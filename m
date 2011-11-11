@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab1KKOFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 09:05:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57695 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752575Ab1KKOFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 09:05:24 -0500
-Message-ID: <4EBD2BB4.3030804@suse.de>
-Date: Fri, 11 Nov 2011 15:05:40 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1756143Ab1KKOJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 09:09:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58515 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab1KKOJI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 09:09:08 -0500
 MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: PPC: e500: Casting (void *) value returned by kmalloc
- is useless
-References: <1320779766.8062.143.camel@localhost.localdomain>
-In-Reply-To: <1320779766.8062.143.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740805421@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17408051C2@HQMAIL01.nvidia.com>
+	<CACRpkdY8YXooD5ChHqQnERPPGhk7TgUvL=TodAPY8Jit9eS=fw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805421@HQMAIL01.nvidia.com>
+Date: Fri, 11 Nov 2011 15:09:07 +0100
+Message-ID: <CACRpkdaArzSfUVgPo0vVEAUNKwZO7W5yhjJpeEQiFK20RQS2Ag@mail.gmail.com>
+Subject: Re: pinctrl discussions @ Linaro Connect, and also requesting GPIOs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2011 08:15 PM, Thomas Meyer wrote:
-> From: Thomas Meyer<thomas@m3y3r.de>
+On Thu, Nov 10, 2011 at 5:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Thursday, November 10, 2011 1:40 AM:
+>> Stephen Warren <swarren@nvidia.com> wrote:
+>> > Many drivers currently call gpio_request(). This is defined /not/ to
+>> > perform any pinmux manipulation.
+>>
+>> Is it?
+>>
+>> I always though that the GPIO driver could call out to the pinctrl
+>> counterpart.
 >
->   Casting (void *) value returned by kmalloc is useless
->   as mentioned in Documentation/CodingStyle, Chap 14.
+> I'd originally thought that too, but when I tried to "fix" gpio_request()
+> on Tegra to perform any necessary pinmux actions, it was pointed out that
+> Documentation/gpio.txt says:
 >
->   The semantic patch that makes this change is available
->   in scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci.
->
->   More information about semantic patching is available at
->   http://coccinelle.lip6.fr/
->
-> Signed-off-by: Thomas Meyer<thomas@m3y3r.de>
-> ---
->
-> diff -u -p a/arch/powerpc/kvm/e500_tlb.c b/arch/powerpc/kvm/e500_tlb.c
-> --- a/arch/powerpc/kvm/e500_tlb.c 2011-11-07 19:37:27.329638682 +0100
-> +++ b/arch/powerpc/kvm/e500_tlb.c 2011-11-08 09:18:39.955928218 +0100
-> @@ -1026,11 +1026,11 @@ int kvmppc_e500_tlb_init(struct kvmppc_v
->   	if (vcpu_e500->gtlb_arch[1] == NULL)
->   		goto err_out_guest0;
->
-> -	vcpu_e500->gtlb_priv[0] = (struct tlbe_priv *)
-> +	vcpu_e500->gtlb_priv[0] =
->   		kzalloc(sizeof(struct tlbe_priv) * KVM_E500_TLB0_SIZE, GFP_KERNEL);
->   	if (vcpu_e500->gtlb_priv[0] == NULL)
->   		goto err_out_guest1;
-> -	vcpu_e500->gtlb_priv[1] = (struct tlbe_priv *)
-> +	vcpu_e500->gtlb_priv[1] =
->   		kzalloc(sizeof(struct tlbe_priv) * KVM_E500_TLB1_SIZE, GFP_KERNEL);
+> " Note that requesting a GPIO does NOT cause it to be configured in any
+> " way; it just marks that GPIO as in use.  Separate code must handle any
+> " pin setup (e.g. controlling which pin the GPIO uses, pullup/pulldown).
+>                              ^^^^^^^^^^^^^^^^^^^^^^^
 
-Sorry, I can't seem to find that code anywhere. I suppose you're using 
-an old git checkout?
+Hm, yeah I see. :-/ You're right of course.
 
+And it is perfectly possible to say, drive a GPIO pin even though it is
+not connected anywhere at all, even though it seem strange,
+there may be cases where a GPIO is used internally on a chip OR
+routed to an external pin, and then this is fully logic.
 
-Alex
+And it makes the two subsystems mostly orthogonal.
 
+> Given that, it appears that the pinctrl/pinmux API is the way to perform
+> that setup, including muxing the GPIO controller onto the pin if required.
+> Given the similarity of that mux setup with more general non-GPIO mux
+> setup is why I suggested including GPIO muxing in the regular mapping
+> table.
+>
+> (as I think I mentioned) and alternative to a custom GPIO mapping table
+> entry would be to remove the GPIO-specific APIs from pinctrl, and have
+> all pinctrl drivers only expose GPIO as an additional function available
+> on a pin (group). Systems that support N different GPIOs on a pin would
+> need to expose GPIO this way anyway.
+
+Yes. It is already possible to use the mapping table like that if
+all GPIOs are represented as indvidual functions from the
+*driver* (i.e. not using the pinmux_request_gpio() function)
+so currently it's a matter of choice.
+
+We already have a goal to do as much as possible of set-up from
+platform code, including mapping table, or, even better, by direct
+bindings from the device tree (whenever we get that).
+
+The idea with the single GPIO request functions was to make
+things simpler and quicker but maybe it's just cluttering the view :-/
+
+What do others think? Shall we just kill
+pinmux_[request|free]_gpio() and its driver hooks?
+
+I guess I have to convert a driver with mixed GPIO myself
+before I fully understand how to do this the right way...
+
+Yours,
+Linus Walleij
