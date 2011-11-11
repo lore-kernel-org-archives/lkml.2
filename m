@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab1KKQGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 11:06:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58401 "EHLO mx1.redhat.com"
+	id S932649Ab1KKQG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 11:06:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32920 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758005Ab1KKQGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 11:06:12 -0500
+	id S1758004Ab1KKQGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 11:06:21 -0500
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, mike.miller@hp.com,
-        iss_storagedev@hp.com, axboe@kernel.dk
-Subject: [PATCH 4/6] block/cciss: Disable ASPM
-Date: Fri, 11 Nov 2011 11:05:09 -0500
-Message-Id: <1321027511-31229-5-git-send-email-mjg@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>, scameron@beardog.cce.hp.com,
+        iss_storagedev@hp.com, linux-scsi@vger.kernel.org
+Subject: [PATCH 5/6] scsi/hpsa: Disable ASPM
+Date: Fri, 11 Nov 2011 11:05:10 -0500
+Message-Id: <1321027511-31229-6-git-send-email-mjg@redhat.com>
 In-Reply-To: <1321027511-31229-1-git-send-email-mjg@redhat.com>
 References: <1321027511-31229-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,21 +23,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Windows driver .inf disables ASPM on all cciss devices. Do the same.
+The Windows driver .inf disables ASPM on hpsa devices. Do the same.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: mike.miller@hp.com
+Cc: scameron@beardog.cce.hp.com
 Cc: iss_storagedev@hp.com
-Cc: axboe@kernel.dk
+Cc: linux-scsi@vger.kernel.org
 ---
- drivers/block/cciss.c |    4 ++++
+ drivers/scsi/hpsa.c |    4 ++++
  1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 486f94e..7e43ad3 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4319,6 +4319,10 @@ static int __devinit cciss_pci_init(ctlr_info_t *h)
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index e76107b..fc2f4c4 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3922,6 +3922,10 @@ static int __devinit hpsa_pci_init(struct ctlr_info *h)
  		dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
  		return -ENODEV;
  	}
@@ -47,7 +47,7 @@ index 486f94e..7e43ad3 100644
 +
  	err = pci_enable_device(h->pdev);
  	if (err) {
- 		dev_warn(&h->pdev->dev, "Unable to Enable PCI device\n");
+ 		dev_warn(&h->pdev->dev, "unable to enable PCI device\n");
 -- 
 1.7.7.1
 
