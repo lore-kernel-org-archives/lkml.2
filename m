@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab1KKVfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 16:35:22 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55089 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab1KKVfU (ORCPT
+	id S1752944Ab1KKVlC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 16:41:02 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:32180 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab1KKVk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 16:35:20 -0500
-Message-ID: <4EBD9500.8070204@gmail.com>
-Date: Fri, 11 Nov 2011 18:34:56 -0300
-From: "Tomas M." <tmezzadra@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	Fri, 11 Nov 2011 16:40:59 -0500
+Date: Fri, 11 Nov 2011 16:40:48 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs fixes
+Message-ID: <20111111214048.GP4435@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com, j-pihet@ti.com,
-        khilman@ti.com, arjan@linux.intel.com, len.brown@intel.com,
-        Arjan van de Ven <arjan@infradead.org>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on
- laptop.
-References: <4EBD46DF.6060507@gmail.com> <4EBD89A8.7070503@gmail.com> <201111112226.25265.rjw@sisk.pl>
-In-Reply-To: <201111112226.25265.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A020203.4EBD9669.0070,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-yes, that helps.
+Hi Linus,
 
-On 11/11/2011 06:26 PM, Rafael J. Wysocki wrote:
-> On Friday, November 11, 2011, Tomas M. wrote:
->> Follow up.
->>
->>
->> reverted this and the following 3 commits from this patch set and the
->> problem is gone.
->>
->> 46bcfad7a819bd17ac4e831b04405152d59784ab
->> 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
->> b25edc42bfb9602f0503474b2c94701d5536ce60
->> e978aa7d7d57d04eb5f88a7507c4fb98577def77
->>
->> they all seem to be related.
-> Does it help (without reverting the commits) if you put idle=poll into the
-> kernel command line?
->
-> Rafael
->
->
->> On 11/11/2011 01:01 PM, Tomas M. wrote:
->>> bisected to e978aa7d7d57d04eb5f88a7507c4fb98577def77
->>>
->>> cannot revert the commit cleanly to further test
->>>
->>> attaching pm-suspend log.  /proc/cpuinfo and lspci -vvnn just in case.
->>> If more info is needed, please let me know.
->>>
->>> thanks!
->>> ----
->>> when trying to suspend... the system locks right before suspending.
->>> sysrq keys  will not work at this point
->>>
->>>
->>> please include me in the CC since im not subscribed to the list.
->>>
->>> i CCed everyone mentioned in the commit. if you were CCed by mystake,
->>> sorry.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
+The for-linus branch of the btrfs git tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+sha: 8965593e41dd2d0e2a2f1e6f245336005ea94a2c
+
+Has our fixes since rc1.  These are pretty small, for the most part
+we're nailing some regressions in the mount error handling code and
+tweaking the ENOSPC throttling.
+
+My for-linus tree is against 3.1, but this was tested against 3.2-rc1 as
+well.
+
+Miao Xie (6) commits (+47/-23):
+    Btrfs: Abstract similar code for btrfs_block_rsv_add{, _noflush} (+12/-16)
+    Btrfs: fix deadlock caused by the race between relocation (+2/-2)
+    Btrfs: fix no reserved space for writing out inode cache (+24/-4)
+    Btrfs: fix unreleased path in btrfs_orphan_cleanup() (+3/-0)
+    Btrfs: fix nocow when deleting the item (+4/-1)
+    Btrfs: fix orphan backref nodes (+2/-0)
+
+Ilya Dryomov (5) commits (+43/-46):
+    Btrfs: avoid null dereference and leaks when bailing from open_ctree() (+15/-20)
+    Btrfs: close devices on all error paths in open_ctree() (+3/-4)
+    Btrfs: fix subvol_name leak on error in btrfs_mount() (+3/-1)
+    Btrfs: fix memory leak in btrfs_parse_early_options() (+1/-0)
+    Btrfs: rework error handling in btrfs_mount() (+21/-21)
+
+Chris Mason (2) commits (+56/-33):
+    Btrfs: fix oops on NULL trans handle in btrfs_truncate (+9/-7)
+    Btrfs: tweak the delayed inode reservations again (+47/-26)
+
+Josef Bacik (2) commits (+93/-16):
+    Btrfs: only map pages if we know we need them when reading the space cache (+10/-7)
+    Btrfs: fix our reservations for updating an inode when completing io (+83/-9)
+
+slyich@gmail.com (1) commits (+5/-3):
+    btrfs: fix double-free 'tree_root' in 'btrfs_mount()'
+
+Arne Jansen (1) commits (+29/-35):
+    Btrfs: handle bio_add_page failure gracefully in scrub
+
+David Sterba (1) commits (+2/-2):
+    btrfs: rename the option to nospace_cache
+
+Total: (18) commits
+
+ fs/btrfs/btrfs_inode.h      |    4 +--
+ fs/btrfs/delayed-inode.c    |   58 +++++++++++++++++++++++++++++-
+ fs/btrfs/disk-io.c          |   42 +++++++++------------
+ fs/btrfs/extent-tree.c      |   50 ++++++++++++++++----------
+ fs/btrfs/free-space-cache.c |   17 +++++----
+ fs/btrfs/inode-map.c        |   28 ++++++++++++--
+ fs/btrfs/inode.c            |   84 +++++++++++++++++++++++++++++--------------
+ fs/btrfs/relocation.c       |    2 +
+ fs/btrfs/scrub.c            |   64 +++++++++++++++------------------
+ fs/btrfs/super.c            |   49 ++++++++++++++-----------
+ fs/btrfs/transaction.c      |    4 +-
+ fs/btrfs/volumes.c          |    5 ++-
+ 12 files changed, 262 insertions(+), 145 deletions(-)
