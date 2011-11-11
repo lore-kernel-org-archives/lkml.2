@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab1KKIiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 03:38:25 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60874 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130Ab1KKIiX (ORCPT
+	id S1757042Ab1KKIkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 03:40:33 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50172 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754130Ab1KKIkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 03:38:23 -0500
+	Fri, 11 Nov 2011 03:40:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <1320985863.21206.40.camel@pasglop>
-References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
-	<CAPQyPG7RrpV8DBV_Qcgr2at_r25_ngjy_84J2FqzRPGfA3PGDA@mail.gmail.com>
-	<4EBC085D.3060107@jp.fujitsu.com>
-	<1320959579.21206.24.camel@pasglop>
-	<alpine.LSU.2.00.1111101723500.1239@sister.anvils>
-	<1320985863.21206.40.camel@pasglop>
-Date: Fri, 11 Nov 2011 16:38:22 +0800
-Message-ID: <CAPQyPG4WHiEqX_tQ1WHMqEWmYUrB8Br7x5PTTtYOH+9D4FHt9A@mail.gmail.com>
-Subject: Re: mm: convert vma->vm_flags to 64bit
-From: Nai Xia <nai.xia@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, dave@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lethal@linux-sh.org,
-        linux@arm.linux.org.uk
+In-Reply-To: <201111101941.59570.dmitry.torokhov@gmail.com>
+References: <20111111131159.848e724c5a9257d0b9f0f0f9@canb.auug.org.au>
+	<201111101941.59570.dmitry.torokhov@gmail.com>
+Date: Fri, 11 Nov 2011 14:10:31 +0530
+Message-ID: <CAJuYYwTr3zzQobV9irFda_xMW8Sg_zCycGJFd+DiXc12FbP7FA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the input tree with the s5p tree
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 12:31 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Thu, 2011-11-10 at 18:09 -0800, Hugh Dickins wrote:
->> It was in this mail below, when Andrew sent Linus the patch, and Linus
->> opposed my "argument" in support: that wasn't on lkml or linux-mm,
->> but I don't see that its privacy needs protecting.
->>
->> KOSAKI-san then sent instead a patch to correct some ints to longs,
->> which Linus did put in: but changing them to a new "vm_flags_t".
->>
->> He was, I think, hoping that one of us would change all the other uses
->> of unsigned long vm_flags to vm_flags_t; but in fact none of us has
->> stepped up yet - yeah, we're still sulking that we didn't get our
->> shiny new 64-bit vm_flags ;)
->>
->> I think Linus is not opposed to PowerPC and others defining a 64-bit
->> vm_flags_t if you need it, but wants not to bloat the x86_32 vma.
->>
->> I'm still wary of the contortions we go to in constraining flags,
->> and feel that the 32-bit case holds back the 64-bit, which would
->> not itself be bloated at all.
->>
->> The subject is likely to come up again, more pressingly, with page
->> flags.
->
-> Right, tho the good first step is to convert everything to vm_flags_t so
-> we can easily switch if we want to, even on a per-arch basis...
->
-> Oh well, now all we need is a volunteer :-)
+Hi Dmitry,
 
-Maybe a "Kernel Common Resource Authority" is needed for all similar
-requests, just like IANA for IP addresses... :)
+On 11 November 2011 09:11, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> Hi Stephen,
+>
+> On Thursday, November 10, 2011 06:11:59 PM Stephen Rothwell wrote:
+>> Hi Dmitry,
+>>
+>> Today's linux-next merge of the input tree got a conflict in
+>> drivers/input/keyboard/Kconfig between commit 007205aa47e9 ("input:
+>> samsung-keypad: Add HAVE_SAMSUNG_KEYPAD config option") from the s5p
+>> tree and commit 5862c02d745f ("Input: samsung-keypad - enable compiling
+>> on other platforms") from the input tree.
+>>
+>> I have fixed it up (probably incorrectly - see below) and can carry the
+>> fix as necessary.
+>
+> Please drop the whole HAVE_SAMSUNG_KEYPAD thing; HAVE_CLK is all
+> this driver needs. Expanding beyond Samsung will allow greater
+> compile coverage.
 
+Thanks for the suggestion. I will modify device tree support for
+samsung keypad driver that is merged in s5p tree for-next branch.
 
-Thanks,
-Nai
+Regards,
+Thomas.
+
 >
-> Cheers,
-> Ben.
+> Thanks.
 >
->
+> --
+> Dmitry
 >
