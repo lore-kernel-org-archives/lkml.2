@@ -1,139 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab1KKAIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 19:08:43 -0500
-Received: from mail-bw0-f74.google.com ([209.85.214.74]:47079 "EHLO
-	mail-bw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab1KKAIl (ORCPT
+	id S1756933Ab1KKAi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 19:38:56 -0500
+Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:47050 "EHLO
+	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab1KKAiy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 19:08:41 -0500
-X-Greylist: delayed 3465 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 19:08:41 EST
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Decotigny <david.decotigny@google.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>
-Subject: [PATCH FIX net v1] forcedeth: fix ifconfig stats on hardware without extended stats support
-Date: Thu, 10 Nov 2011 15:10:40 -0800
-Message-Id: <202cfa353085f52352650ecc169cbee66a034301.1320966597.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1320966597.git.david.decotigny@google.com>
-References: <cover.1320966597.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Thu, 10 Nov 2011 19:38:54 -0500
+From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+To: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+CC: Kumar Gala <galak@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Timur Tabi <B04825@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Thu, 10 Nov 2011 18:38:32 -0600
+Subject: Re: [RFC PATCH 00/17] powerpc/e500: separate e500 from e500mc
+Thread-Topic: [RFC PATCH 00/17] powerpc/e500: separate e500 from e500mc
+Thread-Index: AcygCj1LoQpKFQCkTRavIEOsEn/how==
+Message-ID: <15AB1C61-181F-4454-AF99-772B73DE0AA5@boeing.com>
+References: <4E42AB6F.1050900@freescale.com>
+ <1320883399-15911-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <FF2BF3F3-1158-4747-AEEC-03D6A7C462D9@kernel.crashing.org>
+ <C0DED343-76A8-457E-BF54-E52DFCAC83A8@boeing.com>
+ <58FDDDA5-26C4-493B-A00D-81DD94A5C26A@kernel.crashing.org>
+ <20111110165455.GE11983@schlenkerla.am.freescale.net>
+In-Reply-To: <20111110165455.GE11983@schlenkerla.am.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes sure that tx_packets/rx_bytes ifconfig counters are
-updated even on NICs that don't provide hardware support for these
-stats. In that case, they are updated in software.
+On Nov 10, 2011, at 11:54, Scott Wood wrote:
+> On Thu, Nov 10, 2011 at 10:30:41AM -0600, Kumar Gala wrote:
+>> On Nov 10, 2011, at 10:17 AM, Moffett, Kyle D wrote:
+>>> Furthermore, it looks like there are a couple issues here I missed
+>>> before.  PPC64 systems all appear to have an L1_CACHE_SHIFT of 7,
+>>> except when you turn on the P5020DS board option which magically
+>>> changes it to "6" and breaks lord-knows-what.  I think my patch
+>>> series actually "breaks" that and makes e5500 use 7 as well.
+>> 
+>> a value of '6' on E5500 / P5020DS is correct and doesn't break anything.
+>> Setting it to 7 is wrong and thus the code is correct today.
+>> 
+>>> Are you sure that a kernel built to support E5500 can also run on
+>>> other 64-bit PowerPC/POWER systems?
+>> 
+>> No it will not.  There is not expectation of that as E5500 is an
+>> embedded / Book-E class part and uses that ISA version.  Book-S
+>> (server) 64-bit machines are not OS compatible and we are not trying to
+>> make them as such (but we do re-use a lot of code).
+> 
+> What about other 64-bit book3e chips?  What cache block size does A2 have?
 
-Related commit: "forcedeth: Improve stats counters" (0bdfea8ba8)
+Ok, so I've been poking around this code a bunch and as far as I can
+tell, the cacheline stuff has basically always been subtly wrong in
+twelve different ways and it's only largely coincidence that it works
+today.
 
+So PowerPC64 systems have their own "ppc64_caches" structure set up
+before start_kernel() is called by parsing the OpenFirmware "cpu" nodes.
+That structure is then checked in every piece of 64-bit kernel code
+(except xmon) that uses the "dcbXX" and "icbXX" opcodes.
 
+There is an entirely separate mechanism built into the "cputable" that
+is used on all PowerPC systems to compute cacheline sizes to pass in via
+ELF headers for userspace to use in memset()/memcpy(), etc.
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |   34 ++++++++++++++++++++++++++----
- 1 files changed, 29 insertions(+), 5 deletions(-)
+Furthermore, the VDSO gets cacheline sizes stored into it, but on 64-bit
+they come from the ppc64_caches structure and on 32-bit they come from
+dcache_bsize/icache_bsize copied from the cputable.
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 1dca570..c0afe8e 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -90,6 +90,7 @@
- #define DEV_HAS_STATISTICS_V2      0x0000400  /* device supports hw statistics version 2 */
- #define DEV_HAS_STATISTICS_V3      0x0000800  /* device supports hw statistics version 3 */
- #define DEV_HAS_STATISTICS_V12     0x0000600  /* device supports hw statistics version 1 and 2 */
-+#define DEV_HAS_STATISTICS_V23     0x0000c00  /* device supports hw statistics version 2 and 3 */
- #define DEV_HAS_STATISTICS_V123    0x0000e00  /* device supports hw statistics version 1, 2, and 3 */
- #define DEV_HAS_TEST_EXTENDED      0x0001000  /* device supports extended diagnostic test */
- #define DEV_HAS_MGMT_UNIT          0x0002000  /* device supports management unit */
-@@ -1703,12 +1704,19 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
- 	struct fe_priv *np = netdev_priv(dev);
- 
- 	/* If the nic supports hw counters then retrieve latest values */
--	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
-+	if (np->driver_data & DEV_HAS_STATISTICS_V123) {
-+		/* query hardware */
- 		nv_get_hw_stats(dev);
- 
- 		/* copy to net_device stats */
--		dev->stats.tx_packets = np->estats.tx_packets;
--		dev->stats.rx_bytes = np->estats.rx_bytes;
-+
-+		if (np->driver_data & DEV_HAS_STATISTICS_V23) {
-+			/* When HW stats are available for following
-+			 * stats, we use them. Otherwise they are
-+			 * updated by software. */
-+			dev->stats.tx_packets = np->estats.tx_packets;
-+			dev->stats.rx_bytes = np->estats.rx_bytes;
-+		}
- 		dev->stats.tx_bytes = np->estats.tx_bytes;
- 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
- 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
-@@ -2378,8 +2386,12 @@ static int nv_tx_done(struct net_device *dev, int limit)
- 		if (np->desc_ver == DESC_VER_1) {
- 			if (flags & NV_TX_LASTPACKET) {
- 				if (flags & NV_TX_ERROR) {
--					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
-+					if ((flags & NV_TX_RETRYERROR)
-+					    && !(flags & NV_TX_RETRYCOUNT_MASK))
- 						nv_legacybackoff_reseed(dev);
-+				} else if (unlikely(!(np->driver_data
-+						      & DEV_HAS_STATISTICS_V23))) {
-+					dev->stats.tx_packets++;
- 				}
- 				dev_kfree_skb_any(np->get_tx_ctx->skb);
- 				np->get_tx_ctx->skb = NULL;
-@@ -2388,8 +2400,12 @@ static int nv_tx_done(struct net_device *dev, int limit)
- 		} else {
- 			if (flags & NV_TX2_LASTPACKET) {
- 				if (flags & NV_TX2_ERROR) {
--					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
-+					if ((flags & NV_TX2_RETRYERROR)
-+					    && !(flags & NV_TX2_RETRYCOUNT_MASK))
- 						nv_legacybackoff_reseed(dev);
-+				} else if (unlikely(!(np->driver_data
-+						      & DEV_HAS_STATISTICS_V23))) {
-+					dev->stats.tx_packets++;
- 				}
- 				dev_kfree_skb_any(np->get_tx_ctx->skb);
- 				np->get_tx_ctx->skb = NULL;
-@@ -2429,6 +2445,9 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
- 					else
- 						nv_legacybackoff_reseed(dev);
- 				}
-+			} else if (unlikely(!(np->driver_data
-+					      & DEV_HAS_STATISTICS_V23))) {
-+				dev->stats.tx_packets++;
- 			}
- 
- 			dev_kfree_skb_any(np->get_tx_ctx->skb);
-@@ -2678,6 +2697,8 @@ static int nv_rx_process(struct net_device *dev, int limit)
- 		skb->protocol = eth_type_trans(skb, dev);
- 		napi_gro_receive(&np->napi, skb);
- 		dev->stats.rx_packets++;
-+		if (unlikely(!(np->driver_data & DEV_HAS_STATISTICS_V23)))
-+			dev->stats.rx_bytes += len;
- next_pkt:
- 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
- 			np->get_rx.orig = np->first_rx.orig;
-@@ -2761,6 +2782,9 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
- 			}
- 			napi_gro_receive(&np->napi, skb);
- 			dev->stats.rx_packets++;
-+			if (unlikely(!(np->driver_data
-+				       & DEV_HAS_STATISTICS_V23)))
-+				dev->stats.rx_bytes += len;
- 		} else {
- 			dev_kfree_skb(skb);
- 		}
--- 
-1.7.3.1
+Then there's the value in arch/powerpc/include/asm/cache.h which is used
+throughout the kernel to figure out how far apart to space CPU-specific
+datastructures (EG: __cacheline_aligned_on_smp).
 
+Despite the fact that all PPC64 have an "L1_CACHE_SIZE" value of 128,
+the PowerPC A2 and e5500 have {d,i}cache_bsize values of 64 in cputable
+and presumably also get correct values from OpenFirmware, so the bogus
+constant in asm/cache.h does nothing more than waste a bit of memory
+for unnecessary padding.
+
+Unfortunately, lots of PPC32 assembly pretends that the value found in
+asm/cache.h is a hard truth and uses it for "dcbz", etc, which is why
+there are all of those ugly #ifdefs in asm/cache.h
+
+Based on all of that, my proposal is going to be a patch which does the
+following:
+
+  (1) Conditionally set L1_CACHE_SHIFT to the maximum value used by any
+      platform being compiled in for alignment purposes.
+
+  (2) Make the ppc64_caches struct apply to ppc32 as well, and
+      preinitialize it with a minimum value used by any platform being
+      compiled in (for "dcbXX"/"icbXX" purposes).  This is safe because
+      the pagesize is always a multiple of the cache block size and the
+      kernel only uses dcbXX/icbXX on whole pages.  The only impact is a
+      temporary small performance hit from flushing or zeroing the same
+      block 8 times if too small.
+
+  (3) Try to initialize the ppc_caches struct on ppc32 from the
+      OpenFirmware device-tree.  If that fails, then use the values we
+      find in the cputable.  After this is initialized any performance
+      hit in copy_page()/zero_page() will obviously disappear.
+
+  (4) Fix all of the PPC32 assembly code that is misusing L1_CACHE_SHIFT
+      to use the ppc_caches struct instead.
+
+Does that sound like a reasonable approach?
+
+Cheers,
+Kyle Moffett
+
+--
+Curious about my work on the Debian powerpcspe port?
+I'm keeping a blog here: http://pureperl.blogspot.com/
