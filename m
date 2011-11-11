@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab1KKMfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 07:35:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58249 "EHLO mx1.redhat.com"
+	id S1757375Ab1KKMfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 07:35:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706Ab1KKMfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 07:35:42 -0500
+	id S1757347Ab1KKMfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 07:35:44 -0500
 From: Stanislaw Gruszka <sgruszka@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
@@ -14,110 +14,68 @@ Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Christoph Lameter <cl@linux-foundation.org>,
         Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [PATCH 1/4] mm: remove debug_pagealloc_enabled
-Date: Fri, 11 Nov 2011 13:36:31 +0100
-Message-Id: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
+Subject: [PATCH 4/4] slub: min order when corrupt_dbg
+Date: Fri, 11 Nov 2011 13:36:34 +0100
+Message-Id: <1321014994-2426-4-git-send-email-sgruszka@redhat.com>
+In-Reply-To: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
+References: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After we finish (no)bootmem, pages are passed to buddy allocator. Since
-debug_pagealloc_enabled is not set, we do not protect pages, what is
-not what we want with CONFIG_DEBUG_PAGEALLOC=y. That could be fixed by
-calling enable_debug_pagealloc() before free_all_bootmem(), but actually
-I do not see any reason why we need that global variable. Hence patch
-remove it.
+Disable slub debug facilities and allocate slabs at minimal order when
+corrupt_dbg > 0 to increase probability to catch random memory
+corruption by cpu exception.
 
 Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 ---
- arch/x86/mm/pageattr.c |    6 ------
- include/linux/mm.h     |   10 ----------
- init/main.c            |    5 -----
- mm/debug-pagealloc.c   |    3 ---
- 4 files changed, 0 insertions(+), 24 deletions(-)
+ mm/slub.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index f9e5267..5031eef 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
- 	}
+diff --git a/mm/slub.c b/mm/slub.c
+index 7d2a996..b0e4318 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2844,7 +2844,7 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
+ 	unsigned long flags = s->flags;
+ 	unsigned long size = s->objsize;
+ 	unsigned long align = s->align;
+-	int order;
++	int order, min_order;
  
  	/*
--	 * If page allocator is not up yet then do not call c_p_a():
--	 */
--	if (!debug_pagealloc_enabled)
--		return;
--
--	/*
- 	 * The return value is ignored as the calls cannot fail.
- 	 * Large pages for identity mappings are not used at boot time
- 	 * and hence no memory allocations during large page split.
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 3dc3a8c..0a22db1 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
- #endif /* CONFIG_PROC_FS */
- 
- #ifdef CONFIG_DEBUG_PAGEALLOC
--extern int debug_pagealloc_enabled;
--
- extern void kernel_map_pages(struct page *page, int numpages, int enable);
--
--static inline void enable_debug_pagealloc(void)
--{
--	debug_pagealloc_enabled = 1;
--}
- #ifdef CONFIG_HIBERNATION
- extern bool kernel_page_present(struct page *page);
- #endif /* CONFIG_HIBERNATION */
- #else
- static inline void
- kernel_map_pages(struct page *page, int numpages, int enable) {}
--static inline void enable_debug_pagealloc(void)
--{
--}
- #ifdef CONFIG_HIBERNATION
- static inline bool kernel_page_present(struct page *page) { return true; }
- #endif /* CONFIG_HIBERNATION */
-diff --git a/init/main.c b/init/main.c
-index 217ed23..99c4ba3 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
- 	return 0;
- }
- 
--#ifdef CONFIG_DEBUG_PAGEALLOC
--int __read_mostly debug_pagealloc_enabled = 0;
--#endif
--
- static int __init init_setup(char *str)
- {
- 	unsigned int i;
-@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
- 	}
- #endif
- 	page_cgroup_init();
--	enable_debug_pagealloc();
- 	debug_objects_mem_init();
- 	kmemleak_init();
- 	setup_per_cpu_pageset();
-diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
-index 7cea557..789ff70 100644
---- a/mm/debug-pagealloc.c
-+++ b/mm/debug-pagealloc.c
-@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
- 
- void kernel_map_pages(struct page *page, int numpages, int enable)
- {
--	if (!debug_pagealloc_enabled)
--		return;
--
- 	if (enable)
- 		unpoison_pages(page, numpages);
+ 	 * Round up object size to the next word boundary. We can only
+@@ -2929,8 +2929,11 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
+ 	 */
+ 	size = ALIGN(size, align);
+ 	s->size = size;
++	min_order = get_order(size);
+ 	if (forced_order >= 0)
+ 		order = forced_order;
++	else if (corrupt_dbg())
++		order = min_order;
  	else
+ 		order = calculate_order(size, s->reserved);
+ 
+@@ -2951,7 +2954,7 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
+ 	 * Determine the number of objects per slab
+ 	 */
+ 	s->oo = oo_make(order, size, s->reserved);
+-	s->min = oo_make(get_order(size), size, s->reserved);
++	s->min = oo_make(min_order, size, s->reserved);
+ 	if (oo_objects(s->oo) > oo_objects(s->max))
+ 		s->max = s->oo;
+ 
+@@ -3645,6 +3648,9 @@ void __init kmem_cache_init(void)
+ 	struct kmem_cache *temp_kmem_cache_node;
+ 	unsigned long kmalloc_size;
+ 
++	if (corrupt_dbg())
++		slub_debug = 0;
++
+ 	kmem_size = offsetof(struct kmem_cache, node) +
+ 				nr_node_ids * sizeof(struct kmem_cache_node *);
+ 
 -- 
 1.7.1
 
