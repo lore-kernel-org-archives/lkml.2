@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab1KKLW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 06:22:59 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6953 "EHLO
+	id S1756921Ab1KKLXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 06:23:41 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6990 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab1KKLWs (ORCPT
+	with ESMTP id S1756628Ab1KKLW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 06:22:48 -0500
+	Fri, 11 Nov 2011 06:22:58 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 11 Nov 2011 03:22:31 -0800
+	by hqnvupgp07.nvidia.com on Fri, 11 Nov 2011 03:22:40 -0800
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
         Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>
-Subject: [PATCH v4 04/10] arm/tegra: prepare early init for multiple tegra variants
-Date: Fri, 11 Nov 2011 13:22:10 +0200
-Message-ID: <1321010541-31337-5-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v4 09/10] arm/tegra: implement support for tegra30
+Date: Fri, 11 Nov 2011 13:22:15 +0200
+Message-ID: <1321010541-31337-10-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
@@ -28,244 +28,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch splits the early init code in a common and a tegra20 specific part.
-L2 cache initialization is generalized and discovers the cache associativity
-at runtime. Also use arm_pm_restart instead of arm_arch_reset and reset the
-the system using the PMC reset feature rather then the CAR system reset.
+Add support for tegra30 SoC. This includes a device tree compatible type for
+this SoC ("nvidia,tegra30") and adds L2 cache initialization for this new SoC.
+The clock framework is still missing, which prevents most drivers from working.
+The basic IRQs are the same, so remove the dependency on
+CONFIG_ARCH_TEGRA_2x_SOC.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- arch/arm/mach-tegra/board-dt.c        |   21 ++++++++++++++
- arch/arm/mach-tegra/board-harmony.c   |    2 +-
- arch/arm/mach-tegra/board-paz00.c     |    2 +-
- arch/arm/mach-tegra/board-seaboard.c  |    6 ++--
- arch/arm/mach-tegra/board-trimslice.c |    2 +-
- arch/arm/mach-tegra/board.h           |    6 ++--
- arch/arm/mach-tegra/clock.c           |    5 ---
- arch/arm/mach-tegra/common.c          |   47 ++++++++++++++++++++++----------
- 8 files changed, 62 insertions(+), 29 deletions(-)
+ arch/arm/mach-tegra/Kconfig             |   18 +++++++++++++-----
+ arch/arm/mach-tegra/board-dt.c          |    3 +++
+ arch/arm/mach-tegra/board.h             |    3 +++
+ arch/arm/mach-tegra/common.c            |    7 +++++++
+ arch/arm/mach-tegra/include/mach/irqs.h |    2 --
+ 5 files changed, 26 insertions(+), 7 deletions(-)
 
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 2b1d49b..aad54ca 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -2,11 +2,8 @@ if ARCH_TEGRA
+ 
+ comment "NVIDIA Tegra options"
+ 
+-choice
+-	prompt "Select Tegra processor family for target system"
+-
+ config ARCH_TEGRA_2x_SOC
+-	bool "Tegra 2 family"
++	bool "Enable support for Tegra20 family"
+ 	select CPU_V7
+ 	select ARM_GIC
+ 	select ARCH_REQUIRE_GPIOLIB
+@@ -17,7 +14,18 @@ config ARCH_TEGRA_2x_SOC
+ 	  Support for NVIDIA Tegra AP20 and T20 processors, based on the
+ 	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
+ 
+-endchoice
++config ARCH_TEGRA_3x_SOC
++	bool "Enable support for Tegra30 family"
++	select CPU_V7
++	select ARM_GIC
++	select ARCH_REQUIRE_GPIOLIB
++	select USB_ARCH_HAS_EHCI if USB_SUPPORT
++	select USB_ULPI if USB_SUPPORT
++	select USB_ULPI_VIEWPORT if USB_SUPPORT
++	select USE_OF
++	help
++	  Support for NVIDIA Tegra T30 processor family, based on the
++	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
+ 
+ config TEGRA_PCI
+ 	bool "PCI Express support"
 diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-index d368f8d..15ee974 100644
+index 15ee974..486b473 100644
 --- a/arch/arm/mach-tegra/board-dt.c
 +++ b/arch/arm/mach-tegra/board-dt.c
-@@ -118,6 +118,27 @@ static void __init tegra_dt_init(void)
- 	of_platform_populate(NULL, tegra_dt_match_table, tegra20_auxdata_lookup, NULL);
- }
- 
-+static struct {
-+	const char *machine;
-+	void (*init)(void);
-+} early_init[] __initdata = {
-+#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-+	{ "nvidia,tegra20", tegra20_init_early },
+@@ -125,6 +125,9 @@ static struct {
+ #ifdef CONFIG_ARCH_TEGRA_2x_SOC
+ 	{ "nvidia,tegra20", tegra20_init_early },
+ #endif
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++	{ "nvidia,tegra30", tegra30_init_early },
 +#endif
-+};
-+
-+static void __init tegra_init_early(void)
-+{
-+
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(early_init); i++)
-+		if (of_machine_is_compatible(early_init[i].machine))
-+			return early_init[i].init();
-+
-+	pr_warn("Unknown platform detected\n");
-+}
-+
- static const char * tegra_dt_board_compat[] = {
- 	"nvidia,harmony",
- 	"nvidia,seaboard",
-diff --git a/arch/arm/mach-tegra/board-harmony.c b/arch/arm/mach-tegra/board-harmony.c
-index f0bdc5e..c422aeb 100644
---- a/arch/arm/mach-tegra/board-harmony.c
-+++ b/arch/arm/mach-tegra/board-harmony.c
-@@ -185,7 +185,7 @@ MACHINE_START(HARMONY, "harmony")
- 	.atag_offset	= 0x100,
- 	.fixup		= tegra_harmony_fixup,
- 	.map_io         = tegra_map_common_io,
--	.init_early	= tegra_init_early,
-+	.init_early	= tegra20_init_early,
- 	.init_irq       = tegra_init_irq,
- 	.timer          = &tegra_timer,
- 	.init_machine   = tegra_harmony_init,
-diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
-index 602f8dd..6997a47 100644
---- a/arch/arm/mach-tegra/board-paz00.c
-+++ b/arch/arm/mach-tegra/board-paz00.c
-@@ -188,7 +188,7 @@ MACHINE_START(PAZ00, "Toshiba AC100 / Dynabook AZ")
- 	.atag_offset	= 0x100,
- 	.fixup		= tegra_paz00_fixup,
- 	.map_io         = tegra_map_common_io,
--	.init_early	= tegra_init_early,
-+	.init_early	= tegra20_init_early,
- 	.init_irq       = tegra_init_irq,
- 	.timer          = &tegra_timer,
- 	.init_machine   = tegra_paz00_init,
-diff --git a/arch/arm/mach-tegra/board-seaboard.c b/arch/arm/mach-tegra/board-seaboard.c
-index bf13ea3..5e42e08 100644
---- a/arch/arm/mach-tegra/board-seaboard.c
-+++ b/arch/arm/mach-tegra/board-seaboard.c
-@@ -282,7 +282,7 @@ static void __init tegra_wario_init(void)
- MACHINE_START(SEABOARD, "seaboard")
- 	.atag_offset    = 0x100,
- 	.map_io         = tegra_map_common_io,
--	.init_early     = tegra_init_early,
-+	.init_early     = tegra20_init_early,
- 	.init_irq       = tegra_init_irq,
- 	.timer          = &tegra_timer,
- 	.init_machine   = tegra_seaboard_init,
-@@ -291,7 +291,7 @@ MACHINE_END
- MACHINE_START(KAEN, "kaen")
- 	.atag_offset    = 0x100,
- 	.map_io         = tegra_map_common_io,
--	.init_early     = tegra_init_early,
-+	.init_early     = tegra20_init_early,
- 	.init_irq       = tegra_init_irq,
- 	.timer          = &tegra_timer,
- 	.init_machine   = tegra_kaen_init,
-@@ -300,7 +300,7 @@ MACHINE_END
- MACHINE_START(WARIO, "wario")
- 	.atag_offset    = 0x100,
- 	.map_io         = tegra_map_common_io,
--	.init_early     = tegra_init_early,
-+	.init_early     = tegra20_init_early,
- 	.init_irq       = tegra_init_irq,
- 	.timer          = &tegra_timer,
- 	.init_machine   = tegra_wario_init,
-diff --git a/arch/arm/mach-tegra/board-trimslice.c b/arch/arm/mach-tegra/board-trimslice.c
-index e008c0e..7117e81 100644
---- a/arch/arm/mach-tegra/board-trimslice.c
-+++ b/arch/arm/mach-tegra/board-trimslice.c
-@@ -175,7 +175,7 @@ MACHINE_START(TRIMSLICE, "trimslice")
- 	.atag_offset	= 0x100,
- 	.fixup		= tegra_trimslice_fixup,
- 	.map_io         = tegra_map_common_io,
--	.init_early	= tegra_init_early,
-+	.init_early	= tegra20_init_early,
- 	.init_irq       = tegra_init_irq,
- 	.timer          = &tegra_timer,
- 	.init_machine   = tegra_trimslice_init,
+ };
+ 
+ static void __init tegra_init_early(void)
 diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
-index 1d14df7..355f488 100644
+index 355f488..f508cbb 100644
 --- a/arch/arm/mach-tegra/board.h
 +++ b/arch/arm/mach-tegra/board.h
-@@ -23,9 +23,9 @@
- 
- #include <linux/types.h>
- 
--void tegra_assert_system_reset(char mode, const char *cmd);
--
--void __init tegra_init_early(void);
-+#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-+void __init tegra20_init_early(void);
+@@ -26,6 +26,9 @@
+ #ifdef CONFIG_ARCH_TEGRA_2x_SOC
+ void __init tegra20_init_early(void);
+ #endif
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++void __init tegra30_init_early(void);
 +#endif
  void __init tegra_map_common_io(void);
  void __init tegra_init_irq(void);
  void __init tegra_init_clock(void);
-diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
-index 47f6366..e8d214d 100644
---- a/arch/arm/mach-tegra/clock.c
-+++ b/arch/arm/mach-tegra/clock.c
-@@ -399,11 +399,6 @@ void tegra_periph_reset_assert(struct clk *c)
- }
- EXPORT_SYMBOL(tegra_periph_reset_assert);
- 
--void __init tegra_init_clock(void)
--{
--	tegra2_init_clocks();
--}
--
- /*
-  * The SDMMC controllers on tegra20 have extra bits in the clock source
-  * register that adjust the delay between the clock and data to compenstate
 diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index 03c2bd4..3ad1ca3 100644
+index 3ad1ca3..06f34ec 100644
 --- a/arch/arm/mach-tegra/common.c
 +++ b/arch/arm/mach-tegra/common.c
-@@ -1,5 +1,5 @@
- /*
-- * arch/arm/mach-tegra/board-harmony.c
-+ * arch/arm/mach-tegra/common.c
-  *
-  * Copyright (C) 2010 Google, Inc.
-  *
-@@ -33,16 +33,16 @@
- 
- void tegra_assert_system_reset(char mode, const char *cmd)
- {
--	void __iomem *reset = IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x04);
-+	void __iomem *reset = IO_ADDRESS(TEGRA_PMC_BASE + 0);
- 	u32 reg;
- 
--	/* use *_related to avoid spinlock since caches are off */
- 	reg = readl_relaxed(reset);
--	reg |= 0x04;
-+	reg |= 0x10;
- 	writel_relaxed(reg, reset);
+@@ -98,3 +98,10 @@ void __init tegra20_init_early(void)
+ 	tegra_common_init();
  }
- 
--static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
-+#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-+static __initdata struct tegra_clk_init_table tegra20_clk_init_table[] = {
- 	/* name		parent		rate		enabled */
- 	{ "clk_m",	NULL,		0,		true },
- 	{ "pll_p",	"clk_m",	216000000,	true },
-@@ -58,26 +58,43 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
- 	{ "cpu",	NULL,		0,		true },
- 	{ NULL,		NULL,		0,		0},
- };
-+#endif
- 
--static void __init tegra_init_cache(void)
-+static void __init tegra_init_cache(u32 tag_latency, u32 data_latency)
- {
- #ifdef CONFIG_CACHE_L2X0
- 	void __iomem *p = IO_ADDRESS(TEGRA_ARM_PERIF_BASE) + 0x3000;
-+	u32 aux_ctrl, cache_type;
-+
-+	writel_relaxed(tag_latency, p + L2X0_TAG_LATENCY_CTRL);
-+	writel_relaxed(data_latency, p + L2X0_DATA_LATENCY_CTRL);
- 
--	writel_relaxed(0x331, p + L2X0_TAG_LATENCY_CTRL);
--	writel_relaxed(0x441, p + L2X0_DATA_LATENCY_CTRL);
-+	cache_type = readl(p + L2X0_CACHE_TYPE);
-+	aux_ctrl = (cache_type & 0x700) << (17-8);
-+	aux_ctrl |= 0x6C000001;
- 
--	l2x0_init(p, 0x6C080001, 0x8200c3fe);
-+	l2x0_init(p, aux_ctrl, 0x8200c3fe);
  #endif
- 
- }
- 
--void __init tegra_init_early(void)
-+static void __init tegra_setup_system_reset(void)
- {
--	tegra_init_fuse();
--	tegra_init_clock();
--	tegra_clk_init_from_table(common_clk_init_table);
--	tegra_init_cache();
-+	arm_pm_restart = tegra_assert_system_reset;
-+}
-+
-+static void __init tegra_common_init(void)
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++void __init tegra30_init_early(void)
 +{
-+	tegra_setup_system_reset();
-+}
- 
--	arm_arch_reset = tegra_assert_system_reset;
-+#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-+void __init tegra20_init_early(void)
-+{
-+	tegra_init_fuse();
-+	tegra2_init_clocks();
-+	tegra_clk_init_from_table(tegra20_clk_init_table);
-+	tegra_init_cache(0x331, 0x441);
++	tegra_init_cache(0x441, 0x551);
 +	tegra_common_init();
- }
++}
 +#endif
+diff --git a/arch/arm/mach-tegra/include/mach/irqs.h b/arch/arm/mach-tegra/include/mach/irqs.h
+index 73265af..a2146cd 100644
+--- a/arch/arm/mach-tegra/include/mach/irqs.h
++++ b/arch/arm/mach-tegra/include/mach/irqs.h
+@@ -25,7 +25,6 @@
+ 
+ #define IRQ_LOCALTIMER                  29
+ 
+-#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+ /* Primary Interrupt Controller */
+ #define INT_PRI_BASE			(INT_GIC_BASE + 32)
+ #define INT_TMR1			(INT_PRI_BASE + 0)
+@@ -178,6 +177,5 @@
+ #define NR_BOARD_IRQS			32
+ 
+ #define NR_IRQS				(INT_BOARD_BASE + NR_BOARD_IRQS)
+-#endif
+ 
+ #endif
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
