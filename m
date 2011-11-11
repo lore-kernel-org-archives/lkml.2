@@ -1,196 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1KKJXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 04:23:12 -0500
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:49978 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754086Ab1KKJXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 04:23:07 -0500
-Date: Fri, 11 Nov 2011 11:23:00 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: peiyong feng <peiyong.feng.kernel@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add name match for UDC and gadget driver. Only for
- g_ether Signed-off-by: peiyong feng <peiyong.feng.kernel@gmail.com>
-Message-ID: <20111111092259.GC19090@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1320992229-13155-1-git-send-email-peiyong.feng.kernel@gmail.com>
+	id S1754872Ab1KKJj0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 04:39:26 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:36726 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750971Ab1KKJjS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 04:39:18 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i7F3eY7HS/tUJxUd"
-Content-Disposition: inline
-In-Reply-To: <1320992229-13155-1-git-send-email-peiyong.feng.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <001001cca043$395dbfc0$ac193f40$%jun@samsung.com>
+References: <620ec9ffa6bdbba9ae5f76998e36f8dc.squirrel@www.codeaurora.org> <001001cca043$395dbfc0$ac193f40$%jun@samsung.com>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Fri, 11 Nov 2011 15:08:55 +0530
+Message-ID: <CANfBPZ-Zn+R4GosEL-RJxh8gduAr8e+qN876uPwDkHfiEpdERw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 device
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dh.han@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 11, 2011 at 12:56 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> Maya Erez wrote:
+>> On Thu, Nov 10, 2011 Maya Erez wrote:
+>> > S, Venkatraman <svenkatr@ti.com> wrote:
+>> >> On Thu, Nov 3, 2011 at 7:23 AM, Seungwon Jeon <tgih.jun@samsung.com>
+>> wrote:
+>> >> >> > +static u8 mmc_blk_chk_packable(struct mmc_queue *mq, struct
+>> >> request *req)
+>>
+>> The function prepares the checkable list and not only checks if packing is
+>> possible, therefore I think its name should change to reflect its real
+>> action
+> I labored at naming. Isn't it proper? :)
+> Do you have any recommendation?
+> group_pack_req?
+>
+>>
+>> >> >> > +       if (!(md->flags & MMC_BLK_CMD23) &&
+>> >> >> > +                       !card->ext_csd.packed_event_en)
+>> >> >> > +               goto no_packed;
+>>
+>> Having the condition with a && can lead to cases where CMD23 is not
+>> supported and we send packed commands. Therfore the condition should be
+>> changed to || or be splitted to 2 separate checks.
+>> Also, according to the standard the generic error flag in
+>> PACKED_COMMAND_STATUS is set in case of any error and having
+>> PACKED_EVENT_EN is only optional. Therefore, I don't think that setting
+>> the packed_event_en should be a mandatory condition for using packed
+>> coammnds.
+> ... cases where CMD23 is not supported and we send packed commands?
+> Packed command must not be allowed in such a case.
+> It works only with predefined mode which is essential fator.
+> And spec doesn't mentioned PACKED_EVENT_EN must be set.
+> So Packed command can be sent regardless PACKED_EVENT_EN,
+> but it's not complete without reporting of error.
+> Then host driver may suffer error recovery.
+> Why packed command is used without error reporting?
+>
+>>
+>> >> >> > +       if (mmc_req_rel_wr(cur) &&
+>> >> >> > +                       (md->flags & MMC_BLK_REL_WR) &&
+>> >> >> > +                       !en_rel_wr) {
+>> >> >> > +               goto no_packed;
+>> >> >> > +       }
+>>
+>> Can you please explain this condition and its purpose?
+>>
+> In the case where reliable write is request but enhanced reliable write
+> is not supported, write access must be partial according to
+> reliable write sector count. Because even a single request can be split,
+> packed command is not allowed in this case.
+>
+>> >> >> > +               phys_segments +=  next->nr_phys_segments;
+>> >> >> > +               if (phys_segments > max_phys_segs) {
+>> >> >> > +                       blk_requeue_request(q, next);
+>> >> >> > +                       break;
+>> >> >> > +               }
+>> >> >> I mentioned this before - if the next request is not packable and
+>> >> requeued,
+>> >> >> blk_fetch_request will retrieve it again and this while loop will
+>> never terminate.
+>> >> >>
+>> >> > If next request is not packable, it is requeued and 'break'
+>> terminates
+>> >> this loop.
+>> >> > So it not infinite.
+>> >> Right !! But that doesn't help finding the commands that are packable.
+>> Ideally, you'd need to pack all neighbouring requests into one packed
+>> command.
+>> >> The way CFQ works, it is not necessary that the fetch would return all
+>> outstanding
+>> >> requests that are packable (unless you invoke a forced dispatch) It
+>> would be good to see some numbers on the number of pack hits /
+>> misses
+>> >> that
+>> >> you would encounter with this logic, on a typical usecase.
+>> > Is it considered only for CFQ scheduler? How about other I/O scheduler?
+>> If all requests are drained from scheduler queue forcedly,
+>> > the number of candidate to be packed can be increased.
+>> > However we may lose the unique CFQ's strength and MMC D/D may take the
+>> CFQ's duty.
+>> > Basically, this patch accommodates the origin order requests from I/O
+>> scheduler.
+>> >
+>>
+>> In order to better utilize the packed commands feature and achieve the
+>> best performance improvements I think that the command packing should be
+>> done in the block layer, according to the scheduler policy.
+>> That is, the scheduler should be aware of the capability of the device to
+>> receive a request list and its constrains (such as maximum number of
+>> requests, max number of sectors etc) and use this information as a  factor
+>> to its algorithm.
+>> This way you keep the decision making in the hands of the scheduler while
+>> the MMC layer will only have to send this list as a packed command.
+>>
+> Yes, it would be another interesting approach.
+> Command packing you mentioned means gathering request among same direction(read/write)?
+> Currently I/O scheduler may know device constrains which MMC driver informs
+> with the exception of order information for packed command.
+> But I think the dependency of I/O scheduler may be able to come up.
+> How can MMC layer treat packed command with I/O scheduler which doesn't support this?
 
---i7F3eY7HS/tUJxUd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The very act of packing presumes some sorting and re-ordering at the
+I/O scheduler level.
+When no such sorting is done (ex. noop), MMC should resort to
+non-packed execution, respecting the system configuration choice.
 
-Hi,
+Looking deeper into this, I think a better approach would be to set
+the prep_rq_fn of the request_queue, with a custom mmc function that
+decides if the requests are packable or not, and return a
+BLKPREP_DEFER for those that can't be packed.
 
-(a bit of top-posting before commenting on your patch)
-
-this is truly badly formatted. Read Documentation/CodingStyle,
-Documentation/SubmittingPatches, and Documentation/SubmitChecklist
-
-On Fri, Nov 11, 2011 at 02:17:09PM +0800, peiyong feng wrote:
-> ---
->  drivers/usb/gadget/composite.c |    1 +
->  drivers/usb/gadget/ether.c     |    1 +
->  drivers/usb/gadget/udc-core.c  |   15 +++++++++++++++
->  include/linux/usb/composite.h  |    2 ++
->  include/linux/usb/gadget.h     |    1 +
->  5 files changed, 20 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composit=
-e.c
-> index f71b078..c1d2507 100644
-> --- a/drivers/usb/gadget/composite.c
-> +++ b/drivers/usb/gadget/composite.c
-> @@ -1583,6 +1583,7 @@ int usb_composite_probe(struct usb_composite_driver=
- *driver,
->  	if (!driver->iProduct)
->  		driver->iProduct =3D driver->name;
->  	composite_driver.function =3D  (char *) driver->name;
-> +	composite_driver.name    =3D driver->name_udc;
->  	composite_driver.driver.name =3D driver->name;
->  	composite_driver.speed =3D min((u8)composite_driver.speed,
->  				     (u8)driver->max_speed);
-> diff --git a/drivers/usb/gadget/ether.c b/drivers/usb/gadget/ether.c
-> index 0cd764d..320b9e2 100644
-> --- a/drivers/usb/gadget/ether.c
-> +++ b/drivers/usb/gadget/ether.c
-> @@ -390,6 +390,7 @@ static int __exit eth_unbind(struct usb_composite_dev=
- *cdev)
-> =20
->  static struct usb_composite_driver eth_driver =3D {
->  	.name		=3D "g_ether",
-> +	.name_udc	=3D CONFIG_UDC_NAME,
->  	.dev		=3D &device_desc,
->  	.strings	=3D dev_strings,
->  	.max_speed	=3D USB_SPEED_SUPER,
-> diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
-> index 022baec..9a23620 100644
-> --- a/drivers/usb/gadget/udc-core.c
-> +++ b/drivers/usb/gadget/udc-core.c
-> @@ -37,6 +37,7 @@
->   * to hold information about udc driver and gadget together.
->   */
->  struct usb_udc {
-> +	char *name;
->  	struct usb_gadget_driver	*driver;
->  	struct usb_gadget		*gadget;
->  	struct device			dev;
-> @@ -144,6 +145,13 @@ static void usb_udc_release(struct device *dev)
->  }
-> =20
->  static const struct attribute_group *usb_udc_attr_groups[];
-> +/*set the name of udc*/
-> +static void usb_udc_set_name(struct usb_udc *udc,char *name)
-> +{
-> +	char *tmp =3D kzalloc(strlen(name)+1);
-> +	strcpy(tmp,name);
-> +	usb_udc->name =3D tmp;
-> +}
->  /**
->   * usb_add_gadget_udc - adds a new gadget to the udc class driver list
->   * @parent: the parent device to this udc. Usually the controller
-> @@ -162,6 +170,7 @@ int usb_add_gadget_udc(struct device *parent, struct =
-usb_gadget *gadget)
->  		goto err1;
-> =20
->  	device_initialize(&udc->dev);
-> +	usb_udc_set_name(udc,gadget.name);
->  	udc->dev.release =3D usb_udc_release;
->  	udc->dev.class =3D udc_class;
->  	udc->dev.groups =3D usb_udc_attr_groups;
-> @@ -269,6 +278,12 @@ int usb_gadget_probe_driver(struct usb_gadget_driver=
- *driver,
->  		return -EINVAL;
-> =20
->  	mutex_lock(&udc_lock);
-> +	/*First we get the specific udc*/
-> +	list_for_each_entry(udc, &udc_list, list) {
-> +		if (strcmp(udc->name,driver->name)=3D=3D0)
-> +			goto found;
-> +	}
-> +	/*We take the first one that unused*/
->  	list_for_each_entry(udc, &udc_list, list) {
->  		/* For now we take the first one */
->  		if (!udc->driver)
-> diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-> index a316fba..029c26d 100644
-> --- a/include/linux/usb/composite.h
-> +++ b/include/linux/usb/composite.h
-> @@ -245,6 +245,7 @@ int usb_add_config(struct usb_composite_dev *,
->  /**
->   * struct usb_composite_driver - groups configurations into a gadget
->   * @name: For diagnostics, identifies the driver.
-> + * @name_udc: which UDC this driver attach.
->   * @iProduct: Used as iProduct override if @dev->iProduct is not set.
->   *	If NULL value of @name is taken.
->   * @iManufacturer: Used as iManufacturer override if @dev->iManufacturer=
- is
-> @@ -278,6 +279,7 @@ int usb_add_config(struct usb_composite_dev *,
->   */
->  struct usb_composite_driver {
->  	const char				*name;
-> +	const char 				*name_udc;
->  	const char				*iProduct;
->  	const char				*iManufacturer;
->  	const struct usb_device_descriptor	*dev;
-> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> index 1d3a675..e92083f 100644
-> --- a/include/linux/usb/gadget.h
-> +++ b/include/linux/usb/gadget.h
-> @@ -824,6 +824,7 @@ static inline int usb_gadget_disconnect(struct usb_ga=
-dget *gadget)
->   */
->  struct usb_gadget_driver {
->  	char			*function;
-> +	char 			*name;
->  	enum usb_device_speed	speed;
->  	void			(*unbind)(struct usb_gadget *);
->  	int			(*setup)(struct usb_gadget *,
-
-I truly don't see the point of this patch. You cannot mandate to which
-UDC the driver will attach to. In most situations, it will attach to the
-only available UDC, if you have a board with more then one peripheral
-port, then we need a better way of doing this. Something which won't
-affect anybody else.
-
-$SUBJECT can't be applied, sorry.
-
---=20
-balbi
-
---i7F3eY7HS/tUJxUd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOvOlzAAoJEIaOsuA1yqRE3AoP/RKEOiUh7w9Vvnnm/tJ+mkkj
-n4BBaHWLznZvvUoXBtueU/7gVFBvkcJFF5Ak87Bru+g2Z2j9/Ir2PXc/S03PBUcR
-r3TGO7hybmFdi8fvFih4PjRr9BrPfKwrEf2Ma4TNCniM0LOeMd90s+IIGVUXOLpU
-Zi2JLX4DTShJUlJ5/kNhdKbR0faG4sGkdHOhxVBzGP0Gf36nGRf+BKcbYUTuKGBh
-tuMVkV3t4WnLCUmUfwvw+EarktQGvA5IFvWhZ0W0NXwGNKp7+/BSXMsqr0EyA76G
-GWao81HvSNEPfxdD9B/mRFHE0lGSKcsPVIyXim72xfyzKVR8FLeUwogjUnXjhKrL
-E++2ywSeEroCwJeiQIv8ll6yWxECo7ObWCJ83Uy7Is7HZbLZV49Se90pRWRyN6+4
-LXjlcy56G7SigzbQPWwoE0OScw+I82TIwm9XF15cGNJihrimLjNTLSbWbuVd7ErV
-Q7XNXfrQA4GM45aSHf05t0DKzfK/kwLBhMENKupeogjZW8jsyzhWNAlQVlqlwJe1
-HrEhyamdd20h/wno7ZZGAJt7oaAlzG53vNmbEyNwoKO9qHo2PRueSmA733j4T9Ov
-C92lew/CV60F4YJka5eCoyWPxKmVuVFK1S/ZGqe03Tki17fD7VRUhnlexij/hVhZ
-z6GcnY+XBIdfgnMgfjy4
-=ZV/b
------END PGP SIGNATURE-----
-
---i7F3eY7HS/tUJxUd--
+>
+>> >> >> > +       if (rqc)
+>> >> >> > +               reqs = mmc_blk_chk_packable(mq, rqc);
+>>
+>> It would be best to keep all the calls to blk_fetch_request in the same
+>> location. Therefore, I suggest to move the call to mmc_blk_chk_packable to
+>> mmc/card/queue.c after the first request is fetched.
+>
+> At the first time, I considered that way.
+> I'll do more, if possible.
+>>
+>> >> >> >  cmd_abort:
+>> >> >> > -       spin_lock_irq(&md->lock);
+>> >> >> > -       while (ret)
+>> >> >> > -               ret = __blk_end_request(req, -EIO,
+>> >> blk_rq_cur_bytes(req));
+>> >> >> > -       spin_unlock_irq(&md->lock);
+>> >> >> > +       if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
+>>
+>> This should be the case for MMC_PACKED_NONE.
+> Right, I missed it.
+>>
+>> >> >> > +               spin_lock_irq(&md->lock);
+>> >> >> > +               while (ret)
+>> >> >> > +                       ret = __blk_end_request(req, -EIO,
+>> >> blk_rq_cur_bytes(req));
+>>
+>> Do we need the while or should it be an if? In other cases where
+>> __blk_end_request is called there is no such while.
+> This part is not only the new but also origin code which is moved in this patch.
+> Maybe...,'If' case is used  for a whole of remained bytes and
+> 'while' case is used for partial report of remained bytes.
+>
+> Thank you for review.
+>
+> Best regards,
+> Seugwon Jeon.
+>>
+>> Thanks,
+>> Maya Erez
+>> Consultant for Qualcomm Innovation Center, Inc.
+>> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+>>
+>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
