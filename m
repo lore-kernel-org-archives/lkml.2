@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab1KKLzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 06:55:11 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36720 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752107Ab1KKLzJ (ORCPT
+	id S1757247Ab1KKL6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 06:58:18 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61631 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756838Ab1KKL6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 06:55:09 -0500
-Date: Fri, 11 Nov 2011 11:56:17 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Walrond <andrew@walrond.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: eth0/1 swapped places after kernel Upgrade 3.0.8 -> 3.1.0 (and
- udev 172 -> 174)
-Message-ID: <20111111115617.4a352cc5@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111111114014.GA1962@andrews-imac.pitney-fabs>
-References: <20111102101404.GA5195@andrew-xps.home>
-	<20111111114014.GA1962@andrews-imac.pitney-fabs>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Nov 2011 06:58:17 -0500
+Date: Fri, 11 Nov 2011 11:58:02 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 13/16] ARM: LPAE: Add identity mapping support for the
+ 3-level page table format
+Message-ID: <20111111115802.GF12410@mudshark.cambridge.arm.com>
+References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
+ <1320682618-1182-14-git-send-email-catalin.marinas@arm.com>
+ <20111110225517.GW12913@n2100.arm.linux.org.uk>
+ <20111111113601.GE23243@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111111113601.GE23243@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Nov 2011 11:40:15 +0000
-Andrew Walrond <andrew@walrond.org> wrote:
-
-> On Wed, Nov 02, 2011 at 10:14:04AM +0000, Andrew Walrond wrote:
-> > Not sure if this is a udev or kernel issue, or indeed whether I
-> >  should expect these devices to have persistent naming at all
-> >  without some udev configuration of my own, but I thought I'd
-> >  report it just in case it's useful.
+On Fri, Nov 11, 2011 at 11:36:01AM +0000, Catalin Marinas wrote:
+> On Thu, Nov 10, 2011 at 10:55:17PM +0000, Russell King - ARM Linux wrote:
+> > On Mon, Nov 07, 2011 at 04:16:55PM +0000, Catalin Marinas wrote:
+> > > +		pmd += pmd_index(addr);
+> > > +	} else
+> > > +		pmd = pmd_offset(pud, addr);
+> > > +
+> > > +	do {
+> > > +		next = pmd_addr_end(addr, end);
+> > > +		*pmd = __pmd((addr & PMD_MASK) | prot);
+> > > +		flush_pmd_entry(pmd);
+> > > +	} while (pmd++, addr = next, addr != end);
+> > > +}
+> > > +#else	/* !CONFIG_ARM_LPAE */
 > > 
-> > Output from lspci:
-> > 
-> > 03:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
-> > 07:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
-> > 
+> > I'm not convinced about the wiseness of this.  One of the places where
+> > this code is called is from the reboot paths, which can happen in atomic
+> > context.  Trying to allocate memory in such a context is going to lead
+> > to problems, especially if support for panic'ing on OOM, and rebooting
+> > on panic'ing are both enabled.
 > 
-> It's worse than I thought; eth0/eth1 are randomly swapping places on boot.
-> Is this likely to be a kernel or udev problem?
+> A solution would be to have pre-set page table for identity mappings
+> (which may even come in handy for power management) and avoid the
+> allocation in idmap.c.
 
-The kernel probes them in whatever order it walks the PCI bus. What udev
-does afterwards is a distro question.
+Yup, that's what I do in my latest kexec series (v5) so this problem goes
+away then.
 
-Does the order of the two probe reports every change or just the final
-udev result  - ie are they always found mac xx:xx:03 then xx:xx:05 ?
+> > Therefore, I think this patch depends on the work Will has been doing to
+> > re-structure the kexec and restart support.
+> 
+> I think Will can rebase his patches on top of mine (I touched this file
+> first :)).
+
+Haha, but my code doesn't depend on yours in order to work correctly!
+
+Will
