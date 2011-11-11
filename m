@@ -1,86 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab1KKLBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 06:01:08 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55955 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753502Ab1KKLBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 06:01:06 -0500
-Date: Fri, 11 Nov 2011 11:00:41 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 09/16] ARM: LPAE: MMU setup for the 3-level page
- table format
-Message-ID: <20111111110041.GC23243@arm.com>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
- <1320682618-1182-10-git-send-email-catalin.marinas@arm.com>
- <alpine.LFD.2.02.1111101707250.3307@xanadu.home>
+	id S1754630Ab1KKLRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 06:17:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48116 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab1KKLRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 06:17:10 -0500
+Date: Fri, 11 Nov 2011 11:17:03 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
+ allocations
+Message-ID: <20111111111703.GK3083@suse.de>
+References: <20111110100616.GD3083@suse.de>
+ <20111110142202.GE3083@suse.de>
+ <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
+ <20111110161331.GG3083@suse.de>
+ <20111110151211.523fa185.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
+ <20111111101414.GJ3083@suse.de>
+ <alpine.DEB.2.00.1111110224500.7419@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1111101707250.3307@xanadu.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1111110224500.7419@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:24:58PM +0000, Nicolas Pitre wrote:
-> On Mon, 7 Nov 2011, Catalin Marinas wrote:
+On Fri, Nov 11, 2011 at 02:39:10AM -0800, David Rientjes wrote:
+> On Fri, 11 Nov 2011, Mel Gorman wrote:
 > 
-> [...]
-> > +	/*
-> > +	 * Macro for setting up the TTBRx and TTBCR registers.
-> > +	 * - \ttbr1 updated.
-> > +	 */
-> > +	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
-> > +	mrc	p15, 0, \tmp, c2, c0, 2		@ TTB control register
-> > +	orr	\tmp, \tmp, #TTB_EAE
-> > +	ALT_SMP(orr	\tmp, \tmp, #TTB_FLAGS_SMP)
-> > +	ALT_SMP(orr	\tmp, \tmp, #TTB_FLAGS_SMP << 16)
-> > +	ALT_UP(orr	\tmp, \tmp, #TTB_FLAGS_UP)
-> > +	ALT_UP(orr	\tmp, \tmp, #TTB_FLAGS_UP << 16)
+> > > Indeed.  It seems like the behavior would better be controlled with 
+> > > /sys/kernel/mm/transparent_hugepage/defrag which is set aside specifically 
+> > > to control defragmentation for transparent hugepages and for that 
+> > > synchronous compaction should certainly apply.
+> > 
+> > With khugepaged in place, it's adding a tunable that is unnecessary and
+> > will not be used. Even if such a tuneable was created, the default
+> > behaviour should be "do not stall".
+> > 
 > 
-> The ALT_SMP() and ALT_UP() must always be paired and in the right order.  
-> The above certainly won't produce what you expect on UP.
+> Not sure what you mean, the tunable already exists and defaults to always 
+> if THP is turned on. 
 
-Good catch.
+Yes, but it does not distinguish between "always including synchronous
+stalls" and "always but only if you can do it quickly". This patch
+does change the behaviour of "always" but it's still using compaction
+to defrag memory. A sysfs file exists, but I wanted to avoid changing
+the meaning of its values if at all possible.
 
-> > +#if PHYS_OFFSET <= PAGE_OFFSET
+If a new value was to be added that would allow the user of
+synchronous compaction, what should it be called? always-sync
+exposes implementation details which is not great. always-force
+is misleading because it wouldn't actually force anything.
+always-really-really-mean-it is a bit unwieldly. always-stress might
+suit but what is the meaning exactly? Using sync compaction would be
+part of it but it could also mean be more agressive about reclaiming.
+What level of control is required and how should it be expressed?
+
+I don't object to the existence of this tunable as such but the
+default should still be "no sync compaction for THP" because stalls due
+to writing to a USB stick sucks.
+
+> I've been able to effectively control the behavior 
+> of synchronous compaction with it in combination with extfrag_threshold, 
+
+extfrag_threshold controls whether compaction runs or not, it does not
+control if synchronous compaction it used.
+
+> i.e. always compact even if the fragmentation index is very small, for 
+> workloads that really really really want hugepages at fault when such a 
+> latency is permissable and then disable khugepaged entirely in the 
+> background for cpu bound tasks.
 > 
-> Please don't use PHYS_OFFSET like a preprocessor macro anymore.  This is 
-> becoming a global variable these days, and already is for the majority 
-> of platforms.
+> The history of this boolean is somewhat disturbing: it's introduced in 
+> 77f1fe6b back on January 13 to be true after the first attempt at 
 
-That's left from last year when it was still a macro. I will revisit
-this code.
+It was first introduced because compaction was stalling. This was
+unacceptable because the stalling cost more than hugepages saved and
+was user visible. There were other patches related to reducing latency
+due to compaction.
 
-> > +	 * TTBR0/TTBR1 split (PAGE_OFFSET):
-> > +	 *   0x40000000: T0SZ = 2, T1SZ = 0 (not used)
-> > +	 *   0x80000000: T0SZ = 0, T1SZ = 1
-> > +	 *   0xc0000000: T0SZ = 0, T1SZ = 2
-> > +	 *
-> > +	 * Only use this feature if PHYS_OFFSET <= PAGE_OFFSET, otherwise
-> > +	 * booting secondary CPUs would end up using TTBR1 for the identity
-> > +	 * mapping set up in TTBR0.
-> > +	 */
-> > +	orr	\tmp, \tmp, #(((PAGE_OFFSET >> 30) - 1) << 16) @ TTBCR.T1SZ
-> > +#if defined CONFIG_VMSPLIT_2G
-> > +	/* PAGE_OFFSET == 0x80000000, T1SZ == 1 */
-> > +	add	\ttbr1, \ttbr1, #1 << 4		@ skip two L1 entries
-> > +#elif defined CONFIG_VMSPLIT_3G
-> > +	/* PAGE_OFFSET == 0xc0000000, T1SZ == 2 */
-> > +	add	\ttbr1, \ttbr1, #4096 * (1 + 3)	@ only L2 used, skip pgd+3*pmd
-> > +#endif
-> > +#endif	/* PHYS_OFFSET <= PAGE_OFFSET */
-> 
-> What about CONFIG_VMSPLIT_1G ?
+> compaction, then changed to be !(gfp_mask & __GFP_NO_KSWAPD) in 11bc82d6 
 
-That's the default, we don't use split TTBR for that (I'll add a
-comment).
+Because this was a safe option.
+
+> on March 22, then changed to be true again in c6a140bf on May 24, then 
+
+Because testing indicated that stalls due to sync migration were not
+noticeable. For the most part, this is true but there should have
+been better recognition that sync migration could also write pages
+to slow storage which would be unacceptably slow.
+
+> proposed to be changed right back to !(gfp_mask & __GFP_NO_KSWAPD) in this 
+> patch again.  When are we going to understand that the admin needs to tell 
+> the kernel when we'd really like to try to allocate a transparent hugepage 
+> and when it's ok to fail?
+
+I don't recall a point when this was about the administrator wanting to
+control synchronous compaction. The objective was to maximise the number
+of huge pages used while minimising user-visible stalls.
 
 -- 
-Catalin
+Mel Gorman
+SUSE Labs
