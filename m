@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab1KKIdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 03:33:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60384 "EHLO mga11.intel.com"
+	id S1756726Ab1KKIfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 03:35:23 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41562 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576Ab1KKIdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 03:33:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,494,1315206000"; 
-   d="scan'208";a="83905573"
-Subject: Re: [patch 3/5]thp: add tlb_remove_pmd_tlb_entry
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111111065327.GP5075@redhat.com>
-References: <1319511571.22361.139.camel@sli10-conroe>
-	 <20111110153651.GZ5075@redhat.com>
-	 <1320993389.22361.256.camel@sli10-conroe>
-	 <20111111065327.GP5075@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Nov 2011 16:42:34 +0800
-Message-ID: <1321000954.22361.264.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754130Ab1KKIfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 03:35:21 -0500
+Date: Fri, 11 Nov 2011 09:33:39 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/10] [GIT PULL] tracing: various fixes
+Message-ID: <20111111083339.GD14347@elte.hu>
+References: <20111108012939.372220547@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111108012939.372220547@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-11 at 14:53 +0800, Andrea Arcangeli wrote:
-> On Fri, Nov 11, 2011 at 02:36:29PM +0800, Shaohua Li wrote:
-> > On Thu, 2011-11-10 at 23:36 +0800, Andrea Arcangeli wrote:
-> > > On Tue, Oct 25, 2011 at 10:59:31AM +0800, Shaohua Li wrote:
-> > > > Index: linux/arch/x86/include/asm/tlb.h
-> > > > ===================================================================
-> > > > --- linux.orig/arch/x86/include/asm/tlb.h	2011-10-25 09:00:39.000000000 +0800
-> > > > +++ linux/arch/x86/include/asm/tlb.h	2011-10-25 09:02:52.000000000 +0800
-> > > > @@ -4,6 +4,7 @@
-> > > >  #define tlb_start_vma(tlb, vma) do { } while (0)
-> > > >  #define tlb_end_vma(tlb, vma) do { } while (0)
-> > > >  #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
-> > > > +#define __tlb_remove_pmd_tlb_entry(tlb, pmdp, address) do { } while (0)
-> > > >  #define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
-> > > 
-> > > This is superfluous, it's already define below as noop.
-> > > 
-> > > >  
-> > > >  #include <asm-generic/tlb.h>
-> > > > Index: linux/include/asm-generic/tlb.h
-> > > > ===================================================================
-> > > > --- linux.orig/include/asm-generic/tlb.h	2011-10-25 09:00:23.000000000 +0800
-> > > > +++ linux/include/asm-generic/tlb.h	2011-10-25 09:18:01.000000000 +0800
-> > > > @@ -139,6 +139,16 @@ static inline void tlb_remove_page(struc
-> > > >  		__tlb_remove_tlb_entry(tlb, ptep, address);	\
-> > > >  	} while (0)
-> > > >  
-> > > > +#ifndef __tlb_remove_pmd_tlb_entry
-> > > > +#define __tlb_remove_pmd_tlb_entry(tlb, pmdp, address) do {} while(0)
-> > > > +#endif
-> > > > +
-> > > > +#define tlb_remove_pmd_tlb_entry(tlb, pmdp, address)		\
-> > > > +	do {							\
-> > > > +		tlb->need_flush = 1;				\
-> > > > +		__tlb_remove_pmd_tlb_entry(tlb, pmdp, address);	\
-> > > > +	} while (0)
-> > > 
-> > > this looks weird, why do we set need_flush = 1 again, considering that
-> > > we're doing tlb_remove_page() just a few lines later (which also sets
-> > > tlb->need_flush = 1).
-> > > 
-> > > Ok that other archs may need the __tlb_remove_pmd_tlb_entry to be
-> > > called (and I've no idea why), but the need_flush = 1 seems
-> > > unnecessary.
-> > > 
-> > > Why other archs need the __tlb_remove_pmd_tlb_entry to be called?
-> > > 
-> > > One way to go would be to change the tlb->need_flush = 1 in
-> > > __tlb_remove_page to a VM_BUG_ON(!tlb->need_flush) and then we keep it
-> > > above and we add the __tlb_remove_pmd_tlb_entry call.
-> > > 
-> > > Or is there any place where __tlb_remove_page is called without a
-> > > tlb_remove_*tlb_entry being called before it?
-> > > 
-> > > In any case the VM_BUG_ON will verify this.
-> > ok, I made the whole tlb_remove_pmd_tlb_entry() noop now. we don't need
-> > add anything on it for x86 currently. We can change it later if
-> > necessary.
-> 
-> I thought it'd be cleaner to have only the __tlb_remove_*tlb_entry
-> variants set need_flush=1 and have __tlb_remove_page just check that
-> is set under a VM_BUG_ON. That would also avoid a second unnecessary
-> need_flush = 1 for the pte case which is repeated now (it's not the
-> repeated in the pmd case in your patch because it's a noop, but the
-> pte case it's not a noop). Maybe it's not possible but if it's
-> possible it looks better.
-makes sense to me. __tlb_remove_page should always follow after
-__tlb_remove_*tlb_entry. if we set need_flush=1 in
-__tlb_remove_*tlb_entry, tlb_remove_*tlb_entry == __tlb_remove_*tlb
-entry then, we can delete __xxx. But this sounds not related to the
-issue, I'd prefer another patch to clean it up. how do you think?
 
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> Ingo,
+> 
+> Please pull the latest tip/perf/core tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/core
+> 
+> Head SHA1: 7e9a49ef542610609144d1afcd516dc3fafac4d6
+> 
+> 
+> Gleb Natapov (1):
+>       jump_label: jump_label_inc may return before the code is patched
+> 
+> Ilya Dryomov (1):
+>       tracing: fix event_subsystem ref counting
+> 
+> Jiri Olsa (1):
+>       tracing/latency: Fix header output for latency tracers
+> 
+> Li Zefan (2):
+>       tracing: Restore system filter behavior
+>       tracing: update Documentation on max preds limit
+> 
+> Steven Rostedt (5):
+>       tracing: Add boiler plate for subsystem filter
+>       lockdep: Show subclass in pretty print of lockdep output
+>       ftrace: Remove force undef config value left for testing
+>       perf: Fix parsing of __print_flags() in TP_printk()
+>       ftrace: Fix hash record accounting bug
+> 
+> ----
+>  Documentation/trace/events.txt      |    2 --
+>  include/linux/ftrace_event.h        |    2 ++
+>  kernel/jump_label.c                 |    3 ++-
+>  kernel/lockdep.c                    |   30 +++++++++++++-----------------
+>  kernel/trace/ftrace.c               |    5 +++--
+>  kernel/trace/trace.c                |   15 +++++++++++++++
+>  kernel/trace/trace.h                |    1 +
+>  kernel/trace/trace_events.c         |    1 -
+>  kernel/trace/trace_events_filter.c  |   33 +++++++++++++++++++++++++--------
+>  kernel/trace/trace_irqsoff.c        |   13 ++++++++++++-
+>  kernel/trace/trace_sched_wakeup.c   |   13 ++++++++++++-
+>  tools/perf/util/trace-event-parse.c |    2 ++
+>  12 files changed, 87 insertions(+), 33 deletions(-)
+
+Pulled, thanks a lot Steve!
+
+	Ingo
