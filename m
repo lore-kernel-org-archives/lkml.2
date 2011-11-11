@@ -1,283 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab1KKEs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 23:48:29 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34138 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab1KKEs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 23:48:27 -0500
-Date: Fri, 11 Nov 2011 12:42:02 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Julie Sullivan <kernelmail.jms@gmail.com>,
+	id S1757014Ab1KKEvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 23:51:51 -0500
+Received: from gate.crashing.org ([63.228.1.57]:42461 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753721Ab1KKEvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 23:51:50 -0500
+Message-ID: <1320987054.21206.55.camel@pasglop>
+Subject: Re: [RFC PATCH 02/17] powerpc: Split up PHYS_64BIT config option to
+ fix "select" issues
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Timur Tabi <timur@freescale.com>
+Cc: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: INFO: possible recursive locking detected: get_partial_node() on
- 3.2-rc1
-Message-ID: <20111111044202.GA21013@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111109090556.GA5949@zhy>
- <201111102335.06046.kernelmail.jms@gmail.com>
- <1320980671.22361.252.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1320980671.22361.252.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Baruch Siach <baruch@tkos.co.il>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anatolij Gustschin <agust@denx.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+Date: Fri, 11 Nov 2011 15:50:54 +1100
+In-Reply-To: <4EBC00D2.2030208@freescale.com>
+References: <4E42AB6F.1050900@freescale.com>
+	 <1320883635-17194-3-git-send-email-Kyle.D.Moffett@boeing.com>
+	 <4EBBD9DF.6080100@freescale.com>
+	 <501ACA94-491F-43A7-9DCF-485BEE824DD5@boeing.com>
+	 <4EBC00D2.2030208@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 11:04:31AM +0800, Shaohua Li wrote:
-> On Fri, 2011-11-11 at 07:35 +0800, Julie Sullivan wrote:
-> > (was '3.2-rc1: INFO: possible recursive locking detect')
-> > 
-> > On Wednesday 09 November 2011 09:05:57 Yong Zhang wrote:
-> > > 
-> > >Hi,
-> > >Just get below waring when doing:
-> > >for i in `seq 1 10`; do ./perf bench -f simple sched messaging -g 40; done
-> > 
-> > >And kernel config is attached.
-> 
-> Looks this could be a real dead lock. we hold a lock to free a object,
-> but the free need allocate a new object. if the new object and the freed
-> object are from the same slab, there is a deadlock.
-> 
-> discard_slab() doesn't need hold the lock if the slab is already removed
-> from partial list. how about below patch, only compile tested.
+On Thu, 2011-11-10 at 10:50 -0600, Timur Tabi wrote:
 
-It work on my side.
+> I'm not sure that Kconfig rule is enforceable.  We use 'select' all the time to make sure that our boards enable the options that need to be enabled.  I'd rather see this:
+> 
+> config X
+> 	select A
+> 
+> config Y
+> 	select A
+> 
+> config Z
+> 	select A
+> 
+> than this:
+> 
+> config A
+> 	default y if X | Y | Z
+> 
+> The former is more maintainable and does not allow the option of disabling "A" if someone wants "X".
 
-Thanks,
-Yong
+This is fine as long as config A is not a user selectable option.
 
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 7d2a996..9375668 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1858,7 +1858,7 @@ redo:
->  }
->  
->  /* Unfreeze all the cpu partial slabs */
-> -static void unfreeze_partials(struct kmem_cache *s)
-> +static void unfreeze_partials(struct kmem_cache *s, struct page **discard_page)
->  {
->  	struct kmem_cache_node *n = NULL;
->  	struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
-> @@ -1915,14 +1915,28 @@ static void unfreeze_partials(struct kmem_cache *s)
->  				"unfreezing slab"));
->  
->  		if (m == M_FREE) {
-> -			stat(s, DEACTIVATE_EMPTY);
-> -			discard_slab(s, page);
-> -			stat(s, FREE_SLAB);
-> +			page->next = *discard_page;
-> +			*discard_page = page;
->  		}
->  	}
->  
->  	if (n)
->  		spin_unlock(&n->list_lock);
-> +
-> +}
-> +
-> +static void discard_page_list(struct kmem_cache *s, struct page *discard_page)
-> +{
-> +	struct page *page;
-> +
-> +	while (discard_page) {
-> +		page = discard_page;
-> +		discard_page = discard_page->next;
-> +
-> +		stat(s, DEACTIVATE_EMPTY);
-> +		discard_slab(s, page);
-> +		stat(s, FREE_SLAB);
-> +	}
->  }
->  
->  /*
-> @@ -1950,13 +1964,15 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->  			pages = oldpage->pages;
->  			if (drain && pobjects > s->cpu_partial) {
->  				unsigned long flags;
-> +				struct page *discard_page = NULL;
->  				/*
->  				 * partial array is full. Move the existing
->  				 * set to the per node partial list.
->  				 */
->  				local_irq_save(flags);
-> -				unfreeze_partials(s);
-> +				unfreeze_partials(s, &discard_page);
->  				local_irq_restore(flags);
-> +				discard_page_list(s, discard_page);
->  				pobjects = 0;
->  				pages = 0;
->  			}
-> @@ -1988,12 +2004,14 @@ static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
->  static inline void __flush_cpu_slab(struct kmem_cache *s, int cpu)
->  {
->  	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-> +	struct page *discard_page = NULL;
->  
->  	if (likely(c)) {
->  		if (c->page)
->  			flush_slab(s, c);
->  
-> -		unfreeze_partials(s);
-> +		unfreeze_partials(s, &discard_page);
-> +		discard_page_list(s, discard_page);
->  	}
->  }
->  
-> 
-> 
-> > >---
-> > >[  350.148020] =============================================
-> > [  350.148020] [ INFO: possible recursive locking detected ]
-> > [  350.148020] 3.2.0-rc1-10791-g76a4b59-dirty #2
-> > [  350.148020] ---------------------------------------------
-> > [  350.148020] perf/9439 is trying to acquire lock:
-> > [  350.148020]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff8113847f>] get_partial_node+0x5f/0x360
-> > [  350.148020] 
-> > [  350.148020] but task is already holding lock:
-> > [  350.148020]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff811380c9>] unfreeze_partials+0x199/0x3c0
-> > [  350.148020] 
-> > [  350.148020] other info that might help us debug this:
-> > [  350.148020]  Possible unsafe locking scenario:
-> > [  350.148020] 
-> > [  350.148020]        CPU0
-> > [  350.148020]        ----
-> > [  350.148020]   lock(&(&n->list_lock)->rlock);
-> > [  350.148020]   lock(&(&n->list_lock)->rlock);
-> > [  350.148020] 
-> > [  350.148020]  *** DEADLOCK ***
-> > [  350.148020] 
-> > [  350.148020]  May be due to missing lock nesting notation
-> > [  350.148020] 
-> > [  350.148020] 2 locks held by perf/9439:
-> > [  350.148020]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff810552ee>] release_task+0x9e/0x500
-> > >[  350.148020]  #1:  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff811380c9>] unfreeze_partials+0x199/0x3c0
-> > 
-> > 
-> > Hi Yong
-> > 
-> > I've been getting a similar report not when using perf though, just in my dmesg at startup:
-> > (if people want my .config please ask, I'm not including it else in case it's just unhelpful noise)
-> > 
-> > Cheers
-> > Julie
-> > 
-> > [   34.545934] =============================================
-> > [   34.545936] [ INFO: possible recursive locking detected ]
-> > [   34.545939] 3.2.0-rc1 #103
-> > [   34.545940] ---------------------------------------------
-> > [   34.545943] kdeinit4/2559 is trying to acquire lock:
-> > [   34.545945]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff8110aaa4>] get_partial_node+0x3f/0x17a
-> > [   34.545954] 
-> > [   34.545955] but task is already holding lock:
-> > [   34.545957]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff81109efe>] unfreeze_partials+0xc4/0x193
-> > [   34.545963] 
-> > [   34.545964] other info that might help us debug this:
-> > [   34.545966]  Possible unsafe locking scenario:
-> > [   34.545966] 
-> > [   34.545968]        CPU0
-> > [   34.545969]        ----
-> > [   34.545971]   lock(&(&n->list_lock)->rlock);
-> > [   34.545974]   lock(&(&n->list_lock)->rlock);
-> > [   34.545977] 
-> > [   34.545978]  *** DEADLOCK ***
-> > [   34.545978] 
-> > [   34.545980]  May be due to missing lock nesting notation
-> > [   34.545981] 
-> > [   34.545983] 1 lock held by kdeinit4/2559:
-> > [   34.545985]  #0:  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff81109efe>] unfreeze_partials+0xc4/0x193
-> > [   34.545992] 
-> > [   34.545992] stack backtrace:
-> > [   34.545995] Pid: 2559, comm: kdeinit4 Not tainted 3.2.0-rc1 #103
-> > [   34.545997] Call Trace:
-> > [   34.546003]  [<ffffffff81076548>] __lock_acquire+0x9d8/0xdf7
-> > [   34.546008]  [<ffffffff8105fdf5>] ? __kernel_text_address+0x26/0x4c
-> > [   34.546010]  [<ffffffff81004c57>] ? print_context_stack+0x9c/0xb2
-> > [   34.546010]  [<ffffffff8110aaa4>] ? get_partial_node+0x3f/0x17a
-> > [   34.546010]  [<ffffffff81076e4a>] lock_acquire+0xd8/0xfe
-> > [   34.546010]  [<ffffffff8110aaa4>] ? get_partial_node+0x3f/0x17a
-> > [   34.546010]  [<ffffffff8107e092>] ? __module_text_address+0x12/0x5f
-> > [   34.546010]  [<ffffffff815af2d3>] _raw_spin_lock+0x45/0x7a
-> > [   34.546010]  [<ffffffff8110aaa4>] ? get_partial_node+0x3f/0x17a
-> > [   34.546010]  [<ffffffff8110aaa4>] get_partial_node+0x3f/0x17a
-> > [   34.546010]  [<ffffffff810733fb>] ? look_up_lock_class+0x5f/0xbe
-> > [   34.546010]  [<ffffffff8107e092>] ? __module_text_address+0x12/0x5f
-> > [   34.546010]  [<ffffffff8110ad4e>] __slab_alloc+0x16f/0x3ae
-> > [   34.546010]  [<ffffffff81008529>] ? native_sched_clock+0x3b/0x3d
-> > [   34.546010]  [<ffffffff81112d46>] ? create_object+0x39/0x283
-> > [   34.546010]  [<ffffffff81008529>] ? native_sched_clock+0x3b/0x3d
-> > [   34.546010]  [<ffffffff81072655>] ? arch_local_irq_save+0x9/0xc
-> > [   34.546010]  [<ffffffff81112d46>] ? create_object+0x39/0x283
-> > [   34.546010]  [<ffffffff8110c54c>] kmem_cache_alloc+0x5b/0x12b
-> > [   34.546010]  [<ffffffff81112d46>] create_object+0x39/0x283
-> > [   34.546010]  [<ffffffff8159655c>] kmemleak_alloc+0x73/0x98
-> > [   34.546010]  [<ffffffff81250c3c>] ? __debug_object_init+0x43/0x2e7
-> > [   34.546010]  [<ffffffff8110c5b4>] kmem_cache_alloc+0xc3/0x12b
-> > [   34.546010]  [<ffffffff810679c7>] ? sched_clock_local+0x12/0x75
-> > [   34.546010]  [<ffffffff81250c3c>] __debug_object_init+0x43/0x2e7
-> > [   34.546010]  [<ffffffff81067b92>] ? local_clock+0x2b/0x3c
-> > [   34.546010]  [<ffffffff81073b06>] ? lock_release_holdtime+0x59/0x60
-> > [   34.546010]  [<ffffffff81250ef4>] debug_object_init+0x14/0x16
-> > [   34.546010]  [<ffffffff8105fc57>] rcuhead_fixup_activate+0x27/0x5f
-> > [   34.546010]  [<ffffffff81250943>] debug_object_fixup+0x1e/0x2b
-> > [   34.546010]  [<ffffffff81250fdb>] debug_object_activate+0xcc/0xd9
-> > [   34.546010]  [<ffffffff8110939f>] ? discard_slab+0x4e/0x4e
-> > [   34.546010]  [<ffffffff810a8b77>] __call_rcu+0x4f/0x18e
-> > [   34.546010]  [<ffffffff810a8ce2>] call_rcu_sched+0x15/0x17
-> > [   34.546010]  [<ffffffff81109396>] discard_slab+0x45/0x4e
-> > [   34.546010]  [<ffffffff81109fa4>] unfreeze_partials+0x16a/0x193
-> > [   34.546010]  [<ffffffff81073b06>] ? lock_release_holdtime+0x59/0x60
-> > [   34.546010]  [<ffffffff815afd87>] ? _raw_spin_unlock_irqrestore+0x3f/0x55
-> > [   34.546010]  [<ffffffff8110a020>] put_cpu_partial+0x53/0xbd
-> > [   34.546010]  [<ffffffff8110a197>] __slab_free+0x10d/0x229
-> > [   34.546010]  [<ffffffff810f5e08>] ? anon_vma_free+0x3d/0x41
-> > [   34.546010]  [<ffffffff810f5e08>] ? anon_vma_free+0x3d/0x41
-> > [   34.546010]  [<ffffffff8110a44b>] kmem_cache_free+0x7d/0xc4
-> > [   34.546010]  [<ffffffff810f5e08>] anon_vma_free+0x3d/0x41
-> > [   34.546010]  [<ffffffff810f6d9e>] __put_anon_vma+0x38/0x3d
-> > [   34.546010]  [<ffffffff810f6dcc>] put_anon_vma+0x29/0x2d
-> > [   34.546010]  [<ffffffff810f6f28>] unlink_anon_vmas+0xf5/0x14c
-> > [   34.546010]  [<ffffffff815ae4c4>] ? mutex_unlock+0xe/0x10
-> > [   34.546010]  [<ffffffff810ed096>] free_pgtables+0x73/0xd0
-> > [   34.546010]  [<ffffffff810f30ad>] exit_mmap+0xac/0xe5
-> > [   34.546010]  [<ffffffff81043d05>] mmput+0x60/0x108
-> > [   34.546010]  [<ffffffff81048323>] exit_mm+0x119/0x126
-> > [   34.546010]  [<ffffffff815afd34>] ? _raw_spin_unlock_irq+0x30/0x44
-> > [   34.546010]  [<ffffffff81049a59>] do_exit+0x233/0x80f
-> > [   34.546010]  [<ffffffff81073330>] ? trace_hardirqs_off_caller+0x33/0x90
-> > [   34.546010]  [<ffffffff815affca>] ? retint_swapgs+0xe/0x13
-> > [   34.546010]  [<ffffffff8104a2dd>] do_group_exit+0x88/0xb6
-> > [   34.546010]  [<ffffffff8104a322>] sys_exit_group+0x17/0x1b
-> > [   34.546010]  [<ffffffff815b662b>] system_call_fastpath+0x16/0x1b
-> > 
-> > 
-> > 
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+We do the wrong thing in a few places (i2c comes to mind) and we should
+most certainly consider fixing it. Some of the solution is to move some
+select's to defconfigs, some is to do things the way Kyle proposed.
 
--- 
-Only stand for myself
+For PHYS_64BIT, I'm not 100% certain at this point what the best
+approach it. It should clearly be fixed and hidden for real 64-bit. As
+for the rest, should it be user selectable ? I tend to think it should
+be fixed & selected by the board config and keep it that way, avoiding
+the user question entirely... but you may have good reasons to want to
+keep it around.
+
+Cheers,
+Ben.
+
+
