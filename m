@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab1KKBk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 20:40:26 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:49572 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab1KKBkU (ORCPT
+	id S1757906Ab1KKBkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 20:40:37 -0500
+Received: from mail-wy0-f202.google.com ([74.125.82.202]:39994 "EHLO
+	mail-wy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab1KKBka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 20:40:20 -0500
+	Thu, 10 Nov 2011 20:40:30 -0500
 From: David Decotigny <david.decotigny@google.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -17,9 +17,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
         Szymon Janc <szymon@janc.net.pl>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v2 01/10] forcedeth: fix ifconfig stats on hardware without extended stats support
-Date: Thu, 10 Nov 2011 17:31:26 -0800
-Message-Id: <93a4143f90f2f968500b3624ffa51c8c74e3f95e.1320974990.git.david.decotigny@google.com>
+Subject: [PATCH net-next v2 07/10] forcedeth: account for dropped RX frames
+Date: Thu, 10 Nov 2011 17:31:32 -0800
+Message-Id: <d92ce3b825650e1be19baa6379e8dd51d886c65b.1320974990.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <cover.1320974990.git.david.decotigny@google.com>
 References: <cover.1320974990.git.david.decotigny@google.com>
@@ -31,111 +31,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes sure that tx_packets/rx_bytes ifconfig counters are
-updated even on NICs that don't provide hardware support for these
-stats. In that case, they are updated in software.
-
-Related commit: "forcedeth: Improve stats counters" (0bdfea8ba8)
+This adds the stats counter for dropped RX frames.
 
 
 
 Signed-off-by: David Decotigny <david.decotigny@google.com>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |   34 ++++++++++++++++++++++++++----
- 1 files changed, 29 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/nvidia/forcedeth.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index d24c45b..6e5213e 100644
+index cabc121..0a979b8 100644
 --- a/drivers/net/ethernet/nvidia/forcedeth.c
 +++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -90,6 +90,7 @@
- #define DEV_HAS_STATISTICS_V2      0x0000400  /* device supports hw statistics version 2 */
- #define DEV_HAS_STATISTICS_V3      0x0000800  /* device supports hw statistics version 3 */
- #define DEV_HAS_STATISTICS_V12     0x0000600  /* device supports hw statistics version 1 and 2 */
-+#define DEV_HAS_STATISTICS_V23     0x0000c00  /* device supports hw statistics version 2 and 3 */
- #define DEV_HAS_STATISTICS_V123    0x0000e00  /* device supports hw statistics version 1, 2, and 3 */
- #define DEV_HAS_TEST_EXTENDED      0x0001000  /* device supports extended diagnostic test */
- #define DEV_HAS_MGMT_UNIT          0x0002000  /* device supports management unit */
-@@ -1703,12 +1704,19 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
- 	struct fe_priv *np = netdev_priv(dev);
+@@ -824,6 +824,7 @@ struct fe_priv {
+ 	/* RX software stats */
+ 	struct nv_driver_stat stat_rx_bytes; /* not always available in HW */
+ 	struct nv_driver_stat stat_rx_missed_errors;
++	struct nv_driver_stat stat_rx_dropped;
  
- 	/* If the nic supports hw counters then retrieve latest values */
--	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
-+	if (np->driver_data & DEV_HAS_STATISTICS_V123) {
-+		/* query hardware */
- 		nv_get_hw_stats(dev);
+ 	/* media detection workaround.
+ 	 * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
+@@ -1738,6 +1739,7 @@ static void nv_update_stats(struct net_device *dev)
+ 	/* update software stats */
+ 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_bytes);
+ 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_missed_errors);
++	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_dropped);
  
- 		/* copy to net_device stats */
--		dev->stats.tx_packets = np->estats.tx_packets;
--		dev->stats.rx_bytes = np->estats.rx_bytes;
-+
-+		if (np->driver_data & DEV_HAS_STATISTICS_V23) {
-+			/* When HW stats are available for following
-+			 * stats, we use them. Otherwise they are
-+			 * updated by software. */
-+			dev->stats.tx_packets = np->estats.tx_packets;
-+			dev->stats.rx_bytes = np->estats.rx_bytes;
+ 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_tx_packets);
+ 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_tx_dropped);
+@@ -1780,6 +1782,8 @@ nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
+ 		storage->tx_bytes   = np->estats.tx_bytes;
+ 		storage->rx_errors  = np->estats.rx_errors_total;
+ 		storage->tx_errors  = np->estats.tx_errors_total;
++		storage->rx_dropped = NV_DRIVER_STAT_GET_TOTAL(
++			&np->stat_rx_dropped);
+ 		storage->tx_dropped = NV_DRIVER_STAT_GET_TOTAL(
+ 			&np->stat_tx_dropped);
+ 
+@@ -1835,8 +1839,10 @@ static int nv_alloc_rx(struct net_device *dev)
+ 				np->put_rx.orig = np->first_rx.orig;
+ 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
+ 				np->put_rx_ctx = np->first_rx_ctx;
+-		} else
++		} else {
++			NV_DRIVER_STAT_ATOMIC_INC(&np->stat_rx_dropped);
+ 			return 1;
 +		}
- 		dev->stats.tx_bytes = np->estats.tx_bytes;
- 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
- 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
-@@ -2378,8 +2386,12 @@ static int nv_tx_done(struct net_device *dev, int limit)
- 		if (np->desc_ver == DESC_VER_1) {
- 			if (flags & NV_TX_LASTPACKET) {
- 				if (flags & NV_TX_ERROR) {
--					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
-+					if ((flags & NV_TX_RETRYERROR)
-+					    && !(flags & NV_TX_RETRYCOUNT_MASK))
- 						nv_legacybackoff_reseed(dev);
-+				} else if (unlikely(!(np->driver_data
-+						      & DEV_HAS_STATISTICS_V23))) {
-+					dev->stats.tx_packets++;
- 				}
- 				dev_kfree_skb_any(np->get_tx_ctx->skb);
- 				np->get_tx_ctx->skb = NULL;
-@@ -2388,8 +2400,12 @@ static int nv_tx_done(struct net_device *dev, int limit)
- 		} else {
- 			if (flags & NV_TX2_LASTPACKET) {
- 				if (flags & NV_TX2_ERROR) {
--					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
-+					if ((flags & NV_TX2_RETRYERROR)
-+					    && !(flags & NV_TX2_RETRYCOUNT_MASK))
- 						nv_legacybackoff_reseed(dev);
-+				} else if (unlikely(!(np->driver_data
-+						      & DEV_HAS_STATISTICS_V23))) {
-+					dev->stats.tx_packets++;
- 				}
- 				dev_kfree_skb_any(np->get_tx_ctx->skb);
- 				np->get_tx_ctx->skb = NULL;
-@@ -2429,6 +2445,9 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
- 					else
- 						nv_legacybackoff_reseed(dev);
- 				}
-+			} else if (unlikely(!(np->driver_data
-+					      & DEV_HAS_STATISTICS_V23))) {
-+				dev->stats.tx_packets++;
- 			}
- 
- 			dev_kfree_skb_any(np->get_tx_ctx->skb);
-@@ -2678,6 +2697,8 @@ static int nv_rx_process(struct net_device *dev, int limit)
- 		skb->protocol = eth_type_trans(skb, dev);
- 		napi_gro_receive(&np->napi, skb);
- 		dev->stats.rx_packets++;
-+		if (unlikely(!(np->driver_data & DEV_HAS_STATISTICS_V23)))
-+			dev->stats.rx_bytes += len;
- next_pkt:
- 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
- 			np->get_rx.orig = np->first_rx.orig;
-@@ -2761,6 +2782,9 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
- 			}
- 			napi_gro_receive(&np->napi, skb);
- 			dev->stats.rx_packets++;
-+			if (unlikely(!(np->driver_data
-+				       & DEV_HAS_STATISTICS_V23)))
-+				dev->stats.rx_bytes += len;
- 		} else {
- 			dev_kfree_skb(skb);
- 		}
+ 	}
+ 	return 0;
+ }
+@@ -1867,8 +1873,10 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
+ 				np->put_rx.ex = np->first_rx.ex;
+ 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
+ 				np->put_rx_ctx = np->first_rx_ctx;
+-		} else
++		} else {
++			NV_DRIVER_STAT_ATOMIC_INC(&np->stat_rx_dropped);
+ 			return 1;
++		}
+ 	}
+ 	return 0;
+ }
 -- 
 1.7.3.1
 
