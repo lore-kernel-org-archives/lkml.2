@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1KKHIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 02:08:07 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36906 "EHLO mx3.mail.elte.hu"
+	id S1756129Ab1KKHOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 02:14:12 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42752 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395Ab1KKHIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 02:08:06 -0500
-Date: Fri, 11 Nov 2011 08:06:15 +0100
+	id S1751583Ab1KKHOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 02:14:10 -0500
+Date: Fri, 11 Nov 2011 08:12:25 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [GIT PULL] TSC sched_clock overflow workaround
-Message-ID: <20111111070615.GA14347@elte.hu>
-References: <1320987192.15791.13.camel@js-netbook>
+To: john stultz <johnstul@us.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Daney <ddaney.cavm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Chen Jie <chenj@lemote.com>,
+        zhangfx <zhangfx@lemote.com>
+Subject: Re: [GIT PULL] clocksource:  Avoid possible mult overflows
+Message-ID: <20111111071225.GB14347@elte.hu>
+References: <1320953625.10668.86.camel@work-vm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320987192.15791.13.camel@js-netbook>
+In-Reply-To: <1320953625.10668.86.camel@work-vm>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -32,25 +33,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* John Stultz <johnstul@us.ibm.com> wrote:
+* john stultz <johnstul@us.ibm.com> wrote:
 
-> Hey Thomas, Ingo,
-> 	I thought Peter had sent this on, but apparently its not landed yet, so
-> I wanted to make sure you got it.
+> Hey Ingo,
+> 	Here's the revised fix to the mult overflow issue against
+> tip/timers/core. Let me know if you hit any other issues.
 > 
-> After ~208 days, the sched_clock multiplication overflows and 
-> causes some false positives in the softlockup watchdog. I don't 
-> think there are any actual panics going on, as an earlier related 
-> div by zero issue was already fixed. However, the false positives 
-> do continue to worry folks.
+> thanks
+> -john
 > 
-> We still need a proper fix, which will probably be in part making 
-> sched_clock do periodic accumulation, as well as possibly changing 
-> users of sched_clock (like the softlockup watchdog) use timekeeping 
-> timestamps rather then sched_clock.
+> 
+>   git://git.linaro.org/people/jstultz/linux.git formingo/3.2/tip/timers/core
 
-I'd *much* rather see a real fix for this than an ugly workaround 
-that disables a very real speedup.
+Pulled, thanks John!
+
+Note, it was not based on the latest tip:timers/core branch of:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+
+and it conflicted with another patch of yours (trivially). I've 
+resolved the conflict, please double check that it's all fine.
 
 Thanks,
 
