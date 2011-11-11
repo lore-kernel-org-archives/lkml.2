@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab1KKWC7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 17:02:59 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1298 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab1KKWC6 convert rfc822-to-8bit (ORCPT
+	id S1753531Ab1KKWad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 17:30:33 -0500
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:51329 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669Ab1KKWac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 17:02:58 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 11 Nov 2011 14:02:49 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 11 Nov 2011 14:02:49 -0800
-Subject: RE: [PATCH v4 09/10] arm/tegra: implement support for tegra30
-Thread-Topic: [PATCH v4 09/10] arm/tegra: implement support for tegra30
-Thread-Index: AcygZDmKv2T5kkXGSRKoBKchVGAAuQAWTfSQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17408058CA@HQMAIL01.nvidia.com>
-References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
- <1321010541-31337-10-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1321010541-31337-10-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 11 Nov 2011 17:30:32 -0500
+Date: Fri, 11 Nov 2011 23:30:18 +0100
+From: Udo Steinberg <udo@hypervisor.org>
+To: <keithp@keithp.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: i915 screen corruption
+Message-ID: <20111111233018.629c864b@x220>
+X-Mailer: X-Mailer 5.0 Gold
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/b41QxSY.i5KlrW/w70_5baZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Friday, November 11, 2011 4:22 AM:
-> Add support for tegra30 SoC. This includes a device tree compatible type for
-> this SoC ("nvidia,tegra30") and adds L2 cache initialization for this new SoC.
-> The clock framework is still missing, which prevents most drivers from working.
-> The basic IRQs are the same, so remove the dependency on
-> CONFIG_ARCH_TEGRA_2x_SOC.
+--Sig_/b41QxSY.i5KlrW/w70_5baZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+Hi,
 
->  #ifdef CONFIG_ARCH_TEGRA_2x_SOC
->  void __init tegra20_init_early(void);
->  #endif
-> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-> +void __init tegra30_init_early(void);
-> +#endif
+On a Lenovo Thinkpad X220 with Gen6 (SNB) integrated graphics, I occasional=
+ly
+get screen corruption under X. Every time this happens I'm seeing the
+following in dmesg. This is a vanilla Linux 3.1 kernel.
 
-Do we need to ifdef the prototypes? Same comment for Tegra30 here and
-Tegra20 in the earlier patch.
+Cheers,
 
--- 
-nvpublic
+	- Udo
 
+------------[ cut here ]------------
+WARNING: at drivers/gpu/drm/i915/i915_drv.c:387 __gen6_gt_wait_for_fifo+0x6=
+3/0x6e()
+Hardware name: 4290W4H
+Pid: 1671, comm: X Not tainted 3.1.0 #1
+Call Trace:
+ [<ffffffff81036028>] ? warn_slowpath_common+0x73/0x87
+ [<ffffffff811efe99>] ? __gen6_gt_wait_for_fifo+0x63/0x6e
+ [<ffffffff81223835>] ? gen6_ring_put_irq+0x66/0xa6
+ [<ffffffff8120001c>] ? i915_wait_request+0x2e0/0x3b9
+ [<ffffffff812250ea>] ? render_ring_flush+0xa1/0xac =20
+ [<ffffffff8104bdd1>] ? abort_exclusive_wait+0x79/0x79
+ [<ffffffff8120014e>] ? i915_gem_flush_ring+0x24/0xdc=20
+ [<ffffffff812053f0>] ? i915_gem_do_execbuffer.clone.8+0xd7b/0x11cf
+ [<ffffffff81205ccf>] ? i915_gem_execbuffer2+0x12b/0x1ac
+ [<ffffffff811dfbb6>] ? drm_ioctl+0x251/0x306
+ [<ffffffff81205ba4>] ? i915_gem_execbuffer+0x360/0x360
+ [<ffffffff81008734>] ? init_fpu+0x10b/0x124
+ [<ffffffff81008b38>] ? check_for_xstate+0x1c/0x71
+ [<ffffffff810b1761>] ? do_vfs_ioctl+0x404/0x445 =20
+ [<ffffffff81001b25>] ? sys_rt_sigreturn+0x196/0x1c5
+ [<ffffffff810b17de>] ? sys_ioctl+0x3c/0x5e
+ [<ffffffff813c1bfb>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 63d59cd44de45e89 ]---
+
+--Sig_/b41QxSY.i5KlrW/w70_5baZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk69ofoACgkQnhRzXSM7nSmgpACbBzEA2HgnS923/26Ql+0MLeqb
+krIAn1VbPikJD7db/LV0MdjPtUfxP/m+
+=GmFM
+-----END PGP SIGNATURE-----
+
+--Sig_/b41QxSY.i5KlrW/w70_5baZ--
