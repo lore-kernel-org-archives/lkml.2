@@ -1,95 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab1KKCMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 21:12:08 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:39453 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040Ab1KKCME (ORCPT
+	id S1754864Ab1KKCWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 21:22:18 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44976 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab1KKCWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 21:12:04 -0500
-Date: Fri, 11 Nov 2011 13:11:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: linux-next: manual merge of the input tree with the s5p tree
-Message-Id: <20111111131159.848e724c5a9257d0b9f0f0f9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__11_Nov_2011_13_11_59_+1100_AdL_f4SKr1=7DVHd"
+	Thu, 10 Nov 2011 21:22:16 -0500
+From: ddaney.cavm@gmail.com
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Cc: David Daney <david.daney@cavium.com>
+Subject: [PATCH 3/8] MIPS: Octeon: Add irq_create_of_mapping() and GPIO interrupts.
+Date: Thu, 10 Nov 2011 18:21:59 -0800
+Message-Id: <1320978124-13042-4-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1320978124-13042-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1320978124-13042-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__11_Nov_2011_13_11_59_+1100_AdL_f4SKr1=7DVHd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: David Daney <david.daney@cavium.com>
 
-Hi Dmitry,
+This is needed for Octeon to use the Device Tree.
 
-Today's linux-next merge of the input tree got a conflict in
-drivers/input/keyboard/Kconfig between commit 007205aa47e9 ("input:
-samsung-keypad: Add HAVE_SAMSUNG_KEYPAD config option") from the s5p tree
-and commit 5862c02d745f ("Input: samsung-keypad - enable compiling on
-other platforms") from the input tree.
+The GPIO interrupts are configured based on Device Tree properties
 
-I have fixed it up (probably incorrectly - see below) and can carry the
-fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/cavium-octeon/octeon-irq.c |  188 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 187 insertions(+), 1 deletions(-)
 
-diff --cc drivers/input/keyboard/Kconfig
-index d80b4ea,cdc385b..0000000
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@@ -423,18 -439,12 +439,19 @@@ config KEYBOARD_PMIC8XX
-  	  To compile this driver as a module, choose M here: the module will
-  	  be called pmic8xxx-keypad.
- =20
- +config HAVE_SAMSUNG_KEYPAD
- +	bool
- +	help
- +	  This will include Samsung Keypad controller driver support. If you
- +	  want to include Samsung Keypad support for any machine, kindly
- +	  select this in the respective mach-xxxx/Kconfig file.
- +
-  config KEYBOARD_SAMSUNG
-  	tristate "Samsung keypad support"
-- 	depends on SAMSUNG_DEV_KEYPAD || HAVE_SAMSUNG_KEYPAD
- -	depends on HAVE_CLK
-++	depends on HAVE_CLK || HAVE_SAMSUNG_KEYPAD
-  	help
-- 	  Say Y here if you want to use the Samsung keypad.
-+ 	  Say Y here if you want to use the keypad on your Samsung mobile
-+ 	  device.
- =20
-  	  To compile this driver as a module, choose M here: the
-  	  module will be called samsung-keypad.
+diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+index ffd4ae6..bb10546 100644
+--- a/arch/mips/cavium-octeon/octeon-irq.c
++++ b/arch/mips/cavium-octeon/octeon-irq.c
+@@ -8,11 +8,14 @@
+ 
+ #include <linux/interrupt.h>
+ #include <linux/bitops.h>
++#include <linux/module.h>
+ #include <linux/percpu.h>
++#include <linux/of_irq.h>
+ #include <linux/irq.h>
+ #include <linux/smp.h>
+ 
+ #include <asm/octeon/octeon.h>
++#include <asm/octeon/cvmx-gpio-defs.h>
+ 
+ static DEFINE_RAW_SPINLOCK(octeon_irq_ciu0_lock);
+ static DEFINE_RAW_SPINLOCK(octeon_irq_ciu1_lock);
+@@ -58,6 +61,95 @@ static void __init octeon_irq_set_ciu_mapping(int irq, int line, int bit,
+ 	octeon_irq_ciu_to_irq[line][bit] = irq;
+ }
+ 
++static unsigned int octeon_irq_gpio_mapping(struct device_node *controller,
++					    const u32 *intspec,
++					    unsigned int intsize)
++{
++	struct of_irq oirq;
++	int i;
++	unsigned int irq = 0;
++	unsigned int type;
++	unsigned int ciu = 0, bit = 0;
++	unsigned int pin = be32_to_cpup(intspec);
++	unsigned int trigger = be32_to_cpup(intspec + 1);
++	bool set_edge_handler = false;
++
++	if (pin >= 16)
++		goto err;
++	i = of_irq_map_one(controller, 0, &oirq);
++	if (i)
++		goto err;
++	if (oirq.size != 2)
++		goto err_put;
++
++	ciu = oirq.specifier[0];
++	bit = oirq.specifier[1] + pin;
++
++	if (ciu >= 8 || bit >= 64)
++		goto err_put;
++
++	irq = octeon_irq_ciu_to_irq[ciu][bit];
++	if (!irq)
++		goto err_put;
++
++	switch (trigger & 0xf) {
++	case 1:
++		type = IRQ_TYPE_EDGE_RISING;
++		set_edge_handler = true;
++		break;
++	case 2:
++		type = IRQ_TYPE_EDGE_FALLING;
++		set_edge_handler = true;
++		break;
++	case 4:
++		type = IRQ_TYPE_LEVEL_HIGH;
++		break;
++	case 8:
++		type = IRQ_TYPE_LEVEL_LOW;
++		break;
++	default:
++		pr_err("Error: Invalid irq trigger specification: %x\n",
++		       trigger);
++		type = IRQ_TYPE_LEVEL_LOW;
++		break;
++	}
++
++	irq_set_irq_type(irq, type);
++
++	if (set_edge_handler)
++		__irq_set_handler(irq, handle_edge_irq, 0, NULL);
++
++err_put:
++	of_node_put(oirq.controller);
++err:
++	return irq;
++}
++
++/*
++ * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
++ *
++ * Octeon irq maps are a pair of indexes.  The first selects either
++ * ciu0 or ciu1, the second is the bit within the ciu register.
++ */
++unsigned int irq_create_of_mapping(struct device_node *controller,
++				   const u32 *intspec, unsigned int intsize)
++{
++	unsigned int irq = 0;
++	unsigned int ciu, bit;
++
++	if (of_device_is_compatible(controller, "cavium,octeon-3860-gpio"))
++		return octeon_irq_gpio_mapping(controller, intspec, intsize);
++
++	ciu = be32_to_cpup(intspec);
++	bit = be32_to_cpup(intspec + 1);
++
++	if (ciu < 8 && bit < 64)
++		irq = octeon_irq_ciu_to_irq[ciu][bit];
++
++	return irq;
++}
++EXPORT_SYMBOL_GPL(irq_create_of_mapping);
++
+ static int octeon_coreid_for_cpu(int cpu)
+ {
+ #ifdef CONFIG_SMP
+@@ -505,6 +597,72 @@ static void octeon_irq_ciu_enable_all_v2(struct irq_data *data)
+ 	}
+ }
+ 
++static void octeon_irq_gpio_setup(struct irq_data *data)
++{
++	union cvmx_gpio_bit_cfgx cfg;
++	int bit = data->irq - OCTEON_IRQ_GPIO0;
++	u32 t = irqd_get_trigger_type(data);
++
++	cfg.u64 = 0;
++	cfg.s.int_en = 1;
++	cfg.s.int_type = (t & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING)) != 0;
++	cfg.s.rx_xor = (t & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_EDGE_FALLING)) != 0;
++
++	/* 1 uS glitch filter*/
++	cfg.s.fil_cnt = 7;
++	cfg.s.fil_sel = 3;
++
++	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), cfg.u64);
++}
++
++static void octeon_irq_ciu_enable_gpio_v2(struct irq_data *data)
++{
++	octeon_irq_gpio_setup(data);
++	octeon_irq_ciu_enable_v2(data);
++}
++
++static void octeon_irq_ciu_enable_gpio(struct irq_data *data)
++{
++	octeon_irq_gpio_setup(data);
++	octeon_irq_ciu_enable(data);
++}
++
++static int octeon_irq_ciu_gpio_set_type(struct irq_data *data, unsigned int t)
++{
++	u32 current_type = irqd_get_trigger_type(data);
++
++	/* If the type has been set, don't change it */
++	if (current_type && current_type != t)
++		return -EINVAL;
++
++	irqd_set_trigger_type(data, t);
++	return IRQ_SET_MASK_OK;
++}
++
++static void octeon_irq_ciu_disable_gpio_v2(struct irq_data *data)
++{
++	int bit = data->irq - OCTEON_IRQ_GPIO0;
++	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), 0);
++
++	octeon_irq_ciu_disable_all_v2(data);
++}
++
++static void octeon_irq_ciu_disable_gpio(struct irq_data *data)
++{
++	int bit = data->irq - OCTEON_IRQ_GPIO0;
++	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), 0);
++
++	octeon_irq_ciu_disable_all(data);
++}
++
++static void octeon_irq_ciu_gpio_ack(struct irq_data *data)
++{
++	int bit = data->irq - OCTEON_IRQ_GPIO0;
++	u64 mask = 1ull << bit;
++
++	cvmx_write_csr(CVMX_GPIO_INT_CLR, mask);
++}
++
+ #ifdef CONFIG_SMP
+ 
+ static void octeon_irq_cpu_offline_ciu(struct irq_data *data)
+@@ -717,6 +875,31 @@ static struct irq_chip octeon_irq_chip_ciu_mbox = {
+ 	.flags = IRQCHIP_ONOFFLINE_ENABLED,
+ };
+ 
++static struct irq_chip octeon_irq_chip_ciu_gpio_v2 = {
++	.name = "CIU-GPIO",
++	.irq_enable = octeon_irq_ciu_enable_gpio_v2,
++	.irq_disable = octeon_irq_ciu_disable_gpio_v2,
++	.irq_ack = octeon_irq_ciu_gpio_ack,
++	.irq_mask = octeon_irq_ciu_disable_local_v2,
++	.irq_unmask = octeon_irq_ciu_enable_v2,
++	.irq_set_type = octeon_irq_ciu_gpio_set_type,
++#ifdef CONFIG_SMP
++	.irq_set_affinity = octeon_irq_ciu_set_affinity_v2,
++#endif
++};
++
++static struct irq_chip octeon_irq_chip_ciu_gpio = {
++	.name = "CIU-GPIO",
++	.irq_enable = octeon_irq_ciu_enable_gpio,
++	.irq_disable = octeon_irq_ciu_disable_gpio,
++	.irq_mask = octeon_irq_dummy_mask,
++	.irq_ack = octeon_irq_ciu_gpio_ack,
++	.irq_set_type = octeon_irq_ciu_gpio_set_type,
++#ifdef CONFIG_SMP
++	.irq_set_affinity = octeon_irq_ciu_set_affinity,
++#endif
++};
++
+ /*
+  * Watchdog interrupts are special.  They are associated with a single
+  * core, so we hardwire the affinity to that core.
+@@ -890,6 +1073,7 @@ static void __init octeon_irq_init_ciu(void)
+ 	struct irq_chip *chip_edge;
+ 	struct irq_chip *chip_mbox;
+ 	struct irq_chip *chip_wd;
++	struct irq_chip *chip_gpio;
+ 
+ 	octeon_irq_init_ciu_percpu();
+ 	octeon_irq_setup_secondary = octeon_irq_setup_secondary_ciu;
+@@ -904,6 +1088,7 @@ static void __init octeon_irq_init_ciu(void)
+ 		chip_edge = &octeon_irq_chip_ciu_edge_v2;
+ 		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
+ 		chip_wd = &octeon_irq_chip_ciu_wd_v2;
++		chip_gpio = &octeon_irq_chip_ciu_gpio_v2;
+ 	} else {
+ 		octeon_irq_ip2 = octeon_irq_ip2_v1;
+ 		octeon_irq_ip3 = octeon_irq_ip3_v1;
+@@ -911,6 +1096,7 @@ static void __init octeon_irq_init_ciu(void)
+ 		chip_edge = &octeon_irq_chip_ciu_edge;
+ 		chip_mbox = &octeon_irq_chip_ciu_mbox;
+ 		chip_wd = &octeon_irq_chip_ciu_wd;
++		chip_gpio = &octeon_irq_chip_ciu_gpio;
+ 	}
+ 	octeon_irq_ip4 = octeon_irq_ip4_mask;
+ 
+@@ -921,7 +1107,7 @@ static void __init octeon_irq_init_ciu(void)
+ 	for (i = 0; i < 16; i++)
+ 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0, chip, handle_level_irq);
+ 	for (i = 0; i < 16; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip_gpio, handle_level_irq);
+ 
+ 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
+ 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
+-- 
+1.7.2.3
 
---Signature=_Fri__11_Nov_2011_13_11_59_+1100_AdL_f4SKr1=7DVHd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOvIRvAAoJEECxmPOUX5FEiMwQAJ2fEgFrPIxXrjAbjGJ1epkr
-ZRtk9CuGfn/pEDY00zSxk3Ty8vEScOoqL7Q4zDDiTSS0IcA8Td+d2rHP0liBO/Zu
-mH2ogujOKF/1Cv5zX07w37wK6rLUQpxjA2GsMhxcEcd1A6RubMMJ8/6uOYde7xws
-c1GLgLlDYaP8lOAWv2t5n/2rq5cP/OMwLDgRpgHrT98JAGyCHbvse9YaGKcBdZEo
-ZbuqfsPtWNuUYkKa2MrfxrePWYZ6ZobIoEv2ISq6Ryoomb/MM+LlPVqom0bnrmLL
-72qtXJJz8h63SuY2l0oct/l3+6Px5IdaLNJDJ+MG2yr4d3cFaaSV9TEr4Tv+BcQd
-n7iLfkBgS7rbODyLSW4YgcvnZdI7oDWYmQxX9IH5Lkcci7TzlpvTE1Ee5W9TGmji
-U6mW9ZdMYc4kwUMn/zjEIC8SWmn7xqVmIbmzCndn3BePpqIGLc+bFE8bmS2wCyVj
-30Zjh3rlyYzfbh/UbedVfMqV0pPxugn29QYsWJKrJDqvgQE+FNduHxwd9flejtLK
-Y2bQt/ISowllX7OobroMSbKL3y4aAwxXmSRp3xry+Z0tezoDGri0cyBRaiFbvLXU
-SIWuA7tDgA/Tr9CaU16TbSOqR6OHre3bKQjS0ucUhxfHUFu5g9/ASYyDyRc6iQV2
-FT44bXO3n209ohku2NrT
-=1rVX
------END PGP SIGNATURE-----
-
---Signature=_Fri__11_Nov_2011_13_11_59_+1100_AdL_f4SKr1=7DVHd--
