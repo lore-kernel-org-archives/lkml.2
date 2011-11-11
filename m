@@ -1,35 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab1KKTJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 14:09:04 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50572 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab1KKTJC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 14:09:02 -0500
+	id S1758180Ab1KKTJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 14:09:40 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:48538 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756932Ab1KKTJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 14:09:38 -0500
+Message-ID: <4EBD72E9.4020805@interlog.com>
+Date: Fri, 11 Nov 2011 14:09:29 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1111110857330.3557@router.home>
-References: <20111109090556.GA5949@zhy>
-	<201111102335.06046.kernelmail.jms@gmail.com>
-	<1320980671.22361.252.camel@sli10-conroe>
-	<alpine.DEB.2.00.1111110857330.3557@router.home>
-Date: Fri, 11 Nov 2011 19:09:01 +0000
-Message-ID: <CAAVPGOPwKV12TqwU1DcxvJTW9dsmWNiNFg4ga7PzWNgQ2M=1RQ@mail.gmail.com>
-Subject: Re: INFO: possible recursive locking detected: get_partial_node() on 3.2-rc1
-From: Julie Sullivan <kernelmail.jms@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@suse.de>
+CC: Nao Nishijima <nao.nishijima.xt@hitachi.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Alan Cox <alan@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] block: Revert "[SCSI] genhd: add a new attribute "alias"
+ in gendisk"
+References: <20111109162512.GB1260@google.com> <4EBD361E.5040106@hitachi.com> <20111111173633.GA24351@suse.de>
+In-Reply-To: <20111111173633.GA24351@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's probably moot now but FWIW I checked Shaohua's patch too and it
-got rid of the warning in my dmesg.
-Cheers
-Julie
+On 11-11-11 12:36 PM, Greg KH wrote:
+> On Fri, Nov 11, 2011 at 11:50:06PM +0900, Nao Nishijima wrote:
+>> Hi,
+>>
+>> Finally, I understood why this patch is not acceptable and would like to
+>> solve the problem of the device name mismatch in *user space* using
+>> udev. So, could you please give me your comment about it?
+>>
+>> I aim to unify the device name because the name shown in command output
+>> is different from it that users use for command execution.
+>>
+>> So, I'd like to suggest that two new API should be added to udev.
+>> - The API that returns any symlinks such as by-uuid, by id that users
+>>    selected before if a device name is given as arguments
+>>    If the commands directly access to proc filesystems, they cannot get
+>>    the symlinks. These commands should get the device name via this API.
+>> - The API that replaces device name to symlink in text messages
+>> 　　The dmesg and syslog messages include the raw device names such as
+>>    sdX. They should be replaced with symlinks to unify the device names.
+>> - udev support alias
+>>    Symlinks (by-uuid, by-id …) is too long, compared to before (e.g.
+>>    sdX). I guess most of users need more friendly and short names.
+>>
+>> Could you give me some advice or comments?
+>> (I will post this idea udev mailing list with prototype code)
+>
+> Patches are always best to work off of, please post your changes to udev
+> to the linux-hotplug list and we can take it from there.
+
+... and getting examples of acceptable code and APIs
+for that purpose might help the requester (and others)
+produce those patches.
+
+Doug Gilbert
+
+
