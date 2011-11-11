@@ -1,47 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab1KKKzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 05:55:11 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55075 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750945Ab1KKKzI (ORCPT
+	id S1756442Ab1KKK6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 05:58:46 -0500
+Received: from mail-am1.bigfish.com ([213.199.180.138]:16092 "EHLO
+	AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750870Ab1KKK6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 05:55:08 -0500
-Date: Fri, 11 Nov 2011 10:54:51 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 08/16] ARM: LPAE: Page table maintenance for the
- 3-level format
-Message-ID: <20111111105450.GB23243@arm.com>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
- <1320682618-1182-9-git-send-email-catalin.marinas@arm.com>
- <alpine.LFD.2.02.1111101654400.3307@xanadu.home>
+	Fri, 11 Nov 2011 05:58:44 -0500
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Nov 2011 05:58:44 EST
+X-SpamScore: -24
+X-BigFish: VPS-24(zzbb2dK9371K13e6Q1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+Message-ID: <4EBCFBC8.2020301@analog.com>
+Date: Fri, 11 Nov 2011 11:41:12 +0100
+From: Michael Hennerich <michael.hennerich@analog.com>
+Reply-To: <michael.hennerich@analog.com>
+Organization: Analog Devices Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1111101654400.3307@xanadu.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "jic23@cam.ac.uk" <jic23@cam.ac.uk>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 6/6] IIO: ABI documetation.
+References: <1320677563-18378-1-git-send-email-jic23@cam.ac.uk> <1320677563-18378-7-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1320677563-18378-7-git-send-email-jic23@cam.ac.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 09:59:33PM +0000, Nicolas Pitre wrote:
-> On Mon, 7 Nov 2011, Catalin Marinas wrote:
-> 
-> > This patch modifies the pgd/pmd/pte manipulation functions to support
-> > the 3-level page table format. Since there is no need for an 'ext'
-> > argument to cpu_set_pte_ext(), this patch conditionally defines a
-> > different prototype for this function when CONFIG_ARM_LPAE.
-> 
-> Maybe it doesn't make sense to still call it cpu_set_pte_ext then?
+On 11/07/2011 03:52 PM, jic23@cam.ac.uk wrote:
+> From: Jonathan Cameron<jic23@cam.ac.uk>
+>
+> Elements lifted from staging documentation,
+> drivers/staging/iio/Documentation/sysfs-bus-iio
+>
+> Signed-off-by: Jonathan Cameron<jic23@cam.ac.uk>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+> ---
+>   Documentation/ABI/testing/sysfs-bus-iio |  223 +++++++++++++++++++++++++++++++
+>   1 files changed, 223 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+> new file mode 100644
+> index 0000000..965c7cf
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+> @@ -0,0 +1,223 @@
+> +What:          /sys/bus/iio/devices/iio:deviceX
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Hardware chip or device accessed by one communication port.
+> +               Corresponds to a grouping of sensor channels. X is the IIO
+> +               index of the device.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/name
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Description of the physical chip / device for device X.
+> +               Typically a part number.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/sampling_frequency
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Some devices have internal clocks.  This parameter sets the
+> +               resulting sampling frequency.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/sampling_frequency_available
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               When the internal sampling clock can only take a small
+> +               discrete set of values, this file lists those available.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Raw (unscaled no bias removal etc) voltage measurement from
+> +               channel Y. In special cases where the channel does not
+> +               correspond to externally available input one of the named
+> +               versions may be used. The number must always be specified and
+> +               unique to allow association with event codes. Units after
+> +               application of scale and offset are microvolts.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY-voltageZ_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Raw (unscaled) differential voltage measurement equivalent to
+> +               channel Y - channel Z where these channel numbers apply to the
+> +               physically equivalent inputs when non differential readings are
+> +               separately available. In differential only parts, then all that
+> +               is required is a consistent labeling.  Units after application
+> +               of scale and offset are microvolts.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_temp_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_tempX_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_temp_x_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_temp_y_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_temp_z_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Raw (unscaled no bias removal etc) temperature measurement.
+> +               It an axis is specified it generally means that the temperature
+> +               sensor is associated with one part of a compound device (e.g.
+> +               a gyroscope axis). Units after application of scale and offset
+> +               are milli degrees Celsuis.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_x_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_y_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_z_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Acceleration in direction x, y or z (may be arbitrarily assigned
+> +               but should match other such assignments on device).
+> +               Has all of the equivalent parameters as per voltageY. Units
+> +               after application of scale and offset are m/s^2.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_x_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_y_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_z_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Angular velocity about axis x, y or z (may be arbitrarily
+> +               assigned) Data converted by application of offset then scale to
+> +               radians per second. Has all the equivalent parameters as
+> +               per voltageY. Units after application of scale and offset are
+> +               radians per second.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_incli_x_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_incli_y_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_incli_z_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Inclination raw reading about axis x, y or z (may be
+> +               arbitrarily assigned). Data converted by application of offset
+> +               and scale to Degrees.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_x_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_y_raw
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_z_raw
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Magnetic field along axis x, y or z (may be arbitrarily
+> +               assigned).  Data converted by application of offset
+> +               then scale to Gauss.
+> +
+> +What:          /sys/bus/iio/devices/device[n]/illuminance0_input
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               This should return the calculated lux from the light sensor.
+> +               Units are lumens.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_intensityY_infrared_input
+> +KernelVersion: 2.6.37
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               This property is supported by sensors that have an infrared
+> +               sensitive element.  Unfortunately this reading is very
+> +               frequency range dependent and hence tends not to have well
+> +               defined units.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_intensityY_both_input
+> +KernelVersion: 2.6.37
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               This property is supported by sensors that have an infrared
+> +               and visible light sensing element. The visible portion is
+> +               usually extracted by subtracting the value from a separate
+> +               infrared only sensor.  Unfortunately this reading is very
+> +               frequency range dependent and hence tends not to have well
+> +               defined units.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_x_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_y_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_z_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltage_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_tempY_offset
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_temp_offset
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               If known for a device, offset to be added to<type>[Y]_raw prior
+> +               to scaling by<type>[Y]_scale in order to obtain value in the
+> +<type>  units as specified in<type>[y]_raw documentation.
+> +               Not present if the offset is always 0 or unknown. If Y or
+> +               axis<x|y|z>  is not present, then the offset applies to all
+> +               in channels of<type>.
+> +               May be writable if a variable offset can be applied on the
+> +               device. Note that this is different to calibbias which
+> +               is for devices (or drivers) that apply offsets to compensate
+> +               for variation between different instances of the part, typically
+> +               adjusted by using some hardware supported calibration procedure.
+> +               Calibbias is applied internally, offset is applied in userspace
+> +               to the _raw output.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltage_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/out_voltageY_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_peak_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               If known for a device, scale to be applied to<type>Y[_name]_raw
+> +               post addition of<type>[Y][_name]_offset in order to obtain the
+> +               measured value in<type>  units as specified in
+> +<type>[Y][_name]_raw documentation..  If shared across all in
+> +               channels then Y and<x|y|z>  are not present and the value is
+> +               called<type>[Y][_name]_scale. The peak modifier means this
+> +               value is applied to<type>Y[_name]_peak_raw values.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_scale_available
+> +What:          /sys/.../iio:deviceX/in_voltageX_scale_available
+> +What:          /sys/.../iio:deviceX/in_voltage-voltage_scale_available
+> +What:          /sys/.../iio:deviceX/out_voltageX_scale_available
+> +What:          /sys/.../iio:deviceX/in_capacitance_scale_available
+> +KernelVersion: 2.635
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               If a discrete set of scale values are available, they
+> +               are listed in this attribute.
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_x_calibbias
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_y_calibbias
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_z_calibbias
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_x_calibbias
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_y_calibbias
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_z_calibbias
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Hardware applied calibration offset. (assumed to fix production
+> +               inaccuracies).
+> +
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_voltage_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_x_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_y_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_accel_z_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_x_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_y_calibscale
+> +What:          /sys/bus/iio/devices/iio:deviceX/in_anglvel_z_calibscale
+> +What:          /sys/.../iio:deviceX/in_intensityY_infrared_calibscale
+> +What:          /sys/.../iio:deviceX/in_intensityY_both_calibscale
+> +KernelVersion: 2.6.35
+> +Contact:       linux-iio@vger.kernel.org
+> +Description:
+> +               Hardware applied calibration scale factor. (assumed to fix
+> +               production inaccuracies).  If shared across all channels,
+> +<type>_calibscale is used.
+> \ No newline at end of file
+> --
+> 1.7.7.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-We could do this but it adds several #ifdef's, especially if we also
-change macro names like set_pte_ext(). Otherwise we could leave the
-latter macro unchanged and only change the name in the processor
-structure. But I think it just adds more clutter.
 
 -- 
-Catalin
+Greetings,
+Michael
+
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
+Margaret Seif
+
+
