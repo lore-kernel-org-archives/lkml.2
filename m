@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab1KKODr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 09:03:47 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:25292 "EHLO relay.sw.ru"
+	id S1755725Ab1KKOFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 09:05:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57695 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab1KKODq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 09:03:46 -0500
-From: Andrew Vagin <avagin@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: [PATCH] sched: don't call task_group() many times in set_task_rq()
-Date: Fri, 11 Nov 2011 17:04:00 +0300
-Message-Id: <1321020240-3874331-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1752575Ab1KKOFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 09:05:24 -0500
+Message-ID: <4EBD2BB4.3030804@suse.de>
+Date: Fri, 11 Nov 2011 15:05:40 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: PPC: e500: Casting (void *) value returned by kmalloc
+ is useless
+References: <1320779766.8062.143.camel@localhost.localdomain>
+In-Reply-To: <1320779766.8062.143.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It improves perfomance, especially if autogroup enabled.
+On 11/08/2011 08:15 PM, Thomas Meyer wrote:
+> From: Thomas Meyer<thomas@m3y3r.de>
+>
+>   Casting (void *) value returned by kmalloc is useless
+>   as mentioned in Documentation/CodingStyle, Chap 14.
+>
+>   The semantic patch that makes this change is available
+>   in scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci.
+>
+>   More information about semantic patching is available at
+>   http://coccinelle.lip6.fr/
+>
+> Signed-off-by: Thomas Meyer<thomas@m3y3r.de>
+> ---
+>
+> diff -u -p a/arch/powerpc/kvm/e500_tlb.c b/arch/powerpc/kvm/e500_tlb.c
+> --- a/arch/powerpc/kvm/e500_tlb.c 2011-11-07 19:37:27.329638682 +0100
+> +++ b/arch/powerpc/kvm/e500_tlb.c 2011-11-08 09:18:39.955928218 +0100
+> @@ -1026,11 +1026,11 @@ int kvmppc_e500_tlb_init(struct kvmppc_v
+>   	if (vcpu_e500->gtlb_arch[1] == NULL)
+>   		goto err_out_guest0;
+>
+> -	vcpu_e500->gtlb_priv[0] = (struct tlbe_priv *)
+> +	vcpu_e500->gtlb_priv[0] =
+>   		kzalloc(sizeof(struct tlbe_priv) * KVM_E500_TLB0_SIZE, GFP_KERNEL);
+>   	if (vcpu_e500->gtlb_priv[0] == NULL)
+>   		goto err_out_guest1;
+> -	vcpu_e500->gtlb_priv[1] = (struct tlbe_priv *)
+> +	vcpu_e500->gtlb_priv[1] =
+>   		kzalloc(sizeof(struct tlbe_priv) * KVM_E500_TLB1_SIZE, GFP_KERNEL);
 
-The size of set_task_rq() was 0x180 and now it is 0xa0.
+Sorry, I can't seem to find that code anywhere. I suppose you're using 
+an old git checkout?
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- kernel/sched.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d87c6e5..a740eec 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -766,14 +766,18 @@ static inline struct task_group *task_group(struct task_struct *p)
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
- static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- {
-+#if defined(CONFIG_FAIR_GROUP_SCHED) || defined(CONFIG_RT_GROUP_SCHED)
-+	struct task_group *tg = task_group(p);
-+#endif
-+
- #ifdef CONFIG_FAIR_GROUP_SCHED
--	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
--	p->se.parent = task_group(p)->se[cpu];
-+	p->se.cfs_rq = tg->cfs_rq[cpu];
-+	p->se.parent = tg->se[cpu];
- #endif
- 
- #ifdef CONFIG_RT_GROUP_SCHED
--	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
--	p->rt.parent = task_group(p)->rt_se[cpu];
-+	p->rt.rt_rq  = tg->rt_rq[cpu];
-+	p->rt.parent = tg->rt_se[cpu];
- #endif
- }
- 
--- 
-1.7.1
+Alex
 
