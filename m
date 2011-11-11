@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab1KKCYU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 21:24:20 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51887 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab1KKCWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 21:22:17 -0500
-From: ddaney.cavm@gmail.com
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/8] MIPS: Prune some target specific code out of prom.c
-Date: Thu, 10 Nov 2011 18:21:58 -0800
-Message-Id: <1320978124-13042-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1320978124-13042-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1320978124-13042-1-git-send-email-ddaney.cavm@gmail.com>
+	id S1756792Ab1KKC0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 21:26:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59329 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756746Ab1KKCZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 21:25:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="73849432"
+Subject: Re: [PATCH v2 0/4] ata port runtime power management support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>, Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <20111110153132.GD27258@google.com>
+References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
+	 <20111110153036.GC27258@google.com>  <20111110153132.GD27258@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Nov 2011 10:25:56 +0800
+Message-ID: <1320978356.32515.11.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Thu, 2011-11-10 at 23:31 +0800, Tejun Heo wrote:
+> Ooh, by the way, can you please write more about how you tested it?
 
-This code is not common enough to be in a shared file.  It is also not
-used by any existing boards, so just remove it.
+I have 2 disks installed.
+sda installs the OS. I use sdb to test ata port runtime PM.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/kernel/prom.c |   50 -----------------------------------------------
- 1 files changed, 0 insertions(+), 50 deletions(-)
+# set "auto" to enable disk runtime PM
+# echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata3/host2/target2:0:0/2:0:0:0/power/control
 
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index 6b8b420..04bf462 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -59,53 +59,3 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
- 	initrd_below_start_ok = 1;
- }
- #endif
--
--/*
-- * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
-- *
-- * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
-- * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
-- * supported.
-- */
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
--{
--	return intspec[0];
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
--
--void __init early_init_devtree(void *params)
--{
--	/* Setup flat device-tree pointer */
--	initial_boot_params = params;
--
--	/* Retrieve various informations from the /chosen node of the
--	 * device-tree, including the platform type, initrd location and
--	 * size, and more ...
--	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, arcs_cmdline);
--
--
--	/* Scan memory nodes */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--	of_scan_flat_dt(early_init_dt_scan_memory_arch, NULL);
--}
--
--void __init device_tree_init(void)
--{
--	unsigned long base, size;
--
--	if (!initial_boot_params)
--		return;
--
--	base = virt_to_phys((void *)initial_boot_params);
--	size = be32_to_cpu(initial_boot_params->totalsize);
--
--	/* Before we do anything, lets reserve the dt blob */
--	reserve_mem_mach(base, size);
--
--	unflatten_device_tree();
--
--	/* free the space reserved for the dt blob */
--	free_mem_mach(base, size);
--}
--- 
-1.7.2.3
+mount sdb1 causes ata port resume
+
+umount sdb1 causes ata port suspend
+
+> 
+> Thanks.
+> 
+
 
