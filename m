@@ -1,47 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab1KKMEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 07:04:22 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35834 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab1KKMEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 07:04:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
-Subject: Re: [BUG] NULL deref in swapin_readahead
-Date: Fri, 11 Nov 2011 13:07:02 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: len.brown@intel.com, pavel@ucw.cz, linux-kernel@vger.kernel.org
-References: <4EBD0767.8040901@cwi.nl>
-In-Reply-To: <4EBD0767.8040901@cwi.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1755848Ab1KKMJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 07:09:29 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:43987 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751689Ab1KKMJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 07:09:28 -0500
+Message-ID: <1321013367.6676.13.camel@Joe-Laptop>
+Subject: Mercurial linux-kernel repository at kernel.org?
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mackall <mpm@selenic.com>, mercurial@selenic.com, warthog9@kernel.org
+Date: Fri, 11 Nov 2011 04:09:27 -0800
+In-Reply-To: <1320998367.16747.127.camel@dagon.hellion.org.uk>
+References: <1320998367.16747.127.camel@dagon.hellion.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111111307.02203.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 11, 2011, Wouter M. Koolen wrote:
-> Hi suspend gurus,
-> 
-> I got the attached NULL deref while closing and immediately reopening my 
-> laptop lid. The laptop is configured to suspend to RAM.
-> 
-> Google yields nothing similar for "unable to handle kernel NULL pointer 
-> dereference" "swapin_readahead" "radix_tree_lookup", so I guess this is 
-> an as-yet unknown problem. If not, please excuse the noise.
-> 
-> Kernel (vanilla 3.1.0) config attached. The laptop is a MacBook4,1.
-> 
-> The machine goes on to print a series of soft lockup reports, but I 
-> assumed they are PTSD and omited them.
+Prior to intrusion, a mercurial repository essentially
+duplicating the Linus' git tree existed at:
+http://www.kernel.com/hg/linux-2.6
 
-Well, the trace doesn't indicate how the problem is related to the
-suspend/resume code paths.
+I do not use it, but are there any plans to restore it?
 
-Is this a regression for you?
-
-Thanks,
-Rafael
