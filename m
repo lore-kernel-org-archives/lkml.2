@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757137Ab1KKLh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 06:37:27 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:50479 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754261Ab1KKLh0 (ORCPT
+	id S1757287Ab1KKLkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 06:40:20 -0500
+Received: from gimli.pitney-fabs.co.uk ([87.106.140.52]:38625 "EHLO
+	gimli.pitney-fabs.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285Ab1KKLkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 06:37:26 -0500
-Message-ID: <4EBD08E7.3080608@st.com>
-Date: Fri, 11 Nov 2011 17:07:11 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Fri, 11 Nov 2011 06:40:19 -0500
+Date: Fri, 11 Nov 2011 11:40:15 +0000
+From: Andrew Walrond <andrew@walrond.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: eth0/1 swapped places after kernel Upgrade 3.0.8 -> 3.1.0 (and
+ udev 172 -> 174)
+Message-ID: <20111111114014.GA1962@andrews-imac.pitney-fabs>
+References: <20111102101404.GA5195@andrew-xps.home>
 MIME-Version: 1.0
-To: Rabin Vincent <rabin@rab.in>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 0/2] mfd/stmpe: Add SPI interface support
-References: <cover.1320735864.git.viresh.kumar@st.com> <CAH+eYFAsLVU8A=m1Y1xm2YDRXhL1EGzxB-OcNQNd+w0tjMBZPA@mail.gmail.com> <4EBCF8FC.5020504@st.com> <CAH+eYFCvoy2eubAQkXROZVC7eNph58ohtdsP1pETLuS-6QExtQ@mail.gmail.com>
-In-Reply-To: <CAH+eYFCvoy2eubAQkXROZVC7eNph58ohtdsP1pETLuS-6QExtQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102101404.GA5195@andrew-xps.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2011 5:02 PM, Rabin Vincent wrote:
-> On Fri, Nov 11, 2011 at 15:59, Viresh Kumar <viresh.kumar@st.com> wrote:
->> On 11/11/2011 3:13 PM, Rabin Vincent wrote:
->>> Could you instead convert stmpe to use the register map API, and then
->>> add the SPI interface?  Converting to regmap should both simplify the
->>> existing code as well as make it possible to add the second interface
->>> with fewer lines of code.
->>
->> Sorry Rabin, but i couldn't get your comment completely. :(
->> Can you please spend few lines on "what do you mean by register map API"?
+On Wed, Nov 02, 2011 at 10:14:04AM +0000, Andrew Walrond wrote:
+> Not sure if this is a udev or kernel issue, or indeed whether I
+>  should expect these devices to have persistent naming at all
+>  without some udev configuration of my own, but I thought I'd
+>  report it just in case it's useful.
 > 
-> drivers/base/regmap, added in b83a313bf25 ("regmap: Add generic
-> non-memory mapped register access API").
+> Output from lspci:
 > 
-> Several MFDs are already using it (git grep regmap drivers/mfd/), and
-> patches to convert more are making the rounds on the lists.
+> 03:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
+> 07:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
+> 
 
-Ok. Got it now. :)
+It's worse than I thought; eth0/eth1 are randomly swapping places on boot.
+Is this likely to be a kernel or udev problem?
 
-Can we get this patchset pushed as it is and i will do this regmap stuff
-later in a separate patchset? Actually i am a bit busy currently with
-some other activities and can come back to it after some time.
+Relevant kernel messages:
 
--- 
-viresh
+bnx2: Broadcom NetXtreme II Gigabit Ethernet Driver bnx2 v2.1.11 (July 20, 2011)
+bnx2 0000:03:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+bnx2 0000:03:00.0: eth0: Broadcom NetXtreme II BCM5708 1000Base-T (B2) PCI-X 64-bit 133MHz found at mem f8000000, IRQ 16, node addr 00:1d:09:64:ae:03
+bnx2 0000:07:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+bnx2 0000:07:00.0: eth1: Broadcom NetXtreme II BCM5708 1000Base-T (B2) PCI-X 64-bit 133MHz found at mem f4000000, IRQ 16, node addr 00:1d:09:64:ae:05
+bnx2 0000:03:00.0: irq 47 for MSI/MSI-X
+bnx2 0000:03:00.0: eth0: using MSI
+bnx2 0000:03:00.0: eth0: NIC Copper Link is Up, 100 Mbps full duplex, receive & transmit flow control ON
+bnx2 0000:07:00.0: irq 48 for MSI/MSI-X
+bnx2 0000:07:00.0: eth1: using MSI
+bnx2 0000:07:00.0: eth1: NIC Copper Link is Up, 1000 Mbps full duplex, receive & transmit flow control ON
+
+
+Please let me know if I need to redirect this elsewhere.
+
+> Andrew Walrond
+> 
