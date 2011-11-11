@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab1KKDmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 22:42:52 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39684 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756921Ab1KKDmt (ORCPT
+	id S1757119Ab1KKDmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 22:42:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42441 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab1KKDmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Nov 2011 22:42:49 -0500
-Message-ID: <4EBC99B1.1030008@gmail.com>
-Date: Fri, 11 Nov 2011 11:42:41 +0800
-From: Xiao Guangrong <xiao.grong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the input tree with the s5p tree
+Date: Thu, 10 Nov 2011 19:42:28 -0800
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+References: <20111111131147.3f7ab8c9f14a7d87cc83b5ac@canb.auug.org.au>
+In-Reply-To: <20111111131147.3f7ab8c9f14a7d87cc83b5ac@canb.auug.org.au>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
-References: <4E7AF758.7060900@cn.fujitsu.com> <20111006175333.GA3959@amt.cnet> <4E8FCC37.8090409@cn.fujitsu.com> <4E91926D.8060206@redhat.com> <4E91A3AA.1000309@redhat.com> <4E940018.1010908@cn.fujitsu.com> <4EB3AD54.9050605@gmail.com> <4EB6A958.9030007@redhat.com> <4EBBD190.2020404@gmail.com> <4EBBDA3B.9040504@redhat.com>
-In-Reply-To: <4EBBDA3B.9040504@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111101942.28673.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2011 10:05 PM, Avi Kivity wrote:
-> On 11/10/2011 03:28 PM, Xiao Guangrong wrote:
->>
->> I have tested RHEL.6.1 setup/boot/reboot/shutdown and the complete
->> output of scan_results.py is attached.
->>
->> The result shows the performance is improved:
->> before:            After:
->> 570            529
->> 555            538
->> 552            531
->> 546            528
->> 553            559
->> 553            527
->> 550            523
->> 553            533
->> 547            538
->> 550            526
->>
->> How do you think about it? :)
->
-> Well, either I was sloppy in my measurements, or maybe RHEL 6 is very
-> different from F9 (unlikely).  I'll measure it again and see.
->
+On Thursday, November 10, 2011 06:11:47 PM Stephen Rothwell wrote:
+> Hi Dmitry,
+> 
+> Today's linux-next merge of the input tree got a conflict in
+> drivers/input/keyboard/samsung-keypad.c between commit 532f74540134
+> ("input: samsung-keypad: Add device tree support") from the s5p tree and
+> commit 400bf2995be6 ("Input: samsung-keypad - switch to using
+> SIMPLE_DEV_PM_OPS") from the input tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Thanks for your time. :)
 
-> btw, this is with ept=0, yes?
->
+Yep, looks good, thanks Stephen.
 
-Yeah.
+-- 
+Dmitry
