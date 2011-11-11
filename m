@@ -1,166 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab1KKQIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 11:08:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932792Ab1KKQIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 11:08:02 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] KEYS: Allow special keyrings to be cleared
-To: jmorris@redhat.com
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 11 Nov 2011 16:07:53 +0000
-Message-ID: <20111111160753.5190.36069.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932895Ab1KKQI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 11:08:27 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49637 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932792Ab1KKQIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 11:08:25 -0500
+Message-ID: <4EBD4868.7040809@gmail.com>
+Date: Fri, 11 Nov 2011 10:08:08 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: ddaney.cavm@gmail.com
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 3/8] MIPS: Octeon: Add irq_create_of_mapping() and GPIO
+ interrupts.
+References: <1320978124-13042-1-git-send-email-ddaney.cavm@gmail.com> <1320978124-13042-4-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1320978124-13042-4-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel contains some special internal keyrings, for instance the DNS
-resolver keyring :
+On 11/10/2011 08:21 PM, ddaney.cavm@gmail.com wrote:
+> From: David Daney <david.daney@cavium.com>
+> 
+> This is needed for Octeon to use the Device Tree.
+> 
+> The GPIO interrupts are configured based on Device Tree properties
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+>  arch/mips/cavium-octeon/octeon-irq.c |  188 +++++++++++++++++++++++++++++++++-
+>  1 files changed, 187 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+> index ffd4ae6..bb10546 100644
+> --- a/arch/mips/cavium-octeon/octeon-irq.c
+> +++ b/arch/mips/cavium-octeon/octeon-irq.c
+> @@ -8,11 +8,14 @@
+>  
+>  #include <linux/interrupt.h>
+>  #include <linux/bitops.h>
+> +#include <linux/module.h>
+>  #include <linux/percpu.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/irq.h>
+>  #include <linux/smp.h>
+>  
+>  #include <asm/octeon/octeon.h>
+> +#include <asm/octeon/cvmx-gpio-defs.h>
+>  
+>  static DEFINE_RAW_SPINLOCK(octeon_irq_ciu0_lock);
+>  static DEFINE_RAW_SPINLOCK(octeon_irq_ciu1_lock);
+> @@ -58,6 +61,95 @@ static void __init octeon_irq_set_ciu_mapping(int irq, int line, int bit,
+>  	octeon_irq_ciu_to_irq[line][bit] = irq;
+>  }
+>  
+> +static unsigned int octeon_irq_gpio_mapping(struct device_node *controller,
+> +					    const u32 *intspec,
+> +					    unsigned int intsize)
+> +{
+> +	struct of_irq oirq;
+> +	int i;
+> +	unsigned int irq = 0;
+> +	unsigned int type;
+> +	unsigned int ciu = 0, bit = 0;
+> +	unsigned int pin = be32_to_cpup(intspec);
+> +	unsigned int trigger = be32_to_cpup(intspec + 1);
+> +	bool set_edge_handler = false;
+> +
+> +	if (pin >= 16)
+> +		goto err;
+> +	i = of_irq_map_one(controller, 0, &oirq);
+> +	if (i)
+> +		goto err;
+> +	if (oirq.size != 2)
+> +		goto err_put;
+> +
+> +	ciu = oirq.specifier[0];
+> +	bit = oirq.specifier[1] + pin;
+> +
+> +	if (ciu >= 8 || bit >= 64)
+> +		goto err_put;
+> +
+> +	irq = octeon_irq_ciu_to_irq[ciu][bit];
+> +	if (!irq)
+> +		goto err_put;
+> +
+> +	switch (trigger & 0xf) {
+> +	case 1:
+> +		type = IRQ_TYPE_EDGE_RISING;
+> +		set_edge_handler = true;
+> +		break;
+> +	case 2:
+> +		type = IRQ_TYPE_EDGE_FALLING;
+> +		set_edge_handler = true;
+> +		break;
+> +	case 4:
+> +		type = IRQ_TYPE_LEVEL_HIGH;
+> +		break;
+> +	case 8:
+> +		type = IRQ_TYPE_LEVEL_LOW;
+> +		break;
+> +	default:
+> +		pr_err("Error: Invalid irq trigger specification: %x\n",
+> +		       trigger);
+> +		type = IRQ_TYPE_LEVEL_LOW;
+> +		break;
+> +	}
+> +
+> +	irq_set_irq_type(irq, type);
+> +
+> +	if (set_edge_handler)
+> +		__irq_set_handler(irq, handle_edge_irq, 0, NULL);
+> +
+> +err_put:
+> +	of_node_put(oirq.controller);
+> +err:
+> +	return irq;
+> +}
+> +
+> +/*
+> + * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
+> + *
+> + * Octeon irq maps are a pair of indexes.  The first selects either
+> + * ciu0 or ciu1, the second is the bit within the ciu register.
+> + */
+> +unsigned int irq_create_of_mapping(struct device_node *controller,
+> +				   const u32 *intspec, unsigned int intsize)
+> +{
+> +	unsigned int irq = 0;
+> +	unsigned int ciu, bit;
+> +
+> +	if (of_device_is_compatible(controller, "cavium,octeon-3860-gpio"))
+> +		return octeon_irq_gpio_mapping(controller, intspec, intsize);
+> +
+> +	ciu = be32_to_cpup(intspec);
+> +	bit = be32_to_cpup(intspec + 1);
+> +
+> +	if (ciu < 8 && bit < 64)
+> +		irq = octeon_irq_ciu_to_irq[ciu][bit];
+> +
+> +	return irq;
+> +}
+> +EXPORT_SYMBOL_GPL(irq_create_of_mapping);
 
-2a93faf1 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: empty
+Have you looked at irq_domains (kernel/irq/irqdomain.c)? That is what
+you should be using for your (gpio) interrupt controller and then use
+the common irq_create_of_mapping.
 
-It would occasionally be useful to allow the contents of such keyrings to be
-flushed by root (cache invalidation).
+Rob
 
-Allow a flag to be set on a keyring to mark that someone possessing the
-sysadmin capability can clear the keyring, even without normal write access to
-the keyring.
-
-Set this flag on the special keyrings created by the DNS resolver, the NFS
-identity mapper and the CIFS identity mapper.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: Steve Dickson <steved@redhat.com>
----
-
- Documentation/networking/dns_resolver.txt |    4 ++++
- Documentation/security/keys.txt           |    4 ++++
- fs/cifs/cifsacl.c                         |    1 +
- fs/nfs/idmap.c                            |    1 +
- include/linux/key.h                       |    1 +
- net/dns_resolver/dns_key.c                |    1 +
- security/keys/keyctl.c                    |   15 ++++++++++++++-
- 7 files changed, 26 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/networking/dns_resolver.txt b/Documentation/networking/dns_resolver.txt
-index 7f531ad..d86adcd 100644
---- a/Documentation/networking/dns_resolver.txt
-+++ b/Documentation/networking/dns_resolver.txt
-@@ -102,6 +102,10 @@ implemented in the module can be called after doing:
-      If _expiry is non-NULL, the expiry time (TTL) of the result will be
-      returned also.
- 
-+The kernel maintains an internal keyring in which it caches looked up keys.
-+This can be cleared by any process that has the CAP_SYS_ADMIN capability by
-+the use of KEYCTL_KEYRING_CLEAR on the keyring ID.
-+
- 
- ===============================
- READING DNS KEYS FROM USERSPACE
-diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
-index 4d75931..713ec23 100644
---- a/Documentation/security/keys.txt
-+++ b/Documentation/security/keys.txt
-@@ -554,6 +554,10 @@ The keyctl syscall functions are:
-      process must have write permission on the keyring, and it must be a
-      keyring (or else error ENOTDIR will result).
- 
-+     This function can also be used to clear special kernel keyrings if they
-+     are appropriately marked if the user has CAP_SYS_ADMIN capability.  The
-+     DNS resolver cache keyring is an example of this.
-+
- 
-  (*) Link a key into a keyring:
- 
-diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
-index 72ddf23..854749d 100644
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -556,6 +556,7 @@ init_cifs_idmap(void)
- 
- 	/* instruct request_key() to use this special keyring as a cache for
- 	 * the results it looks up */
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	root_cred = cred;
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 47d1c6f..d5a80f8 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -115,6 +115,7 @@ int nfs_idmap_init(void)
- 	if (ret < 0)
- 		goto failed_put_key;
- 
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	id_resolver_cache = cred;
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 183a6af..3ac4128 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -155,6 +155,7 @@ struct key {
- #define KEY_FLAG_IN_QUOTA	3	/* set if key consumes quota */
- #define KEY_FLAG_USER_CONSTRUCT	4	/* set if key is being constructed in userspace */
- #define KEY_FLAG_NEGATIVE	5	/* set if key is negative */
-+#define KEY_FLAG_ROOT_CAN_CLEAR	6	/* set if key can be cleared by root without permission */
- 
- 	/* the description string
- 	 * - this is used to match a key against search criteria
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index fa000d2..c73bba3 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -281,6 +281,7 @@ static int __init init_dns_resolver(void)
- 
- 	/* instruct request_key() to use this special keyring as a cache for
- 	 * the results it looks up */
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
- 	cred->thread_keyring = keyring;
- 	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
- 	dns_resolver_cache = cred;
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 0b3f5d7..6523599 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -388,11 +388,24 @@ long keyctl_keyring_clear(key_serial_t ringid)
- 	keyring_ref = lookup_user_key(ringid, KEY_LOOKUP_CREATE, KEY_WRITE);
- 	if (IS_ERR(keyring_ref)) {
- 		ret = PTR_ERR(keyring_ref);
-+
-+		/* Root is permitted to invalidate certain special keyrings */
-+		if (capable(CAP_SYS_ADMIN)) {
-+			keyring_ref = lookup_user_key(ringid, 0, 0);
-+			if (IS_ERR(keyring_ref))
-+				goto error;
-+			if (test_bit(KEY_FLAG_ROOT_CAN_CLEAR,
-+				     &key_ref_to_ptr(keyring_ref)->flags))
-+				goto clear;
-+			goto error_put;
-+		}
-+
- 		goto error;
- 	}
- 
-+clear:
- 	ret = keyring_clear(key_ref_to_ptr(keyring_ref));
--
-+error_put:
- 	key_ref_put(keyring_ref);
- error:
- 	return ret;
+> +
+>  static int octeon_coreid_for_cpu(int cpu)
+>  {
+>  #ifdef CONFIG_SMP
+> @@ -505,6 +597,72 @@ static void octeon_irq_ciu_enable_all_v2(struct irq_data *data)
+>  	}
+>  }
+>  
+> +static void octeon_irq_gpio_setup(struct irq_data *data)
+> +{
+> +	union cvmx_gpio_bit_cfgx cfg;
+> +	int bit = data->irq - OCTEON_IRQ_GPIO0;
+> +	u32 t = irqd_get_trigger_type(data);
+> +
+> +	cfg.u64 = 0;
+> +	cfg.s.int_en = 1;
+> +	cfg.s.int_type = (t & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING)) != 0;
+> +	cfg.s.rx_xor = (t & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_EDGE_FALLING)) != 0;
+> +
+> +	/* 1 uS glitch filter*/
+> +	cfg.s.fil_cnt = 7;
+> +	cfg.s.fil_sel = 3;
+> +
+> +	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), cfg.u64);
+> +}
+> +
+> +static void octeon_irq_ciu_enable_gpio_v2(struct irq_data *data)
+> +{
+> +	octeon_irq_gpio_setup(data);
+> +	octeon_irq_ciu_enable_v2(data);
+> +}
+> +
+> +static void octeon_irq_ciu_enable_gpio(struct irq_data *data)
+> +{
+> +	octeon_irq_gpio_setup(data);
+> +	octeon_irq_ciu_enable(data);
+> +}
+> +
+> +static int octeon_irq_ciu_gpio_set_type(struct irq_data *data, unsigned int t)
+> +{
+> +	u32 current_type = irqd_get_trigger_type(data);
+> +
+> +	/* If the type has been set, don't change it */
+> +	if (current_type && current_type != t)
+> +		return -EINVAL;
+> +
+> +	irqd_set_trigger_type(data, t);
+> +	return IRQ_SET_MASK_OK;
+> +}
+> +
+> +static void octeon_irq_ciu_disable_gpio_v2(struct irq_data *data)
+> +{
+> +	int bit = data->irq - OCTEON_IRQ_GPIO0;
+> +	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), 0);
+> +
+> +	octeon_irq_ciu_disable_all_v2(data);
+> +}
+> +
+> +static void octeon_irq_ciu_disable_gpio(struct irq_data *data)
+> +{
+> +	int bit = data->irq - OCTEON_IRQ_GPIO0;
+> +	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), 0);
+> +
+> +	octeon_irq_ciu_disable_all(data);
+> +}
+> +
+> +static void octeon_irq_ciu_gpio_ack(struct irq_data *data)
+> +{
+> +	int bit = data->irq - OCTEON_IRQ_GPIO0;
+> +	u64 mask = 1ull << bit;
+> +
+> +	cvmx_write_csr(CVMX_GPIO_INT_CLR, mask);
+> +}
+> +
+>  #ifdef CONFIG_SMP
+>  
+>  static void octeon_irq_cpu_offline_ciu(struct irq_data *data)
+> @@ -717,6 +875,31 @@ static struct irq_chip octeon_irq_chip_ciu_mbox = {
+>  	.flags = IRQCHIP_ONOFFLINE_ENABLED,
+>  };
+>  
+> +static struct irq_chip octeon_irq_chip_ciu_gpio_v2 = {
+> +	.name = "CIU-GPIO",
+> +	.irq_enable = octeon_irq_ciu_enable_gpio_v2,
+> +	.irq_disable = octeon_irq_ciu_disable_gpio_v2,
+> +	.irq_ack = octeon_irq_ciu_gpio_ack,
+> +	.irq_mask = octeon_irq_ciu_disable_local_v2,
+> +	.irq_unmask = octeon_irq_ciu_enable_v2,
+> +	.irq_set_type = octeon_irq_ciu_gpio_set_type,
+> +#ifdef CONFIG_SMP
+> +	.irq_set_affinity = octeon_irq_ciu_set_affinity_v2,
+> +#endif
+> +};
+> +
+> +static struct irq_chip octeon_irq_chip_ciu_gpio = {
+> +	.name = "CIU-GPIO",
+> +	.irq_enable = octeon_irq_ciu_enable_gpio,
+> +	.irq_disable = octeon_irq_ciu_disable_gpio,
+> +	.irq_mask = octeon_irq_dummy_mask,
+> +	.irq_ack = octeon_irq_ciu_gpio_ack,
+> +	.irq_set_type = octeon_irq_ciu_gpio_set_type,
+> +#ifdef CONFIG_SMP
+> +	.irq_set_affinity = octeon_irq_ciu_set_affinity,
+> +#endif
+> +};
+> +
+>  /*
+>   * Watchdog interrupts are special.  They are associated with a single
+>   * core, so we hardwire the affinity to that core.
+> @@ -890,6 +1073,7 @@ static void __init octeon_irq_init_ciu(void)
+>  	struct irq_chip *chip_edge;
+>  	struct irq_chip *chip_mbox;
+>  	struct irq_chip *chip_wd;
+> +	struct irq_chip *chip_gpio;
+>  
+>  	octeon_irq_init_ciu_percpu();
+>  	octeon_irq_setup_secondary = octeon_irq_setup_secondary_ciu;
+> @@ -904,6 +1088,7 @@ static void __init octeon_irq_init_ciu(void)
+>  		chip_edge = &octeon_irq_chip_ciu_edge_v2;
+>  		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
+>  		chip_wd = &octeon_irq_chip_ciu_wd_v2;
+> +		chip_gpio = &octeon_irq_chip_ciu_gpio_v2;
+>  	} else {
+>  		octeon_irq_ip2 = octeon_irq_ip2_v1;
+>  		octeon_irq_ip3 = octeon_irq_ip3_v1;
+> @@ -911,6 +1096,7 @@ static void __init octeon_irq_init_ciu(void)
+>  		chip_edge = &octeon_irq_chip_ciu_edge;
+>  		chip_mbox = &octeon_irq_chip_ciu_mbox;
+>  		chip_wd = &octeon_irq_chip_ciu_wd;
+> +		chip_gpio = &octeon_irq_chip_ciu_gpio;
+>  	}
+>  	octeon_irq_ip4 = octeon_irq_ip4_mask;
+>  
+> @@ -921,7 +1107,7 @@ static void __init octeon_irq_init_ciu(void)
+>  	for (i = 0; i < 16; i++)
+>  		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0, chip, handle_level_irq);
+>  	for (i = 0; i < 16; i++)
+> -		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip, handle_level_irq);
+> +		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip_gpio, handle_level_irq);
+>  
+>  	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
+>  	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
 
