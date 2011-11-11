@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab1KKLkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 06:40:20 -0500
-Received: from gimli.pitney-fabs.co.uk ([87.106.140.52]:38625 "EHLO
-	gimli.pitney-fabs.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285Ab1KKLkT (ORCPT
+	id S1756736Ab1KKLmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 06:42:11 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46808 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754326Ab1KKLmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 06:40:19 -0500
-Date: Fri, 11 Nov 2011 11:40:15 +0000
-From: Andrew Walrond <andrew@walrond.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: eth0/1 swapped places after kernel Upgrade 3.0.8 -> 3.1.0 (and
- udev 172 -> 174)
-Message-ID: <20111111114014.GA1962@andrews-imac.pitney-fabs>
-References: <20111102101404.GA5195@andrew-xps.home>
+	Fri, 11 Nov 2011 06:42:08 -0500
+Message-ID: <4EBD09FF.4030002@linux.vnet.ibm.com>
+Date: Fri, 11 Nov 2011 17:11:51 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111102101404.GA5195@andrew-xps.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, len.brown@intel.com,
+        tglx@linutronix.de, jeremy@goop.org, hpa@zytor.com, bp@alien8.de,
+        tj@kernel.org, trenn@suse.de, mingo@redhat.com,
+        xen-devel@lists.xensource.com, stable@kernel.org
+Subject: Re: [PATCH 1/3] cpuidle: If disable_cpuidle() is called, set pm_idle
+ to default_idle.
+References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com> <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com> <4EBA53C5.9040603@linux.vnet.ibm.com> <20111109144440.GB8410@phenom.dumpdata.com>
+In-Reply-To: <20111109144440.GB8410@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111111-7282-0000-0000-000003A87344
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 10:14:04AM +0000, Andrew Walrond wrote:
-> Not sure if this is a udev or kernel issue, or indeed whether I
->  should expect these devices to have persistent naming at all
->  without some udev configuration of my own, but I thought I'd
->  report it just in case it's useful.
+
+
+On Wednesday 09 November 2011 08:14 PM, Konrad Rzeszutek Wilk wrote:
+> . snip..
+>>>
+>>>      ..scribble on pm_idle and access default_idle,
+>>>     have it simply disable_cpuidle() so acpi_idle will not load and
+>>>     architecture default HLT will be used.
+>>>
+>>> .. but the default HLT does not get used. Instead we end up in the
 > 
-> Output from lspci:
+> Hey Deepthi,
 > 
-> 03:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
-> 07:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
+>>> +	if (cpuidle_disabled()) {
+>>> +		pm_idle = default_idle;
+>>> +		return;
+>>> +	}
+>>
+>>
+>> The above check is needed to initialise pm_idle to default_idle if
+>> cpuidle is disabled but this requirement here is Zen specific. 
+>> On other architectures, if cpuidle is disabled on boot then we 
+>> rather would want mwait_idle or amd_e400_idle to be enabled than 
+>> default_idle. Can we make this check Zen specific ? 
 > 
+> We do? Why? I would have thought that if you want to disable the cpuidle
+> you would want the default_idle. 
 
-It's worse than I thought; eth0/eth1 are randomly swapping places on boot.
-Is this likely to be a kernel or udev problem?
+Well I was with a view that if cpuidle is disabled, mwait and arm_e400
+would take precedence over default_idle. But if is ok to have default_idle instead,
+then go ahead. 
 
-Relevant kernel messages:
-
-bnx2: Broadcom NetXtreme II Gigabit Ethernet Driver bnx2 v2.1.11 (July 20, 2011)
-bnx2 0000:03:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-bnx2 0000:03:00.0: eth0: Broadcom NetXtreme II BCM5708 1000Base-T (B2) PCI-X 64-bit 133MHz found at mem f8000000, IRQ 16, node addr 00:1d:09:64:ae:03
-bnx2 0000:07:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-bnx2 0000:07:00.0: eth1: Broadcom NetXtreme II BCM5708 1000Base-T (B2) PCI-X 64-bit 133MHz found at mem f4000000, IRQ 16, node addr 00:1d:09:64:ae:05
-bnx2 0000:03:00.0: irq 47 for MSI/MSI-X
-bnx2 0000:03:00.0: eth0: using MSI
-bnx2 0000:03:00.0: eth0: NIC Copper Link is Up, 100 Mbps full duplex, receive & transmit flow control ON
-bnx2 0000:07:00.0: irq 48 for MSI/MSI-X
-bnx2 0000:07:00.0: eth1: using MSI
-bnx2 0000:07:00.0: eth1: NIC Copper Link is Up, 1000 Mbps full duplex, receive & transmit flow control ON
-
-
-Please let me know if I need to redirect this elsewhere.
-
-> Andrew Walrond
+> Perhaps there is another way do this is:
 > 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index becd6d9..04b10a4 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -38,6 +38,7 @@ int cpuidle_disabled(void)
+>  void disable_cpuidle(void)
+>  {
+>  	off = 1;
+> +	pm_idle = default_idle;
+>  }
+> 
+Brining pm_idle pointer back to cpuidle code is going a step back coz
+we wanted to complete remove using pm_idle going forward. As having 
+a pointer exported into various files is not a good thing. That's the 
+reason we started the clean up in the first place :) 
+
+> which would do almost the same thing as this patch (well, except
+> that if you run cpuidle.off=1 you still end up with amd_e400_idle
+> instead of default_idle, so it is not the complete solution).
+> 
+>>
+>> ...  if(ZEN_ARCH && cpuidle_disabled()) ... 
+> 
+> That would not work very well. For one thing you would need to call
+> 'xen_domain()', and pull in a lots of header files. Second of, it
+> looks quite ugly and kernel folks like pretty code.
+> 
+Yes, I agree to this. 
+
