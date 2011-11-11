@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab1KKVGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 16:06:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40673 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab1KKVGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 16:06:41 -0500
-Message-ID: <4EBD8E5F.1010200@kernel.dk>
-Date: Fri, 11 Nov 2011 22:06:39 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1758205Ab1KKVXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 16:23:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:36414 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751923Ab1KKVXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 16:23:45 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Tomas M." <tmezzadra@gmail.com>
+Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on laptop.
+Date: Fri, 11 Nov 2011 22:26:24 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com, j-pihet@ti.com,
+        khilman@ti.com, arjan@linux.intel.com, len.brown@intel.com,
+        Arjan van de Ven <arjan@infradead.org>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <4EBD46DF.6060507@gmail.com> <4EBD89A8.7070503@gmail.com>
+In-Reply-To: <4EBD89A8.7070503@gmail.com>
 MIME-Version: 1.0
-To: Mike Miller <mike.miller@hp.com>
-CC: Matthew Garrett <mjg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ISS StorageDev <iss_storagedev@hp.com>
-Subject: Re: [PATCH V2 4/6] block/cciss: Disable ASPM
-References: <1321028064-644-1-git-send-email-mjg@redhat.com> <1321028064-644-5-git-send-email-mjg@redhat.com> <4EBD4A31.2070609@hp.com>
-In-Reply-To: <4EBD4A31.2070609@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111112226.25265.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-11 17:15, Mike Miller wrote:
-> On 11/11/2011 10:14 AM, Matthew Garrett wrote:
->> The Windows driver .inf disables ASPM on all cciss devices. Do the same.
->>
->> Signed-off-by: Matthew Garrett<mjg@redhat.com>
->> Cc: mike.miller@hp.com
->> Cc: iss_storagedev@hp.com
->> Cc: axboe@kernel.dk
->> ---
->>   drivers/block/cciss.c |    5 +++++
->>   1 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
->> index 486f94e..92d8a2f 100644
->> --- a/drivers/block/cciss.c
->> +++ b/drivers/block/cciss.c
->> @@ -24,6 +24,7 @@
->>   #include<linux/interrupt.h>
->>   #include<linux/types.h>
->>   #include<linux/pci.h>
->> +#include<linux/pci-aspm.h>
->>   #include<linux/kernel.h>
->>   #include<linux/slab.h>
->>   #include<linux/delay.h>
->> @@ -4319,6 +4320,10 @@ static int __devinit cciss_pci_init(ctlr_info_t *h)
->>           dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
->>           return -ENODEV;
->>       }
->> +
->> +    pci_disable_link_state(h->pdev, PCIE_LINK_STATE_L0S |
->> +                   PCIE_LINK_STATE_L1 | PCIE_LINK_STATE_CLKPM);
->> +
->>       err = pci_enable_device(h->pdev);
->>       if (err) {
->>           dev_warn(&h->pdev->dev, "Unable to Enable PCI device\n");
+On Friday, November 11, 2011, Tomas M. wrote:
+> Follow up.
 > 
-> Acked-by: Mike Miller <mike.miller@hp.com>
+> 
+> reverted this and the following 3 commits from this patch set and the 
+> problem is gone.
+> 
+> 46bcfad7a819bd17ac4e831b04405152d59784ab
+> 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
+> b25edc42bfb9602f0503474b2c94701d5536ce60
+> e978aa7d7d57d04eb5f88a7507c4fb98577def77
+> 
+> they all seem to be related.
 
-Applied for 3.2, thanks.
+Does it help (without reverting the commits) if you put idle=poll into the
+kernel command line?
 
--- 
-Jens Axboe
+Rafael
+
+
+> On 11/11/2011 01:01 PM, Tomas M. wrote:
+> > bisected to e978aa7d7d57d04eb5f88a7507c4fb98577def77
+> >
+> > cannot revert the commit cleanly to further test
+> >
+> > attaching pm-suspend log.  /proc/cpuinfo and lspci -vvnn just in case. 
+> > If more info is needed, please let me know.
+> >
+> > thanks!
+> > ----
+> > when trying to suspend... the system locks right before suspending.
+> > sysrq keys  will not work at this point
+> >
+> >
+> > please include me in the CC since im not subscribed to the list.
+> >
+> > i CCed everyone mentioned in the commit. if you were CCed by mystake, 
+> > sorry.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
