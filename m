@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab1KKNMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 08:12:16 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:36701 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752014Ab1KKNMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 08:12:15 -0500
-Subject: Re: [PATCH v3] x86, efi: Calling __pa() with an ioremap'd address
- is invalid
-From: Matt Fleming <matt@console-pimps.org>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAC=cRTP5JxuYD2sU+cHi8yso68WTQREOboeQaeOPdqNMYorPkw@mail.gmail.com>
-References: <1320680088-2584-1-git-send-email-matt@console-pimps.org>
-	 <20111107202324.GA27515@srcf.ucam.org>
-	 <CAC=cRTP5JxuYD2sU+cHi8yso68WTQREOboeQaeOPdqNMYorPkw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Nov 2011 13:12:12 +0000
-Message-ID: <1321017132.3572.196.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1757837Ab1KKNMi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 08:12:38 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:54075
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756499Ab1KKNMg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 08:12:36 -0500
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Tabi Timur-B04825 <B04825@freescale.com>,
+        "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Baruch Siach <baruch@tkos.co.il>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anatolij Gustschin <agust@denx.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 02/17] powerpc: Split up PHYS_64BIT config option to
+ fix "select" issues
+Thread-Topic: [RFC PATCH 02/17] powerpc: Split up PHYS_64BIT config option
+ to fix "select" issues
+Thread-Index: AQHMnzzdhs3Oy1OOpUirq+wMQb9GQpWmJMiAgACN2oD//6CVAIABLeEAgACMJQA=
+Date: Fri, 11 Nov 2011 13:12:31 +0000
+Message-ID: <4EBD1F3E.2040402@freescale.com>
+References: <4E42AB6F.1050900@freescale.com>
+  <1320883635-17194-3-git-send-email-Kyle.D.Moffett@boeing.com>
+  <4EBBD9DF.6080100@freescale.com>
+  <501ACA94-491F-43A7-9DCF-485BEE824DD5@boeing.com>
+  <4EBC00D2.2030208@freescale.com> <1320987054.21206.55.camel@pasglop>
+In-Reply-To: <1320987054.21206.55.camel@pasglop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:7.0.1)
+ Gecko/20110928 Firefox/7.0.1 SeaMonkey/2.4.1
+x-originating-ip: [68.203.10.197]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <A419414BBD5C94438D000514307BDFB3@freescale.net>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-11 at 09:02 +0800, huang ying wrote:
-> On Tue, Nov 8, 2011 at 4:23 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > On Mon, Nov 07, 2011 at 03:34:48PM +0000, Matt Fleming wrote:
-> >
-> >> After the feedback from v1 I tried to unify the efi_ioremap()
-> >> implementations but ran into the issue detailed in the RH bug report
-> >> in the changelog. Unless we teach the x86 setup code that
-> >> EFI_RUNTIME_SERVICES_DATA regions should be part of the direct kernel
-> >> mapping table (even though they're marked as E820_RESERVED) I think
-> >> this patch makes the most sense.
-> >
-> > Honestly it seems like there may well be an argument for that. We're
-> > talking about executable code that the kernel will be calling - it seems
-> > theoretically neater for it to be added to the direct mapping. We're
-> > just heavily constrained by our collapsing of the EFI memory map onto
-> > the rather less fine-grained E820 one and the lack of any obvious way to
-> > extend that in an OS-specific manner. I guess we could expect the
-> > bootloader to conform to the standard and then re-walk the EFI memory
-> > map ourselves to fix things up, but eww...
-> 
-> Sorry for late.
-> 
-> Why ioremap_cache() can not work for some EFI_RUNTIME_SERVICES_DATA region?
+Benjamin Herrenschmidt wrote:
 
-It looks like ioremap_cache() maps the region with the NX bit set.
+> For PHYS_64BIT, I'm not 100% certain at this point what the best
+> approach it. It should clearly be fixed and hidden for real 64-bit. As
+> for the rest, should it be user selectable ?
+
+I have been unable to convince our BSP teams that the minor performance 
+improvement of a 32-bit kernel vs 36-bit is not worth the hassle.  We ship 
+a lot of lower-end e500 systems that will never have more than 2GB of memory.
+
+The P1022DS is an example.  We ship 32-bit and 36-bit versions of U-Boot, 
+the kernel, and the device tree.  I recently added code to U-boot to 
+detect if you have a mismatched U-Boot and device tree, because it is so 
+easy to mess that up.  I would like nothing more than to abandon 32-bit 
+for all e500, but I don't see Freescale allowing that any time soon.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Timur Tabi
+Linux kernel developer at Freescale
