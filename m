@@ -1,126 +1,374 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1KKBSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 20:18:09 -0500
-Received: from locusts.copyleft.no ([178.255.144.241]:52679 "EHLO
-	mail.mailgateway.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab1KKBSG (ORCPT
+	id S1755963Ab1KKBcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 20:32:18 -0500
+Received: from mail-ww0-f74.google.com ([74.125.82.74]:46853 "EHLO
+	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab1KKBcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 20:18:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <7v39dvuca4.fsf@alter.siamese.dyndns.org>
-References: <20111026202235.GA20928@havoc.gtf.org>
-	<1319969101.5215.20.camel@dabdike>
-	<CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
-	<1320049150.8283.19.camel@dabdike>
-	<CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
-	<7vy5w1ow90.fsf@alter.siamese.dyndns.org>
-	<CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
-	<7vwrbjlj5r.fsf@alter.siamese.dyndns.org>
-	<CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
-	<7vk47jld5s.fsf@alter.siamese.dyndns.org>
-	<CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
-	<CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
-	<CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
-	<CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
-	<7v62j1gitn.fsf@alter.siamese.dyndns.org>
-	<7vvcr1f38j.fsf@alter.siamese.dyndns.org>
-	<CA+55aFyRawm9CoJMiEXDFCX4YTidPOiV4oqSS2d7nNv7Ecw8BQ@mail.gmail.com>
-	<7v4nydurzh.fsf@alter.siamese.dyndns.org>
-	<CALKQrgfZtELcK3H5ZYvmcW8RrtKMVRACFTvw3s5SidFvmFWkGw@mail.gmail.com>
-	<7vaa84t3ek.fsf@alter.siamese.dyndns.org>
-	<CALKQrgdxEXQGKQ3t9Sh82=U933ypHNg8duyVmG9uJbg2iST5fw@mail.gmail.com>
-	<7v39dvuca4.fsf@alter.siamese.dyndns.org>
-Date: Fri, 11 Nov 2011 02:17:58 +0100
-Message-ID: <CALKQrgcJmPHZG0bbgwoH6_htQODYVJtXYyHgSb_7qRKkJkb2Yw@mail.gmail.com>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-From: Johan Herland <johan@herland.net>
-To: Junio C Hamano <junio@pobox.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Shawn Pearce <spearce@spearce.org>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Nov 2011 20:32:15 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v2 06/10] forcedeth: implement ndo_get_stats64() API
+Date: Thu, 10 Nov 2011 17:31:31 -0800
+Message-Id: <a5f2ece4715268a41f331f09f95aaa63e0557421.1320974990.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1320974990.git.david.decotigny@google.com>
+References: <cover.1320974990.git.david.decotigny@google.com>
+In-Reply-To: <cover.1320974990.git.david.decotigny@google.com>
+References: <cover.1320974990.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 18:18, Junio C Hamano <junio@pobox.com> wrote:
-> Johan Herland <johan@herland.net> writes:
->
->> What about having one notes ref per branch? If/when the branch is merged,
->> the associated notes ref containing the annotations for the commits on that
->> branch would be merged as well (using "git notes merge").
->
-> That is a crude workaround that you could (with help from users) make it
-> work, but it does not change the fact that the current mechanism to
-> transfer and integrate notes across repositories is a bad match for what
-> the "signed commit" type annotations wants to achieve. In fact, the need
-> for such a workaround is an illustration of how bad a match the mechanism
-> is.
->
-> When you merge a history that has commit A into another history that did
-> not have that commit, the act of creating a merge commit itself should be
-> enough to make the resulting history to contain that commit. The commit
-> DAG already expresses it, and if a parallel "notes" mechanism needs to be
-> futzed with to match that DAG, and command like "merge" needs to be told
-> to help that process, that is a shortcoming of the "notes" mechanism.
+This commit implements the ndo_get_stats64() API for forcedeth. Since
+these stats are being updated from different contexts (process and
+timer), this commit adds protection (locking + atomic variables).
 
-[ ...and from elsewhere in this thread: ]
-
-> Note that in this thread, I am not saying that "git notes" mechanism is
-> not good for anything. A tree whose node names encode an object name is a
-> valid way to store the mapping from that object to a set of other objects,
-> and we already agreed that as the "local" storage mechanism, "git notes"
-> may be used as-is for the purpose of this thread.
->
-> But the transfer and merge semantics "git notes" mechanism offers treats
-> the entire "notes" that appear in _one_ repository and merging that set to
-> the entire "notes" in another repository and it is not a good match for
-> the purpose of this thread.
-
-Ok. Point taken.
-
-Given that we need an alternative way to transfer annotations between
-repos (using auto-follow to select the relevant set of annotations, and
-then transferring only those annotations): Can we leverage existing
-functionality in "notes" where useful (e.g. using existing notes merge
-strategies to deal with colliding annotations), while at the same time
-extending the current "notes" feature with this alternative transfer
-mechanism? FWIW, I expect there are other "notes" use cases that
-would also prefer the auto-follow only-relevant transfer behavior.
-
-So, how can we use "notes" to better support the transfer semantics you
-suggest? The mapping from the object being annotated to the annotation
-object is already contained in the notes tree, but the "timestamp" you
-describe (needed to efficiently calculate the set of annotations to
-auto-follow) is not [1]. However, we could easily enough add a sorted
-list of (timestamp,  annotated object name) pairs, to allow fast lookup
-of annotations created after a given timestamp. We could even store this
-list in a blob or tree object referenced directly from the notes tree [2].
+Tested:
+  16-way SMP x86_64 ->
+  RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
 
 
-Have fun! :)
 
-...Johan
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |  155 +++++++++++++++++++++++--------
+ 1 files changed, 118 insertions(+), 37 deletions(-)
 
-
-[1]: Although I did at some point experiment with using timestamps in the
-internal organization of the notes tree (see for example
-http://article.gmane.org/gmane.comp.version-control.git/127966 ), I ended
-up using only the annotated object name (with flexible fanout). I don't
-think that reintroducing timestamps in the notes tree organization will
-pay off, because we need both lookup by annotated SHA1 and lookup by
-newer-than-given-timestamp to be fast, and there's AFAIK no way to get
-both from a single notes tree organzation.
-
-[2]: E.g. accessible with "git cat-file refs/notes/foo:timestamps". When
-a notes tree contains an entry that is obviously not an object name (SHA1),
-the notes code will leave it alone/untouched in the tree (see "struct
-non_note" and associated code in notes.c for further details).
-
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 1a1972b..cabc121 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -693,6 +693,21 @@ struct nv_ethtool_stats {
+ #define NV_DEV_STATISTICS_V2_COUNT (NV_DEV_STATISTICS_V3_COUNT - 3)
+ #define NV_DEV_STATISTICS_V1_COUNT (NV_DEV_STATISTICS_V2_COUNT - 6)
+ 
++/* driver statistics */
++struct nv_driver_stat {
++	atomic_t delta;  /* increase since last nv_update_stats() */
++	u64 total;  /* cumulative, requires netdev_priv(dev)->stats_lock */
++};
++
++#define NV_DRIVER_STAT_ATOMIC_INC(ptr_stat) /* atomic */ \
++	({ atomic_inc(&(ptr_stat)->delta); })
++#define NV_DRIVER_STAT_ATOMIC_ADD(ptr_stat,increment) /* atomic */	\
++	({ atomic_add((increment), &(ptr_stat)->delta); })
++#define NV_DRIVER_STAT_UPDATE_TOTAL(ptr_stat) /* requires stats_lock */ \
++	({ (ptr_stat)->total += atomic_xchg(&(ptr_stat)->delta, 0); })
++#define NV_DRIVER_STAT_GET_TOTAL(ptr_stat) /* requires stats_lock */ \
++	((ptr_stat)->total)
++
+ /* diagnostics */
+ #define NV_TEST_COUNT_BASE 3
+ #define NV_TEST_COUNT_EXTENDED 4
+@@ -737,6 +752,12 @@ struct nv_skb_map {
+  * - tx setup is lockless: it relies on netif_tx_lock. Actual submission
+  *	needs netdev_priv(dev)->lock :-(
+  * - set_multicast_list: preparation lockless, relies on netif_tx_lock.
++ *
++ * Stats are protected with stats_lock:
++ * - updated by nv_do_stats_poll (timer). This is meant to avoid
++ *   integer wraparound in the NIC stats registers, at low frequency
++ *   (0.1 Hz)
++ * - updated by nv_get_ethtool_stats + nv_get_stats64
+  */
+ 
+ /* in dev: base, irq */
+@@ -746,9 +767,10 @@ struct fe_priv {
+ 	struct net_device *dev;
+ 	struct napi_struct napi;
+ 
+-	/* General data:
+-	 * Locking: spin_lock(&np->lock); */
++	/* stats are updated in syscall and timer */
++	spinlock_t stats_lock;
+ 	struct nv_ethtool_stats estats;
++
+ 	int in_shutdown;
+ 	u32 linkspeed;
+ 	int duplex;
+@@ -799,6 +821,10 @@ struct fe_priv {
+ 	u32 nic_poll_irq;
+ 	int rx_ring_size;
+ 
++	/* RX software stats */
++	struct nv_driver_stat stat_rx_bytes; /* not always available in HW */
++	struct nv_driver_stat stat_rx_missed_errors;
++
+ 	/* media detection workaround.
+ 	 * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
+ 	 */
+@@ -821,6 +847,10 @@ struct fe_priv {
+ 	struct nv_skb_map *tx_end_flip;
+ 	int tx_stop;
+ 
++	/* TX software stats */
++	struct nv_driver_stat stat_tx_packets; /* not always available in HW */
++	struct nv_driver_stat stat_tx_dropped;
++
+ 	/* msi/msi-x fields */
+ 	u32 msi_flags;
+ 	struct msix_entry msi_x_entry[NV_MSI_X_MAX_VECTORS];
+@@ -1636,11 +1666,19 @@ static void nv_mac_reset(struct net_device *dev)
+ 	pci_push(base);
+ }
+ 
+-static void nv_get_hw_stats(struct net_device *dev)
++/* Caller must appropriately lock netdev_priv(dev)->stats_lock */
++static void nv_update_stats(struct net_device *dev)
+ {
+ 	struct fe_priv *np = netdev_priv(dev);
+ 	u8 __iomem *base = get_hwbase(dev);
+ 
++	/* If it happens that this is run in top-half context, then
++	 * replace the spin_lock of stats_lock with
++	 * spin_lock_irqsave() in calling functions. */
++	WARN_ONCE(in_irq(), "forcedeth: estats spin_lock(_bh) from top-half");
++	assert_spin_locked(&np->stats_lock);
++
++	/* query hardware */
+ 	np->estats.tx_bytes += readl(base + NvRegTxCnt);
+ 	np->estats.tx_zero_rexmt += readl(base + NvRegTxZeroReXmt);
+ 	np->estats.tx_one_rexmt += readl(base + NvRegTxOneReXmt);
+@@ -1696,44 +1734,75 @@ static void nv_get_hw_stats(struct net_device *dev)
+ 		np->estats.tx_multicast += readl(base + NvRegTxMulticast);
+ 		np->estats.tx_broadcast += readl(base + NvRegTxBroadcast);
+ 	}
++
++	/* update software stats */
++	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_bytes);
++	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_missed_errors);
++
++	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_tx_packets);
++	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_tx_dropped);
+ }
+ 
+ /*
+- * nv_get_stats: dev->get_stats function
++ * nv_get_stats64: dev->ndo_get_stats64 function
+  * Get latest stats value from the nic.
+  * Called with read_lock(&dev_base_lock) held for read -
+  * only synchronized against unregister_netdevice.
+  */
+-static struct net_device_stats *nv_get_stats(struct net_device *dev)
++static struct rtnl_link_stats64*
++nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
++	__acquires(&netdev_priv(dev)->stats_lock)
++	__releases(&netdev_priv(dev)->stats_lock)
+ {
+ 	struct fe_priv *np = netdev_priv(dev);
+ 
+ 	/* If the nic supports hw counters then retrieve latest values */
+ 	if (np->driver_data & DEV_HAS_STATISTICS_V123) {
+-		/* query hardware */
+-		nv_get_hw_stats(dev);
++		spin_lock_bh(&np->stats_lock);
+ 
+-		/* copy to net_device stats */
++		nv_update_stats(dev);
++
++		/* generic stats */
+ 
+ 		if (np->driver_data & DEV_HAS_STATISTICS_V23) {
+ 			/* When HW stats are available for following
+ 			 * stats, we use them. Otherwise they are
+ 			 * updated by software. */
+-			dev->stats.tx_packets = np->estats.tx_packets;
+-			dev->stats.rx_bytes = np->estats.rx_bytes;
++			storage->tx_packets = np->estats.tx_packets;
++			storage->rx_bytes   = np->estats.rx_bytes;
++		} else {
++			storage->tx_packets = NV_DRIVER_STAT_GET_TOTAL(
++				&np->stat_tx_packets);
++			storage->rx_bytes   = NV_DRIVER_STAT_GET_TOTAL(
++				&np->stat_rx_bytes);
+ 		}
+-		dev->stats.rx_packets = np->estats.rx_packets;
+-		dev->stats.tx_bytes = np->estats.tx_bytes;
+-		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
+-		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
+-		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
+-		dev->stats.rx_over_errors = np->estats.rx_over_errors;
+-		dev->stats.rx_fifo_errors = np->estats.rx_drop_frame;
+-		dev->stats.rx_errors = np->estats.rx_errors_total;
+-		dev->stats.tx_errors = np->estats.tx_errors_total;
+-	}
+-
+-	return &dev->stats;
++		storage->rx_packets = np->estats.rx_packets;
++		storage->tx_bytes   = np->estats.tx_bytes;
++		storage->rx_errors  = np->estats.rx_errors_total;
++		storage->tx_errors  = np->estats.tx_errors_total;
++		storage->tx_dropped = NV_DRIVER_STAT_GET_TOTAL(
++			&np->stat_tx_dropped);
++
++		/* meaningful only when NIC supports stats v3 */
++		storage->multicast  = np->estats.rx_multicast;
++
++		/* detailed rx_errors */
++		storage->rx_length_errors = np->estats.rx_length_error;
++		storage->rx_over_errors   = np->estats.rx_over_errors;
++		storage->rx_crc_errors    = np->estats.rx_crc_errors;
++		storage->rx_frame_errors  = np->estats.rx_frame_align_error;
++		storage->rx_fifo_errors   = np->estats.rx_drop_frame;
++		storage->rx_missed_errors = NV_DRIVER_STAT_GET_TOTAL(
++			&np->stat_rx_missed_errors);
++
++		/* detailed tx_errors */
++		storage->tx_carrier_errors = np->estats.tx_carrier_errors;
++		storage->tx_fifo_errors    = np->estats.tx_fifo_errors;
++
++		spin_unlock_bh(&np->stats_lock);
++	}
++
++	return storage;
+ }
+ 
+ /*
+@@ -1935,7 +2004,7 @@ static void nv_drain_tx(struct net_device *dev)
+ 			np->tx_ring.ex[i].buflow = 0;
+ 		}
+ 		if (nv_release_txskb(np, &np->tx_skb[i]))
+-			dev->stats.tx_dropped++;
++			NV_DRIVER_STAT_ATOMIC_INC(&np->stat_tx_dropped);
+ 		np->tx_skb[i].dma = 0;
+ 		np->tx_skb[i].dma_len = 0;
+ 		np->tx_skb[i].dma_single = 0;
+@@ -2397,7 +2466,7 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 						nv_legacybackoff_reseed(dev);
+ 				} else if (unlikely(!(np->driver_data
+ 						      & DEV_HAS_STATISTICS_V23))) {
+-					dev->stats.tx_packets++;
++					NV_DRIVER_STAT_ATOMIC_INC(&np->stat_tx_packets);
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2411,7 +2480,7 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 						nv_legacybackoff_reseed(dev);
+ 				} else if (unlikely(!(np->driver_data
+ 						      & DEV_HAS_STATISTICS_V23))) {
+-					dev->stats.tx_packets++;
++					NV_DRIVER_STAT_ATOMIC_INC(&np->stat_tx_packets);
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2453,7 +2522,7 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+ 				}
+ 			} else if (unlikely(!(np->driver_data
+ 					      & DEV_HAS_STATISTICS_V23))) {
+-				dev->stats.tx_packets++;
++				NV_DRIVER_STAT_ATOMIC_INC(&np->stat_tx_packets);
+ 			}
+ 
+ 			dev_kfree_skb_any(np->get_tx_ctx->skb);
+@@ -2667,7 +2736,7 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 					/* the rest are hard errors */
+ 					else {
+ 						if (flags & NV_RX_MISSEDFRAME)
+-							dev->stats.rx_missed_errors++;
++							NV_DRIVER_STAT_ATOMIC_INC(&np->stat_rx_missed_errors);
+ 						dev_kfree_skb(skb);
+ 						goto next_pkt;
+ 					}
+@@ -2711,7 +2780,7 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		napi_gro_receive(&np->napi, skb);
+ 		if (unlikely(!(np->driver_data & DEV_HAS_STATISTICS_V23)))
+-			dev->stats.rx_bytes += len;
++			NV_DRIVER_STAT_ATOMIC_ADD(&np->stat_rx_bytes, len);
+ next_pkt:
+ 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
+ 			np->get_rx.orig = np->first_rx.orig;
+@@ -2796,7 +2865,7 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 			napi_gro_receive(&np->napi, skb);
+ 			if (unlikely(!(np->driver_data
+ 				       & DEV_HAS_STATISTICS_V23)))
+-				dev->stats.rx_bytes += len;
++				NV_DRIVER_STAT_ATOMIC_ADD(&np->stat_rx_bytes, len);
+ 		} else {
+ 			dev_kfree_skb(skb);
+ 		}
+@@ -3924,11 +3993,18 @@ static void nv_poll_controller(struct net_device *dev)
+ #endif
+ 
+ static void nv_do_stats_poll(unsigned long data)
++	__acquires(&netdev_priv(dev)->stats_lock)
++	__releases(&netdev_priv(dev)->stats_lock)
+ {
+ 	struct net_device *dev = (struct net_device *) data;
+ 	struct fe_priv *np = netdev_priv(dev);
+ 
+-	nv_get_hw_stats(dev);
++	/* If lock is currently taken, the stats are being refreshed
++	 * and hence fresh enough */
++	if (spin_trylock(&np->stats_lock)) {
++		nv_update_stats(dev);
++		spin_unlock(&np->stats_lock);
++	}
+ 
+ 	if (!np->in_shutdown)
+ 		mod_timer(&np->stats_poll,
+@@ -4573,14 +4649,18 @@ static int nv_get_sset_count(struct net_device *dev, int sset)
+ 	}
+ }
+ 
+-static void nv_get_ethtool_stats(struct net_device *dev, struct ethtool_stats *estats, u64 *buffer)
++static void nv_get_ethtool_stats(struct net_device *dev,
++				 struct ethtool_stats *estats, u64 *buffer)
++	__acquires(&netdev_priv(dev)->stats_lock)
++	__releases(&netdev_priv(dev)->stats_lock)
+ {
+ 	struct fe_priv *np = netdev_priv(dev);
+ 
+-	/* update stats */
+-	nv_get_hw_stats(dev);
+-
+-	memcpy(buffer, &np->estats, nv_get_sset_count(dev, ETH_SS_STATS)*sizeof(u64));
++	spin_lock_bh(&np->stats_lock);
++	nv_update_stats(dev);
++	memcpy(buffer, &np->estats,
++	       nv_get_sset_count(dev, ETH_SS_STATS)*sizeof(u64));
++	spin_unlock_bh(&np->stats_lock);
+ }
+ 
+ static int nv_link_test(struct net_device *dev)
+@@ -5218,7 +5298,7 @@ static int nv_close(struct net_device *dev)
+ static const struct net_device_ops nv_netdev_ops = {
+ 	.ndo_open		= nv_open,
+ 	.ndo_stop		= nv_close,
+-	.ndo_get_stats		= nv_get_stats,
++	.ndo_get_stats64	= nv_get_stats64,
+ 	.ndo_start_xmit		= nv_start_xmit,
+ 	.ndo_tx_timeout		= nv_tx_timeout,
+ 	.ndo_change_mtu		= nv_change_mtu,
+@@ -5235,7 +5315,7 @@ static const struct net_device_ops nv_netdev_ops = {
+ static const struct net_device_ops nv_netdev_ops_optimized = {
+ 	.ndo_open		= nv_open,
+ 	.ndo_stop		= nv_close,
+-	.ndo_get_stats		= nv_get_stats,
++	.ndo_get_stats64	= nv_get_stats64,
+ 	.ndo_start_xmit		= nv_start_xmit_optimized,
+ 	.ndo_tx_timeout		= nv_tx_timeout,
+ 	.ndo_change_mtu		= nv_change_mtu,
+@@ -5274,6 +5354,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
+ 	np->dev = dev;
+ 	np->pci_dev = pci_dev;
+ 	spin_lock_init(&np->lock);
++	spin_lock_init(&np->stats_lock);
+ 	SET_NETDEV_DEV(dev, &pci_dev->dev);
+ 
+ 	init_timer(&np->oom_kick);
 -- 
-Johan Herland, <johan@herland.net>
-www.herland.net
+1.7.3.1
+
