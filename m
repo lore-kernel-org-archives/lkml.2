@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1KKVlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 16:41:13 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17973 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab1KKVlJ convert rfc822-to-8bit (ORCPT
+	id S1753365Ab1KKVsA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 16:48:00 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:40207 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab1KKVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 16:41:09 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 11 Nov 2011 13:40:53 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 11 Nov 2011 13:40:48 -0800
-Subject: RE: [PATCH v4 00/10] Add support for tegra30 and cardhu
-Thread-Topic: [PATCH v4 00/10] Add support for tegra30 and cardhu
-Thread-Index: AcygZDAphH77Z9tlSj6j7goZoUnGBwAVg85Q
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17408058A8@HQMAIL01.nvidia.com>
-References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Nov 2011 16:47:59 -0500
+Message-ID: <4EBD980B.7040300@google.com>
+Date: Fri, 11 Nov 2011 13:47:55 -0800
+From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.linux.openvz.devel
+To: Andrew Vagin <avagin@openvz.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] sched: don't call task_group() many times in set_task_rq()
+References: <1321020240-3874331-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1321020240-3874331-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Friday, November 11, 2011 4:22 AM:
-> This patchset adds support for the tegra30 SoC and the cardhu development
-> board.
+For future note, please keep lists that don't allow cross-posting out of CC:
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+"You are not allowed to post to this mailing list, and your message has
+been automatically rejected.  If you think that your messages are
+being rejected in error, contact the mailing list owner at
+devel-owner@openvz.org."
 
-Tested:
+Thanks,
 
-Tegra20-only build, Tegra30-only build, Tegra20+Tegra30 build.
-
-Booting on Tegra30/Cardhu: Tegra30-only build, Tegra20+Tegra30 build.
-
-Booting on Tegra20/Seaboard, using DT and board files.
-
-All testing based on next-20111111, plus Will Deacon's 3 reset patches
-that this relies on.
-
-I haven't actually looked at the patches yet.
-
--- 
-nvpublic
-
+- Paul
