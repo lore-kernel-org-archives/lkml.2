@@ -1,99 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab1KKT6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 14:58:18 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57120 "EHLO comal.ext.ti.com"
+	id S1756831Ab1KKUEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 15:04:08 -0500
+Received: from claw.goop.org ([74.207.240.146]:36223 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab1KKT6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 14:58:17 -0500
-Message-ID: <4EBD7E47.8010502@ti.com>
-Date: Fri, 11 Nov 2011 20:57:59 +0100
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1751689Ab1KKUEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 15:04:05 -0500
+Message-ID: <4EBD7FAD.6050304@goop.org>
+Date: Fri, 11 Nov 2011 12:03:57 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 6/8] of: add clock providers
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca> <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca> <20111109091328.GY16886@pengutronix.de> <4EBA62AD.3000407@ti.com> <20111109114936.GL16886@pengutronix.de>
-In-Reply-To: <20111109114936.GL16886@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [GIT PULL] More cleanups for atomic memory operations/spinlocks
+References: <4EB9D48F.5010201@goop.org>
+In-Reply-To: <4EB9D48F.5010201@goop.org>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/9/2011 12:49 PM, Sascha Hauer wrote:
-> On Wed, Nov 09, 2011 at 12:23:25PM +0100, Cousson, Benoit wrote:
->> On 11/9/2011 10:13 AM, Sascha Hauer wrote:
->>> On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
->>
->> [...]
->>
->>>> +Sources of clock signal can be represented by any node in the device
->>>> +tree.  Those nodes are designated as clock providers.  Clock consumer
->>>> +nodes use a phandle and clock specifier pair to connect clock provider
->>>> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
->>>> +specifier is an array of one more more cells identifying the clock
->>>> +output on a device.  The length of a clock specifier is defined by the
->>>> +value of a #clock-cells property in the clock provider node.
->>>> +
->>>> +[1] http://patchwork.ozlabs.org/patch/31551/
->>>> +
->>>> +==Clock providers==
->>>> +
->>>> +Required properties:
->>>> +#clock-cells:	   Number of cells in a clock specifier; typically will be
->>>> +		   set to 1
->>>> +
->>>> +Optional properties:
->>>> +clock-output-name: Recommended to be a list of strings of clock output signal
->>>> +		   names indexed by the first cell in the clock specifier.
->>>> +		   However, the meaning of clock-output-names is domain
->>>> +		   specific to the clock provider, and is only provided to
->>>> +		   encourage using the same meaning for the majority of clock
->>>> +		   providers.  This format may not work for clock providers
->>>> +		   using a complex clock specifier format.  In those cases it
->>>> +		   is recommended to omit this property and create a binding
->>>> +		   specific names property.
->>>
->>> If the clock-output-name property is omitted, does this mean a clock
->>> provider only has a single output or does it mean that it's not known
->>> how many clock outputs a provider actually has?
->>
->> Allowing several outputs for a single clock node might lead to a lot
->> of confusion. What will be the meaning of a clock rate if you have
->> several outputs at different frequency?
->> I think it will be better to define a clock node as a single source
->> of clock. If several outputs are needed, then we should define
->> several clock nodes.
->> If we let a clock node be any kind of big clock blob, we will never
->> be able to define some generic reusable clock node API. Everybody
->> will define its own custom clock blobs.
+Ping?
+
+On 11/08/2011 05:17 PM, Jeremy Fitzhardinge wrote:
+> I forgot to push these for the just-closed merge window, but they're
+> fine for the next one.  Could you find them a home in tip.git?
 >
-> Generally +1. I asked myself the same question whether it's a good thing
-> to allow a node to have multiple clocks. For i.MX I can say that I don't
-> need this and that I do not intend to use this feature. Grants concerns
-> about this are that the clock part of the device tree might explode when
-> we put each and every clock into the devicetree, so he wants to allow
-> bigger blobs of multiple clocks.
+> Thanks,
+>     J
+>
+> The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
+>
+>   Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
+>
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/ticketlock-cleanup
+>
+> Jeremy Fitzhardinge (2):
+>       x86/cmpxchg: add a locked add() helper
+>       x86: consolidate xchg and xadd macros
+>
+>  arch/x86/include/asm/cmpxchg.h  |  140 +++++++++++++++++++-------------------
+>  arch/x86/include/asm/spinlock.h |   15 +----
+>  2 files changed, 71 insertions(+), 84 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
+> index 5d3acdf..5488e10 100644
+> --- a/arch/x86/include/asm/cmpxchg.h
+> +++ b/arch/x86/include/asm/cmpxchg.h
+> @@ -14,6 +14,8 @@ extern void __cmpxchg_wrong_size(void)
+>  	__compiletime_error("Bad argument size for cmpxchg");
+>  extern void __xadd_wrong_size(void)
+>  	__compiletime_error("Bad argument size for xadd");
+> +extern void __add_wrong_size(void)
+> +	__compiletime_error("Bad argument size for add");
+>  
+>  /*
+>   * Constants for operation sizes. On 32-bit, the 64-bit size it set to
+> @@ -31,60 +33,47 @@ extern void __xadd_wrong_size(void)
+>  #define	__X86_CASE_Q	-1		/* sizeof will never return -1 */
+>  #endif
+>  
+> +/* 
+> + * An exchange-type operation, which takes a value and a pointer, and
+> + * returns a the old value.
+> + */
+> +#define __xchg_op(ptr, arg, op, lock)					\
+> +	({								\
+> +	        __typeof__ (*(ptr)) __ret = (arg);			\
+> +		switch (sizeof(*(ptr))) {				\
+> +		case __X86_CASE_B:					\
+> +			asm volatile (lock #op "b %b0, %1\n"		\
+> +				      : "+r" (__ret), "+m" (*(ptr))	\
+> +				      : : "memory", "cc");		\
+> +			break;						\
+> +		case __X86_CASE_W:					\
+> +			asm volatile (lock #op "w %w0, %1\n"		\
+> +				      : "+r" (__ret), "+m" (*(ptr))	\
+> +				      : : "memory", "cc");		\
+> +			break;						\
+> +		case __X86_CASE_L:					\
+> +			asm volatile (lock #op "l %0, %1\n"		\
+> +				      : "+r" (__ret), "+m" (*(ptr))	\
+> +				      : : "memory", "cc");		\
+> +			break;						\
+> +		case __X86_CASE_Q:					\
+> +			asm volatile (lock #op "q %q0, %1\n"		\
+> +				      : "+r" (__ret), "+m" (*(ptr))	\
+> +				      : : "memory", "cc");		\
+> +			break;						\
+> +		default:						\
+> +			__ ## op ## _wrong_size();			\
+> +		}							\
+> +		__ret;							\
+> +	})
+> +
+>  /*
+>   * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
+>   * Since this is generally used to protect other memory information, we
+>   * use "asm volatile" and "memory" clobbers to prevent gcc from moving
+>   * information around.
+>   */
+> -#define __xchg(x, ptr, size)						\
+> -({									\
+> -	__typeof(*(ptr)) __x = (x);					\
+> -	switch (size) {							\
+> -	case __X86_CASE_B:						\
+> -	{								\
+> -		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
+> -		asm volatile("xchgb %0,%1"				\
+> -			     : "=q" (__x), "+m" (*__ptr)		\
+> -			     : "0" (__x)				\
+> -			     : "memory");				\
+> -		break;							\
+> -	}								\
+> -	case __X86_CASE_W:						\
+> -	{								\
+> -		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
+> -		asm volatile("xchgw %0,%1"				\
+> -			     : "=r" (__x), "+m" (*__ptr)		\
+> -			     : "0" (__x)				\
+> -			     : "memory");				\
+> -		break;							\
+> -	}								\
+> -	case __X86_CASE_L:						\
+> -	{								\
+> -		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+> -		asm volatile("xchgl %0,%1"				\
+> -			     : "=r" (__x), "+m" (*__ptr)		\
+> -			     : "0" (__x)				\
+> -			     : "memory");				\
+> -		break;							\
+> -	}								\
+> -	case __X86_CASE_Q:						\
+> -	{								\
+> -		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+> -		asm volatile("xchgq %0,%1"				\
+> -			     : "=r" (__x), "+m" (*__ptr)		\
+> -			     : "0" (__x)				\
+> -			     : "memory");				\
+> -		break;							\
+> -	}								\
+> -	default:							\
+> -		__xchg_wrong_size();					\
+> -	}								\
+> -	__x;								\
+> -})
+> -
+> -#define xchg(ptr, v)							\
+> -	__xchg((v), (ptr), sizeof(*ptr))
+> +#define xchg(ptr, v)	__xchg_op((ptr), (v), xchg, "")
+>  
+>  /*
+>   * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+> @@ -165,46 +154,57 @@ extern void __xadd_wrong_size(void)
+>  	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
+>  #endif
+>  
+> -#define __xadd(ptr, inc, lock)						\
+> +/*
+> + * xadd() adds "inc" to "*ptr" and atomically returns the previous
+> + * value of "*ptr".
+> + *
+> + * xadd() is locked when multiple CPUs are online
+> + * xadd_sync() is always locked
+> + * xadd_local() is never locked
+> + */
+> +#define __xadd(ptr, inc, lock)	__xchg_op((ptr), (inc), xadd, lock)
+> +#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
+> +#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
+> +#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
+> +
+> +#define __add(ptr, inc, lock)						\
+>  	({								\
+>  	        __typeof__ (*(ptr)) __ret = (inc);			\
+>  		switch (sizeof(*(ptr))) {				\
+>  		case __X86_CASE_B:					\
+> -			asm volatile (lock "xaddb %b0, %1\n"		\
+> -				      : "+r" (__ret), "+m" (*(ptr))	\
+> -				      : : "memory", "cc");		\
+> +			asm volatile (lock "addb %b1, %0\n"		\
+> +				      : "+m" (*(ptr)) : "ri" (inc)	\
+> +				      : "memory", "cc");		\
+>  			break;						\
+>  		case __X86_CASE_W:					\
+> -			asm volatile (lock "xaddw %w0, %1\n"		\
+> -				      : "+r" (__ret), "+m" (*(ptr))	\
+> -				      : : "memory", "cc");		\
+> +			asm volatile (lock "addw %w1, %0\n"		\
+> +				      : "+m" (*(ptr)) : "ri" (inc)	\
+> +				      : "memory", "cc");		\
+>  			break;						\
+>  		case __X86_CASE_L:					\
+> -			asm volatile (lock "xaddl %0, %1\n"		\
+> -				      : "+r" (__ret), "+m" (*(ptr))	\
+> -				      : : "memory", "cc");		\
+> +			asm volatile (lock "addl %1, %0\n"		\
+> +				      : "+m" (*(ptr)) : "ri" (inc)	\
+> +				      : "memory", "cc");		\
+>  			break;						\
+>  		case __X86_CASE_Q:					\
+> -			asm volatile (lock "xaddq %q0, %1\n"		\
+> -				      : "+r" (__ret), "+m" (*(ptr))	\
+> -				      : : "memory", "cc");		\
+> +			asm volatile (lock "addq %1, %0\n"		\
+> +				      : "+m" (*(ptr)) : "ri" (inc)	\
+> +				      : "memory", "cc");		\
+>  			break;						\
+>  		default:						\
+> -			__xadd_wrong_size();				\
+> +			__add_wrong_size();				\
+>  		}							\
+>  		__ret;							\
+>  	})
+>  
+>  /*
+> - * xadd() adds "inc" to "*ptr" and atomically returns the previous
+> - * value of "*ptr".
+> + * add_*() adds "inc" to "*ptr"
+>   *
+> - * xadd() is locked when multiple CPUs are online
+> - * xadd_sync() is always locked
+> - * xadd_local() is never locked
+> + * __add() takes a lock prefix
+> + * add_smp() is locked when multiple CPUs are online
+> + * add_sync() is always locked
+>   */
+> -#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
+> -#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
+> -#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
+> +#define add_smp(ptr, inc)	__add((ptr), (inc), LOCK_PREFIX)
+> +#define add_sync(ptr, inc)	__add((ptr), (inc), "lock; ")
+>  
+>  #endif	/* ASM_X86_CMPXCHG_H */
+> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+> index 972c260..a82c2bf 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -79,23 +79,10 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+>  	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+>  }
+>  
+> -#if (NR_CPUS < 256)
+>  static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+>  {
+> -	asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
+> -		     : "+m" (lock->head_tail)
+> -		     :
+> -		     : "memory", "cc");
+> +	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
+>  }
+> -#else
+> -static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+> -{
+> -	asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
+> -		     : "+m" (lock->head_tail)
+> -		     :
+> -		     : "memory", "cc");
+> -}
+> -#endif
+>  
+>  static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+>  {
+>
+>
 
-I can clearly understand this concern, because in the case of OMAP4, we 
-will have to add ~250 nodes if we want to define the current clock tree.
-
-> My impression gets more and more that we either put the clock tree in the
-> devicetree or we do not do it, but there's not much room in between.
-
-If we are not ready to accept 4k lines of clock data inside the 
-devicetree, which is indeed huge and mostly useless, then I think we 
-should just expose the leaf clocks. But then they will depend on parent 
-that will not be in DT but in static files, which might be weird.
-
-I'm not sure what the right answer is :-(
-
-Regards,
-Benoit
