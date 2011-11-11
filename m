@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab1KKNY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 08:24:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45051 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab1KKNY1 (ORCPT
+	id S1757821Ab1KKNZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 08:25:30 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:37690
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751948Ab1KKNZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 08:24:27 -0500
-Date: Fri, 11 Nov 2011 13:24:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 16/16] ARM: LPAE: Add the Kconfig entries
-Message-ID: <20111111132415.GD12913@n2100.arm.linux.org.uk>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com> <1320682618-1182-17-git-send-email-catalin.marinas@arm.com> <20111110225737.GX12913@n2100.arm.linux.org.uk> <20111111114613.GF23243@arm.com>
+	Fri, 11 Nov 2011 08:25:28 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zz98dKzz1202hzz15d4Rz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LUHZY7-01-35V-02
+X-M-MSG: 
+Date: Fri, 11 Nov 2011 14:24:11 +0100
+From: Joerg Roedel <Joerg.Roedel@amd.com>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Kai Huang <mail.kai.huang@gmail.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        <iommu@lists.linux-foundation.org>, <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        KyongHo Cho <pullip.cho@samsung.com>, <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
+ supported by the hardware
+Message-ID: <20111111132411.GH13213@amd.com>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+ <1318850846-16066-3-git-send-email-ohad@wizery.com>
+ <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
+ <1320938930.22195.17.camel@i7.infradead.org>
+ <20111110170918.GE13213@amd.com>
+ <4EBC3E20.20301@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111111114613.GF23243@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4EBC3E20.20301@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 11:46:14AM +0000, Catalin Marinas wrote:
-> So we could change this to:
-> 
-> config ARCH_DMA_ADDR_T_64BIT
-> 	depends on ARM_LPAE
-> 
-> and let platforms select it.
+On Thu, Nov 10, 2011 at 01:12:00PM -0800, Stepan Moskovchenko wrote:
+> I have been experimenting with an iommu_map_range call, which maps a
+> given scatterlist of discontiguous physical pages into a contiguous
+> virtual region at a given IOVA. This has some performance advantages
+> over just calling iommu_map iteratively. First, it reduces the
+> amount of table walking / calculation needed for mapping each page,
+> given how you know that all the pages will be mapped into a single
+> virtually-contiguous region (so in most cases, the first-level table
+> calculation can be reused). Second, it allows one to defer the TLB
+> (and sometimes cache) maintenance operations until the entire
+> scatterlist has been mapped, rather than doing a TLB invalidate
+> after mapping each page, as would have been the case if iommu_map
+> were just being called from within a loop. Granted, just using
+> iommu_map many times may be acceptable on the slow path, but I have
+> seen significant performance gains when using this approach on the
+> fast path.
 
-Actually, even this is conceptually wrong.  You really need to get away
-from the thought that a dma address in any way is encapsulated within
-the machine physical address.
+Yes, from a performance point-of-view that makes sense, as an addition
+to the existing iommu_map interface. Are the pages in the list allowed
+to have different page-sizes?
 
-They're two separate things.  For example, you could have an ARMv4 based
-system (so, 32-bit address bus) connected to a PCI bridge which supports
-64-bit addressing.  This PCI bridge could map system memory into PCI
-space greater than 4GB (ok, there are down-sides to doing this, but this
-is just an example to illustrate the point).  This would therefore require
-a 64-bit dma_addr_t.
 
-The size of dma_addr_t has very little to do with the page table format
-or even the host address bus width, and is more to do with bus and
-system setup than host CPU setup.
+	Joerg
 
-So, I think that we can have:
+-- 
+AMD Operating System Research Center
 
-config ARCH_DMA_ADDR_T_64BIT
-	bool
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-and we just leave it at that - if a platform needs 64-bit DMA addresses,
-then selecting this symbol would be the correct approach.
