@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab1KKM2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 07:28:09 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:33338 "EHLO mx2.fusionio.com"
+	id S1757354Ab1KKMfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 07:35:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756777Ab1KKM2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 07:28:07 -0500
-X-ASG-Debug-ID: 1321014485-01de2837981273e0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4EBD14D3.5090002@fusionio.com>
-Date: Fri, 11 Nov 2011 13:28:03 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        "stable@kernel.org" <stable@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] backing-dev: ensure wakeup_timer is deleted
-References: <1320916025-20264-1-git-send-email-linus.walleij@stericsson.com>
-X-ASG-Orig-Subj: Re: [PATCH] backing-dev: ensure wakeup_timer is deleted
-In-Reply-To: <1320916025-20264-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1321014485
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.79950
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1752706Ab1KKMfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 07:35:42 -0500
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [PATCH 1/4] mm: remove debug_pagealloc_enabled
+Date: Fri, 11 Nov 2011 13:36:31 +0100
+Message-Id: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-10 10:07, Linus Walleij wrote:
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index a086064..71034f4 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -724,6 +724,14 @@ void bdi_destroy(struct backing_dev_info *bdi)
->  
->  	bdi_unregister(bdi);
->  
-> +	/*
-> +	 * If bdi_unregister() had already been called earlier, the
-> +	 * wakeup_timer could still be armed because bdi_prune_sb()
-> +	 * can race with the bdi_wakeup_thread_delayed() calls from
-> +	 * __mark_inode_dirty().
-> +	 */
-> +	del_timer_sync(&bdi->wb.wakeup_timer);
-> +
->  	for (i = 0; i < NR_BDI_STAT_ITEMS; i++)
->  		percpu_counter_destroy(&bdi->bdi_stat[i]);
+After we finish (no)bootmem, pages are passed to buddy allocator. Since
+debug_pagealloc_enabled is not set, we do not protect pages, what is
+not what we want with CONFIG_DEBUG_PAGEALLOC=y. That could be fixed by
+calling enable_debug_pagealloc() before free_all_bootmem(), but actually
+I do not see any reason why we need that global variable. Hence patch
+remove it.
 
-Thanks, makes sense, applied.
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ arch/x86/mm/pageattr.c |    6 ------
+ include/linux/mm.h     |   10 ----------
+ init/main.c            |    5 -----
+ mm/debug-pagealloc.c   |    3 ---
+ 4 files changed, 0 insertions(+), 24 deletions(-)
 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..5031eef 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	}
+ 
+ 	/*
+-	 * If page allocator is not up yet then do not call c_p_a():
+-	 */
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+-	/*
+ 	 * The return value is ignored as the calls cannot fail.
+ 	 * Large pages for identity mappings are not used at boot time
+ 	 * and hence no memory allocations during large page split.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..0a22db1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
+ #endif /* CONFIG_PROC_FS */
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-extern int debug_pagealloc_enabled;
+-
+ extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-
+-static inline void enable_debug_pagealloc(void)
+-{
+-	debug_pagealloc_enabled = 1;
+-}
+ #ifdef CONFIG_HIBERNATION
+ extern bool kernel_page_present(struct page *page);
+ #endif /* CONFIG_HIBERNATION */
+ #else
+ static inline void
+ kernel_map_pages(struct page *page, int numpages, int enable) {}
+-static inline void enable_debug_pagealloc(void)
+-{
+-}
+ #ifdef CONFIG_HIBERNATION
+ static inline bool kernel_page_present(struct page *page) { return true; }
+ #endif /* CONFIG_HIBERNATION */
+diff --git a/init/main.c b/init/main.c
+index 217ed23..99c4ba3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-int __read_mostly debug_pagealloc_enabled = 0;
+-#endif
+-
+ static int __init init_setup(char *str)
+ {
+ 	unsigned int i;
+@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
+ 	}
+ #endif
+ 	page_cgroup_init();
+-	enable_debug_pagealloc();
+ 	debug_objects_mem_init();
+ 	kmemleak_init();
+ 	setup_per_cpu_pageset();
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index 7cea557..789ff70 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
+ 
+ void kernel_map_pages(struct page *page, int numpages, int enable)
+ {
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+ 	if (enable)
+ 		unpoison_pages(page, numpages);
+ 	else
 -- 
-Jens Axboe
+1.7.1
 
