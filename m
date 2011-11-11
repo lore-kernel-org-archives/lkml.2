@@ -1,65 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab1KKOY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 09:24:29 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:45820
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752851Ab1KKOY2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 09:24:28 -0500
-X-SpamScore: -21
-X-BigFish: VPS-21(zzc89bh936eK1432N98dKzz1202hzz15d4Rz32i668h839h93fh)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LUI2OG-01-6OJ-02
-X-M-MSG: 
-Date: Fri, 11 Nov 2011 15:24:16 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: David Woodhouse <dwmw2@infradead.org>
-CC: David Airlie <airlied@linux.ie>, <linux-kernel@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, <intel-gfx@lists.freedesktop.org>
-Subject: Re: [PATCH] iommu/intel: Fix build failure with intel-gtt and
- !intel-iommu
-Message-ID: <20111111142416.GK13213@amd.com>
-References: <20111111134832.GI13213@amd.com>
- <1321019553.2027.47.camel@shinybook.infradead.org>
+	id S1757933Ab1KKO37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 09:29:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59039 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755226Ab1KKO35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 09:29:57 -0500
+Date: Fri, 11 Nov 2011 14:29:53 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/4] mm: more intensive memory corruption debug
+Message-ID: <20111111142953.GM3083@suse.de>
+References: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
+ <1321014994-2426-2-git-send-email-sgruszka@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1321019553.2027.47.camel@shinybook.infradead.org>
+In-Reply-To: <1321014994-2426-2-git-send-email-sgruszka@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 01:52:33PM +0000, David Woodhouse wrote:
-> On Fri, 2011-11-11 at 14:48 +0100, Joerg Roedel wrote:
-> > +#define intel_iommu_gfx_mapped 1 
+On Fri, Nov 11, 2011 at 01:36:32PM +0100, Stanislaw Gruszka wrote:
+> With CONFIG_DEBUG_PAGEALLOC configured, cpu will generate exception on
+> access (read,write) to not allocated page, what allow to catch code
+> which corrupt memory. However kernel is trying to maximalise memory
+> usage, hence there is usually not much free pages in the system and
+> buggy code usually corrupt some crucial data.
 > 
-> That ought to be zero; if the IOMMU code isn't present, it's
-> *definitely* not mapped through the IOMMU :)
+> This patch change buddy allocator to keep more free/protected pages
+> and interlace free/protected and allocated pages to increase probability
+> of catch a corruption.
 > 
-> But I'm fairly sure this was already noticed and a patch is on its way
-> upstream already.
+> When kernel is compiled with CONFIG_DEBUG_PAGEALLOC, corrupt_dbg
+> parameter is available to specify page order that should be kept free.
 > 
-> It's my fault — my original testing patches to expose this information
-> from the IOMMU code did put it into a header file, but when I sent it
-> upstream I missed that part of the patch, thus leading to the horrid
-> 'extern int intel_iommu_gfx_mapped;' in intel-gtt.c that your patch
-> removes.
+> I.e:
+> 
+> * corrupt_dbg=1:
+>   - order=0 allocation will result of 1 page allocated and 1 consecutive
+>     page protected
 
-No problem, it was easy to fix :) I'll keep that patch in my out-of-tree
-branch until it is fixed upstream.
+It is common to call this a guard page so I would suggest using a
+similar name. The meaning of "guard page" will be obvious without
+looking at the documentation.
 
+>   - order > 0 allocations are not affected
+> * corrupt_dbg=2
+>   - order=0 allocation will result 1 allocated page and 3 consecutive
+>     pages protected
+>   - order=1 allocation will result 2 allocated pages and 2 consecutive
+>     pages protected
+>   - order > 1 allocations are not affected
 
-	Joerg
+That's a bit confusing to read and the name corrupt_dbg does not
+give any hints. It would be easier to understand if it was called
+debug_guardpage_minorder=n where where 1<<n is the minimum allocation
+size used by the page allocator.
+
+"When kernel is compiled with CONFIG_DEBUG_PAGEALLOC,
+debug_guardpage_minorder defines the minimum order used by the page
+allocator to grant a request. The requested size will be returned with
+the remaining pages used as guard pages."
+
+or similar.
+
+> * and so on
+> 
+> Probably only practical usage is corrupt_dbg=1, as long someone is not
+> really desperate by memory corruption bug and have huge amount of RAM.
+> 
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> ---
+>  Documentation/kernel-parameters.txt |    9 ++++
+>  include/linux/mm.h                  |   11 +++++
+>  include/linux/page-debug-flags.h    |    4 +-
+>  mm/Kconfig.debug                    |    1 +
+>  mm/page_alloc.c                     |   74 +++++++++++++++++++++++++++++++----
+>  5 files changed, 90 insertions(+), 9 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index a0c5c5f..cbfa533 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -567,6 +567,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			/proc/<pid>/coredump_filter.
+>  			See also Documentation/filesystems/proc.txt.
+>  
+> +	corrupt_dbg=	[KNL] When CONFIG_DEBUG_PAGEALLOC is set, this
+> +			parameter allows control order of pages that will be
+> +			intentionally kept free (and hence protected) by buddy
+> +			allocator. Bigger value increase probability of
+> +			catching random memory corruption, but reduce amount
+> +			of memory for normal system use. Setting this
+> +			parameter to 1 or 2, should be enough to identify most
+> +			random memory corruption problems.
+> +
+
+This was clearer than the commit log entry at least although I still
+think the parameter name is poor.
+
+>  	cpuidle.off=1	[CPU_IDLE]
+>  			disable the cpuidle sub-system
+>  
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 0a22db1..4de55df 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1617,5 +1617,16 @@ extern void copy_user_huge_page(struct page *dst, struct page *src,
+>  				unsigned int pages_per_huge_page);
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+>  
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +extern unsigned int _corrupt_dbg;
+> +
+> +static inline unsigned int corrupt_dbg(void)
+> +{
+> +	return _corrupt_dbg;
+> +}
+> +#else
+> +static inline unsigned int corrupt_dbg(void) { return 0; }
+> +#endif /* CONFIG_DEBUG_PAGEALLOC */
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _LINUX_MM_H */
+> diff --git a/include/linux/page-debug-flags.h b/include/linux/page-debug-flags.h
+> index b0638fd..f63c905 100644
+> --- a/include/linux/page-debug-flags.h
+> +++ b/include/linux/page-debug-flags.h
+> @@ -13,6 +13,7 @@
+>  
+>  enum page_debug_flags {
+>  	PAGE_DEBUG_FLAG_POISON,		/* Page is poisoned */
+> +	PAGE_DEBUG_FLAG_CORRUPT,
+
+See, the corrupt name here is misleading. It's not corrupt, it's a
+guard page. Until something writes to it, it's not corrupt.
+
+>  };
+>  
+>  /*
+> @@ -21,7 +22,8 @@ enum page_debug_flags {
+>   */
+>  
+>  #ifdef CONFIG_WANT_PAGE_DEBUG_FLAGS
+> -#if !defined(CONFIG_PAGE_POISONING) \
+> +#if !defined(CONFIG_PAGE_POISONING) && \
+> +    !defined(CONFIG_DEBUG_PAGEALLOC) \
+>  /* && !defined(CONFIG_PAGE_DEBUG_SOMETHING_ELSE) && ... */
+>  #error WANT_PAGE_DEBUG_FLAGS is turned on with no debug features!
+>  #endif
+> diff --git a/mm/Kconfig.debug b/mm/Kconfig.debug
+> index 8b1a477..3c554f0 100644
+> --- a/mm/Kconfig.debug
+> +++ b/mm/Kconfig.debug
+> @@ -4,6 +4,7 @@ config DEBUG_PAGEALLOC
+>  	depends on !HIBERNATION || ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
+>  	depends on !KMEMCHECK
+>  	select PAGE_POISONING if !ARCH_SUPPORTS_DEBUG_PAGEALLOC
+> +	select WANT_PAGE_DEBUG_FLAGS
+
+Why not add PAGE_CORRUPT (or preferably PAGE_GUARD) in the same pattern
+as PAGE_POISONING already uses?
+
+>  	---help---
+>  	  Unmap pages from the kernel linear mapping after free_pages().
+>  	  This results in a large slowdown, but helps to find certain types
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 9dd443d..de25c82 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -57,6 +57,7 @@
+>  #include <linux/ftrace_event.h>
+>  #include <linux/memcontrol.h>
+>  #include <linux/prefetch.h>
+> +#include <linux/page-debug-flags.h>
+>  
+>  #include <asm/tlbflush.h>
+>  #include <asm/div64.h>
+> @@ -403,6 +404,44 @@ static inline void prep_zero_page(struct page *page, int order, gfp_t gfp_flags)
+>  		clear_highpage(page + i);
+>  }
+>  
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +unsigned int _corrupt_dbg;
+> +
+> +static int __init corrupt_dbg_setup(char *buf)
+> +{
+> +	unsigned long res;
+> +
+> +	if (kstrtoul(buf, 10, &res) < 0 ||  res > MAX_ORDER / 2) {
+> +		printk(KERN_ERR "Bad corrupt_dbg value\n");
+> +		return 0;
+> +	}
+
+You don't document the limitations of the value for corrupt_dbg.
+
+> +	_corrupt_dbg = res;
+> +	printk(KERN_INFO "Setting corrupt debug order to %d\n", _corrupt_dbg);
+> +	return 0;
+> +}
+> +__setup("corrupt_dbg=", corrupt_dbg_setup);
+> +
+> +static inline void set_page_corrupt_dbg(struct page *page)
+> +{
+> +	__set_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
+> +}
+> +
+> +static inline void clear_page_corrupt_dbg(struct page *page)
+> +{
+> +	__clear_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
+> +}
+> +
+> +static inline bool page_is_corrupt_dbg(struct page *page)
+> +{
+> +	return test_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
+> +}
+> +
+> +#else
+> +static inline void set_page_corrupt_dbg(struct page *page) { }
+> +static inline void clear_page_corrupt_dbg(struct page *page) { }
+> +static inline bool page_is_corrupt_dbg(struct page *page) { return false; }
+> +#endif
+> +
+>  static inline void set_page_order(struct page *page, int order)
+>  {
+>  	set_page_private(page, order);
+> @@ -460,6 +499,11 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
+>  	if (page_zone_id(page) != page_zone_id(buddy))
+>  		return 0;
+>  
+> +	if (page_is_corrupt_dbg(buddy) && page_order(buddy) == order) {
+> +		VM_BUG_ON(page_count(buddy) != 0);
+> +		return 1;
+> +	}
+> +
+>  	if (PageBuddy(buddy) && page_order(buddy) == order) {
+>  		VM_BUG_ON(page_count(buddy) != 0);
+>  		return 1;
+> @@ -518,9 +562,15 @@ static inline void __free_one_page(struct page *page,
+>  			break;
+>  
+>  		/* Our buddy is free, merge with it and move up one order. */
+> -		list_del(&buddy->lru);
+> -		zone->free_area[order].nr_free--;
+> -		rmv_page_order(buddy);
+> +		if (page_is_corrupt_dbg(buddy)) {
+> +			clear_page_corrupt_dbg(buddy);
+> +			set_page_private(page, 0);
+> +			__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+
+Why are the buddies not merged?
+
+> +		} else {
+> +			list_del(&buddy->lru);
+> +			zone->free_area[order].nr_free--;
+> +			rmv_page_order(buddy);
+> +		}
+>  		combined_idx = buddy_idx & page_idx;
+>  		page = page + (combined_idx - page_idx);
+>  		page_idx = combined_idx;
+> @@ -736,7 +786,7 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
+>   * -- wli
+>   */
+>  static inline void expand(struct zone *zone, struct page *page,
+> -	int low, int high, struct free_area *area,
+> +	unsigned int low, unsigned int high, struct free_area *area,
+>  	int migratetype)
+>  {
+>  	unsigned long size = 1 << high;
+> @@ -746,9 +796,16 @@ static inline void expand(struct zone *zone, struct page *page,
+>  		high--;
+>  		size >>= 1;
+>  		VM_BUG_ON(bad_range(zone, &page[size]));
+> -		list_add(&page[size].lru, &area->free_list[migratetype]);
+> -		area->nr_free++;
+> -		set_page_order(&page[size], high);
+> +		if (high < corrupt_dbg()) {
+> +			INIT_LIST_HEAD(&page[size].lru);
+> +			set_page_corrupt_dbg(&page[size]);
+> +			set_page_private(&page[size], high);
+> +			__mod_zone_page_state(zone, NR_FREE_PAGES, -(1 << high));
+> +		} else {
+
+Because high is a signed integer, I don't think this would necessarily
+optimised away at compile time when DEBUG_PAGEALLOC is not set adding a
+new branch to a heavily executed fast path.
+
+For the fast paths, you should not add new branches if you can. Move the
+debugging code to inline functions that only exist when DEBUG_PAGEALLOC
+is set so there is no additional overhead in the !CONFIG_DEBUG_PAGEALLOC
+case.
+
+> +			set_page_order(&page[size], high);
+> +			list_add(&page[size].lru, &area->free_list[migratetype]);
+> +			area->nr_free++;
+> +		}
+>  	}
+>  }
+>  
+> @@ -1756,7 +1813,8 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+>  {
+>  	unsigned int filter = SHOW_MEM_FILTER_NODES;
+>  
+> -	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
+> +	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs) ||
+> +	    corrupt_dbg() > 0)
+>  		return;
+>  
+>  	/*
+> -- 
+> 1.7.1
+> 
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Mel Gorman
+SUSE Labs
