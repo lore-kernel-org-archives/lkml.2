@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1KKIqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 03:46:42 -0500
-Received: from bitmer.com ([213.157.87.50]:54513 "EHLO bitmer.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754339Ab1KKIqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 03:46:40 -0500
-Message-ID: <4EBCE0E6.5020202@bitmer.com>
-Date: Fri, 11 Nov 2011 10:46:30 +0200
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Icedove/3.1.15
+	id S1757227Ab1KKIwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 03:52:55 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47975 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab1KKIwy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 03:52:54 -0500
+Date: Fri, 11 Nov 2011 08:52:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Nai Xia <nai.xia@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: mm: convert vma->vm_flags to 64bit
+Message-ID: <20111111085239.GA12913@n2100.arm.linux.org.uk>
+References: <20110412151116.B50D.A69D9226@jp.fujitsu.com> <CAPQyPG7RrpV8DBV_Qcgr2at_r25_ngjy_84J2FqzRPGfA3PGDA@mail.gmail.com> <alpine.DEB.2.00.1111092048520.27280@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?P=E9ter_Ujfalusi?= <peter.ujfalusi@ti.com>
-CC: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] mfd: twl4030-audio: Fix audio codec breakage
-References: <1319013845-2628-1-git-send-email-jarkko.nikula@bitmer.com> <1848643.7W84dlC6t3@barack>
-In-Reply-To: <1848643.7W84dlC6t3@barack>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1111092048520.27280@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2011 09:41 AM, Péter Ujfalusi wrote:
-> On Wednesday 19 October 2011 11:44:05 Jarkko Nikula wrote:
->> Commit 57fe725 ("MFD: twl4030-codec ->  twl4030-audio: Rename the driver")
->> broke the device registration for twl4030 codec if twl6040 is not set.
->>
->> Reason for breakage is that commit didn't update the changed config name for
->> macro twl_has_codec().
->>
->> Signed-off-by: Jarkko Nikula<jarkko.nikula@bitmer.com>
->> Cc: Peter Ujfalusi<peter.ujfalusi@ti.com>
->> ---
->> I don't know is this too late for 3.1 or would it be better to queue for
->> stable when it's out? Anyway breakage happened in 3.1-rc cycle and
->> unfortunately I noticed it only now.
->
-> Thanks Jarkko for noticing this. I have overlooked it probably because I'm
-> using omap2plus_defconf for most of the time.
->
-> The breakage also present in 3.0. Can we queue this patch for stable 3.0.x,
-> and 3.1.x?
->
-> Acked-by: Peter Ujfalusi<peter.ujfalusi@ti.com>
->
-Actually this is already fixed by f09ee04 ("mfd: Fix twl4030 
-dependencies for audio codec") which is now in 3.2-rc. Is that commit 
-queued for stable too?
+On Wed, Nov 09, 2011 at 08:49:58PM -0800, David Rientjes wrote:
+> On Thu, 10 Nov 2011, Nai Xia wrote:
+> 
+> > Did this patch get merged at last, or on this way being merged, or
+> > just dropped ?
+> > 
+> 
+> I thought we were waiting to find out if it caused a problem on arm.  
+> Either Russell should be able to clarify that or a couple months in 
+> linux-next.
 
--- 
-Jarkko
+As I said last time, these flags are passed into assembly on ARM.  For
+example, we pass a pointer to the VMA, and the assembly code them loads
+the vma flags to check whether VM_EXEC is set, so it knows whether it
+needs to flush the instruction TLB.
+
+Making this a 64-bit quantity then means we have to deal with the host
+endian issues and the position of the VM_EXEC bit inside that 64-bit
+quantity.  Remembering that ARM is 32-bit, that needs additional
+complexity to sort out, something like:
+
+#ifdef __ARMEB__
+#define VM_FLAGS_LOWWORD	4
+#else
+#define VM_FLAGS_LOWWORD	0
+#endif
+
+#if VM_EXEC >= 1<<32
+#define VM_FLAG_EXEC		(VM_EXEC >> 32)
+#define VM_FLAG_EXECWORD	4
+#else
+#define VM_FLAG_EXEC		VM_EXEC
+#define VM_FLAG_EXECWORD	0
+#endif
+
+	ldr	rd, [rn, #VMA_VM_FLAGS + (VM_FLAGS_LOWWORD ^ VM_FLAG_EXECWORD)]
+...
+	tst	rd, #VM_FLAG_EXEC
+
+which is not only rather horrible, but I also wonder whether VM_EXEC >> 32
+will provide the right answer with a binutils targetting 32-bit.
