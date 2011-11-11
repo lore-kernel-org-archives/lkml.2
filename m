@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab1KKKnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 05:43:16 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:53098 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab1KKKnN (ORCPT
+	id S1752910Ab1KKKoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 05:44:08 -0500
+Received: from mail-va3.bigfish.com ([216.32.180.10]:18082 "EHLO
+	VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750870Ab1KKKoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 05:43:13 -0500
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dK9371K1432N98dKc8kzz1202hzz84d07h8275bh8275dhz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-Message-ID: <4EBCFBAA.5010408@analog.com>
-Date: Fri, 11 Nov 2011 11:40:42 +0100
+	Fri, 11 Nov 2011 05:44:06 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zzbb2dK9371K1432N98dKc8kzz1202hzz8275bh8275dhz2dh2a8h668h839h67h)
+X-Spam-TCS-SCL: 6:0
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+Message-ID: <4EBCFBDE.4000103@analog.com>
+Date: Fri, 11 Nov 2011 11:41:34 +0100
 From: Michael Hennerich <michael.hennerich@analog.com>
 Reply-To: <michael.hennerich@analog.com>
 Organization: Analog Devices Inc.
@@ -31,10 +31,11 @@ CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
         "arnd@arndb.de" <arnd@arndb.de>,
         "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
         "lars@metafoo.de" <lars@metafoo.de>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 1/6] IIO: Core sysfs only support.
-References: <1320677563-18378-1-git-send-email-jic23@cam.ac.uk> <1320677563-18378-2-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1320677563-18378-2-git-send-email-jic23@cam.ac.uk>
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
+Subject: Re: [PATCH 5/6] IIO:imu:adis16400 partial move from staging.
+References: <1320677563-18378-1-git-send-email-jic23@cam.ac.uk> <1320677563-18378-6-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1320677563-18378-6-git-send-email-jic23@cam.ac.uk>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-OriginatorOrg: analog.com
@@ -43,1064 +44,1410 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 11/07/2011 03:52 PM, jic23@cam.ac.uk wrote:
-> From: Jonathan Cameron<jic23@cam.ac.uk>
+> From: Manuel Stahl<manuel.stahl@iis.fraunhofer.de>
 >
-> Add support for simple sysfs only interfaces.
->
-> Bulk of patch is concerned with taking struct iio_chan_spec
-> arrays and generating all the relevant interfaces from them.
+> This driver made use of a few convenient corners of scan_type so
+> I have lifted those elements into iio_chan_spec structure for now
+> (in initial iio core support patch).
 >
 > Signed-off-by: Jonathan Cameron<jic23@cam.ac.uk>
-Since this is a subset of what we already reviewed and tested while in 
-staging -
-I'm happy to add my ACK.
-
 Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-
 > ---
->   drivers/Kconfig           |    2 +
->   drivers/Makefile          |    3 +
->   drivers/iio/Kconfig       |   11 +
->   drivers/iio/Makefile      |    6 +
->   drivers/iio/iio.c         |  591 +++++++++++++++++++++++++++++++++++++++++++++
->   include/linux/iio/iio.h   |  244 +++++++++++++++++++
->   include/linux/iio/sysfs.h |   68 +++++
->   include/linux/iio/types.h |   52 ++++
->   8 files changed, 977 insertions(+), 0 deletions(-)
+>   drivers/iio/Kconfig              |    1 +
+>   drivers/iio/Makefile             |    1 +
+>   drivers/iio/imu/Kconfig          |   12 +
+>   drivers/iio/imu/Makefile         |    6 +
+>   drivers/iio/imu/adis16400.h      |  180 ++++++
+>   drivers/iio/imu/adis16400_core.c | 1142 ++++++++++++++++++++++++++++++++++++++
+>   6 files changed, 1342 insertions(+), 0 deletions(-)
 >
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index b5e6f24..7410537 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -136,4 +136,6 @@ source "drivers/hv/Kconfig"
->
->   source "drivers/devfreq/Kconfig"
->
-> +source "drivers/iio/Kconfig"
-> +
->   endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 1b31421..216bba4 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -129,6 +129,9 @@ obj-$(CONFIG_IOMMU_SUPPORT) += iommu/
->
->   # Virtualization drivers
->   obj-$(CONFIG_VIRT_DRIVERS)     += virt/
-> +
->   obj-$(CONFIG_HYPERV)           += hv/
->
->   obj-$(CONFIG_PM_DEVFREQ)       += devfreq/
-> +
-> +obj-$(CONFIG_IIO)              += iio/
 > diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-> new file mode 100644
-> index 0000000..012ebb0
-> --- /dev/null
+> index 5dcd9e5..308bc97 100644
+> --- a/drivers/iio/Kconfig
 > +++ b/drivers/iio/Kconfig
-> @@ -0,0 +1,11 @@
-> +#
-> +# Industrial I/O subsystem
-> +#
-> +
-> +menuconfig IIO
-> +       tristate "Industrial I/O support"
-> +       depends on GENERIC_HARDIRQS
-> +       help
-> +         The Industrial input / output subsystem provides a unified
-> +         framework for many different types of embedded sensor.
-> +
+> @@ -12,6 +12,7 @@ menuconfig IIO
+>   if IIO
+>
+>   source "drivers/iio/adc/Kconfig"
+> +source "drivers/iio/imu/Kconfig"
+>   source "drivers/iio/light/Kconfig"
+>
+>   endif # IIO
 > diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-> new file mode 100644
-> index 0000000..733846b
-> --- /dev/null
+> index 0e59946..db3c426 100644
+> --- a/drivers/iio/Makefile
 > +++ b/drivers/iio/Makefile
+> @@ -6,4 +6,5 @@ obj-$(CONFIG_IIO) += iio.o
+>   industrialio-y := core.o
+>
+>   obj-y += adc/
+> +obj-y += imu/
+>   obj-y += light/
+> diff --git a/drivers/iio/imu/Kconfig b/drivers/iio/imu/Kconfig
+> new file mode 100644
+> index 0000000..fe3c28c
+> --- /dev/null
+> +++ b/drivers/iio/imu/Kconfig
+> @@ -0,0 +1,12 @@
+> +menu "Inertial measurement units (IMUs)"
+> +
+> +config IIO_ADIS16400
+> +       tristate "Analog Devices ADIS16400 and similar IMU SPI driver"
+> +       depends on SPI
+> +       help
+> +         Say yes here to build support for Analog Devices adis16300, adis16350,
+> +         adis16354, adis16355, adis16360, adis16362, adis16364, adis16365,
+> +         adis16400 and adis16405 triaxial inertial sensors (adis16400 series
+> +         also have magnetometers).
+> +
+> +endmenu
+> diff --git a/drivers/iio/imu/Makefile b/drivers/iio/imu/Makefile
+> new file mode 100644
+> index 0000000..eb4d31e
+> --- /dev/null
+> +++ b/drivers/iio/imu/Makefile
 > @@ -0,0 +1,6 @@
 > +#
-> +# Makefile for the Industrial I/O subsystem
+> +# Makefile for IIO IMUs
 > +#
 > +
-> +obj-$(CONFIG_IIO) += iio.o
-> +industrialio-y := core.o
-> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+> +iio_adis16400-y := adis16400_core.o
+> +obj-$(CONFIG_IIO_ADIS16400) += iio_adis16400.o
+> \ No newline at end of file
+> diff --git a/drivers/iio/imu/adis16400.h b/drivers/iio/imu/adis16400.h
 > new file mode 100644
-> index 0000000..9a98f5f
+> index 0000000..78377ea
 > --- /dev/null
-> +++ b/drivers/iio/iio.c
-> @@ -0,0 +1,591 @@
-> +/* The industrial I/O core
+> +++ b/drivers/iio/imu/adis16400.h
+> @@ -0,0 +1,180 @@
+> +/*
+> + * adis16400.h support Analog Devices ADIS16400
+> + *             3d 18g accelerometers,
+> + *             3d gyroscopes,
+> + *             3d 2.5gauss magnetometers via SPI
 > + *
-> + * Copyright (c) 2008-2011 Jonathan Cameron
+> + * Copyright (c) 2009 Manuel Stahl<manuel.stahl@iis.fraunhofer.de>
+> + * Copyright (c) 2007 Jonathan Cameron<jic23@cam.ac.uk>
 > + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
+> + * Loosely based upon lis3l02dq.h
 > + *
-> + * Based on elements of hwmon and input subsystems.
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
 > + */
+> +
+> +#ifndef SPI_ADIS16400_H_
+> +#define SPI_ADIS16400_H_
+> +
+> +#define ADIS16400_STARTUP_DELAY        290 /* ms */
+> +#define ADIS16400_MTEST_DELAY 90 /* ms */
+> +
+> +#define ADIS16400_READ_REG(a)    a
+> +#define ADIS16400_WRITE_REG(a) ((a) | 0x80)
+> +
+> +#define ADIS16400_FLASH_CNT  0x00 /* Flash memory write count */
+> +#define ADIS16400_SUPPLY_OUT 0x02 /* Power supply measurement */
+> +#define ADIS16400_XGYRO_OUT 0x04 /* X-axis gyroscope output */
+> +#define ADIS16400_YGYRO_OUT 0x06 /* Y-axis gyroscope output */
+> +#define ADIS16400_ZGYRO_OUT 0x08 /* Z-axis gyroscope output */
+> +#define ADIS16400_XACCL_OUT 0x0A /* X-axis accelerometer output */
+> +#define ADIS16400_YACCL_OUT 0x0C /* Y-axis accelerometer output */
+> +#define ADIS16400_ZACCL_OUT 0x0E /* Z-axis accelerometer output */
+> +#define ADIS16400_XMAGN_OUT 0x10 /* X-axis magnetometer measurement */
+> +#define ADIS16400_YMAGN_OUT 0x12 /* Y-axis magnetometer measurement */
+> +#define ADIS16400_ZMAGN_OUT 0x14 /* Z-axis magnetometer measurement */
+> +#define ADIS16400_TEMP_OUT  0x16 /* Temperature output */
+> +#define ADIS16400_AUX_ADC   0x18 /* Auxiliary ADC measurement */
+> +
+> +#define ADIS16350_XTEMP_OUT 0x10 /* X-axis gyroscope temperature measurement */
+> +#define ADIS16350_YTEMP_OUT 0x12 /* Y-axis gyroscope temperature measurement */
+> +#define ADIS16350_ZTEMP_OUT 0x14 /* Z-axis gyroscope temperature measurement */
+> +
+> +#define ADIS16300_PITCH_OUT 0x12 /* X axis inclinometer output measurement */
+> +#define ADIS16300_ROLL_OUT  0x12 /* Y axis inclinometer output measurement */
+> +
+> +/* Calibration parameters */
+> +#define ADIS16400_XGYRO_OFF 0x1A /* X-axis gyroscope bias offset factor */
+> +#define ADIS16400_YGYRO_OFF 0x1C /* Y-axis gyroscope bias offset factor */
+> +#define ADIS16400_ZGYRO_OFF 0x1E /* Z-axis gyroscope bias offset factor */
+> +#define ADIS16400_XACCL_OFF 0x20 /* X-axis acceleration bias offset factor */
+> +#define ADIS16400_YACCL_OFF 0x22 /* Y-axis acceleration bias offset factor */
+> +#define ADIS16400_ZACCL_OFF 0x24 /* Z-axis acceleration bias offset factor */
+> +#define ADIS16400_XMAGN_HIF 0x26 /* X-axis magnetometer, hard-iron factor */
+> +#define ADIS16400_YMAGN_HIF 0x28 /* Y-axis magnetometer, hard-iron factor */
+> +#define ADIS16400_ZMAGN_HIF 0x2A /* Z-axis magnetometer, hard-iron factor */
+> +#define ADIS16400_XMAGN_SIF 0x2C /* X-axis magnetometer, soft-iron factor */
+> +#define ADIS16400_YMAGN_SIF 0x2E /* Y-axis magnetometer, soft-iron factor */
+> +#define ADIS16400_ZMAGN_SIF 0x30 /* Z-axis magnetometer, soft-iron factor */
+> +
+> +#define ADIS16400_GPIO_CTRL 0x32 /* Auxiliary digital input/output control */
+> +#define ADIS16400_MSC_CTRL  0x34 /* Miscellaneous control */
+> +#define ADIS16400_SMPL_PRD  0x36 /* Internal sample period (rate) control */
+> +#define ADIS16400_SENS_AVG  0x38 /* Dynamic range and digital filter control */
+> +#define ADIS16400_SLP_CNT   0x3A /* Sleep mode control */
+> +#define ADIS16400_DIAG_STAT 0x3C /* System status */
+> +
+> +/* Alarm functions */
+> +#define ADIS16400_GLOB_CMD  0x3E /* System command */
+> +#define ADIS16400_ALM_MAG1  0x40 /* Alarm 1 amplitude threshold */
+> +#define ADIS16400_ALM_MAG2  0x42 /* Alarm 2 amplitude threshold */
+> +#define ADIS16400_ALM_SMPL1 0x44 /* Alarm 1 sample size */
+> +#define ADIS16400_ALM_SMPL2 0x46 /* Alarm 2 sample size */
+> +#define ADIS16400_ALM_CTRL  0x48 /* Alarm control */
+> +#define ADIS16400_AUX_DAC   0x4A /* Auxiliary DAC data */
+> +
+> +#define ADIS16400_PRODUCT_ID 0x56 /* Product identifier */
+> +
+> +#define ADIS16400_ERROR_ACTIVE                 (1<<14)
+> +#define ADIS16400_NEW_DATA                     (1<<14)
+> +
+> +/* MSC_CTRL */
+> +#define ADIS16400_MSC_CTRL_MEM_TEST            (1<<11)
+> +#define ADIS16400_MSC_CTRL_INT_SELF_TEST       (1<<10)
+> +#define ADIS16400_MSC_CTRL_NEG_SELF_TEST       (1<<9)
+> +#define ADIS16400_MSC_CTRL_POS_SELF_TEST       (1<<8)
+> +#define ADIS16400_MSC_CTRL_GYRO_BIAS           (1<<7)
+> +#define ADIS16400_MSC_CTRL_ACCL_ALIGN          (1<<6)
+> +#define ADIS16400_MSC_CTRL_DATA_RDY_EN         (1<<2)
+> +#define ADIS16400_MSC_CTRL_DATA_RDY_POL_HIGH   (1<<1)
+> +#define ADIS16400_MSC_CTRL_DATA_RDY_DIO2       (1<<0)
+> +
+> +/* SMPL_PRD */
+> +#define ADIS16400_SMPL_PRD_TIME_BASE   (1<<7)
+> +#define ADIS16400_SMPL_PRD_DIV_MASK    0x7F
+> +
+> +/* DIAG_STAT */
+> +#define ADIS16400_DIAG_STAT_ZACCL_FAIL (1<<15)
+> +#define ADIS16400_DIAG_STAT_YACCL_FAIL (1<<14)
+> +#define ADIS16400_DIAG_STAT_XACCL_FAIL (1<<13)
+> +#define ADIS16400_DIAG_STAT_XGYRO_FAIL (1<<12)
+> +#define ADIS16400_DIAG_STAT_YGYRO_FAIL (1<<11)
+> +#define ADIS16400_DIAG_STAT_ZGYRO_FAIL (1<<10)
+> +#define ADIS16400_DIAG_STAT_ALARM2     (1<<9)
+> +#define ADIS16400_DIAG_STAT_ALARM1     (1<<8)
+> +#define ADIS16400_DIAG_STAT_FLASH_CHK  (1<<6)
+> +#define ADIS16400_DIAG_STAT_SELF_TEST  (1<<5)
+> +#define ADIS16400_DIAG_STAT_OVERFLOW   (1<<4)
+> +#define ADIS16400_DIAG_STAT_SPI_FAIL   (1<<3)
+> +#define ADIS16400_DIAG_STAT_FLASH_UPT  (1<<2)
+> +#define ADIS16400_DIAG_STAT_POWER_HIGH (1<<1)
+> +#define ADIS16400_DIAG_STAT_POWER_LOW  (1<<0)
+> +
+> +/* GLOB_CMD */
+> +#define ADIS16400_GLOB_CMD_SW_RESET    (1<<7)
+> +#define ADIS16400_GLOB_CMD_P_AUTO_NULL (1<<4)
+> +#define ADIS16400_GLOB_CMD_FLASH_UPD   (1<<3)
+> +#define ADIS16400_GLOB_CMD_DAC_LATCH   (1<<2)
+> +#define ADIS16400_GLOB_CMD_FAC_CALIB   (1<<1)
+> +#define ADIS16400_GLOB_CMD_AUTO_NULL   (1<<0)
+> +
+> +/* SLP_CNT */
+> +#define ADIS16400_SLP_CNT_POWER_OFF    (1<<8)
+> +
+> +#define ADIS16400_MAX_TX 24
+> +#define ADIS16400_MAX_RX 24
+> +
+> +#define ADIS16400_SPI_SLOW     (u32)(300 * 1000)
+> +#define ADIS16400_SPI_BURST    (u32)(1000 * 1000)
+> +#define ADIS16400_SPI_FAST     (u32)(2000 * 1000)
+> +
+> +#define ADIS16400_HAS_PROD_ID 1
+> +
+> +struct adis16400_chip_info {
+> +       const struct iio_chan_spec *channels;
+> +       const int num_channels;
+> +       const int product_id;
+> +       const long flags;
+> +       unsigned int gyro_scale_micro;
+> +       unsigned int accel_scale_micro;
+> +};
+> +
+> +/**
+> + * struct adis16400_state - device instance specific data
+> + * @us:                        actual spi_device
+> + * @trig:              data ready trigger registered with iio
+> + * @tx:                        transmit buffer
+> + * @rx:                        receive buffer
+> + * @buf_lock:          mutex to protect tx and rx
+> + **/
+> +struct adis16400_state {
+> +       struct spi_device               *us;
+> +       struct iio_trigger              *trig;
+> +       struct mutex                    buf_lock;
+> +       struct adis16400_chip_info      *variant;
+> +
+> +       u8      tx[ADIS16400_MAX_TX] ____cacheline_aligned;
+> +       u8      rx[ADIS16400_MAX_RX] ____cacheline_aligned;
+> +};
+> +
+> +#define ADIS16400_SCAN_SUPPLY  0
+> +#define ADIS16400_SCAN_GYRO_X  1
+> +#define ADIS16400_SCAN_GYRO_Y  2
+> +#define ADIS16400_SCAN_GYRO_Z  3
+> +#define ADIS16400_SCAN_ACC_X   4
+> +#define ADIS16400_SCAN_ACC_Y   5
+> +#define ADIS16400_SCAN_ACC_Z   6
+> +#define ADIS16400_SCAN_MAGN_X  7
+> +#define ADIS16350_SCAN_TEMP_X  7
+> +#define ADIS16400_SCAN_MAGN_Y  8
+> +#define ADIS16350_SCAN_TEMP_Y  8
+> +#define ADIS16400_SCAN_MAGN_Z  9
+> +#define ADIS16350_SCAN_TEMP_Z  9
+> +#define ADIS16400_SCAN_TEMP    10
+> +#define ADIS16350_SCAN_ADC_0   10
+> +#define ADIS16400_SCAN_ADC_0   11
+> +#define ADIS16300_SCAN_INCLI_X 12
+> +#define ADIS16300_SCAN_INCLI_Y 13
+> +
+> +#endif /* SPI_ADIS16400_H_ */
+> diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
+> new file mode 100644
+> index 0000000..5e49742
+> --- /dev/null
+> +++ b/drivers/iio/imu/adis16400_core.c
+> @@ -0,0 +1,1142 @@
+> +/*
+> + * adis16400.c support a number of ADI IMUs
+> + *
+> + * Copyright (c) 2009 Manuel Stahl<manuel.stahl@iis.fraunhofer.de>
+> + * Copyright (c) 2007-2011 Jonathan Cameron<jic23@cam.ac.uk>
+> + * Copyright (c) 2011 Analog Devices Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +#include<linux/delay.h>
+> +#include<linux/mutex.h>
+> +#include<linux/device.h>
 > +#include<linux/kernel.h>
-> +#include<linux/module.h>
+> +#include<linux/spi/spi.h>
 > +#include<linux/slab.h>
-> +#include<linux/idr.h>
+> +#include<linux/sysfs.h>
+> +#include<linux/list.h>
+> +
 > +#include<linux/iio/iio.h>
 > +#include<linux/iio/sysfs.h>
+> +#include "adis16400.h"
 > +
-> +static DEFINE_IDA(iio_ida);
-> +
-> +static struct bus_type iio_bus_type = {
-> +       .name = "iio",
+> +enum adis16400_chip_variant {
+> +       ADIS16300,
+> +       ADIS16334,
+> +       ADIS16350,
+> +       ADIS16360,
+> +       ADIS16362,
+> +       ADIS16364,
+> +       ADIS16365,
+> +       ADIS16400,
 > +};
 > +
-> +static const char * const iio_data_type_name[] = {
-> +       [IIO_RAW] = "raw",
-> +       [IIO_PROCESSED] = "input",
-> +};
-> +
-> +static const char * const iio_chan_type_name_spec[] = {
-> +       [IIO_VOLTAGE] = "voltage",
-> +       [IIO_CURRENT] = "current",
-> +       [IIO_POWER] = "power",
-> +       [IIO_ACCEL] = "accel",
-> +       [IIO_ANGL_VEL] = "anglvel",
-> +       [IIO_MAGN] = "magn",
-> +       [IIO_LIGHT] = "illuminance",
-> +       [IIO_INTENSITY] = "intensity",
-> +       [IIO_PROXIMITY] = "proximity",
-> +       [IIO_TEMP] = "temp",
-> +       [IIO_INCLI] = "incli",
-> +       [IIO_ROT] = "rot",
-> +       [IIO_ANGL] = "angl",
-> +       [IIO_TIMESTAMP] = "timestamp",
-> +};
-> +
-> +static const char * const iio_direction_name[] = {
-> +       [IIO_IN] = "in",
-> +       [IIO_OUT] = "out",
-> +};
-> +
-> +static const char * const iio_modifier_names[] = {
-> +       [IIO_MOD_X] = "x",
-> +       [IIO_MOD_Y] = "y",
-> +       [IIO_MOD_Z] = "z",
-> +       [IIO_MOD_LIGHT_BOTH] = "both",
-> +       [IIO_MOD_LIGHT_INFRARED] = "ir",
-> +};
-> +
-> +static const char * const iio_chan_info_postfix[] = {
-> +       [IIO_CHAN_INFO_SCALE] = "scale",
-> +       [IIO_CHAN_INFO_OFFSET] = "offset",
-> +       [IIO_CHAN_INFO_CALIBSCALE] = "calibscale",
-> +       [IIO_CHAN_INFO_CALIBBIAS] = "calibbias",
-> +       [IIO_CHAN_INFO_PEAK] = "peak_raw",
-> +       [IIO_CHAN_INFO_PEAK_SCALE] = "peak_scale",
-> +       [IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW] = "quadrature_correction_raw",
-> +};
-> +
-> +static void iio_device_free_read_attr(struct iio_dev *indio_dev,
-> +                                                struct iio_dev_attr *p)
+> +/**
+> + * adis16400_spi_write_reg_8() - write single byte to a register
+> + * @dev: device associated with child of actual device (iio_dev or iio_trig)
+> + * @reg_address: the address of the register to be written
+> + * @val: the value to write
+> + */
+> +static int adis16400_spi_write_reg_8(struct iio_dev *indio_dev,
+> +                                    u8 reg_address,
+> +                                    u8 val)
 > +{
-> +       kfree(p->dev_attr.attr.name);
-> +       kfree(p);
+> +       int ret;
+> +       struct adis16400_state *st = iio_priv(indio_dev);
+> +
+> +       mutex_lock(&st->buf_lock);
+> +       st->tx[0] = ADIS16400_WRITE_REG(reg_address);
+> +       st->tx[1] = val;
+> +
+> +       ret = spi_write(st->us, st->tx, 2);
+> +       mutex_unlock(&st->buf_lock);
+> +
+> +       return ret;
 > +}
 > +
-> +static void iio_device_unregister_sysfs(struct iio_dev *indio_dev)
+> +/**
+> + * adis16400_spi_write_reg_16() - write 2 bytes to a pair of registers
+> + * @dev: device associated with child of actual device (iio_dev or iio_trig)
+> + * @reg_address: the address of the lower of the two registers. Second register
+> + *               is assumed to have address one greater.
+> + * @val: value to be written
+> + *
+> + * At the moment the spi framework doesn't allow global setting of cs_change.
+> + * This means that use cannot be made of spi_write.
+> + */
+> +static int adis16400_spi_write_reg_16(struct iio_dev *indio_dev,
+> +               u8 lower_reg_address,
+> +               u16 value)
 > +{
+> +       int ret;
+> +       struct spi_message msg;
+> +       struct adis16400_state *st = iio_priv(indio_dev);
+> +       struct spi_transfer xfers[] = {
+> +               {
+> +                       .tx_buf = st->tx,
+> +                       .bits_per_word = 8,
+> +                       .len = 2,
+> +                       .cs_change = 1,
+> +               }, {
+> +                       .tx_buf = st->tx + 2,
+> +                       .bits_per_word = 8,
+> +                       .len = 2,
+> +               },
+> +       };
 > +
-> +       struct iio_dev_attr *p, *n;
+> +       mutex_lock(&st->buf_lock);
+> +       st->tx[0] = ADIS16400_WRITE_REG(lower_reg_address);
+> +       st->tx[1] = value&  0xFF;
+> +       st->tx[2] = ADIS16400_WRITE_REG(lower_reg_address + 1);
+> +       st->tx[3] = (value>>  8)&  0xFF;
 > +
-> +       list_for_each_entry_safe(p, n,&indio_dev->channel_attr_list, l) {
-> +               list_del(&p->l);
-> +               iio_device_free_read_attr(indio_dev, p);
+> +       spi_message_init(&msg);
+> +       spi_message_add_tail(&xfers[0],&msg);
+> +       spi_message_add_tail(&xfers[1],&msg);
+> +       ret = spi_sync(st->us,&msg);
+> +       mutex_unlock(&st->buf_lock);
+> +
+> +       return ret;
+> +}
+> +
+> +/**
+> + * adis16400_spi_read_reg_16() - read 2 bytes from a 16-bit register
+> + * @indio_dev: iio device
+> + * @reg_address: the address of the lower of the two registers. Second register
+> + *               is assumed to have address one greater.
+> + * @val: somewhere to pass back the value read
+> + *
+> + * At the moment the spi framework doesn't allow global setting of cs_change.
+> + * This means that use cannot be made of spi_read.
+> + **/
+> +static int adis16400_spi_read_reg_16(struct iio_dev *indio_dev,
+> +               u8 lower_reg_address,
+> +               u16 *val)
+> +{
+> +       struct spi_message msg;
+> +       struct adis16400_state *st = iio_priv(indio_dev);
+> +       int ret;
+> +       struct spi_transfer xfers[] = {
+> +               {
+> +                       .tx_buf = st->tx,
+> +                       .bits_per_word = 8,
+> +                       .len = 2,
+> +                       .cs_change = 1,
+> +               }, {
+> +                       .rx_buf = st->rx,
+> +                       .bits_per_word = 8,
+> +                       .len = 2,
+> +               },
+> +       };
+> +
+> +       mutex_lock(&st->buf_lock);
+> +       st->tx[0] = ADIS16400_READ_REG(lower_reg_address);
+> +       st->tx[1] = 0;
+> +
+> +       spi_message_init(&msg);
+> +       spi_message_add_tail(&xfers[0],&msg);
+> +       spi_message_add_tail(&xfers[1],&msg);
+> +       ret = spi_sync(st->us,&msg);
+> +       if (ret) {
+> +               dev_err(&st->us->dev,
+> +                       "problem when reading 16 bit register 0x%02X",
+> +                       lower_reg_address);
+> +               goto error_ret;
 > +       }
-> +       kfree(indio_dev->chan_attr_group.attrs);
+> +       *val = (st->rx[0]<<  8) | st->rx[1];
+> +
+> +error_ret:
+> +       mutex_unlock(&st->buf_lock);
+> +       return ret;
 > +}
 > +
-> +static void iio_dev_release(struct device *device)
-> +{
-> +       struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
-> +       iio_device_unregister_sysfs(indio_dev);
-> +}
-> +
-> +static struct device_type iio_dev_type = {
-> +       .name = "iio_device",
-> +       .release = iio_dev_release,
-> +};
-> +
-> +struct iio_dev *iio_device_allocate(int sizeof_priv)
-> +{
-> +       struct iio_dev *dev;
-> +       size_t alloc_size;
-> +
-> +       alloc_size = sizeof(struct iio_dev);
-> +       if (sizeof_priv) {
-> +               alloc_size = ALIGN(alloc_size, IIO_ALIGN);
-> +               alloc_size += sizeof_priv;
-> +       }
-> +       /* ensure cacheline alignment of whole construct */
-> +       alloc_size += IIO_ALIGN - 1;
-> +
-> +       dev = kzalloc(alloc_size, GFP_KERNEL);
-> +
-> +       if (dev) {
-> +               dev->dev.groups = dev->groups;
-> +               dev->dev.type =&iio_dev_type;
-> +               dev->dev.bus =&iio_bus_type;
-> +               device_initialize(&dev->dev);
-> +               dev_set_drvdata(&dev->dev, (void *)dev);
-> +               mutex_init(&dev->mlock);
-> +       }
-> +
-> +       return dev;
-> +}
-> +EXPORT_SYMBOL_GPL(iio_device_allocate);
-> +
-> +void iio_device_free(struct iio_dev *dev)
-> +{
-> +       if (dev)
-> +               iio_put_device(dev);
-> +}
-> +EXPORT_SYMBOL_GPL(iio_device_free);
-> +
-> +ssize_t __iio_read_const_attr(struct device *dev,
-> +                           struct device_attribute *attr,
-> +                           char *buf)
-> +{
-> +       return sprintf(buf, "%s\n",
-> +                      container_of(attr,
-> +                                   struct iio_const_attr,
-> +                                   dev_attr)->string);
-> +}
-> +EXPORT_SYMBOL_GPL(__iio_read_const_attr);
-> +
-> +static ssize_t iio_read_channel_info(struct device *dev,
-> +                                    struct device_attribute *attr,
-> +                                    char *buf)
+> +static ssize_t adis16400_read_frequency(struct device *dev,
+> +               struct device_attribute *attr,
+> +               char *buf)
 > +{
 > +       struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +       struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
-> +       int val, val2;
-> +       int ret = indio_dev->info->read_raw(indio_dev, this_attr->c,
-> +&val,&val2, this_attr->address);
-> +
-> +       if (ret<  0)
-> +               return ret;
-> +
-> +       if (ret == IIO_VAL_INT)
-> +               return sprintf(buf, "%d\n", val);
-> +       else if (ret == IIO_VAL_INT_PLUS_MICRO) {
-> +               if (val2<  0)
-> +                       return sprintf(buf, "-%d.%06u\n", val, -val2);
-> +               else
-> +                       return sprintf(buf, "%d.%06u\n", val, val2);
-> +       } else if (ret == IIO_VAL_INT_PLUS_NANO) {
-> +               if (val2<  0)
-> +                       return sprintf(buf, "-%d.%09u\n", val, -val2);
-> +               else
-> +                       return sprintf(buf, "%d.%09u\n", val, val2);
-> +       } else
-> +               return 0;
-> +}
-> +
-> +static ssize_t iio_write_channel_info(struct device *dev,
-> +                                     struct device_attribute *attr,
-> +                                     const char *buf,
-> +                                     size_t len)
-> +{
-> +       struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +       struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
-> +       int ret, integer = 0, fract = 0, fract_mult = 100000;
-> +       bool integer_part = true, negative = false;
-> +
-> +       /* Assumes decimal - precision based on number of digits */
-> +       if (!indio_dev->info->write_raw)
-> +               return -EINVAL;
-> +
-> +       if (indio_dev->info->write_raw_get_fmt)
-> +               switch (indio_dev->info->write_raw_get_fmt(indio_dev,
-> +                       this_attr->c, this_attr->address)) {
-> +               case IIO_VAL_INT_PLUS_MICRO:
-> +                       fract_mult = 100000;
-> +                       break;
-> +               case IIO_VAL_INT_PLUS_NANO:
-> +                       fract_mult = 100000000;
-> +                       break;
-> +               default:
-> +                       return -EINVAL;
-> +               }
-> +
-> +       if (buf[0] == '-') {
-> +               negative = true;
-> +               buf++;
-> +       }
-> +
-> +       while (*buf) {
-> +               if ('0'<= *buf&&  *buf<= '9') {
-> +                       if (integer_part)
-> +                               integer = integer*10 + *buf - '0';
-> +                       else {
-> +                               fract += fract_mult*(*buf - '0');
-> +                               if (fract_mult == 1)
-> +                                       break;
-> +                               fract_mult /= 10;
-> +                       }
-> +               } else if (*buf == '\n') {
-> +                       if (*(buf + 1) == '\0')
-> +                               break;
-> +                       else
-> +                               return -EINVAL;
-> +               } else if (*buf == '.') {
-> +                       integer_part = false;
-> +               } else {
-> +                       return -EINVAL;
-> +               }
-> +               buf++;
-> +       }
-> +       if (negative) {
-> +               if (integer)
-> +                       integer = -integer;
-> +               else
-> +                       fract = -fract;
-> +       }
-> +
-> +       ret = indio_dev->info->write_raw(indio_dev, this_attr->c,
-> +                                        integer, fract, this_attr->address);
+> +       int ret, len = 0;
+> +       u16 t;
+> +       int sps;
+> +       ret = adis16400_spi_read_reg_16(indio_dev,
+> +                       ADIS16400_SMPL_PRD,
+> +&t);
 > +       if (ret)
 > +               return ret;
+> +       sps =  (t&  ADIS16400_SMPL_PRD_TIME_BASE) ? 53 : 1638;
+> +       sps /= (t&  ADIS16400_SMPL_PRD_DIV_MASK) + 1;
+> +       len = sprintf(buf, "%d SPS\n", sps);
+> +       return len;
+> +}
+> +
+> +static ssize_t adis16400_write_frequency(struct device *dev,
+> +               struct device_attribute *attr,
+> +               const char *buf,
+> +               size_t len)
+> +{
+> +       struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +       struct adis16400_state *st = iio_priv(indio_dev);
+> +       long val;
+> +       int ret;
+> +       u8 t;
+> +
+> +       ret = strict_strtol(buf, 10,&val);
+> +       if (ret)
+> +               return ret;
+> +
+> +       mutex_lock(&indio_dev->mlock);
+> +
+> +       t = (1638 / val);
+> +       if (t>  0)
+> +               t--;
+> +       t&= ADIS16400_SMPL_PRD_DIV_MASK;
+> +       if ((t&  ADIS16400_SMPL_PRD_DIV_MASK)>= 0x0A)
+> +               st->us->max_speed_hz = ADIS16400_SPI_SLOW;
+> +       else
+> +               st->us->max_speed_hz = ADIS16400_SPI_FAST;
+> +
+> +       ret = adis16400_spi_write_reg_8(indio_dev,
+> +                       ADIS16400_SMPL_PRD,
+> +                       t);
+> +
+> +       mutex_unlock(&indio_dev->mlock);
+> +
+> +       return ret ? ret : len;
+> +}
+> +
+> +static int adis16400_reset(struct iio_dev *indio_dev)
+> +{
+> +       int ret;
+> +       ret = adis16400_spi_write_reg_8(indio_dev,
+> +                       ADIS16400_GLOB_CMD,
+> +                       ADIS16400_GLOB_CMD_SW_RESET);
+> +       if (ret)
+> +               dev_err(&indio_dev->dev, "problem resetting device");
+> +
+> +       return ret;
+> +}
+> +
+> +static ssize_t adis16400_write_reset(struct device *dev,
+> +               struct device_attribute *attr,
+> +               const char *buf, size_t len)
+> +{
+> +       bool val;
+> +       int ret;
+> +
+> +       ret = strtobool(buf,&val);
+> +       if (ret<  0)
+> +               return ret;
+> +       if (val) {
+> +               ret = adis16400_reset(dev_get_drvdata(dev));
+> +               if (ret<  0)
+> +                       return ret;
+> +       }
 > +
 > +       return len;
 > +}
 > +
-> +static
-> +int __iio_device_attr_init(struct device_attribute *dev_attr,
-> +                          const char *postfix,
-> +                          struct iio_chan_spec const *chan,
-> +                          ssize_t (*readfunc)(struct device *dev,
-> +                                              struct device_attribute *attr,
-> +                                              char *buf),
-> +                          ssize_t (*writefunc)(struct device *dev,
-> +                                               struct device_attribute *attr,
-> +                                               const char *buf,
-> +                                               size_t len),
-> +                          bool generic)
+> +/* Power down the device */
+> +static int adis16400_stop_device(struct iio_dev *indio_dev)
 > +{
 > +       int ret;
-> +       char *name_format, *full_postfix;
-> +       sysfs_attr_init(&dev_attr->attr);
+> +       u16 val = ADIS16400_SLP_CNT_POWER_OFF;
 > +
-> +       /* Build up postfix of<extend_name>_<modifier>_postfix */
-> +       if (chan->modified&&  !generic) {
-> +               if (chan->extend_name)
-> +                       full_postfix = kasprintf(GFP_KERNEL, "%s_%s_%s",
-> +                                                iio_modifier_names[chan
-> +                                                                   ->channel2],
-> +                                                chan->extend_name,
-> +                                                postfix);
-> +               else
-> +                       full_postfix = kasprintf(GFP_KERNEL, "%s_%s",
-> +                                                iio_modifier_names[chan
-> +                                                                   ->channel2],
-> +                                                postfix);
-> +       } else {
-> +               if (chan->extend_name == NULL)
-> +                       full_postfix = kstrdup(postfix, GFP_KERNEL);
-> +               else
-> +                       full_postfix = kasprintf(GFP_KERNEL,
-> +                                                "%s_%s",
-> +                                                chan->extend_name,
-> +                                                postfix);
-> +       }
-> +       if (full_postfix == NULL) {
-> +               ret = -ENOMEM;
-> +               goto error_ret;
-> +       }
-> +
-> +       if (chan->differential) { /* Differential  can not have modifier */
-> +               if (generic)
-> +                       name_format
-> +                               = kasprintf(GFP_KERNEL, "%s_%s-%s_%s",
-> +                                           iio_direction_name[chan->output],
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           full_postfix);
-> +               else if (chan->indexed)
-> +                       name_format
-> +                               = kasprintf(GFP_KERNEL, "%s_%s%d-%s%d_%s",
-> +                                           iio_direction_name[chan->output],
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           chan->channel,
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           chan->channel2,
-> +                                           full_postfix);
-> +               else {
-> +                       WARN_ON("Differential channels must be indexed\n");
-> +                       ret = -EINVAL;
-> +                       goto error_free_full_postfix;
-> +               }
-> +       } else { /* Single ended */
-> +               if (generic)
-> +                       name_format
-> +                               = kasprintf(GFP_KERNEL, "%s_%s_%s",
-> +                                           iio_direction_name[chan->output],
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           full_postfix);
-> +               else if (chan->indexed)
-> +                       name_format
-> +                               = kasprintf(GFP_KERNEL, "%s_%s%d_%s",
-> +                                           iio_direction_name[chan->output],
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           chan->channel,
-> +                                           full_postfix);
-> +               else
-> +                       name_format
-> +                               = kasprintf(GFP_KERNEL, "%s_%s_%s",
-> +                                           iio_direction_name[chan->output],
-> +                                           iio_chan_type_name_spec[chan->type],
-> +                                           full_postfix);
-> +       }
-> +       if (name_format == NULL) {
-> +               ret = -ENOMEM;
-> +               goto error_free_full_postfix;
-> +       }
-> +       dev_attr->attr.name = kasprintf(GFP_KERNEL,
-> +                                       name_format,
-> +                                       chan->channel,
-> +                                       chan->channel2);
-> +       if (dev_attr->attr.name == NULL) {
-> +               ret = -ENOMEM;
-> +               goto error_free_name_format;
-> +       }
-> +
-> +       if (readfunc) {
-> +               dev_attr->attr.mode |= S_IRUGO;
-> +               dev_attr->show = readfunc;
-> +       }
-> +
-> +       if (writefunc) {
-> +               dev_attr->attr.mode |= S_IWUSR;
-> +               dev_attr->store = writefunc;
-> +       }
-> +       kfree(name_format);
-> +       kfree(full_postfix);
-> +
-> +       return 0;
-> +
-> +error_free_name_format:
-> +       kfree(name_format);
-> +error_free_full_postfix:
-> +       kfree(full_postfix);
-> +error_ret:
-> +       return ret;
-> +}
-> +
-> +static void __iio_device_attr_deinit(struct device_attribute *dev_attr)
-> +{
-> +       kfree(dev_attr->attr.name);
-> +}
-> +
-> +static
-> +int __iio_add_chan_devattr(const char *postfix,
-> +                          struct iio_chan_spec const *chan,
-> +                          ssize_t (*readfunc)(struct device *dev,
-> +                                              struct device_attribute *attr,
-> +                                              char *buf),
-> +                          ssize_t (*writefunc)(struct device *dev,
-> +                                               struct device_attribute *attr,
-> +                                               const char *buf,
-> +                                               size_t len),
-> +                          u64 mask,
-> +                          bool generic,
-> +                          struct device *dev,
-> +                          struct list_head *attr_list)
-> +{
-> +       int ret;
-> +       struct iio_dev_attr *iio_attr, *t;
-> +
-> +       iio_attr = kzalloc(sizeof *iio_attr, GFP_KERNEL);
-> +       if (iio_attr == NULL) {
-> +               ret = -ENOMEM;
-> +               goto error_ret;
-> +       }
-> +       ret = __iio_device_attr_init(&iio_attr->dev_attr,
-> +                                    postfix, chan,
-> +                                    readfunc, writefunc, generic);
+> +       ret = adis16400_spi_write_reg_16(indio_dev, ADIS16400_SLP_CNT, val);
 > +       if (ret)
-> +               goto error_iio_dev_attr_free;
-> +       iio_attr->c = chan;
-> +       iio_attr->address = mask;
-> +       list_for_each_entry(t, attr_list, l)
-> +               if (strcmp(t->dev_attr.attr.name,
-> +                          iio_attr->dev_attr.attr.name) == 0) {
-> +                       if (!generic)
-> +                               dev_err(dev, "tried to double register : %s\n",
-> +                                       t->dev_attr.attr.name);
-> +                       ret = -EBUSY;
-> +                       goto error_device_attr_deinit;
-> +               }
+> +               dev_err(&indio_dev->dev,
+> +                       "problem with turning device off: SLP_CNT");
 > +
-> +       list_add(&iio_attr->l, attr_list);
-> +
-> +       return 0;
-> +
-> +error_device_attr_deinit:
-> +       __iio_device_attr_deinit(&iio_attr->dev_attr);
-> +error_iio_dev_attr_free:
-> +       kfree(iio_attr);
-> +error_ret:
 > +       return ret;
 > +}
 > +
-> +static int iio_device_add_channel_sysfs(struct iio_dev *indio_dev,
-> +                                       struct iio_chan_spec const *chan)
+> +static int adis16400_check_status(struct iio_dev *indio_dev)
 > +{
-> +       int ret, i, attrcount = 0;
+> +       u16 status;
+> +       int ret;
+> +       struct device *dev =&indio_dev->dev;
 > +
-> +       if (chan->channel<  0)
-> +               return 0;
-> +       ret = __iio_add_chan_devattr(iio_data_type_name[chan->processed_val],
-> +                                    chan,
-> +&iio_read_channel_info,
-> +                                    (chan->output ?
-> +&iio_write_channel_info : NULL),
-> +                                    0,
-> +                                    0,
-> +&indio_dev->dev,
-> +&indio_dev->channel_attr_list);
-> +       if (ret)
+> +       ret = adis16400_spi_read_reg_16(indio_dev,
+> +                                       ADIS16400_DIAG_STAT,&status);
+> +
+> +       if (ret<  0) {
+> +               dev_err(dev, "Reading status failed\n");
 > +               goto error_ret;
-> +       attrcount++;
-> +
-> +       for_each_set_bit(i,&chan->info_mask,
-> +                        ARRAY_SIZE(iio_chan_info_postfix)*2) {
-> +               ret = __iio_add_chan_devattr(iio_chan_info_postfix[i/2],
-> +                                            chan,
-> +&iio_read_channel_info,
-> +&iio_write_channel_info,
-> +                                            i/2,
-> +                                            !(i%2),
-> +&indio_dev->dev,
-> +&indio_dev->channel_attr_list);
-> +               if (ret == -EBUSY&&  (i%2 == 0)) {
-> +                       ret = 0;
-> +                       continue;
-> +               }
-> +               if (ret<  0)
-> +                       goto error_ret;
-> +               attrcount++;
 > +       }
-> +       ret = attrcount;
+> +       ret = status;
+> +       if (status&  ADIS16400_DIAG_STAT_ZACCL_FAIL)
+> +               dev_err(dev, "Z-axis accelerometer self-test failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_YACCL_FAIL)
+> +               dev_err(dev, "Y-axis accelerometer self-test failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_XACCL_FAIL)
+> +               dev_err(dev, "X-axis accelerometer self-test failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_XGYRO_FAIL)
+> +               dev_err(dev, "X-axis gyroscope self-test failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_YGYRO_FAIL)
+> +               dev_err(dev, "Y-axis gyroscope self-test failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_ZGYRO_FAIL)
+> +               dev_err(dev, "Z-axis gyroscope self-test failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_ALARM2)
+> +               dev_err(dev, "Alarm 2 active\n");
+> +       if (status&  ADIS16400_DIAG_STAT_ALARM1)
+> +               dev_err(dev, "Alarm 1 active\n");
+> +       if (status&  ADIS16400_DIAG_STAT_FLASH_CHK)
+> +               dev_err(dev, "Flash checksum error\n");
+> +       if (status&  ADIS16400_DIAG_STAT_SELF_TEST)
+> +               dev_err(dev, "Self test error\n");
+> +       if (status&  ADIS16400_DIAG_STAT_OVERFLOW)
+> +               dev_err(dev, "Sensor overrange\n");
+> +       if (status&  ADIS16400_DIAG_STAT_SPI_FAIL)
+> +               dev_err(dev, "SPI failure\n");
+> +       if (status&  ADIS16400_DIAG_STAT_FLASH_UPT)
+> +               dev_err(dev, "Flash update failed\n");
+> +       if (status&  ADIS16400_DIAG_STAT_POWER_HIGH)
+> +               dev_err(dev, "Power supply above 5.25V\n");
+> +       if (status&  ADIS16400_DIAG_STAT_POWER_LOW)
+> +               dev_err(dev, "Power supply below 4.75V\n");
+> +
 > +error_ret:
 > +       return ret;
 > +}
 > +
-> +static ssize_t iio_show_dev_name(struct device *dev,
-> +                                struct device_attribute *attr,
-> +                                char *buf)
-> +{
-> +       struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +       return sprintf(buf, "%s\n", indio_dev->name);
-> +}
-> +
-> +static DEVICE_ATTR(name, S_IRUGO, iio_show_dev_name, NULL);
-> +
-> +static int iio_device_register_sysfs(struct iio_dev *indio_dev)
-> +{
-> +       int i, ret = 0, attrcount, attrn, attrcount_orig = 0;
-> +       struct iio_dev_attr *p, *n;
-> +       struct attribute **attr;
-> +
-> +       /* First count elements in any existing group */
-> +       if (indio_dev->info->attrs) {
-> +               attr = indio_dev->info->attrs->attrs;
-> +               while (*attr++ != NULL)
-> +                       attrcount_orig++;
-> +       }
-> +       attrcount = attrcount_orig;
-> +
-> +       INIT_LIST_HEAD(&indio_dev->channel_attr_list);
-> +       if (indio_dev->channels)
-> +               for (i = 0; i<  indio_dev->num_channels; i++) {
-> +                       ret = iio_device_add_channel_sysfs(indio_dev,
-> +&indio_dev
-> +                                                          ->channels[i]);
-> +                       if (ret<  0)
-> +                               goto error_clear_attrs;
-> +                       attrcount += ret;
-> +               }
-> +       if (indio_dev->name)
-> +               attrcount++;
-> +
-> +       indio_dev->chan_attr_group.attrs
-> +               = kzalloc(sizeof(indio_dev->chan_attr_group.attrs[0])*
-> +                         (attrcount + 1),
-> +                         GFP_KERNEL);
-> +       if (indio_dev->chan_attr_group.attrs == NULL) {
-> +               ret = -ENOMEM;
-> +               goto error_clear_attrs;
-> +       }
-> +       /* Copy across original attributes */
-> +       if (indio_dev->info->attrs)
-> +               memcpy(indio_dev->chan_attr_group.attrs,
-> +                      indio_dev->info->attrs->attrs,
-> +                      sizeof(indio_dev->chan_attr_group.attrs[0])
-> +                      *attrcount_orig);
-> +       attrn = attrcount_orig;
-> +       /* Add all elements from the list. */
-> +       list_for_each_entry(p,&indio_dev->channel_attr_list, l)
-> +               indio_dev->chan_attr_group.attrs[attrn++] =&p->dev_attr.attr;
-> +       if (indio_dev->name)
-> +               indio_dev->chan_attr_group.attrs[attrn++] =&dev_attr_name.attr;
-> +
-> +       indio_dev->groups[indio_dev->groupcounter++] =
-> +&indio_dev->chan_attr_group;
-> +
-> +       return 0;
-> +
-> +error_clear_attrs:
-> +       list_for_each_entry_safe(p, n,
-> +&indio_dev->channel_attr_list, l) {
-> +               list_del(&p->l);
-> +               iio_device_free_read_attr(indio_dev, p);
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +int iio_device_register(struct iio_dev *indio_dev)
+> +static int adis16400_self_test(struct iio_dev *indio_dev)
 > +{
 > +       int ret;
-> +
-> +       indio_dev->id = ida_simple_get(&iio_ida, 0, 0, GFP_KERNEL);
-> +       if (indio_dev->id<  0) {
-> +               ret = indio_dev->id;
-> +               goto error_ret;
-> +       }
-> +
-> +       dev_set_name(&indio_dev->dev, "iio:device%d", indio_dev->id);
-> +
-> +       ret = iio_device_register_sysfs(indio_dev);
+> +       ret = adis16400_spi_write_reg_16(indio_dev,
+> +                       ADIS16400_MSC_CTRL,
+> +                       ADIS16400_MSC_CTRL_MEM_TEST);
 > +       if (ret) {
-> +               dev_err(indio_dev->dev.parent,
-> +                       "Failed to register sysfs interfaces\n");
-> +               goto error_free_ida;
+> +               dev_err(&indio_dev->dev, "problem starting self test");
+> +               goto err_ret;
 > +       }
-> +       ret = device_add(&indio_dev->dev);
+> +
+> +       msleep(ADIS16400_MTEST_DELAY);
+> +       adis16400_check_status(indio_dev);
+> +
+> +err_ret:
+> +       return ret;
+> +}
+> +
+> +static int adis16400_initial_setup(struct iio_dev *indio_dev)
+> +{
+> +       int ret;
+> +       u16 prod_id, smp_prd;
+> +       struct adis16400_state *st = iio_priv(indio_dev);
+> +
+> +       /* use low spi speed for init */
+> +       st->us->max_speed_hz = ADIS16400_SPI_SLOW;
+> +       st->us->mode = SPI_MODE_3;
+> +       spi_setup(st->us);
+> +
+> +       ret = adis16400_self_test(indio_dev);
+> +       if (ret) {
+> +               dev_err(&indio_dev->dev, "self test failure");
+> +               goto err_ret;
+> +       }
+> +
+> +       ret = adis16400_check_status(indio_dev);
+> +       if (ret) {
+> +               adis16400_reset(indio_dev);
+> +               dev_err(&indio_dev->dev, "device not playing ball ->  reset");
+> +               msleep(ADIS16400_STARTUP_DELAY);
+> +               ret = adis16400_check_status(indio_dev);
+> +               if (ret) {
+> +                       dev_err(&indio_dev->dev, "giving up");
+> +                       goto err_ret;
+> +               }
+> +       }
+> +       if (st->variant->flags&  ADIS16400_HAS_PROD_ID) {
+> +               ret = adis16400_spi_read_reg_16(indio_dev,
+> +                                               ADIS16400_PRODUCT_ID,&prod_id);
+> +               if (ret)
+> +                       goto err_ret;
+> +
+> +               if ((prod_id&  0xF000) != st->variant->product_id)
+> +                       dev_warn(&indio_dev->dev, "incorrect id");
+> +
+> +               dev_info(&indio_dev->dev,
+> +                        "%s: prod_id 0x%04x at CS%d (irq %d)\n",
+> +                        indio_dev->name, prod_id,
+> +                        st->us->chip_select, st->us->irq);
+> +       }
+> +       /* use high spi speed if possible */
+> +       ret = adis16400_spi_read_reg_16(indio_dev,
+> +                                       ADIS16400_SMPL_PRD,&smp_prd);
+> +       if (!ret&&  (smp_prd&  ADIS16400_SMPL_PRD_DIV_MASK)<  0x0A) {
+> +               st->us->max_speed_hz = ADIS16400_SPI_SLOW;
+> +               spi_setup(st->us);
+> +       }
+> +
+> +err_ret:
+> +       return ret;
+> +}
+> +
+> +static IIO_DEVICE_ATTR(sampling_frequency,
+> +                      S_IWUSR | S_IRUGO,
+> +                      adis16400_read_frequency,
+> +                      adis16400_write_frequency,
+> +                      0);
+> +
+> +static IIO_DEVICE_ATTR(reset, S_IWUSR, NULL, adis16400_write_reset, 0);
+> +
+> +static IIO_CONST_ATTR(sampling_frequency_available, "409 546 819 1638");
+> +
+> +enum adis16400_chan {
+> +       in_supply,
+> +       gyro_x,
+> +       gyro_y,
+> +       gyro_z,
+> +       accel_x,
+> +       accel_y,
+> +       accel_z,
+> +       magn_x,
+> +       magn_y,
+> +       magn_z,
+> +       temp,
+> +       temp0, temp1, temp2,
+> +       in1,
+> +       incli_x,
+> +       incli_y,
+> +};
+> +
+> +static u8 adis16400_addresses[17][2] = {
+> +       [in_supply] = { ADIS16400_SUPPLY_OUT },
+> +       [gyro_x] = { ADIS16400_XGYRO_OUT, ADIS16400_XGYRO_OFF },
+> +       [gyro_y] = { ADIS16400_YGYRO_OUT, ADIS16400_YGYRO_OFF },
+> +       [gyro_z] = { ADIS16400_ZGYRO_OUT, ADIS16400_ZGYRO_OFF },
+> +       [accel_x] = { ADIS16400_XACCL_OUT, ADIS16400_XACCL_OFF },
+> +       [accel_y] = { ADIS16400_YACCL_OUT, ADIS16400_YACCL_OFF },
+> +       [accel_z] = { ADIS16400_ZACCL_OUT, ADIS16400_ZACCL_OFF },
+> +       [magn_x] = { ADIS16400_XMAGN_OUT },
+> +       [magn_y] = { ADIS16400_YMAGN_OUT },
+> +       [magn_z] = { ADIS16400_ZMAGN_OUT },
+> +       [temp] = { ADIS16400_TEMP_OUT },
+> +       [temp0] = { ADIS16350_XTEMP_OUT },
+> +       [temp1] = { ADIS16350_YTEMP_OUT },
+> +       [temp2] = { ADIS16350_ZTEMP_OUT },
+> +       [in1] = { ADIS16400_AUX_ADC },
+> +       [incli_x] = { ADIS16300_PITCH_OUT },
+> +       [incli_y] = { ADIS16300_ROLL_OUT }
+> +};
+> +
+> +static int adis16400_write_raw(struct iio_dev *indio_dev,
+> +                              struct iio_chan_spec const *chan,
+> +                              int val,
+> +                              int val2,
+> +                              long mask)
+> +{
+> +       int ret;
+> +
+> +       switch (mask) {
+> +       case IIO_CHAN_INFO_CALIBBIAS:
+> +               mutex_lock(&indio_dev->mlock);
+> +               ret = adis16400_spi_write_reg_16(indio_dev,
+> +                               adis16400_addresses[chan->address][1],
+> +                               val);
+> +               mutex_unlock(&indio_dev->mlock);
+> +               return ret;
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +}
+> +
+> +static int adis16400_read_raw(struct iio_dev *indio_dev,
+> +                             struct iio_chan_spec const *chan,
+> +                             int *val,
+> +                             int *val2,
+> +                             long mask)
+> +{
+> +       struct adis16400_state *st = iio_priv(indio_dev);
+> +       int ret, shift;
+> +       s16 val16;
+> +
+> +       switch (mask) {
+> +       case 0:
+> +               mutex_lock(&indio_dev->mlock);
+> +               ret = adis16400_spi_read_reg_16(indio_dev,
+> +                               adis16400_addresses[chan->address][0],
+> +&val16);
+> +               if (ret) {
+> +                       mutex_unlock(&indio_dev->mlock);
+> +                       return ret;
+> +               }
+> +               val16&= (1<<  chan->scan_type.realbits) - 1;
+> +               if (chan->scan_type.sign == 's') {
+> +                       shift = 16 - chan->scan_type.realbits;
+> +                       val16 = (s16)(val16<<  shift)>>  shift;
+> +               }
+> +               *val = val16;
+> +               mutex_unlock(&indio_dev->mlock);
+> +               return IIO_VAL_INT;
+> +       case IIO_CHAN_INFO_SCALE:
+> +               switch (chan->type) {
+> +               case IIO_ANGL_VEL:
+> +                       *val = 0;
+> +                       *val2 = st->variant->gyro_scale_micro;
+> +                       return IIO_VAL_INT_PLUS_MICRO;
+> +               case IIO_IN:
+> +                       *val = 0;
+> +                       if (chan->channel == 0)
+> +                               *val2 = 2418;
+> +                       else
+> +                               *val2 = 806;
+> +                       return IIO_VAL_INT_PLUS_MICRO;
+> +               case IIO_ACCEL:
+> +                       *val = 0;
+> +                       *val2 = st->variant->accel_scale_micro;
+> +                       return IIO_VAL_INT_PLUS_MICRO;
+> +               case IIO_MAGN:
+> +                       *val = 0;
+> +                       *val2 = 500;
+> +                       return IIO_VAL_INT_PLUS_MICRO;
+> +               case IIO_TEMP:
+> +                       *val = 0;
+> +                       *val2 = 140000;
+> +                       return IIO_VAL_INT_PLUS_MICRO;
+> +               default:
+> +                       return -EINVAL;
+> +               }
+> +       case IIO_CHAN_INFO_CALIBBIAS:
+> +               mutex_lock(&indio_dev->mlock);
+> +               ret = adis16400_spi_read_reg_16(indio_dev,
+> +                               adis16400_addresses[chan->address][1],
+> +&val16);
+> +               mutex_unlock(&indio_dev->mlock);
+> +               if (ret)
+> +                       return ret;
+> +               val16 = ((val16&  0xFFF)<<  4)>>  4;
+> +               *val = val16;
+> +               return IIO_VAL_INT;
+> +       case IIO_CHAN_INFO_OFFSET:
+> +               /* currently only temperature */
+> +               *val = 198;
+> +               *val2 = 160000;
+> +               return IIO_VAL_INT_PLUS_MICRO;
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +}
+> +
+> +static struct iio_chan_spec adis16400_channels[] = {
+> +       {
+> +               .type = IIO_VOLTAGE,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .extend_name = "supply",
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = in_supply,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 'u',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_MAGN,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = magn_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_MAGN,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = magn_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_MAGN,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = magn_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_TEMP,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .info_mask = IIO_CHAN_INFO_OFFSET_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = temp,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_IN,
+> +               .indexed = 1,
+> +               .channel = 1,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = in1,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 'u',
+> +               },
+> +       },
+> +};
+> +
+> +static struct iio_chan_spec adis16350_channels[] = {
+> +       {
+> +               .type = IIO_VOLTAGE,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .extend_name = "supply",
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = in_supply,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 'u',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_TEMP,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .extend_name = "x",
+> +               .info_mask = IIO_CHAN_INFO_OFFSET_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = temp0,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_TEMP,
+> +               .indexed = 1,
+> +               .channel = 1,
+> +               .extend_name = "y",
+> +               .info_mask = IIO_CHAN_INFO_OFFSET_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = temp1,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_TEMP,
+> +               .indexed = 1,
+> +               .channel = 2,
+> +               .extend_name = "z",
+> +               .info_mask = IIO_CHAN_INFO_OFFSET_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = temp2,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_IN,
+> +               .indexed = 1,
+> +               .channel = 1,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = in1,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 'u',
+> +               },
+> +       },
+> +};
+> +
+> +static struct iio_chan_spec adis16300_channels[] = {
+> +       {
+> +               .type = IIO_VOLTAGE,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .extend_name = "supply",
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = in_supply,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 'u',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_TEMP,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .info_mask = IIO_CHAN_INFO_OFFSET_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = temp,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_IN,
+> +               .indexed = 1,
+> +               .channel = 1,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
+> +               .address = in1,
+> +               .scan_type = {
+> +                       .realbits = 12,
+> +                       .sign = 'u',
+> +               },
+> +       }, {
+> +               .type = IIO_INCLI,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = incli_x,
+> +               .scan_type = {
+> +                       .realbits = 13,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_INCLI,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = incli_y,
+> +               .scan_type = {
+> +                       .realbits = 13,
+> +                       .sign = 's',
+> +               },
+> +       },
+> +};
+> +
+> +static const struct iio_chan_spec adis16334_channels[] = {
+> +       {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ANGL_VEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = gyro_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_X,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_x,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Y,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_y,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_ACCEL,
+> +               .modified = 1,
+> +               .channel2 = IIO_MOD_Z,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       }, {
+> +               .type = IIO_TEMP,
+> +               .indexed = 1,
+> +               .channel = 0,
+> +               .info_mask = IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT |
+> +               IIO_CHAN_INFO_SCALE_SHARED_BIT,
+> +               .address = accel_z,
+> +               .scan_type = {
+> +                       .realbits = 14,
+> +                       .sign = 's',
+> +               },
+> +       },
+> +};
+> +
+> +static struct attribute *adis16400_attributes[] = {
+> +&iio_dev_attr_sampling_frequency.dev_attr.attr,
+> +&iio_const_attr_sampling_frequency_available.dev_attr.attr,
+> +&iio_dev_attr_reset.dev_attr.attr,
+> +       NULL
+> +};
+> +
+> +static const struct attribute_group adis16400_attribute_group = {
+> +       .attrs = adis16400_attributes,
+> +};
+> +
+> +static struct adis16400_chip_info adis16400_chips[] = {
+> +       [ADIS16300] = {
+> +               .channels = adis16300_channels,
+> +               .num_channels = ARRAY_SIZE(adis16300_channels),
+> +               .gyro_scale_micro = 873,
+> +               .accel_scale_micro = 5884,
+> +       },
+> +       [ADIS16334] = {
+> +               .channels = adis16334_channels,
+> +               .num_channels = ARRAY_SIZE(adis16334_channels),
+> +               .gyro_scale_micro = 873,
+> +               .accel_scale_micro = 981,
+> +       },
+> +       [ADIS16350] = {
+> +               .channels = adis16350_channels,
+> +               .num_channels = ARRAY_SIZE(adis16350_channels),
+> +               .gyro_scale_micro = 872664,
+> +               .accel_scale_micro = 24732,
+> +       },
+> +       [ADIS16360] = {
+> +               .channels = adis16350_channels,
+> +               .num_channels = ARRAY_SIZE(adis16350_channels),
+> +               .flags = ADIS16400_HAS_PROD_ID,
+> +               .product_id = 0x3FE8,
+> +               .gyro_scale_micro = 1279,
+> +               .accel_scale_micro = 24732,
+> +       },
+> +       [ADIS16362] = {
+> +               .channels = adis16350_channels,
+> +               .num_channels = ARRAY_SIZE(adis16350_channels),
+> +               .flags = ADIS16400_HAS_PROD_ID,
+> +               .product_id = 0x3FEA,
+> +               .gyro_scale_micro = 1279,
+> +               .accel_scale_micro = 24732,
+> +       },
+> +       [ADIS16364] = {
+> +               .channels = adis16350_channels,
+> +               .num_channels = ARRAY_SIZE(adis16350_channels),
+> +               .flags = ADIS16400_HAS_PROD_ID,
+> +               .product_id = 0x3FEC,
+> +               .gyro_scale_micro = 1279,
+> +               .accel_scale_micro = 24732,
+> +       },
+> +       [ADIS16365] = {
+> +               .channels = adis16350_channels,
+> +               .num_channels = ARRAY_SIZE(adis16350_channels),
+> +               .flags = ADIS16400_HAS_PROD_ID,
+> +               .product_id = 0x3FED,
+> +               .gyro_scale_micro = 1279,
+> +               .accel_scale_micro = 24732,
+> +       },
+> +       [ADIS16400] = {
+> +               .channels = adis16400_channels,
+> +               .num_channels = ARRAY_SIZE(adis16400_channels),
+> +               .flags = ADIS16400_HAS_PROD_ID,
+> +               .product_id = 0x4015,
+> +               .gyro_scale_micro = 873,
+> +               .accel_scale_micro = 32656,
+> +       }
+> +};
+> +
+> +static const struct iio_info adis16400_info = {
+> +       .driver_module = THIS_MODULE,
+> +       .read_raw =&adis16400_read_raw,
+> +       .write_raw =&adis16400_write_raw,
+> +       .attrs =&adis16400_attribute_group,
+> +};
+> +
+> +static int __devinit adis16400_probe(struct spi_device *spi)
+> +{
+> +       int ret;
+> +       struct adis16400_state *st;
+> +       struct iio_dev *indio_dev;
+> +
+> +       indio_dev = iio_device_allocate(sizeof(*st));
+> +       if (indio_dev == NULL) {
+> +               ret = -ENOMEM;
+> +               goto error_ret;
+> +       }
+> +       st = iio_priv(indio_dev);
+> +       /* this is only used for removal purposes */
+> +       spi_set_drvdata(spi, indio_dev);
+> +
+> +       st->us = spi;
+> +       mutex_init(&st->buf_lock);
+> +
+> +       /* setup the industrialio driver allocated elements */
+> +       st->variant =&adis16400_chips[spi_get_device_id(spi)->driver_data];
+> +       indio_dev->dev.parent =&spi->dev;
+> +       indio_dev->name = spi_get_device_id(spi)->name;
+> +       indio_dev->channels = st->variant->channels;
+> +       indio_dev->num_channels = st->variant->num_channels;
+> +       indio_dev->info =&adis16400_info;
+> +
+> +       ret = iio_device_register(indio_dev);
 > +       if (ret)
-> +               goto error_free_sysfs;
+> +               goto error_free_dev;
+> +
+> +       /* Get the device into a sane initial state */
+> +       ret = adis16400_initial_setup(indio_dev);
+> +       if (ret)
+> +               goto error_unregister_dev;
 > +
 > +       return 0;
 > +
-> +error_free_sysfs:
-> +       iio_device_unregister_sysfs(indio_dev);
-> +error_free_ida:
-> +       ida_simple_remove(&iio_ida, indio_dev->id);
+> +error_unregister_dev:
+> +       iio_device_unregister(indio_dev);
+> +error_free_dev:
+> +       iio_device_free(indio_dev);
 > +error_ret:
 > +       return ret;
 > +}
-> +EXPORT_SYMBOL(iio_device_register);
 > +
-> +void iio_device_unregister(struct iio_dev *indio_dev)
+> +/* fixme, confirm ordering in this function */
+> +static int adis16400_remove(struct spi_device *spi)
 > +{
-> +       device_unregister(&indio_dev->dev);
-> +}
-> +EXPORT_SYMBOL(iio_device_unregister);
+> +       int ret;
+> +       struct iio_dev *indio_dev = spi_get_drvdata(spi);
 > +
-> +static int __init iio_init(void)
-> +{
-> +       return bus_register(&iio_bus_type);
-> +}
-> +subsys_initcall(iio_init);
+> +       iio_device_unregister(indio_dev);
 > +
-> +static void __exit iio_exit(void)
-> +{
-> +       bus_unregister(&iio_bus_type);
-> +}
-> +module_exit(iio_exit);
+> +       ret = adis16400_stop_device(indio_dev);
+> +       if (ret)
+> +               return ret;
 > +
-> +MODULE_AUTHOR("Jonathan Cameron<jic23@cam.ac.uk>");
-> +MODULE_DESCRIPTION("Industrial I/O core");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-> new file mode 100644
-> index 0000000..4367d82
-> --- /dev/null
-> +++ b/include/linux/iio/iio.h
-> @@ -0,0 +1,244 @@
-> +/*
-> + * The industrial I/O core
-> + *
-> + * Copyright (c) 2008-2011 Jonathan Cameron
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + */
-> +#ifndef _IIO_H_
-> +#define _IIO_H_
+> +       iio_device_free(indio_dev);
 > +
-> +#include<linux/klist.h>
-> +#include<linux/device.h>
-> +#include<linux/iio/types.h>
-> +
-> +/* Minimum alignment of priv within iio_dev */
-> +#define IIO_ALIGN L1_CACHE_BYTES
-> +
-> +enum iio_data_type {
-> +       IIO_RAW,
-> +       IIO_PROCESSED,
-> +};
-> +
-> +enum iio_chan_info_enum {
-> +       IIO_CHAN_INFO_SCALE = 1,
-> +       IIO_CHAN_INFO_OFFSET,
-> +       IIO_CHAN_INFO_CALIBSCALE,
-> +       IIO_CHAN_INFO_CALIBBIAS,
-> +       IIO_CHAN_INFO_PEAK,
-> +       IIO_CHAN_INFO_PEAK_SCALE,
-> +       IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW,
-> +};
-> +
-> +#define IIO_CHAN_INFO_SHARED_BIT(type) BIT(type*2)
-> +#define IIO_CHAN_INFO_SEPARATE_BIT(type) BIT(type*2 + 1)
-> +
-> +#define IIO_CHAN_INFO_SCALE_SEPARATE_BIT               \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_SCALE)
-> +#define IIO_CHAN_INFO_SCALE_SHARED_BIT                 \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_SCALE)
-> +#define IIO_CHAN_INFO_OFFSET_SEPARATE_BIT                      \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_OFFSET)
-> +#define IIO_CHAN_INFO_OFFSET_SHARED_BIT                        \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_OFFSET)
-> +#define IIO_CHAN_INFO_CALIBSCALE_SEPARATE_BIT                  \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_CALIBSCALE)
-> +#define IIO_CHAN_INFO_CALIBSCALE_SHARED_BIT                    \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_CALIBSCALE)
-> +#define IIO_CHAN_INFO_CALIBBIAS_SEPARATE_BIT                   \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_CALIBBIAS)
-> +#define IIO_CHAN_INFO_CALIBBIAS_SHARED_BIT                     \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_CALIBBIAS)
-> +#define IIO_CHAN_INFO_PEAK_SEPARATE_BIT                        \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_PEAK)
-> +#define IIO_CHAN_INFO_PEAK_SHARED_BIT                  \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_PEAK)
-> +#define IIO_CHAN_INFO_PEAKSCALE_SEPARATE_BIT                   \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_PEAKSCALE)
-> +#define IIO_CHAN_INFO_PEAKSCALE_SHARED_BIT                     \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_PEAKSCALE)
-> +#define IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SEPARATE_BIT   \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(                             \
-> +               IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW)
-> +#define IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SHARED_BIT     \
-> +       IIO_CHAN_INFO_SHARED_BIT(                               \
-> +               IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW)
-> +#define IIO_CHAN_INFO_AVERAGE_RAW_SEPARATE_BIT                 \
-> +       IIO_CHAN_INFO_SEPARATE_BIT(IIO_CHAN_INFO_AVERAGE_RAW)
-> +#define IIO_CHAN_INFO_AVERAGE_RAW_SHARED_BIT                   \
-> +       IIO_CHAN_INFO_SHARED_BIT(IIO_CHAN_INFO_AVERAGE_RAW)
-> +
-> +
-> +enum iio_direction {
-> +       IIO_IN,
-> +       IIO_OUT,
-> +};
-> +
-> +/**
-> + * struct iio_chan_spec - specification of a single channel
-> + * @type:              What type of measurement is the channel making.
-> + * @channel:           What number or name do we wish to asign the channel.
-> + * @channel2:          If there is a second number for a differential
-> + *                     channel then this is it. If modified is set then the
-> + *                     value here specifies the modifier.
-> + * @address:           Driver specific identifier.
-> + * @scan_type:         Description of data format.
-> + * @info_mask:         What information is to be exported about this channel.
-> + *                     This includes calibbias, scale etc.
-> + * @extend_name:       Allows labeling of channel attributes with an
-> + *                     informative name. Note this has no effect codes etc,
-> + *                     unlike modifiers.
-> + * @processed_val:     Flag to specify the data access attribute should be
-> + *                     *_input rather than *_raw.
-> + * @modified:          Does a modifier apply to this channel. What these are
-> + *                     depends on the channel type.  Modifier is set in
-> + *                     channel2. Examples are IIO_MOD_X for axial sensors about
-> + *                     the 'x' axis.
-> + * @indexed:           Specify the channel has a numerical index. If not,
-> + *                     the value in channel will be suppressed for attribute
-> + *                     but not for event codes. Typically set it to 0 when
-> + *                     the index is false.
-> + * @output:            Specify the channel is an output channel (DAC).
-> + * @differential:      Is the channel a differential channel. Cannot coexist
-> + *                     with modified and requires indexed.
-> + */
-> +struct iio_chan_spec {
-> +       enum iio_chan_type      type;
-> +       int                     channel;
-> +       int                     channel2;
-> +       unsigned long           address;
-> +       /**
-> +        * struct scan_type - description of the data format
-> +        * @sign:       Set if signed value
-> +        * @realbits:   Number of valid bits of data
-> +        * @shift:      Shift right by this before masking out realbits.
-> +        */
-> +       struct {
-> +               char            sign;
-> +               u8              realbits;
-> +               u8              shift;
-> +       } scan_type;
-> +       long                    info_mask;
-> +       char                    *extend_name;
-> +       unsigned                processed_val:1;
-> +       unsigned                modified:1;
-> +       unsigned                indexed:1;
-> +       unsigned                output:1;
-> +       unsigned                differential:1;
-> +};
-> +
-> +struct iio_dev;
-> +
-> +/**
-> + * struct iio_info - constant information about device
-> + * @driver_module:     module structure used to ensure correct
-> + *                     ownership of chrdevs etc
-> + * @attrs:             general purpose device attributes
-> + * @read_raw:          function to request a value from the device.
-> + *                     mask specifies which value. Note 0 means a reading of
-> + *                     the channel in question.  Return value will specify the
-> + *                     type of value returned by the device. val and val2 will
-> + *                     contain the elements making up the returned value.
-> + * @write_raw:         function to write a value to the device.
-> + *                     Parameters are the same as for read_raw.
-> + * @write_raw_get_fmt: callback function to query the expected
-> + *                     format/precision. If not set by the driver, write_raw
-> + *                     returns IIO_VAL_INT_PLUS_MICRO.
-> + **/
-> +struct iio_info {
-> +       struct module                   *driver_module;
-> +       const struct attribute_group    *attrs;
-> +
-> +       int (*read_raw)(struct iio_dev *indio_dev,
-> +                       struct iio_chan_spec const *chan,
-> +                       int *val,
-> +                       int *val2,
-> +                       long mask);
-> +
-> +       int (*write_raw)(struct iio_dev *indio_dev,
-> +                        struct iio_chan_spec const *chan,
-> +                        int val,
-> +                        int val2,
-> +                        long mask);
-> +
-> +       int (*write_raw_get_fmt)(struct iio_dev *indio_dev,
-> +                        struct iio_chan_spec const *chan,
-> +                        long mask);
-> +};
-> +
-> +/**
-> + * struct iio_dev - industrial I/O device
-> + * @id:                        [INTERN] used to identify device internally
-> + * @dev:               [DRIVER] device structure, should be assigned a parent
-> + *                     and owner
-> + * @mlock:             [INTERN] lock used to prevent simultaneous device state
-> + *                     changes
-> + * @available_scan_masks: [DRIVER] optional array of allowed bitmasks
-> + * @channels:          [DRIVER] channel specification structure table
-> + * @num_channels:      [DRIVER] number of chanels specified in @channels
-> + * @channel_attr_list: [INTERN] keep track of automatically created channel
-> + *                     attributes
-> + * @chan_attr_group:   [INTERN] group for all attrs in base directory
-> + * @name:              [DRIVER] name of the device
-> + * @info:              [DRIVER] callbacks and constant info from driver
-> + * @groups:            [INTERN] attribute groups
-> + * @groupcounter:      [INTERN] index of next attribute group
-> + **/
-> +struct iio_dev {
-> +       int                             id;
-> +       struct device                   dev;
-> +       struct mutex                    mlock;
-> +       unsigned long                   *available_scan_masks;
-> +       struct iio_chan_spec const      *channels;
-> +       int                             num_channels;
-> +       struct list_head                channel_attr_list;
-> +       struct attribute_group          chan_attr_group;
-> +       const char                      *name;
-> +       const struct iio_info           *info;
-> +#define IIO_MAX_GROUPS 1
-> +       const struct attribute_group    *groups[IIO_MAX_GROUPS + 1];
-> +       int                             groupcounter;
-> +};
-> +
-> +/**
-> + * iio_device_allocate() - allocate an iio_dev from a driver
-> + * @sizeof_priv:       Space to allocate for private structure.
-> + **/
-> +struct iio_dev *iio_device_allocate(int sizeof_priv);
-> +
-> +static inline void *iio_priv(const struct iio_dev *dev)
-> +{
-> +       return (char *)dev + ALIGN(sizeof(struct iio_dev), IIO_ALIGN);
+> +       return 0;
 > +}
 > +
-> +/**
-> + * iio_device_free() - free an iio_dev from a driver
-> + * @dev: the iio_dev associated with the device
-> + **/
-> +void iio_device_free(struct iio_dev *dev);
+> +static const struct spi_device_id adis16400_id[] = {
+> +       {"adis16300", ADIS16300},
+> +       {"adis16334", ADIS16334},
+> +       {"adis16350", ADIS16350},
+> +       {"adis16354", ADIS16350},
+> +       {"adis16355", ADIS16350},
+> +       {"adis16360", ADIS16360},
+> +       {"adis16362", ADIS16362},
+> +       {"adis16364", ADIS16364},
+> +       {"adis16365", ADIS16365},
+> +       {"adis16400", ADIS16400},
+> +       {"adis16405", ADIS16400},
+> +       {}
+> +};
 > +
-> +/**
-> + * iio_device_register() - register a device with the IIO subsystem
-> + * @indio_dev:         Device structure filled by the device driver
-> + **/
-> +int iio_device_register(struct iio_dev *indio_dev);
+> +static struct spi_driver adis16400_driver = {
+> +       .driver = {
+> +               .name = "adis16400",
+> +               .owner = THIS_MODULE,
+> +       },
+> +       .id_table = adis16400_id,
+> +       .probe = adis16400_probe,
+> +       .remove = __devexit_p(adis16400_remove),
+> +};
 > +
-> +/**
-> + * iio_device_unregister() - unregister a device from the IIO subsystem
-> + * @indio_dev:         Device structure representing the device.
-> + **/
-> +void iio_device_unregister(struct iio_dev *indio_dev);
-> +
-> +/**
-> + * iio_put_device() - reference counted deallocation of struct device
-> + * @indio_dev: the iio_device containing the device
-> + **/
-> +static inline void iio_put_device(struct iio_dev *indio_dev)
+> +static __init int adis16400_init(void)
 > +{
-> +       if (indio_dev)
-> +               put_device(&indio_dev->dev);
-> +};
+> +       return spi_register_driver(&adis16400_driver);
+> +}
+> +module_init(adis16400_init);
 > +
-> +#endif /* _IIO_H_ */
-> diff --git a/include/linux/iio/sysfs.h b/include/linux/iio/sysfs.h
-> new file mode 100644
-> index 0000000..c6735bf
-> --- /dev/null
-> +++ b/include/linux/iio/sysfs.h
-> @@ -0,0 +1,68 @@
-> +/*
-> + * The industrial I/O core
-> + *
-> + * Copyright (c) 2008 Jonathan Cameron
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * General attributes
-> + */
+> +static __exit void adis16400_exit(void)
+> +{
+> +       spi_unregister_driver(&adis16400_driver);
+> +}
+> +module_exit(adis16400_exit);
 > +
-> +#include<linux/klist.h>
-> +#include<linux/device.h>
-> +
-> +#ifndef _IIO_SYSFS_H_
-> +#define _IIO_SYSFS_H_
-> +
-> +struct iio_chan_spec;
-> +
-> +/**
-> + * struct iio_dev_attr - iio specific device attribute
-> + * @dev_attr:  underlying device attribute
-> + * @address:   associated register address
-> + * @l:         list head for maintaining list of dynamically created attrs
-> + * @c:         channel spec for channel with which attr is associated if any
-> + */
-> +struct iio_dev_attr {
-> +       struct device_attribute dev_attr;
-> +       int address;
-> +       struct list_head l;
-> +       struct iio_chan_spec const *c;
-> +};
-> +
-> +#define to_iio_dev_attr(_dev_attr)                             \
-> +       container_of(_dev_attr, struct iio_dev_attr, dev_attr)
-> +
-> +#define IIO_ATTR(_name, _mode, _show, _store, _addr)           \
-> +       { .dev_attr = __ATTR(_name, _mode, _show, _store),      \
-> +         .address = _addr }
-> +
-> +#define IIO_DEVICE_ATTR(_name, _mode, _show, _store, _addr)    \
-> +       struct iio_dev_attr iio_dev_attr_##_name                \
-> +       = IIO_ATTR(_name, _mode, _show, _store, _addr)
-> +
-> +/**
-> + * struct iio_const_attr - constant device specific attribute
-> + *                         often used for things like available modes
-> + * @string:    attribute string
-> + * @dev_attr:  underlying device attribute
-> + */
-> +struct iio_const_attr {
-> +       const char *string;
-> +       struct device_attribute dev_attr;
-> +};
-> +
-> +#define to_iio_const_attr(_dev_attr) \
-> +       container_of(_dev_attr, struct iio_const_attr, dev_attr)
-> +
-> +ssize_t __iio_read_const_attr(struct device *dev,
-> +                             struct device_attribute *attr,
-> +                             char *len);
-> +
-> +#define IIO_CONST_ATTR(_name, _string)                                 \
-> +       struct iio_const_attr iio_const_attr_##_name                    \
-> +       = { .string = _string,                                          \
-> +           .dev_attr = __ATTR(_name, S_IRUGO, __iio_read_const_attr, NULL) }
-> +#endif /* _IIO_SYSFS_H_ */
-> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-> new file mode 100644
-> index 0000000..4cb24aa
-> --- /dev/null
-> +++ b/include/linux/iio/types.h
-> @@ -0,0 +1,52 @@
-> +/* industrial I/O data types needed both in and out of kernel
-> + *
-> + * Copyright (c) 2011 Jonathan Cameron
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + */
-> +
-> +#ifndef _IIO_TYPES_H_
-> +#define _IIO_TYPES_H_
-> +
-> +enum iio_chan_type {
-> +       IIO_VOLTAGE,
-> +       IIO_CURRENT,
-> +       IIO_POWER,
-> +       IIO_CAPACITANCE,
-> +       IIO_ACCEL,
-> +       IIO_ANGL_VEL,
-> +       IIO_MAGN,
-> +       IIO_LIGHT,
-> +       IIO_INTENSITY,
-> +       IIO_PROXIMITY,
-> +       IIO_TEMP,
-> +       IIO_INCLI,
-> +       IIO_ROT,
-> +       IIO_ANGL,
-> +       IIO_TIMESTAMP,
-> +};
-> +
-> +enum iio_modifier {
-> +       IIO_NO_MOD,
-> +       IIO_MOD_X,
-> +       IIO_MOD_Y,
-> +       IIO_MOD_Z,
-> +       IIO_MOD_X_AND_Y,
-> +       IIO_MOD_X_ANX_Z,
-> +       IIO_MOD_Y_AND_Z,
-> +       IIO_MOD_X_AND_Y_AND_Z,
-> +       IIO_MOD_X_OR_Y,
-> +       IIO_MOD_X_OR_Z,
-> +       IIO_MOD_Y_OR_Z,
-> +       IIO_MOD_X_OR_Y_OR_Z,
-> +       IIO_MOD_LIGHT_BOTH,
-> +       IIO_MOD_LIGHT_INFRARED,
-> +};
-> +
-> +#define IIO_VAL_INT 1
-> +#define IIO_VAL_INT_PLUS_MICRO 2
-> +#define IIO_VAL_INT_PLUS_NANO 3
-> +
-> +#endif /* _IIO_TYPES_H_ */
+> +MODULE_AUTHOR("Manuel Stahl<manuel.stahl@iis.fraunhofer.de>");
+> +MODULE_DESCRIPTION("Analog Devices ADIS16400/5 IMU SPI driver");
+> +MODULE_LICENSE("GPL v2");
 > --
 > 1.7.7.2
 >
