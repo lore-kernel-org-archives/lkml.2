@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1KLAjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 19:39:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:36571 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab1KLAjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 19:39:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Tomas M." <tmezzadra@gmail.com>
-Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on laptop.
-Date: Sat, 12 Nov 2011 01:41:48 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com, j-pihet@ti.com,
-        khilman@ti.com, arjan@linux.intel.com, len.brown@intel.com,
-        Arjan van de Ven <arjan@infradead.org>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <4EBD46DF.6060507@gmail.com> <201111112226.25265.rjw@sisk.pl> <4EBD9500.8070204@gmail.com>
-In-Reply-To: <4EBD9500.8070204@gmail.com>
+	id S1755029Ab1KLAp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 19:45:27 -0500
+Received: from sous-sol.org ([216.99.217.87]:42913 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754197Ab1KLAp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 19:45:26 -0500
+X-Greylist: delayed 1682 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Nov 2011 19:45:25 EST
+Date: Fri, 11 Nov 2011 16:45:13 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>, chrisw@sous-sol.org,
+        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel-iommu: Default to non-coherent for domains
+ unattached to iommus
+Message-ID: <20111112004513.GP14486@sequoia.sous-sol.org>
+References: <20111111224849.9756.13368.stgit@bling.home>
+ <1321058267.2006.21.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111120141.48463.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1321058267.2006.21.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 11, 2011, Tomas M. wrote:
-> yes, that helps.
-
-What does "cat /sys/devices/system/cpu/cpuidle/current_driver" show?
-
-Rafael
-
-
-> On 11/11/2011 06:26 PM, Rafael J. Wysocki wrote:
-> > On Friday, November 11, 2011, Tomas M. wrote:
-> >> Follow up.
-> >>
-> >>
-> >> reverted this and the following 3 commits from this patch set and the
-> >> problem is gone.
-> >>
-> >> 46bcfad7a819bd17ac4e831b04405152d59784ab
-> >> 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
-> >> b25edc42bfb9602f0503474b2c94701d5536ce60
-> >> e978aa7d7d57d04eb5f88a7507c4fb98577def77
-> >>
-> >> they all seem to be related.
-> > Does it help (without reverting the commits) if you put idle=poll into the
-> > kernel command line?
-> >
-> > Rafael
-> >
-> >
-> >> On 11/11/2011 01:01 PM, Tomas M. wrote:
-> >>> bisected to e978aa7d7d57d04eb5f88a7507c4fb98577def77
-> >>>
-> >>> cannot revert the commit cleanly to further test
-> >>>
-> >>> attaching pm-suspend log.  /proc/cpuinfo and lspci -vvnn just in case.
-> >>> If more info is needed, please let me know.
-> >>>
-> >>> thanks!
-> >>> ----
-> >>> when trying to suspend... the system locks right before suspending.
-> >>> sysrq keys  will not work at this point
-> >>>
-> >>>
-> >>> please include me in the CC since im not subscribed to the list.
-> >>>
-> >>> i CCed everyone mentioned in the commit. if you were CCed by mystake,
-> >>> sorry.
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >>
+* David Woodhouse (dwmw2@infradead.org) wrote:
+> On Fri, 2011-11-11 at 15:49 -0700, Alex Williamson wrote:
+> > To fix this, switch domain_update_iommu_coherency() to use the
+> > safer, non-coherent default for domains not attached to iommus. 
 > 
+> That isn't a fix for the problem you described.
 > 
+> The problem is that changing a domain from coherent to non-coherent is
+> *broken*. It probably needs to flush the cache for the *entire* set of
+> page tables — not just the new context entry it adds.
 
+For a guest domain, the page tables aren't actually changing.
+And for the snoop mode change, we remap the pages.
+
+> You might have removed the *common* case where we trigger that bug, but
+> it certainly isn't a fix.
+> 
+> However, I'd be receptive to an argument that the situation you describe
+> is in fact the *only* time we'd have to switch from coherent to
+> non-coherent at run time, because the coherency is an all-or-nothing
+> characteristic of the chipset. Either all the IOMMUs are coherent, or
+> none of them, right? This brain-damage only affects the first chipsets
+> from before we worked out that cache incoherency was a *really* f*cking
+> stupid idea, doesn't it?
+
+Dunno if it exists going forward (I've stopped being surprised by the
+brain damage in this area ;), but those machines are still out there.
+
+> So if you were to ditch the whole idea of a per-domain runtime update,
+> and instead calculate a global value for 'iommu_coherency' at boot time,
+> by iterating over for_each_active_iommu()¹, I think that would be a
+> better way to deal with the issue. And you *could* really call that a
+> 'fix'.
+> 
+> Make sense?
+
+Ideally, yes.  Not sure we can practically do it though.  Would have to
+be sure we force incoherent access mode for the busted hw.
+
+thanks,
+-chris
