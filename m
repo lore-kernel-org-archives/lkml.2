@@ -1,122 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1KLXVr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 18:21:47 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51756 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab1KLXVq (ORCPT
+	id S1754231Ab1KLXuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 18:50:09 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52811 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab1KLXuH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 18:21:46 -0500
-Date: Sat, 12 Nov 2011 23:20:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] arch/arm/mm/fault.c: Porting OOM changes into
-	__do_page_fault
-Message-ID: <20111112232039.GD27746@n2100.arm.linux.org.uk>
-References: <1321139283-2955-1-git-send-email-consul.kautuk@gmail.com>
+	Sat, 12 Nov 2011 18:50:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321139283-2955-1-git-send-email-consul.kautuk@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <201111122325.09134.rjw@sisk.pl>
+References: <201111120341.12473.arnd@arndb.de> <201111122325.09134.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 12 Nov 2011 21:49:45 -0200
+X-Google-Sender-Auth: c9GM89bbyJHOz0KiYhunmdAOp3I
+Message-ID: <CA+55aFyW=8SJ-a8c63Pjijad+HY6y_xaB_JoT4diZufMRT=o+w@mail.gmail.com>
+Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on laptop.
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 12, 2011 at 06:08:03PM -0500, Kautuk Consul wrote:
-> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-> index aa33949..2f89dba 100644
-> --- a/arch/arm/mm/fault.c
-> +++ b/arch/arm/mm/fault.c
-> @@ -231,11 +231,15 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
->  
->  static int __kprobes
->  __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
-> -		struct task_struct *tsk)
-> +		struct pt_regs *regs, struct task_struct *tsk)
->  {
->  	struct vm_area_struct *vma;
->  	int fault;
-> +	int write = fsr & FSR_WRITE;
-> +	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-> +					(write ? FAULT_FLAG_WRITE : 0);
->  
-> +retry:
->  	vma = find_vma(mm, addr);
->  	fault = VM_FAULT_BADMAP;
->  	if (unlikely(!vma))
-> @@ -257,13 +261,44 @@ good_area:
->  	 * If for any reason at all we couldn't handle the fault, make
->  	 * sure we exit gracefully rather than endlessly redo the fault.
->  	 */
-> -	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
-> -	if (unlikely(fault & VM_FAULT_ERROR))
-> +	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
-> +
-> +	if (unlikely((fault & VM_FAULT_ERROR)))
->  		return fault;
-> -	if (fault & VM_FAULT_MAJOR)
-> -		tsk->maj_flt++;
-> -	else
-> -		tsk->min_flt++;
-> +
-> +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-> +		return fault;
-> +
-> +	/*
-> +	 * Major/minor page fault accounting is only done on the
-> +	 * initial attempt. If we go through a retry, it is extremely
-> +	 * likely that the page will be found in page cache at that point.
-> +	 */
-> +	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
-> +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-> +		if (fault & VM_FAULT_MAJOR) {
-> +			tsk->maj_flt++;
-> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-> +				      regs, addr);
-> +		} else {
-> +			tsk->min_flt++;
-> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-> +				      regs, addr);
-> +		}
-> +		if (fault & VM_FAULT_RETRY) {
-> +			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-> +			 * of starvation. */
-> +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-> +
-> +			/* Acquire the mmap_sem again before retrying this
-> +			 * pagefault. This would have been released by
-> +			 * __lock_page_or_retry() in mm/filemap.c. */
-> +			down_read(&mm->mmap_sem);
-> +
-> +			goto retry;
-> +		}
-> +	}
-> +
->  	return fault;
->  
->  check_stack:
-> @@ -320,14 +355,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
->  #endif
->  	}
->  
-> -	fault = __do_page_fault(mm, addr, fsr, tsk);
-> -	up_read(&mm->mmap_sem);
-> -
-> -	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
-> -	if (fault & VM_FAULT_MAJOR)
-> -		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
-> -	else if (fault & VM_FAULT_MINOR)
-> -		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
-> +	fault = __do_page_fault(mm, addr, fsr, regs, tsk);
-> +	if (likely(!(fault & VM_FAULT_RETRY)))
-> +		up_read(&mm->mmap_sem);
+On Sat, Nov 12, 2011 at 8:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Thanks for the info.  Unfortunately, I've already resent the patch without
+> your Tested-by: tag, but it can still be added when the patch is committed.
 
-I really don't like this.  I crafted this handling in such a way that
-the locking was plainly obvious - with all locking handled in
-do_page_fault and not inside __do_page_fault.  That's how I want things
-to stay, so please rework this patch to maintain that.
+Added, committed, and pushed out,
+
+              Linus
