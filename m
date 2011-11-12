@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab1KLVbL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 16:31:11 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47220 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1KLVbK (ORCPT
+	id S1752330Ab1KLVrm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 16:47:42 -0500
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:37141 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab1KLVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 16:31:10 -0500
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: jgarzik@redhat.com
-Cc: linux-kernel@vger.kernel.org, bzolnier@gmail.com,
-        Alexander Beregalov <a.beregalov@gmail.com>
-Subject: [PATCH] libata: fix build without BMDMA
-Date: Sun, 13 Nov 2011 01:30:56 +0400
-Message-Id: <1321133456-15875-1-git-send-email-a.beregalov@gmail.com>
-X-Mailer: git-send-email 1.7.8.rc1
+	Sat, 12 Nov 2011 16:47:41 -0500
+Subject: [PATCH] [TRIVIAL] drop "select GCD" from three Kconfig files
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 12 Nov 2011 22:47:36 +0100
+Message-ID: <1321134456.20271.10.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix these errors:
-drivers/ata/libata-sff.c:2538:3: error: implicit declaration of function
-'ata_pci_bmdma_prepare_host'
-drivers/ata/libata-sff.c:2549:40: error: 'ata_bmdma_interrupt'
-undeclared (first use in this function)
+There is no Kconfig symbol named GCD. The three select statements for
+that symbol are nops. Drop these.
 
-Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
+0) Untested. All my recent config files have CONFIG_IP_VS_WRR but not
+CONFIG_GCD. That already proves these selects are nops.
 
-I'm not sure if it is better than declaration fake functions.
+1) These selects got added by commits 7ca5dc145b ("MIPS: Add support for
+Texas Instruments AR7 System-on-a-Chip"), ae24e578de ("ipvs:
+ip_vs_wrr.c: use lib/gcd.c"), and a9605391cfab ("ALSA:
+sound/core/pcm_timer.c: use lib/gcd.c"). But lib/gcd.o is builtin, so
+all that's needed to use gcd() is to include linux/gcd.h, which these
+three commits also did.
 
-drivers/ata/libata-sff.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ arch/mips/Kconfig          |    1 -
+ net/netfilter/ipvs/Kconfig |    1 -
+ sound/core/Kconfig         |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index 63d5327..4cadfa2 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2533,10 +2533,12 @@ static int ata_pci_init_one(struct pci_dev *pdev,
- 	if (rc)
- 		goto out;
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index d46f1da..7b91132 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -65,7 +65,6 @@ config AR7
+ 	select SYS_SUPPORTS_LITTLE_ENDIAN
+ 	select SYS_SUPPORTS_ZBOOT_UART16550
+ 	select ARCH_REQUIRE_GPIOLIB
+-	select GCD
+ 	select VLYNQ
+ 	help
+ 	  Support for the Texas Instruments AR7 System-on-a-Chip
+diff --git a/net/netfilter/ipvs/Kconfig b/net/netfilter/ipvs/Kconfig
+index 70bd1d0..ca80de5 100644
+--- a/net/netfilter/ipvs/Kconfig
++++ b/net/netfilter/ipvs/Kconfig
+@@ -122,7 +122,6 @@ config	IP_VS_RR
+  
+ config	IP_VS_WRR
+ 	tristate "weighted round-robin scheduling"
+-	select GCD
+ 	---help---
+ 	  The weighted robin-robin scheduling algorithm directs network
+ 	  connections to different real servers based on server weights
+diff --git a/sound/core/Kconfig b/sound/core/Kconfig
+index 475455c..c15682a 100644
+--- a/sound/core/Kconfig
++++ b/sound/core/Kconfig
+@@ -5,7 +5,6 @@ config SND_TIMER
+ config SND_PCM
+ 	tristate
+ 	select SND_TIMER
+-	select GCD
  
-+#ifdef CONFIG_ATA_BMDMA
- 	if (bmdma)
- 		/* prepare and activate BMDMA host */
- 		rc = ata_pci_bmdma_prepare_host(pdev, ppi, &host);
- 	else
-+#endif
- 		/* prepare and activate SFF host */
- 		rc = ata_pci_sff_prepare_host(pdev, ppi, &host);
- 	if (rc)
-@@ -2544,10 +2546,12 @@ static int ata_pci_init_one(struct pci_dev *pdev,
- 	host->private_data = host_priv;
- 	host->flags |= hflags;
- 
-+#ifdef CONFIG_ATA_BMDMA
- 	if (bmdma) {
- 		pci_set_master(pdev);
- 		rc = ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
- 	} else
-+#endif
- 		rc = ata_pci_sff_activate_host(host, ata_sff_interrupt, sht);
- out:
- 	if (rc == 0)
+ config SND_HWDEP
+ 	tristate
 -- 
-1.7.8.rc1
+1.7.4.4
+
+
 
