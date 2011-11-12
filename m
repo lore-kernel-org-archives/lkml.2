@@ -1,116 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1KLFof (ORCPT <rfc822;w@1wt.eu>);
+	id S1753367Ab1KLFoi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 00:44:38 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49372 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab1KLFof convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 Nov 2011 00:44:35 -0500
-Received: from mga03.intel.com ([143.182.124.21]:9071 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab1KLFnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 00:43:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,498,1315206000"; 
-   d="scan'208";a="73897233"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
-        "Ingo Molnar" <mingo@elte.hu>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Arjan van de Ven" <arjan.van.de.ven@intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <len.brown@intel.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v4 5/7] Documentations/cpu-hotplug.tx, kernel-parameters.txt: Add x86 CPU0 online/offline feature
-Date: Fri, 11 Nov 2011 21:26:30 -0800
-Message-Id: <1321075592-31600-6-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
+MIME-Version: 1.0
+In-Reply-To: <20110904020914.848566742@intel.com>
+References: <20110904015305.367445271@intel.com>
+	<20110904020914.848566742@intel.com>
+Date: Sat, 12 Nov 2011 13:44:34 +0800
+Message-ID: <CAPQyPG5JS+C-zHyXFW1EXMfRyRS=4oM2mijPL9dOn7=0ubD4Eg@mail.gmail.com>
+Subject: Re: [PATCH 02/18] writeback: dirty position control
+From: Nai Xia <nai.xia@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+Hello Fengguang,
 
-Add x86 CPU0 online/offline feature in the two documentations.
+Is this the similar idea&algo behind TCP congestion control
+since 2.6.19 ?
 
-By default BSP is not hotpluggable. Kernel parameter bsp_hotplug enables BSP
-online/offline feature.
+Same situation: Multiple tcp connections contending for network
+bandwidth V.S. multiple process contending for BDI bandwidth.
 
-The documentations point out two BSP dependencies. First, resume from hibernate
-or suspend always starts from BSP. So hibernate and suspend are prevented if BSP
-is offline. Another dependency is PIC interrupts always go to BSP.
+Same solution: Per connection(v.s. process) speed control with cubic
+algorithm controlled balancing.
 
-It's said that some machines may depend on CPU0 to poweroff/reboot. But I
-haven't seen such dependency on a few tested machines.
+:-)
 
-Please let me know if you see any CPU0 dependencies on your machine.
+Then the validness and efficiency in essence has been verified
+in real world for years in another similar situation. Good to see we
+are going to have it in write-back too!
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- Documentation/cpu-hotplug.txt       |   19 +++++++++++++++++++
- Documentation/kernel-parameters.txt |   13 +++++++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index a20bfd4..0ca600d 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -207,6 +207,25 @@ by making it not-removable.
- 
- In such cases you will also notice that the online file is missing under cpu0.
- 
-+Q: Is CPU0 removable on X86?
-+A: Yes. If given kernel option bsp_hotplug, CPU0 is removable.
-+
-+But some features depend on BSP. Known dependencies are:
-+1. Resume from hibernate/suspend depends on BSP. Hibernate/suspend will fail if
-+BSP is offline and you need to online BSP before hibernate/suspend can continue.
-+2. PIC interrupts also depend on BSP. BSP can't be removed if a PIC interrupt
-+is detected.
-+
-+It's said poweroff/reboot may depend on BSP on some machines although I haven't
-+seen any poweroff/reboot failure so far after BSP is offline on a few tested
-+machines.
-+
-+Please let me know if you know or see any other dependencies of BSP.
-+
-+If the dependencies are under your control, you can turn on bsp_hotplug.
-+
-+--Fenghua Yu <fenghua.yu@intel.com>
-+
- Q: How do i find out if a particular CPU is not removable?
- A: Depending on the implementation, some architectures may show this by the
- absence of the "online" file. This is done if it can be determined ahead of
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..55582db 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1842,6 +1842,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
- 
-+	bsp_hotplug	[X86] BSP (aka CPU0) is hotpluggable.
-+			Some features depend on BSP. Known dependencies are:
-+			1. Resume from suspend/hibernate depends on BSP.
-+			Suspend/hibernate will fail if BSP is offline and you
-+			need to online BSP before suspend/hibernate.
-+			2. PIC interrupts also depend on BSP. BSP can't be
-+			removed if a PIC interrupt is detected.
-+			It's said poweroff/reboot may depend on BSP on some
-+			machines although I haven't seen such issues so far
-+			after BSP is offline on a few tested machines.
-+			If the dependencies are under your control, you can
-+			turn on bsp_hotplug.
-+
- 	nptcg=		[IA-64] Override max number of concurrent global TLB
- 			purges which is reported from either PAL_VM_SUMMARY or
- 			SAL PALO.
--- 
-1.6.0.3
+Thanks,
+Nai
 
+
+On Sun, Sep 4, 2011 at 9:53 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> bdi_position_ratio() provides a scale factor to bdi->dirty_ratelimit, so
+> that the resulted task rate limit can drive the dirty pages back to the
+> global/bdi setpoints.
+>
+> Old scheme is,
+>                                          |
+>                           free run area  |  throttle area
+>  ----------------------------------------+---------------------------->
+>                                    thresh^                  dirty pages
+>
+> New scheme is,
+>
+>  ^ task rate limit
+>  |
+>  |            *
+>  |             *
+>  |              *
+>  |[free run]      *      [smooth throttled]
+>  |                  *
+>  |                     *
+>  |                         *
+>  ..bdi->dirty_ratelimit..........*
+>  |                               .     *
+>  |                               .          *
+>  |                               .              *
+>  |                               .                 *
+>  |                               .                    *
+>  +-------------------------------.-----------------------*------------>
+>                          setpoint^                  limit^  dirty pages
+>
+> The slope of the bdi control line should be
+>
+> 1) large enough to pull the dirty pages to setpoint reasonably fast
+>
+> 2) small enough to avoid big fluctuations in the resulted pos_ratio and
+>   hence task ratelimit
+>
+> Since the fluctuation range of the bdi dirty pages is typically observed
+> to be within 1-second worth of data, the bdi control line's slope is
+> selected to be a linear function of bdi write bandwidth, so that it can
+> adapt to slow/fast storage devices well.
+>
+> Assume the bdi control line
+>
+>        pos_ratio = 1.0 + k * (dirty - bdi_setpoint)
+>
+> where k is the negative slope.
+>
+> If targeting for 12.5% fluctuation range in pos_ratio when dirty pages
+> are fluctuating in range
+>
+>        [bdi_setpoint - write_bw/2, bdi_setpoint + write_bw/2],
+>
+> we get slope
+>
+>        k = - 1 / (8 * write_bw)
+>
+> Let pos_ratio(x_intercept) = 0, we get the parameter used in code:
+>
+>        x_intercept = bdi_setpoint + 8 * write_bw
+>
+> The global/bdi slopes are nicely complementing each other when the
+> system has only one major bdi (indicated by bdi_thresh ~= thresh):
+>
+> 1) slope of global control line    => scaling to the control scope size
+> 2) slope of main bdi control line  => scaling to the writeout bandwidth
+>
+> so that
+>
+> - in memory tight systems, (1) becomes strong enough to squeeze dirty
+>  pages inside the control scope
+>
+> - in large memory systems where the "gravity" of (1) for pulling the
+>  dirty pages to setpoint is too weak, (2) can back (1) up and drive
+>  dirty pages to bdi_setpoint ~= setpoint reasonably fast.
+>
+> Unfortunately in JBOD setups, the fluctuation range of bdi threshold
+> is related to memory size due to the interferences between disks.  In
+> this case, the bdi slope will be weighted sum of write_bw and bdi_thresh.
+>
+> Given equations
+>
+>        span = x_intercept - bdi_setpoint
+>        k = df/dx = - 1 / span
+>
+> and the extremum values
+>
+>        span = bdi_thresh
+>        dx = bdi_thresh
+>
+> we get
+>
+>        df = - dx / span = - 1.0
+>
+> That means, when bdi_dirty deviates bdi_thresh up, pos_ratio and hence
+> task ratelimit will fluctuate by -100%.
+>
+> peter: use 3rd order polynomial for the global control line
+>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Acked-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/fs-writeback.c         |    2
+>  include/linux/writeback.h |    1
+>  mm/page-writeback.c       |  213 +++++++++++++++++++++++++++++++++++-
+>  3 files changed, 210 insertions(+), 6 deletions(-)
+>
+> --- linux-next.orig/mm/page-writeback.c 2011-08-26 15:57:18.000000000 +0800
+> +++ linux-next/mm/page-writeback.c      2011-08-26 15:57:34.000000000 +0800
+> @@ -46,6 +46,8 @@
+>  */
+>  #define BANDWIDTH_INTERVAL     max(HZ/5, 1)
+>
+> +#define RATELIMIT_CALC_SHIFT   10
+> +
+>  /*
+>  * After a CPU has dirtied this many pages, balance_dirty_pages_ratelimited
+>  * will look to see if it needs to force writeback or throttling.
+> @@ -409,6 +411,12 @@ int bdi_set_max_ratio(struct backing_dev
+>  }
+>  EXPORT_SYMBOL(bdi_set_max_ratio);
+>
+> +static unsigned long dirty_freerun_ceiling(unsigned long thresh,
+> +                                          unsigned long bg_thresh)
+> +{
+> +       return (thresh + bg_thresh) / 2;
+> +}
+> +
+>  static unsigned long hard_dirty_limit(unsigned long thresh)
+>  {
+>        return max(thresh, global_dirty_limit);
+> @@ -493,6 +501,197 @@ unsigned long bdi_dirty_limit(struct bac
+>        return bdi_dirty;
+>  }
+>
+> +/*
+> + * Dirty position control.
+> + *
+> + * (o) global/bdi setpoints
+> + *
+> + * We want the dirty pages be balanced around the global/bdi setpoints.
+> + * When the number of dirty pages is higher/lower than the setpoint, the
+> + * dirty position control ratio (and hence task dirty ratelimit) will be
+> + * decreased/increased to bring the dirty pages back to the setpoint.
+> + *
+> + *     pos_ratio = 1 << RATELIMIT_CALC_SHIFT
+> + *
+> + *     if (dirty < setpoint) scale up   pos_ratio
+> + *     if (dirty > setpoint) scale down pos_ratio
+> + *
+> + *     if (bdi_dirty < bdi_setpoint) scale up   pos_ratio
+> + *     if (bdi_dirty > bdi_setpoint) scale down pos_ratio
+> + *
+> + *     task_ratelimit = dirty_ratelimit * pos_ratio >> RATELIMIT_CALC_SHIFT
+> + *
+> + * (o) global control line
+> + *
+> + *     ^ pos_ratio
+> + *     |
+> + *     |            |<===== global dirty control scope ======>|
+> + * 2.0 .............*
+> + *     |            .*
+> + *     |            . *
+> + *     |            .   *
+> + *     |            .     *
+> + *     |            .        *
+> + *     |            .            *
+> + * 1.0 ................................*
+> + *     |            .                  .     *
+> + *     |            .                  .          *
+> + *     |            .                  .              *
+> + *     |            .                  .                 *
+> + *     |            .                  .                    *
+> + *   0 +------------.------------------.----------------------*------------->
+> + *           freerun^          setpoint^                 limit^   dirty pages
+> + *
+> + * (o) bdi control lines
+> + *
+> + * The control lines for the global/bdi setpoints both stretch up to @limit.
+> + * The below figure illustrates the main bdi control line with an auxiliary
+> + * line extending it to @limit.
+> + *
+> + *   o
+> + *     o
+> + *       o                                      [o] main control line
+> + *         o                                    [*] auxiliary control line
+> + *           o
+> + *             o
+> + *               o
+> + *                 o
+> + *                   o
+> + *                     o
+> + *                       o--------------------- balance point, rate scale = 1
+> + *                       | o
+> + *                       |   o
+> + *                       |     o
+> + *                       |       o
+> + *                       |         o
+> + *                       |           o
+> + *                       |             o------- connect point, rate scale = 1/2
+> + *                       |               .*
+> + *                       |                 .   *
+> + *                       |                   .      *
+> + *                       |                     .         *
+> + *                       |                       .           *
+> + *                       |                         .              *
+> + *                       |                           .                 *
+> + *  [--------------------+-----------------------------.--------------------*]
+> + *  0              bdi_setpoint                    x_intercept           limit
+> + *
+> + * The auxiliary control line allows smoothly throttling bdi_dirty down to
+> + * normal if it starts high in situations like
+> + * - start writing to a slow SD card and a fast disk at the same time. The SD
+> + *   card's bdi_dirty may rush to many times higher than bdi_setpoint.
+> + * - the bdi dirty thresh drops quickly due to change of JBOD workload
+> + */
+> +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+> +                                       unsigned long thresh,
+> +                                       unsigned long bg_thresh,
+> +                                       unsigned long dirty,
+> +                                       unsigned long bdi_thresh,
+> +                                       unsigned long bdi_dirty)
+> +{
+> +       unsigned long write_bw = bdi->avg_write_bandwidth;
+> +       unsigned long freerun = dirty_freerun_ceiling(thresh, bg_thresh);
+> +       unsigned long limit = hard_dirty_limit(thresh);
+> +       unsigned long x_intercept;
+> +       unsigned long setpoint;         /* dirty pages' target balance point */
+> +       unsigned long bdi_setpoint;
+> +       unsigned long span;
+> +       long long pos_ratio;            /* for scaling up/down the rate limit */
+> +       long x;
+> +
+> +       if (unlikely(dirty >= limit))
+> +               return 0;
+> +
+> +       /*
+> +        * global setpoint
+> +        *
+> +        *                           setpoint - dirty 3
+> +        *        f(dirty) := 1.0 + (----------------)
+> +        *                           limit - setpoint
+> +        *
+> +        * it's a 3rd order polynomial that subjects to
+> +        *
+> +        * (1) f(freerun)  = 2.0 => rampup dirty_ratelimit reasonably fast
+> +        * (2) f(setpoint) = 1.0 => the balance point
+> +        * (3) f(limit)    = 0   => the hard limit
+> +        * (4) df/dx      <= 0   => negative feedback control
+> +        * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
+> +        *     => fast response on large errors; small oscillation near setpoint
+> +        */
+> +       setpoint = (freerun + limit) / 2;
+> +       x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
+> +                   limit - setpoint + 1);
+> +       pos_ratio = x;
+> +       pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> +       pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> +       pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
+> +
+> +       /*
+> +        * We have computed basic pos_ratio above based on global situation. If
+> +        * the bdi is over/under its share of dirty pages, we want to scale
+> +        * pos_ratio further down/up. That is done by the following mechanism.
+> +        */
+> +
+> +       /*
+> +        * bdi setpoint
+> +        *
+> +        *        f(bdi_dirty) := 1.0 + k * (bdi_dirty - bdi_setpoint)
+> +        *
+> +        *                        x_intercept - bdi_dirty
+> +        *                     := --------------------------
+> +        *                        x_intercept - bdi_setpoint
+> +        *
+> +        * The main bdi control line is a linear function that subjects to
+> +        *
+> +        * (1) f(bdi_setpoint) = 1.0
+> +        * (2) k = - 1 / (8 * write_bw)  (in single bdi case)
+> +        *     or equally: x_intercept = bdi_setpoint + 8 * write_bw
+> +        *
+> +        * For single bdi case, the dirty pages are observed to fluctuate
+> +        * regularly within range
+> +        *        [bdi_setpoint - write_bw/2, bdi_setpoint + write_bw/2]
+> +        * for various filesystems, where (2) can yield in a reasonable 12.5%
+> +        * fluctuation range for pos_ratio.
+> +        *
+> +        * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
+> +        * own size, so move the slope over accordingly and choose a slope that
+> +        * yields 100% pos_ratio fluctuation on suddenly doubled bdi_thresh.
+> +        */
+> +       if (unlikely(bdi_thresh > thresh))
+> +               bdi_thresh = thresh;
+> +       /*
+> +        * scale global setpoint to bdi's:
+> +        *      bdi_setpoint = setpoint * bdi_thresh / thresh
+> +        */
+> +       x = div_u64((u64)bdi_thresh << 16, thresh + 1);
+> +       bdi_setpoint = setpoint * (u64)x >> 16;
+> +       /*
+> +        * Use span=(8*write_bw) in single bdi case as indicated by
+> +        * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
+> +        *
+> +        *        bdi_thresh                    thresh - bdi_thresh
+> +        * span = ---------- * (8 * write_bw) + ------------------- * bdi_thresh
+> +        *          thresh                            thresh
+> +        */
+> +       span = (thresh - bdi_thresh + 8 * write_bw) * (u64)x >> 16;
+> +       x_intercept = bdi_setpoint + span;
+> +
+> +       span >>= 1;
+> +       if (unlikely(bdi_dirty > bdi_setpoint + span)) {
+> +               if (unlikely(bdi_dirty > limit))
+> +                       return 0;
+> +               if (x_intercept < limit) {
+> +                       x_intercept = limit;    /* auxiliary control line */
+> +                       bdi_setpoint += span;
+> +                       pos_ratio >>= 1;
+> +               }
+> +       }
+> +       pos_ratio *= x_intercept - bdi_dirty;
+> +       do_div(pos_ratio, x_intercept - bdi_setpoint + 1);
+> +
+> +       return pos_ratio;
+> +}
+> +
+>  static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+>                                       unsigned long elapsed,
+>                                       unsigned long written)
+> @@ -591,6 +790,7 @@ static void global_update_bandwidth(unsi
+>
+>  void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+>                            unsigned long thresh,
+> +                           unsigned long bg_thresh,
+>                            unsigned long dirty,
+>                            unsigned long bdi_thresh,
+>                            unsigned long bdi_dirty,
+> @@ -627,6 +827,7 @@ snapshot:
+>
+>  static void bdi_update_bandwidth(struct backing_dev_info *bdi,
+>                                 unsigned long thresh,
+> +                                unsigned long bg_thresh,
+>                                 unsigned long dirty,
+>                                 unsigned long bdi_thresh,
+>                                 unsigned long bdi_dirty,
+> @@ -635,8 +836,8 @@ static void bdi_update_bandwidth(struct
+>        if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
+>                return;
+>        spin_lock(&bdi->wb.list_lock);
+> -       __bdi_update_bandwidth(bdi, thresh, dirty, bdi_thresh, bdi_dirty,
+> -                              start_time);
+> +       __bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
+> +                              bdi_thresh, bdi_dirty, start_time);
+>        spin_unlock(&bdi->wb.list_lock);
+>  }
+>
+> @@ -677,7 +878,8 @@ static void balance_dirty_pages(struct a
+>                 * catch-up. This avoids (excessively) small writeouts
+>                 * when the bdi limits are ramping up.
+>                 */
+> -               if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
+> +               if (nr_dirty <= dirty_freerun_ceiling(dirty_thresh,
+> +                                                     background_thresh))
+>                        break;
+>
+>                bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+> @@ -721,8 +923,9 @@ static void balance_dirty_pages(struct a
+>                if (!bdi->dirty_exceeded)
+>                        bdi->dirty_exceeded = 1;
+>
+> -               bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty,
+> -                                    bdi_thresh, bdi_dirty, start_time);
+> +               bdi_update_bandwidth(bdi, dirty_thresh, background_thresh,
+> +                                    nr_dirty, bdi_thresh, bdi_dirty,
+> +                                    start_time);
+>
+>                /* Note: nr_reclaimable denotes nr_dirty + nr_unstable.
+>                 * Unstable writes are a feature of certain networked
+> --- linux-next.orig/fs/fs-writeback.c   2011-08-26 15:57:18.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c        2011-08-26 15:57:20.000000000 +0800
+> @@ -675,7 +675,7 @@ static inline bool over_bground_thresh(v
+>  static void wb_update_bandwidth(struct bdi_writeback *wb,
+>                                unsigned long start_time)
+>  {
+> -       __bdi_update_bandwidth(wb->bdi, 0, 0, 0, 0, start_time);
+> +       __bdi_update_bandwidth(wb->bdi, 0, 0, 0, 0, 0, start_time);
+>  }
+>
+>  /*
+> --- linux-next.orig/include/linux/writeback.h   2011-08-26 15:57:18.000000000 +0800
+> +++ linux-next/include/linux/writeback.h        2011-08-26 15:57:20.000000000 +0800
+> @@ -141,6 +141,7 @@ unsigned long bdi_dirty_limit(struct bac
+>
+>  void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+>                            unsigned long thresh,
+> +                           unsigned long bg_thresh,
+>                            unsigned long dirty,
+>                            unsigned long bdi_thresh,
+>                            unsigned long bdi_dirty,
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
