@@ -1,34 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab1KLXuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 18:50:09 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52811 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1KLXuH convert rfc822-to-8bit (ORCPT
+	id S1754439Ab1KLXuo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 18:50:44 -0500
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:35977 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab1KLXun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 18:50:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <201111122325.09134.rjw@sisk.pl>
-References: <201111120341.12473.arnd@arndb.de> <201111122325.09134.rjw@sisk.pl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 12 Nov 2011 21:49:45 -0200
-X-Google-Sender-Auth: c9GM89bbyJHOz0KiYhunmdAOp3I
-Message-ID: <CA+55aFyW=8SJ-a8c63Pjijad+HY6y_xaB_JoT4diZufMRT=o+w@mail.gmail.com>
-Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on laptop.
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 12 Nov 2011 18:50:43 -0500
+Subject: [PATCH] powerpc/p3060qds: Fix select of 'MPC8xxx_GPIO'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Shengzhou Liu <Shengzhou.Liu@freescale.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Cc: Kumar Gala <galak@kernel.crashing.org>, Anatolij Gustschin <agust@denx.de>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Nov 2011 00:50:30 +0100
+Message-ID: <1321141830.20271.22.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 12, 2011 at 8:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Thanks for the info.  Unfortunately, I've already resent the patch without
-> your Tested-by: tag, but it can still be added when the patch is committed.
+The driver for the Freescale P3060 QDS got added by commit 96cc017c5b
+("[...] Add support for P3060QDS board"). Its Kconfig entry selects
+MPC8xxx_GPIO. But at the time that driver got added MPC8xxx_GPIO was
+already renamed to GPIO_MPC8XXX, by commit c68308dd50c ("gpio: move
+mpc8xxx/512x gpio driver to drivers/gpio").
 
-Added, committed, and pushed out,
+So make this driver select GPIO_MPC8XXX.
 
-              Linus
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Bravely untested: I haven't got the hardware nor the PPC toolchain
+needed to build this. And it seems this needs (build) testing anyhow.
+
+1) Sent to the people who wrote the two patches mentioned in the commit
+explanation and CC'd the non-authors who signed-off these patches.
+
+2) The config tools do not complain about selects that cannot be met
+because they concern a Kconfig symbol that doesn't even exist. Shouldn't
+they be made to complain in that case?
+
+ arch/powerpc/platforms/85xx/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
+index 45023e2..d7946be 100644
+--- a/arch/powerpc/platforms/85xx/Kconfig
++++ b/arch/powerpc/platforms/85xx/Kconfig
+@@ -203,7 +203,7 @@ config P3060_QDS
+ 	select PPC_E500MC
+ 	select PHYS_64BIT
+ 	select SWIOTLB
+-	select MPC8xxx_GPIO
++	select GPIO_MPC8XXX
+ 	select HAS_RAPIDIO
+ 	select PPC_EPAPR_HV_PIC
+ 	help
+-- 
+1.7.4.4
+
+
+
