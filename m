@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab1KLJCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 04:02:09 -0500
-Received: from 8bytes.org ([88.198.83.132]:47602 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab1KLJCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 04:02:05 -0500
-Date: Sat, 12 Nov 2011 10:02:03 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+	id S1751698Ab1KLJOv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 04:14:51 -0500
+Received: from www17.your-server.de ([213.133.104.17]:51459 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab1KLJOt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 04:14:49 -0500
+Message-ID: <1321089280.20155.126.camel@localhost.localdomain>
+Subject: [PATCH] usb: OHCI/EHCI-XLS: Use resource_size v3
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86 amd_gart_64: Verify we can perform the
-	remapping requested
-Message-ID: <20111112090203.GD11779@8bytes.org>
-References: <m1lisj48q1.fsf@fess.ebiederm.org> <m1fwir48og.fsf@fess.ebiederm.org> <20111024100735.GL1512@8bytes.org> <20111111153148.GC11779@8bytes.org> <m11uteo57u.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m11uteo57u.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Sat, 12 Nov 2011 10:14:40 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 10:59:33AM -0800, Eric W. Biederman wrote:
-> Joerg Roedel <joro@8bytes.org> writes:
-> > Okay, thinking more about this, I am not so sure anymore it is a really
-> > good idea to fix it this way. It basically signals the driver that DMA
-> > is not possible with the device if the aperture does not fit into
-> > the dma_mask. But DMA within the ZONE_DMA might still work, no?
-> >
-> > So I think the right way to fix it is to return a dma-mapping error if
-> > and only if the address needs to be remapped by the aperture (of swiotlb or
-> > gart).
-> 
-> Perhaps I am mistaken but since the method is iommu type specific if we
-> don't actually use the iommu we should not call the method so I think
-> this is patch is already implementing what you want.
+Use resource_size function on resource object
+instead of explicit computation.
 
-No it does not. With GART or SWIOTLB all DMA-mapping functions call
-directly into the IOMMU driver. The driver then checks whether it needs
-to remap or not (see dma_capable() in SWIOTLB or need_iommu() in GART).
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/resource_size.cocci.
 
-I think the check you want to add needs to happen after these checks in
-each of the IOMMU drivers.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
+diff -u -p a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
+--- a/drivers/usb/host/ohci-xls.c 2011-11-07 19:38:15.467036480 +0100
++++ b/drivers/usb/host/ohci-xls.c 2011-11-08 12:13:16.922398086 +0100
+@@ -40,7 +40,7 @@ static int ohci_xls_probe_internal(const
+ 		goto err1;
+ 	}
+ 	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = res->end - res->start + 1;
++	hcd->rsrc_len = resource_size(res);
+ 
+ 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+ 			driver->description)) {
+diff -u -p a/drivers/usb/host/ehci-xls.c b/drivers/usb/host/ehci-xls.c
+--- a/drivers/usb/host/ehci-xls.c 2011-11-07 19:38:15.387035265 +0100
++++ b/drivers/usb/host/ehci-xls.c 2011-11-08 12:13:30.675915786 +0100
+@@ -69,7 +69,7 @@ int ehci_xls_probe_internal(const struct
+ 	}
+ 
+ 	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = res->end - res->start + 1;
++	hcd->rsrc_len = resource_size(res);
+ 
+ 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+ 				driver->description)) {
 
-	Joerg
 
