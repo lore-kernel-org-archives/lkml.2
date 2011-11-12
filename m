@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1KLRJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 12:09:57 -0500
-Received: from posta.adiyaman.edu.tr ([193.255.110.217]:46435 "EHLO
-	posta.adiyaman.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab1KLRJ4 convert rfc822-to-8bit (ORCPT
+	id S1755215Ab1KLRNb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 12:13:31 -0500
+Received: from www17.your-server.de ([213.133.104.17]:52814 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab1KLRNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 12:09:56 -0500
-X-Greylist: delayed 3815 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Nov 2011 12:09:56 EST
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: GOOD DAY
-To: Recipients <info@gmf.org>
-From: Barrister Hans Fuchs <info@gmf.org>
-Date: Sat, 12 Nov 2011 03:36:29 -1200
-Reply-To: bhf_101@admin.in.th
-Message-Id: <20111112153639.87B64181A2F@posta.adiyaman.edu.tr>
+	Sat, 12 Nov 2011 12:13:30 -0500
+Message-ID: <1321117442.1624.11.camel@localhost.localdomain>
+Subject: [PATCH] staging: hv: Use kmemdup rather than duplicating its
+ implementation
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 12 Nov 2011 18:04:02 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Barrister Hans Fuchs.
-London-Uk.
+Use kmemdup rather than duplicating its implementation
+
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+--- a/drivers/staging/hv/hv_mouse.c 2011-11-07 19:38:10.923634136 +0100
++++ b/drivers/staging/hv/hv_mouse.c 2011-11-08 10:52:29.944091035 +0100
+@@ -205,13 +205,11 @@ static void mousevsc_on_receive_device_i
+ 	desc = &device_info->hid_descriptor;
+ 	WARN_ON(desc->bLength == 0);
  
-I am Hans Fuchs Esq,  I have an immediate business proposal that involves £42,000,000.00 Forty-Two Million Pounds which we will like to invest under your custody. Once I receive a message from you notifying me of your interest, the details of the transaction/the terms and condition of sharing regarding the business would then be brought to your knowledge.
+-	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
++	input_device->hid_desc = kmemdup(desc, desc->bLength, GFP_ATOMIC);
  
-http://www.guardian.co.uk/world/2011/feb/27/gaddafi-family-assets-frozen-queen
+ 	if (!input_device->hid_desc)
+ 		goto cleanup;
  
-Your urgent response will be highly appreciated and will swiftly bring us to the commencement of the transaction. I hope to conclude. this transaction within 14 Business days Do not forget to contact me on the receipt of this e-mail address. And please you have to maintain absolute confidentiality as regards this pending transaction. 
+-	memcpy(input_device->hid_desc, desc, desc->bLength);
+-
+ 	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
+ 	if (input_device->report_desc_size == 0)
+ 		goto cleanup;
+diff -u -p a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+--- a/drivers/staging/hv/netvsc.c 2011-11-07 19:38:10.923634136 +0100
++++ b/drivers/staging/hv/netvsc.c 2011-11-08 10:52:30.410763958 +0100
+@@ -230,19 +230,14 @@ static int netvsc_init_recv_buf(struct h
+ 	net_device->recv_section_cnt = init_packet->msg.
+ 		v1_msg.send_recv_buf_complete.num_sections;
  
-I urgently await your response.
+-	net_device->recv_section = kmalloc(net_device->recv_section_cnt
+-		* sizeof(struct nvsp_1_receive_buffer_section), GFP_KERNEL);
++	net_device->recv_section = kmemdup(init_packet->msg.v1_msg.send_recv_buf_complete.sections,
++					   net_device->recv_section_cnt * sizeof(struct nvsp_1_receive_buffer_section),
++					   GFP_KERNEL);
+ 	if (net_device->recv_section == NULL) {
+ 		ret = -EINVAL;
+ 		goto cleanup;
+ 	}
  
-Best Regards,
-bhf_101@admin.in.th
-Hans Fuchs Esq
+-	memcpy(net_device->recv_section,
+-		init_packet->msg.v1_msg.
+-	       send_recv_buf_complete.sections,
+-		net_device->recv_section_cnt *
+-	       sizeof(struct nvsp_1_receive_buffer_section));
+-
+ 	/*
+ 	 * For 1st release, there should only be 1 section that represents the
+ 	 * entire receive buffer
+
+
 
