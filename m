@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab1KLFpi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 00:45:38 -0500
-Received: from mga03.intel.com ([143.182.124.21]:34136 "EHLO mga03.intel.com"
+	id S1754573Ab1KLFpy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 00:45:54 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20172 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab1KLFnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 00:43:51 -0500
+	id S1751312Ab1KLFnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 00:43:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,498,1315206000"; 
-   d="scan'208";a="73897226"
+   d="scan'208";a="73897221"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
         "Ingo Molnar" <mingo@elte.hu>,
@@ -25,9 +25,9 @@ To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
 Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>,
         "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v4 3/7] x86/mtrr/main.c: Ask the first online CPU to save mtrr
-Date: Fri, 11 Nov 2011 21:26:28 -0800
-Message-Id: <1321075592-31600-4-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v4 2/7] x86/common.c: Init BSP data during BSP online
+Date: Fri, 11 Nov 2011 21:26:27 -0800
+Message-Id: <1321075592-31600-3-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
 References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
@@ -37,37 +37,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Ask the first online CPU to save mtrr instead of asking BSP. BSP could be
-offline when mtrr_save_state() is called.
+During BSP online, enable x2apic, set_numa_node, add numa mask, and enable
+sep cpu for BSP.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/cpu/mtrr/main.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/processor.h |    1 +
+ arch/x86/kernel/cpu/common.c     |   13 ++++++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 6b96110..e4c1a41 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -695,11 +695,16 @@ void mtrr_ap_init(void)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index b650435..4057161 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -162,6 +162,7 @@ extern struct pt_regs *idle_regs(struct pt_regs *);
+ 
+ extern void early_cpu_init(void);
+ extern void identify_boot_cpu(void);
++extern void identify_boot_cpu_online(void);
+ extern void identify_secondary_cpu(struct cpuinfo_x86 *);
+ extern void print_cpu_info(struct cpuinfo_x86 *);
+ extern void init_scattered_cpuid_features(struct cpuinfo_x86 *c);
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index aa003b1..faa3bda 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -916,6 +916,14 @@ void __init identify_boot_cpu(void)
+ #endif
  }
  
- /**
-- * Save current fixed-range MTRR state of the BSP
-+ * Save current fixed-range MTRR state of the first cpu in cpu_online_mask.
-  */
- void mtrr_save_state(void)
- {
--	smp_call_function_single(0, mtrr_save_fixed_ranges, NULL, 1);
-+	int first_cpu;
++void __cpuinit identify_boot_cpu_online(void)
++{
++	numa_add_cpu(smp_processor_id());
++#ifdef CONFIG_X86_32
++	enable_sep_cpu();
++#endif
++}
 +
-+	get_online_cpus();
-+	first_cpu = cpumask_first(cpu_online_mask);
-+	smp_call_function_single(first_cpu, mtrr_save_fixed_ranges, NULL, 1);
-+	put_online_cpus();
- }
+ void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+ {
+ 	BUG_ON(c == &boot_cpu_data);
+@@ -1163,7 +1171,7 @@ void __cpuinit cpu_init(void)
+ 	oist = &per_cpu(orig_ist, cpu);
  
- void set_mtrr_aps_delayed_init(void)
+ #ifdef CONFIG_NUMA
+-	if (cpu != 0 && percpu_read(numa_node) == 0 &&
++	if (percpu_read(numa_node) == 0 &&
+ 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
+ 		set_numa_node(early_cpu_to_node(cpu));
+ #endif
+@@ -1195,8 +1203,7 @@ void __cpuinit cpu_init(void)
+ 	barrier();
+ 
+ 	x86_configure_nx();
+-	if (cpu != 0)
+-		enable_x2apic();
++	enable_x2apic();
+ 
+ 	/*
+ 	 * set up and load the per-CPU TSS
 -- 
 1.6.0.3
 
