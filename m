@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1KLWSp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 17:18:45 -0500
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:54874 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab1KLWSo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 17:18:44 -0500
-Subject: [PATCH] score: Kconfig: drop nine selects and one entry
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 12 Nov 2011 23:18:17 +0100
-Message-ID: <1321136297.20271.15.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1753485Ab1KLWWv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 17:22:51 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37232 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab1KLWWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 17:22:49 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on laptop.
+Date: Sat, 12 Nov 2011 23:25:08 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>
+References: <201111120341.12473.arnd@arndb.de>
+In-Reply-To: <201111120341.12473.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111122325.09134.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The config entries in the "System type" choice each use the same three
-select statements. The Kconfig symbol SYS_SUPPORTS_32BIT_KERNEL is only
-used by mips. The Kconfig symbol CPU_SCORE7 is used once, in an (almost)
-empty Kconfig entry, and there are no uses of CONFIG_CPU_SCORE7. (This
-means that the CPU_SCORE7 entry can also be dropped.) And
-GENERIC_HAS_IOMAP is a typo. It should have been GENERIC_IOMAP. But
-there's an entry for GENERIC_IOMAP that defaults to y, so no one
-noticed.
+On Saturday, November 12, 2011, Arnd Bergmann wrote:
+> On Saturday, November 12, 2011, Rafael J. Wysocki wrote:
+> > If that's "acpi_idle", the appended patch should help (it works for
+> > me at least).
+> 
+> Hi Rafael,
+> 
+> I currently have limited email connectivity but I happened to bisect the
+> same bug and your patch fixes it for me. I am certainly on acpi_idle
+> with my thinkpad w500.
 
-So all selects from the config entries in this choice can be dropped.
-And so can the CPU_SCORE7 config entry.
+Yes, I'm quite sure everyone on acpi_idle is affected by this bug.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) git grep tested only.
+> Sorry for breaking the email threading and dropping people from Cc.
 
-1) Please note that ARCH_SCORE7, MACH_SPCT6600, and SCORE_SIM aren't
-used anywhere else. There are also no uses of CONFIG_ARCH_SCORE7,
-CONFIG_MACH_SPCT6600, and CONFIG_SCORE_SIM macros. Perhaps the entire
-"System type" choice can be dropped.
+No problem.
 
- arch/score/Kconfig |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend regression)
+> > After commit e978aa7d7d57d04eb5f88a7507c4fb98577def77 (cpuidle: Move
+> > dev->last_residency update to driver enter routine; remove
+> > dev->last_state) setting acpi_idle_suspend to 1 by
+> > acpi_processor_suspend() causes the ACPI cpuidle routines to return
+> > error codes continuously, which in turn causes cpuidle to lock up
+> > (hard).  However, acpi_idle_suspend doesn't appear to be useful for
+> > any purpose (it's racy and doesn't really provide any real
+> > protection), so it can be removed, which makes the problem go away.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Tested-by: Arnd Bergmann <arnd@arndb.de>
 
-diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-index df169e8..4390afc 100644
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -11,28 +11,17 @@ choice
- 
- config ARCH_SCORE7
- 	bool "SCORE7 processor"
--	select SYS_SUPPORTS_32BIT_KERNEL
--	select CPU_SCORE7
--	select GENERIC_HAS_IOMAP
- 
- config MACH_SPCT6600
- 	bool "SPCT6600 series based machines"
--	select SYS_SUPPORTS_32BIT_KERNEL
--	select CPU_SCORE7
--	select GENERIC_HAS_IOMAP
- 
- config SCORE_SIM
- 	bool "Score simulator"
--	select SYS_SUPPORTS_32BIT_KERNEL
--	select CPU_SCORE7
--	select GENERIC_HAS_IOMAP
-+
- endchoice
- 
- endmenu
- 
--config CPU_SCORE7
--	bool
--
- config GENERIC_IOMAP
- 	def_bool y
- 
--- 
-1.7.4.4
+Thanks for the info.  Unfortunately, I've already resent the patch without
+your Tested-by: tag, but it can still be added when the patch is committed.
 
-
-
+Rafael
