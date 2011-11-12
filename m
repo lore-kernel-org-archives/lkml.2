@@ -1,146 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab1KLXIO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 18:08:14 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48690 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab1KLXIN (ORCPT
+	id S1754026Ab1KLXOV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 18:14:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57820 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab1KLXOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 18:08:13 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1] arch/arm/mm/fault.c: Porting OOM changes into __do_page_fault
-Date: Sat, 12 Nov 2011 18:08:03 -0500
-Message-Id: <1321139283-2955-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 12 Nov 2011 18:14:20 -0500
+Date: Sat, 12 Nov 2011 23:14:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Wan ZongShun <mcuos.com@gmail.com>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: NUC900: Add PCI driver support for NUC960
+Message-ID: <20111112231408.GC27746@n2100.arm.linux.org.uk>
+References: <4EBE98FC.6070903@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBE98FC.6070903@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits d065bd810b6deb67d4897a14bfe21f8eb526ba99 and
-37b23e0525d393d48a7d59f870b3bc061a30ccdb introduced changes into
-the x86 pagefault handler for makeing the page fault handler
-retryable as well as killable.
+On Sun, Nov 13, 2011 at 12:04:12AM +0800, Wan ZongShun wrote:
+> +#define NUC900_PCI_IO_BASE	0xE0000000
+> +#define NUC900_PCI_IO_END	0xE000FFFF
+> +#define NUC900_PCI_IO_SIZE	0x10000
+...
+> +static struct resource pci_io = {
+> +	.name	= "NUC900 PCI IO",
+> +	.start	= NUC900_PCI_IO_BASE,
+> +	.end	= NUC900_PCI_IO_BASE + NUC900_PCI_IO_SIZE - 1,
+> +	.flags	= IORESOURCE_IO,
+> +};
+...
+> +static int __init pci_nuc900_setup_resources(struct resource **resource)
+> +{
+> +	int ret = 0;
+> +
+> +	ret = request_resource(&iomem_resource, &pci_io);
+> +	if (ret) {
+> +		printk(KERN_ERR "PCI: unable to allocate I/O "
+> +		       "memory region (%d)\n", ret);
+> +		goto out;
+> +	}
 
-These changes reduce the mmap_sem hold time(for x86), which is crucial
-during OOM killer invocation.
+You must not cross-register IO resources into MMIO resources.  The
+resource manager doesn't work like that.  If you have an IO space which
+is part of the MMIO space (which is true on all ARMs) then you should
+register a MMIO resource reserving (iow, with IORESOURCE_BUSY, or
+using request_mem_region()) to ensure that the region is properly
+reserved in the MMIO space.
 
-Porting these changes to ARM.
+The IO resource stands entirely separately and is part of the
+&ioport_resource tree.
 
-Without these changes, my ARM board encounters many hang and livelock
-scenarios.
-After applying this patch, OOM feature performance improves according to
-my testing.
+> +	ret = request_resource(&iomem_resource, &pci_mem);
+> +	if (ret) {
+> +		printk(KERN_ERR "PCI: unable to allocate non-prefetchable "
+> +		       "memory region (%d)\n", ret);
+> +		goto release_io_mem;
+> +	}
+> +
+> +	/*
+> +	 * bus->resource[0] is the IO resource for this bus
+> +	 * bus->resource[1] is the mem resource for this bus
+> +	 * bus->resource[2] is the prefetch mem resource for this bus
+> +	 */
+> +	resource[0] = &pci_io;
 
-Motivation for porting these changes:
-------------------------------------
-Embedded devices such as SMART TVs and SMART phones in the near future
-will have the capability to download and run apps from the internet.
-Due to this, the device user might run some malignant app that
-allocates too much memory.
-In that case, OOM killer performance is very important so that the
-device can free up memory for other apps as well as the kernel.
+This seems wrong.  IO space generally is 16-bit, not 32-bit, and
+resource 0 is expected to be registered against the ioport_resource
+or be the ioport_resource itself if it covers all 16-bit.
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/arm/mm/fault.c |   60 ++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 45 insertions(+), 15 deletions(-)
+Moreover, if you have an IO space which is part of the MMIO space, it
+is expected that your __io macro in mach/io.h appropriately translates
+an inb(0) access to the start of your IO space emulation.
 
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index aa33949..2f89dba 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -231,11 +231,15 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
- 
- static int __kprobes
- __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
--		struct task_struct *tsk)
-+		struct pt_regs *regs, struct task_struct *tsk)
- {
- 	struct vm_area_struct *vma;
- 	int fault;
-+	int write = fsr & FSR_WRITE;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+					(write ? FAULT_FLAG_WRITE : 0);
- 
-+retry:
- 	vma = find_vma(mm, addr);
- 	fault = VM_FAULT_BADMAP;
- 	if (unlikely(!vma))
-@@ -257,13 +261,44 @@ good_area:
- 	 * If for any reason at all we couldn't handle the fault, make
- 	 * sure we exit gracefully rather than endlessly redo the fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
--	if (unlikely(fault & VM_FAULT_ERROR))
-+	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
-+
-+	if (unlikely((fault & VM_FAULT_ERROR)))
- 		return fault;
--	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
--	else
--		tsk->min_flt++;
-+
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return fault;
-+
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+				      regs, addr);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+				      regs, addr);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			 * of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+
-+			/* Acquire the mmap_sem again before retrying this
-+			 * pagefault. This would have been released by
-+			 * __lock_page_or_retry() in mm/filemap.c. */
-+			down_read(&mm->mmap_sem);
-+
-+			goto retry;
-+		}
-+	}
-+
- 	return fault;
- 
- check_stack:
-@@ -320,14 +355,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- #endif
- 	}
- 
--	fault = __do_page_fault(mm, addr, fsr, tsk);
--	up_read(&mm->mmap_sem);
--
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
--	if (fault & VM_FAULT_MAJOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
--	else if (fault & VM_FAULT_MINOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
-+	fault = __do_page_fault(mm, addr, fsr, regs, tsk);
-+	if (likely(!(fault & VM_FAULT_RETRY)))
-+		up_read(&mm->mmap_sem);
- 
- 	/*
- 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
--- 
-1.7.5.4
+> +	resource[1] = &pci_mem;
+> +	resource[2] = NULL;
+> +
+> +	goto out;
+> +
+> + release_io_mem:
+> +	release_resource(&pci_io);
+> + out:
+> +	return ret;
+> +}
 
+Missing blank line.
+
+> +int __init pci_nuc900_setup(int nr, struct pci_sys_data *sys)
+> +{
+> +	int ret = 0;
+> +
+> +	if (nr == 0) {
+> +		sys->mem_offset = 0;
+> +		sys->io_offset = 0;
+> +		ret = pci_nuc900_setup_resources(sys->resource);
+> +		if (ret) {
+> +			printk(KERN_ERR "pci_versatile_setup:\
+> +							resources... oops?\n");
+
+Don't continue strings with '\'.  Plus this isn't versatile.  Also try
+printing the error code, which can aid debugging.
+
+Try this instead:
+			pr_err("%s: failed to setup resources: %d\n",
+			       __func__, ret);
+
+> +			goto out;
+> +		}
+> +	} else {
+> +		printk(KERN_ERR "pci_versatile_setup:\
+> +						resources... nr == 0??\n");
+> +		goto out;
+> +	}
+> +	ret = 1;
+> +out:
+> +	return ret;
+> +}
+> +
+> +struct pci_bus *pci_nuc900_scan_bus(int nr, struct pci_sys_data *sys)
+> +{
+> +	return pci_scan_bus(sys->busnr, &pci_nuc900_ops, sys);
+> +}
+> +
+> +void __init pci_nuc900_preinit(void)
+> +{
+> +	/* CK33 from PLL0 */
+> +	__raw_writel(__raw_readl(REG_CLKSEL) & ~EXTAL15M, REG_CLKSEL);
+> +	/* PCI CLOCK = 200/6 = 33Mhz */
+> +	 __raw_writel(((__raw_readl(REG_CLKDIV) &
+> +				(~(0xf<<4))) | CK33DIV5), REG_CLKDIV);
+> +
+> +	/* enable PCI clock */
+> +	__raw_writel(__raw_readl(REG_CLKEN) | 0x4, REG_CLKEN);
+> +
+> +	__raw_writel(RESET_VAL1, REG_PCICTR);
+> +
+> +	mdelay(100);
+> +
+> +	__raw_writel(RESET_VAL2, REG_PCICTR);
+> +
+> +	mdelay(200);
+> +}
+> +
+> +static inline int bridge_swizzle(int pin, unsigned int slot)
+> +{
+> +	return (pin + slot) & 3;
+> +}
+> +
+> +/*
+> + * This routine handles multiple bridges.
+> + */
+> +static u8 __init nuc900_swizzle(struct pci_dev *dev, u8 *pinp)
+> +{
+> +	int pin = *pinp;
+> +
+> +	if (pin == 0)
+> +		pin = 1;
+
+pin should never be zero - are you seeing such cases?
+
+> +
+> +	pin -= 1;
+> +	while (dev->bus->self) {
+> +		pin = bridge_swizzle(pin, PCI_SLOT(dev->devfn));
+> +		/*
+> +		 * move up the chain of bridges, swizzling as we go.
+> +		 */
+> +		dev = dev->bus->self;
+> +	}
+> +	*pinp = pin + 1;
+> +
+> +	return PCI_SLOT(dev->devfn);
+> +}
+
+Is there a reason the standard swizzle (pci_common_swizzle) doesn't work
+for you?
