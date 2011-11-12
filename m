@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab1KLQ7i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 11:59:38 -0500
-Received: from www17.your-server.de ([213.133.104.17]:34378 "EHLO
+	id S1754946Ab1KLRAX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 12:00:23 -0500
+Received: from www17.your-server.de ([213.133.104.17]:34311 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149Ab1KLQ7f (ORCPT
+	with ESMTP id S1754723Ab1KLQ73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 11:59:35 -0500
-Message-ID: <1321100509.1668.28.camel@localhost.localdomain>
-Subject: [PATCH] staging: hv: Use kmemdup rather than duplicating its
+	Sat, 12 Nov 2011 11:59:29 -0500
+Message-ID: <1321100025.1668.20.camel@localhost.localdomain>
+Subject: [PATCH] ocfs2: Use kmemdup rather than duplicating its
  implementation
 From: Thomas Meyer <thomas@m3y3r.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+To: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 12 Nov 2011 13:21:49 +0100
+Date: Sat, 12 Nov 2011 13:13:45 +0100
 Mime-Version: 1.0
 X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
@@ -31,49 +30,37 @@ in scripts/coccinelle/api/memdup.cocci.
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
---- a/drivers/staging/hv/hv_mouse.c 2011-11-07 19:38:10.923634136 +0100
-+++ b/drivers/staging/hv/hv_mouse.c 2011-11-08 10:52:29.944091035 +0100
-@@ -205,13 +205,11 @@ static void mousevsc_on_receive_device_i
- 	desc = &device_info->hid_descriptor;
- 	WARN_ON(desc->bLength == 0);
+diff -u -p a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
+--- a/fs/ocfs2/localalloc.c 2011-11-07 19:38:23.787162856 +0100
++++ b/fs/ocfs2/localalloc.c 2011-11-08 10:34:40.993095086 +0100
+@@ -434,12 +434,11 @@ void ocfs2_shutdown_local_alloc(struct o
+ 	bh = osb->local_alloc_bh;
+ 	alloc = (struct ocfs2_dinode *) bh->b_data;
  
--	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
-+	input_device->hid_desc = kmemdup(desc, desc->bLength, GFP_ATOMIC);
- 
- 	if (!input_device->hid_desc)
- 		goto cleanup;
- 
--	memcpy(input_device->hid_desc, desc, desc->bLength);
--
- 	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
- 	if (input_device->report_desc_size == 0)
- 		goto cleanup;
-diff -u -p a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
---- a/drivers/staging/hv/netvsc.c 2011-11-07 19:38:10.923634136 +0100
-+++ b/drivers/staging/hv/netvsc.c 2011-11-08 10:52:30.410763958 +0100
-@@ -230,19 +230,14 @@ static int netvsc_init_recv_buf(struct h
- 	net_device->recv_section_cnt = init_packet->msg.
- 		v1_msg.send_recv_buf_complete.num_sections;
- 
--	net_device->recv_section = kmalloc(net_device->recv_section_cnt
--		* sizeof(struct nvsp_1_receive_buffer_section), GFP_KERNEL);
-+	net_device->recv_section = kmemdup(init_packet->msg.v1_msg.send_recv_buf_complete.sections,
-+					   net_device->recv_section_cnt * sizeof(struct nvsp_1_receive_buffer_section),
-+					   GFP_KERNEL);
- 	if (net_device->recv_section == NULL) {
- 		ret = -EINVAL;
- 		goto cleanup;
+-	alloc_copy = kmalloc(bh->b_size, GFP_NOFS);
++	alloc_copy = kmemdup(alloc, bh->b_size, GFP_NOFS);
+ 	if (!alloc_copy) {
+ 		status = -ENOMEM;
+ 		goto out_commit;
  	}
+-	memcpy(alloc_copy, alloc, bh->b_size);
  
--	memcpy(net_device->recv_section,
--		init_packet->msg.v1_msg.
--	       send_recv_buf_complete.sections,
--		net_device->recv_section_cnt *
--	       sizeof(struct nvsp_1_receive_buffer_section));
--
- 	/*
- 	 * For 1st release, there should only be 1 section that represents the
- 	 * entire receive buffer
+ 	status = ocfs2_journal_access_di(handle, INODE_CACHE(local_alloc_inode),
+ 					 bh, OCFS2_JOURNAL_ACCESS_WRITE);
+@@ -1249,13 +1248,12 @@ static int ocfs2_local_alloc_slide_windo
+ 	 * local alloc shutdown won't try to double free main bitmap
+ 	 * bits. Make a copy so the sync function knows which bits to
+ 	 * free. */
+-	alloc_copy = kmalloc(osb->local_alloc_bh->b_size, GFP_NOFS);
++	alloc_copy = kmemdup(alloc, osb->local_alloc_bh->b_size, GFP_NOFS);
+ 	if (!alloc_copy) {
+ 		status = -ENOMEM;
+ 		mlog_errno(status);
+ 		goto bail;
+ 	}
+-	memcpy(alloc_copy, alloc, osb->local_alloc_bh->b_size);
+ 
+ 	status = ocfs2_journal_access_di(handle,
+ 					 INODE_CACHE(local_alloc_inode),
 
 
