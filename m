@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1KLOpK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 09:45:10 -0500
-Received: from phobos.b-et-a.de ([80.237.154.114]:39832 "HELO un.b-et-a.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753820Ab1KLOpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 09:45:09 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Nov 2011 09:45:08 EST
-Date: Sat, 12 Nov 2011 15:38:25 +0100
-From: Klaus Ripke <klaus@ripke.com>
-To: linux-kernel@vger.kernel.org
-Subject: LOAD_FREQ (4*HZ+61) avoids loadavg Moire
-Message-ID: <20111112143825.GX6192@aine.Speedport_W_502V_Typ_A>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1754235Ab1KLOrb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 09:47:31 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38699 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1KLOr3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 09:47:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACRpkda06ZvxABSjs3PvL2hE8-0uBNonH83=qZG+yS0fax69AA@mail.gmail.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17408051C2@HQMAIL01.nvidia.com>
+	<CACRpkdY8YXooD5ChHqQnERPPGhk7TgUvL=TodAPY8Jit9eS=fw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805421@HQMAIL01.nvidia.com>
+	<CACRpkdaArzSfUVgPo0vVEAUNKwZO7W5yhjJpeEQiFK20RQS2Ag@mail.gmail.com>
+	<CAJuYYwS465WW-Xp6gk5hzKArTZGzmc6nh+-XR=BPusGfTU=DXw@mail.gmail.com>
+	<CACRpkda06ZvxABSjs3PvL2hE8-0uBNonH83=qZG+yS0fax69AA@mail.gmail.com>
+Date: Sat, 12 Nov 2011 20:17:29 +0530
+Message-ID: <CAJuYYwQJaRZQ+fEZBfujyuoVNBVf8167cbfnX6JqhvVzrJmrYQ@mail.gmail.com>
+Subject: Re: pinctrl discussions @ Linaro Connect, and also requesting GPIOs
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LOAD_FREQ is (5*HZ+1) to avoid high load average when idle:
-http://kerneltrap.org/mailarchive/linux-kernel/2007/10/3/328568
+On 12 November 2011 19:49, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sat, Nov 12, 2011 at 12:22 PM, Thomas Abraham
+> <thomas.abraham@linaro.org> wrote:
+>
+>> Another question, not related to the above. The gpio and pinctrl
+>> drivers would operate on the same physical memory space (pinmux and
+>> gpio is just a single controller). Both gpio and pinctrl driver would
+>> do a ioremap of this physical address space. I remember reading that
+>> ioremap of the same physical memory area twice is not correct. So any
+>> suggestions on how to handle this.
+>
+> Yes, create one single driver in a single file that presents a pinctrl *and*
+> a gpiolib interface. Put the driver in drivers/pinctrl/pinctrl-foo.c.
+> That's the most natural design pattern methinks. Trying to artificially
+> break it apart in two driver files doesn't make sense.
 
-I suggest (4*HZ+61) for a better distribution.
+Yes, this seems better (and additional work). I will try it out.
+Meanwhile, I will post a simplistic exynos4 pinctrl driver patch, just
+to ensure it is headed in the right direction.
 
-With some seconds based load (like SSL heartbeats)
-and LOAD_FREQ at (5*HZ+1) I see Moire patterns like inverse sawtooth,
-since 2 or 3 probes hit the jobs (load increases quickly),
-followed by several probes missing it.
+Thanks,
+Thomas.
 
-
-A 4.61 sec interval gives optimal distribution over when within a
-second a probe is taken, as .61 is close to golden ratio phi 1.618...
-(test in http://ripke.com/goldenratio.c).
-
-12*4.61 = 55.32 secs is still close to a minute,
-and 13*4.61=59.93 is even closer than the current 12*5.01=60.12
-(with exponents EXP_x adjusted to a ratio of 13 instead of 12).
-
-
-best
-Klaus
+>
+> Linus Walleij
+>
