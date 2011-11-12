@@ -1,84 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab1KLCEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 21:04:25 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:36699 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab1KLCEX (ORCPT
+	id S1752173Ab1KLC16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 21:27:58 -0500
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:58964 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab1KLC15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 21:04:23 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6527"; a="134610824"
-Message-ID: <4EBDD426.4050105@codeaurora.org>
-Date: Fri, 11 Nov 2011 18:04:22 -0800
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Joerg Roedel <Joerg.Roedel@amd.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Kai Huang <mail.kai.huang@gmail.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
-        KyongHo Cho <pullip.cho@samsung.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as supported
- by the hardware
-References: <1318850846-16066-1-git-send-email-ohad@wizery.com> <1318850846-16066-3-git-send-email-ohad@wizery.com> <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com> <1320938930.22195.17.camel@i7.infradead.org> <20111110170918.GE13213@amd.com> <4EBC3E20.20301@codeaurora.org> <20111111132411.GH13213@amd.com>
-In-Reply-To: <20111111132411.GH13213@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Nov 2011 21:27:57 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Decotigny <david.decotigny@google.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>
+Subject: [PATCH FIX net v2] forcedeth: fix stats on hardware without extended stats support
+Date: Fri, 11 Nov 2011 18:27:34 -0800
+Message-Id: <51c23650f3fc6e48b652a7ab322ca09a1cb7cbcc.1321064621.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321064621.git.david.decotigny@google.com>
+References: <cover.1321064621.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2011 5:24 AM, Joerg Roedel wrote:
-> On Thu, Nov 10, 2011 at 01:12:00PM -0800, Stepan Moskovchenko wrote:
->> I have been experimenting with an iommu_map_range call, which maps a
->> given scatterlist of discontiguous physical pages into a contiguous
->> virtual region at a given IOVA. This has some performance advantages
->> over just calling iommu_map iteratively. First, it reduces the
->> amount of table walking / calculation needed for mapping each page,
->> given how you know that all the pages will be mapped into a single
->> virtually-contiguous region (so in most cases, the first-level table
->> calculation can be reused). Second, it allows one to defer the TLB
->> (and sometimes cache) maintenance operations until the entire
->> scatterlist has been mapped, rather than doing a TLB invalidate
->> after mapping each page, as would have been the case if iommu_map
->> were just being called from within a loop. Granted, just using
->> iommu_map many times may be acceptable on the slow path, but I have
->> seen significant performance gains when using this approach on the
->> fast path.
-> Yes, from a performance point-of-view that makes sense, as an addition
-> to the existing iommu_map interface. Are the pages in the list allowed
-> to have different page-sizes?
->
->
-> 	Joerg
->
+This change makes sure that tx_packets/rx_bytes ifconfig counters are
+updated even on NICs that don't provide hardware support for these
+stats: they are now updated in software. For the sake of consistency,
+we also now have tx_bytes updated in software (hardware counters
+include ethernet CRC, and software doesn't account for it).
 
-Hello
+This reverts parts of:
+ - "forcedeth: statistics optimization" (21828163b2)
+ - "forcedeth: Improve stats counters" (0bdfea8ba8)
+ - "forcedeth: remove unneeded stats updates" (4687f3f364)
 
-Yes, the scatterlist is allowed to have different page sizes. But, they 
-are required to have a length that is a multiple of 4K. If a page in the 
-list is bigger than 4K, the code will iteratively map it with 4K pages. 
-I suppose based on how my implementation is written, it would not be too 
-difficult to add checks for the proper length and VA/PA alignments, and 
-insert a 64K / 1M / 16M mapping if the alignment is lucky and the SG 
-item is big enough.
+Tested:
+  pktgen + loopback (http://patchwork.ozlabs.org/patch/124698/)
+  reports identical tx_packets/rx_packets and tx_bytes/rx_bytes.
 
-In my particular test case, even though the pages in the list might be 
-of different sizes, they are not guaranteed to be aligned properly and I 
-would most likely have to fall back on mapping them as multiple 
-consecutive 4K pages, anyway. But even despite this, having map_range to 
-consolidate a lot of the common operations into one call sill gives me a 
-nice speed boost.
 
-I hadn't sent the patches out because this was all for my testing, but 
-would you be interested in me adding a map_range to the API? The 
-iommu_map_range call could even do a check if the ops supports a 
-.map_range, and fall back on calling iommu_map repeatedly if the driver 
-doesn't support this operation natively. In my code, the function takes 
-a domain, iova, scatterlist, length, and prot.
 
-Steve
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |   36 +++++++++++++++++++++++-------
+ 1 files changed, 27 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 1dca570..1c61d36 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -609,7 +609,7 @@ struct nv_ethtool_str {
+ };
+ 
+ static const struct nv_ethtool_str nv_estats_str[] = {
+-	{ "tx_bytes" },
++	{ "tx_bytes" }, /* includes Ethernet FCS CRC */
+ 	{ "tx_zero_rexmt" },
+ 	{ "tx_one_rexmt" },
+ 	{ "tx_many_rexmt" },
+@@ -637,7 +637,7 @@ static const struct nv_ethtool_str nv_estats_str[] = {
+ 	/* version 2 stats */
+ 	{ "tx_deferral" },
+ 	{ "tx_packets" },
+-	{ "rx_bytes" },
++	{ "rx_bytes" }, /* includes Ethernet FCS CRC */
+ 	{ "tx_pause" },
+ 	{ "rx_pause" },
+ 	{ "rx_drop_frame" },
+@@ -649,7 +649,7 @@ static const struct nv_ethtool_str nv_estats_str[] = {
+ };
+ 
+ struct nv_ethtool_stats {
+-	u64 tx_bytes;
++	u64 tx_bytes; /* should be ifconfig->tx_bytes + 4*tx_packets */
+ 	u64 tx_zero_rexmt;
+ 	u64 tx_one_rexmt;
+ 	u64 tx_many_rexmt;
+@@ -670,14 +670,14 @@ struct nv_ethtool_stats {
+ 	u64 rx_unicast;
+ 	u64 rx_multicast;
+ 	u64 rx_broadcast;
+-	u64 rx_packets;
++	u64 rx_packets; /* should be ifconfig->rx_packets */
+ 	u64 rx_errors_total;
+ 	u64 tx_errors_total;
+ 
+ 	/* version 2 stats */
+ 	u64 tx_deferral;
+-	u64 tx_packets;
+-	u64 rx_bytes;
++	u64 tx_packets; /* should be ifconfig->tx_packets */
++	u64 rx_bytes;   /* should be ifconfig->rx_bytes + 4*rx_packets */
+ 	u64 tx_pause;
+ 	u64 rx_pause;
+ 	u64 rx_drop_frame;
+@@ -1706,10 +1706,17 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
+ 	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
+ 		nv_get_hw_stats(dev);
+ 
++		/*
++		 * Note: because HW stats are not always available and
++		 * for consistency reasons, the following ifconfig
++		 * stats are managed by software: rx_bytes, tx_bytes,
++		 * rx_packets and tx_packets. The related hardware
++		 * stats reported by ethtool should be equivalent to
++		 * these ifconfig stats, with 4 additional bytes per
++		 * packet (Ethernet FCS CRC).
++		 */
++
+ 		/* copy to net_device stats */
+-		dev->stats.tx_packets = np->estats.tx_packets;
+-		dev->stats.rx_bytes = np->estats.rx_bytes;
+-		dev->stats.tx_bytes = np->estats.tx_bytes;
+ 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
+ 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
+ 		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
+@@ -2380,6 +2387,9 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 				if (flags & NV_TX_ERROR) {
+ 					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
++				} else {
++					dev->stats.tx_packets++;
++					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2390,6 +2400,9 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 				if (flags & NV_TX2_ERROR) {
+ 					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
++				} else {
++					dev->stats.tx_packets++;
++					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2429,6 +2442,9 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+ 					else
+ 						nv_legacybackoff_reseed(dev);
+ 				}
++			} else {
++				dev->stats.tx_packets++;
++				dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
+ 			}
+ 
+ 			dev_kfree_skb_any(np->get_tx_ctx->skb);
+@@ -2678,6 +2694,7 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		napi_gro_receive(&np->napi, skb);
+ 		dev->stats.rx_packets++;
++		dev->stats.rx_bytes += len;
+ next_pkt:
+ 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
+ 			np->get_rx.orig = np->first_rx.orig;
+@@ -2761,6 +2778,7 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 			}
+ 			napi_gro_receive(&np->napi, skb);
+ 			dev->stats.rx_packets++;
++			dev->stats.rx_bytes += len;
+ 		} else {
+ 			dev_kfree_skb(skb);
+ 		}
+-- 
+1.7.3.1
+
