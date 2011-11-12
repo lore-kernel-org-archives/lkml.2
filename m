@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab1KLB2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 20:28:30 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:56883 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756322Ab1KLB22 (ORCPT
+	id S1755564Ab1KLBa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 20:30:26 -0500
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:51283 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751292Ab1KLBaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 20:28:28 -0500
-Date: Fri, 11 Nov 2011 20:28:07 -0500 (EST)
-Message-Id: <20111111.202807.1335209533396648252.davem@davemloft.net>
-To: horti@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david.decotigny@google.com, ian.campbell@citrix.com,
-        rick.jones2@hp.com, eric.dumazet@gmail.com, maheshb@google.com
-Subject: Re: [PATCH net-next v1] net-forcedeth: Add internal loopback
- support for forcedeth NICs.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <177427773f155c883809613ddf1ce28546aaac3e.1320871300.git.horti@google.com>
-References: <cover.1320871300.git.horti@google.com>
-	<177427773f155c883809613ddf1ce28546aaac3e.1320871300.git.horti@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 11 Nov 2011 17:28:09 -0800 (PST)
+	Fri, 11 Nov 2011 20:30:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111112010850.GT14486@sequoia.sous-sol.org>
+References: <20111111224849.9756.13368.stgit@bling.home> <1321058267.2006.21.camel@shinybook.infradead.org>
+ <CAL1RGDXZjKhA++3eFVPbazixaM7Q_JfBJyLKE0xjBs+sK55idg@mail.gmail.com>
+ <20111112005100.GR14486@sequoia.sous-sol.org> <1321059340.2006.27.camel@shinybook.infradead.org>
+ <20111112010850.GT14486@sequoia.sous-sol.org>
+From: Roland Dreier <roland@purestorage.com>
+Date: Fri, 11 Nov 2011 17:30:01 -0800
+Message-ID: <CAL1RGDXiE5=GZvogdOnSkOKKc_YdWyrh0W+ZT2S71TmMdQHcBw@mail.gmail.com>
+Subject: Re: [PATCH] intel-iommu: Default to non-coherent for domains
+ unattached to iommus
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ddutile@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sanjay Hortikar <horti@google.com>
-Date: Wed,  9 Nov 2011 12:45:25 -0800
+On Fri, Nov 11, 2011 at 5:08 PM, Chris Wright <chrisw@sous-sol.org> wrote:
+>> I would be more inclined to suspect that there's some
+>> chipset buffering that we aren't correctly flushing (which might in
+>> itself be a hardware issue, since the way to flush the cache is supposed
+>> to be well-defined).
+>
+> Roland, have you tried switching BIOS to Coherency On and can do you
+> ever see stale PTEs?
 
-> @@ -5124,6 +5266,12 @@ static int nv_open(struct net_device *dev)
->  
->  	spin_unlock_irq(&np->lock);
->  
-> +	/* If the loopback feature was set while the device was down, make sure
-> +	* that it's set correctly now.
-> +	*/
+Yeah, the problems go away if I turn on coherency.
 
-Improperly formatted comment, it should be:
+More details here:
+  https://lkml.org/lkml/2011/10/11/412
 
-	/*
-	 *
-	 */
+(and after that email, I let the box run long enough that I'm pretty
+sure turning VT-d coherency on does fix things)
 
-> @@ -5328,6 +5476,10 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
->  
->  	dev->features |= dev->hw_features;
->  
-> +	/* Add loopback capability to the device. */
-> +	dev->hw_features |= NETIF_F_LOOPBACK;
-> +
-> +
->  	np->pause_flags = NV_PAUSEFRAME_RX_CAPABLE | NV_PAUSEFRAME_RX_REQ | NV_PAUSEFRAME_AUTONEG;
+I'd love to fix this but not sure how much I can contribute beyond
+tests (I don't see anything wrong in the VT-d cache flushing code
+in the kernel, and I did look for a while).
 
-Please do not add all of these extra empty lines.
+ - R.
