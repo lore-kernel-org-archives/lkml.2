@@ -1,66 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab1KLXuo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 18:50:44 -0500
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:35977 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab1KLXun (ORCPT
+	id S1754369Ab1KLX4I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 18:56:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54443 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab1KLX4F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 18:50:43 -0500
-Subject: [PATCH] powerpc/p3060qds: Fix select of 'MPC8xxx_GPIO'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Cc: Kumar Gala <galak@kernel.crashing.org>, Anatolij Gustschin <agust@denx.de>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Nov 2011 00:50:30 +0100
-Message-ID: <1321141830.20271.22.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sat, 12 Nov 2011 18:56:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111112232039.GD27746@n2100.arm.linux.org.uk>
+References: <1321139283-2955-1-git-send-email-consul.kautuk@gmail.com>
+	<20111112232039.GD27746@n2100.arm.linux.org.uk>
+Date: Sat, 12 Nov 2011 18:56:04 -0500
+Message-ID: <CAFPAmTTTvLMrSjfVkP+C7grkBY6cpB9kxTUWN2mJe-bTQX17OA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] arch/arm/mm/fault.c: Porting OOM changes into __do_page_fault
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver for the Freescale P3060 QDS got added by commit 96cc017c5b
-("[...] Add support for P3060QDS board"). Its Kconfig entry selects
-MPC8xxx_GPIO. But at the time that driver got added MPC8xxx_GPIO was
-already renamed to GPIO_MPC8XXX, by commit c68308dd50c ("gpio: move
-mpc8xxx/512x gpio driver to drivers/gpio").
+On Sat, Nov 12, 2011 at 6:20 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sat, Nov 12, 2011 at 06:08:03PM -0500, Kautuk Consul wrote:
+>> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+>> index aa33949..2f89dba 100644
+>> --- a/arch/arm/mm/fault.c
+>> +++ b/arch/arm/mm/fault.c
+>> @@ -231,11 +231,15 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
+>>
+>>  static int __kprobes
+>>  __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
+>> -             struct task_struct *tsk)
+>> +             struct pt_regs *regs, struct task_struct *tsk)
+>>  {
+>>       struct vm_area_struct *vma;
+>>       int fault;
+>> +     int write = fsr & FSR_WRITE;
+>> +     unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+>> +                                     (write ? FAULT_FLAG_WRITE : 0);
+>>
+>> +retry:
+>>       vma = find_vma(mm, addr);
+>>       fault = VM_FAULT_BADMAP;
+>>       if (unlikely(!vma))
+>> @@ -257,13 +261,44 @@ good_area:
+>>        * If for any reason at all we couldn't handle the fault, make
+>>        * sure we exit gracefully rather than endlessly redo the fault.
+>>        */
+>> -     fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
+>> -     if (unlikely(fault & VM_FAULT_ERROR))
+>> +     fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
+>> +
+>> +     if (unlikely((fault & VM_FAULT_ERROR)))
+>>               return fault;
+>> -     if (fault & VM_FAULT_MAJOR)
+>> -             tsk->maj_flt++;
+>> -     else
+>> -             tsk->min_flt++;
+>> +
+>> +     if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
+>> +             return fault;
+>> +
+>> +     /*
+>> +      * Major/minor page fault accounting is only done on the
+>> +      * initial attempt. If we go through a retry, it is extremely
+>> +      * likely that the page will be found in page cache at that point.
+>> +      */
+>> +     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+>> +     if (flags & FAULT_FLAG_ALLOW_RETRY) {
+>> +             if (fault & VM_FAULT_MAJOR) {
+>> +                     tsk->maj_flt++;
+>> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
+>> +                                   regs, addr);
+>> +             } else {
+>> +                     tsk->min_flt++;
+>> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
+>> +                                   regs, addr);
+>> +             }
+>> +             if (fault & VM_FAULT_RETRY) {
+>> +                     /* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
+>> +                      * of starvation. */
+>> +                     flags &= ~FAULT_FLAG_ALLOW_RETRY;
+>> +
+>> +                     /* Acquire the mmap_sem again before retrying this
+>> +                      * pagefault. This would have been released by
+>> +                      * __lock_page_or_retry() in mm/filemap.c. */
+>> +                     down_read(&mm->mmap_sem);
+>> +
+>> +                     goto retry;
+>> +             }
+>> +     }
+>> +
+>>       return fault;
+>>
+>>  check_stack:
+>> @@ -320,14 +355,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>>  #endif
+>>       }
+>>
+>> -     fault = __do_page_fault(mm, addr, fsr, tsk);
+>> -     up_read(&mm->mmap_sem);
+>> -
+>> -     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+>> -     if (fault & VM_FAULT_MAJOR)
+>> -             perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
+>> -     else if (fault & VM_FAULT_MINOR)
+>> -             perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
+>> +     fault = __do_page_fault(mm, addr, fsr, regs, tsk);
+>> +     if (likely(!(fault & VM_FAULT_RETRY)))
+>> +             up_read(&mm->mmap_sem);
+>
+> I really don't like this.  I crafted this handling in such a way that
+> the locking was plainly obvious - with all locking handled in
+> do_page_fault and not inside __do_page_fault.  That's how I want things
+> to stay, so please rework this patch to maintain that.
 
-So make this driver select GPIO_MPC8XXX.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Bravely untested: I haven't got the hardware nor the PPC toolchain
-needed to build this. And it seems this needs (build) testing anyhow.
+I understand your concern.
 
-1) Sent to the people who wrote the two patches mentioned in the commit
-explanation and CC'd the non-authors who signed-off these patches.
+However, the entire concept of retryable and killable page fault
+handlers kind of messes with the
+locking that was there earlier.
+( Please look at the commits I have mentioned in the patch. )
 
-2) The config tools do not complain about selects that cannot be met
-because they concern a Kconfig symbol that doesn't even exist. Shouldn't
-they be made to complain in that case?
+There will anyways have to be a check somewhere in the pagefault
+handler code to check if
+VM_FAULT_RETRY was returned and only do an up_read when there wasn't.
+The reason for this is that the mmap_sem is released in
+__lock_page_or_retry() in filemap.c.
 
- arch/powerpc/platforms/85xx/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Can you shed some more light on what you would find more acceptable in
+the locking mechanism ?
 
-diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
-index 45023e2..d7946be 100644
---- a/arch/powerpc/platforms/85xx/Kconfig
-+++ b/arch/powerpc/platforms/85xx/Kconfig
-@@ -203,7 +203,7 @@ config P3060_QDS
- 	select PPC_E500MC
- 	select PHYS_64BIT
- 	select SWIOTLB
--	select MPC8xxx_GPIO
-+	select GPIO_MPC8XXX
- 	select HAS_RAPIDIO
- 	select PPC_EPAPR_HV_PIC
- 	help
--- 
-1.7.4.4
-
-
-
+>
