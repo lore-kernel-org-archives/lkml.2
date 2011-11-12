@@ -1,37 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab1KLUk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 15:40:56 -0500
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:37832 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab1KLUkz (ORCPT
+	id S1752990Ab1KLVbL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 16:31:11 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47220 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab1KLVbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 15:40:55 -0500
-Subject: Re: [PATCH] [TRIVIAL] drm: drop select of SLOW_WORK
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1320797810.14409.419.camel@x61.thuisdomein>
-References: <1320797810.14409.419.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 12 Nov 2011 21:40:52 +0100
-Message-ID: <1321130452.27598.108.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sat, 12 Nov 2011 16:31:10 -0500
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: jgarzik@redhat.com
+Cc: linux-kernel@vger.kernel.org, bzolnier@gmail.com,
+        Alexander Beregalov <a.beregalov@gmail.com>
+Subject: [PATCH] libata: fix build without BMDMA
+Date: Sun, 13 Nov 2011 01:30:56 +0400
+Message-Id: <1321133456-15875-1-git-send-email-a.beregalov@gmail.com>
+X-Mailer: git-send-email 1.7.8.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 01:16 +0100, Paul Bolle wrote:
-> slow-work got killed in commit 181a51f6e0. This means that since v2.6.36
-> there is no Kconfig symbol SLOW_WORK. Apparently selecting that symbol
-> is a nop. Drop that select.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+fix these errors:
+drivers/ata/libata-sff.c:2538:3: error: implicit declaration of function
+'ata_pci_bmdma_prepare_host'
+drivers/ata/libata-sff.c:2549:40: error: 'ata_bmdma_interrupt'
+undeclared (first use in this function)
 
-This one was taken by Dave Airlie and is already in the mainline tree. 
+Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
+---
 
+I'm not sure if it is better than declaration fake functions.
 
-Paul Bolle
+drivers/ata/libata-sff.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+index 63d5327..4cadfa2 100644
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -2533,10 +2533,12 @@ static int ata_pci_init_one(struct pci_dev *pdev,
+ 	if (rc)
+ 		goto out;
+ 
++#ifdef CONFIG_ATA_BMDMA
+ 	if (bmdma)
+ 		/* prepare and activate BMDMA host */
+ 		rc = ata_pci_bmdma_prepare_host(pdev, ppi, &host);
+ 	else
++#endif
+ 		/* prepare and activate SFF host */
+ 		rc = ata_pci_sff_prepare_host(pdev, ppi, &host);
+ 	if (rc)
+@@ -2544,10 +2546,12 @@ static int ata_pci_init_one(struct pci_dev *pdev,
+ 	host->private_data = host_priv;
+ 	host->flags |= hflags;
+ 
++#ifdef CONFIG_ATA_BMDMA
+ 	if (bmdma) {
+ 		pci_set_master(pdev);
+ 		rc = ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
+ 	} else
++#endif
+ 		rc = ata_pci_sff_activate_host(host, ata_sff_interrupt, sht);
+ out:
+ 	if (rc == 0)
+-- 
+1.7.8.rc1
 
