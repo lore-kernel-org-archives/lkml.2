@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab1KLQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 11:59:35 -0500
-Received: from www17.your-server.de ([213.133.104.17]:34366 "EHLO
+	id S1755004Ab1KLQ7i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 11:59:38 -0500
+Received: from www17.your-server.de ([213.133.104.17]:34378 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149Ab1KLQ7c (ORCPT
+	with ESMTP id S1754149Ab1KLQ7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 11:59:32 -0500
-Message-ID: <1321100125.1668.22.camel@localhost.localdomain>
-Subject: [PATCH] gma500: Use kmemdup rather than duplicating its
+	Sat, 12 Nov 2011 11:59:35 -0500
+Message-ID: <1321100509.1668.28.camel@localhost.localdomain>
+Subject: [PATCH] staging: hv: Use kmemdup rather than duplicating its
  implementation
 From: Thomas Meyer <thomas@m3y3r.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 12 Nov 2011 13:15:25 +0100
+Date: Sat, 12 Nov 2011 13:21:49 +0100
 Mime-Version: 1.0
 X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
@@ -31,22 +31,49 @@ in scripts/coccinelle/api/memdup.cocci.
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/staging/gma500/intel_bios.c b/drivers/staging/gma500/intel_bios.c
---- a/drivers/staging/gma500/intel_bios.c 2011-11-07 19:38:10.703630794 +0100
-+++ b/drivers/staging/gma500/intel_bios.c 2011-11-08 10:52:10.090491565 +0100
-@@ -104,12 +104,11 @@ static void parse_backlight_data(struct
- 	bl_start = find_section(bdb, BDB_LVDS_BACKLIGHT);
- 	vbt_lvds_bl = (struct bdb_lvds_backlight *)(bl_start + 1) + p_type;
+diff -u -p a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+--- a/drivers/staging/hv/hv_mouse.c 2011-11-07 19:38:10.923634136 +0100
++++ b/drivers/staging/hv/hv_mouse.c 2011-11-08 10:52:29.944091035 +0100
+@@ -205,13 +205,11 @@ static void mousevsc_on_receive_device_i
+ 	desc = &device_info->hid_descriptor;
+ 	WARN_ON(desc->bLength == 0);
  
--	lvds_bl = kzalloc(sizeof(*vbt_lvds_bl), GFP_KERNEL);
-+	lvds_bl = kmemdup(vbt_lvds_bl, sizeof(*vbt_lvds_bl), GFP_KERNEL);
- 	if (!lvds_bl) {
- 		dev_err(dev_priv->dev->dev, "out of memory for backlight data\n");
- 		return;
+-	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
++	input_device->hid_desc = kmemdup(desc, desc->bLength, GFP_ATOMIC);
+ 
+ 	if (!input_device->hid_desc)
+ 		goto cleanup;
+ 
+-	memcpy(input_device->hid_desc, desc, desc->bLength);
+-
+ 	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
+ 	if (input_device->report_desc_size == 0)
+ 		goto cleanup;
+diff -u -p a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+--- a/drivers/staging/hv/netvsc.c 2011-11-07 19:38:10.923634136 +0100
++++ b/drivers/staging/hv/netvsc.c 2011-11-08 10:52:30.410763958 +0100
+@@ -230,19 +230,14 @@ static int netvsc_init_recv_buf(struct h
+ 	net_device->recv_section_cnt = init_packet->msg.
+ 		v1_msg.send_recv_buf_complete.num_sections;
+ 
+-	net_device->recv_section = kmalloc(net_device->recv_section_cnt
+-		* sizeof(struct nvsp_1_receive_buffer_section), GFP_KERNEL);
++	net_device->recv_section = kmemdup(init_packet->msg.v1_msg.send_recv_buf_complete.sections,
++					   net_device->recv_section_cnt * sizeof(struct nvsp_1_receive_buffer_section),
++					   GFP_KERNEL);
+ 	if (net_device->recv_section == NULL) {
+ 		ret = -EINVAL;
+ 		goto cleanup;
  	}
--	memcpy(lvds_bl, vbt_lvds_bl, sizeof(*vbt_lvds_bl));
- 	dev_priv->lvds_bl = lvds_bl;
- }
  
+-	memcpy(net_device->recv_section,
+-		init_packet->msg.v1_msg.
+-	       send_recv_buf_complete.sections,
+-		net_device->recv_section_cnt *
+-	       sizeof(struct nvsp_1_receive_buffer_section));
+-
+ 	/*
+ 	 * For 1st release, there should only be 1 section that represents the
+ 	 * entire receive buffer
 
 
