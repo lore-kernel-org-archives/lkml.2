@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab1KLNvH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 08:51:07 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43374 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab1KLNvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 08:51:05 -0500
-Date: Sat, 12 Nov 2011 14:50:59 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Geode LX boot fails after x86 microcode revision change
-Message-ID: <20111112135059.GA2009@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel Drake <dsd@laptop.org>, Borislav Petkov <bp@amd64.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com>
- <20111108203116.GF25083@aftab>
- <4EB9A6BC.7050600@zytor.com>
- <F625F33982F5D847987879CC59FF132D6F5B@storexdag03.amd.com>
- <CAMLZHHTu-FNphvt5_L7fxqRpPukfs8nbS71x3GYo5GsPBo5cNw@mail.gmail.com>
- <20111108223744.GA1996@x1.osrc.amd.com>
- <CAMLZHHRc+yNr=6SB7Z1t_hyL+e8a0T-BokyQ+wVUPw-vhd3rQA@mail.gmail.com>
- <20111109173412.GE14181@aftab>
- <CAMLZHHRJdumbbuBtHnAOtLRCzgBrKQw-PHCeeG=WEs5KeKsKGw@mail.gmail.com>
+	id S1754031Ab1KLORo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 09:17:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33610 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab1KLORm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 09:17:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAMLZHHRJdumbbuBtHnAOtLRCzgBrKQw-PHCeeG=WEs5KeKsKGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJuYYwS465WW-Xp6gk5hzKArTZGzmc6nh+-XR=BPusGfTU=DXw@mail.gmail.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17408051C2@HQMAIL01.nvidia.com>
+	<CACRpkdY8YXooD5ChHqQnERPPGhk7TgUvL=TodAPY8Jit9eS=fw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805421@HQMAIL01.nvidia.com>
+	<CACRpkdaArzSfUVgPo0vVEAUNKwZO7W5yhjJpeEQiFK20RQS2Ag@mail.gmail.com>
+	<CAJuYYwS465WW-Xp6gk5hzKArTZGzmc6nh+-XR=BPusGfTU=DXw@mail.gmail.com>
+Date: Sat, 12 Nov 2011 15:17:42 +0100
+Message-ID: <CACRpkdbWjAa5dKEu5caXG8jS2c7Z9ZHtT80Gc2DZYNUTTy3HZw@mail.gmail.com>
+Subject: Re: pinctrl discussions @ Linaro Connect, and also requesting GPIOs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 12:40:15PM -0600, Daniel Drake wrote:
-> On Wed, Nov 9, 2011 at 11:34 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > On Tue, Nov 08, 2011 at 04:59:05PM -0600, Daniel Drake wrote:
-> >> On Tue, Nov 8, 2011 at 4:37 PM, Borislav Petkov <bp@alien8.de> wrote:
-> >> > Yep, just send me /proc/cpuinfo from a working kernel.
-> >
-> > Daniel, would you please test? It should work though :-)
-> 
-> Thanks, it boots now.
+On Sat, Nov 12, 2011 at 12:22 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
-Cool, thanks, I'll add your Tested-by: and send out.
+> Samsung SoC's use two pin functions out of 4/8/16 pin functions to
+> represent that a pin is used as a gpio. For instance, function 0 means
+> pin is used as a gpio input, and function 1 means pin is used as gpio
+> output. A pin cannot support both input and output mode at the same
+> time.
+>
+> The existing pinmux_[request|free]_gpio() functions can specify that a
+> pin has to be set in gpio function mode, but lack the provision to
+> select input or output mode for the gpio.
 
--- 
-Regards/Gruss,
-   Boris
+OK then this needs fixing if this API is to persist.
+
+> The alternative approach of
+> using pin functions to select gpio-input or gpio-output will be used
+> for samsung pinmux drivers.
+>
+> This means the gpio_direction_[input|output] api's would remain unused
+> on samsung platforms. And existing platforms already using this api
+> will have to be modified to use the pinmux api to select the direction
+> of the gpio pin. And the role of gpio_request will seem redundant when
+> used along with pinmux_get().
+
+This does not seem right. Why should it not use
+gpio_direction_[input|output] to select whether the pin is used
+for input or output like everyone else?
+
+This will just lead to trouble with shared HW blocks where
+one use gpio_direction_[input|output] to select the direction
+while another one will use some pinctrl API.
+
+We need one of two things:
+
+1. pinmux_[request|free]_gpio() to pass direction to the
+  core and driver, or
+
+2. A use pattern like this:
+  pmx = pinmux_get(dev, "gpio-1-in");
+  /* Use as input */
+  pinmux_put(pmx);
+  pmx = pinmux_get(dev, "gpio-1-out");
+  /* Use as output */
+  etc
+
+The latter seems hopeless to maintain. So the external call
+pinmux_[request|free]_gpio() needs to be kept around,
+and it needs to be called *internally* by GPIO drivers to set
+up pins, so as to avoid hazzle.
+
+In my opinion atleast...
+
+Linus Walleij
