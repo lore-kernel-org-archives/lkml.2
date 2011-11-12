@@ -1,222 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab1KLKCw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 05:02:52 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44161 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab1KLKCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 05:02:50 -0500
-Message-ID: <4EBE4445.6020106@gmail.com>
-Date: Sat, 12 Nov 2011 11:02:45 +0100
-From: carla <carla.sella@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+	id S1752871Ab1KLK2B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 05:28:01 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:43902 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752597Ab1KLK17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 05:27:59 -0500
+Message-ID: <4EBE4A09.9090007@parallels.com>
+Date: Sat, 12 Nov 2011 08:27:21 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: BUG: suspend/resume does not work on G62 notebook PC
-References: <4EB53C46.1060301@gmail.com> <20111108010406.GC16800@kroah.com>
-In-Reply-To: <20111108010406.GC16800@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Paul Turner <pjt@google.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>,
+        <fweisbec@gmail.com>
+Subject: Re: [PATCH v2 03/14] Move /proc/stat logic inside sched.c
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com> <1320182360-20043-4-git-send-email-glommer@parallels.com> <4EBDCD4E.1060801@google.com>
+In-Reply-To: <4EBDCD4E.1060801@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.105.23.253]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On 11/11/2011 11:35 PM, Paul Turner wrote:
+> On 11/01/2011 02:19 PM, Glauber Costa wrote:
+>> This patch moves all of the /proc/stat display code inside
+>> sched.c. The goal is to later on, have a different version
+>> of it per-cgroup. In containers environment, this is useful
+>> to give each container a different and independent view of
+>> the statistics displayed in this file.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> ---
+>> fs/proc/stat.c | 139 +-----------------------------------------------
+>> include/linux/sched.h | 1 +
+>> kernel/sched.c | 142 +++++++++++++++++++++++++++++++++++++++++++++++++
+>> 3 files changed, 144 insertions(+), 138 deletions(-)
+>>
 >
-> Can you try the 3.2-rc1 release?
+> This feels a little contrived. sched.c isn't the right place for much of
+> this code. Why do you want to move it all instead of exporting the
+> functionality (e.g. remove static?).
+
+Because later on in the series I start using task_group, which is a 
+scheduler internal data structure (Since the very goal here is achieving
+per cgroup data.
+
+It seemed to me better to do this way - as much as I agree with you that 
+a lot here may not belong in sched.c - than to use external functions. 
+Since all we have outside sched.c is a task_struct,
+we'd have to derive a task_group from it every time. Also,
+as you can see in the followup patches, which task_group to use depends 
+on the caller and possibly some runtime variables. So the computation is 
+not as trivially fast as just getting a field in a structure.
+
+
+>> diff --git a/kernel/sched.c b/kernel/sched.c
+>> index e78e1aa..3f42916 100644
+>> --- a/kernel/sched.c
+>> +++ b/kernel/sched.c
+>> @@ -71,6 +71,7 @@
+>> #include<linux/ctype.h>
+>> #include<linux/ftrace.h>
+>> #include<linux/slab.h>
+>> +#include<linux/tick.h>
+>>
+>> #include<asm/tlb.h>
+>> #include<asm/irq_regs.h>
+>> @@ -9494,6 +9495,147 @@ struct cgroup_subsys cpu_cgroup_subsys = {
+>>
+>> #endif /* CONFIG_CGROUP_SCHED */
+>>
+>> +#ifndef fi
+>> +#define arch_irq_stat_cpu(cpu) 0
+>> +#endif
+>> +#ifndef arch_irq_stat
+>> +#define arch_irq_stat() 0
+>> +#endif
+>> +#ifndef arch_idle_time
+>> +#define arch_idle_time(cpu) 0
+>> +#endif
+>> +
+>> +static u64 get_idle_time(int cpu)
+>> +{
+>> + u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
+>> +
+>> + if (idle_time == -1ULL) {
+>> + /* !NO_HZ so we can rely on cpustat.idle */
+>> + idle = kstat_cpu(cpu).cpustat[IDLE];
+>> + idle += arch_idle_time(cpu);
+>> + } else
+>> + idle = usecs_to_cputime(idle_time);
+>> +
+>> + return idle;
+>> +}
+>> +
+>> +static u64 get_iowait_time(int cpu)
+>> +{
+>> + u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+>> +
+>> + if (iowait_time == -1ULL)
+>> + /* !NO_HZ so we can rely on cpustat.iowait */
+>> + iowait = kstat_cpu(cpu).cpustat[IOWAIT];
+>> + else
+>> + iowait = usecs_to_cputime(iowait_time);
+>> +
+>> + return iowait;
+>> +}
+>> +
+>> +int cpu_cgroup_proc_stat(struct seq_file *p)
+>> +{
+>> + int i, j;
+>> + unsigned long jif;
+>> + u64 user, nice, system, idle, iowait, irq, softirq, steal;
+>> + u64 guest, guest_nice;
+>> + u64 sum = 0;
+>> + u64 sum_softirq = 0;
+>> + unsigned int per_softirq_sums[NR_SOFTIRQS] = {0};
+>> + struct timespec boottime;
+>> +
+>> + user = nice = system = idle = iowait =
+>> + irq = softirq = steal = 0;
+>> + guest = guest_nice = 0;
+>> + getboottime(&boottime);
+>> + jif = boottime.tv_sec;
+>> +
+>> + for_each_possible_cpu(i) {
+>> + user += kstat_cpu(i).cpustat[USER];
+>> + nice += kstat_cpu(i).cpustat[NICE];
+>> + system += kstat_cpu(i).cpustat[SYSTEM];
+>> + idle += get_idle_time(i);
+>> + iowait += get_iowait_time(i);
+>> + irq += kstat_cpu(i).cpustat[IRQ];
+>> + softirq += kstat_cpu(i).cpustat[SOFTIRQ];
+>> + steal += kstat_cpu(i).cpustat[STEAL];
+>> + guest += kstat_cpu(i).cpustat[GUEST];
+>> + guest_nice += kstat_cpu(i).cpustat[GUEST_NICE];
+>> +
+>> + for (j = 0; j< NR_SOFTIRQS; j++) {
+>> + unsigned int softirq_stat = kstat_softirqs_cpu(j, i);
+>> +
+>> + per_softirq_sums[j] += softirq_stat;
+>> + sum_softirq += softirq_stat;
+>> + }
+>> + }
+>> + sum += arch_irq_stat();
+>> +
+>> + seq_printf(p, "cpu %llu %llu %llu %llu %llu %llu %llu %llu %llu "
+>> + "%llu\n",
+>> + (unsigned long long)cputime64_to_clock_t(user),
+>> + (unsigned long long)cputime64_to_clock_t(nice),
+>> + (unsigned long long)cputime64_to_clock_t(system),
+>> + (unsigned long long)cputime64_to_clock_t(idle),
+>> + (unsigned long long)cputime64_to_clock_t(iowait),
+>> + (unsigned long long)cputime64_to_clock_t(irq),
+>> + (unsigned long long)cputime64_to_clock_t(softirq),
+>> + (unsigned long long)cputime64_to_clock_t(steal),
+>> + (unsigned long long)cputime64_to_clock_t(guest),
+>> + (unsigned long long)cputime64_to_clock_t(guest_nice));
+>> + for_each_online_cpu(i) {
+>> + /* Copy values here to work around gcc-2.95.3, gcc-2.96 */
 >
-
-Hello,
-I installed kernel 3.2.0-rc1 but I'm having the same problems, this is 
-the output of "sudo /usr/share/checkbox/scripts/suspend_test --full":
-
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-letozaf@letozaf-HP-G62:~$ sudo /usr/share/checkbox/scripts/suspend_test 
---full
-This script will attempt to suspend and resume your computer a number of 
-times.
-Should the machine fail to resume, first attempt to manually resume it.  If
-that fails power your system off and on which will generate an apport bug
-report automatically.
-
-Press CTRL-C now to abort testing ...
-
-*** TEST 1 -- suspend triggered via dbus message
-*** please ensure your AC cord is attached
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 2 -- suspend with AC disconnected
-*** please ensure your AC cord is detached
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 3 -- suspend with AC connected
-*** please ensure your AC cord is attached
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 4 -- loss of AC while suspended
-*** please remove the AC cord while the machine is suspended
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 5 -- return of AC while suspended
-*** please insert the AC cord while the machine is suspended
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 6 -- battery drain during suspend
-*** calculates overall power drain during a long-term suspend
-*** please ensure your AC cord is detached
-*** machine will suspend for 20 minutes
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-before: 3872 mWh
-after: 3840 mWh
-consumed: 32 mW
-sleep seconds: 1236 sec
-overall usage: 93 mW
-
-*** TEST 7 -- 30 iteration variable delay suspend/resume stress test
-*** please ensure your AC cord is attached
-*** machine will suspend for 20 seconds
-*** NOTE: there will be no further user interaction from this point
-*** press return when ready
-
-delay 60 ...
-SUSPEND FAILED, did not go to sleep
-wait for 60 seconds
-delay 58 ...
-SUSPEND FAILED, did not go to sleep
-wait for 58 seconds
-delay 56 ...
-SUSPEND FAILED, did not go to sleep
-wait for 56 seconds
-delay 54 ...
-SUSPEND FAILED, did not go to sleep
-wait for 54 seconds
-delay 52 ...
-SUSPEND FAILED, did not go to sleep
-wait for 52 seconds
-delay 50 ...
-SUSPEND FAILED, did not go to sleep
-wait for 50 seconds
-delay 48 ...
-SUSPEND FAILED, did not go to sleep
-wait for 48 seconds
-delay 46 ...
-SUSPEND FAILED, did not go to sleep
-wait for 46 seconds
-delay 44 ...
-SUSPEND FAILED, did not go to sleep
-wait for 44 seconds
-delay 42 ...
-SUSPEND FAILED, did not go to sleep
-wait for 42 seconds
-delay 40 ...
-SUSPEND FAILED, did not go to sleep
-wait for 40 seconds
-delay 38 ...
-SUSPEND FAILED, did not go to sleep
-wait for 38 seconds
-delay 36 ...
-SUSPEND FAILED, did not go to sleep
-wait for 36 seconds
-delay 34 ...
-SUSPEND FAILED, did not go to sleep
-wait for 34 seconds
-delay 32 ...
-SUSPEND FAILED, did not go to sleep
-wait for 32 seconds
-delay 30 ...
-SUSPEND FAILED, did not go to sleep
-wait for 30 seconds
-delay 28 ...
-SUSPEND FAILED, did not go to sleep
-wait for 28 seconds
-delay 26 ...
-SUSPEND FAILED, did not go to sleep
-wait for 26 seconds
-delay 24 ...
-SUSPEND FAILED, did not go to sleep
-wait for 24 seconds
-delay 22 ...
-SUSPEND FAILED, did not go to sleep
-wait for 22 seconds
-delay 20 ...
-SUSPEND FAILED, did not go to sleep
-wait for 20 seconds
-delay 18 ...
-SUSPEND FAILED, did not go to sleep
-wait for 18 seconds
-delay 16 ...
-SUSPEND FAILED, did not go to sleep
-wait for 16 seconds
-delay 14 ...
-SUSPEND FAILED, did not go to sleep
-wait for 14 seconds
-delay 12 ...
-SUSPEND FAILED, did not go to sleep
-wait for 12 seconds
-delay 10 ...
-SUSPEND FAILED, did not go to sleep
-wait for 10 seconds
-delay 8 ...
-SUSPEND FAILED, did not go to sleep
-wait for 8 seconds
-delay 6 ...
-SUSPEND FAILED, did not go to sleep
-wait for 6 seconds
-delay 4 ...
-SUSPEND FAILED, did not go to sleep
-wait for 4 seconds
-delay 2 ...
-SUSPEND FAILED, did not go to sleep
-wait for 2 seconds
-
-*** Please report your results on the Ubuntu WIKI:
-     https://wiki.ubuntu.com/KernelTeam/SuspendResumeTesting
-
-       Battery Consumption: 93 mW
-letozaf@letozaf-HP-G62:~$
-
-
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-Test 1 did not work.
-But all the other tests seemed to work as my laptop went on suspension, 
-but when it come back from suspension, after about 30 seconds I got the 
-message : "SUSPEND FAILED, did not go to sleep".
-As it did this also on the last test, this test lasted very long like 
-about 50 minutes, more or less.
-
-Also the "Hibernate/Resume smoke test " did not work, my laptop's screen 
-went black for about 5 seconds and then I got the lock screen asking me 
-for my password to go back to my session.
-
-Carla Sella
-email:carla.sella@gmail.com
-https://launchpad.net/~carla-sella
-
-
+> GCC 3.2 is the listed current minimum requirement. If this code is being
+> revisited this could be cleaned up.
+>
+>> + user = kstat_cpu(i).cpustat[USER];
+>> + nice = kstat_cpu(i).cpustat[NICE];
+>> + system = kstat_cpu(i).cpustat[SYSTEM];
+>> + idle = get_idle_time(i);
+>> + iowait = get_iowait_time(i);
+>> + irq = kstat_cpu(i).cpustat[IRQ];
+>> + softirq = kstat_cpu(i).cpustat[SOFTIRQ];
+>> + steal = kstat_cpu(i).cpustat[STEAL];
+>> + guest = kstat_cpu(i).cpustat[GUEST];
+>> + guest_nice = kstat_cpu(i).cpustat[GUEST_NICE];
+>> + seq_printf(p,
+>> + "cpu%d %llu %llu %llu %llu %llu %llu %llu %llu %llu "
+>> + "%llu\n",
+>> + i,
+>> + (unsigned long long)cputime64_to_clock_t(user),
+>> + (unsigned long long)cputime64_to_clock_t(nice),
+>> + (unsigned long long)cputime64_to_clock_t(system),
+>> + (unsigned long long)cputime64_to_clock_t(idle),
+>> + (unsigned long long)cputime64_to_clock_t(iowait),
+>> + (unsigned long long)cputime64_to_clock_t(irq),
+>> + (unsigned long long)cputime64_to_clock_t(softirq),
+>> + (unsigned long long)cputime64_to_clock_t(steal),
+>> + (unsigned long long)cputime64_to_clock_t(guest),
+>> + (unsigned long long)cputime64_to_clock_t(guest_nice));
+>> + }
+>> + seq_printf(p, "intr %llu", (unsigned long long)sum);
+>> +
+>> + /* sum again ? it could be updated? */
+>> + for_each_irq_nr(j)
+>> + seq_printf(p, " %u", kstat_irqs(j));
+>> +
+>> + seq_printf(p,
+>> + "\nctxt %llu\n"
+>> + "btime %lu\n"
+>> + "processes %lu\n"
+>> + "procs_running %lu\n"
+>> + "procs_blocked %lu\n",
+>> + nr_context_switches(),
+>> + (unsigned long)jif,
+>> + total_forks,
+>> + nr_running(),
+>> + nr_iowait());
+>> +
+>> + seq_printf(p, "softirq %llu", (unsigned long long)sum_softirq);
+>> +
+>> + for (i = 0; i< NR_SOFTIRQS; i++)
+>> + seq_printf(p, " %u", per_softirq_sums[i]);
+>> + seq_putc(p, '\n');
+>> +
+>> + return 0;
+>> +}
+>> +
+>> #ifdef CONFIG_CGROUP_CPUACCT
+>>
+>> /*
+>
 
