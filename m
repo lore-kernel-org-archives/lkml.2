@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab1KLWOu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 17:14:50 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37219 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab1KLWOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 17:14:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend regression)
-Date: Sat, 12 Nov 2011 23:17:27 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Ferenc Wagner <wferi@niif.hu>, "Tomas M." <tmezzadra@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com, j-pihet@ti.com,
-        khilman@ti.com, arjan@linux.intel.com, len.brown@intel.com,
-        Arjan van de Ven <arjan@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <4EBD46DF.6060507@gmail.com> <201111120250.14151.rjw@sisk.pl> <87k475cxvf.fsf@tac.ki.iif.hu>
-In-Reply-To: <87k475cxvf.fsf@tac.ki.iif.hu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753970Ab1KLWSp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 17:18:45 -0500
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:54874 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1KLWSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 17:18:44 -0500
+Subject: [PATCH] score: Kconfig: drop nine selects and one entry
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 12 Nov 2011 23:18:17 +0100
+Message-ID: <1321136297.20271.15.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111122317.27576.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+The config entries in the "System type" choice each use the same three
+select statements. The Kconfig symbol SYS_SUPPORTS_32BIT_KERNEL is only
+used by mips. The Kconfig symbol CPU_SCORE7 is used once, in an (almost)
+empty Kconfig entry, and there are no uses of CONFIG_CPU_SCORE7. (This
+means that the CPU_SCORE7 entry can also be dropped.) And
+GENERIC_HAS_IOMAP is a typo. It should have been GENERIC_IOMAP. But
+there's an entry for GENERIC_IOMAP that defaults to y, so no one
+noticed.
 
-After commit e978aa7d7d57d04eb5f88a7507c4fb98577def77 (cpuidle: Move
-dev->last_residency update to driver enter routine; remove
-dev->last_state) setting acpi_idle_suspend to 1 by
-acpi_processor_suspend() causes the ACPI cpuidle routines to return
-error codes continuously, which in turn causes cpuidle to lock up
-(hard).  However, acpi_idle_suspend doesn't appear to be useful for
-any particular purpose (it's racy and doesn't really provide any real
-protection), so it can be removed, which makes the problem go away.
+So all selects from the config entries in this choice can be dropped.
+And so can the CPU_SCORE7 config entry.
 
-Reported-and-tested-by: Tomas M. <tmezzadra@gmail.com>
-Reported-and-tested-by: Ferenc Wagner <wferi@niif.hu>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/acpi/processor_idle.c |   29 -----------------------------
- 1 file changed, 29 deletions(-)
+0) git grep tested only.
 
-Index: linux/drivers/acpi/processor_idle.c
-===================================================================
---- linux.orig/drivers/acpi/processor_idle.c
-+++ linux/drivers/acpi/processor_idle.c
-@@ -224,7 +224,6 @@ static void lapic_timer_state_broadcast(
- /*
-  * Suspend / resume control
-  */
--static int acpi_idle_suspend;
- static u32 saved_bm_rld;
+1) Please note that ARCH_SCORE7, MACH_SPCT6600, and SCORE_SIM aren't
+used anywhere else. There are also no uses of CONFIG_ARCH_SCORE7,
+CONFIG_MACH_SPCT6600, and CONFIG_SCORE_SIM macros. Perhaps the entire
+"System type" choice can be dropped.
+
+ arch/score/Kconfig |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
+
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index df169e8..4390afc 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -11,28 +11,17 @@ choice
  
- static void acpi_idle_bm_rld_save(void)
-@@ -243,21 +242,13 @@ static void acpi_idle_bm_rld_restore(voi
+ config ARCH_SCORE7
+ 	bool "SCORE7 processor"
+-	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
  
- int acpi_processor_suspend(struct acpi_device * device, pm_message_t state)
- {
--	if (acpi_idle_suspend == 1)
--		return 0;
+ config MACH_SPCT6600
+ 	bool "SPCT6600 series based machines"
+-	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
+ 
+ config SCORE_SIM
+ 	bool "Score simulator"
+-	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
++
+ endchoice
+ 
+ endmenu
+ 
+-config CPU_SCORE7
+-	bool
 -
- 	acpi_idle_bm_rld_save();
--	acpi_idle_suspend = 1;
- 	return 0;
- }
+ config GENERIC_IOMAP
+ 	def_bool y
  
- int acpi_processor_resume(struct acpi_device * device)
- {
--	if (acpi_idle_suspend == 0)
--		return 0;
--
- 	acpi_idle_bm_rld_restore();
--	acpi_idle_suspend = 0;
- 	return 0;
- }
- 
-@@ -763,13 +754,6 @@ static int acpi_idle_enter_c1(struct cpu
- 
- 	local_irq_disable();
- 
--	/* Do not access any ACPI IO ports in suspend path */
--	if (acpi_idle_suspend) {
--		local_irq_enable();
--		cpu_relax();
--		return -EINVAL;
--	}
--
- 	lapic_timer_state_broadcast(pr, cx, 1);
- 	kt1 = ktime_get_real();
- 	acpi_idle_do_entry(cx);
-@@ -810,13 +794,6 @@ static int acpi_idle_enter_simple(struct
- 
- 	local_irq_disable();
- 
--	if (acpi_idle_suspend) {
--		local_irq_enable();
--		cpu_relax();
--		return -EINVAL;
--	}
--
--
- 	if (cx->entry_method != ACPI_CSTATE_FFH) {
- 		current_thread_info()->status &= ~TS_POLLING;
- 		/*
-@@ -895,12 +872,6 @@ static int acpi_idle_enter_bm(struct cpu
- 	if (unlikely(!pr))
- 		return -EINVAL;
- 
--
--	if (acpi_idle_suspend) {
--		cpu_relax();
--		return -EINVAL;
--	}
--
- 	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
- 		if (drv->safe_state_index >= 0) {
- 			return drv->states[drv->safe_state_index].enter(dev,
+-- 
+1.7.4.4
+
+
 
