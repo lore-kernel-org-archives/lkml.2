@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab1KLFnz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 00:43:55 -0500
-Received: from mga03.intel.com ([143.182.124.21]:9071 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab1KLFnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752037Ab1KLFnx (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 12 Nov 2011 00:43:53 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20172 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab1KLFnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 00:43:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,498,1315206000"; 
-   d="scan'208";a="73897236"
+   d="scan'208";a="73897216"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
         "Ingo Molnar" <mingo@elte.hu>,
@@ -25,9 +25,9 @@ To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
 Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>,
         "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v4 6/7] x86/i387.c: Thread xstate is initialized only on BSP once
-Date: Fri, 11 Nov 2011 21:26:31 -0800
-Message-Id: <1321075592-31600-7-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v4 1/7] x86/topology.c: Support functions for BSP online/offline
+Date: Fri, 11 Nov 2011 21:26:26 -0800
+Message-Id: <1321075592-31600-2-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
 References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
@@ -37,41 +37,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-init_thread_xstate() is only called on BSP once to avoid overriding xstate_size.
+By default, BSP can't be hotpluggable because bsp_hotpluggable is 0. Kernel
+parameter bsp_hotplug can enable BSP hotplug feature.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/i387.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ arch/x86/kernel/topology.c |   24 +++++++++++++++++-------
+ 1 files changed, 17 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 739d859..72652ff 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -93,6 +93,7 @@ void __cpuinit fpu_init(void)
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index 76ee977..4493868 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -35,18 +35,28 @@
+ static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++
++static int __read_mostly bsp_hotpluggable;
++
++static int __init enable_bsp_hotplug(char *str)
++{
++	bsp_hotpluggable = 1;
++	return 1;
++}
++
++__setup("bsp_hotplug", enable_bsp_hotplug);
++
+ int __ref arch_register_cpu(int num)
  {
- 	unsigned long cr0;
- 	unsigned long cr4_mask = 0;
-+	static int once = 1;
+ 	/*
+-	 * CPU0 cannot be offlined due to several
+-	 * restrictions and assumptions in kernel. This basically
+-	 * doesn't add a control file, one cannot attempt to offline
+-	 * BSP.
++	 * Resume from suspend/hibernate depends on BSP. PIC interrupts depend
++	 * on BSP.
+ 	 *
+-	 * Also certain PCI quirks require not to enable hotplug control
+-	 * for all CPU's.
++	 * If the BSP depencies are under control, one can tell kernel to
++	 * enable BSP hotplug. This basically adds a control file and
++	 * one can attempt to offline BSP.
+ 	 */
+-	if (num)
++	if (num || bsp_hotpluggable)
+ 		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
  
- 	if (cpu_has_fxsr)
- 		cr4_mask |= X86_CR4_OSFXSR;
-@@ -107,8 +108,14 @@ void __cpuinit fpu_init(void)
- 		cr0 |= X86_CR0_EM;
- 	write_cr0(cr0);
- 
--	if (!smp_processor_id())
-+	/*
-+	 * init_thread_xstate is only called on BSP once to avoid overriding
-+	 * xstate_size.
-+	 */
-+	if (!smp_processor_id() && once) {
-+		once = 0;
- 		init_thread_xstate();
-+	}
- 
- 	mxcsr_feature_mask_init();
- 	/* clean state in init */
+ 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
 -- 
 1.6.0.3
 
