@@ -1,39 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1KLXOc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 18:14:32 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:54321 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab1KLXO0 (ORCPT
+	id S1754157Ab1KLXVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 18:21:47 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51756 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab1KLXVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 18:14:26 -0500
-Date: Sat, 12 Nov 2011 18:14:22 -0500 (EST)
-Message-Id: <20111112.181422.1840921776479927270.davem@davemloft.net>
-To: nbowler@elliptictech.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ah: Don't return NET_XMIT_DROP on input.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1320951687-21491-1-git-send-email-nbowler@elliptictech.com>
-References: <1320951687-21491-1-git-send-email-nbowler@elliptictech.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 12 Nov 2011 15:14:24 -0800 (PST)
+	Sat, 12 Nov 2011 18:21:46 -0500
+Date: Sat, 12 Nov 2011 23:20:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] arch/arm/mm/fault.c: Porting OOM changes into
+	__do_page_fault
+Message-ID: <20111112232039.GD27746@n2100.arm.linux.org.uk>
+References: <1321139283-2955-1-git-send-email-consul.kautuk@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321139283-2955-1-git-send-email-consul.kautuk@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Bowler <nbowler@elliptictech.com>
-Date: Thu, 10 Nov 2011 14:01:27 -0500
+On Sat, Nov 12, 2011 at 06:08:03PM -0500, Kautuk Consul wrote:
+> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> index aa33949..2f89dba 100644
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -231,11 +231,15 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
+>  
+>  static int __kprobes
+>  __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
+> -		struct task_struct *tsk)
+> +		struct pt_regs *regs, struct task_struct *tsk)
+>  {
+>  	struct vm_area_struct *vma;
+>  	int fault;
+> +	int write = fsr & FSR_WRITE;
+> +	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+> +					(write ? FAULT_FLAG_WRITE : 0);
+>  
+> +retry:
+>  	vma = find_vma(mm, addr);
+>  	fault = VM_FAULT_BADMAP;
+>  	if (unlikely(!vma))
+> @@ -257,13 +261,44 @@ good_area:
+>  	 * If for any reason at all we couldn't handle the fault, make
+>  	 * sure we exit gracefully rather than endlessly redo the fault.
+>  	 */
+> -	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
+> -	if (unlikely(fault & VM_FAULT_ERROR))
+> +	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
+> +
+> +	if (unlikely((fault & VM_FAULT_ERROR)))
+>  		return fault;
+> -	if (fault & VM_FAULT_MAJOR)
+> -		tsk->maj_flt++;
+> -	else
+> -		tsk->min_flt++;
+> +
+> +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
+> +		return fault;
+> +
+> +	/*
+> +	 * Major/minor page fault accounting is only done on the
+> +	 * initial attempt. If we go through a retry, it is extremely
+> +	 * likely that the page will be found in page cache at that point.
+> +	 */
+> +	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+> +	if (flags & FAULT_FLAG_ALLOW_RETRY) {
+> +		if (fault & VM_FAULT_MAJOR) {
+> +			tsk->maj_flt++;
+> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
+> +				      regs, addr);
+> +		} else {
+> +			tsk->min_flt++;
+> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
+> +				      regs, addr);
+> +		}
+> +		if (fault & VM_FAULT_RETRY) {
+> +			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
+> +			 * of starvation. */
+> +			flags &= ~FAULT_FLAG_ALLOW_RETRY;
+> +
+> +			/* Acquire the mmap_sem again before retrying this
+> +			 * pagefault. This would have been released by
+> +			 * __lock_page_or_retry() in mm/filemap.c. */
+> +			down_read(&mm->mmap_sem);
+> +
+> +			goto retry;
+> +		}
+> +	}
+> +
+>  	return fault;
+>  
+>  check_stack:
+> @@ -320,14 +355,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>  #endif
+>  	}
+>  
+> -	fault = __do_page_fault(mm, addr, fsr, tsk);
+> -	up_read(&mm->mmap_sem);
+> -
+> -	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+> -	if (fault & VM_FAULT_MAJOR)
+> -		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
+> -	else if (fault & VM_FAULT_MINOR)
+> -		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
+> +	fault = __do_page_fault(mm, addr, fsr, regs, tsk);
+> +	if (likely(!(fault & VM_FAULT_RETRY)))
+> +		up_read(&mm->mmap_sem);
 
-> When the ahash driver returns -EBUSY, AH4/6 input functions return
-> NET_XMIT_DROP, presumably copied from the output code path.  But
-> returning transmit codes on input doesn't make a lot of sense.
-> Since NET_XMIT_DROP is a positive int, this gets interpreted as
-> the next header type (i.e., success).  As that can only end badly,
-> remove the check.
-> 
-> Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
-
-Applied and queued up for -stable, thanks Nick.
+I really don't like this.  I crafted this handling in such a way that
+the locking was plainly obvious - with all locking handled in
+do_page_fault and not inside __do_page_fault.  That's how I want things
+to stay, so please rework this patch to maintain that.
