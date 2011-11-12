@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1KLRIN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 12:08:13 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:33123 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754623Ab1KLRIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 12:08:12 -0500
-From: Richard Weinberger <richard@nod.at>
-To: mingo@elte.hu
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] sched: Fix comment for requeue_rt_entity
-Date: Sat, 12 Nov 2011 18:07:57 +0100
-Message-Id: <1321117677-3282-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
+	id S1755188Ab1KLRJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 12:09:57 -0500
+Received: from posta.adiyaman.edu.tr ([193.255.110.217]:46435 "EHLO
+	posta.adiyaman.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054Ab1KLRJ4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 12:09:56 -0500
+X-Greylist: delayed 3815 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Nov 2011 12:09:56 EST
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: GOOD DAY
+To: Recipients <info@gmf.org>
+From: Barrister Hans Fuchs <info@gmf.org>
+Date: Sat, 12 Nov 2011 03:36:29 -1200
+Reply-To: bhf_101@admin.in.th
+Message-Id: <20111112153639.87B64181A2F@posta.adiyaman.edu.tr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- kernel/sched_rt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 056cbd2..909ba03 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -954,8 +954,8 @@ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
- }
+Barrister Hans Fuchs.
+London-Uk.
  
- /*
-- * Put task to the end of the run list without the overhead of dequeue
-- * followed by enqueue.
-+ * Put task to the head or the end of the run list without the overhead of
-+ * dequeue followed by enqueue.
-  */
- static void
- requeue_rt_entity(struct rt_rq *rt_rq, struct sched_rt_entity *rt_se, int head)
--- 
-1.7.7
+I am Hans Fuchs Esq,  I have an immediate business proposal that involves £42,000,000.00 Forty-Two Million Pounds which we will like to invest under your custody. Once I receive a message from you notifying me of your interest, the details of the transaction/the terms and condition of sharing regarding the business would then be brought to your knowledge.
+ 
+http://www.guardian.co.uk/world/2011/feb/27/gaddafi-family-assets-frozen-queen
+ 
+Your urgent response will be highly appreciated and will swiftly bring us to the commencement of the transaction. I hope to conclude. this transaction within 14 Business days Do not forget to contact me on the receipt of this e-mail address. And please you have to maintain absolute confidentiality as regards this pending transaction. 
+ 
+I urgently await your response.
+ 
+Best Regards,
+bhf_101@admin.in.th
+Hans Fuchs Esq
 
