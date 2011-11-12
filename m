@@ -1,260 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab1KLCi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 21:38:29 -0500
-Received: from mail-fx0-f74.google.com ([209.85.161.74]:58186 "EHLO
-	mail-fx0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab1KLCi2 (ORCPT
+	id S1753255Ab1KLD0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 22:26:35 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50557 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab1KLD0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 21:38:28 -0500
-X-Greylist: delayed 1604 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Nov 2011 21:38:27 EST
-From: Sanjay Hortikar <horti@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Decotigny <david.decotigny@google.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rick Jones <rick.jones2@hp.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Sanjay Hortikar <horti@google.com>,
-        Mahesh Bandewar <maheshb@google.com>
-Subject: [PATCH net-next v2] net-forcedeth: Add internal loopback support for forcedeth NICs.
-Date: Fri, 11 Nov 2011 18:11:21 -0800
-Message-Id: <0a790bcdac9827d6e4a9162cc8f6b5bcb70acd4e.1321063429.git.horti@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321063429.git.horti@google.com>
-References: <cover.1321063429.git.horti@google.com>
-Organization: Google, Inc.
+	Fri, 11 Nov 2011 22:26:34 -0500
+Message-ID: <4EBDE766.5080505@gmail.com>
+Date: Fri, 11 Nov 2011 21:26:30 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 01/10] arm/tegra: initial device tree for tegra30
+References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com> <1321010541-31337-2-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1321010541-31337-2-git-send-email-pdeschrijver@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support enabling/disabling/querying internal loopback mode for
-forcedeth NICs using ethtool.
+On 11/11/2011 05:22 AM, Peter De Schrijver wrote:
+> This patch adds the initial device tree for tegra30
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra30.dtsi |  127 ++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 127 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/tegra30.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+> new file mode 100644
+> index 0000000..fabe243
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/tegra30.dtsi
+> @@ -0,0 +1,127 @@
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +	compatible = "nvidia,tegra30";
 
-Signed-off-by: Sanjay Hortikar <horti@google.com>
-Signed-off-by: Mahesh Bandewar <maheshb@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |  156 ++++++++++++++++++++++++++++++-
- 1 files changed, 155 insertions(+), 1 deletions(-)
+Needs documentation.
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index d24c45b..e8a5ae3 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -3003,6 +3003,73 @@ static void nv_update_pause(struct net_device *dev, u32 pause_flags)
- 	}
- }
- 
-+static void nv_force_linkspeed(struct net_device *dev, int speed, int duplex)
-+{
-+	struct fe_priv *np = netdev_priv(dev);
-+	u8 __iomem *base = get_hwbase(dev);
-+	u32 phyreg, txreg;
-+	int mii_status;
-+
-+	np->linkspeed = NVREG_LINKSPEED_FORCE|speed;
-+	np->duplex = duplex;
-+
-+	/* see if gigabit phy */
-+	mii_status = mii_rw(dev, np->phyaddr, MII_BMSR, MII_READ);
-+	if (mii_status & PHY_GIGABIT) {
-+		np->gigabit = PHY_GIGABIT;
-+		phyreg = readl(base + NvRegSlotTime);
-+		phyreg &= ~(0x3FF00);
-+		if ((np->linkspeed & 0xFFF) == NVREG_LINKSPEED_10)
-+			phyreg |= NVREG_SLOTTIME_10_100_FULL;
-+		else if ((np->linkspeed & 0xFFF) == NVREG_LINKSPEED_100)
-+			phyreg |= NVREG_SLOTTIME_10_100_FULL;
-+		else if ((np->linkspeed & 0xFFF) == NVREG_LINKSPEED_1000)
-+			phyreg |= NVREG_SLOTTIME_1000_FULL;
-+		writel(phyreg, base + NvRegSlotTime);
-+	}
-+
-+	phyreg = readl(base + NvRegPhyInterface);
-+	phyreg &= ~(PHY_HALF|PHY_100|PHY_1000);
-+	if (np->duplex == 0)
-+		phyreg |= PHY_HALF;
-+	if ((np->linkspeed & NVREG_LINKSPEED_MASK) == NVREG_LINKSPEED_100)
-+		phyreg |= PHY_100;
-+	else if ((np->linkspeed & NVREG_LINKSPEED_MASK) ==
-+							NVREG_LINKSPEED_1000)
-+		phyreg |= PHY_1000;
-+	writel(phyreg, base + NvRegPhyInterface);
-+
-+	if (phyreg & PHY_RGMII) {
-+		if ((np->linkspeed & NVREG_LINKSPEED_MASK) ==
-+							NVREG_LINKSPEED_1000)
-+			txreg = NVREG_TX_DEFERRAL_RGMII_1000;
-+		else
-+			txreg = NVREG_TX_DEFERRAL_RGMII_10_100;
-+	} else {
-+		txreg = NVREG_TX_DEFERRAL_DEFAULT;
-+	}
-+	writel(txreg, base + NvRegTxDeferral);
-+
-+	if (np->desc_ver == DESC_VER_1) {
-+		txreg = NVREG_TX_WM_DESC1_DEFAULT;
-+	} else {
-+		if ((np->linkspeed & NVREG_LINKSPEED_MASK) ==
-+					 NVREG_LINKSPEED_1000)
-+			txreg = NVREG_TX_WM_DESC2_3_1000;
-+		else
-+			txreg = NVREG_TX_WM_DESC2_3_DEFAULT;
-+	}
-+	writel(txreg, base + NvRegTxWatermark);
-+
-+	writel(NVREG_MISC1_FORCE | (np->duplex ? 0 : NVREG_MISC1_HD),
-+			base + NvRegMisc1);
-+	pci_push(base);
-+	writel(np->linkspeed, base + NvRegLinkSpeed);
-+	pci_push(base);
-+
-+	return;
-+}
-+
- /**
-  * nv_update_linkspeed: Setup the MAC according to the link partner
-  * @dev: Network device to be configured
-@@ -3024,11 +3091,25 @@ static int nv_update_linkspeed(struct net_device *dev)
- 	int newls = np->linkspeed;
- 	int newdup = np->duplex;
- 	int mii_status;
-+	u32 bmcr;
- 	int retval = 0;
- 	u32 control_1000, status_1000, phyreg, pause_flags, txreg;
- 	u32 txrxFlags = 0;
- 	u32 phy_exp;
- 
-+	/* If device loopback is enabled, set carrier on and enable max link
-+	 * speed.
-+	 */
-+	bmcr = mii_rw(dev, np->phyaddr, MII_BMCR, MII_READ);
-+	if (bmcr & BMCR_LOOPBACK) {
-+		if (netif_running(dev)) {
-+			nv_force_linkspeed(dev, NVREG_LINKSPEED_1000, 1);
-+			if (!netif_carrier_ok(dev))
-+				netif_carrier_on(dev);
-+		}
-+		return 1;
-+	}
-+
- 	/* BMSR_LSTATUS is latched, read it twice:
- 	 * we want the current value.
- 	 */
-@@ -4455,6 +4536,61 @@ static int nv_set_pauseparam(struct net_device *dev, struct ethtool_pauseparam*
- 	return 0;
- }
- 
-+static int nv_set_loopback(struct net_device *dev, u32 features)
-+{
-+	struct fe_priv *np = netdev_priv(dev);
-+	unsigned long flags;
-+	u32 miicontrol;
-+	int err, retval = 0;
-+
-+	spin_lock_irqsave(&np->lock, flags);
-+	miicontrol = mii_rw(dev, np->phyaddr, MII_BMCR, MII_READ);
-+	if (features & NETIF_F_LOOPBACK) {
-+		if (miicontrol & BMCR_LOOPBACK) {
-+			spin_unlock_irqrestore(&np->lock, flags);
-+			netdev_info(dev, "Loopback already enabled\n");
-+			return 0;
-+		}
-+		nv_disable_irq(dev);
-+		/* Turn on loopback mode */
-+		miicontrol |= BMCR_LOOPBACK | BMCR_FULLDPLX | BMCR_SPEED1000;
-+		err = mii_rw(dev, np->phyaddr, MII_BMCR, miicontrol);
-+		if (err) {
-+			retval = PHY_ERROR;
-+			spin_unlock_irqrestore(&np->lock, flags);
-+			phy_init(dev);
-+		} else {
-+			if (netif_running(dev)) {
-+				/* Force 1000 Mbps full-duplex */
-+				nv_force_linkspeed(dev, NVREG_LINKSPEED_1000,
-+									 1);
-+				/* Force link up */
-+				netif_carrier_on(dev);
-+			}
-+			spin_unlock_irqrestore(&np->lock, flags);
-+			netdev_info(dev,
-+				"Internal PHY loopback mode enabled.\n");
-+		}
-+	} else {
-+		if (!(miicontrol & BMCR_LOOPBACK)) {
-+			spin_unlock_irqrestore(&np->lock, flags);
-+			netdev_info(dev, "Loopback already disabled\n");
-+			return 0;
-+		}
-+		nv_disable_irq(dev);
-+		/* Turn off loopback */
-+		spin_unlock_irqrestore(&np->lock, flags);
-+		netdev_info(dev, "Internal PHY loopback mode disabled.\n");
-+		phy_init(dev);
-+	}
-+	msleep(500);
-+	spin_lock_irqsave(&np->lock, flags);
-+	nv_enable_irq(dev);
-+	spin_unlock_irqrestore(&np->lock, flags);
-+
-+	return retval;
-+}
-+
- static u32 nv_fix_features(struct net_device *dev, u32 features)
- {
- 	/* vlan is dependent on rx checksum offload */
-@@ -4490,6 +4626,13 @@ static int nv_set_features(struct net_device *dev, u32 features)
- 	struct fe_priv *np = netdev_priv(dev);
- 	u8 __iomem *base = get_hwbase(dev);
- 	u32 changed = dev->features ^ features;
-+	int retval;
-+
-+	if ((changed & NETIF_F_LOOPBACK) && netif_running(dev)) {
-+		retval = nv_set_loopback(dev, features);
-+		if (retval != 0)
-+			return retval;
-+	}
- 
- 	if (changed & NETIF_F_RXCSUM) {
- 		spin_lock_irq(&np->lock);
-@@ -5124,6 +5267,12 @@ static int nv_open(struct net_device *dev)
- 
- 	spin_unlock_irq(&np->lock);
- 
-+	/* If the loopback feature was set while the device was down, make sure
-+	 * that it's set correctly now.
-+	 */
-+	if (dev->features & NETIF_F_LOOPBACK)
-+		nv_set_loopback(dev, dev->features);
-+
- 	return 0;
- out_drain:
- 	nv_drain_rxtx(dev);
-@@ -5328,6 +5477,9 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 
- 	dev->features |= dev->hw_features;
- 
-+	/* Add loopback capability to the device. */
-+	dev->hw_features |= NETIF_F_LOOPBACK;
-+
- 	np->pause_flags = NV_PAUSEFRAME_RX_CAPABLE | NV_PAUSEFRAME_RX_REQ | NV_PAUSEFRAME_AUTONEG;
- 	if ((id->driver_data & DEV_HAS_PAUSEFRAME_TX_V1) ||
- 	    (id->driver_data & DEV_HAS_PAUSEFRAME_TX_V2) ||
-@@ -5603,12 +5755,14 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 	dev_info(&pci_dev->dev, "ifname %s, PHY OUI 0x%x @ %d, addr %pM\n",
- 		 dev->name, np->phy_oui, np->phyaddr, dev->dev_addr);
- 
--	dev_info(&pci_dev->dev, "%s%s%s%s%s%s%s%s%s%sdesc-v%u\n",
-+	dev_info(&pci_dev->dev, "%s%s%s%s%s%s%s%s%s%s%sdesc-v%u\n",
- 		 dev->features & NETIF_F_HIGHDMA ? "highdma " : "",
- 		 dev->features & (NETIF_F_IP_CSUM | NETIF_F_SG) ?
- 			"csum " : "",
- 		 dev->features & (NETIF_F_HW_VLAN_RX | NETIF_F_HW_VLAN_TX) ?
- 			"vlan " : "",
-+		 dev->features & (NETIF_F_LOOPBACK) ?
-+			"loopback " : "",
- 		 id->driver_data & DEV_HAS_POWER_CNTRL ? "pwrctl " : "",
- 		 id->driver_data & DEV_HAS_MGMT_UNIT ? "mgmt " : "",
- 		 id->driver_data & DEV_NEED_TIMERIRQ ? "timirq " : "",
--- 
-1.7.3.1
+> +	interrupt-parent = <&intc>;
+> +
+> +	intc: interrupt-controller@50041000 {
+> +		compatible = "nvidia,tegra30-gic", "nvidia,tegra20-gic";
+> +		interrupt-controller;
+> +		#interrupt-cells = <1>;
+
+Is the Tegra GIC really different from a standard A9 gic? You need to
+update to use the gic binding. The cells should be 3 for example.
+
+Rob
+
+> +		reg = < 0x50041000 0x1000 >,
+> +		      < 0x50040100 0x0100 >;
+> +	};
+> +
+> +	i2c@7000c000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible =  "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
+> +		reg = <0x7000C000 0x100>;
+> +		interrupts = < 70 >;
+> +	};
+> +
+> +	i2c@7000c400 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
+> +		reg = <0x7000C400 0x100>;
+> +		interrupts = < 116 >;
+> +	};
+> +
+> +	i2c@7000c500 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
+> +		reg = <0x7000C500 0x100>;
+> +		interrupts = < 124 >;
+> +	};
+> +
+> +	i2c@7000c700 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
+> +		reg = <0x7000c700 0x100>;
+> +		interrupts = < 152 >;
+> +	};
+> +
+> +	i2c@7000d000 {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
+> +		reg = <0x7000D000 0x100>;
+> +		interrupts = < 85 >;
+> +	};
+> +
+> +	gpio: gpio@6000d000 {
+> +		compatible = "nvidia,tegra30-gpio", "nvidia,tegra20-gpio";
+> +		reg = < 0x6000d000 0x1000 >;
+> +		interrupts = < 64 65 66 67 87 119 121 >;
+> +		#gpio-cells = <2>;
+> +		gpio-controller;
+> +	};
+> +
+> +	serial@70006000 {
+> +		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006000 0x40>;
+> +		reg-shift = <2>;
+> +		interrupts = < 68 >;
+> +	};
+> +
+> +	serial@70006040 {
+> +		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006040 0x40>;
+> +		reg-shift = <2>;
+> +		interrupts = < 69 >;
+> +	};
+> +
+> +	serial@70006200 {
+> +		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006200 0x100>;
+> +		reg-shift = <2>;
+> +		interrupts = < 78 >;
+> +	};
+> +
+> +	serial@70006300 {
+> +		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006300 0x100>;
+> +		reg-shift = <2>;
+> +		interrupts = < 122 >;
+> +	};
+> +
+> +	serial@70006400 {
+> +		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006400 0x100>;
+> +		reg-shift = <2>;
+> +		interrupts = < 123 >;
+> +	};
+> +
+> +	sdhci@78000000 {
+> +		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
+> +		reg = <0x78000000 0x200>;
+> +		interrupts = < 46 >;
+> +	};
+> +
+> +	sdhci@78000200 {
+> +		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
+> +		reg = <0x78000200 0x200>;
+> +		interrupts = < 47 >;
+> +	};
+> +
+> +	sdhci@78000400 {
+> +		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
+> +		reg = <0x78000400 0x200>;
+> +		interrupts = < 51 >;
+> +	};
+> +
+> +	sdhci@78000600 {
+> +		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
+> +		reg = <0x78000600 0x200>;
+> +		interrupts = < 63 >;
+> +	};
+> +
+> +	pinmux: pinmux@70000000 {
+> +		compatible = "nvidia,tegra30-pinmux";
+> +		reg = < 0x70000868 0xd0     /* Pad control registers */
+> +			0x70003000 0x3e0 >; /* Mux registers */
+> +	};
+> +};
 
