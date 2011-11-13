@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1KMPNc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 10:13:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab1KMPNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 10:13:31 -0500
-Date: Sun, 13 Nov 2011 17:14:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com, penberg@kernel.org
-Subject: Re: [PATCHv2 RFC] virtio-spec: flexible configuration layout
-Message-ID: <20111113151427.GA16749@redhat.com>
-References: <1320150813.3847.24.camel@lappy>
- <20111101124223.GA14060@redhat.com>
- <8739e7uy87.fsf@rustcorp.com.au>
- <20111102233110.GA20289@redhat.com>
- <20111108214021.GA4538@redhat.com>
- <20111109195901.GA28155@redhat.com>
- <1320870287.3730.6.camel@lappy>
- <20111109205208.GA28599@redhat.com>
- <1320872248.3730.11.camel@lappy>
- <87aa83qoao.fsf@rustcorp.com.au>
+	id S1754035Ab1KMPRY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 10:17:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55085 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab1KMPRX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 10:17:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87aa83qoao.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1321075592-31600-7-git-send-email-fenghua.yu@intel.com>
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
+	<1321075592-31600-7-git-send-email-fenghua.yu@intel.com>
+Date: Sun, 13 Nov 2011 10:17:21 -0500
+Message-ID: <CAMzpN2i40ZOJ7GyARFg+dVeox3DpfTFV8WL-C_OzjQ0z7Xz_kQ@mail.gmail.com>
+Subject: Re: [PATCH v4 6/7] x86/i387.c: Thread xstate is initialized only on
+ BSP once
+From: Brian Gerst <brgerst@gmail.com>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 02:54:31PM +1030, Rusty Russell wrote:
-> On Wed, 09 Nov 2011 22:57:28 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > On Wed, 2011-11-09 at 22:52 +0200, Michael S. Tsirkin wrote:
-> > > On Wed, Nov 09, 2011 at 10:24:47PM +0200, Sasha Levin wrote:
-> > > > It'll be a bit harder deprecating it in the future.
-> > > 
-> > > Harder than ... what ?
-> > 
-> > Harder than allowing devices not to present it at all if new layout
-> > config is used. Right now the simple implementation is to use MMIO for
-> > config and device specific, and let it fallback to legacy for ISR and
-> > notifications (and therefore, this is probably how everybody will
-> > implement it), which means that when you do want to deprecate legacy,
-> > there will be extra work to be done then, instead of doing it now.
-> 
-> Indeed, I'd like to see two changes to your proposal:
-> 
-> (1) It should be all or nothing.  If a driver can find the virtio header
->     capability, it should only use the capabilties.  Otherwise, it
->     should fall back to legacy.
+On Sat, Nov 12, 2011 at 12:26 AM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+>
+> init_thread_xstate() is only called on BSP once to avoid overriding xstate_size.
+>
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/kernel/i387.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+> index 739d859..72652ff 100644
+> --- a/arch/x86/kernel/i387.c
+> +++ b/arch/x86/kernel/i387.c
+> @@ -93,6 +93,7 @@ void __cpuinit fpu_init(void)
+>  {
+>        unsigned long cr0;
+>        unsigned long cr4_mask = 0;
+> +       static int once = 1;
+>
+>        if (cpu_has_fxsr)
+>                cr4_mask |= X86_CR4_OSFXSR;
+> @@ -107,8 +108,14 @@ void __cpuinit fpu_init(void)
+>                cr0 |= X86_CR0_EM;
+>        write_cr0(cr0);
+>
+> -       if (!smp_processor_id())
+> +       /*
+> +        * init_thread_xstate is only called on BSP once to avoid overriding
+> +        * xstate_size.
+> +        */
+> +       if (!smp_processor_id() && once) {
+> +               once = 0;
+>                init_thread_xstate();
+> +       }
 
-Okay, but going forward, if we add more capabilities, we probably won't
-want to require them and fail to load if not there.  That's really why I
-wanted to make the failover ignore any capability separately - to make
-this future proof.  I'm not terribly fixated on this, it just seemed a
-bit more symmetrical to treat all capabilities in the same way. Hmm?
+Just check if xstate_size is 0 instead of adding a new flag.
 
->     Your draft suggests a mix is possible;
->     I prefer a clean failure (ie. one day don't present a BAR 0 *at
->     all*, so ancient drivers just fail to load.).
-
-Just to clarify, as written in draft this is possible with the current
-spec proposal.  So I'm guessing there's some other motivation that you
-had in mind?
-
-> (2) There's no huge win in keeping the same layout.  Let's make some
->     cleanups.
-
-About this last point - what cleanups do you have in mind?  Just move
-some registers around?  I guess we could put feature bits near each
-other, and move device status towards the end to avoid wasting 3 bytes.
-The win seems minimal, but the change does make legacy hypervisor
-support in guests more cumbersome, as we need to spread coditional code
-around instead of localizing it in the initialization path.
-
->    There are more users ahead of us then behind us (I
->     hope!).
-
-In that case isn't it safe to assume we'll find some uses
-for the reserved registers?
-
-> But I think this is the right direction!
-> 
-> Thanks,
-> Rusty.
+--
+Brian Gerst
