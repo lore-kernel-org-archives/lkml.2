@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1KMAQN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 19:16:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37303 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab1KMAQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 19:16:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on laptop.
-Date: Sun, 13 Nov 2011 01:18:52 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>
-References: <201111120341.12473.arnd@arndb.de> <201111122325.09134.rjw@sisk.pl> <CA+55aFyW=8SJ-a8c63Pjijad+HY6y_xaB_JoT4diZufMRT=o+w@mail.gmail.com>
-In-Reply-To: <CA+55aFyW=8SJ-a8c63Pjijad+HY6y_xaB_JoT4diZufMRT=o+w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754114Ab1KMAWs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 19:22:48 -0500
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:54507 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab1KMAWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Nov 2011 19:22:47 -0500
+Subject: [PATCH] [TRIVIAL] powerpc/4xx: Fix typo 'PCC4xx_MSI'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Rupjyoti Sarmah <rsarmah@amcc.com>, Tirumala R Marri <tmarri@apm.com>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Nov 2011 01:22:40 +0100
+Message-ID: <1321143760.20271.31.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111130118.52866.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 13, 2011, Linus Torvalds wrote:
-> On Sat, Nov 12, 2011 at 8:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> > Thanks for the info.  Unfortunately, I've already resent the patch without
-> > your Tested-by: tag, but it can still be added when the patch is committed.
-> 
-> Added, committed, and pushed out,
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) This corrects an obvious typo. It is untested.
 
-Thanks a lot!
+1) This could influence the code generated for the "AMCC PPC440SPe
+evaluation board". So I've CC'd the people involved in commit 3fb7933850
+("powerpc/4xx: Adding PCIe MSI support"), which introduced this typo, to
+actually test this.
 
-Rafael
+ arch/powerpc/platforms/44x/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
+index 762322c..9c37179 100644
+--- a/arch/powerpc/platforms/44x/Kconfig
++++ b/arch/powerpc/platforms/44x/Kconfig
+@@ -75,7 +75,7 @@ config KATMAI
+ 	select PCI
+ 	select PPC4xx_PCI_EXPRESS
+ 	select PCI_MSI
+-	select PCC4xx_MSI
++	select PPC4xx_MSI
+ 	help
+ 	  This option enables support for the AMCC PPC440SPe evaluation board.
+ 
+-- 
+1.7.4.4
+
