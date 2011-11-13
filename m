@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1KMVIu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 16:08:50 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13434 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab1KMVIs (ORCPT
+	id S1753736Ab1KMVmt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 16:42:49 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48054 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1KMVms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 16:08:48 -0500
-Date: Sun, 13 Nov 2011 22:14:32 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-cc: Andrey Yurovsky <andrey@cozybit.com>, Colin McCabe <colin@cozybit.com>,
-        Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] Net, libertas: Resolve memory leak in
- if_spi_host_to_card()
-Message-ID: <alpine.LNX.2.00.1111132211580.3368@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 13 Nov 2011 16:42:48 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [197.237.16.88]
+In-Reply-To: <CAHVUoiSgT8DuauMCpM1G_GWeqmHsPBzudew+5xJLuDGW7d9Ryw@mail.gmail.com>
+References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
+ <20111019183848.GE2229@ghostprotocols.net> <4E9F1AA0.4010706@gmail.com>
+ <20111019192011.GG2229@ghostprotocols.net> <4E9F4B50.1060207@gmail.com>
+ <20111020130041.GB1772@ghostprotocols.net> <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
+ <20111113134314.GA2699@ghostprotocols.net> <CAHVUoiSgT8DuauMCpM1G_GWeqmHsPBzudew+5xJLuDGW7d9Ryw@mail.gmail.com>
+From: Brian Marete <marete@toshnix.com>
+Date: Mon, 14 Nov 2011 00:42:27 +0300
+Message-ID: <CAHVUoiTSS0U4JTwukOkQ_4rhjvWEZvy6qceLqSJ1s6a=gekKKQ@mail.gmail.com>
+Subject: Re: [PATCH] perf top: fix crash on annotate request
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we hit the default case in the switch in if_spi_host_to_card() we'll leak
-the memory we allocated for 'packet'. This patch resolves the leak by freeing
-the allocated memory in that case.
+On Mon, Nov 14, 2011 at 12:03 AM, Brian Marete <marete@toshnix.com> wrote:
+> On Sun, Nov 13, 2011 at 4:43 PM, Arnaldo Carvalho de Melo
+>> It is going well before the start of this symbol:
+>>
+>> addr(256544) < sym->start(1124896)
+>>
+>
+> I will reproduce (which I am always able to do) run another bt and report back.
+>
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/net/wireless/libertas/if_spi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Sorry, had misread your comment above as a request for information.
 
- Compile tested only due to lack of hardware.
+And yes, I can reproduce this on the HEAD you have printed above with git-log.
 
-diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
-index 11b69b3..728baa4 100644
---- a/drivers/net/wireless/libertas/if_spi.c
-+++ b/drivers/net/wireless/libertas/if_spi.c
-@@ -995,6 +995,7 @@ static int if_spi_host_to_card(struct lbs_private *priv,
- 		spin_unlock_irqrestore(&card->buffer_lock, flags);
- 		break;
- 	default:
-+		kfree(packet);
- 		netdev_err(priv->dev, "can't transfer buffer of type %d\n",
- 			   type);
- 		err = -EINVAL;
--- 
-1.7.7.3
-
+Let me know if you need further information.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Brian Gitonga Marete
+Toshnix Systems
+Tel: +254722151590
