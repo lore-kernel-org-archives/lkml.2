@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1KMOuo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 09:50:44 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53026 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab1KMOum convert rfc822-to-8bit (ORCPT
+	id S1752851Ab1KMO5j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 09:57:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45868 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab1KMO5i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 09:50:42 -0500
+	Sun, 13 Nov 2011 09:57:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111113231944.4677bd7a2154975c989663ab@canb.auug.org.au>
-References: <CAA_GA1f8+6bqXGXo33GDbJmXvaqdD-qMUh=ejx0+Ag-shmc0uw@mail.gmail.com>
-	<20111113231944.4677bd7a2154975c989663ab@canb.auug.org.au>
-Date: Sun, 13 Nov 2011 22:50:41 +0800
-Message-ID: <CAA_GA1fFspdayjpLNpm1C-kPug6n7LXyJ0dqiX=3d_gHt2U9xg@mail.gmail.com>
-Subject: Re: Blackfin.git tree change
-From: Bob Liu <lliubbo@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linux-Kernel <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>, sonic.zhang@analog.com
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <CAJd=RBC0eTkjF8CSKXv-SK5Zef1G+9x-FUYRBXKmVg6Gbno5gw@mail.gmail.com>
+References: <1321179449-6675-1-git-send-email-gilad@benyossef.com>
+	<1321179449-6675-5-git-send-email-gilad@benyossef.com>
+	<CAJd=RBC0eTkjF8CSKXv-SK5Zef1G+9x-FUYRBXKmVg6Gbno5gw@mail.gmail.com>
+Date: Sun, 13 Nov 2011 16:57:36 +0200
+Message-ID: <CAOtvUMe+Um-t3k=VC2Kz4hnOdKYszn9_OG8fa2tp8qK=FLpz0Q@mail.gmail.com>
+Subject: Re: [PATCH v3 4/5] slub: Only IPI CPUs that have per cpu obj to flush
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Stephen
-
-On Sun, Nov 13, 2011 at 8:19 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Bob,
+On Sun, Nov 13, 2011 at 2:20 PM, Hillf Danton <dhillf@gmail.com> wrote:
 >
-> On Fri, 11 Nov 2011 18:49:59 +0800 Bob Liu <lliubbo@gmail.com> wrote:
->>
->> I'll take most of the arch Blackfin maintain work from now on.
->>
->> My tree is:
->> git://git.kernel.org/pub/scm/linux/kernel/git/lliubbo/blackfin.git#for-linus
->>
->> Would you please update it for linux-next.
+> On Sun, Nov 13, 2011 at 6:17 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 >
-> OK, I have switched to that tree and will put you as the contact. Â Should
-> I also keep Mike as a contact for problems with this tree?
+...
 >
-
-Yes, Please.
-
-> The only thing I did notice, is that this commit was in Mike's tree but
-> is not in yours:
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 7d2a996..caf4b3a 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -2006,7 +2006,20 @@ static void flush_cpu_slab(void *d)
+> >
+> >  static void flush_all(struct kmem_cache *s)
+> >  {
+> > -       on_each_cpu(flush_cpu_slab, s, 1);
+> > +       cpumask_var_t cpus;
+> > +       struct kmem_cache_cpu *c;
+> > +       int cpu;
+> > +
+> > +       if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
 >
-> Author: Sonic Zhang <sonic.zhang@analog.com>
-> Date: Â  Mon Aug 1 17:53:21 2011 +0800
->
-> Â  Â Blackfin: add serial TX IRQ in individual platform resource
->
-> Â  Â The serial TX IRQ is not simply (RX IRQ + 1) on some Blackfin chips,
-> Â  Â so move the values to the platform resources.
->
-> Â  Â Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> Â  Â Signed-off-by: Mike Frysinger <vapier@gentoo.org>
->
-> Just in case it was forgotten.
+> Perhaps, the technique of local_cpu_mask defined in kernel/sched_rt.c
+> could be used to replace the above atomic allocation.
 >
 
-Sorry for that, I thought that patch has been merged to mainline.
-I'll update it soon. Thanks.
+Thank you for taking the time to review my patch :-)
 
-> Thanks for adding your subsystem tree as a participant of linux-next. Â As
-> you may know, this is not a judgment of your code. Â The purpose of
-> linux-next is for integration testing and to lower the impact of
-> conflicts between subsystems in the next merge window.
->
-> You will need to ensure that the patches/commits in your tree/series have
-> been:
-> Â  Â  * submitted under GPL v2 (or later) and include the Contributor's
-> Â  Â  Â  Â Signed-off-by,
-> Â  Â  * posted to the relevant mailing list,
-> Â  Â  * reviewed by you (or another maintainer of your subsystem tree),
-> Â  Â  * successfully unit tested, and
-> Â  Â  * destined for the current or next Linux merge window.
->
-> Basically, this should be just what you would send to Linus (or ask him
-> to fetch). Â It is allowed to be rebased if you deem it necessary.
->
-> --
-> Cheers,
-> Stephen Rothwell
-> sfr@canb.auug.org.au
->
-> Legal Stuff:
-> By participating in linux-next, your subsystem tree contributions are
-> public and will be included in the linux-next trees. Â You may be sent
-> e-mail messages indicating errors or other issues when the
-> patches/commits from your subsystem tree are merged and tested in
-> linux-next. Â These messages may also be cross-posted to the linux-next
-> mailing list, the linux-kernel mailing list, etc. Â The linux-next tree
-> project and IBM (my employer) make no warranties regarding the linux-next
-> project, the testing procedures, the results, the e-mails, etc. Â If you
-> don't agree to these ground rules, let me know and I'll remove your tree
-> from participation in linux-next.
->
+That is indeed the direction I went with inthe previous iteration of
+this patch, with the small change that because of observing that the
+allocation will only actually occurs for CPUMASK_OFFSTACK=y which by
+definition are systems with lots and lots of CPUs and, it is actually
+better to allocate the cpumask per kmem_cache rather then per CPU,
+since on system where it matters we are bound to have more CPUs (e.g.
+4096) then kmem_caches (~160). See
+https://lkml.org/lkml/2011/10/23/151.
 
--- 
-Regards,
---Bob
+I then went a head and further optimized the code to only incur the
+memory overhead of allocating those cpumasks for CPUMASK_OFFSTACK=y
+systems. See https://lkml.org/lkml/2011/10/23/152.
+
+As you can see from the discussion that evolved, there seems to be an
+agreement that the code complexity overhead involved is simply not
+worth it for what is, unlike sched_rt, a rather esoteric case and one
+where allocation failure is easily dealt with.
+
+Thanks!
+Gilad
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
