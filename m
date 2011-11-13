@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab1KMAal (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 19:30:41 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62978 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab1KMAak (ORCPT
+	id S1753045Ab1KMAna (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 19:43:30 -0500
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:43520 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab1KMAn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 19:30:40 -0500
-From: John Kacur <jkacur@redhat.com>
-To: lkml <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH] Compile error with allmodconfig and CONFIG_PREEMPT_RT_FULL=y
-Date: Sun, 13 Nov 2011 01:30:29 +0100
-Message-Id: <1321144229-6108-1-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.7.2.3
+	Sat, 12 Nov 2011 19:43:29 -0500
+Subject: [PATCH] [TRIVIAL] unicore32: Fix typo 'PUV3_I2C'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Nov 2011 01:43:23 +0100
+Message-ID: <1321145003.20271.36.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERROR: "in_serving_softirq" [net/sched/cls_cgroup.ko] undefined!
-
-The above can be fixed by exporting in_serving_softirq
-
-Signed-off-by: John Kacur <jkacur@redhat.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- kernel/softirq.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+0) This corrects an obvious typo. It is untested.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index e8756aa..026a283 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -447,6 +447,7 @@ int in_serving_softirq(void)
- 	preempt_enable();
- 	return res;
- }
-+EXPORT_SYMBOL(in_serving_softirq);
+1) This could influence the code generated for "I2C Battery BQ27200
+Support" and for "I2C EEPROMs AT24 support". So I've CC'd the people
+involved in commit fa7499ef77 ("unicore32 machine related files: core
+files"), which introduced this typo, to actually test this.
+
+ arch/unicore32/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+index e57dcce..942ed61 100644
+--- a/arch/unicore32/Kconfig
++++ b/arch/unicore32/Kconfig
+@@ -237,13 +237,13 @@ menu "PKUnity NetBook-0916 Features"
  
- /*
-  * Called with bh and local interrupts disabled. For full RT cpu must
+ config I2C_BATTERY_BQ27200
+ 	tristate "I2C Battery BQ27200 Support"
+-	select PUV3_I2C
++	select I2C_PUV3
+ 	select POWER_SUPPLY
+ 	select BATTERY_BQ27x00
+ 
+ config I2C_EEPROM_AT24
+ 	tristate "I2C EEPROMs AT24 support"
+-	select PUV3_I2C
++	select I2C_PUV3
+ 	select MISC_DEVICES
+ 	select EEPROM_AT24
+ 
 -- 
-1.7.2.3
+1.7.4.4
+
+
 
