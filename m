@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab1KMMt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 07:49:56 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33728 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1KMMty (ORCPT
+	id S1752556Ab1KMMxu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 07:53:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45678 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1KMMxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 07:49:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321143760.20271.31.camel@x61.thuisdomein>
-References: <1321143760.20271.31.camel@x61.thuisdomein>
-Date: Sun, 13 Nov 2011 07:49:52 -0500
-Message-ID: <CA+5PVA79SP3HvDqOx1Tducggnh=s3arA4JOdWSgMbY_9SveSNg@mail.gmail.com>
-Subject: Re: [PATCH] [TRIVIAL] powerpc/4xx: Fix typo 'PCC4xx_MSI'
-From: Josh Boyer <jwboyer@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jiri Kosina <trivial@kernel.org>, Rupjyoti Sarmah <rsarmah@amcc.com>,
-        Tirumala R Marri <tmarri@apm.com>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 13 Nov 2011 07:53:48 -0500
+Subject: Re: [PATCH v2 07/16] mtd/docg3: add OOB layout to mtdinfo
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Mike Dunn <mikedunn@newsguy.com>, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sun, 13 Nov 2011 14:53:43 +0200
+In-Reply-To: <87vcqoiavr.fsf@free.fr>
+References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
+	 <1320912342-30147-8-git-send-email-robert.jarzmik@free.fr>
+	 <4EBECB89.2020102@newsguy.com> <87vcqoiavr.fsf@free.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1321188825.2273.4.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 12, 2011 at 7:22 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) This corrects an obvious typo. It is untested.
->
-> 1) This could influence the code generated for the "AMCC PPC440SPe
-> evaluation board". So I've CC'd the people involved in commit 3fb7933850
-> ("powerpc/4xx: Adding PCIe MSI support"), which introduced this typo, to
-> actually test this.
+On Sun, 2011-11-13 at 11:18 +0100, Robert Jarzmik wrote:
+> I personally think this should be provided by the MTD API. A function
+> is_page_blank(ofs) could tell if the page was written or not. Now if the
+> function is NULL, the upper layer (UBIFS, ...) could decide _by itself_ to
+> assign a free OOB byte to that meaning. But IMHO it's not the drivers duty to
+> take these decisions to restrict the OOB, let it be done at an upper level.
 
-My linux.vnet.ibm.com address should be bouncing by now.  Anyway,
-patch looks good.
+Probably it is a good idea to introduce an mtd_is_page_blank. But it
+should either work for all flashes or not introduced at all. I do not
+think upper layers should use OOB at all. And this interface should also
+work for NOR flash. Probably it should just fall-back to comparing the
+data with 0xFF if the driver cannot offer anything special.
 
-Acked-by: Josh Boyer <jwboyer@gmail.com>
+Artem.
 
-josh
