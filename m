@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1KMUko (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 15:40:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085Ab1KMUkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 15:40:43 -0500
-Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
-From: Vadim Rozenfeld <vrozenfe@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Krishna Kumar <krkumar2@in.ibm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>, kvm@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Amit Shah <amit.shah@redhat.com>
-In-Reply-To: <4EBA744D.8020107@redhat.com>
-References: <87wrbkvh3v.fsf@rustcorp.com.au>
-	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
-	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
-	 <20111102233110.GA20289@redhat.com> <20111108214021.GA4538@redhat.com>
-	 <1320828366.31056.16.camel@lappy>  <4EBA744D.8020107@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Nov 2011 22:40:20 +0200
-Message-ID: <1321216820.15736.5.camel@vadimr.dell>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753329Ab1KMU7u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 15:59:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50446 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab1KMU7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 15:59:49 -0500
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        syed rafiuddin <rafiuddin.sayed@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 9/9] bq27x00: Fix OOPS caused by unregistring bq27x00 driver
+Date: Sun, 13 Nov 2011 21:54:16 +0100
+Message-ID: <45584927.uAIXTvEKdg@pali-elitebook>
+User-Agent: KMail/4.7.3 (Linux/3.1.0-2-generic; KDE/4.7.3; x86_64; ; )
+In-Reply-To: <1320108191-6647-9-git-send-email-pali.rohar@gmail.com>
+References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com> <1320108191-6647-1-git-send-email-pali.rohar@gmail.com> <1320108191-6647-9-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart57469943.3BPAOjhCSp"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 14:38 +0200, Avi Kivity wrote:
-> On 11/09/2011 10:46 AM, Sasha Levin wrote:
-> > > Alternatively we can add new structures with new
-> > > structure IDs, pointed to from PCI configuration space.
-> > > 
-> > > As we don't yet have devices or drivers with 64 bit features,
-> > > I decided we don't need high feature bits in legacy space.
-> > > This also frees up feature bit 31 as we don't need it
-> > > to enable high feature bits anymore.
-> >
-> > KVM tool actually has support for 64bit features, we can probably remove
-> > that when Pekka isn't looking :)
-> >
-> 
-> What about the Windows drivers?
-> 
-Probably some small adjustments will be required,
-but I don't see any major problem here.
 
-Vadim. 
+--nextPart57469943.3BPAOjhCSp
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
+On Tuesday 01 November 2011 01:43:11 you wrote:
+> * power_supply_unregister call bq27x00_battery_get_property which cal=
+l
+> bq27x00_battery_poll * make sure that bq27x00_battery_poll will not c=
+all
+> schedule_delayed_work again after unregister (which cause OOPS)
+>=20
+> Signed-off-by: Pali Roh=E1r <pali.rohar@gmail.com>
+> ---
+>  drivers/power/bq27x00_battery.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/power/bq27x00_battery.c
+> b/drivers/power/bq27x00_battery.c index 15ecd42..29ce907 100644
+> --- a/drivers/power/bq27x00_battery.c
+> +++ b/drivers/power/bq27x00_battery.c
+> @@ -722,6 +722,10 @@ static int bq27x00_powersupply_init(struct
+> bq27x00_device_info *di)
+>=20
+>  static void bq27x00_powersupply_unregister(struct bq27x00_device_inf=
+o *di)
+>  {
+> +=09/* power_supply_unregister call bq27x00_battery_get_property whic=
+h call
+> bq27x00_battery_poll */ +=09/* make sure that bq27x00_battery_poll wi=
+ll not
+> call schedule_delayed_work again after unregister (which cause OOPS) =
+*/
+> +=09poll_interval =3D 0;
+> +
+>  =09cancel_delayed_work_sync(&di->work);
+>=20
+>  =09bq27x00_battery_reg_exit(di);
+
+Can somebody review this patch series? At least this last patch fix reb=
+ooting=20
+device Nokia N900 after unloading bq27x00_battery module with rmmod!
+
+--=20
+Pali Roh=E1r
+pali.rohar@gmail.com
+--nextPart57469943.3BPAOjhCSp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk7ALngACgkQi/DJPQPkQ1K2MACeOIxst+/cPzt+2gL6Kd/szGEd
+GmIAoJlUuPIB/eQzqdr5GwMB4s/oIgr5
+=1RN1
+-----END PGP SIGNATURE-----
+
+--nextPart57469943.3BPAOjhCSp--
 
