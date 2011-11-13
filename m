@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1KMNIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 08:08:25 -0500
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:36758 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab1KMNIY (ORCPT
+	id S1753757Ab1KMNfz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 08:35:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46839 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab1KMNfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 08:08:24 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4EBFC148.7070409@cam.ac.uk>
-Date: Sun, 13 Nov 2011 13:08:24 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: iio: drop "select IIO_SIMPLE_DUMMY_EVGEN"
-References: <1321189545.20271.59.camel@x61.thuisdomein>
-In-Reply-To: <1321189545.20271.59.camel@x61.thuisdomein>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
+	Sun, 13 Nov 2011 08:35:54 -0500
+Subject: Re: [PATCH v2 07/16] mtd/docg3: add OOB layout to mtdinfo
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>, Mike Dunn <mikedunn@newsguy.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sun, 13 Nov 2011 15:35:49 +0200
+In-Reply-To: <1321189398.2021.5.camel@shinybook.infradead.org>
+References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
+	 <1320912342-30147-8-git-send-email-robert.jarzmik@free.fr>
+	 <4EBECB89.2020102@newsguy.com> <87vcqoiavr.fsf@free.fr>
+	 <1321188825.2273.4.camel@koala>
+	 <1321189398.2021.5.camel@shinybook.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1321191352.2273.14.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2011 01:05 PM, Paul Bolle wrote:
-> Commit e6477000fc ("staging:iio:dummy Add event support + fake event
-> generator") added "select IIO_SIMPLE_DUMMY_EVGEN if [...]". But there
-> is no Kconfig symbol named IIO_SIMPLE_DUMMY_EVGEN. The select statement
-> for that symbol is a nop. Drop it.
-Yes, you are quite right.  Looks like some dead logic from an earlier
-version.  My mistake.
+On Sun, 2011-11-13 at 13:03 +0000, David Woodhouse wrote:
+> On Sun, 2011-11-13 at 14:53 +0200, Artem Bityutskiy wrote:
+> > On Sun, 2011-11-13 at 11:18 +0100, Robert Jarzmik wrote:
+> > > I personally think this should be provided by the MTD API. A function
+> > > is_page_blank(ofs) could tell if the page was written or not. Now if the
+> > > function is NULL, the upper layer (UBIFS, ...) could decide _by itself_ to
+> > > assign a free OOB byte to that meaning. But IMHO it's not the drivers duty to
+> > > take these decisions to restrict the OOB, let it be done at an upper level.
+> > 
+> > Probably it is a good idea to introduce an mtd_is_page_blank. But it
+> > should either work for all flashes or not introduced at all. I do not
+> > think upper layers should use OOB at all. And this interface should also
+> > work for NOR flash. Probably it should just fall-back to comparing the
+> > data with 0xFF if the driver cannot offer anything special. 
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Jonathan Cameron <jic23@camd.ac.uk>
-> ---
-> 0) Tested with "make menuconfig" before and after applying this patch.
-> Identical .config files were generated, as was expected.
+> We *tried* comparing with 0xFF in JFFS2 and found that it wasn't good
+> enough (it could be *mostly* erased before a powerfail but not
+> completely, so as soon as you start to program it you get a lot of
+> bitflips). Hence the cleanmarkers.
 > 
-> 1) The "select IIO_DUMMY_EVGEN" of the IIO_SIMPLE_DUMMY_EVENTS Kconfig
-> entry probably does what was intended here. Maybe that's why no one
-> noticed.
-Indeed it does.
-> 
->  drivers/staging/iio/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/Kconfig b/drivers/staging/iio/Kconfig
-> index 4ec9118..90162aa 100644
-> --- a/drivers/staging/iio/Kconfig
-> +++ b/drivers/staging/iio/Kconfig
-> @@ -76,7 +76,6 @@ config IIO_DUMMY_EVGEN
->  
->  config IIO_SIMPLE_DUMMY
->         tristate "An example driver with no hardware requirements"
-> -       select IIO_SIMPLE_DUMMY_EVGEN if IIO_SIMPLE_DUMMY_EVENTS
->         help
->  	 Driver intended mainly as documentation for how to write
->  	 a driver. May also be useful for testing userspace code
+> The only way you can treat a page as erased is if you *know* it was
+> successfully erased. So I'd be reluctant to introduce a function that
+> encourages people to draw inferences they shouldn't.
+
+That's a bit different. Nowadays no one tries to compare to 0xFFs to
+check if an eraseblock is erased or not :-)
+
+This is about the situation when you have an eraseblock with data, and
+you want to find where it ends, e.g., you want to find the first blank
+NAND page. Both JFFS2 and UBIFS search for 0xFFs. It worked for many
+years, but modern NANDs have bit-flips even in empty space, so reading a
+never written NAND page may return mostly 0xFFs, but with few bits set
+to 0. Modern NANDs have strong ECC which can handle 4 bit errors and
+above. According to Ivan, manufacturers say it is expected and OK.
+
+No make SW like JFFS2 and UBIFS work, modern drivers need to
+either correct bit-flips on blank pages automatically, or be able to
+quickly distinguish between blank and non-blank pages and memset the
+buffer with 0xFFs for the former case.
+
+What Robert says is that we probably need an is_page_blank() and let the
+driver implement it optimally, or make MTD fall-back to 0xFFs
+comparison.
+
+This is my understanding.
+
+Artem.
 
