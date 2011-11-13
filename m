@@ -1,149 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1KMBci (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 20:32:38 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45428 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab1KMBci (ORCPT
+	id S1752362Ab1KMBnt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 20:43:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33439 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab1KMBnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 20:32:38 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1 v3] arch/arm/mm/fault.c: Porting OOM changes into __do_page_fault
-Date: Sat, 12 Nov 2011 20:32:26 -0500
-Message-Id: <1321147946-3639-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 12 Nov 2011 20:43:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EBDD426.4050105@codeaurora.org>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+	<1318850846-16066-3-git-send-email-ohad@wizery.com>
+	<CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
+	<1320938930.22195.17.camel@i7.infradead.org>
+	<20111110170918.GE13213@amd.com>
+	<4EBC3E20.20301@codeaurora.org>
+	<20111111132411.GH13213@amd.com>
+	<4EBDD426.4050105@codeaurora.org>
+Date: Sun, 13 Nov 2011 10:43:46 +0900
+X-Google-Sender-Auth: wfI_FcfGxFxBbHdr9NpH4D38y7Y
+Message-ID: <CAHQjnOPkhR2SWO5Tov_V6Zw=zYb9EOJPbC1bENXJ+ttw_TB1HA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
+ supported by the hardware
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Kai Huang <mail.kai.huang@gmail.com>, kvm@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits d065bd810b6deb67d4897a14bfe21f8eb526ba99 and
-37b23e0525d393d48a7d59f870b3bc061a30ccdb introduced changes into
-the x86 pagefault handler for making the page fault handler
-retryable as well as killable.
+On Sat, Nov 12, 2011 at 11:04 AM, Stepan Moskovchenko
+<stepanm@codeaurora.org> wrote:
+> Yes, the scatterlist is allowed to have different page sizes. But, they are
+> required to have a length that is a multiple of 4K. If a page in the list is
 
-These changes reduce the mmap_sem hold time(for x86), which is crucial
-during OOM killer invocation.
+An element in scatterlist may not be aligned by 4K but I think IOMMU driver
+must round it up to 4K if IOMMU API support iommu_map_range().
 
-Porting these changes to ARM.
+The first element in scatterlist is often not aligned by 4K if the pages are
+provided from userspace. Length + offset of  the element must be
+aligned by 4K, though.
 
-Without these changes, my ARM board encounters many hang and livelock
-scenarios.
-After applying this patch, OOM feature performance improves according to
-my testing.
-
-Motivation for porting these changes:
-------------------------------------
-Embedded devices such as SMART TVs and SMART phones have the capability
-to download and run apps from the internet.
-Due to this, the device user might run some malignant app that
-allocates too much memory.
-In that case, OOM killer performance is very important so that the
-device can free up memory for other apps as well as the kernel.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/arm/mm/fault.c |   50 ++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 38 insertions(+), 12 deletions(-)
-
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index aa33949..9aeba03 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
- 
- static int __kprobes
- __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
--		struct task_struct *tsk)
-+		unsigned int flags, struct task_struct *tsk)
- {
- 	struct vm_area_struct *vma;
- 	int fault;
-@@ -257,13 +257,9 @@ good_area:
- 	 * If for any reason at all we couldn't handle the fault, make
- 	 * sure we exit gracefully rather than endlessly redo the fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
- 	if (unlikely(fault & VM_FAULT_ERROR))
- 		return fault;
--	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
--	else
--		tsk->min_flt++;
- 	return fault;
- 
- check_stack:
-@@ -279,6 +275,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	int fault, sig, code;
-+	int write = fsr & FSR_WRITE;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+					(write ? FAULT_FLAG_WRITE : 0);
- 
- 	if (notify_page_fault(regs, fsr))
- 		return 0;
-@@ -305,6 +304,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	if (!down_read_trylock(&mm->mmap_sem)) {
- 		if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
- 			goto no_context;
-+retry:
- 		down_read(&mm->mmap_sem);
- 	} else {
- 		/*
-@@ -320,14 +320,40 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- #endif
- 	}
- 
--	fault = __do_page_fault(mm, addr, fsr, tsk);
--	up_read(&mm->mmap_sem);
-+	fault = __do_page_fault(mm, addr, fsr, flags, tsk);
-+
-+	/* If we need to retry but a fatal signal is pending, handle the
-+	 * signal first. We do not need to release the mmap_sem because
-+	 * it would already be released in __lock_page_or_retry in
-+	 * mm/filemap.c. */
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
- 
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
- 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
--	if (fault & VM_FAULT_MAJOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
--	else if (fault & VM_FAULT_MINOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+				      regs, addr);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+				      regs, addr);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			 * of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			goto retry;
-+		}
-+	}
-+
-+	up_read(&mm->mmap_sem);
- 
- 	/*
- 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
--- 
-1.7.5.4
-
+Thank you,
+KyongHo.
