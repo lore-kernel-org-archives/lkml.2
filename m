@@ -1,142 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab1KMKtU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 05:49:20 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59516 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab1KMKtT (ORCPT
+	id S1753335Ab1KMLDE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 06:03:04 -0500
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:40744 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab1KMLDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 05:49:19 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1 v4] arm: fault.c: Port OOM changes into do_page_fault
-Date: Sun, 13 Nov 2011 05:49:07 -0500
-Message-Id: <1321181347-4391-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 13 Nov 2011 06:03:03 -0500
+Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
+References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Nov 2011 12:02:56 +0100
+Message-ID: <1321182176.20271.43.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-Commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Sun, 2011-11-13 at 11:31 +0100, Geert Uytterhoeven wrote:
+> commit 51c9d654c2def97827395a7fbfd0c6f865c26544 ("Staging: delete tty
+> drivers") removed the MVME167 serial driver, but forgot to remove these
+> references.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  arch/m68k/Kconfig.devices           |    2 +-
+>  arch/m68k/configs/multi_defconfig   |    1 -
+>  arch/m68k/configs/mvme16x_defconfig |    1 -
+>  3 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/m68k/Kconfig.devices b/arch/m68k/Kconfig.devices
+> index 6033f5d..e01eeb2 100644
+> --- a/arch/m68k/Kconfig.devices
+> +++ b/arch/m68k/Kconfig.devices
+> @@ -128,7 +128,7 @@ config DN_SERIAL
+>  
+>  config SERIAL_CONSOLE
+>  	bool "Support for serial port console"
+> -	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO) && (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || SERIAL167 || DN_SERIAL)
+> +	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO) && (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || DN_SERIAL)
 
-The above commits introduced changes into the x86 pagefault handler 
-for making the page fault handler retryable as well as killable.
+0) The SERIAL=y part can also be dropped. There's no Kconfig symbol
+SERIAL.
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
+1) I've been looking at this impressive dependency list a few days back.
+My impression was that it can be reduced to only AMIGA_BUILTIN_SERIAL=y.
+(After that this Kconfig symbol might better be renamed to
+AMIGA_BUILTIN_SERIAL_CONSOLE.)
 
-Port these changes to ARM.
+I might have a draft patch to drop the dependencies somewhere. I need to
+have another look at that (draft) patch before I can submit it.
 
-Without these changes, my ARM board encounters many hang and livelock
-scenarios.
-After applying this patch, OOM feature performance improves according to
-my testing.
+>  	---help---
+>  	  If you say Y here, it will be possible to use a serial port as the
+>  	  system console (the system console is the device which receives all
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/arm/mm/fault.c |   50 ++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 38 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index aa33949..9aeba03 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
- 
- static int __kprobes
- __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
--		struct task_struct *tsk)
-+		unsigned int flags, struct task_struct *tsk)
- {
- 	struct vm_area_struct *vma;
- 	int fault;
-@@ -257,13 +257,9 @@ good_area:
- 	 * If for any reason at all we couldn't handle the fault, make
- 	 * sure we exit gracefully rather than endlessly redo the fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
- 	if (unlikely(fault & VM_FAULT_ERROR))
- 		return fault;
--	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
--	else
--		tsk->min_flt++;
- 	return fault;
- 
- check_stack:
-@@ -279,6 +275,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	int fault, sig, code;
-+	int write = fsr & FSR_WRITE;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+					(write ? FAULT_FLAG_WRITE : 0);
- 
- 	if (notify_page_fault(regs, fsr))
- 		return 0;
-@@ -305,6 +304,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	if (!down_read_trylock(&mm->mmap_sem)) {
- 		if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
- 			goto no_context;
-+retry:
- 		down_read(&mm->mmap_sem);
- 	} else {
- 		/*
-@@ -320,14 +320,40 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- #endif
- 	}
- 
--	fault = __do_page_fault(mm, addr, fsr, tsk);
--	up_read(&mm->mmap_sem);
-+	fault = __do_page_fault(mm, addr, fsr, flags, tsk);
-+
-+	/* If we need to retry but a fatal signal is pending, handle the
-+	 * signal first. We do not need to release the mmap_sem because
-+	 * it would already be released in __lock_page_or_retry in
-+	 * mm/filemap.c. */
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
- 
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
- 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
--	if (fault & VM_FAULT_MAJOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
--	else if (fault & VM_FAULT_MINOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+				      regs, addr);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+				      regs, addr);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			 * of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			goto retry;
-+		}
-+	}
-+
-+	up_read(&mm->mmap_sem);
- 
- 	/*
- 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
--- 
-1.7.5.4
+Paul Bolle
+
