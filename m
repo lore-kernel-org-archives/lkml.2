@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab1KMKSf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 05:18:35 -0500
+	id S1753123Ab1KMKSb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 05:18:31 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62515 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab1KMKSd (ORCPT
+	with ESMTP id S1752764Ab1KMKS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 05:18:33 -0500
+	Sun, 13 Nov 2011 05:18:27 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -15,11 +15,10 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
         Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH v3 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-Date: Sun, 13 Nov 2011 12:17:28 +0200
-Message-Id: <1321179449-6675-5-git-send-email-gilad@benyossef.com>
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH v3 2/5] arm: Move arm over to generic on_each_cpu_mask
+Date: Sun, 13 Nov 2011 12:17:26 +0200
+Message-Id: <1321179449-6675-3-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321179449-6675-1-git-send-email-gilad@benyossef.com>
 References: <1321179449-6675-1-git-send-email-gilad@benyossef.com>
@@ -27,38 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_all() is called for each kmem_cahce_destroy(). So every cache
-being destroyed dynamically ended up sending an IPI to each CPU in the
-system, regardless if the cache has ever been used there.
-
-For example, if you close the Infinband ipath driver char device file,
-the close file ops calls kmem_cache_destroy(). So running some
-infiniband config tool on one a single CPU dedicated to system tasks
-might interrupt the rest of the 127 CPUs I dedicated to some CPU
-intensive task.
-
-I suspect there is a good chance that every line in the output of "git
-grep kmem_cache_destroy linux/ | grep '\->'" has a similar scenario.
-
-This patch attempts to rectify this issue by sending an IPI to flush
-the per cpu objects back to the free lists only to CPUs that seems to
-have such objects.
-
-The check which CPU to IPI is racy but we don't care since asking a
-CPU without per cpu objects to flush does no damage and as far as I
-can tell the flush_all by itself is racy against allocs on remote
-CPUs anyway, so if you meant the flush_all to be determinstic, you
-had to arrange for locking regardless.
-
-Without this patch the following artificial test case:
-
-$ cd /sys/kernel/slab
-$ for DIR in *; do cat $DIR/alloc_calls > /dev/null; done
-
-produces 166 IPIs on an cpuset isolated CPU. With it it produces none.
-
-The code path of memory allocation failure for CPUMASK_OFFSTACK=y
-config was tested using fault injection framework.
+Note the generic version has the mask as first parameter
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 Acked-by: Chris Metcalf <cmetcalf@tilera.com>
@@ -69,39 +37,64 @@ CC: linux-mm@kvack.org
 CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
-CC: Sasha Levin <levinsasha928@gmail.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Andi Kleen <andi@firstfloor.org>
 ---
- mm/slub.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ arch/arm/kernel/smp_tlb.c |   20 +++++---------------
+ 1 files changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 7d2a996..caf4b3a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2006,7 +2006,20 @@ static void flush_cpu_slab(void *d)
+diff --git a/arch/arm/kernel/smp_tlb.c b/arch/arm/kernel/smp_tlb.c
+index 7dcb352..02c5d2c 100644
+--- a/arch/arm/kernel/smp_tlb.c
++++ b/arch/arm/kernel/smp_tlb.c
+@@ -13,18 +13,6 @@
+ #include <asm/smp_plat.h>
+ #include <asm/tlbflush.h>
  
- static void flush_all(struct kmem_cache *s)
- {
--	on_each_cpu(flush_cpu_slab, s, 1);
-+	cpumask_var_t cpus;
-+	struct kmem_cache_cpu *c;
-+	int cpu;
-+
-+	if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
-+		for_each_online_cpu(cpu) {
-+			c = per_cpu_ptr(s->cpu_slab, cpu);
-+			if (c && c->page)
-+				cpumask_set_cpu(cpu, cpus);
-+		}
-+		on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
-+		free_cpumask_var(cpus);
-+	} else
-+		on_each_cpu(flush_cpu_slab, s, 1);
- }
+-static void on_each_cpu_mask(void (*func)(void *), void *info, int wait,
+-	const struct cpumask *mask)
+-{
+-	preempt_disable();
+-
+-	smp_call_function_many(mask, func, info, wait);
+-	if (cpumask_test_cpu(smp_processor_id(), mask))
+-		func(info);
+-
+-	preempt_enable();
+-}
+-
+ /**********************************************************************/
  
  /*
+@@ -87,7 +75,7 @@ void flush_tlb_all(void)
+ void flush_tlb_mm(struct mm_struct *mm)
+ {
+ 	if (tlb_ops_need_broadcast())
+-		on_each_cpu_mask(ipi_flush_tlb_mm, mm, 1, mm_cpumask(mm));
++		on_each_cpu_mask(mm_cpumask(mm), ipi_flush_tlb_mm, mm, 1);
+ 	else
+ 		local_flush_tlb_mm(mm);
+ }
+@@ -98,7 +86,8 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
+ 		struct tlb_args ta;
+ 		ta.ta_vma = vma;
+ 		ta.ta_start = uaddr;
+-		on_each_cpu_mask(ipi_flush_tlb_page, &ta, 1, mm_cpumask(vma->vm_mm));
++		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_page,
++					&ta, 1);
+ 	} else
+ 		local_flush_tlb_page(vma, uaddr);
+ }
+@@ -121,7 +110,8 @@ void flush_tlb_range(struct vm_area_struct *vma,
+ 		ta.ta_vma = vma;
+ 		ta.ta_start = start;
+ 		ta.ta_end = end;
+-		on_each_cpu_mask(ipi_flush_tlb_range, &ta, 1, mm_cpumask(vma->vm_mm));
++		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_range,
++					&ta, 1);
+ 	} else
+ 		local_flush_tlb_range(vma, start, end);
+ }
 -- 
 1.7.0.4
 
