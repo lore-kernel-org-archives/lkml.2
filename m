@@ -1,568 +1,578 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab1KMXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 18:21:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45127 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab1KMXTs (ORCPT
+	id S1751481Ab1KMXw2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 18:52:28 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43045 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab1KMXwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 18:19:48 -0500
-Message-Id: <20111113231341.458893511@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Sun, 13 Nov 2011 23:19:47 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: [patch 1/7] timekeeping: Split xtime lock into lock and seqcount
-References: <20111113230921.728083714@linutronix.de>
-Content-Disposition: inline; filename=xtime-split-lock-and-seqcount.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 13 Nov 2011 18:52:24 -0500
+Message-ID: <4EC05827.7030709@gmail.com>
+Date: Mon, 14 Nov 2011 00:52:07 +0100
+From: =?UTF-8?B?xYF1a2FzeiBTb3dh?= <luksow@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Will Drewry <wad@chromium.org>
+CC: Paul Menage <paul@paulmenage.org>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: [RFC v2] cgroup: syscalls limiting subsystem
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to shorten the sequence sections to the small sections
-which actually update the timekeeping data structures, so the reader
-blocked section becomes minimal.
+Hi,
 
-Scripted conversion. No functional change.
+As I promised, RFC v2 of the syscalls limiting cgroup subsystem is
+ready. For those who missed previous one here is the shortuct:
+http://marc.info/?l=linux-security-module&m=131914567720567&w=2
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/jiffies.c       |    4 -
- kernel/time/ntp.c           |   24 +++++++----
- kernel/time/tick-common.c   |   10 ++--
- kernel/time/tick-internal.h |    3 -
- kernel/time/tick-sched.c    |   16 ++++---
- kernel/time/timekeeping.c   |   95 +++++++++++++++++++++++++-------------------
- 6 files changed, 91 insertions(+), 61 deletions(-)
+In v2 I made changes suggested by Paul and Will (thanks!) this means:
+1. clearing bits in descendants - it enables less synchronizing so the
+overhead is smaller (see below)
+2. ability to turn on/off (default: off) policy checking at current (and
+only current!) level of cgroup (see below)
+3. some minor fixes
 
-Index: linux-2.6/kernel/time/jiffies.c
-===================================================================
---- linux-2.6.orig/kernel/time/jiffies.c
-+++ linux-2.6/kernel/time/jiffies.c
-@@ -74,9 +74,9 @@ u64 get_jiffies_64(void)
- 	u64 ret;
+Details:
+1. Clearing bits in descendants means that every children is in coherent
+state with it's parent. This means 4 different kind of concurrent
+accessing to syscalls_bitmap:
+a) Copying bits from parent to children when creating new cgroup.
+b) Setting bits in descendants on ALLOW/DENY write.
+c) Testing all bits in sequence on printing.
+d) Testing one bit in bitmap on policy checking.
+
+c) and d) are testing bits which are guaranteed to be atomic so I
+decided to not put any critical section in there because it's useless
+and in d) it's significant overhead. So in c) and d) we get info that is
+or was (when write occurred) true in some point of time.
+Now a) and b) clearly needs syncing. Concurrent writes to the hierarchy
+could damage the consistency - same with concurrent write and copying.
+Finally I decided to use one global mutex for write and copying - it
+saves some memory and code complexity but there is some performance
+impact that I think is not important because copying and writing to
+hierarchy is rare.
+I think, that I did the syncing right but I am open for any comments on
+this.
+
+2. I added file (syscalls.checking) which allows to turn on/off policy
+checking for current level of cgroup. This is not affecting children in
+any way - all syscalls forbidden in children are still forbidden and all
+syscalls forbidden in parent are still forbidden in children. I think
+that making it any other way would complicate the usage to the level of
+impossibility.
+The good thing is that performance for processes within cgroup with
+checking=0 is basically untouched - there is flag checking and jump
+added only. So, we can have syscalls subsystem compiled and ready for
+the use with 0% overhead which was the goal for RFC v2.
+The bad thing however, is breaking clarity of this cgroup because we
+have a flag that is not hierarchical (like everything in cgroup). But I
+think that is a good subject for a discussion.
+
+Last but not least - the overhead. It is lower in RFC v2 than in RFC v1
+and what is even more important - it is the same on all levels in
+hierarchy (thanks to the change suggested by Paul). Now I am looking for
+some fair methods of benchmarking it. Previously, I ran many (like 10^8)
+system calls in a loop and then measure the overhead for it (system
+time) but it has two drawbacks: first is that different syscalls take
+different time to complete, second - it doesn't give the real impression
+on how typical process would be slower - no apps make syscalls only. So,
+I would love to hear some suggestions how to measure the overhead in a
+way that provides useful piece of information.
+
+Last thing for the performance is that I found rather simple method of
+optimizing it even more. Compiler is currently not inlining bitmap
+checking in syscall path which means jumping and a lot of stack ops. If
+I was able to write bitmap checking in assembly (or force inlining) the
+overhead will be smallest possible - only dereferencing pointers and bit
+testing. I am currently trying to do it but unfortunately I have not
+succeeded yet. Maybe someone is willing to help with that?
+
+That is all for RFC v2 from me. Please, let me know what you think.
+
+Best Regards,
+Lukasz Sowa
+
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index a1fe5c1..0c92e36 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -95,6 +95,7 @@ struct thread_info {
+ #define TIF_BLOCKSTEP		25	/* set when we want DEBUGCTLMSR_BTF */
+ #define TIF_LAZY_MMU_UPDATES	27	/* task is updating the mmu lazily */
+ #define TIF_SYSCALL_TRACEPOINT	28	/* syscall tracepoint instrumentation */
++#define TIF_SYSCALL_USE_CGROUP	29	/* is using permission checking in syscalls cgroup */
  
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		ret = jiffies_64;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 	return ret;
- }
- EXPORT_SYMBOL(get_jiffies_64);
-Index: linux-2.6/kernel/time/ntp.c
-===================================================================
---- linux-2.6.orig/kernel/time/ntp.c
-+++ linux-2.6/kernel/time/ntp.c
-@@ -358,7 +358,8 @@ static enum hrtimer_restart ntp_leap_sec
+ #define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
+ #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
+@@ -117,6 +118,7 @@ struct thread_info {
+ #define _TIF_BLOCKSTEP		(1 << TIF_BLOCKSTEP)
+ #define _TIF_LAZY_MMU_UPDATES	(1 << TIF_LAZY_MMU_UPDATES)
+ #define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
++#define _TIF_SYSCALL_USE_CGROUP	(1 << TIF_SYSCALL_USE_CGROUP)
+ 
+ /* work to do in syscall_trace_enter() */
+ #define _TIF_WORK_SYSCALL_ENTRY	\
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index f3f6f53..6727326 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -425,6 +425,20 @@ sysenter_past_esp:
+ sysenter_do_call:
+ 	cmpl $(nr_syscalls), %eax
+ 	jae syscall_badsys
++#ifdef CONFIG_CGROUP_SYSCALLS
++	testl $_TIF_SYSCALL_USE_CGROUP, TI_flags(%ebp)
++	jz syscalls_cgroup_skip_sysenter
++	push %eax
++	push %ecx
++	push %edx
++	call syscalls_cgroup_perm
++	cmpl $0, %eax
++	pop %edx
++	pop %ecx
++	pop %eax
++	je syscall_badsys
++syscalls_cgroup_skip_sysenter:
++#endif
+ 	call *sys_call_table(,%eax,4)
+ 	movl %eax,PT_EAX(%esp)
+ 	LOCKDEP_SYS_EXIT
+@@ -507,6 +521,20 @@ ENTRY(system_call)
+ 	cmpl $(nr_syscalls), %eax
+ 	jae syscall_badsys
+ syscall_call:
++#ifdef CONFIG_CGROUP_SYSCALLS
++	testl $_TIF_SYSCALL_USE_CGROUP, TI_flags(%ebp)
++	jz syscalls_cgroup_skip_syscall
++	push %eax
++	push %ecx
++	push %edx
++	call syscalls_cgroup_perm
++	cmpl $0, %eax
++	pop %edx
++	pop %ecx
++	pop %eax
++	je syscall_badsys
++syscalls_cgroup_skip_syscall:
++#endif
+ 	call *sys_call_table(,%eax,4)
+ 	movl %eax,PT_EAX(%esp)		# store the return value
+ syscall_exit:
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index faf8d5e..8a9687c 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -484,6 +484,33 @@ ENTRY(system_call_after_swapgs)
+ system_call_fastpath:
+ 	cmpq $__NR_syscall_max,%rax
+ 	ja badsys
++#ifdef CONFIG_CGROUP_SYSCALLS
++	testl $_TIF_SYSCALL_USE_CGROUP,TI_flags(%rcx)
++	jz syscalls_cgroup_skip_fastpath
++	pushq %rax
++	pushq %rdi
++	pushq %rsi
++	pushq %rdx
++	pushq %rcx
++	pushq %r8
++	pushq %r9
++	pushq %r10
++	pushq %r11
++	movq %rax,%rdi
++	call syscalls_cgroup_perm
++	cmpl $0,%eax
++	popq %r11
++	popq %r10
++	popq %r9
++	popq %r8
++	popq %rcx
++	popq %rdx
++	popq %rsi
++	popq %rdi
++	popq %rax
++	je badsys
++syscalls_cgroup_skip_fastpath:
++#endif
+ 	movq %r10,%rcx
+ 	call *sys_call_table(,%rax,8)  # XXX:	 rip relative
+ 	movq %rax,RAX-ARGOFFSET(%rsp)
+@@ -600,6 +627,36 @@ tracesys:
+ 	RESTORE_REST
+ 	cmpq $__NR_syscall_max,%rax
+ 	ja   int_ret_from_sys_call	/* RAX(%rsp) set to -ENOSYS above */
++#ifdef CONFIG_CGROUP_SYSCALLS
++	pushq %rcx
++	GET_THREAD_INFO(%rcx)
++	testl $_TIF_SYSCALL_USE_CGROUP,TI_flags(%rcx)
++	popq %rcx
++	jz syscalls_cgroup_skip_tracesys
++	pushq %rax
++	pushq %rdi
++	pushq %rsi
++	pushq %rdx
++	pushq %rcx
++	pushq %r8
++	pushq %r9
++	pushq %r10
++	pushq %r11
++	movq %rax,%rdi
++	call syscalls_cgroup_perm
++	cmpl $0,%eax
++	popq %r11
++	popq %r10
++	popq %r9
++	popq %r8
++	popq %rcx
++	popq %rdx
++	popq %rsi
++	popq %rdi
++	popq %rax
++	je int_ret_from_sys_call
++syscalls_cgroup_skip_tracesys:
++#endif
+ 	movq %r10,%rcx	/* fixup for C */
+ 	call *sys_call_table(,%rax,8)
+ 	movq %rax,RAX-ARGOFFSET(%rsp)
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index a3ef66a..a7401f1 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -26,6 +26,11 @@ extern unsigned long __sw_hweight64(__u64 w);
+ 	     (bit) < (size); \
+ 	     (bit) = find_next_bit((addr), (size), (bit) + 1))
+ 
++#define for_each_zero_bit(bit, addr, size) \
++	for ((bit) = find_first_zero_bit((addr), (size)); \
++	     (bit) < (size); \
++	     (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
++
+ static __inline__ int get_bitmask_order(unsigned int count)
  {
- 	enum hrtimer_restart res = HRTIMER_NORESTART;
- 
--	write_seqlock(&xtime_lock);
-+	raw_spin_lock(&xtime_lock);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	switch (time_state) {
- 	case TIME_OK:
-@@ -388,7 +389,8 @@ static enum hrtimer_restart ntp_leap_sec
- 		break;
- 	}
- 
--	write_sequnlock(&xtime_lock);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock(&xtime_lock);
- 
- 	return res;
- }
-@@ -663,7 +665,8 @@ int do_adjtimex(struct timex *txc)
- 
- 	getnstimeofday(&ts);
- 
--	write_seqlock_irq(&xtime_lock);
-+	raw_spin_lock_irq(&xtime_lock);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	if (txc->modes & ADJ_ADJTIME) {
- 		long save_adjust = time_adjust;
-@@ -705,7 +708,8 @@ int do_adjtimex(struct timex *txc)
- 	/* fill PPS status fields */
- 	pps_fill_timex(txc);
- 
--	write_sequnlock_irq(&xtime_lock);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irq(&xtime_lock);
- 
- 	txc->time.tv_sec = ts.tv_sec;
- 	txc->time.tv_usec = ts.tv_nsec;
-@@ -903,7 +907,8 @@ void hardpps(const struct timespec *phas
- 
- 	pts_norm = pps_normalize_ts(*phase_ts);
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	/* clear the error bits, they will be set again if needed */
- 	time_status &= ~(STA_PPSJITTER | STA_PPSWANDER | STA_PPSERROR);
-@@ -916,7 +921,8 @@ void hardpps(const struct timespec *phas
- 	 * just start the frequency interval */
- 	if (unlikely(pps_fbase.tv_sec == 0)) {
- 		pps_fbase = *raw_ts;
--		write_sequnlock_irqrestore(&xtime_lock, flags);
-+		write_seqcount_end(&xtime_seq);
-+		raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 		return;
- 	}
- 
-@@ -931,7 +937,8 @@ void hardpps(const struct timespec *phas
- 		time_status |= STA_PPSJITTER;
- 		/* restart the frequency calibration interval */
- 		pps_fbase = *raw_ts;
--		write_sequnlock_irqrestore(&xtime_lock, flags);
-+		write_seqcount_end(&xtime_seq);
-+		raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 		pr_err("hardpps: PPSJITTER: bad pulse\n");
- 		return;
- 	}
-@@ -948,7 +955,8 @@ void hardpps(const struct timespec *phas
- 
- 	hardpps_update_phase(pts_norm.nsec);
- 
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- }
- EXPORT_SYMBOL(hardpps);
- 
-Index: linux-2.6/kernel/time/tick-common.c
-===================================================================
---- linux-2.6.orig/kernel/time/tick-common.c
-+++ linux-2.6/kernel/time/tick-common.c
-@@ -63,13 +63,15 @@ int tick_is_oneshot_available(void)
- static void tick_periodic(int cpu)
- {
- 	if (tick_do_timer_cpu == cpu) {
--		write_seqlock(&xtime_lock);
-+		raw_spin_lock(&xtime_lock);
-+		write_seqcount_begin(&xtime_seq);
- 
- 		/* Keep track of the next tick event */
- 		tick_next_period = ktime_add(tick_next_period, tick_period);
- 
- 		do_timer(1);
--		write_sequnlock(&xtime_lock);
-+		write_seqcount_end(&xtime_seq);
-+		raw_spin_unlock(&xtime_lock);
- 	}
- 
- 	update_process_times(user_mode(get_irq_regs()));
-@@ -130,9 +132,9 @@ void tick_setup_periodic(struct clock_ev
- 		ktime_t next;
- 
- 		do {
--			seq = read_seqbegin(&xtime_lock);
-+			seq = read_seqcount_begin(&xtime_seq);
- 			next = tick_next_period;
--		} while (read_seqretry(&xtime_lock, seq));
-+		} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 		clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
- 
-Index: linux-2.6/kernel/time/tick-internal.h
-===================================================================
---- linux-2.6.orig/kernel/time/tick-internal.h
-+++ linux-2.6/kernel/time/tick-internal.h
-@@ -141,4 +141,5 @@ static inline int tick_device_is_functio
+ 	int order;
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index ac663c1..ad6b600 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -64,3 +64,9 @@ SUBSYS(perf)
  #endif
  
- extern void do_timer(unsigned long ticks);
--extern seqlock_t xtime_lock;
-+extern raw_spinlock_t xtime_lock;
-+extern seqcount_t xtime_seq;
-Index: linux-2.6/kernel/time/tick-sched.c
-===================================================================
---- linux-2.6.orig/kernel/time/tick-sched.c
-+++ linux-2.6/kernel/time/tick-sched.c
-@@ -56,7 +56,8 @@ static void tick_do_update_jiffies64(kti
- 		return;
- 
- 	/* Reevalute with xtime_lock held */
--	write_seqlock(&xtime_lock);
-+	raw_spin_lock(&xtime_lock);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	delta = ktime_sub(now, last_jiffies_update);
- 	if (delta.tv64 >= tick_period.tv64) {
-@@ -79,7 +80,8 @@ static void tick_do_update_jiffies64(kti
- 		/* Keep the tick_next_period variable up to date */
- 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
- 	}
--	write_sequnlock(&xtime_lock);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock(&xtime_lock);
- }
- 
- /*
-@@ -89,12 +91,14 @@ static ktime_t tick_init_jiffy_update(vo
- {
- 	ktime_t period;
- 
--	write_seqlock(&xtime_lock);
-+	raw_spin_lock(&xtime_lock);
-+	write_seqcount_begin(&xtime_seq);
- 	/* Did we start the jiffies update yet ? */
- 	if (last_jiffies_update.tv64 == 0)
- 		last_jiffies_update = tick_next_period;
- 	period = last_jiffies_update;
--	write_sequnlock(&xtime_lock);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock(&xtime_lock);
- 	return period;
- }
- 
-@@ -345,11 +349,11 @@ void tick_nohz_stop_sched_tick(int inidl
- 	ts->idle_calls++;
- 	/* Read jiffies and the time when jiffies were updated last */
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		last_update = last_jiffies_update;
- 		last_jiffies = jiffies;
- 		time_delta = timekeeping_max_deferment();
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
- 	    arch_needs_cpu(cpu)) {
-Index: linux-2.6/kernel/time/timekeeping.c
-===================================================================
---- linux-2.6.orig/kernel/time/timekeeping.c
-+++ linux-2.6/kernel/time/timekeeping.c
-@@ -136,10 +136,11 @@ static inline s64 timekeeping_get_ns_raw
- }
- 
- /*
-- * This read-write spinlock protects us from races in SMP while
-- * playing with xtime.
-+ * xtime_seq  allows lockless readers to observe updates
-+ * xtime_lock protects the time keeping code
-  */
--__cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
-+__cacheline_aligned_in_smp seqcount_t xtime_seq;
-+DEFINE_RAW_SPINLOCK(xtime_lock);
- 
- 
- /*
-@@ -222,7 +223,7 @@ void getnstimeofday(struct timespec *ts)
- 	WARN_ON(timekeeping_suspended);
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 
- 		*ts = xtime;
- 		nsecs = timekeeping_get_ns();
-@@ -230,7 +231,7 @@ void getnstimeofday(struct timespec *ts)
- 		/* If arch requires, add in gettimeoffset() */
- 		nsecs += arch_gettimeoffset();
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	timespec_add_ns(ts, nsecs);
- }
-@@ -245,12 +246,12 @@ ktime_t ktime_get(void)
- 	WARN_ON(timekeeping_suspended);
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
- 		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
- 		nsecs += timekeeping_get_ns();
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 	/*
- 	 * Use ktime_set/ktime_add_ns to create a proper ktime on
- 	 * 32-bit architectures without CONFIG_KTIME_SCALAR.
-@@ -276,12 +277,12 @@ void ktime_get_ts(struct timespec *ts)
- 	WARN_ON(timekeeping_suspended);
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		*ts = xtime;
- 		tomono = wall_to_monotonic;
- 		nsecs = timekeeping_get_ns();
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec,
- 				ts->tv_nsec + tomono.tv_nsec + nsecs);
-@@ -309,7 +310,7 @@ void getnstime_raw_and_real(struct times
- 	do {
- 		u32 arch_offset;
- 
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 
- 		*ts_raw = raw_time;
- 		*ts_real = xtime;
-@@ -322,7 +323,7 @@ void getnstime_raw_and_real(struct times
- 		nsecs_raw += arch_offset;
- 		nsecs_real += arch_offset;
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	timespec_add_ns(ts_raw, nsecs_raw);
- 	timespec_add_ns(ts_real, nsecs_real);
-@@ -361,7 +362,8 @@ int do_settimeofday(const struct timespe
- 	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	timekeeping_forward_now();
- 
-@@ -377,7 +379,8 @@ int do_settimeofday(const struct timespe
- 	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
- 				timekeeper.mult);
- 
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -401,7 +404,8 @@ int timekeeping_inject_offset(struct tim
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	timekeeping_forward_now();
- 
-@@ -414,7 +418,8 @@ int timekeeping_inject_offset(struct tim
- 	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
- 				timekeeper.mult);
- 
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -486,11 +491,11 @@ void getrawmonotonic(struct timespec *ts
- 	s64 nsecs;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		nsecs = timekeeping_get_ns_raw();
- 		*ts = raw_time;
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	timespec_add_ns(ts, nsecs);
- }
-@@ -506,11 +511,11 @@ int timekeeping_valid_for_hres(void)
- 	int ret;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 
- 		ret = timekeeper.clock->flags & CLOCK_SOURCE_VALID_FOR_HRES;
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	return ret;
- }
-@@ -518,7 +523,7 @@ int timekeeping_valid_for_hres(void)
- /**
-  * timekeeping_max_deferment - Returns max time the clocksource can be deferred
-  *
-- * Caller must observe xtime_lock via read_seqbegin/read_seqretry to
-+ * Caller must observe xtime_seq via read_seqcount_begin/req_seqcount_retry to
-  * ensure that the clocksource does not change!
-  */
- u64 timekeeping_max_deferment(void)
-@@ -568,7 +573,8 @@ void __init timekeeping_init(void)
- 	read_persistent_clock(&now);
- 	read_boot_clock(&boot);
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	ntp_init();
- 
-@@ -589,7 +595,8 @@ void __init timekeeping_init(void)
- 				-boot.tv_sec, -boot.tv_nsec);
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- }
- 
- /* time in seconds when suspend began */
-@@ -636,7 +643,8 @@ void timekeeping_inject_sleeptime(struct
- 	if (!(ts.tv_sec == 0 && ts.tv_nsec == 0))
- 		return;
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 	timekeeping_forward_now();
- 
- 	__timekeeping_inject_sleeptime(delta);
-@@ -646,7 +654,8 @@ void timekeeping_inject_sleeptime(struct
- 	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
- 				timekeeper.mult);
- 
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -669,7 +678,8 @@ static void timekeeping_resume(void)
- 
- 	clocksource_resume();
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 
- 	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
- 		ts = timespec_sub(ts, timekeeping_suspend_time);
-@@ -679,7 +689,8 @@ static void timekeeping_resume(void)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 
- 	touch_softlockup_watchdog();
- 
-@@ -697,7 +708,8 @@ static int timekeeping_suspend(void)
- 
- 	read_persistent_clock(&timekeeping_suspend_time);
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	raw_spin_lock_irqsave(&xtime_lock, flags);
-+	write_seqcount_begin(&xtime_seq);
- 	timekeeping_forward_now();
- 	timekeeping_suspended = 1;
- 
-@@ -720,7 +732,8 @@ static int timekeeping_suspend(void)
- 		timekeeping_suspend_time =
- 			timespec_add(timekeeping_suspend_time, delta_delta);
- 	}
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock_irqrestore(&xtime_lock, flags);
- 
- 	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
- 	clocksource_suspend();
-@@ -1011,13 +1024,13 @@ void get_monotonic_boottime(struct times
- 	WARN_ON(timekeeping_suspended);
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		*ts = xtime;
- 		tomono = wall_to_monotonic;
- 		sleep = total_sleep_time;
- 		nsecs = timekeeping_get_ns();
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
- 			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
-@@ -1068,10 +1081,10 @@ struct timespec current_kernel_time(void
- 	unsigned long seq;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 
- 		now = xtime;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	return now;
- }
-@@ -1083,11 +1096,11 @@ struct timespec get_monotonic_coarse(voi
- 	unsigned long seq;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 
- 		now = xtime;
- 		mono = wall_to_monotonic;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 
- 	set_normalized_timespec(&now, now.tv_sec + mono.tv_sec,
- 				now.tv_nsec + mono.tv_nsec);
-@@ -1119,11 +1132,11 @@ void get_xtime_and_monotonic_and_sleep_o
- 	unsigned long seq;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		*xtim = xtime;
- 		*wtom = wall_to_monotonic;
- 		*sleep = total_sleep_time;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- }
- 
- /**
-@@ -1135,9 +1148,9 @@ ktime_t ktime_get_monotonic_offset(void)
- 	struct timespec wtom;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqcount_begin(&xtime_seq);
- 		wtom = wall_to_monotonic;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqcount_retry(&xtime_seq, seq));
- 	return timespec_to_ktime(wtom);
- }
- 
-@@ -1149,7 +1162,9 @@ ktime_t ktime_get_monotonic_offset(void)
-  */
- void xtime_update(unsigned long ticks)
- {
--	write_seqlock(&xtime_lock);
-+	raw_spin_lock(&xtime_lock);
-+	write_seqcount_begin(&xtime_seq);
- 	do_timer(ticks);
--	write_sequnlock(&xtime_lock);
-+	write_seqcount_end(&xtime_seq);
-+	raw_spin_unlock(&xtime_lock);
- }
-
-
+ /* */
++
++#ifdef CONFIG_CGROUP_SYSCALLS
++SUBSYS(syscalls)
++#endif
++
++/* */
+diff --git a/init/Kconfig b/init/Kconfig
+index 43298f9..9823ebe 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -609,6 +609,13 @@ config CGROUP_DEVICE
+ 	  Provides a cgroup implementing whitelists for devices which
+ 	  a process in the cgroup can mknod or open.
+ 
++config CGROUP_SYSCALLS
++	bool "Syscalls controller for cgroups"
++	depends on X86
++	help
++	  Provides a way to limit access to specified syscalls for
++	  tasks in a cgroup.
++
+ config CPUSETS
+ 	bool "Cpuset support"
+ 	help
+diff --git a/security/Makefile b/security/Makefile
+index a5e502f..1dff6c7 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -22,6 +22,7 @@ obj-$(CONFIG_AUDIT)			+= lsm_audit.o
+ obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
+ obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
++obj-$(CONFIG_CGROUP_SYSCALLS)	+= syscalls_cgroup.o
+ 
+ # Object integrity file lists
+ subdir-$(CONFIG_INTEGRITY)		+= integrity
+diff --git a/security/syscalls_cgroup.c b/security/syscalls_cgroup.c
+new file mode 100644
+index 0000000..5801533
+--- /dev/null
++++ b/security/syscalls_cgroup.c
+@@ -0,0 +1,273 @@
++/*
++ * security/syscalls_cgroup.c - syscalls cgroup subsystem
++ *
++ * Copyright (C) 2011 Lukasz Sowa <luksow@gmail.com>
++ */
++
++#include <linux/bitmap.h>
++#include <linux/bitops.h>
++#include <linux/cgroup.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
++
++struct syscalls_cgroup {
++	unsigned long *syscalls_bitmap;
++	struct cgroup_subsys_state css;
++	char checking;
++};
++
++static DEFINE_MUTEX(syscalls_cgroup_mutex);
++
++static inline struct syscalls_cgroup *css_to_scg(struct cgroup_subsys_state *subsys_state)
++{
++	return container_of(subsys_state, struct syscalls_cgroup, css);
++}
++
++static inline struct syscalls_cgroup *cgroup_to_scg(struct cgroup *cgroup)
++{
++	return css_to_scg(cgroup_subsys_state(cgroup,
++							 syscalls_subsys_id));
++}
++
++static inline struct syscalls_cgroup *task_to_scg(struct task_struct *task)
++{
++	return css_to_scg(task_subsys_state(task, syscalls_subsys_id));
++}
++
++/*
++ * The range of syscall number is not checked here, because it is done
++ * in low level assembly code. test_bit is guaranteed to be atomic so
++ * locking is not necessary.
++ */
++static inline int __syscalls_cgroup_perm(struct syscalls_cgroup *scg, int number)
++{
++	return test_bit(number, scg->syscalls_bitmap);
++}
++
++inline int syscalls_cgroup_perm(int number)
++{
++	return __syscalls_cgroup_perm(task_to_scg(current), number);
++}
++
++/*
++ * On cgroup creation, syscalls bitmap is simply inherited from parent. In case
++ * of root cgroup, we set all bits. We have to block while copying because it is
++ * not atomic operation.
++ */
++static struct cgroup_subsys_state *syscalls_cgroup_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
++{
++	struct syscalls_cgroup *scg;
++	struct syscalls_cgroup *parent_scg;
++
++	scg = kmalloc(sizeof(*scg), GFP_KERNEL);
++	if (!scg)
++		return ERR_PTR(-ENOMEM);
++	scg->syscalls_bitmap = kmalloc(BITS_TO_LONGS(NR_syscalls) * sizeof(unsigned long),
++								GFP_KERNEL);
++	if (!scg->syscalls_bitmap) {
++		kfree(scg);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	scg->checking = 0;
++
++	if (cgroup->parent) {
++		parent_scg = cgroup_to_scg(cgroup->parent);
++		mutex_lock(&syscalls_cgroup_mutex);
++		bitmap_copy(scg->syscalls_bitmap,
++					parent_scg->syscalls_bitmap,
++					NR_syscalls);
++		mutex_unlock(&syscalls_cgroup_mutex);
++	} else {
++		bitmap_fill(scg->syscalls_bitmap, NR_syscalls);
++	}
++
++	return &scg->css;
++}
++
++static void syscalls_cgroup_destroy(struct cgroup_subsys *subsys,
++							struct cgroup *cgroup)
++{
++	struct syscalls_cgroup *scg = cgroup_to_scg(cgroup);
++	kfree(scg->syscalls_bitmap);
++	kfree(scg);
++}
++
++#define SYSCALLS_CGROUP_ALLOW 0
++#define SYSCALLS_CGROUP_DENY 1
++
++static int syscalls_cgroup_read(struct cgroup *cgroup, struct cftype *cftype,
++						struct seq_file *seq_file)
++{
++	struct syscalls_cgroup *scg = cgroup_to_scg(cgroup);
++	int bit = 0;
++
++	switch (cftype->private) {
++	case SYSCALLS_CGROUP_ALLOW:
++		for_each_set_bit(bit, scg->syscalls_bitmap, NR_syscalls) {
++			seq_printf(seq_file, "%d ", bit);
++		}
++		break;
++	case SYSCALLS_CGROUP_DENY:
++		for_each_zero_bit(bit, scg->syscalls_bitmap, NR_syscalls) {
++			seq_printf(seq_file, "%d ", bit);
++		}
++		break;
++	default:
++		BUG();
++	}
++	seq_printf(seq_file, "\n");
++
++	return 0;
++}
++
++/*
++ * Allowing/denying syscall is quite complicated task, so we block for whole
++ * operation. Moreover it is rare, so performance is not as important as
++ * lower complexity and memory usage.
++ */
++static int syscalls_cgroup_write(struct cgroup *cgroup, struct cftype *cftype,
++							const char *buffer)
++{
++	struct syscalls_cgroup *scg = cgroup_to_scg(cgroup);
++	struct syscalls_cgroup *next_scg;
++	struct syscalls_cgroup *parent_scg;
++	struct cgroup_subsys_state *next_css;
++	int number;
++	int ret;
++	int id;
++	int found;
++
++	ret = kstrtoint(buffer, 0, &number);
++	if (ret)
++		return ret;
++
++	if (number < 0 || number >= NR_syscalls)
++		return -ERANGE;
++
++	mutex_lock(&syscalls_cgroup_mutex);
++	switch (cftype->private) {
++	case SYSCALLS_CGROUP_ALLOW:
++		if (cgroup->parent) {
++			parent_scg = cgroup_to_scg(cgroup->parent);
++			if (test_bit(number, parent_scg->syscalls_bitmap))
++				set_bit(number, scg->syscalls_bitmap);
++			else
++				ret = -EPERM;
++		} else {
++			set_bit(number, scg->syscalls_bitmap);
++		}
++		break;
++	case SYSCALLS_CGROUP_DENY:
++		clear_bit(number, scg->syscalls_bitmap);
++
++		id = css_id(&scg->css) + 1;
++		rcu_read_lock();
++		while ((next_css = css_get_next(&syscalls_subsys,
++						id, &scg->css, &found))) {
++			next_scg = css_to_scg(next_css);
++			clear_bit(number, next_scg->syscalls_bitmap);
++			id = found + 1;
++		}
++		rcu_read_unlock();
++		break;
++	default:
++		BUG();
++	}
++	mutex_unlock(&syscalls_cgroup_mutex);
++
++	return ret;
++}
++
++static int syscalls_cgroup_switch_write(struct cgroup *cgroup,
++							struct cftype *cftype,
++							const char *buffer)
++{
++	struct syscalls_cgroup *scg = cgroup_to_scg(cgroup);
++	struct task_struct *task;
++	struct cgroup_iter it;
++	int number;
++	int ret;
++
++	ret = kstrtoint(buffer, 0, &number);
++	if (ret)
++		return ret;
++
++	cgroup_iter_start(cgroup, &it);
++	if (number) {
++		while ((task = cgroup_iter_next(cgroup, &it)))
++			set_tsk_thread_flag(task, TIF_SYSCALL_USE_CGROUP);
++	} else {
++		while ((task = cgroup_iter_next(cgroup, &it)))
++			clear_tsk_thread_flag(task, TIF_SYSCALL_USE_CGROUP);
++	}
++	cgroup_iter_end(cgroup, &it);
++
++	scg->checking = number ? 1 : 0;
++
++	return ret;
++}
++
++static int syscalls_cgroup_switch_read(struct cgroup *cgroup,
++						struct cftype *cftype,
++						struct seq_file *seq_file)
++{
++	struct syscalls_cgroup *scg = cgroup_to_scg(cgroup);
++	seq_printf(seq_file, "%d\n", scg->checking);
++	return 0;
++}
++
++static struct cftype syscalls_cgroup_files[] = {
++	{
++		.name = "allow",
++		.read_seq_string = syscalls_cgroup_read,
++		.write_string = syscalls_cgroup_write,
++		.private = SYSCALLS_CGROUP_ALLOW,
++	},
++	{
++		.name = "deny",
++		.read_seq_string = syscalls_cgroup_read,
++		.write_string = syscalls_cgroup_write,
++		.private = SYSCALLS_CGROUP_DENY,
++	},
++	{
++		.name = "checking",
++		.read_seq_string = syscalls_cgroup_switch_read,
++		.write_string  = syscalls_cgroup_switch_write
++	}
++};
++
++static int syscalls_cgroup_populate(struct cgroup_subsys *subsys,
++							struct cgroup *cgroup)
++{
++	return cgroup_add_files(cgroup, subsys, syscalls_cgroup_files,
++					ARRAY_SIZE(syscalls_cgroup_files));
++}
++
++struct cgroup_subsys syscalls_subsys = {
++	.name = "syscalls",
++	.create = syscalls_cgroup_create,
++	.destroy = syscalls_cgroup_destroy,
++	.populate = syscalls_cgroup_populate,
++	.subsys_id = syscalls_subsys_id,
++	.use_id = 1,
++	.module = THIS_MODULE,
++};
++
++static int __init init_syscalls_subsys(void)
++{
++	return cgroup_load_subsys(&syscalls_subsys);
++}
++
++static void __exit exit_syscalls_subsys(void)
++{
++	cgroup_unload_subsys(&syscalls_subsys);
++}
++
++module_init(init_syscalls_subsys);
++module_exit(exit_syscalls_subsys);
++MODULE_LICENSE("GPL");
++
