@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1KMKS7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 05:18:59 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62515 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab1KMKSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 05:18:30 -0500
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH v3 3/5] tile: Move tile to use generic on_each_cpu_mask
-Date: Sun, 13 Nov 2011 12:17:27 +0200
-Message-Id: <1321179449-6675-4-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1321179449-6675-1-git-send-email-gilad@benyossef.com>
-References: <1321179449-6675-1-git-send-email-gilad@benyossef.com>
+	id S1752917Ab1KMKS3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 05:18:29 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:54821 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752588Ab1KMKS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 05:18:27 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Mike Dunn <mikedunn@newsguy.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/16] mtd/docg3: add OOB layout to mtdinfo
+References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
+	<1320912342-30147-8-git-send-email-robert.jarzmik@free.fr>
+	<4EBECB89.2020102@newsguy.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Sun, 13 Nov 2011 11:18:16 +0100
+In-Reply-To: <4EBECB89.2020102@newsguy.com> (Mike Dunn's message of "Sat, 12
+	Nov 2011 11:39:53 -0800")
+Message-ID: <87vcqoiavr.fsf@free.fr>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API is the same as the tile private one, so just remove
-the private version of the functions
+Mike Dunn <mikedunn@newsguy.com> writes:
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-mm@kvack.org
-CC: Christoph Lameter <cl@linux-foundation.org>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Matt Mackall <mpm@selenic.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>
----
- arch/tile/include/asm/smp.h |    7 -------
- arch/tile/kernel/smp.c      |   19 -------------------
- 2 files changed, 0 insertions(+), 26 deletions(-)
+> On 11/10/2011 12:05 AM, Robert Jarzmik wrote:
+>> +static struct nand_ecclayout docg3_oobinfo = {
+>> +	.eccbytes = 8,
+>> +	.eccpos = {7, 8, 9, 10, 11, 12, 13, 14},
+>> +	.oobfree = {{0, 7}, {15, 1} },
+>> +	.oobavail = 8,
+>> +};
+>> +
 
-diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
-index 532124a..1aa759a 100644
---- a/arch/tile/include/asm/smp.h
-+++ b/arch/tile/include/asm/smp.h
-@@ -43,10 +43,6 @@ void evaluate_message(int tag);
- /* Boot a secondary cpu */
- void online_secondary(void);
- 
--/* Call a function on a specified set of CPUs (may include this one). */
--extern void on_each_cpu_mask(const struct cpumask *mask,
--			     void (*func)(void *), void *info, bool wait);
--
- /* Topology of the supervisor tile grid, and coordinates of boot processor */
- extern HV_Topology smp_topology;
- 
-@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
- 
- #else /* !CONFIG_SMP */
- 
--#define on_each_cpu_mask(mask, func, info, wait)		\
--  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
--
- #define smp_master_cpu		0
- #define smp_height		1
- #define smp_width		1
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index c52224d..a44e103 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
- 	send_IPI_many(&mask, tag);
- }
- 
--
--/*
-- * Provide smp_call_function_mask, but also run function locally
-- * if specified in the mask.
-- */
--void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
--		      void *info, bool wait)
--{
--	int cpu = get_cpu();
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(cpu, mask)) {
--		local_irq_disable();
--		func(info);
--		local_irq_enable();
--	}
--	put_cpu();
--}
--
--
- /*
-  * Functions related to starting/stopping cpus.
-  */
+I took a different approach.  I check an internal docg3 register to see if the
+page was written. Or I could had have checked the Hamming code, as I don't think
+it can be 0xff whatever the pagesize 7 bytes values.
+
+The reason behind is that the Hamming code is Ham(64, 57), ie. Ham(2^6,
+2^6-6-1). The means the 6 bits are enough to cover all codewords possibilities,
+and 0xff is not one of them.
+
+So unless a bitflip in Hamming code, 0xff in it means blank page. And I think
+the ECC engine is even smarter, with the ECCCONF1_PAGE_IS_WRITTEN.
+
+>
+> Just FYI, per Ivan's suggestion, I changed this to use the last oob byte as a
+> "page programmed" flag for the purpose of detecting bit flips when reading a
+> blank page.  Maybe something to keep in mind.  You can have a look at the latest
+> G4 driver patch to see exactly how I use it.
+I personally think this should be provided by the MTD API. A function
+is_page_blank(ofs) could tell if the page was written or not. Now if the
+function is NULL, the upper layer (UBIFS, ...) could decide _by itself_ to
+assign a free OOB byte to that meaning. But IMHO it's not the drivers duty to
+take these decisions to restrict the OOB, let it be done at an upper level.
+
+Cheers.
+
 -- 
-1.7.0.4
-
+Robert
