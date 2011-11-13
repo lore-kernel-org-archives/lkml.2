@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1KMNnW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 08:43:22 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51342 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab1KMNnV (ORCPT
+	id S1753962Ab1KMNxA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 08:53:00 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:56109 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab1KMNw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 08:43:21 -0500
-Date: Sun, 13 Nov 2011 11:43:14 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Brian Marete <marete@toshnix.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
-Subject: Re: [PATCH] perf top: fix crash on annotate request
-Message-ID: <20111113134314.GA2699@ghostprotocols.net>
-References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
- <20111019183848.GE2229@ghostprotocols.net>
- <4E9F1AA0.4010706@gmail.com>
- <20111019192011.GG2229@ghostprotocols.net>
- <4E9F4B50.1060207@gmail.com>
- <20111020130041.GB1772@ghostprotocols.net>
- <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 13 Nov 2011 08:52:59 -0500
+Date: Mon, 14 Nov 2011 00:52:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: cleanup time
+Message-Id: <20111114005252.ed41504cabda72e4e8b60eac@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__14_Nov_2011_00_52_52_+1100_DS5RKWS5Pql/dZod"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Nov 11, 2011 at 01:01:47AM +0300, Brian Marete escreveu:
-> On Thu, Oct 20, 2011 at 4:00 PM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> > I.e. the map_ip for this method is messing up things, what symbol is
-> > this? I.e. please provide:
+--Signature=_Mon__14_Nov_2011_00_52_52_+1100_DS5RKWS5Pql/dZod
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > p *sym
-> > p *map
+Hi all,
 
-> I have am experiencing the same segfault using perf from the latest
-> linus' tree. The gdb backtrace is below. Which patch fixes it? Or is
-> it already fixed in some git tree on kernel.org?
+Since we are out of the merge window, could people with trees in
+linux-next please take th opportunity to clean them up.   Hopefully,
+Linus took all the contents of your trees, in which case git
+trees/branches should be reset to be a (subset of) Linus' tree (this will
+be a noop for those for whom Linus pulled that actual branch that is in
+linux-next).  For quilt series, you should remove any patches that Linus
+has merged.
 
-Can you perform this command?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-[acme@felicio linux]$ git log | head -1
-commit 3439a8da16bcad6b0982ece938c9f8299bb53584
+--Signature=_Mon__14_Nov_2011_00_52_52_+1100_DS5RKWS5Pql/dZod
+Content-Type: application/pgp-signature
 
- 
-> Program received signal SIGSEGV, Segmentation fault.
-> 0x000000000042e27e in symbol__inc_addr_samples (sym=0x1279e70, map=0x9677a0,
->     evidx=0, addr=256544) at util/annotate.c:73
-> 73		h->addr[offset]++;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> # Output of p *sym
-> $1 = {rb_node = {rb_parent_color = 19423281, rb_right = 0x0, rb_left = 0x0},
->   start = 1124896, end = 1126163, namelen = 16, binding = 0 '\000',
->   ignore = false, name = 0x1279e70 "1`(\001"}
+iQIcBAEBCAAGBQJOv8u0AAoJEECxmPOUX5FECl4P/099imsKlEMcMGeyZX4iqHDT
+7v9F9DYTpUscBY7J8ofsQfc8S9LG0LzJhFvjjDRri3rdXLd7fYuvIDJ/fCp/6eW9
+rfLQP/OI3LZO7OpfmqoQzdpwl9VXI1Phi84IQ4d6wt+oUpG1ZPt8qII9Nb99fdXH
+hZHM3k816lHc25W7CHVFLHB1NnnUbECsFgcgkJXFUt5puIf1dqyYR/uRqVAoXidr
+vgo+FwKRZHWNdKm+NKhOwHxR7EZ/qHVA/g7bi8Kv0J1Y7XDlnPbc27itv2BjlXq1
+A/Q8Cp0xq1xjKJwlply2KQVujJ+oI98eGETjD74OZFAFNFayy3pSl1MkFPI2hG8w
+aBvumWDsLyRqCD3MVlRhElLtqAijlHaeRYKB73QuCXy6FaJXRxfoL/x35R9PY3rj
+DMEhN6mGOBir7CVDhudSdnKJ1dVzf9FIbVqtWybuOZg3soX/8rC5L303qeDR+Skm
+lgxK6PI9Z0CqbbHL31yV79VD4lrWbREwBYw2W8kBc9sEt5Nu8NiS5i//fdFKhwbR
+W2p5RDbplfC7P9xUKrIr1GcyPrUv5H/r60Y1lg8ActWOvE+SrlEMb/9JiT/fYI3U
+7EEUI61U4OjRh1pbWjKBbpZydICnrNVVf/GqRlhfVbgiNjdDOYF672ogKKy4s7IF
+E5NcouijdQeRx4o26W7s
+=vCJR
+-----END PGP SIGNATURE-----
 
-It is going well before the start of this symbol:
-
-addr(256544) < sym->start(1124896)
- 
-- Arnaldo
+--Signature=_Mon__14_Nov_2011_00_52_52_+1100_DS5RKWS5Pql/dZod--
