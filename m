@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab1KMUTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 15:19:15 -0500
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:34935 "EHLO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab1KMUTM convert rfc822-to-8bit (ORCPT
+	id S1754062Ab1KMUXj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 15:23:39 -0500
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:48948 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab1KMUXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 15:19:12 -0500
-From: "Alexander, Susan" <salexander@poplarville.k12.ms.us>
-To: "Alexander, Susan" <salexander@poplarville.k12.ms.us>
-Date: Sun, 13 Nov 2011 13:24:50 -0600
-Subject: RE: CHARITY/DONATION, This is a personal email directed to you. 
-Thread-Topic: CHARITY/DONATION, This is a personal email directed to you. 
-Thread-Index: AQHMocErYBoIRjzw2kGC2krnXQWvOZWrLKvb
-Message-ID: <8BE2567CF42C794D9D580BABD64CB779A4ADD9F309@EXCHANGE01.poplarville.k12.ms.us>
-References: <8BE2567CF42C794D9D580BABD64CB779A4ADD9F0FF@EXCHANGE01.poplarville.k12.ms.us>
-In-Reply-To: <8BE2567CF42C794D9D580BABD64CB779A4ADD9F0FF@EXCHANGE01.poplarville.k12.ms.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Sun, 13 Nov 2011 15:23:38 -0500
+Subject: [PATCH] [TRIVIAL] MIPS: Sibyte: drop select of SIBYTE_CFE
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Nov 2011 21:23:35 +0100
+Message-ID: <1321215815.20271.89.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+SIBYTE_CFE got killed in commit 05f94eebd5 ("MIPS: Sibyte: Remove
+standalone kernel support"). This means that since v2.6.31 there is no
+Kconfig symbol SIBYTE_CFE. The select statement for that symbol is a
+nop. Drop it.
 
-________________________________
-From: Alexander, Susan
-Sent: Saturday, November 12, 2011 11:00 PM
-To: Alexander, Susan
-Subject: CHARITY/DONATION, This is a personal email directed to you.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with "make ARCH=mips menuconfig" before and after applying this
+patch. Identical .config files were generated, as was expected
 
-Dear Sir/Madam,
+ arch/mips/sibyte/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-This is a personal email directed to you. I and my wife won a Jackpot Lottery of $11.3 million in July and have voluntarily decided to donate the sum of $500,000.00 USD to you as part of our own charity project to improve the lot of 10 lucky individuals all over the world. If you have received this email then you are one of the lucky recipients and all you have to do is get back with us so that we can send your details to the payout bank.
-Please note that you have to contact my private email for more informations (allen.violet.large2011@hotmail.co.uk<mailto:allen.violet.large2011@hotmail.co.uk>)
-You can verify this by visiting the web pages below.
-http://www.msnbc.msn.com/id/40009180/ns/us_news-giving/t/retired-couple-gives-away-million-lottery-win/
-Goodluck,
-Allen and Violet Large
-Email: allen.violet.large@filipinos.ca<mailto:allen.violet.large@filipinos.ca>
+diff --git a/arch/mips/sibyte/Kconfig b/arch/mips/sibyte/Kconfig
+index 3e639bd..3cd937e 100644
+--- a/arch/mips/sibyte/Kconfig
++++ b/arch/mips/sibyte/Kconfig
+@@ -71,7 +71,6 @@ config SIBYTE_SB1xxx_SOC
+ 	bool
+ 	select DMA_COHERENT
+ 	select IRQ_CPU
+-	select SIBYTE_CFE
+ 	select SWAP_IO_SPACE
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+ 	select SYS_SUPPORTS_64BIT_KERNEL
+-- 
+1.7.4.4
+
+
+
