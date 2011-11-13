@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1KMUeE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 15:34:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37792 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab1KMUeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 15:34:02 -0500
-Date: Sun, 13 Nov 2011 21:34:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, pinglinux@gmail.com, chris@cnpbagwell.com
-Subject: Re: [PATCH 1/2] HID: wacom: Move parsing to a separate function
-In-Reply-To: <1320492502-11976-1-git-send-email-przemo@firszt.eu>
-Message-ID: <alpine.LNX.2.00.1111132133450.15187@pobox.suse.cz>
-References: <1320492502-11976-1-git-send-email-przemo@firszt.eu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754236Ab1KMUgr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 15:36:47 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46838 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab1KMUgq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 15:36:46 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAPM=9tzJMaxs1d-kKj-oc1K-izwRT78dcfjrxA=BAsxpvMioqw@mail.gmail.com>
+References: <2407026.akcTO2Ggic@gemini-64>
+	<CAPM=9tzJMaxs1d-kKj-oc1K-izwRT78dcfjrxA=BAsxpvMioqw@mail.gmail.com>
+Date: Sun, 13 Nov 2011 15:36:46 -0500
+Message-ID: <CADnq5_N59MVB6V0xdf=_iMfU6HyW_d1+YZb1DSGyQDOQDo2yOA@mail.gmail.com>
+Subject: Re: PROBLEM: Radeon display connector : No monitor connected or
+ invalid EDID
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Treeve Jelbert <treeve@scarlet.be>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Nov 2011, Przemo Firszt wrote:
+On Sun, Nov 13, 2011 at 1:47 PM, Dave Airlie <airlied@gmail.com> wrote:
+> cc Alex.
+>
+>> Since installing kernel-3.1.1 the screen goes blank during the boot and I am
+>> unable to do anything, not even ssh into the box.
+>> â€‹
+>> linux-3.1.0 worked ok. There are no other changes to the system. Both were
+>> built using the same config file.
 
-> This patch doesn't change the way driver works. Parsing logic is now in a
-> separate function. It's a first step to add Intuos4 Wireless support to
-> hid-wacom driver.
-> 
-> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-> Acked-by: Ping Cheng <pinglinux@gmail.com>
-> Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
 
-I have applied both patches, thanks Przemo.
+Can you bisect?
 
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+
+Alex
