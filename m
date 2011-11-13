@@ -1,130 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab1KMJuG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 04:50:06 -0500
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:39552
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751754Ab1KMJuE (ORCPT
+	id S1752121Ab1KMJwe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 04:52:34 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65434 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab1KMJwc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 04:50:04 -0500
-From: Igor Grinberg <grinberg@compulab.co.il>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>
-Subject: [PATCH] MFD: TWL: add power off functionality
-Date: Sun, 13 Nov 2011 11:49:50 +0200
-Message-Id: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
-X-Mailer: git-send-email 1.7.3.4
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+	Sun, 13 Nov 2011 04:52:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAHR064jx4jWdLHRaKECEz-1Wauhm1xR+pGNLXsPPn7jYKJ81Uw@mail.gmail.com>
+References: <20110920161743.GA32737@kroah.com>
+	<CAHR064gzgKtLSNQ-NuoKWW9-Nv_S0myOusQT+-CxVVeyO5fMKA@mail.gmail.com>
+	<20111107181209.GB5474@suse.de>
+	<CAHR064jx4jWdLHRaKECEz-1Wauhm1xR+pGNLXsPPn7jYKJ81Uw@mail.gmail.com>
+Date: Sun, 13 Nov 2011 10:52:29 +0100
+Message-ID: <CAHR064i+PNSae_3+PnMtmkhpRw=+5qEAdUu_EzOiBfVzF_gfhA@mail.gmail.com>
+Subject: Re: [patch 0/8] Samsung Laptop driver patches - resend
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TWL family of PMICs, used in master mode, have a power off
-functionality. The resulting power off sequence shuts down all the SoC
-supplies, LDOs, etc. The sequence is described in the datasheets
-chapter "Power-Off Sequence".
-Note, that board must be wired correctly for the power off to work as
-expected.
+On Mon, Nov 7, 2011 at 11:57 PM, Corentin Chary
+<corentin.chary@gmail.com> wrote:
+> On Mon, Nov 7, 2011 at 7:12 PM, Greg KH <gregkh@suse.de> wrote:
+>> On Sun, Nov 06, 2011 at 11:54:39PM +0100, Corentin Chary wrote:
+>>> Just got a 90X3A from Intel and I'll try to take a look at samsung-laptop
+>>> since some features are missing (keyboard backlight for example).
+>>
+>> Try adding your device to this driver.  Or, watch out, as newer Samsung
+>> devices support backlight control "properly" through acpi, which is
+>> good, and this driver is not needed by them at all.
+>
+> I'm speaking about *keyboard* backlight here, not screen backlight
+> (which is already available using both the acpi driver and the intel
+> graphic driver). There is also a setting to enable USB power while
+> sleeping without having to change it in the BIOS, and it's probably
+> possible to control the sound and wlan led.
+>
+>>> Do you have any doc on the vendor "interface" (other than just reading
+>>> the code :) ) ?
+>>
+>> I do not have any documentation for the interface, sorry.  The code
+>> should be self-explanatory.
+>
+> Arg... I can understand the code, I can easilly write ACPI and WMI
+> drivers, but the "SABI" thing will be harder to reverse engineer :).
 
-Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
----
- drivers/mfd/twl4030-power.c |   42 ++++++++++++++++++++++++++++++++++++++++--
- include/linux/i2c/twl.h     |    2 ++
- 2 files changed, 42 insertions(+), 2 deletions(-)
+It was in fact very fun to find out new commands, and I found interesting stuff.
 
-diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-index a764676..d905f51 100644
---- a/drivers/mfd/twl4030-power.c
-+++ b/drivers/mfd/twl4030-power.c
-@@ -34,7 +34,8 @@
- static u8 twl4030_start_script_address = 0x2b;
- 
- #define PWR_P1_SW_EVENTS	0x10
--#define PWR_DEVOFF	(1<<0)
-+#define PWR_DEVOFF		(1 << 0)
-+#define SEQ_OFFSYNC		(1 << 0)
- 
- #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
- #define PHY_TO_OFF_PM_RECEIVER(p)	(p - 0x5b)
-@@ -511,12 +512,27 @@ int twl4030_remove_script(u8 flags)
- 	return err;
- }
- 
-+/*
-+ * In master mode, start the power off sequence.
-+ * After a successful execution, TWL shuts down the power to the SoC
-+ * and all peripherals connected to it.
-+ */
-+void twl4030_power_off(void)
-+{
-+	int err;
-+
-+	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, PWR_DEVOFF,
-+			       TWL4030_PM_MASTER_P1_SW_EVENTS);
-+	if (err)
-+		pr_err("TWL4030 Unable to power off\n");
-+}
-+
- void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
- {
- 	int err = 0;
- 	int i;
- 	struct twl4030_resconfig *resconfig;
--	u8 address = twl4030_start_script_address;
-+	u8 val, address = twl4030_start_script_address;
- 
- 	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
- 			TWL4030_PM_MASTER_KEY_CFG1,
-@@ -548,6 +564,28 @@ void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
- 		}
- 	}
- 
-+	/* Board has to be wired properly to use this feature */
-+	if (twl4030_scripts->use_poweroff && !pm_power_off) {
-+		/* Default for SEQ_OFFSYNC is set, lets ensure this */
-+		err = twl_i2c_read_u8(TWL4030_MODULE_PM_MASTER, &val,
-+				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
-+		if (err) {
-+			pr_warning("TWL4030 Unable to read registers\n");
-+
-+		} else if (!(val & SEQ_OFFSYNC)) {
-+			val |= SEQ_OFFSYNC;
-+			err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, val,
-+					TWL4030_PM_MASTER_CFG_P123_TRANSITION);
-+			if (err) {
-+				pr_err("TWL4030 Unable to setup SEQ_OFFSYNC\n");
-+				goto relock;
-+			}
-+		}
-+
-+		pm_power_off = twl4030_power_off;
-+	}
-+
-+relock:
- 	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
- 			TWL4030_PM_MASTER_PROTECT_KEY);
- 	if (err)
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 114c0f6..78d3465 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -652,10 +652,12 @@ struct twl4030_power_data {
- 	unsigned num;
- 	struct twl4030_resconfig *resource_config;
- #define TWL4030_RESCONFIG_UNDEF	((u8)-1)
-+	bool use_poweroff;	/* Board is wired for TWL poweroff */
- };
- 
- extern void twl4030_power_init(struct twl4030_power_data *triton2_scripts);
- extern int twl4030_remove_script(u8 flags);
-+extern void twl4030_power_off(void);
- 
- struct twl4030_codec_data {
- 	unsigned int digimic_delay; /* in ms */
+However, I have a quick question: what does "wireless button" control
+exactly ? Because my laptop (SwSmi@ one), seems to have a totally
+different command to control rfkill (both for bluetooth and wlan). My
+guess is that command do the same thing that happens when you press
+the Fn+F12 key, but if it's really that I'd prefer use the "true"
+rfkill interface with differencied control for bluetooth and wlan.
+
+I have found other interesting information including:
+- you can pass up to 11 byte of data for each command (but I didn't
+found any command using more than 6)
+- there is a way to find the model name and bios version near the signature
+- wlan and bluetooth control
+- USB charge control
+- Keyboard backlight control
+- Battery life extender control
+
+I'll try to clean that up and send some patches in one week or two.
+
 -- 
-1.7.3.4
-
+Corentin Chary
+http://xf.iksaif.net
