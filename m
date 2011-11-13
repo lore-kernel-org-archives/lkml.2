@@ -1,124 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab1KMMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 07:20:25 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58103 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab1KMMUO convert rfc822-to-8bit (ORCPT
+	id S1752983Ab1KMMt4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 07:49:56 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33728 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab1KMMty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 07:20:14 -0500
+	Sun, 13 Nov 2011 07:49:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1321179449-6675-5-git-send-email-gilad@benyossef.com>
-References: <1321179449-6675-1-git-send-email-gilad@benyossef.com>
-	<1321179449-6675-5-git-send-email-gilad@benyossef.com>
-Date: Sun, 13 Nov 2011 20:20:12 +0800
-Message-ID: <CAJd=RBC0eTkjF8CSKXv-SK5Zef1G+9x-FUYRBXKmVg6Gbno5gw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Hillf Danton <dhillf@gmail.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1321143760.20271.31.camel@x61.thuisdomein>
+References: <1321143760.20271.31.camel@x61.thuisdomein>
+Date: Sun, 13 Nov 2011 07:49:52 -0500
+Message-ID: <CA+5PVA79SP3HvDqOx1Tducggnh=s3arA4JOdWSgMbY_9SveSNg@mail.gmail.com>
+Subject: Re: [PATCH] [TRIVIAL] powerpc/4xx: Fix typo 'PCC4xx_MSI'
+From: Josh Boyer <jwboyer@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jiri Kosina <trivial@kernel.org>, Rupjyoti Sarmah <rsarmah@amcc.com>,
+        Tirumala R Marri <tmarri@apm.com>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 6:17 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> flush_all() is called for each kmem_cahce_destroy(). So every cache
-> being destroyed dynamically ended up sending an IPI to each CPU in the
-> system, regardless if the cache has ever been used there.
->
-> For example, if you close the Infinband ipath driver char device file,
-> the close file ops calls kmem_cache_destroy(). So running some
-> infiniband config tool on one a single CPU dedicated to system tasks
-> might interrupt the rest of the 127 CPUs I dedicated to some CPU
-> intensive task.
->
-> I suspect there is a good chance that every line in the output of "git
-> grep kmem_cache_destroy linux/ | grep '\->'" has a similar scenario.
->
-> This patch attempts to rectify this issue by sending an IPI to flush
-> the per cpu objects back to the free lists only to CPUs that seems to
-> have such objects.
->
-> The check which CPU to IPI is racy but we don't care since asking a
-> CPU without per cpu objects to flush does no damage and as far as I
-> can tell the flush_all by itself is racy against allocs on remote
-> CPUs anyway, so if you meant the flush_all to be determinstic, you
-> had to arrange for locking regardless.
->
-> Without this patch the following artificial test case:
->
-> $ cd /sys/kernel/slab
-> $ for DIR in *; do cat $DIR/alloc_calls > /dev/null; done
->
-> produces 166 IPIs on an cpuset isolated CPU. With it it produces none.
->
-> The code path of memory allocation failure for CPUMASK_OFFSTACK=y
-> config was tested using fault injection framework.
->
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: linux-mm@kvack.org
-> CC: Christoph Lameter <cl@linux-foundation.org>
-> CC: Pekka Enberg <penberg@kernel.org>
-> CC: Matt Mackall <mpm@selenic.com>
-> CC: Sasha Levin <levinsasha928@gmail.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Andi Kleen <andi@firstfloor.org>
+On Sat, Nov 12, 2011 at 7:22 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
->  mm/slub.c |   15 ++++++++++++++-
->  1 files changed, 14 insertions(+), 1 deletions(-)
+> 0) This corrects an obvious typo. It is untested.
 >
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 7d2a996..caf4b3a 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2006,7 +2006,20 @@ static void flush_cpu_slab(void *d)
->
->  static void flush_all(struct kmem_cache *s)
->  {
-> -       on_each_cpu(flush_cpu_slab, s, 1);
-> +       cpumask_var_t cpus;
-> +       struct kmem_cache_cpu *c;
-> +       int cpu;
-> +
-> +       if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
+> 1) This could influence the code generated for the "AMCC PPC440SPe
+> evaluation board". So I've CC'd the people involved in commit 3fb7933850
+> ("powerpc/4xx: Adding PCIe MSI support"), which introduced this typo, to
+> actually test this.
 
-Perhaps, the technique of local_cpu_mask defined in kernel/sched_rt.c
-could be used to replace the above atomic allocation.
+My linux.vnet.ibm.com address should be bouncing by now.  Anyway,
+patch looks good.
 
-Best regards
+Acked-by: Josh Boyer <jwboyer@gmail.com>
 
-Hillf
-
-> +               for_each_online_cpu(cpu) {
-> +                       c = per_cpu_ptr(s->cpu_slab, cpu);
-> +                       if (c && c->page)
-> +                               cpumask_set_cpu(cpu, cpus);
-> +               }
-> +               on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
-> +               free_cpumask_var(cpus);
-> +       } else
-> +               on_each_cpu(flush_cpu_slab, s, 1);
->  }
->
->  /*
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
+josh
