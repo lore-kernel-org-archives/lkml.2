@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab1KMTYV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 14:24:21 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:52307 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab1KMTYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 14:24:20 -0500
-Date: Sun, 13 Nov 2011 20:24:17 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Subject: WARNING: at fs/sysfs/sysfs.h:195 (during boot)
-Message-ID: <20111113192417.GA1659@x4.trippels.de>
+	id S1754518Ab1KMTdc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 14:33:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab1KMTdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 14:33:31 -0500
+Date: Sun, 13 Nov 2011 20:28:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>, Nathan Lynch <ntl@pobox.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serue@us.ibm.com>, Daniel Lezcano <dlezcano@fr.ibm.com>
+Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
+	pids
+Message-ID: <20111113192848.GC4633@redhat.com>
+References: <4EBCF4E7.4090002@parallels.com> <20111111152532.GA22640@redhat.com> <4EBD461E.1000106@parallels.com> <CAOS58YOW5KpP3OJDd5PqsMUg6PicnLW6jH_5Hb7WGPsnCYXGBw@mail.gmail.com> <CAOS58YOS77+WZt19qu_72DPgEPdwTdkD88J6RNR4a3x0h-2Qkw@mail.gmail.com> <4EBD4ACB.2070001@parallels.com> <20111111162200.GA24737@google.com> <4EBD522E.2000203@parallels.com> <20111111170244.GB24737@google.com> <4EBD57D4.1060503@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4EBD57D4.1060503@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm seeing this for the fist time:
+On 11/11, Pavel Emelyanov wrote:
+>
+> Hm, so intrusiveness is your main concern here, I see.
 
-...
-XFS (sda): Mounting Filesystem
-XFS (sda): Ending clean mount
-ATL1E 0000:02:00.0: irq 40 for MSI/MSI-X
-ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
-ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
-udevd[888]: starting version 171
-------------[ cut here ]------------
-WARNING: at fs/sysfs/sysfs.h:195 sysfs_get_inode+0x136/0x140()
-Hardware name: System Product Name
-Pid: 945, comm: udevadm Not tainted 3.2.0-rc1-00252-g8f042aa #49
-Call Trace:
- [<ffffffff81072795>] warn_slowpath_common+0x75/0xb0
- [<ffffffff81072895>] warn_slowpath_null+0x15/0x20
- [<ffffffff81167b26>] sysfs_get_inode+0x136/0x140
- [<ffffffff811695df>] sysfs_lookup+0x6f/0x110
- [<ffffffff8111b739>] d_alloc_and_lookup+0x39/0x80
- [<ffffffff8111ca93>] do_lookup+0x283/0x390
- [<ffffffff8111d954>] path_lookupat+0x114/0x6d0
- [<ffffffff8111b946>] ? getname_flags+0x36/0x230
- [<ffffffff8111df3b>] do_path_lookup+0x2b/0x70
- [<ffffffff8111e3a8>] user_path_at_empty+0x58/0xb0
- [<ffffffff81169d4c>] ? sysfs_put_link+0x1c/0x20
- [<ffffffff81120ac4>] ? generic_readlink+0x84/0xa0
- [<ffffffff8111e40c>] user_path_at+0xc/0x10
- [<ffffffff811161e0>] vfs_fstatat+0x30/0x70
- [<ffffffff8112d94b>] ? mntput_no_expire+0x2b/0xe0
- [<ffffffff81116236>] vfs_stat+0x16/0x20
- [<ffffffff81116305>] sys_newstat+0x15/0x30
- [<ffffffff8111642e>] ? sys_readlinkat+0x7e/0xb0
- [<ffffffff814d2c7b>] system_call_fastpath+0x16/0x1b
----[ end trace 2226f614d7765573 ]---
-Adding 2097148k swap on /var/tmp/swap/swapfile.  Priority:-1 extents:2 across:2634672k
+To me, this is important.
 
-fs/sysfs/sysfs.h:195: 
-    WARN_ON(!atomic_read(&sd->s_count));
+> OK, let's assume we go with sysctl setting the last_pid.
+>
+> One of the major concerns with previous attempts have been - someone creates
+> a process with a pid that was in use by some app recently and screws things
+> up with pid reuse.
 
--- 
-Markus
+Good point.
+
+> My approach solves this,
+
+Yes. Although, can't resist, in a subtle way (imho). CLONE_CHILD_USEPIDS
+stops working after a clone() without this flag.
+
+> how can sysctl handle it? Allowing
+> the last_pid change by the CAP_SYA_ADMIN
+
+Yes, when I suggested set_last_pid I assumed that it needs CAP_SYS_ADMIN.
+
+> only is not an option, since people
+> are looking forward to non-root restore.
+
+But CLONE_NEWPID needs CAP_SYS_ADMIN too ?
+
+Anyway, I do not pretend I understand the problem space. And probably
+it would be more convenient to change the creds before forking some
+children with the predefined pids, I do not know.
+
+So yes, I agree, CLONE_CHILD_USEPIDS wins here. Perhaps set_last_pid
+needs another sysctl(set_last_pid_allowed)/whatever, or another idea.
+Or we should use CLONE_CHILD_USEPIDS ;)
+
+Let me repeat. It is not that I strongly against CLONE_CHILD_USEPIDS
+(although yes, I can't say personally I like it very much ;). Just
+I am trying to ensure we can't make something more clear/clean/simple,
+at least from the kernel pov. Especially because you are trying to
+establish the new user-visible API.
+
+Oleg.
+
