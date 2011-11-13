@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab1KMU7u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 15:59:50 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50446 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab1KMU7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 15:59:49 -0500
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
-        syed rafiuddin <rafiuddin.sayed@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 9/9] bq27x00: Fix OOPS caused by unregistring bq27x00 driver
-Date: Sun, 13 Nov 2011 21:54:16 +0100
-Message-ID: <45584927.uAIXTvEKdg@pali-elitebook>
-User-Agent: KMail/4.7.3 (Linux/3.1.0-2-generic; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <1320108191-6647-9-git-send-email-pali.rohar@gmail.com>
-References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com> <1320108191-6647-1-git-send-email-pali.rohar@gmail.com> <1320108191-6647-9-git-send-email-pali.rohar@gmail.com>
+	id S1754692Ab1KMVCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 16:02:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752011Ab1KMVCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 16:02:06 -0500
+Date: Sun, 13 Nov 2011 23:03:14 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: mst@redhat.com, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
+Message-ID: <20111113210256.GA31621@redhat.com>
+References: <patchbomb.1320306168@localhost6.localdomain6>
+ <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart57469943.3BPAOjhCSp"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 03, 2011 at 06:12:53PM +1030, Rusty Russell wrote:
+> A virtio driver does virtqueue_add_buf() multiple times before finally
+> calling virtqueue_kick(); previously we only exposed the added buffers
+> in the virtqueue_kick() call.  This means we don't need a memory
+> barrier in virtqueue_add_buf(), but it reduces concurrency as the
+> device (ie. host) can't see the buffers until the kick.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
---nextPart57469943.3BPAOjhCSp
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="iso-8859-1"
+In the past I played with a patch like this, but I didn't see a
+performance gain either way. Do you see any gain?
 
-On Tuesday 01 November 2011 01:43:11 you wrote:
-> * power_supply_unregister call bq27x00_battery_get_property which cal=
-l
-> bq27x00_battery_poll * make sure that bq27x00_battery_poll will not c=
-all
-> schedule_delayed_work again after unregister (which cause OOPS)
->=20
-> Signed-off-by: Pali Roh=E1r <pali.rohar@gmail.com>
+I'm a bit concerned that with this patch, a buggy driver that
+adds more than 2^16 descriptors without a kick
+would seem to work sometimes. Let's add WARN_ON(vq->num_added > (1 << 16))?
+
 > ---
->  drivers/power/bq27x00_battery.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/power/bq27x00_battery.c
-> b/drivers/power/bq27x00_battery.c index 15ecd42..29ce907 100644
-> --- a/drivers/power/bq27x00_battery.c
-> +++ b/drivers/power/bq27x00_battery.c
-> @@ -722,6 +722,10 @@ static int bq27x00_powersupply_init(struct
-> bq27x00_device_info *di)
->=20
->  static void bq27x00_powersupply_unregister(struct bq27x00_device_inf=
-o *di)
->  {
-> +=09/* power_supply_unregister call bq27x00_battery_get_property whic=
-h call
-> bq27x00_battery_poll */ +=09/* make sure that bq27x00_battery_poll wi=
-ll not
-> call schedule_delayed_work again after unregister (which cause OOPS) =
-*/
-> +=09poll_interval =3D 0;
+>  drivers/virtio/virtio_ring.c |   37 ++++++++++++++++++++++---------------
+>  1 file changed, 22 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -227,9 +227,15 @@ add_head:
+>  
+>  	/* Put entry in available array (but don't update avail->idx until they
+>  	 * do sync). */
+> -	avail = ((vq->vring.avail->idx + vq->num_added++) & (vq->vring.num-1));
+> +	avail = (vq->vring.avail->idx & (vq->vring.num-1));
+>  	vq->vring.avail->ring[avail] = head;
+>  
+> +	/* Descriptors and available array need to be set before we expose the
+> +	 * new available array entries. */
+> +	virtio_wmb();
+> +	vq->vring.avail->idx++;
+> +	vq->num_added++;
 > +
->  =09cancel_delayed_work_sync(&di->work);
->=20
->  =09bq27x00_battery_reg_exit(di);
-
-Can somebody review this patch series? At least this last patch fix reb=
-ooting=20
-device Nokia N900 after unloading bq27x00_battery module with rmmod!
-
---=20
-Pali Roh=E1r
-pali.rohar@gmail.com
---nextPart57469943.3BPAOjhCSp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk7ALngACgkQi/DJPQPkQ1K2MACeOIxst+/cPzt+2gL6Kd/szGEd
-GmIAoJlUuPIB/eQzqdr5GwMB4s/oIgr5
-=1RN1
------END PGP SIGNATURE-----
-
---nextPart57469943.3BPAOjhCSp--
-
+>  	pr_debug("Added buffer head %i to %p\n", head, vq);
+>  	END_USE(vq);
+>  
+> @@ -248,13 +254,10 @@ bool virtqueue_kick_prepare(struct virtq
+>  	 * new available array entries. */
+>  	virtio_wmb();
+>  
+> -	old = vq->vring.avail->idx;
+> -	new = vq->vring.avail->idx = old + vq->num_added;
+> +	old = vq->vring.avail->idx - vq->num_added;
+> +	new = vq->vring.avail->idx;
+>  	vq->num_added = 0;
+>  
+> -	/* Need to update avail index before checking if we should notify */
+> -	virtio_mb();
+> -
+>  	if (vq->event) {
+>  		needs_kick = vring_need_event(vring_avail_event(&vq->vring),
+>  					      new, old);
+> 
+> 
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
