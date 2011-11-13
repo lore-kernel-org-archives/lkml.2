@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab1KMKf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 05:35:29 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:59400 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab1KMKf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 05:35:27 -0500
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Mike Dunn <mikedunn@newsguy.com>
-Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 13/16] mtd/docg3: add ECC correction code
-References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
-	<1320912342-30147-14-git-send-email-robert.jarzmik@free.fr>
-	<4EBECDCB.306@newsguy.com>
-X-URL: http://belgarath.falguerolles.org/
-Date: Sun, 13 Nov 2011 11:35:17 +0100
-In-Reply-To: <4EBECDCB.306@newsguy.com> (Mike Dunn's message of "Sat, 12 Nov
-	2011 11:49:31 -0800")
-Message-ID: <87mxc0ia3e.fsf@free.fr>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.3 (gnu/linux)
+	id S1752595Ab1KMKgD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 05:36:03 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60912 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab1KMKgB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 05:36:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20111113103202.GG27746@n2100.arm.linux.org.uk>
+References: <1321147946-3639-1-git-send-email-consul.kautuk@gmail.com>
+	<20111113103202.GG27746@n2100.arm.linux.org.uk>
+Date: Sun, 13 Nov 2011 05:36:00 -0500
+Message-ID: <CAFPAmTRiYqNOUeE2D39jth=OCFHaEZ8zBqeD4DXv2TqHHdKE1g@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v3] arch/arm/mm/fault.c: Porting OOM changes into __do_page_fault
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Dunn <mikedunn@newsguy.com> writes:
+Thank you, Russell.
 
-> On 11/10/2011 12:05 AM, Robert Jarzmik wrote:
->>  
->> +if MTD_DOCG3
->> +config BCH_CONST_M
->> +	default 14
->> +config BCH_CONST_T
->> +	default 4
->> +endif
+I will post version 4 of this patch again to you for review with your
+suggested changes ASAP.
+
+On Sun, Nov 13, 2011 at 5:32 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sat, Nov 12, 2011 at 08:32:26PM -0500, Kautuk Consul wrote:
+>> Commits d065bd810b6deb67d4897a14bfe21f8eb526ba99 and
+>> 37b23e0525d393d48a7d59f870b3bc061a30ccdb introduced changes into
+>> the x86 pagefault handler for making the page fault handler
+>> retryable as well as killable.
 >
+> Please include the summary of those commit IDs in the description.
 >
-> It might be better to let the user set this in the kernel config.  Doing it here
-> precludes the use of the algorithm by any other module that needs to use it with
-> different parameters.
-You're right.
-I'll shift that to mioa701 board code, where I'm sure no other BCH is necessary.
-
->> +static int doc_ecc_bch_fix_data(struct docg3 *docg3, void *buf, u8 *hwecc)
-> Nit: function name in comment is inconsistent with its actual name.
-Good catch. Will fix.
->> +	for (i = 0; i < numerrs; i++)
->> +		if (errorpos[i] < DOC_ECC_BCH_COVERED_BYTES*8)
->> +			/* error is located in data, correct it */
->> +			change_bit(errorpos[i], buf);
->> +out:
->> +	doc_dbg("doc_ecc_bch_fix_data: flipped %d bits\n", numerrs);
->> +	return numerrs;
->> +}
+>> These changes reduce the mmap_sem hold time(for x86), which is crucial
+>> during OOM killer invocation.
 >
+> We don't need (for x86) because that's not really relevant, and also
+> implied by the above paragraph.
 >
-> Where do you check for reads of a blank page?
-On stack frame above. Look at doc_read_oob():
-		if ((block0 >= DOC_LAYOUT_BLOCK_FIRST_DATA) &&
-		    (eccconf1 & DOC_ECCCONF1_BCH_SYNDROM_ERR) &&
-		    (eccconf1 & DOC_ECCCONF1_PAGE_IS_WRITTEN) &&
-                                \---> this is the key
-		    (ops->mode != MTD_OPS_RAW) &&
-		    (nbdata == DOC_LAYOUT_PAGE_SIZE)) {
-			ret = doc_ecc_bch_fix_data(docg3, buf, hwecc);
-
-Here you see that I'll make the error correction only if the page was written
-before. If it's blank, I continue reading without attempting ECC correction.
-
-> Not specifically related to this patch, but... are you sure you want to
-> initialize the ecc on every read?  I'm sure it's not necessary; you can just
-> leave it on; maybe turn it off if doing raw reads.  I know this is the case for
-> both the P3 and G4 when running under PalmOS / TrueFFS library.  I notice that
-> this function has delays and polls the status register in between calls to
-> cpu_relax(), so the performance hit is probably not insignificant, especiallu
-> when done for every 512 byte page.
-Well, that's some info.
-And yes, it adds some latency.
-Now for the necessity, I'm not fully convinced. I know that the ECC register is
-set up differently for reads and writes (that's the
-DOC_ECCCONF0_READ_MODE). When doc_read_oob() is called, I don't know if the
-previous action was a read or a write ...
-
-What I could do to improve performance would be to store in the docg3 private
-data if last action was a read or a write, and perform the doc_*_page_ecc_init()
-only if action changes. What do you think ?
-
-> Another nit (also not specifically related to this patch): bad name for this
-> function.  The ecc being read is not the BCH syndrome, as we now know.  This is
-> a pet peeve of mine; M-sys abused that word by misapplying it to the byts read
-> from the ecc hw, which confused the hell out of me as I tried to understand what
-> the hw was generating.
-Yes, I'll change the name to hw_ecc or something like that.
-
-Thanks for the review.
-
--- 
-Robert
+>> Porting these changes to ARM.
+>
+> "Port" not "Porting" - it's not something that happens continuously
+> (or even something that happens each time the commit text is read!)
+>
+>>
+>> Without these changes, my ARM board encounters many hang and livelock
+>> scenarios.
+>> After applying this patch, OOM feature performance improves according to
+>> my testing.
+>>
+>> Motivation for porting these changes:
+>> ------------------------------------
+>> Embedded devices such as SMART TVs and SMART phones have the capability
+>> to download and run apps from the internet.
+>> Due to this, the device user might run some malignant app that
+>> allocates too much memory.
+>> In that case, OOM killer performance is very important so that the
+>> device can free up memory for other apps as well as the kernel.
+>>
+>> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+>
+> This now looks better, thanks.
+>
+> I don't think we need the "motivation" section in here - it should be
+> below the '---'.
+>
+>> ---
+>>  arch/arm/mm/fault.c |   50 ++++++++++++++++++++++++++++++++++++++------------
+>>  1 files changed, 38 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+>> index aa33949..9aeba03 100644
+>> --- a/arch/arm/mm/fault.c
+>> +++ b/arch/arm/mm/fault.c
+>> @@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
+>>
+>>  static int __kprobes
+>>  __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
+>> -             struct task_struct *tsk)
+>> +             unsigned int flags, struct task_struct *tsk)
+>>  {
+>>       struct vm_area_struct *vma;
+>>       int fault;
+>> @@ -257,13 +257,9 @@ good_area:
+>>        * If for any reason at all we couldn't handle the fault, make
+>>        * sure we exit gracefully rather than endlessly redo the fault.
+>>        */
+>> -     fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
+>> +     fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
+>>       if (unlikely(fault & VM_FAULT_ERROR))
+>>               return fault;
+>> -     if (fault & VM_FAULT_MAJOR)
+>> -             tsk->maj_flt++;
+>> -     else
+>> -             tsk->min_flt++;
+>>       return fault;
+>>
+>>  check_stack:
+>> @@ -279,6 +275,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>>       struct task_struct *tsk;
+>>       struct mm_struct *mm;
+>>       int fault, sig, code;
+>> +     int write = fsr & FSR_WRITE;
+>> +     unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+>> +                                     (write ? FAULT_FLAG_WRITE : 0);
+>>
+>>       if (notify_page_fault(regs, fsr))
+>>               return 0;
+>> @@ -305,6 +304,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>>       if (!down_read_trylock(&mm->mmap_sem)) {
+>>               if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
+>>                       goto no_context;
+>> +retry:
+>>               down_read(&mm->mmap_sem);
+>>       } else {
+>>               /*
+>> @@ -320,14 +320,40 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>>  #endif
+>>       }
+>>
+>> -     fault = __do_page_fault(mm, addr, fsr, tsk);
+>> -     up_read(&mm->mmap_sem);
+>> +     fault = __do_page_fault(mm, addr, fsr, flags, tsk);
+>> +
+>> +     /* If we need to retry but a fatal signal is pending, handle the
+>> +      * signal first. We do not need to release the mmap_sem because
+>> +      * it would already be released in __lock_page_or_retry in
+>> +      * mm/filemap.c. */
+>> +     if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
+>> +             return 0;
+>>
+>> +     /*
+>> +      * Major/minor page fault accounting is only done on the
+>> +      * initial attempt. If we go through a retry, it is extremely
+>> +      * likely that the page will be found in page cache at that point.
+>> +      */
+>>       perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+>> -     if (fault & VM_FAULT_MAJOR)
+>> -             perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
+>> -     else if (fault & VM_FAULT_MINOR)
+>> -             perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
+>> +     if (flags & FAULT_FLAG_ALLOW_RETRY) {
+>> +             if (fault & VM_FAULT_MAJOR) {
+>> +                     tsk->maj_flt++;
+>> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
+>> +                                   regs, addr);
+>> +             } else {
+>> +                     tsk->min_flt++;
+>> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
+>> +                                   regs, addr);
+>> +             }
+>> +             if (fault & VM_FAULT_RETRY) {
+>> +                     /* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
+>> +                      * of starvation. */
+>> +                     flags &= ~FAULT_FLAG_ALLOW_RETRY;
+>> +                     goto retry;
+>> +             }
+>> +     }
+>> +
+>> +     up_read(&mm->mmap_sem);
+>>
+>>       /*
+>>        * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
+>> --
+>> 1.7.5.4
+>>
+>
