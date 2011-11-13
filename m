@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab1KMTP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 14:15:26 -0500
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:37298 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab1KMTPZ (ORCPT
+	id S1754367Ab1KMTYV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 14:24:21 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:52307 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1KMTYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 14:15:25 -0500
-Subject: [PATCH] ASoC: davinci: drop SFFSDR_FPGA and CONFIG_SFFSDR_FPGA
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Nov 2011 20:15:14 +0100
-Message-ID: <1321211714.20271.85.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Nov 2011 14:24:20 -0500
+Date: Sun, 13 Nov 2011 20:24:17 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Subject: WARNING: at fs/sysfs/sysfs.h:195 (during boot)
+Message-ID: <20111113192417.GA1659@x4.trippels.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 08bd168696 ("ASoC: Add driver for the Lyrtech SFFSDR board")
-added a reference to a Kconfig symbol SFFSDR_FPGA. Commit ac37373b64
-("ASoC: DaVinci: Fix SFFSDR compilation error.") added a macro
-CONFIG_SFFSDR_FPGA. But there's no Kconfig symbol SFFSDR_FPGA and no
-define of CONFIG_SFFSDR_FPGA. So the select of SFFSDR_FPGA is a nop. It
-can be dropped. The checks for CONFIG_SFFSDR_FPGA can also be dropped.
+I'm seeing this for the fist time:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested, as this needs (build, etc.) testing if we want to be
-thorough. But I do not have the hardware and neither do I have the
-needed toolchain at hand.
+...
+XFS (sda): Mounting Filesystem
+XFS (sda): Ending clean mount
+ATL1E 0000:02:00.0: irq 40 for MSI/MSI-X
+ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+udevd[888]: starting version 171
+------------[ cut here ]------------
+WARNING: at fs/sysfs/sysfs.h:195 sysfs_get_inode+0x136/0x140()
+Hardware name: System Product Name
+Pid: 945, comm: udevadm Not tainted 3.2.0-rc1-00252-g8f042aa #49
+Call Trace:
+ [<ffffffff81072795>] warn_slowpath_common+0x75/0xb0
+ [<ffffffff81072895>] warn_slowpath_null+0x15/0x20
+ [<ffffffff81167b26>] sysfs_get_inode+0x136/0x140
+ [<ffffffff811695df>] sysfs_lookup+0x6f/0x110
+ [<ffffffff8111b739>] d_alloc_and_lookup+0x39/0x80
+ [<ffffffff8111ca93>] do_lookup+0x283/0x390
+ [<ffffffff8111d954>] path_lookupat+0x114/0x6d0
+ [<ffffffff8111b946>] ? getname_flags+0x36/0x230
+ [<ffffffff8111df3b>] do_path_lookup+0x2b/0x70
+ [<ffffffff8111e3a8>] user_path_at_empty+0x58/0xb0
+ [<ffffffff81169d4c>] ? sysfs_put_link+0x1c/0x20
+ [<ffffffff81120ac4>] ? generic_readlink+0x84/0xa0
+ [<ffffffff8111e40c>] user_path_at+0xc/0x10
+ [<ffffffff811161e0>] vfs_fstatat+0x30/0x70
+ [<ffffffff8112d94b>] ? mntput_no_expire+0x2b/0xe0
+ [<ffffffff81116236>] vfs_stat+0x16/0x20
+ [<ffffffff81116305>] sys_newstat+0x15/0x30
+ [<ffffffff8111642e>] ? sys_readlinkat+0x7e/0xb0
+ [<ffffffff814d2c7b>] system_call_fastpath+0x16/0x1b
+---[ end trace 2226f614d7765573 ]---
+Adding 2097148k swap on /var/tmp/swap/swapfile.  Priority:-1 extents:2 across:2634672k
 
-1) Note that there's no file named *plat-sffsdr/sffsdr-fpga.h in the
-tree. Neither is there a function or a macro named
-sffsdr_fpga_set_codec_fs. So defining CONFIG_SFFSDR_FPGA will never
-work.
+fs/sysfs/sysfs.h:195: 
+    WARN_ON(!atomic_read(&sd->s_count));
 
- sound/soc/davinci/Kconfig          |    1 -
- sound/soc/davinci/davinci-sffsdr.c |    9 ---------
- 2 files changed, 0 insertions(+), 10 deletions(-)
-
-diff --git a/sound/soc/davinci/Kconfig b/sound/soc/davinci/Kconfig
-index 9e11a14..6a91206 100644
---- a/sound/soc/davinci/Kconfig
-+++ b/sound/soc/davinci/Kconfig
-@@ -59,7 +59,6 @@ config SND_DAVINCI_SOC_SFFSDR
- 	depends on SND_DAVINCI_SOC && MACH_SFFSDR
- 	select SND_DAVINCI_SOC_I2S
- 	select SND_SOC_PCM3008
--	select SFFSDR_FPGA
- 	help
- 	  Say Y if you want to add support for SoC audio on
- 	  Lyrtech SFFSDR board.
-diff --git a/sound/soc/davinci/davinci-sffsdr.c b/sound/soc/davinci/davinci-sffsdr.c
-index 0fe558c..d650c2d 100644
---- a/sound/soc/davinci/davinci-sffsdr.c
-+++ b/sound/soc/davinci/davinci-sffsdr.c
-@@ -24,9 +24,6 @@
- 
- #include <asm/dma.h>
- #include <asm/mach-types.h>
--#ifdef CONFIG_SFFSDR_FPGA
--#include <asm/plat-sffsdr/sffsdr-fpga.h>
--#endif
- 
- #include <mach/edma.h>
- 
-@@ -53,13 +50,11 @@ static int sffsdr_hw_params(struct snd_pcm_substream *substream,
- 	/* Fsref can be 32000, 44100 or 48000. */
- 	fs = params_rate(params);
- 
--#ifndef CONFIG_SFFSDR_FPGA
- 	/* Without the FPGA module, the Fs is fixed at 44100 Hz */
- 	if (fs != 44100) {
- 		pr_debug("warning: only 44.1 kHz is supported without SFFSDR FPGA module\n");
- 		return -EINVAL;
- 	}
--#endif
- 
- 	/* set cpu DAI configuration */
- 	ret = snd_soc_dai_set_fmt(cpu_dai, AUDIO_FORMAT);
-@@ -68,11 +63,7 @@ static int sffsdr_hw_params(struct snd_pcm_substream *substream,
- 
- 	pr_debug("sffsdr_hw_params: rate = %d Hz\n", fs);
- 
--#ifndef CONFIG_SFFSDR_FPGA
- 	return 0;
--#else
--	return sffsdr_fpga_set_codec_fs(fs);
--#endif
- }
- 
- static struct snd_soc_ops sffsdr_ops = {
 -- 
-1.7.4.4
-
+Markus
