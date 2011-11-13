@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab1KMQoi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 11:44:38 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51669 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab1KMQoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 11:44:37 -0500
-Date: Sun, 13 Nov 2011 17:44:32 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 03/10] threadgroup: extend threadgroup_lock() to cover
- exit and exec
-Message-ID: <20111113164426.GB9446@somewhere>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
+	id S1754207Ab1KMQub (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 11:50:31 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:53223 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752891Ab1KMQua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 11:50:30 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Bob Liu <lliubbo@gmail.com>
+Subject: Re: Blackfin.git tree change
+Date: Sun, 13 Nov 2011 11:50:27 -0500
+User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Linux-Kernel" <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, sonic.zhang@analog.com
+References: <CAA_GA1f8+6bqXGXo33GDbJmXvaqdD-qMUh=ejx0+Ag-shmc0uw@mail.gmail.com> <20111113231944.4677bd7a2154975c989663ab@canb.auug.org.au> <CAA_GA1fFspdayjpLNpm1C-kPug6n7LXyJ0dqiX=3d_gHt2U9xg@mail.gmail.com>
+In-Reply-To: <CAA_GA1fFspdayjpLNpm1C-kPug6n7LXyJ0dqiX=3d_gHt2U9xg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320191193-8110-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart660606697.167xMpUnOm";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111131150.28881.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:46:26PM -0700, Tejun Heo wrote:
-> threadgroup_lock() protected only protected against new addition to
-> the threadgroup, which was inherently somewhat incomplete and
-> problematic for its only user cgroup.  On-going migration could race
-> against exec and exit leading to interesting problems - the symmetry
-> between various attach methods, task exiting during method execution,
-> ->exit() racing against attach methods, migrating task switching basic
-> properties during exec and so on.
-> 
-> This patch extends threadgroup_lock() such that it protects against
-> all three threadgroup altering operations - fork, exit and exec.  For
-> exit, threadgroup_change_begin/end() calls are added to exit path.
-> For exec, threadgroup_[un]lock() are updated to also grab and release
-> cred_guard_mutex.
-> 
-> With this change, threadgroup_lock() guarantees that the target
-> threadgroup will remain stable - no new task will be added, no new
-> PF_EXITING will be set and exec won't happen.
-> 
-> The next patch will update cgroup so that it can take full advantage
-> of this change.
+--nextPart660606697.167xMpUnOm
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I don't want to nitpick really, but IMHO the races involved in exit and exec
-are too different, specific and complicated on their own to be solved in a
-single one patch. This should be split in two things.
+On Sunday 13 November 2011 09:50:41 Bob Liu wrote:
+> On Sun, Nov 13, 2011 at 8:19 PM, Stephen Rothwell wrote:
+> > The only thing I did notice, is that this commit was in Mike's tree but
+> > is not in yours:
+> >=20
+> > Author: Sonic Zhang <sonic.zhang@analog.com>
+> > Date:   Mon Aug 1 17:53:21 2011 +0800
+> >=20
+> >    Blackfin: add serial TX IRQ in individual platform resource
+> >=20
+> >    The serial TX IRQ is not simply (RX IRQ + 1) on some Blackfin chips,
+> >    so move the values to the platform resources.
+> >=20
+> >    Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> >    Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> >=20
+> > Just in case it was forgotten.
+>=20
+> Sorry for that, I thought that patch has been merged to mainline.
+> I'll update it soon. Thanks.
 
-The specific problems and their fix need to be described more in detail
-in the changelog because the issues are very tricky.
+i figured this would be a good test for you merging things ;).  this patch=
+=20
+needs to be merged into mainline before 3.2 is released ... and the sooner,=
+=20
+the better.
 
-The exec case:
+it was waiting on the tty/serial layers to be merged, and now that they hav=
+e,=20
+that patch can now be merged.
+=2Dmike
 
-IIUC, the race in exec is about the group leader that can be changed
-to become the exec'ing thread, making while_each_thread() unsafe.
-We also have other things happening there like all the other threads
-in the group that get killed, but that should be handled by the threadgroup_change_begin()
-you put in the exit path.
-The old leader is also killed but release_task() -> __unhash_process() is called
-for it manually from the exec path. However this thread too should be covered by your
-synchronisation in exit().
+--nextPart660606697.167xMpUnOm
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-So after your protection in the exit path, the only thing to protect against in exec
-is that group_leader that can change concurrently. But I may be missing something in the picture.
-Also note this is currently protected by the tasklist readlock. Cred guard mutex is
-certainly better, I just don't remember if you remove the tasklist lock in a
-further patch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-The exit case:
+iQIcBAABAgAGBQJOv/VUAAoJEEFjO5/oN/WB4FgP/jYQbn53ktAvdzBXwb4a2gCw
+JVwinG+Gt6EIyfbufXjE120fASGF9ym4yObt732vVOI5u8fOHPJl+leXWu7fW3hn
+uk/r9yt0lh0momw42rRcK5xmScDC3q3ge2XDtHyn06EO4/Q4TGLFuJEksilDjx1Y
+jEi9ZHCuxapJo4Ed5Fg0m2zhpAPcrbPemerQgjNR3rdlr8xloHkHgCZA1D29z0ul
+Oo4e2RcMnbbSE44xhNxr31/BlKhQ/1fqS5dRWZcHTBU6Kev4BETRL2rc5F4RTPQd
+bNsmiqmRmWioebrDj4orTmzQPT/Ub6w4SCogGduIPsWQvkLIuDeqo74A0ENthL25
+SjJAOCJddYNuXXuKkkCiVppjynGtFczdAdncxMUh87Iaz6KQ+dLBjdcQwqyfPc6Q
+5wt/JquHg4weEkYk8OTzyaQg6oMNCpgs3I26lmt2Vgija/eV33Hgus6VkpSKFdEs
+nxYWACDScVzCKTAmLPpEvPIf2jC6Yx72y/3AFX5YYLDHdU1ohkku27Bt789kZfPv
+THcvHnLm1fnBdgdM0WtDzK3jW3IhSawJ3nXPT+fnL2Q1t7BiAqfjb8zXFhNrk7qu
+2U+8zknD92Kbwy9IAUngPz66smPmwf6No19l7DpIljtFqcxuSLHcL5iz9yvOy6Yc
+inpxsl4K0I1G8SOF+uau
+=t4CQ
+-----END PGP SIGNATURE-----
 
-There the issue is about racing against cgroup_exit() where the task can be
-assigned to the root cgroup. Is this really a problem in fact? I don't know
-if subsystems care about that. Perhaps some of them are buggy in that
-regard. At least the task counter handles that and it needs a
-->cancel_attach_task() for this purpose in the case the migration fails due to exit.
-Not sure about others. A real synchronization against exit is less error prone for sure.
-In the end that's probably a win.
+--nextPart660606697.167xMpUnOm--
