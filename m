@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab1KMW5x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 17:57:53 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45086 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab1KMW5w (ORCPT
+	id S1754261Ab1KMXBV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 18:01:21 -0500
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:40772 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab1KMXBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 17:57:52 -0500
-Date: Sun, 13 Nov 2011 23:57:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.2-rc1-rt1
-Message-ID: <alpine.LFD.2.02.1111132213220.2694@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 13 Nov 2011 18:01:20 -0500
+Subject: [PATCH] [TRIVIAL] usb: gadget: drop "select
+ USB_GADGET_S3C_HSOTG_PIO"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Nov 2011 00:01:12 +0100
+Message-ID: <1321225272.20271.107.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+There is no Kconfig symbol named USB_GADGET_S3C_HSOTG_PIO. The select
+statement for that symbol is a nop. Drop it.
 
-I'm pleased to announce the 3.2-rc1-rt1 release.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested with "make ARCH=arm menuconfig" before and after applying this
+patch. Identical .config files were generated, as was expected.
 
-It's a straight forward port of the 3.0-rt patch queue, which reduced
-the patch size by more than 25% from 807k to 580k. The diffstat change
-is:
+1) This select statement was introduced in commit 5b7d70c6db ("USB:
+Gadget driver for Samsung HS/OtG block"). I have no idea why.
 
- 429 files changed, 10118 insertions(+), 3000 deletions(-)
- 318 files changed,  8871 insertions(+), 1858 deletions(-)
+2) This concludes this ad hoc series of Kconfig cleanups: select
+statements with bogus Kconfig symbols. On to the next series, perhaps...
 
-Thanks to all who helped polishing patches and bringing them mainline!
+ drivers/usb/gadget/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index b21cd37..870a707 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -264,7 +264,6 @@ config USB_PXA27X
+ config USB_S3C_HSOTG
+ 	tristate "S3C HS/OtG USB Device controller"
+ 	depends on S3C_DEV_USB_HSOTG
+-	select USB_GADGET_S3C_HSOTG_PIO
+ 	select USB_GADGET_DUALSPEED
+ 	help
+ 	  The Samsung S3C64XX USB2.0 high-speed gadget controller
+-- 
+1.7.4.4
 
-The test results on my reference machine are in the 3.0-rt ballpark
-and I have not seen any frightening explosions so far.
-
-
-3.2-rc1-rt is not against 3.2-rc1 - it's against the post rc1
-commit 52e4c2a05256cb83cda12f3c2137ab1533344edb.
-
-   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=52e4c2a05256cb83cda12f3c2137ab1533344edb
-
-
-For non git users conveniance I uploaded a delta patch against
-3.2-rc1:
-
-   https://tglx.de/~tglx/rt/3.2/base/patch-3.2-rc1-52e4c2a05-rt1.patch.gz
-
-to get the base kernel on which the RT patch applies.
-
-
-The RT patch against 3.2-rc1-52e4c2a05 can be found here:
-
-   https://tglx.de/~tglx/rt/3.2/patch-3.2-rc1-52e4c2a05-rt1.patch.gz
-
-
-The split quilt queue is available at:
-
-   https://tglx.de/~tglx/rt/3.2/patches-3.2-rc1-52e4c2a05-rt1.tar.gz
-
-
-Enjoy,
-
-	tglx
