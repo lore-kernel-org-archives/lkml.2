@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab1KMHzE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 02:55:04 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65111 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1KMHzC convert rfc822-to-8bit (ORCPT
+	id S1751574Ab1KMIjl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 03:39:41 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60274 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab1KMIjk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 02:55:02 -0500
-From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Subject: Re: intel_idle causing 3.0.8 system reboot (was: if nolapic not used then system reboots after loading first module (possibly first irq using module))
-Date: Sun, 13 Nov 2011 08:54:55 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-rc1-00252-g8f042aa-dirty; KDE/4.7.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-References: <201110272327.14891.a.miskiewicz@gmail.com> <201110281954.39191.a.miskiewicz@gmail.com> <CAJvTdKmCgbebEOY7Ly=cE1ZV2GVG7hL5fE8LmK9nz7r8+BNPJQ@mail.gmail.com>
-In-Reply-To: <CAJvTdKmCgbebEOY7Ly=cE1ZV2GVG7hL5fE8LmK9nz7r8+BNPJQ@mail.gmail.com>
+	Sun, 13 Nov 2011 03:39:40 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1320606618.1428.76.camel@jaguar>
+References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
+	<1319385413-29665-7-git-send-email-gilad@benyossef.com>
+	<alpine.DEB.2.00.1110272304020.14619@router.home>
+	<CAOtvUMcHOysen7betBOwEJAjL-UVzvBfCf0fzmmBERFrivkOBA@mail.gmail.com>
+	<alpine.DEB.2.00.1111020351350.23788@router.home>
+	<1320606618.1428.76.camel@jaguar>
+Date: Sun, 13 Nov 2011 10:39:39 +0200
+Message-ID: <CAOtvUMfcus0Gx3z9XA9EEU-QQuAi4aMp7+_cNEVZzsDmzxLavQ@mail.gmail.com>
+Subject: Re: [PATCH v2 6/6] slub: only preallocate cpus_with_slabs if offstack
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201111130854.56201.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 of November 2011, Len Brown wrote:
-> > intel_idle.max_cstate=2 also makes the problem go away.
-> 
-> Is the system running with BIOS SETUP defaults?
+On Sun, Nov 6, 2011 at 9:10 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Fri, 28 Oct 2011, Gilad Ben-Yossef wrote:
+>> > I think if it is up to me, I recommend going the simpler †route that
+>> > does the allocation in flush_all using GFP_ATOMIC for
+>> > CPUMASK_OFFSTACK=y and sends an IPI to all CPUs if it fails, because
+>> > it is simpler code and in the end I believe it is also correct.
+>
+> On Wed, 2011-11-02 at 03:52 -0500, Christoph Lameter wrote:
+>> I support that. Pekka?
+>
+> Sure. I'm OK with that. Someone needs to run some tests to make sure
+> it's working with low memory conditions when GFP_ATOMIC allocations
+> fail, though.
 
-Tried also with "safe defaults (F8)" but that didn't help.
+I've just used the fault injection framework (which is really cool by
+the way) to inject an
+allocation failure for every cpumask alloc in slub.c flush_all in
+CONFIG_CPUMASK_OFFSTACK=y kernel and then forced each kmem cache
+to flush by reading sys/kernel/slab/*/alloc_calls and everything seems to be
+in order. dmesg log shows the fault injection failing the allocation,
+I get an extra debug
+trace from the cpumask allocation code and the system keeps chugging along.
 
-> Are there any BIOS SETUP options related to CPU idle states?
+While at it I did a similar thing for the drain_all_pages of
+mm/page_alloc.c (running
+a new version of the code from the previous patch) and forced the
+drain to be called
+by running ./hackbench 1000. Here again I saw log reports of the code
+path being
+called (from the fault injection framework), allocation failed and
+save for the debug
+trace the system continued to work fine (the OOm killer has killed by
+shell, but that
+is to be expected).
 
-Yes, there are
+Both of the above with the latest spin of the patch I'll send out soon
+after some more tests,
+so it looks good.
 
-"C state package limit setting" with values possible: Auto, C1, C3, C6, C7 
-(set to "Auto" here)
-"Intel EIST technology" -> Enabled
-"C1E support" -> Enabled
-"Intel C-STATE tech" -> Enabled
-"C1 Auto Demotion" -> Enabled
-"C3 Auto Demotion" -> Enabled
-
-> please boot with intel_idle.max_cstate=0
-> and send the output of these two commands:
-> 
-> dmesg |grep idle
-> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-
-[root@berta ~]# dmesg |grep idle
-[    0.000000] Command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
-console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
-[    0.000000] Kernel command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
-console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
-[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
-[    0.278494] using mwait in idle threads.
-[    4.330321] intel_idle: disabled
-[    5.794456] cpuidle: using governor ladder
-[    5.806755] cpuidle: using governor menu
-[root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-grep: /sys/devices/system/cpu/cpu0/cpuidle/*/*: No such file or directory
-
-There are only:
-[root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpuidle/*
-/sys/devices/system/cpu/cpuidle/current_driver:none
-/sys/devices/system/cpu/cpuidle/current_governor_ro:menu
-
-> 
-> thanks,
-> Len Brown, Intel Open Source Technology Center
-> 
-> >> # cat /proc/cpuinfo
-> >> processor       : 0
-> >> vendor_id       : GenuineIntel
-> >> cpu family      : 6
-> >> model           : 30
-> >> model name      : Intel(R) Xeon(R) CPU           X3430  @ 2.40GHz
-> >> stepping        : 5
-
+Thanks!
+Gilad
 
 -- 
-Arkadiusz Mi≈õkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
