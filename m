@@ -1,177 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1KMKgD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 05:36:03 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60912 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab1KMKgB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 05:36:01 -0500
+	id S1752727Ab1KMKl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 05:41:59 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:41976 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab1KMKl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 05:41:58 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Mike Dunn <mikedunn@newsguy.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/16] DocG3 fixes and write support
+References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
+	<4EBED0B8.1030307@newsguy.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Sun, 13 Nov 2011 11:41:49 +0100
+In-Reply-To: <4EBED0B8.1030307@newsguy.com> (Mike Dunn's message of "Sat, 12
+	Nov 2011 12:02:00 -0800")
+Message-ID: <87ipmoi9si.fsf@free.fr>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20111113103202.GG27746@n2100.arm.linux.org.uk>
-References: <1321147946-3639-1-git-send-email-consul.kautuk@gmail.com>
-	<20111113103202.GG27746@n2100.arm.linux.org.uk>
-Date: Sun, 13 Nov 2011 05:36:00 -0500
-Message-ID: <CAFPAmTRiYqNOUeE2D39jth=OCFHaEZ8zBqeD4DXv2TqHHdKE1g@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v3] arch/arm/mm/fault.c: Porting OOM changes into __do_page_fault
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you, Russell.
+Mike Dunn <mikedunn@newsguy.com> writes:
 
-I will post version 4 of this patch again to you for review with your
-suggested changes ASAP.
+> How did you figure out these operating modes and the protected part stuff?  From
+> reverse-engineering a disassembled binary?  I'm impressed.  You don't get that
+> level of detail from just monitoring cpu accesses to the device during normal
+> operation.
+Retro-engineering and the nandwrite tests.
+You see nandtest did not work. I could see why, and made some additionnal
+tests. The result was that writting to page 0 and page 1 gave back the AND of
+these both pages.
 
-On Sun, Nov 13, 2011 at 5:32 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Nov 12, 2011 at 08:32:26PM -0500, Kautuk Consul wrote:
->> Commits d065bd810b6deb67d4897a14bfe21f8eb526ba99 and
->> 37b23e0525d393d48a7d59f870b3bc061a30ccdb introduced changes into
->> the x86 pagefault handler for making the page fault handler
->> retryable as well as killable.
->
-> Please include the summary of those commit IDs in the description.
->
->> These changes reduce the mmap_sem hold time(for x86), which is crucial
->> during OOM killer invocation.
->
-> We don't need (for x86) because that's not really relevant, and also
-> implied by the above paragraph.
->
->> Porting these changes to ARM.
->
-> "Port" not "Porting" - it's not something that happens continuously
-> (or even something that happens each time the commit text is read!)
->
->>
->> Without these changes, my ARM board encounters many hang and livelock
->> scenarios.
->> After applying this patch, OOM feature performance improves according to
->> my testing.
->>
->> Motivation for porting these changes:
->> ------------------------------------
->> Embedded devices such as SMART TVs and SMART phones have the capability
->> to download and run apps from the internet.
->> Due to this, the device user might run some malignant app that
->> allocates too much memory.
->> In that case, OOM killer performance is very important so that the
->> device can free up memory for other apps as well as the kernel.
->>
->> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
->
-> This now looks better, thanks.
->
-> I don't think we need the "motivation" section in here - it should be
-> below the '---'.
->
->> ---
->>  arch/arm/mm/fault.c |   50 ++++++++++++++++++++++++++++++++++++++------------
->>  1 files changed, 38 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
->> index aa33949..9aeba03 100644
->> --- a/arch/arm/mm/fault.c
->> +++ b/arch/arm/mm/fault.c
->> @@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
->>
->>  static int __kprobes
->>  __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
->> -             struct task_struct *tsk)
->> +             unsigned int flags, struct task_struct *tsk)
->>  {
->>       struct vm_area_struct *vma;
->>       int fault;
->> @@ -257,13 +257,9 @@ good_area:
->>        * If for any reason at all we couldn't handle the fault, make
->>        * sure we exit gracefully rather than endlessly redo the fault.
->>        */
->> -     fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
->> +     fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
->>       if (unlikely(fault & VM_FAULT_ERROR))
->>               return fault;
->> -     if (fault & VM_FAULT_MAJOR)
->> -             tsk->maj_flt++;
->> -     else
->> -             tsk->min_flt++;
->>       return fault;
->>
->>  check_stack:
->> @@ -279,6 +275,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
->>       struct task_struct *tsk;
->>       struct mm_struct *mm;
->>       int fault, sig, code;
->> +     int write = fsr & FSR_WRITE;
->> +     unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
->> +                                     (write ? FAULT_FLAG_WRITE : 0);
->>
->>       if (notify_page_fault(regs, fsr))
->>               return 0;
->> @@ -305,6 +304,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
->>       if (!down_read_trylock(&mm->mmap_sem)) {
->>               if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
->>                       goto no_context;
->> +retry:
->>               down_read(&mm->mmap_sem);
->>       } else {
->>               /*
->> @@ -320,14 +320,40 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
->>  #endif
->>       }
->>
->> -     fault = __do_page_fault(mm, addr, fsr, tsk);
->> -     up_read(&mm->mmap_sem);
->> +     fault = __do_page_fault(mm, addr, fsr, flags, tsk);
->> +
->> +     /* If we need to retry but a fatal signal is pending, handle the
->> +      * signal first. We do not need to release the mmap_sem because
->> +      * it would already be released in __lock_page_or_retry in
->> +      * mm/filemap.c. */
->> +     if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
->> +             return 0;
->>
->> +     /*
->> +      * Major/minor page fault accounting is only done on the
->> +      * initial attempt. If we go through a retry, it is extremely
->> +      * likely that the page will be found in page cache at that point.
->> +      */
->>       perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
->> -     if (fault & VM_FAULT_MAJOR)
->> -             perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
->> -     else if (fault & VM_FAULT_MINOR)
->> -             perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
->> +     if (flags & FAULT_FLAG_ALLOW_RETRY) {
->> +             if (fault & VM_FAULT_MAJOR) {
->> +                     tsk->maj_flt++;
->> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
->> +                                   regs, addr);
->> +             } else {
->> +                     tsk->min_flt++;
->> +                     perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
->> +                                   regs, addr);
->> +             }
->> +             if (fault & VM_FAULT_RETRY) {
->> +                     /* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
->> +                      * of starvation. */
->> +                     flags &= ~FAULT_FLAG_ALLOW_RETRY;
->> +                     goto retry;
->> +             }
->> +     }
->> +
->> +     up_read(&mm->mmap_sem);
->>
->>       /*
->>        * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
->> --
->> 1.7.5.4
->>
->
+And from there, I checked what was the difference between DOCG3 IPL and SPL, and
+landed on the "mode" register.
+
+> BTW, I'm coming around to your thinking that the nand interface is not
+> appropriate for these chips.  Even though they are nand, the lack of any
+> standard nand interface means the nand base does not do much for you except
+> obfuscate.  Memory based bbt maintenance is handled in nand base, maybe a couple
+> other minor things.  I hope I change my mind; otherwise I'll have to rework the
+> G4 driver :-(
+I don't know for G4, but I'm more convinced for G3 as well, as NAND interface
+provides some state machine in the chip (where the last seek occured, ...).
+
+> I still strongly suspect that the G3 is very similiar to the P3 in my Treo
+> 650.  At some point down the road I'll test it out on the P3.  Device capacity
+> might be the only difference between the two devices.  If so, the G3 driver
+> might even work on the P3 right out of the box.
+And if not right out of the box, I'll bet on :
+ - adding a DOC_CHIPID_P3 ...
+ - and if the chip is bigger, amend doc_setup_addr_sector(0 and
+ doc_setup_writeaddr_sector() to input another byte of address (ie. add a line
+ with doc_flash_address(docg3, (sector >> 24) & 0xff).
+
+Cheers.
+
+--
+Robert
