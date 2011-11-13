@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1KMLDE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 06:03:04 -0500
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:40744 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab1KMLDD (ORCPT
+	id S1753481Ab1KMLLQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 06:11:16 -0500
+Received: from smtprelay.restena.lu ([158.64.1.62]:38404 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab1KMLLO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 06:03:03 -0500
-Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+	Sun, 13 Nov 2011 06:11:14 -0500
+Date: Sun, 13 Nov 2011 12:11:05 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
-References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Nov 2011 12:02:56 +0100
-Message-ID: <1321182176.20271.43.camel@x61.thuisdomein>
+Subject: Re: [resolved] Filesystem (directory) permissions meaning
+ difference for x86_64 and x86 for 3.1?
+Message-ID: <20111113121105.1092d733@neptune.home>
+In-Reply-To: <20111109215125.7c1c3d3a@neptune.home>
+References: <20111109215125.7c1c3d3a@neptune.home>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-13 at 11:31 +0100, Geert Uytterhoeven wrote:
-> commit 51c9d654c2def97827395a7fbfd0c6f865c26544 ("Staging: delete tty
-> drivers") removed the MVME167 serial driver, but forgot to remove these
-> references.
+On Wed, 09 November 2011 Bruno Prémont wrote:
+> On a x86_64 system I'm getting permission denied when trying to chdir()
+> into a directory where I have only 'x' permissions (be it with unix
+> permissions or with posix ACLs).
+> For the same layout of directory I can successfully chdir() on x86 as I
+> can with older kernels of 2.6 series.
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  arch/m68k/Kconfig.devices           |    2 +-
->  arch/m68k/configs/multi_defconfig   |    1 -
->  arch/m68k/configs/mvme16x_defconfig |    1 -
->  3 files changed, 1 insertions(+), 3 deletions(-)
+> In both cases the filesystem is tmpfs with support for posix ACLs and
+> kernel is 3.1.0.
 > 
-> diff --git a/arch/m68k/Kconfig.devices b/arch/m68k/Kconfig.devices
-> index 6033f5d..e01eeb2 100644
-> --- a/arch/m68k/Kconfig.devices
-> +++ b/arch/m68k/Kconfig.devices
-> @@ -128,7 +128,7 @@ config DN_SERIAL
->  
->  config SERIAL_CONSOLE
->  	bool "Support for serial port console"
-> -	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO) && (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || SERIAL167 || DN_SERIAL)
-> +	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO) && (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || DN_SERIAL)
+> 
+> Directory layout:
+> drwx--x---  3 root test   60 Nov  9 21:14 /tmp/btest
+> drwxrwx---  2 root test   40 Nov  9 21:14 /tmp/btest/subtest
+> drwxr-x---+ 3 root root   60 Nov  9 21:10 /tmp/test
+> drwxrwx---+ 2 root root   40 Nov  9 21:10 /tmp/test/subtest
+> 
+> Posix ACLs
+> # file: /tmp/test
+> # owner: root
+> # group: root
+> user::rwx
+> group::r-x
+> group:test:--x
+> mask::r-x
+> other::---
+> 
+> # file: test/subtest/
+> # owner: root
+> # group: root
+> user::rwx
+> group::r-x
+> group:test:rwx
+> mask::rwx
+> other::---
+> 
+> 
+> When executing as user test (with test as only group), on x86_64 I get
+> EPERM on chdir(X) where X is any one of the 4 directories above.
+> 
+> On x86 I can chdir() into the directory without issue (as expected),
+> and when in /tmp/test (or /tmp/btest) I get EPERM when trying to list
+> contents - expected as well. Under subtest I can list content.
+> 
+> The same results are obtained on XFS filesystem.
+> 
+> Any idea what's wrong?
 
-0) The SERIAL=y part can also be dropped. There's no Kconfig symbol
-SERIAL.
+The issue was two entries in /etc/group for the same group name but with
+two distinct GIDs :/
+This explains why I could not reproduce on a different system!
 
-1) I've been looking at this impressive dependency list a few days back.
-My impression was that it can be reduced to only AMIGA_BUILTIN_SERIAL=y.
-(After that this Kconfig symbol might better be renamed to
-AMIGA_BUILTIN_SERIAL_CONSOLE.)
-
-I might have a draft patch to drop the dependencies somewhere. I need to
-have another look at that (draft) patch before I can submit it.
-
->  	---help---
->  	  If you say Y here, it will be possible to use a serial port as the
->  	  system console (the system console is the device which receives all
-
-
-Paul Bolle
-
+Bruno
