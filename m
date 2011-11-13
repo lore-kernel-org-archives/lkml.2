@@ -1,148 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab1KMAvi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Nov 2011 19:51:38 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48628 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1KMAvh (ORCPT
+	id S1754710Ab1KMAxD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Nov 2011 19:53:03 -0500
+Received: from a2s42.a2hosting.com ([216.119.133.2]:60551 "EHLO
+	a2s42.a2hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab1KMAxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Nov 2011 19:51:37 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1 v2] arch/arm/mm/fault.c: Porting OOM changes into __do_page_fault
-Date: Sat, 12 Nov 2011 19:51:21 -0500
-Message-Id: <1321145481-3329-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 12 Nov 2011 19:53:01 -0500
+X-Greylist: delayed 2909 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Nov 2011 19:53:01 EST
+Message-ID: <4EBF099A.3090701@kerneldriver.org>
+Date: Sat, 12 Nov 2011 19:04:42 -0500
+From: David Cullen <david.cullen@kerneldriver.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM: Toshiba Satellite L775D-S7340 reboots during shutdown
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - a2s42.a2hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - kerneldriver.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits d065bd810b6deb67d4897a14bfe21f8eb526ba99 and
-37b23e0525d393d48a7d59f870b3bc061a30ccdb introduced changes into
-the x86 pagefault handler for makeing the page fault handler
-retryable as well as killable.
+Hello,
 
-These changes reduce the mmap_sem hold time(for x86), which is crucial
-during OOM killer invocation.
+Toshiba Satellite L775D-S7340 reboots during shutdown.
 
-Porting these changes to ARM.
+When I shutdown my machine when running the default kernel for Linux 
+Mint 11 and the default kernel for Ubuntu 11.10, the machine reboots 
+instead of halting.
 
-Without these changes, my ARM board encounters many hang and livelock
-scenarios.
-After applying this patch, OOM feature performance improves according to
-my testing.
+I am currently running
 
-Motivation for porting these changes:
-------------------------------------
-Embedded devices such as SMART TVs and SMART phones in the near future
-will have the capability to download and run apps from the internet.
-Due to this, the device user might run some malignant app that
-allocates too much memory.
-In that case, OOM killer performance is very important so that the
-device can free up memory for other apps as well as the kernel.
+> Linux drawork01 3.0.0-12-generic #20-Ubuntu SMP Fri Oct 7 14:56:25 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+>
+> Gnu C                  4.6.1
+> Gnu make               3.81
+> binutils               2.21.53.20110810
+> util-linux             2.19.1
+> mount                  support
+> module-init-tools      3.16
+> e2fsprogs              1.41.14
+> pcmciautils            015
+> Linux C Library        2.13
+> Dynamic linker (ldd)   2.13
+> Procps                 3.2.8
+> Net-tools              1.60
+> Kbd                    1.15.2
+> Sh-utils               8.5
+> wireless-tools         30
+> Modules Loaded         rfcomm bnep bluetooth parport_pc ppdev
+> nfsd binfmt_misc nfs lockd fscache auth_rpcgss nfs_acl sunrpc
+> vesafb uvcvideo videodev v4l2_compat_ioctl32 arc4
+> snd_hda_codec_realtek snd_seq_midi snd_hda_codec_hdmi psmouse
+> serio_raw rtl8192ce rtl8192c_common snd_hda_intel rtlwifi
+> snd_hda_codec k10temp snd_hwdep mac80211 snd_rawmidi snd_pcm
+> cfg80211 snd_seq_midi_event snd_seq sparse_keymap video snd_timer
+> snd_seq_device wmi fglrx snd soundcore snd_page_alloc i2c_piix4
+> lp parport usbhid hid ums_realtek usb_storage uas r8169
+> pata_atiixp ahci libahci
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/arm/mm/fault.c |   48 +++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 37 insertions(+), 11 deletions(-)
+I have the problem even without the fglrx driver.  I can uninstall 
+it and re-run
 
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index aa33949..7286786 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
- 
- static int __kprobes
- __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
--		struct task_struct *tsk)
-+		unsigned int flags, struct task_struct *tsk)
- {
- 	struct vm_area_struct *vma;
- 	int fault;
-@@ -257,13 +257,9 @@ good_area:
- 	 * If for any reason at all we couldn't handle the fault, make
- 	 * sure we exit gracefully rather than endlessly redo the fault.
- 	 */
--	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
- 	if (unlikely(fault & VM_FAULT_ERROR))
- 		return fault;
--	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
--	else
--		tsk->min_flt++;
- 	return fault;
- 
- check_stack:
-@@ -279,6 +275,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	int fault, sig, code;
-+	int write = fsr & FSR_WRITE;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+					(write ? FAULT_FLAG_WRITE : 0);
- 
- 	if (notify_page_fault(regs, fsr))
- 		return 0;
-@@ -305,6 +304,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	if (!down_read_trylock(&mm->mmap_sem)) {
- 		if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
- 			goto no_context;
-+retry:
- 		down_read(&mm->mmap_sem);
- 	} else {
- 		/*
-@@ -320,14 +320,40 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- #endif
- 	}
- 
--	fault = __do_page_fault(mm, addr, fsr, tsk);
-+	fault = __do_page_fault(mm, addr, fsr, flags, tsk);
-+
-+	/* If we need to retry but a fatal signal is pending, handle the
-+	 * signal first. We do not need to release the mmap_sem because
-+	 * it would already be released in __lock_page_or_retry in
-+	 * mm/filemap.c. */
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
-+
- 	up_read(&mm->mmap_sem);
- 
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
- 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
--	if (fault & VM_FAULT_MAJOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
--	else if (fault & VM_FAULT_MINOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+				      regs, addr);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+				      regs, addr);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			 * of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			goto retry;
-+		}
-+	}
- 
- 	/*
- 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
+     sh scripts/ver_linux
+
+if that is required for this defect to be looked at.
+
 -- 
-1.7.5.4
-
+Thank you,
+David Cullen
