@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab1KMSUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 13:20:39 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33334 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab1KMSUi (ORCPT
+	id S1754245Ab1KMSVp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 13:21:45 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33238 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab1KMSVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 13:20:38 -0500
-Date: Sun, 13 Nov 2011 19:20:34 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 03/10] threadgroup: extend threadgroup_lock() to cover
- exit and exec
-Message-ID: <20111113182029.GC9446@somewhere>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320191193-8110-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 13 Nov 2011 13:21:44 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, mingo@elte.hu, linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, fweisbec@gmail.com, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf tools: make -C consistent across commands (for cpu list arg)
+Date: Sun, 13 Nov 2011 11:21:37 -0700
+Message-Id: <1321208497-6752-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:46:26PM -0700, Tejun Heo wrote:
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index aa47d0f..6fb546e 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2377,13 +2377,37 @@ static inline void threadgroup_change_done(struct task_struct *tsk)
->  {
->  	up_read(&tsk->signal->group_rwsem);
->  }
-> +
-> +/**
-> + * threadgroup_lock - lock threadgroup
-> + * @tsk: member task of the threadgroup to lock
-> + *
-> + * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
-> + * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
-> + * perform exec.  This is useful for cases where the threadgroup needs to
-> + * stay stable across blockable operations.
-> + *
-> + * fork and exit explicitly call threadgroup_change_{begin|end}() for
-> + * synchronization.  exec is already synchronized with cread_guard_mutex
-> + * which we grab here.
-> + */
->  static inline void threadgroup_lock(struct task_struct *tsk)
->  {
-> +	/* exec uses exit for de-threading, grab cred_guard_mutex first */
-> +	mutex_lock(&tsk->signal->cred_guard_mutex);
+Currently the meaning of -C varies by perf command: for perf-top,
+perf-stat, perf-record it means cpu list. For perf-report it
+means comm list. Then perf-annotate, perf-report and perf-script
+use -c for cpu list.
 
-May be worth explaining what in exec is synchronized through this. ie the leader.
+Fix annotate, report and script to use -C for cpu list to be
+consistent with top, stat and record. This means report needs
+to use -c for comm list which does introduce a backward
+compatibility change.
 
->  	down_write(&tsk->signal->group_rwsem);
->  }
-> +
-> +/**
-> + * threadgroup_unlock - unlock threadgroup
-> + * @tsk: member task of the threadgroup to unlock
-> + *
-> + * Reverse threadgroup_lock().
-> + */
->  static inline void threadgroup_unlock(struct task_struct *tsk)
->  {
->  	up_write(&tsk->signal->group_rwsem);
-> +	mutex_unlock(&tsk->signal->cred_guard_mutex);
->  }
->  #else
->  static inline void threadgroup_change_begin(struct task_struct *tsk) {}
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 2913b35..3565f00 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -938,6 +938,12 @@ NORET_TYPE void do_exit(long code)
->  		schedule();
->  	}
->  
-> +	/*
-> +	 * @tsk's threadgroup is going through changes - lock out users
-> +	 * which expect stable threadgroup.
-> +	 */
-> +	threadgroup_change_begin(tsk);
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Documentation/perf-annotate.txt |    2 +-
+ tools/perf/Documentation/perf-report.txt   |    4 ++--
+ tools/perf/builtin-annotate.c              |    2 +-
+ tools/perf/builtin-report.c                |    4 ++--
+ tools/perf/builtin-script.c                |    2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
 
-Why so early? You actually want to synchronize against cgroup_exit(). Or
-am I missing something?
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index fe6762e..476029d 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -66,7 +66,7 @@ OPTIONS
+ 	used. This interfaces starts by centering on the line with more
+ 	samples, TAB/UNTAB cycles through the lines with more samples.
+ 
+--c::
++-C::
+ --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+ 	be provided as a comma-separated list with no space: 0,1. Ranges of
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 212f24d..dc85392 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -39,7 +39,7 @@ OPTIONS
+ -T::
+ --threads::
+ 	Show per-thread event counters
+--C::
++-c::
+ --comms=::
+ 	Only consider symbols in these comms. CSV that understands
+ 	file://filename entries.
+@@ -128,7 +128,7 @@ OPTIONS
+ --symfs=<directory>::
+         Look for files with symbols relative to this directory.
+ 
+--c::
++-C::
+ --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+ 	be provided as a comma-separated list with no space: 0,1. Ranges of
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 46b4c24..1b5e68c 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -269,7 +269,7 @@ static const struct option options[] = {
+ 		    "print matching source lines (may be slow)"),
+ 	OPT_BOOLEAN('P', "full-paths", &full_paths,
+ 		    "Don't shorten the displayed pathnames"),
+-	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		   "Look for files with symbols relative to this directory"),
+ 	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 4d7c834..85a3160 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -474,7 +474,7 @@ static const struct option options[] = {
+ 	OPT_BOOLEAN('G', "inverted", &inverted_callchain, "alias for inverted call graph"),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+ 		   "only consider symbols in these dsos"),
+-	OPT_STRING('C', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
++	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+ 		   "only consider symbols in these comms"),
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+@@ -488,7 +488,7 @@ static const struct option options[] = {
+ 		    "Only display entries resolved to a symbol"),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+-	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_BOOLEAN('I', "show-info", &show_full_info,
+ 		    "Display extended information about perf.data file"),
+ 	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 2f62a29..01329ca 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1083,7 +1083,7 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+ 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
+-	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_BOOLEAN('I', "show-info", &show_full_info,
+ 		    "display extended information from perf.data file"),
+ 	OPT_END()
+-- 
+1.7.7.1
 
-Yeah there may be a problem with reading PF_EXITING inside the lock if it
-is updated outside the lock, may be we need a pair of memory barriers. But
-other than that, this should be enough to lock around cgroup_exit().
