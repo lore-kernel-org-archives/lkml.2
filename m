@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab1KMJsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 04:48:10 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43317 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab1KMJsI (ORCPT
+	id S1752063Ab1KMJuG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 04:50:06 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:39552
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751754Ab1KMJuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 04:48:08 -0500
-Date: Sun, 13 Nov 2011 10:48:00 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anatolij Gustschin <agust@denx.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc/p3060qds: Fix select of 'MPC8xxx_GPIO'
-Message-ID: <20111113094800.GA18470@pengutronix.de>
-References: <1321141830.20271.22.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
-Content-Disposition: inline
-In-Reply-To: <1321141830.20271.22.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 13 Nov 2011 04:50:04 -0500
+From: Igor Grinberg <grinberg@compulab.co.il>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>
+Subject: [PATCH] MFD: TWL: add power off functionality
+Date: Sun, 13 Nov 2011 11:49:50 +0200
+Message-Id: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
+X-Mailer: git-send-email 1.7.3.4
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+TWL family of PMICs, used in master mode, have a power off
+functionality. The resulting power off sequence shuts down all the SoC
+supplies, LDOs, etc. The sequence is described in the datasheets
+chapter "Power-Off Sequence".
+Note, that board must be wired correctly for the power off to work as
+expected.
 
---u3/rZRmxL6MmkK24
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+---
+ drivers/mfd/twl4030-power.c |   42 ++++++++++++++++++++++++++++++++++++++++--
+ include/linux/i2c/twl.h     |    2 ++
+ 2 files changed, 42 insertions(+), 2 deletions(-)
 
-On Sun, Nov 13, 2011 at 12:50:30AM +0100, Paul Bolle wrote:
-> The driver for the Freescale P3060 QDS got added by commit 96cc017c5b
-> ("[...] Add support for P3060QDS board"). Its Kconfig entry selects
-> MPC8xxx_GPIO. But at the time that driver got added MPC8xxx_GPIO was
-> already renamed to GPIO_MPC8XXX, by commit c68308dd50c ("gpio: move
-> mpc8xxx/512x gpio driver to drivers/gpio").
->=20
-> So make this driver select GPIO_MPC8XXX.
->=20
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index a764676..d905f51 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -34,7 +34,8 @@
+ static u8 twl4030_start_script_address = 0x2b;
+ 
+ #define PWR_P1_SW_EVENTS	0x10
+-#define PWR_DEVOFF	(1<<0)
++#define PWR_DEVOFF		(1 << 0)
++#define SEQ_OFFSYNC		(1 << 0)
+ 
+ #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
+ #define PHY_TO_OFF_PM_RECEIVER(p)	(p - 0x5b)
+@@ -511,12 +512,27 @@ int twl4030_remove_script(u8 flags)
+ 	return err;
+ }
+ 
++/*
++ * In master mode, start the power off sequence.
++ * After a successful execution, TWL shuts down the power to the SoC
++ * and all peripherals connected to it.
++ */
++void twl4030_power_off(void)
++{
++	int err;
++
++	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, PWR_DEVOFF,
++			       TWL4030_PM_MASTER_P1_SW_EVENTS);
++	if (err)
++		pr_err("TWL4030 Unable to power off\n");
++}
++
+ void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
+ {
+ 	int err = 0;
+ 	int i;
+ 	struct twl4030_resconfig *resconfig;
+-	u8 address = twl4030_start_script_address;
++	u8 val, address = twl4030_start_script_address;
+ 
+ 	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
+ 			TWL4030_PM_MASTER_KEY_CFG1,
+@@ -548,6 +564,28 @@ void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
+ 		}
+ 	}
+ 
++	/* Board has to be wired properly to use this feature */
++	if (twl4030_scripts->use_poweroff && !pm_power_off) {
++		/* Default for SEQ_OFFSYNC is set, lets ensure this */
++		err = twl_i2c_read_u8(TWL4030_MODULE_PM_MASTER, &val,
++				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
++		if (err) {
++			pr_warning("TWL4030 Unable to read registers\n");
++
++		} else if (!(val & SEQ_OFFSYNC)) {
++			val |= SEQ_OFFSYNC;
++			err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, val,
++					TWL4030_PM_MASTER_CFG_P123_TRANSITION);
++			if (err) {
++				pr_err("TWL4030 Unable to setup SEQ_OFFSYNC\n");
++				goto relock;
++			}
++		}
++
++		pm_power_off = twl4030_power_off;
++	}
++
++relock:
+ 	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
+ 			TWL4030_PM_MASTER_PROTECT_KEY);
+ 	if (err)
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 114c0f6..78d3465 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -652,10 +652,12 @@ struct twl4030_power_data {
+ 	unsigned num;
+ 	struct twl4030_resconfig *resource_config;
+ #define TWL4030_RESCONFIG_UNDEF	((u8)-1)
++	bool use_poweroff;	/* Board is wired for TWL poweroff */
+ };
+ 
+ extern void twl4030_power_init(struct twl4030_power_data *triton2_scripts);
+ extern int twl4030_remove_script(u8 flags);
++extern void twl4030_power_off(void);
+ 
+ struct twl4030_codec_data {
+ 	unsigned int digimic_delay; /* in ms */
+-- 
+1.7.3.4
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-
-Thanks for catching this!
-
-> 2) The config tools do not complain about selects that cannot be met
-> because they concern a Kconfig symbol that doesn't even exist. Shouldn't
-> they be made to complain in that case?
-
-I'd think so.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---u3/rZRmxL6MmkK24
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6/klAACgkQD27XaX1/VRt5LwCgxo8vn3H8WKz9+5pEM0utFWh2
-CVYAnA5FZG3qLAUHXjhTMp83Xi45S+Sl
-=QaI6
------END PGP SIGNATURE-----
-
---u3/rZRmxL6MmkK24--
