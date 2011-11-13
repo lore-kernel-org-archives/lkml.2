@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab1KMS5T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 13:57:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55577 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab1KMS5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 13:57:18 -0500
-Message-ID: <4EC01306.5030208@kernel.dk>
-Date: Sun, 13 Nov 2011 19:57:10 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754445Ab1KMS7v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 13:59:51 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:41475 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141Ab1KMS7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 13:59:50 -0500
+Date: Sun, 13 Nov 2011 19:01:17 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] one drm fix
+Message-ID: <alpine.DEB.2.00.1111131900280.8973@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Xiaotian Feng <dfeng@redhat.com>, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: Always check length of all iov entries in blk_rq_map_user_iov()
-References: <1321210507.18929.293.camel@deadeye>
-In-Reply-To: <1321210507.18929.293.camel@deadeye>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-13 19:55, Ben Hutchings wrote:
-> Even after commit 5478755616ae2ef1ce144dded589b62b2a50d575
-> ("block: check for proper length of iov entries earlier ...")
-> we still won't check for zero-length entries after an unaligned
-> entry.  Remove the break-statement, so all entries are checked.
 
-Thanks, that is an oversight. Applied.
+Hi Linus,
 
--- 
-Jens Axboe
+Just a radeon fix for the older cards to catch up with the pm changes for 
+the newer ones.
 
+Dave.
+
+The following changes since commit 8f3f1c9a22a6420e28c2d3eff59b832893bc8efc:
+
+  drm/radeon/kms/pm: switch to dynamically allocating clock mode array (2011-11-11 14:16:05 +0000)
+
+are available in the git repository at:
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Alex Deucher (1):
+      drm/radeon/kms/combios: fix dynamic allocation of PM clock modes
+
+ drivers/gpu/drm/radeon/radeon_combios.c |   27 +++++++++++++++++++--------
+ 1 files changed, 19 insertions(+), 8 deletions(-)
