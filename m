@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab1KMH11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 02:27:27 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:38939 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab1KMH1Z convert rfc822-to-8bit (ORCPT
+	id S1751488Ab1KMHzE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 02:55:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65111 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab1KMHzC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 02:27:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=VkzzWI1CoiekSizOlfV
-	PyDV06n9+BPd/RhzXLis1VPa4IUoZCK+lUFMwv/xZzb8or1UnmVUhNX52o3LRCXf
-	/GiVlefLrPGiJGBJYywYeFvt+Xd3v3vqOmz0WOZWkMKiXLkzTs320Bsa39MkTo5o
-	XrsQvRkvPV4chUyyKsxyvS6A=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.8.rc2
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 12 Nov 2011 23:27:22 -0800
-Message-ID: <7vzkg0o52d.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Sun, 13 Nov 2011 02:55:02 -0500
+From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Subject: Re: intel_idle causing 3.0.8 system reboot (was: if nolapic not used then system reboots after loading first module (possibly first irq using module))
+Date: Sun, 13 Nov 2011 08:54:55 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-rc1-00252-g8f042aa-dirty; KDE/4.7.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+References: <201110272327.14891.a.miskiewicz@gmail.com> <201110281954.39191.a.miskiewicz@gmail.com> <CAJvTdKmCgbebEOY7Ly=cE1ZV2GVG7hL5fE8LmK9nz7r8+BNPJQ@mail.gmail.com>
+In-Reply-To: <CAJvTdKmCgbebEOY7Ly=cE1ZV2GVG7hL5fE8LmK9nz7r8+BNPJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: EE5C1CC6-0DC8-11E1-B903-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201111130854.56201.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git 1.7.8.rc2 is available for testing.
+On Sunday 13 of November 2011, Len Brown wrote:
+> > intel_idle.max_cstate=2 also makes the problem go away.
+> 
+> Is the system running with BIOS SETUP defaults?
 
-Since rc0, we killed all known regressions. Because there won't be any
-more new feature merged until the 1.7.8 final, it is a good time for the
-coolest kids on the block to start using the upcoming release before
-others do.
+Tried also with "safe defaults (F8)" but that didn't help.
 
-The release tarballs are found at:
+> Are there any BIOS SETUP options related to CPU idle states?
 
-    http://code.google.com/p/git-core/downloads/list
+Yes, there are
 
-and their SHA-1 checksums are:
+"C state package limit setting" with values possible: Auto, C1, C3, C6, C7 
+(set to "Auto" here)
+"Intel EIST technology" -> Enabled
+"C1E support" -> Enabled
+"Intel C-STATE tech" -> Enabled
+"C1 Auto Demotion" -> Enabled
+"C3 Auto Demotion" -> Enabled
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+> please boot with intel_idle.max_cstate=0
+> and send the output of these two commands:
+> 
+> dmesg |grep idle
+> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
 
-b1cb030dee2b9ae024f4076fe5fadfea43edec4e  git-1.7.8.rc2.tar.gz
-cd30ce92f9518920ff8f9cdde0a8da5c856f6193  git-htmldocs-1.7.8.rc2.tar.gz
-97d72c0c56e557eb3f11b9a3dcdb971e38eaee49  git-manpages-1.7.8.rc2.tar.gz
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+[root@berta ~]# dmesg |grep idle
+[    0.000000] Command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
+console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
+[    0.000000] Kernel command line: auto BOOT_IMAGE=pld3.0.8test ro root=812 
+console=tty0 console=ttyS2,38400n81 panic=60 selinux=0 intel_idle.max_cstate=0
+[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+[    0.278494] using mwait in idle threads.
+[    4.330321] intel_idle: disabled
+[    5.794456] cpuidle: using governor ladder
+[    5.806755] cpuidle: using governor menu
+[root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+grep: /sys/devices/system/cpu/cpu0/cpuidle/*/*: No such file or directory
 
-iQIcBAEBAgAGBQJOv287AAoJELC16IaWr+bLGJwP/1ZL+9NcBiIWshqxrYaBACF6
-dgLsK1M7iJBn95ye6xBp57uPeLGK9iv5qLvo5Wxoog8raWgceR3qXjZL3snfYlLO
-Hz2P8Zb9EF80QfVs7RjkQYAJRaT/WzbSxoQF/ZUXHyLk2BHpw6YfYA0Vj0JJZ72l
-bCYMnppi18uxLuUyf6/0ftlkadxv3L58VIaNWAp8NwuLuskucx64LZgYzwkaRFfO
-YNWgV0zwimK+9SF/gnQ5cw55GCurs69HWoDVLJbnQuJbjiU3Kl9jehYBwTo/rPSn
-vo03Foh3mV6u3DTovZARLF54goJvvc+JKKkFAdeY+dNKLdZQRdO+hrldGTeGKxVk
-XissJxmsHm/DkXc15yIPu+iV5wmAXVc8BpTzK1NgleuOyz2qnvVrmY+ZOVQfM1BA
-4zS6PMp/sgEJa6ybmwXuYY/JpJlgmEBsDk6MJOJ8RKt+q0qovB+2ltMJbFpqVnQR
-VEswTvhBOmUSfKhiY68UmqE4H6vmSO5yOmo1VQKgCKzN7glcG/3wpIHNK9+QW9yE
-eOQMSDdBQGGgzz7Y+bVwpbOpSUsc49MYit8T9wx/haNNCA3Fud1UUKbT+060/zQw
-Tgv2gi/6L/vCcDhj7oersNYfpgilggYBeiADKsI1fw6SHzBpbWblJZTtjr1yplaZ
-YG+o9yPd2EwA2tkosG51
-=hXu/
------END PGP SIGNATURE-----
+There are only:
+[root@berta ~]# LC_ALL=C grep . /sys/devices/system/cpu/cpuidle/*
+/sys/devices/system/cpu/cpuidle/current_driver:none
+/sys/devices/system/cpu/cpuidle/current_governor_ro:menu
 
-Also the following public repositories all have a copy of the v1.7.8.rc2
-tag and the master branch that the tag points at:
+> 
+> thanks,
+> Len Brown, Intel Open Source Technology Center
+> 
+> >> # cat /proc/cpuinfo
+> >> processor       : 0
+> >> vendor_id       : GenuineIntel
+> >> cpu family      : 6
+> >> model           : 30
+> >> model name      : Intel(R) Xeon(R) CPU           X3430  @ 2.40GHz
+> >> stepping        : 5
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
 
-----------------------------------------------------------------
-
-Changes since v1.7.8-rc1 are as follows:
-
-Felipe Contreras (1):
-      remote: fix remote set-url usage
-
-Jeff King (1):
-      docs: don't mention --quiet or --exit-code in git-log(1)
-
-Junio C Hamano (5):
-      remote: fix set-branches usage
-      docs: Update install-doc-quick
-      Git 1.7.7.3
-      Update draft release notes to 1.7.8
-      Git 1.7.8-rc2
-
-Liu Yuan (1):
-      mktree: fix a memory leak in write_tree()
-
-SZEDER Gábor (1):
-      completion: don't leak variable from the prompt into environment
-
+-- 
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
