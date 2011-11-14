@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab1KNRqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:46:39 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:32949 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab1KNRqi (ORCPT
+	id S1755603Ab1KNRrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:47:46 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63307 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab1KNRrn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:46:38 -0500
+	Mon, 14 Nov 2011 12:47:43 -0500
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 14 Nov 2011 10:46:16 -0700
-X-Google-Sender-Auth: JjdcO8DmisNeTvagdb7jxM-W0Kk
-Message-ID: <CACxGe6sfe5gK7zpLuhT5=neS8-6Y4uPK_hJQYjr8f9xGKq38Wg@mail.gmail.com>
-Subject: [GIT PULL] bug fixes for gpio drivers
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org
-Cc: Kevin Hilman <khilman@ti.com>, Wolfram Sang <wsa@pengutronix.de>,
-        Linus Walleij <linus.ml.walleij@gmail.com>
+In-Reply-To: <20111111094509.0de1c139@jbarnes-desktop>
+References: <20111110004339.5866.28478.stgit@amt.stowe>
+	<20111110004351.5866.40960.stgit@amt.stowe>
+	<20111111094509.0de1c139@jbarnes-desktop>
+Date: Mon, 14 Nov 2011 10:47:42 -0700
+Message-ID: <CAL-B5D3kHX5mysVQk+btD2VSsNi=3E17s1b0fNDD7USyBfG6nw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] PCI: Maintain a list of FW-assigned BIOS BAR values
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
+        bhelgaas@google.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Nov 11, 2011 at 10:45 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Wed, 09 Nov 2011 17:43:51 -0700
+> Myron Stowe <myron.stowe@redhat.com> wrote:
+>
+>> From: Myron Stowe <mstowe@redhat.com>
+>>
+>> Commit 58c84eda075 introduced functionality to try and reinstate the
+>> original BIOS BAR addresses of a PCI device when normal resource
+>> assignment attempts fail.  To keep track of the BIOS BAR addresses,
+>> struct pci_dev was augmented with an array to hold the BAR addresses
+>> of the PCI device: 'resource_size_t fw_addr[DEVICE_COUNT_RESOURCE]'.
+>>
+>> The reinstatement of BAR addresses is an uncommon event leaving the
+>> 'fw_addr' array unused normally.  As the use of struct pci_dev is so
+>> prevalent, this seems wasteful.
+>>
+>> This patch introduces a stand alone data structure and corresponding set
+>> of interfacing routines for maintaining a list of FW-assigned BIOS BAR
+>> value temporary entries.
+>>
+>> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+>> ---
+>>
+>>  drivers/pci/setup-res.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/pci.h     |    1 +
+>>  2 files changed, 74 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+>> index ad8c4ae..ab45c11 100644
+>> --- a/drivers/pci/setup-res.c
+>> +++ b/drivers/pci/setup-res.c
+>> @@ -26,6 +26,79 @@
+>>  #include "pci.h"
+>>
+>>
+>> +/*
+>> + * This list of dynamic mappings is for temporarly maintaining
+>> + * original BIOS BAR addresses for possbile reinstatement.
+>> + */
+>> +struct pci_fwaddrmap {
+>> +     struct list_head list;
+>> +     struct pci_dev *dev;
+>> +     resource_size_t fw_addr[DEVICE_COUNT_RESOURCE];
+>> +     unsigned long refcount;
+>> +};
+>> +
+>> +static LIST_HEAD(pci_fwaddrmappings);
+>> +static DEFINE_SPINLOCK(pci_fwaddrmap_lock);
+>
+> Is the refcounting really needed?  Can't we just free the whole list at
+> some point to simplify things a bit?
 
-Some gpio drivers bug fixes for 3.2.  Nothing exciting here.
+No, refcounting is not absolutely necessary, it's just the approach I came
+up with initially.  I'll look into just freeing the entire list once we are done
+with it.
 
-Expect further 3.2 gpio bug fix pull requests to come from Linus Walleij.
-
-g.
-
-The following changes since commit 7f80850d3f9fd8fda23a317044aef3a6bafab06b:
-
-  Merge branch 'rmobile-fixes-for-linus' of
-git://github.com/pmundt/linux-sh (2011-11-14 06:47:04 -0200)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 gpio/merge
-
-Grant Likely (1):
-      Merge branch 'for_3.2/gpio-cleanup' of
-git://gitorious.org/khilman/linux-omap-pm into gpio/merge
-
-Kevin Hilman (1):
-      gpio/omap: replace MOD_REG_BIT macro with static inline
-
-Todd Poynor (1):
-      gpio/omap: check return value from irq_alloc_generic_chip
-
-Wolfram Sang (2):
-      gpio: pca953x: remove unneeded check for chip type
-      gpio: pca953x: propagate the errno from the chip_init functions
-
- drivers/gpio/gpio-omap.c    |   59 ++++++++++++++++++++++++------------------
- drivers/gpio/gpio-pca953x.c |   11 +++-----
- 2 files changed, 38 insertions(+), 32 deletions(-)
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Myron
+>
+> --
+> Jesse Barnes, Intel Open Source Technology Center
+>
