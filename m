@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab1KNXm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:42:28 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:52207 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab1KNXm0 (ORCPT
+	id S1756677Ab1KNXmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:42:49 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:48948 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab1KNXms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:42:26 -0500
-Date: Mon, 14 Nov 2011 15:42:16 -0800
-From: Gary Hade <garyhade@us.ibm.com>
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Renninger <trenn@novell.com>, Gary Hade <garyhade@us.ibm.com>
-Subject: [PATCH] x86/PCI: Ignore CPU non-addressable _CRS reserved memory
-	resources
-Message-ID: <20111114234216.GA16000@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11111423-1780-0000-0000-000000EA5124
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000231; HX=3.00000177; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00087642; UDB=6.00023653; UTC=2011-11-14
- 23:42:24
+	Mon, 14 Nov 2011 18:42:48 -0500
+Date: Mon, 14 Nov 2011 18:42:40 -0500 (EST)
+Message-Id: <20111114.184240.1832866874941847383.davem@davemloft.net>
+To: grundler@chromium.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, allan@asix.com.tw,
+        freddy@asix.com.tw
+Subject: Re: [PATCH 5/5] net-next:asix: update VERSION and white space
+ changes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1321312921-7748-5-git-send-email-grundler@chromium.org>
+References: <1321312921-7748-1-git-send-email-grundler@chromium.org>
+	<1321312921-7748-5-git-send-email-grundler@chromium.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 Nov 2011 15:42:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Grant Grundler <grundler@chromium.org>
+Date: Mon, 14 Nov 2011 15:22:01 -0800
 
-From: Gary Hade <garyhade@us.ibm.com>
+> No functional changes. Three things targeted:
+> o update VERSION to reflect previous changes.
+> o fix up white space/formatting of some lines
+> o define 150 to be AX_SWRESET_MDELAY (self documenting code)
+> 
+> Signed-off-by: Grant Grundler <grundler@chromium.org>
 
-This assures that a _CRS reserved host bridge window or 
-window region is not used if it is not addressable by
-the CPU.  The new code either trims the window to exclude
-the non-addressable portion or totally ignores the window
-if the entire window is non-addressable.
+Why have such a wonderful set of real bug fixes that I can apply right
+now and send off to Linus's tree, only to sabotage it with whitespace
+changes at the end which are no appropriate?
 
-The current code has been shown to be problematic with
-32-bit non-PAE kernels on systems where _CRS reserves
-resources above 4GB.
+Please, just submit this without the whitespace and other cleanup
+stuff.  Restrict it to real bug fixes, and I'll push it around.
 
-Signed-off-by: Gary Hade <garyhade@us.ibm.com>
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Renninger <trenn@novell.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: stable@kernel.org
----
-
- arch/x86/pci/acpi.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 404f21a..3557af7 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -149,7 +149,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 	struct acpi_resource_address64 addr;
- 	acpi_status status;
- 	unsigned long flags;
--	u64 start, end;
-+	u64 start, orig_end, end;
- 
- 	status = resource_to_addr(acpi_res, &addr);
- 	if (!ACPI_SUCCESS(status))
-@@ -165,7 +165,21 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 		return AE_OK;
- 
- 	start = addr.minimum + addr.translation_offset;
--	end = addr.maximum + addr.translation_offset;
-+	orig_end = end = addr.maximum + addr.translation_offset;
-+
-+	/* Exclude non-addressable range or non-addressable portion of range */
-+	end = min(end, (u64)iomem_resource.end);
-+	if (end <= start) {
-+		dev_info(&info->bridge->dev,
-+			"host bridge window [%#llx-%#llx] "
-+			"(ignored, not CPU addressable)\n", start, orig_end);
-+		return AE_OK;
-+	} else if (orig_end != end) {
-+		dev_info(&info->bridge->dev,
-+			"host bridge window [%#llx-%#llx] "
-+			"([%#llx-%#llx] ignored, not CPU addressable)\n", 
-+			start, orig_end, end + 1, orig_end);
-+	}
- 
- 	res = &info->res[info->res_num];
- 	res->name = info->name;
-
+The whitespace and other bits can be submitted for net-next afterwards.
