@@ -1,179 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1KOALr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:11:47 -0500
-Received: from mail-ww0-f74.google.com ([74.125.82.74]:62178 "EHLO
-	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab1KOALp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:11:45 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>,
-        david decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v3 1/9] forcedeth: fix stats on hardware without extended stats support
-Date: Mon, 14 Nov 2011 16:11:11 -0800
-Message-Id: <6be75e56196a0f77b2eda0a7742e439de6255172.1321313729.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
-References: <cover.1321313729.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
-References: <cover.1321313729.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	id S1756898Ab1KOANc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:13:32 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7753 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753667Ab1KOANa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 19:13:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,511,1315206000"; 
+   d="scan'208";a="90449093"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Ingo Molnar" <mingo@elte.hu>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Rusty Russell" <rusty@rustcorp.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>,
+        "linux-next" <linux-next@vger.kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH] kernel/cpu.c: Add right qualifiers for intel_thermal_interrupt() and cpu_hotplug_pm_sync_init() 
+Date: Mon, 14 Nov 2011 15:56:07 -0800
+Message-Id: <1321314967-4559-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: david decotigny <david.decotigny@google.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-This change makes sure that tx_packets/rx_bytes ifconfig counters are
-updated even on NICs that don't provide hardware support for these
-stats: they are now updated in software. For the sake of consistency,
-we also now have tx_bytes updated in software (hardware counters
-include ethernet CRC, and software doesn't account for it).
+Add __init for functions alloc_frozen_cpus() and cpu_hotplug_pm_sync_init()
+because they are only called during boot time.
 
-This reverts parts of:
- - "forcedeth: statistics optimization" (21828163b2)
- - "forcedeth: Improve stats counters" (0bdfea8ba8)
- - "forcedeth: remove unneeded stats updates" (4687f3f364)
+Add static for function cpu_hotplug_pm_sync_init() because its scope is limited
+in this file only.
 
-Tested:
-  pktgen + loopback (http://patchwork.ozlabs.org/patch/124698/)
-  reports identical tx_packets/rx_packets and tx_bytes/rx_bytes.
-
-Signed-off-by: David Decotigny <david.decotigny@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-(cherry picked from commit 898bdf2cb43eb0a962c397eb4dd1aec2c7211be2)
-
-
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |   36 +++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 9 deletions(-)
+ kernel/cpu.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index e8a5ae3..374625b 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -609,7 +609,7 @@ struct nv_ethtool_str {
- };
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 563f136..cf915b8 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -470,7 +470,7 @@ out:
+ 	cpu_maps_update_done();
+ }
  
- static const struct nv_ethtool_str nv_estats_str[] = {
--	{ "tx_bytes" },
-+	{ "tx_bytes" }, /* includes Ethernet FCS CRC */
- 	{ "tx_zero_rexmt" },
- 	{ "tx_one_rexmt" },
- 	{ "tx_many_rexmt" },
-@@ -637,7 +637,7 @@ static const struct nv_ethtool_str nv_estats_str[] = {
- 	/* version 2 stats */
- 	{ "tx_deferral" },
- 	{ "tx_packets" },
--	{ "rx_bytes" },
-+	{ "rx_bytes" }, /* includes Ethernet FCS CRC */
- 	{ "tx_pause" },
- 	{ "rx_pause" },
- 	{ "rx_drop_frame" },
-@@ -649,7 +649,7 @@ static const struct nv_ethtool_str nv_estats_str[] = {
- };
+-static int alloc_frozen_cpus(void)
++static int __init alloc_frozen_cpus(void)
+ {
+ 	if (!alloc_cpumask_var(&frozen_cpus, GFP_KERNEL|__GFP_ZERO))
+ 		return -ENOMEM;
+@@ -543,7 +543,7 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
+ }
  
- struct nv_ethtool_stats {
--	u64 tx_bytes;
-+	u64 tx_bytes; /* should be ifconfig->tx_bytes + 4*tx_packets */
- 	u64 tx_zero_rexmt;
- 	u64 tx_one_rexmt;
- 	u64 tx_many_rexmt;
-@@ -670,14 +670,14 @@ struct nv_ethtool_stats {
- 	u64 rx_unicast;
- 	u64 rx_multicast;
- 	u64 rx_broadcast;
--	u64 rx_packets;
-+	u64 rx_packets; /* should be ifconfig->rx_packets */
- 	u64 rx_errors_total;
- 	u64 tx_errors_total;
  
- 	/* version 2 stats */
- 	u64 tx_deferral;
--	u64 tx_packets;
--	u64 rx_bytes;
-+	u64 tx_packets; /* should be ifconfig->tx_packets */
-+	u64 rx_bytes;   /* should be ifconfig->rx_bytes + 4*rx_packets */
- 	u64 tx_pause;
- 	u64 rx_pause;
- 	u64 rx_drop_frame;
-@@ -1706,10 +1706,17 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
- 	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
- 		nv_get_hw_stats(dev);
- 
-+		/*
-+		 * Note: because HW stats are not always available and
-+		 * for consistency reasons, the following ifconfig
-+		 * stats are managed by software: rx_bytes, tx_bytes,
-+		 * rx_packets and tx_packets. The related hardware
-+		 * stats reported by ethtool should be equivalent to
-+		 * these ifconfig stats, with 4 additional bytes per
-+		 * packet (Ethernet FCS CRC).
-+		 */
-+
- 		/* copy to net_device stats */
--		dev->stats.tx_packets = np->estats.tx_packets;
--		dev->stats.rx_bytes = np->estats.rx_bytes;
--		dev->stats.tx_bytes = np->estats.tx_bytes;
- 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
- 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
- 		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
-@@ -2380,6 +2387,9 @@ static int nv_tx_done(struct net_device *dev, int limit)
- 				if (flags & NV_TX_ERROR) {
- 					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
- 						nv_legacybackoff_reseed(dev);
-+				} else {
-+					dev->stats.tx_packets++;
-+					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
- 				}
- 				dev_kfree_skb_any(np->get_tx_ctx->skb);
- 				np->get_tx_ctx->skb = NULL;
-@@ -2390,6 +2400,9 @@ static int nv_tx_done(struct net_device *dev, int limit)
- 				if (flags & NV_TX2_ERROR) {
- 					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
- 						nv_legacybackoff_reseed(dev);
-+				} else {
-+					dev->stats.tx_packets++;
-+					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
- 				}
- 				dev_kfree_skb_any(np->get_tx_ctx->skb);
- 				np->get_tx_ctx->skb = NULL;
-@@ -2429,6 +2442,9 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
- 					else
- 						nv_legacybackoff_reseed(dev);
- 				}
-+			} else {
-+				dev->stats.tx_packets++;
-+				dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
- 			}
- 
- 			dev_kfree_skb_any(np->get_tx_ctx->skb);
-@@ -2678,6 +2694,7 @@ static int nv_rx_process(struct net_device *dev, int limit)
- 		skb->protocol = eth_type_trans(skb, dev);
- 		napi_gro_receive(&np->napi, skb);
- 		dev->stats.rx_packets++;
-+		dev->stats.rx_bytes += len;
- next_pkt:
- 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
- 			np->get_rx.orig = np->first_rx.orig;
-@@ -2761,6 +2778,7 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
- 			}
- 			napi_gro_receive(&np->napi, skb);
- 			dev->stats.rx_packets++;
-+			dev->stats.rx_bytes += len;
- 		} else {
- 			dev_kfree_skb(skb);
- 		}
+-int cpu_hotplug_pm_sync_init(void)
++static int __init cpu_hotplug_pm_sync_init(void)
+ {
+ 	pm_notifier(cpu_hotplug_pm_callback, 0);
+ 	return 0;
 -- 
-1.7.3.1
+1.6.0.3
 
