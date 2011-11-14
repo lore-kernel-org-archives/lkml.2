@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1KNFjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 00:39:25 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:52856 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab1KNFjY (ORCPT
+	id S1753169Ab1KNFll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 00:41:41 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59146 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab1KNFlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 00:39:24 -0500
-Date: Mon, 14 Nov 2011 00:39:19 -0500 (EST)
-Message-Id: <20111114.003919.1393266325552023244.davem@davemloft.net>
-To: avagin@openvz.org
-Cc: shemminger@linux-foundation.org, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] bridge: Fix potential deadlock on br->multicast_lock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1320940083-3719823-1-git-send-email-avagin@openvz.org>
-References: <1320940083-3719823-1-git-send-email-avagin@openvz.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 13 Nov 2011 21:39:21 -0800 (PST)
+	Mon, 14 Nov 2011 00:41:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111114.002257.1441682753359852153.davem@davemloft.net>
+References: <cover.1321063429.git.horti@google.com>
+	<0a790bcdac9827d6e4a9162cc8f6b5bcb70acd4e.1321063429.git.horti@google.com>
+	<20111114.002257.1441682753359852153.davem@davemloft.net>
+Date: Sun, 13 Nov 2011 21:41:39 -0800
+Message-ID: <CAB70Pt+1-+SiiFmif7jDiAek0x6S1MpcceXQTs-qFfLhenCzuw@mail.gmail.com>
+Subject: Re: [PATCH net-next v2] net-forcedeth: Add internal loopback support
+ for forcedeth NICs.
+From: Sanjay Hortikar <horti@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        david.decotigny@google.com, ian.campbell@citrix.com,
+        rick.jones2@hp.com, eric.dumazet@gmail.com, maheshb@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Vagin <avagin@openvz.org>
-Date: Thu, 10 Nov 2011 18:48:03 +0300
+Thank you.
+- S.
 
-> multicast_lock is taken in softirq context, so we should use
-> spin_lock_bh() in userspace.
-> 
-> call-chain in softirq context:
-> run_timer_softirq()
-> 	br_multicast_query_expired()
-> 
-> call-chain in userspace:
-> sysfs_write_file()
-> 	store_multicast_snooping()
-> 		br_multicast_toggle()
-> 
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-
-Applied, thanks.
+On Sun, Nov 13, 2011 at 9:22 PM, David Miller <davem@davemloft.net> wrote:
+> From: Sanjay Hortikar <horti@google.com>
+> Date: Fri, 11 Nov 2011 18:11:21 -0800
+>
+>> Support enabling/disabling/querying internal loopback mode for
+>> forcedeth NICs using ethtool.
+>>
+>> Signed-off-by: Sanjay Hortikar <horti@google.com>
+>> Signed-off-by: Mahesh Bandewar <maheshb@google.com>
+>
+> Applied, thanks.
+>
