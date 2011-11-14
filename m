@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab1KNXQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:16:16 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39386 "EHLO ogre.sisk.pl"
+	id S1756573Ab1KNXRU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:17:20 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39399 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab1KNXQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:16:15 -0500
+	id S1753827Ab1KNXRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 18:17:19 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Usermodehelper: Cleanup remnants of usermodehelper_pm_callback()
-Date: Tue, 15 Nov 2011 00:18:55 +0100
+To: myungjoo.ham@samsung.com
+Subject: Re: [PATCH 2/2] devfreq: separate error paths from successful path
+Date: Tue, 15 Nov 2011 00:19:59 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: dhowells@redhat.com, eparis@redhat.com, kay.sievers@vrfy.org,
-        jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <20111110161921.3714.25382.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111110161921.3714.25382.stgit@srivatsabhat.in.ibm.com>
+Cc: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        =?euc-kr?q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        Mike Turquette <mturquette@ti.com>
+References: <1640445.17731320984574558.JavaMail.weblogic@epml10> <201111150017.41439.rjw@sisk.pl>
+In-Reply-To: <201111150017.41439.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="euc-kr"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111150018.55625.rjw@sisk.pl>
+Message-Id: <201111150019.59967.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 10, 2011, Srivatsa S. Bhat wrote:
-> usermodehelper_pm_callback() no longer exists in the kernel. There are 2
-> comments in kernel/kmod.c that still refer to it.
+On Tuesday, November 15, 2011, Rafael J. Wysocki wrote:
+> On Friday, November 11, 2011, MyungJoo Ham wrote:
+> > Sender : Axel Lin<axel.lin@gmail.com> Date : 2011-11-10 16:30 (GMT+09:00)
+> > > I think this change improves readability.
+> > > 
+> > > Signed-off-by: Axel Lin 
+> > 
+> > I agree. It makes it easier to read.
+> > 
+> > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 > 
-> Also, the patch that introduced usermodehelper_pm_callback(), #included
-> 2 header files: <linux/notifier.h> and <linux/suspend.h>. But these are
-> no longer necessary.
-> 
-> This patch updates the comments as appropriate and removes the unnecessary
-> header file inclusions.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Applied to linux-pm/pm-fixes.
 
-Applied to linux-pm/linux-next.
+Sorry, this one went to linux-pm/linux-next and will wait for the 3.3 merge
+window.
 
 Thanks,
 Rafael
 
 
-> ---
+> > > ---
+> > > drivers/devfreq/devfreq.c |   15 +++++++--------
+> > > 1 files changed, 7 insertions(+), 8 deletions(-)
+> > > 
+> > > diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> > > index 59d24e9..c189b82 100644
+> > > --- a/drivers/devfreq/devfreq.c
+> > > +++ b/drivers/devfreq/devfreq.c
+> > > @@ -347,7 +347,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+> > > if (!IS_ERR(devfreq)) {
+> > > dev_err(dev, "%s: Unable to create devfreq for the device. It already has one. ", __func__);
+> > > err = -EINVAL;
+> > > - goto out;
+> > > + goto err_out;
+> > > }
+> > > }
+> > > 
+> > > @@ -356,7 +356,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+> > > dev_err(dev, "%s: Unable to create devfreq for the device ",
+> > > __func__);
+> > > err = -ENOMEM;
+> > > - goto out;
+> > > + goto err_out;
+> > > }
+> > > 
+> > > mutex_init(&devfreq->lock);
+> > > @@ -399,17 +399,16 @@ struct devfreq *devfreq_add_device(struct device *dev,
+> > >    devfreq->next_polling);
+> > > }
+> > > mutex_unlock(&devfreq_list_lock);
+> > > - goto out;
+> > > +out:
+> > > + return devfreq;
+> > > +
+> > > err_init:
+> > > device_unregister(&devfreq->dev);
+> > > err_dev:
+> > > mutex_unlock(&devfreq->lock);
+> > > kfree(devfreq);
+> > > -out:
+> > > - if (err)
+> > > - return ERR_PTR(err);
+> > > - else
+> > > - return devfreq;
+> > > +err_out:
+> > > + return ERR_PTR(err);
+> > > }
+> > > 
+> > > /**
+> > 
 > 
->  kernel/kmod.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index a4bea97..2142687 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -34,8 +34,6 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/resource.h>
-> -#include <linux/notifier.h>
-> -#include <linux/suspend.h>
->  #include <asm/uaccess.h>
->  
->  #include <trace/events/module.h>
-> @@ -282,14 +280,14 @@ static int usermodehelper_disabled = 1;
->  static atomic_t running_helpers = ATOMIC_INIT(0);
->  
->  /*
-> - * Wait queue head used by usermodehelper_pm_callback() to wait for all running
-> + * Wait queue head used by usermodehelper_disable() to wait for all running
->   * helpers to finish.
->   */
->  static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
->  
->  /*
->   * Time to wait for running_helpers to become zero before the setting of
-> - * usermodehelper_disabled in usermodehelper_pm_callback() fails
-> + * usermodehelper_disabled in usermodehelper_disable() fails
->   */
->  #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
->  
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 > 
 
