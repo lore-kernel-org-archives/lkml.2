@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab1KNO0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 09:26:05 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60092 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab1KNO0D (ORCPT
+	id S1754505Ab1KNO3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 09:29:19 -0500
+Received: from mail-am1.bigfish.com ([213.199.180.138]:25528 "EHLO
+	AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753525Ab1KNO3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 09:26:03 -0500
+	Mon, 14 Nov 2011 09:29:18 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LUNMWM-02-CCL-02
+X-M-MSG: 
+Date: Mon, 14 Nov 2011 15:29:09 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Dave Airlie <airlied@linux.ie>
+CC: David Woodhouse <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <iommu@lists.linux-foundation.org>, <intel-gfx@lists.freedesktop.org>
+Subject: Re: [PATCH] iommu/intel: Fix build failure with intel-gtt and
+ !intel-iommu
+Message-ID: <20111114142909.GF14704@amd.com>
+References: <20111111134832.GI13213@amd.com>
+ <1321019553.2027.47.camel@shinybook.infradead.org>
+ <20111114132647.GD14704@amd.com>
+ <alpine.DEB.2.00.1111141334340.8973@skynet.skynet.ie>
 MIME-Version: 1.0
-In-Reply-To: <1321279937.1421.18.camel@twins>
-References: <20111107110149.GA5177@quad>
-	<20111110180308.GD15738@erda.amd.com>
-	<CABPqkBSyYjM7V8cy--WRBHJ8o9TU9WUD9mGE1E5HntYdm2BHyw@mail.gmail.com>
-	<1321279937.1421.18.camel@twins>
-Date: Mon, 14 Nov 2011 15:26:02 +0100
-Message-ID: <CABPqkBSc-o+ysZEVx72acE7+AY8fLR8sqFDedKBwh8H60Z77cQ@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1111141334340.8973@skynet.skynet.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's take Robert's example:
-   c0 c1 c2
- e0 x     x
- e1    x  x
- e2 x  x
+On Mon, Nov 14, 2011 at 01:35:13PM +0000, Dave Airlie wrote:
+> 
+> 
+> > 
+> > > But I'm fairly sure this was already noticed and a patch is on its way
+> > > upstream already.
+> > 
+> > It is not yet fixed upstream. I plan to send fixes to Linus soon. Any
+> > objection against me including this if its not fixed until then?
+> 
+> Does a08185a3eb658854b29c05bcbfac0f85038ffe9f in Linus tree not fix it?
 
-The nodes in the graph:
+Oops, tested the wrong tree. It is fixed indeed. Sorry for the noise :)
 
-- S (starting point)
-- T (the ending point)
-- e0, e1, e2 (the events)
-- c0, c1, c2 (the counters)
 
-There is an edge from the source to all the events.
-There is an edge from all the counters to the sync.
-There is an edge between an event and a counter, if
-it can count the event.
+	Joerg
 
-The capacity of any edge is 1.
+-- 
+AMD Operating System Research Center
 
-The max flow algorithm returns the maximum number of
-events that can be measured together. If max_flow ==
-number of events, we maxed out.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-To find the assignment, we simply need to inspect the
-outgoing edges from events and use the only edge which
-has a flow == 1.
-
-If we list all the edges for the example above, we have:
-S -> e0
-S -> e1
-S -> e2
-e0 -> c0
-e0 -> c2
-e1 -> c1
-e1 -> c2
-e2 -> c0
-e2 -> c1
-c0 -> T
-c1 -> T
-c2 -> T
-
-then we do max_flow(S, T), Here we find 3.
-
-Given the capacity is either 0 or 1, I think we could use
-bitmasks to describe the edges.
-
-On Mon, Nov 14, 2011 at 3:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-11-14 at 13:55 +0100, Stephane Eranian wrote:
->> I have been talking with co-workers experts in operational research
->> about our problem. They all pointed to me to the max flow algorithm from
->> Ford-Fulkerson (search for it on Wikipedia). I think it solves the complexity
->> and recursion problems. My understanding is that the complexity is also
->> more under control.
->
-> How would you apply this algorithm to the problem at hand? I'm probably
-> missing the obvious thing here, but if we want the flow to be the number
-> of assigned counter then we end up with nodes being the various
-> permutations of assignments or so, which isn't helpful since that'd be
-> n! nodes.
->
->
->
