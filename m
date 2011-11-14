@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1KND75 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 22:59:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52489 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab1KND74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 22:59:56 -0500
-Date: Sun, 13 Nov 2011 19:58:15 -0800
-From: Greg KH <gregkh@suse.de>
-To: wangyanqing <Udknight@gmail.com>, wd@denx.de, stable@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]usb: serial: pl2303: rm id
-Message-ID: <20111114035815.GA17996@suse.de>
-References: <20111110060408.GA25028@udknight.homenetwork>
- <20111114011130.GA4433@udknight.homenetwork>
+	id S1753435Ab1KNEAf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 23:00:35 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60154 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab1KNEAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 23:00:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111114011130.GA4433@udknight.homenetwork>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
+References: <8762inleno.fsf@spindle.srvr.nix> <CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 13 Nov 2011 20:00:13 -0800
+X-Google-Sender-Auth: dV44luzx6I3o_ommHzQuqF69xPE
+Message-ID: <CAObL_7GEeF37rHkWYGDR3B596j8WnOJXB2dLD0ZdXgwNhU3Jkw@mail.gmail.com>
+Subject: Re: [3.1 REGRESSION] Commit 5cec93c216db77c45f7ce970d46283bcb1933884
+ breaks the Chromium seccomp sandbox
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org, mseaborn@chromium.org
+Content-Type: multipart/mixed; boundary=bcaec520e5f3a376ea04b1a9e90c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 09:11:30AM +0800, wangyanqing wrote:
-> On Thu, Nov 10, 2011 at 02:04:08PM +0800, wangyanqing wrote:
-> > I get report from customer that his usb-serial
-> > converter doesn't work well,it sometimes work,
-> > but sometimes it doesn't.
-> > 
-> > The usb-serial converter's id:
-> > vendor_id product_id
-> > 0x4348    0x5523
-> > 
-> > Then I search the usb-serial codes, and there are
-> > two drivers announce support this device, pl2303
-> > and ch341, commit 026dfaf1 cause it. Through many
-> > times to test, ch341 works well with this device,
-> > and pl2303 doesn't work quite often(it just work quite little).
-> > 
-> > ch341 works well with this device, so we doesn't
-> > need pl2303 to support.I try to revert 026dfaf1 first,
-> > but it failed. So I prepare this patch by hand to revert it.
-> > 
-> > Signed-off-by: Wang YanQing <Udknight@gmail.com>
-> > ---
-> >  drivers/usb/serial/pl2303.c |    1 -
-> >  drivers/usb/serial/pl2303.h |    4 ----
-> >  2 files changed, 0 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-> > index 9083d1e..fc2d66f 100644
-> > --- a/drivers/usb/serial/pl2303.c
-> > +++ b/drivers/usb/serial/pl2303.c
-> > @@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
-> >  	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
-> >  	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
-> >  	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
-> > -	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
-> >  	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
-> >  	{ }					/* Terminating entry */
-> >  };
-> > diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
-> > index 3d10d7f..c38b8c0 100644
-> > --- a/drivers/usb/serial/pl2303.h
-> > +++ b/drivers/usb/serial/pl2303.h
-> > @@ -145,10 +145,6 @@
-> >  #define ADLINK_VENDOR_ID		0x0b63
-> >  #define ADLINK_ND6530_PRODUCT_ID	0x6530
-> >  
-> > -/* WinChipHead USB->RS 232 adapter */
-> > -#define WINCHIPHEAD_VENDOR_ID		0x4348
-> > -#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
-> > -
-> >  /* SMART USB Serial Adapter */
-> >  #define SMART_VENDOR_ID	0x0b8c
-> >  #define SMART_PRODUCT_ID	0x2303
-> > -- 
-> > 1.7.3.4
-> > 
-> Hi all.
-> Maybe it should be noticed that not only one usb-serial converter base 
-> this chip have this issue, but there are about 50(even more) usb-serial 
-> coverter lines have the same issue, so we can't ignore it.
-> Of course we can make all the drivers work well, but we should make it
-> useful at the first.
+--bcaec520e5f3a376ea04b1a9e90c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Why not add the device id to the other driver at the same time, that
-would ensure that the device continues to work, right?
+On Sun, Nov 13, 2011 at 6:36 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>
+> The attached patch (in vsyscall=3Dnative mode) should help diagnose
+> exactly what's wrong. =A0But I wouldn't be surprised if you can trigger
+> the exact same failure on older kernels by doing
 
-thanks,
+Now with actual attachment.
 
-greg k-h
+--Andy
+
+--bcaec520e5f3a376ea04b1a9e90c
+Content-Type: text/x-patch; charset=US-ASCII; name="log_seccomp_kill.patch"
+Content-Disposition: attachment; filename="log_seccomp_kill.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_guyy31m40
+
+ZGlmZiAtLWdpdCBhL2tlcm5lbC9zZWNjb21wLmMgYi9rZXJuZWwvc2VjY29tcC5jCmluZGV4IDU3
+ZDRiMTMuLjI5ZGVhZjggMTAwNjQ0Ci0tLSBhL2tlcm5lbC9zZWNjb21wLmMKKysrIGIva2VybmVs
+L3NlY2NvbXAuYwpAQCAtNTQsNiArNTQsNyBAQCB2b2lkIF9fc2VjdXJlX2NvbXB1dGluZyhpbnQg
+dGhpc19zeXNjYWxsKQogI2lmZGVmIFNFQ0NPTVBfREVCVUcKIAlkdW1wX3N0YWNrKCk7CiAjZW5k
+aWYKKwlwcmludGsoS0VSTl9FUlIgIktpbGxpbmcgJWQgZHVlIHRvIGJhZCBzZWNjb21wIHN5c2Nh
+bGwgJWRcbiIsIChpbnQpY3VycmVudC0+cGlkLCAoaW50KXRoaXNfc3lzY2FsbCk7CiAJZG9fZXhp
+dChTSUdLSUxMKTsKIH0KIAo=
+--bcaec520e5f3a376ea04b1a9e90c--
