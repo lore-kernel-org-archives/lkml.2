@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab1KNXoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:44:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52218 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab1KNXoK (ORCPT
+	id S1756709Ab1KNXqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:46:10 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:24638 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab1KNXqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:44:10 -0500
-Date: Mon, 14 Nov 2011 15:44:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-Id: <20111114154408.10de1bc7.akpm@linux-foundation.org>
-In-Reply-To: <20111111101414.GJ3083@suse.de>
-References: <20111110100616.GD3083@suse.de>
-	<20111110142202.GE3083@suse.de>
-	<CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
-	<20111110161331.GG3083@suse.de>
-	<20111110151211.523fa185.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
-	<20111111101414.GJ3083@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Nov 2011 18:46:08 -0500
+Date: Tue, 15 Nov 2011 00:51:57 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Miller <davem@davemloft.net>
+cc: rmallon@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, xiaosuo@gmail.com, greearb@candelatech.com,
+        loke.chetan@gmail.com, waltje@uWalt.NL.Mugnet.ORG,
+        gw4pts@gw4pts.ampr.org, waltje@linux.com, ross.biro@gmail.com,
+        alan@linux.intel.com
+Subject: Re: [PATCH] net/packet: remove dead code and unneeded variable from
+ prb_setup_retire_blk_timer()
+In-Reply-To: <20111114.184325.1962580278359413683.davem@davemloft.net>
+Message-ID: <alpine.LNX.2.00.1111150049500.9919@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1111132247440.3368@swampdragon.chaosbits.net> <4EC0AA31.9040403@gmail.com> <alpine.LNX.2.00.1111150034120.9919@swampdragon.chaosbits.net> <20111114.184325.1962580278359413683.davem@davemloft.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Nov 2011 10:14:14 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+On Mon, 14 Nov 2011, David Miller wrote:
 
-> On Thu, Nov 10, 2011 at 03:37:32PM -0800, David Rientjes wrote:
-> > On Thu, 10 Nov 2011, Andrew Morton wrote:
-> > 
-> > > > This patch once again prevents sync migration for transparent
-> > > > hugepage allocations as it is preferable to fail a THP allocation
-> > > > than stall.
-> > > 
-> > > Who said?  ;) Presumably some people would prefer to get lots of
-> > > huge pages for their 1000-hour compute job, and waiting a bit to get
-> > > those pages is acceptable.
-> > > 
-> > 
-> > Indeed.  It seems like the behavior would better be controlled with 
-> > /sys/kernel/mm/transparent_hugepage/defrag which is set aside specifically 
-> > to control defragmentation for transparent hugepages and for that 
-> > synchronous compaction should certainly apply.
+> From: Jesper Juhl <jj@chaosbits.net>
+> Date: Tue, 15 Nov 2011 00:37:33 +0100 (CET)
 > 
-> With khugepaged in place, it's adding a tunable that is unnecessary and
-> will not be used. Even if such a tuneable was created, the default
-> behaviour should be "do not stall".
+> > David: You may want to pass on this one. I obviously didn't think it 
+> > through properly - sorry :-(
+> 
+> It's already in my tree and pushed out to kernel.org, what in the
+> world do you think "applied" means?
+> 
+I'm sorry about that. I try to be careful with my patches, but sometimes 
+mistakes slip through - I'm only human... I do my best, but I mess up 
+sometimes and Ryan raised a good point that I had not considered when I 
+prepared the patch - what would you have me do except reply to his mail as 
+I did?
 
-(who said?)
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Let me repeat my cruelly unanswered question: do we have sufficient
-instrumentation in place so that operators can determine that this
-change is causing them to get less huge pages than they'd like?
-
-Because some people really really want those huge pages.  If we go and
-silently deprive them of those huge pages via changes like this, how do
-they *know* it's happening?
-
-And what are their options for making the kernel try harder to get
-those pages?
-
-And how do we communicate all of this to those operators?
