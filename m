@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab1KNPrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 10:47:07 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:51087 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab1KNPrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 10:47:06 -0500
-Message-ID: <4EC137F6.1050509@ilyx.ru>
-Date: Mon, 14 Nov 2011 19:47:02 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111108 Iceape/2.0.11
+	id S1755041Ab1KNPyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 10:54:04 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45430 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab1KNPyC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 10:54:02 -0500
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH v3 2/2] TTY: tty flip buffer optimisation.
-References: <4EC10DC6.8070807@ilyx.ru>	<4EC124EB.4050203@suse.cz> <20111114150523.2abdf7a1@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111114150523.2abdf7a1@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LNX.2.00.1111132247440.3368@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1111132247440.3368@swampdragon.chaosbits.net>
+Date: Mon, 14 Nov 2011 10:54:01 -0500
+Message-ID: <CAAsGZS7sPYqXi+KxjD9omzvDME6A3SFGv+kMadMhJk6qNtSsBw@mail.gmail.com>
+Subject: Re: [PATCH] net/packet: remove dead code and unneeded variable from prb_setup_retire_blk_timer()
+From: chetan loke <loke.chetan@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        Ben Greear <greearb@candelatech.com>, waltje@uwalt.nl.mugnet.org,
+        gw4pts@gw4pts.ampr.org, waltje@linux.com, ross.biro@gmail.com,
+        alan@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
+On Sun, Nov 13, 2011 at 4:55 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> We test for 'tx_ring' being != zero and BUG() if that's the case. So after
+> that check there is no way that 'tx_ring' could be anything _but_ zero, so
+> testing it again is just dead code. Once that dead code is removed, the
+> 'pkc' local variable becomes entirely redundant, so remove that as well.
 
->> Hi, the results are indeed nice. However is there any *real* load other
->> than this tailor-made microbenchmark where the added code complexity is
->> worth it?
-> 
-> I'm wondering if we need the complexity in the first place. Certainly 256
-> does seem a bit small for pty/tty traffic. A 'real world' benchmark would
-> be an ls -lR / on a machine with a fast graphics card or in console mode
-> 
-> ie
-> 
-> ls -lR /		# prime cache
-> time ls -lR /
-> 
-> and there are cases where people do a lot of traffic over a pty like this
-> so I don't think it's entirely fake.
-> 
-> I don't like the complexity but we could certainly go from using 256 byte
-> buffers to "tty->buf.bufsize" and make it configurable without
-> that complexity.
-> 
-> Alan
-> 
+It was there so that it would be a no-brainer thing for the next
+person who would want to enable tx_ring support. And given that this
+check was called just once during the initial setup, it didn't seem
+like a big deal to me. And the BUG() would let the next-person know
+what different paths need to be plugged.
 
 
-For avoid complexity we need remove free buffer at all.
-And use kmalloc()-kfree() for every chunk. Don't need tty_buffer_find().
-It will be fast and easy.
-Ilya.
-
+Chetan Loke
