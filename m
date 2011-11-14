@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab1KNWmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 17:42:18 -0500
-Received: from mail2.unitix.de ([176.9.2.175]:49197 "EHLO mail2.unitix.de"
+	id S1756583Ab1KNWnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 17:43:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22837 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755523Ab1KNWmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 17:42:17 -0500
-X-Greylist: delayed 525 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 17:42:17 EST
-Message-ID: <4EC19738.8050007@arndnet.de>
-Date: Mon, 14 Nov 2011 23:33:28 +0100
-From: Arnd Hannemann <arnd@arndnet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: 3.2rc1: bootup fails: DRHD: handling fault status reg 2
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1751654Ab1KNWnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 17:43:22 -0500
+Message-ID: <1321310590.16847.3.camel@dcbw.foobar.com>
+Subject: Re: [PATCH] Net, libertas: Resolve memory leak in
+ if_spi_host_to_card()
+From: Dan Williams <dcbw@redhat.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrey Yurovsky <andrey@cozybit.com>, Colin McCabe <colin@cozybit.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 14 Nov 2011 16:43:10 -0600
+In-Reply-To: <alpine.LNX.2.00.1111132211580.3368@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1111132211580.3368@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 2011-11-13 at 22:14 +0100, Jesper Juhl wrote:
+> If we hit the default case in the switch in if_spi_host_to_card() we'll leak
+> the memory we allocated for 'packet'. This patch resolves the leak by freeing
+> the allocated memory in that case.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-when trying to boot kernel 3.2rc1 on my thinkpad t510 I get an endless loop of errors:
+Acked-by: Dan Williams <dcbw@redhat.com>
 
- DRHD: handling fault status reg 2
- DMAR: [DMA Read] Request device [0d:00.0] fault addr fffff000
- DMAR: [fault reason 02] Present bit in context entry is clear
+> ---
+>  drivers/net/wireless/libertas/if_spi.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+>  Compile tested only due to lack of hardware.
+> 
+> diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
+> index 11b69b3..728baa4 100644
+> --- a/drivers/net/wireless/libertas/if_spi.c
+> +++ b/drivers/net/wireless/libertas/if_spi.c
+> @@ -995,6 +995,7 @@ static int if_spi_host_to_card(struct lbs_private *priv,
+>  		spin_unlock_irqrestore(&card->buffer_lock, flags);
+>  		break;
+>  	default:
+> +		kfree(packet);
+>  		netdev_err(priv->dev, "can't transfer buffer of type %d\n",
+>  			   type);
+>  		err = -EINVAL;
+> -- 
+> 1.7.7.3
+> 
+> 
 
-screenshot can be found here:
-http://arndnet.de/lkml/screenshot3.2rc1.jpg
 
-kernel 3.1.1 is booting up flawlessly.
-
-Any idea?
-
-Best regards
-Arnd
