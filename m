@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1KNUpW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 15:45:22 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3002 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093Ab1KNUpV convert rfc822-to-8bit (ORCPT
+	id S1756299Ab1KNUuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 15:50:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40310 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953Ab1KNUuL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 15:45:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 14 Nov 2011 12:45:18 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Denis Kuzmenko <linux@solonet.org.ua>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Nov 2011 12:45:14 -0800
-Subject: RE: [PATCH] gpio/gpio-sysfs: Try to export busy GPIO line leads to
- wrong GPIO line exporting
-Thread-Topic: [PATCH] gpio/gpio-sysfs: Try to export busy GPIO line leads to
- wrong GPIO line exporting
-Thread-Index: Acyho+Dzm3N2JMejQGSgC3+VhTCGYgBaUJ6w
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740805B5B@HQMAIL01.nvidia.com>
-References: <4EBF1DD1.8090600@solonet.org.ua>
-In-Reply-To: <4EBF1DD1.8090600@solonet.org.ua>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Nov 2011 15:50:11 -0500
 MIME-Version: 1.0
+In-Reply-To: <e69163f6245513b05d5d21c2f57b916931ad5bff.1320917557.git.joe@perches.com>
+References: <cover.1320917551.git.joe@perches.com>
+	<e69163f6245513b05d5d21c2f57b916931ad5bff.1320917557.git.joe@perches.com>
+Date: Mon, 14 Nov 2011 21:50:10 +0100
+X-Google-Sender-Auth: SwdDdjc_3e8ROtsAi_lwDlBWB80
+Message-ID: <CAMuHMdXwjFphNNHc-OZXHaC4OP981x48hRuCdi3FjtPKh6YvHA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] treewide: Remove useless NORET_TYPE macro and uses
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote at Saturday, November 12, 2011 6:31 PM:
-> From: Denis Kuzmenko <linux@solonet.org.ua>
-> 
-> Fix bug in gpio-sysfs interface (export of busy GPIO line leads to export of different GPIO line).
-> 
-> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
-> ---
-> 
-> Patch is against 3.0.9
-> When trying to export GPIO line 37(40) which is already exported/requested by kernel code we got GPIO
-> line 3(4) exported.
-> Looks like this is done because `export_store` function doesn't return the number of processed bytes
-> and gets a part of previous buffer again.
-> This fix works for me (Samsung s3c2440).
-> 
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index a971e3d..ccec497 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -633,7 +633,7 @@ static ssize_t export_store(struct class *class,
->  done:
->  	if (status)
->  		pr_debug("%s: status %d\n", __func__, status);
-> -	return status ? : len;
-> +	return len;
->  }
+On Thu, Nov 10, 2011 at 10:41, Joe Perches <joe@perches.com> wrote:
+> It's a very old and now unused prototype marking
+> so just delete it.
+>
+> Neaten panic pointer argument style to keep checkpatch quiet.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-I assume that when the error occurs, status is negative. Is it some
-special value like EINTR, EAGAIN? I'm surprised that the retried write
-is smaller than the whole original buffer.
+For the m68k parts:
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-What's actually retrying the failed write? Is it user-space in response
-to the previous failed write, in a (mistaken?) attempt to handle shorter-
-than-expected-writes? You could confirm this with strace.
+Gr{oetje,eeting}s,
 
-If the patch above really is correct, there are other places it'd be
-needed; it looks like e.g. drivers/video/backlight/backlight.c would
-have the same issue if you gave too-large integers to its sysfs files.
+                        Geert
 
--- 
-nvpublic
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
