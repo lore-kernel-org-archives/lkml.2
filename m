@@ -1,38 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1KNFum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 00:50:42 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:52870 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab1KNFul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 00:50:41 -0500
-Date: Mon, 14 Nov 2011 00:49:29 -0500 (EST)
-Message-Id: <20111114.004929.384609475492837593.davem@davemloft.net>
-To: prox@prolixium.com
-Cc: oliver@neukum.name, gregkh@suse.de, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESEND] net/usb: Misc. fixes for the LG-VL600 LTE USB
- modem
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1320875290-29407-1-git-send-email-prox@prolixium.com>
-References: <1320875290-29407-1-git-send-email-prox@prolixium.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 13 Nov 2011 21:49:31 -0800 (PST)
+	id S1753677Ab1KNFxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 00:53:20 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:57250 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751178Ab1KNFxS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 00:53:18 -0500
+From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+To: Yinghai Lu <yinghai.lu@oracle.com>, James Bottomley <jejb@kernel.org>
+CC: "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
+        "Moore, Eric" <Eric.Moore@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Nov 2011 11:23:10 +0530
+Subject: RE: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
+Thread-Topic: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
+Thread-Index: AcyfwqGDp+CJ2DAvShyW0oahJ83oPACzrzLA
+Message-ID: <A6888A6805518E4EA4AF7072A28264A6047262C8F4@inbmail02.lsi.com>
+References: <4EBBF646.8010705@oracle.com>
+In-Reply-To: <4EBBF646.8010705@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Kamichoff <prox@prolixium.com>
-Date: Wed,  9 Nov 2011 16:48:10 -0500
+A similar patch to fix this issue was already posted by Dan Carpenter.  
 
-> Add checking for valid magic values (needed for stability in the event
-> corrupted packets are received) and remove some other unneeded checks.
-> Also, fix flagging device as WWAN (Bugzilla bug #39952).
-> 
-> Signed-off-by: Mark Kamichoff <prox@prolixium.com>
+Regards,
+Nagalakshmi
 
-Applied, thanks Mark.
+
+-----Original Message-----
+From: Yinghai Lu [mailto:yinghai.lu@oracle.com] 
+Sent: Thursday, November 10, 2011 9:35 PM
+To: James E.J. Bottomley; Nandigama, Nagalakshmi
+Cc: Desai, Kashyap; Moore, Eric; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
+
+
+Got panic:
+[  752.590700] BUG: unable to handle kernel NULL pointer dereference at 00000000000000f6
+[  752.598542] IP: [<ffffffff8160b5f3>] mpt2sas_scsih_reset_handler+0x168/0x183
+[  752.605595] PGD 175d43067 PUD 175d44067 PMD 0 
+[  752.610081] Oops: 0002 [#1] SMP 
+[  752.613342] CPU 0 
+[  752.615175] Modules linked in:
+[  752.618428] 
+[  752.619921] Pid: 9187, comm: sas2flash Not tainted 3.2.0-rc1-tip-yh-01580-g878f195-dirty #1288 Oracle Corporation Sun Blade
+[  752.632632] RIP: 0010:[<ffffffff8160b5f3>]  [<ffffffff8160b5f3>] mpt2sas_scsih_reset_handler+0x168/0x183
+
+it turns out it is introduced in
+
+_scsih_error_recovery_delete_devices() forget to alloc the event before using.
+
+It is introduced by:
+
+| commit 921cd8024b908f8f49f772c8d3a02381b4db2ed2
+| Author: nagalakshmi.nandigama@lsi.com <nagalakshmi.nandigama@lsi.com>
+| Date:   Wed Oct 19 15:36:26 2011 +0530
+|
+|    [SCSI] mpt2sas: New feature - Fast Load Support
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -2802,6 +2802,9 @@ _scsih_error_recovery_delete_devices(str
+ 
+ 	if (ioc->is_driver_loading)
+ 		return;
++	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
++	if (!fw_event)
++		return;
+ 	fw_event->event = MPT2SAS_REMOVE_UNRESPONDING_DEVICES;
+ 	fw_event->ioc = ioc;
+ 	_scsih_fw_event_add(ioc, fw_event);
