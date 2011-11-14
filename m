@@ -1,170 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab1KNXX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:23:29 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:54100 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab1KNXXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:23:24 -0500
-From: Grant Grundler <grundler@chromium.org>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Allan Chou <allan@asix.com.tw>, Freddy Xin <freddy@asix.com.tw>,
-        Grant Grundler <grundler@chromium.org>
-Subject: [PATCH 5/5] net-next:asix: update VERSION and white space changes
-Date: Mon, 14 Nov 2011 15:22:01 -0800
-Message-Id: <1321312921-7748-5-git-send-email-grundler@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1321312921-7748-1-git-send-email-grundler@chromium.org>
-References: <1321312921-7748-1-git-send-email-grundler@chromium.org>
+	id S1756619Ab1KNX3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:29:15 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:43216 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab1KNX3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 18:29:14 -0500
+Date: Mon, 14 Nov 2011 15:29:12 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] pstore: pass reason to backend write callback
+Message-ID: <20111114232912.GA14717@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes. Three things targeted:
-o update VERSION to reflect previous changes.
-o fix up white space/formatting of some lines
-o define 150 to be AX_SWRESET_MDELAY (self documenting code)
+This allows a backend to filter on the dmesg reason as well as the pstore
+reason. When ramoops is switched to pstore, this is needed since it has
+no interest in storing non-crash dmesg details.
 
-Signed-off-by: Grant Grundler <grundler@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/usb/asix.c |   46 +++++++++++++++++++++-------------------------
- 1 files changed, 21 insertions(+), 25 deletions(-)
+ drivers/acpi/apei/erst.c   |    6 ++++--
+ drivers/firmware/efivars.c |    8 +++++---
+ fs/pstore/platform.c       |    9 +++++----
+ include/linux/pstore.h     |   12 +++++++++---
+ 4 files changed, 23 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index c07dd26..29598dc 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -36,7 +36,7 @@
- #include <linux/usb/usbnet.h>
- #include <linux/slab.h>
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index b8b97d6..76d0f84 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -934,7 +934,8 @@ static int erst_close_pstore(struct pstore_info *psi);
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+ 			   struct timespec *time, char **buf,
+ 			   struct pstore_info *psi);
+-static int erst_writer(enum pstore_type_id type, u64 *id, unsigned int part,
++static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
++		       u64 *id, unsigned int part,
+ 		       size_t size, struct pstore_info *psi);
+ static int erst_clearer(enum pstore_type_id type, u64 id,
+ 			struct pstore_info *psi);
+@@ -1051,7 +1052,8 @@ out:
+ 	return (rc < 0) ? rc : (len - sizeof(*rcd));
+ }
  
--#define DRIVER_VERSION "26-Sep-2011"
-+#define DRIVER_VERSION "08-Nov-2011"
- #define DRIVER_NAME "asix"
- 
- /* ASIX AX8817X based USB 2.0 Ethernet Devices */
-@@ -94,6 +94,8 @@
- #define AX_SWRESET_IPRL			0x20
- #define AX_SWRESET_IPPD			0x40
- 
-+#define AX_SWRESET_MDELAY	150
-+
- #define AX88772_IPG0_DEFAULT		0x15
- #define AX88772_IPG1_DEFAULT		0x0c
- #define AX88772_IPG2_DEFAULT		0x12
-@@ -494,9 +496,9 @@ static int asix_sw_reset(struct usbnet *dev, u8 flags)
+-static int erst_writer(enum pstore_type_id type, u64 *id, unsigned int part,
++static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
++		       u64 *id, unsigned int part,
+ 		       size_t size, struct pstore_info *psi)
  {
- 	int ret;
- 
--        ret = asix_write_cmd(dev, AX_CMD_SW_RESET, flags, 0, 0, NULL);
-+	ret = asix_write_cmd(dev, AX_CMD_SW_RESET, flags, 0, 0, NULL);
- 	if (ret < 0)
--		netdev_err(dev->net, "Failed to send software reset: %02x\n", ret);
-+		netdev_err(dev->net, "Failed to send SW_RESET: %02x\n", ret);
- 
- 	return ret;
- }
-@@ -540,7 +542,6 @@ static u16 asix_read_medium_status(struct usbnet *dev)
- 	}
- 
- 	return le16_to_cpu(v);
--
- }
- 
- static int asix_write_medium_mode(struct usbnet *dev, u16 mode)
-@@ -792,9 +793,9 @@ static int asix_set_mac_address(struct net_device *net, void *p)
+ 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index a54a6b9..0a53a05 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -495,7 +495,8 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
  	return 0;
  }
  
--/* We need to override some ethtool_ops so we require our
--   own structure so we don't interfere with other usbnet
--   devices that may be connected at the same time. */
-+/* We override some ethtool_ops to access per device data.
-+ * Multiple usbnet devices may be connected at the same time.
-+ */
- static const struct ethtool_ops ax88172_ethtool_ops = {
- 	.get_drvinfo		= asix_get_drvinfo,
- 	.get_link		= asix_get_link,
-@@ -994,25 +995,20 @@ static int ax88772_reset(struct usbnet *dev)
- 	if (ret < 0)
- 		goto out;
+-static int efi_pstore_write(enum pstore_type_id type, u64 *id,
++static int efi_pstore_write(enum pstore_type_id type,
++		enum kmsg_dump_reason reason, u64 *id,
+ 		unsigned int part, size_t size, struct pstore_info *psi)
+ {
+ 	char name[DUMP_NAME_LEN];
+@@ -565,7 +566,7 @@ static int efi_pstore_write(enum pstore_type_id type, u64 *id,
+ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+ 			    struct pstore_info *psi)
+ {
+-	efi_pstore_write(type, &id, (unsigned int)id, 0, psi);
++	efi_pstore_write(type, 0, &id, (unsigned int)id, 0, psi);
  
--	msleep(150);
-+	msleep(AX_SWRESET_MDELAY);
+ 	return 0;
+ }
+@@ -586,7 +587,8 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	return -1;
+ }
  
- 	ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
- 	if (ret < 0)
- 		goto out;
+-static int efi_pstore_write(enum pstore_type_id type, u64 *id,
++static int efi_pstore_write(enum pstore_type_id type,
++		enum kmsg_dump_reason reason, u64 *id,
+ 		unsigned int part, size_t size, struct pstore_info *psi)
+ {
+ 	return 0;
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index c09cbb4..2454dbe 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -122,7 +122,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		memcpy(dst, s1 + s1_start, l1_cpy);
+ 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
  
--	msleep(150);
-+	msleep(AX_SWRESET_MDELAY);
+-		ret = psinfo->write(PSTORE_TYPE_DMESG, &id, part,
++		ret = psinfo->write(PSTORE_TYPE_DMESG, reason, &id, part,
+ 				   hsize + l1_cpy + l2_cpy, psinfo);
+ 		if (ret == 0 && reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+ 			pstore_new_entry = 1;
+@@ -244,7 +244,8 @@ static void pstore_timefunc(unsigned long dummy)
+  * Call platform driver to write a record to the
+  * persistent store.
+  */
+-int pstore_write(enum pstore_type_id type, char *buf, size_t size)
++int pstore_write(enum pstore_type_id type, enum kmsg_dump_reason reason,
++		 char *buf, size_t size)
+ {
+ 	u64		id;
+ 	int		ret;
+@@ -258,10 +259,10 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
  
--	if (embd_phy) {
--		ret = asix_sw_reset(dev, AX_SWRESET_IPRL);
--		if (ret < 0)
--			goto out;
--	} else {
--		ret = asix_sw_reset(dev, AX_SWRESET_PRTE);
--		if (ret < 0)
--			goto out;
--	}
-+	ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL : AX_SWRESET_PRTE);
-+	if (ret < 0)
-+		goto out;
+ 	spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 	memcpy(psinfo->buf, buf, size);
+-	ret = psinfo->write(type, &id, 0, size, psinfo);
++	ret = psinfo->write(type, reason, &id, 0, size, psinfo);
+ 	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ 	if (ret == 0 && pstore_is_mounted())
+-		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, buf,
++		pstore_mkfile(type, psinfo->name, id, buf,
+ 			      size, CURRENT_TIME, psinfo);
+ 
+ 	return 0;
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 781cf43..dabf5eb 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -22,6 +22,9 @@
+ #ifndef _LINUX_PSTORE_H
+ #define _LINUX_PSTORE_H
+ 
++#include <linux/time.h>
++#include <linux/kmsg_dump.h>
 +
-+	msleep(AX_SWRESET_MDELAY);
+ /* types */
+ enum pstore_type_id {
+ 	PSTORE_TYPE_DMESG	= 0,
+@@ -40,7 +43,8 @@ struct pstore_info {
+ 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+ 			struct timespec *time, char **buf,
+ 			struct pstore_info *psi);
+-	int		(*write)(enum pstore_type_id type, u64 *id,
++	int		(*write)(enum pstore_type_id type,
++			enum kmsg_dump_reason reason, u64 *id,
+ 			unsigned int part, size_t size, struct pstore_info *psi);
+ 	int		(*erase)(enum pstore_type_id type, u64 id,
+ 			struct pstore_info *psi);
+@@ -49,7 +53,8 @@ struct pstore_info {
  
--	msleep(150);
- 	rx_ctl = asix_read_rx_ctl(dev);
- 	dbg("RX_CTL is 0x%04x after software reset", rx_ctl);
- 	ret = asix_write_rx_ctl(dev, 0x0000);
-@@ -1026,13 +1022,13 @@ static int ax88772_reset(struct usbnet *dev)
- 	if (ret < 0)
- 		goto out;
- 
--	msleep(150);
-+	msleep(AX_SWRESET_MDELAY);
- 
- 	ret = asix_sw_reset(dev, AX_SWRESET_IPRL | AX_SWRESET_PRL);
- 	if (ret < 0)
- 		goto out;
- 
--	msleep(150);
-+	msleep(AX_SWRESET_MDELAY);
- 
- 	asix_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
- 	asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
-@@ -1290,10 +1286,10 @@ static int ax88178_reset(struct usbnet *dev)
- 	asix_write_cmd(dev, AX_CMD_SW_PHY_SELECT, 0, 0, 0, NULL);
- 
- 	asix_sw_reset(dev, 0);
--	msleep(150);
-+	msleep(AX_SWRESET_MDELAY);
- 
- 	asix_sw_reset(dev, AX_SWRESET_PRL | AX_SWRESET_IPPD);
--	msleep(150);
-+	msleep(AX_SWRESET_MDELAY);
- 
- 	asix_write_rx_ctl(dev, 0);
- 
-@@ -1672,13 +1668,13 @@ static struct usb_driver asix_driver = {
- 
- static int __init asix_init(void)
- {
-- 	return usb_register(&asix_driver);
-+	return usb_register(&asix_driver);
+ #ifdef CONFIG_PSTORE
+ extern int pstore_register(struct pstore_info *);
+-extern int pstore_write(enum pstore_type_id type, char *buf, size_t size);
++extern int pstore_write(enum pstore_type_id type, enum kmsg_dump_reason reason,
++			char *buf, size_t size);
+ #else
+ static inline int
+ pstore_register(struct pstore_info *psi)
+@@ -57,7 +62,8 @@ pstore_register(struct pstore_info *psi)
+ 	return -ENODEV;
  }
- module_init(asix_init);
- 
- static void __exit asix_exit(void)
+ static inline int
+-pstore_write(enum pstore_type_id type, char *buf, size_t size)
++pstore_write(enum pstore_type_id type, enum kmsg_dump_reason reason,
++	     char *buf, size_t size)
  {
-- 	usb_deregister(&asix_driver);
-+	usb_deregister(&asix_driver);
+ 	return -ENODEV;
  }
- module_exit(asix_exit);
- 
 -- 
-1.7.3.1
+1.7.0.4
 
