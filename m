@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab1KNR6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:58:54 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36739 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699Ab1KNR6w (ORCPT
+	id S1755698Ab1KNSAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 13:00:31 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56683 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab1KNSAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:58:52 -0500
-Message-ID: <4EC156D8.1080803@gmail.com>
-Date: Mon, 14 Nov 2011 09:58:48 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Mon, 14 Nov 2011 13:00:30 -0500
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>, tglx@linutronix.de
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 0/2] irq/of: Enchance irq_domain support.
-References: <1321062616-28317-1-git-send-email-ddaney.cavm@gmail.com> <4EBDEE3D.1000000@gmail.com>
-In-Reply-To: <4EBDEE3D.1000000@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740805AAE@HQMAIL01.nvidia.com>
+References: <1321261837-31320-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805AAE@HQMAIL01.nvidia.com>
+Date: Mon, 14 Nov 2011 23:30:29 +0530
+Message-ID: <CAJuYYwTKNLh0NxfUBubGJuyLFDgkD6qPc=brd8dLObUW9p0tgA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: indicate GPIO direction on single GPIO request
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2011 07:55 PM, Rob Herring wrote:
-> On 11/11/2011 07:50 PM, ddaney.cavm@gmail.com wrote:
->> From: David Daney<david.daney@cavium.com>
->>
->> This is the first cut at hooking up my Octeon port to the irq_domain things.
->>
->> The Octeon specific patches are part of a larger set, and will need to
->> be applied with that set, the first patch is stand-alone.
->>
->> The basic problem being solved taken from one of my other e-mails:
->>
->>     Unfortunately, although a good idea, kernel/irq/irqdomain.c makes a
->>     bunch of assumptions that don't hold for Octeon.  We may be able to
->>     improve it so that it flexible enough to suit us.
->>
->>
->>     Here are the problems I see:
->>
->>     1) It is assumed that there is some sort of linear correspondence
->>     between 'hwirq' and 'irq', and that the range of valid values is
->>     contiguous.
->>
->>     2) It is assumed that the concepts of nr_irq, irq_base and
->>     hwirq_base have easy to determine values and you can do iteration
->>     over their ranges by adding indexes to the bases.
->>
+On 14 November 2011 22:48, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Monday, November 14, 2011 2:11 AM:
+>> When requesting a single GPIO pin to be muxed in, some controllers
+>> will need to poke a different value into the control register
+>> depending on whether the pin will be used for GPIO output or GPIO
+>> input. So pass this info along for the gpio_request_enable()
+>> function, we assume this is not needed for the gpio_free_disable()
+>> function for the time being.
 >
-> I still think this is the wrong approach.
+> I'm not sure this API change makes sense.
 >
-> Are the gpio interrupts the source of your problem here?
+> Functions gpio_direction_{input,output} already exist to configure the
+> direction of a GPIO, and drivers should already be using them. These have
+> to work to allow drivers to toggle the direction dynamically. Requiring
+> them to additionally pass this same information to the pinmux driver when
+> setting up the pinmux seems like extra redundant work.
 
-No.
+Hardware that require pinmux controller also to be programmed for
+setting the gpio direction would require this. Yes, there does seem to
+be redundancy if the driver has to call both
+gpio_direction_{input,output} and pinmux_request_gpio (with the new
+direction parameter). Also, there seems to be a redundancy if the
+driver calls both gpio_request and pinmux_request_gpio.
 
-> That's how I read it.
-
-Take a look at Patch 2/2, since the GPIO irqs are contiguous over both 
-irq and hwirq numbers, I use the existing infrastructure with no 
-modifications.
-
-> You have 16 GPIO irqs directly connected into lines on your
-> primary interrupt controller which has 128 lines. So for a Linux irq
-> number, you want to translate to a GPIO hwirq number and/or a CIU hwirq
-> number. Trying to have 2 hwirq mappings for 1 Linux irq number just
-> won't work. It seems to me you should use a chained handler here because
-> you need to process the interrupt at both the primary ctrlr and gpio
-> ctrlr levels.
 >
-
-All moot as it is based on the false predicate of GPIO irqs being the 
-problem.
-
-
-The root of the problem are all of the irqs that are not GPIO.  I have:
-
-o irq numbers currently in the range [9..196], with holes for any given 
-SOC/Board implementation.  SOCs currently in development will have 
-additional irq numbers with even more holes.
-
-o Two different interrupt controllers.  One with 128 lines, the other 
-with  512 or more lines, both sparsely populated.  The mapping of hwirq 
-to irq is done at boot time based on the hardware the kernel image is 
-running on.  Note that the second type of irq controller support is not 
-in the kernel.org kernel, but it exists, and I intend on getting support 
-for it merged ASAP.
-
-At a minimum the loop in irq_domain_add() where we iterate over a linear 
-range of irq numbers is not flexible enough.  You may not like my 
-iterator functions in irq_domain_ops, but we need to provide something 
-better than the irq_domain_for_each_irq() macro.
-
-David Daney
-
-
-> Rob
+> Instead, shouldn't it work like this:
 >
->>
->> David Daney (2):
->>    irq/of/ARM: Enhance irq iteration capability of irq_domain code.
->>    MIPS: Octeon: Add irq_create_of_mapping() and GPIO interrupts.
->>
->>   arch/arm/common/gic.c                |   32 +++--
->>   arch/mips/Kconfig                    |    1 +
->>   arch/mips/cavium-octeon/octeon-irq.c |  279 +++++++++++++++++++++++++++++++++-
->>   include/linux/irqdomain.h            |   29 +++-
->>   kernel/irq/irqdomain.c               |   97 +++++++++---
->>   5 files changed, 390 insertions(+), 48 deletions(-)
->>
+> * If the pinmux driver implementation behind pinmux_request_gpio() needs
+> to know the direction when configuring the HW, default to input for safety;
+> that will prevent the SoC driving a signal on a GPIO that's driven by some
+> other device.
+>
+> * Rely exclusively on gpio_direction_{input,output} to allow drivers to
+> configure the direction.
+>
+> * If the pinmux HW needs programming in response to the gpio_direction_*
+> calls, have the GPIO and pinmux driver internally communicate to achieve
+> this.
+
+If gpio_direction_* does have to setup the pinmux, then it has to be
+done using one the external interfaces which the pinctrl/pinmux
+subsystem provides. That has been pinmux_request_gpio for now. If
+adding 'direction' to pinmux_request_gpio is redundant, then there
+should be another external interface provided by pinmux subsystem for
+gpio_direction_{input,output} to setup the direction.
+
+Thanks,
+Thomas.
+
+>
+> Does that seem reasonable?
+>
+> --
+> nvpublic
 >
 >
-
