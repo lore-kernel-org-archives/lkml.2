@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab1KNXPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:15:44 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39379 "EHLO ogre.sisk.pl"
+	id S1756366Ab1KNXQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:16:16 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39386 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab1KNXPn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:15:43 -0500
+	id S1753450Ab1KNXQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 18:16:15 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: myungjoo.ham@samsung.com
-Subject: Re: [PATCH 1/2] devfreq: fix use after free in devfreq_remove_device
-Date: Tue, 15 Nov 2011 00:18:22 +0100
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] PM/Usermodehelper: Cleanup remnants of usermodehelper_pm_callback()
+Date: Tue, 15 Nov 2011 00:18:55 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        =?euc-kr?q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        Mike Turquette <mturquette@ti.com>
-References: <29486171.446861320912914822.JavaMail.weblogic@epml06>
-In-Reply-To: <29486171.446861320912914822.JavaMail.weblogic@epml06>
+Cc: dhowells@redhat.com, eparis@redhat.com, kay.sievers@vrfy.org,
+        jmorris@namei.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <20111110161921.3714.25382.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111110161921.3714.25382.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="euc-kr"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201111150018.22817.rjw@sisk.pl>
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111150018.55625.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 10, 2011, 함명주 wrote:
-> Sender : Axel Lin<axel.lin@gmail.com> Date : 2011-11-10 16:28 (GMT+09:00)
-> > In devfreq_remove_device, calling _remove_devfreq will also free devfreq.
-> > Don't dereference devfreq->governor->no_central_polling after _remove_devfreq.
-> > 
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Thursday, November 10, 2011, Srivatsa S. Bhat wrote:
+> usermodehelper_pm_callback() no longer exists in the kernel. There are 2
+> comments in kernel/kmod.c that still refer to it.
 > 
-> Thank you for finding that out.
+> Also, the patch that introduced usermodehelper_pm_callback(), #included
+> 2 header files: <linux/notifier.h> and <linux/suspend.h>. But these are
+> no longer necessary.
 > 
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> This patch updates the comments as appropriate and removes the unnecessary
+> header file inclusions.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Applied to linux-pm/pm-fixes.
+Applied to linux-pm/linux-next.
 
 Thanks,
 Rafael
 
 
-> > ---
-> > drivers/devfreq/devfreq.c |    8 ++++++--
-> > 1 files changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> > index d065925..59d24e9 100644
-> > --- a/drivers/devfreq/devfreq.c
-> > +++ b/drivers/devfreq/devfreq.c
-> > @@ -418,10 +418,14 @@ out:
-> >   */
-> > int devfreq_remove_device(struct devfreq *devfreq)
-> > {
-> > + bool central_polling;
-> > +
-> > if (!devfreq)
-> > return -EINVAL;
-> > 
-> > - if (!devfreq->governor->no_central_polling) {
-> > + central_polling = !devfreq->governor->no_central_polling;
-> > +
-> > + if (central_polling) {
-> > mutex_lock(&devfreq_list_lock);
-> > while (wait_remove_device == devfreq) {
-> > mutex_unlock(&devfreq_list_lock);
-> > @@ -433,7 +437,7 @@ int devfreq_remove_device(struct devfreq *devfreq)
-> > mutex_lock(&devfreq->lock);
-> > _remove_devfreq(devfreq, false); /* it unlocks devfreq->lock */
-> > 
-> > - if (!devfreq->governor->no_central_polling)
-> > + if (central_polling)
-> > mutex_unlock(&devfreq_list_lock);
-> > 
-> > return 0;
+> ---
 > 
->  MyungJoo Ham (함명주)
+>  kernel/kmod.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> Mobile Software Platform Lab,
-> Digital Media and Communications (DMC) Business
-> Samsung Electronics
-> cell: +82-10-6714-2858 / office: +82-31-279-8033
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index a4bea97..2142687 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -34,8 +34,6 @@
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/resource.h>
+> -#include <linux/notifier.h>
+> -#include <linux/suspend.h>
+>  #include <asm/uaccess.h>
+>  
+>  #include <trace/events/module.h>
+> @@ -282,14 +280,14 @@ static int usermodehelper_disabled = 1;
+>  static atomic_t running_helpers = ATOMIC_INIT(0);
+>  
+>  /*
+> - * Wait queue head used by usermodehelper_pm_callback() to wait for all running
+> + * Wait queue head used by usermodehelper_disable() to wait for all running
+>   * helpers to finish.
+>   */
+>  static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
+>  
+>  /*
+>   * Time to wait for running_helpers to become zero before the setting of
+> - * usermodehelper_disabled in usermodehelper_pm_callback() fails
+> + * usermodehelper_disabled in usermodehelper_disable() fails
+>   */
+>  #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
+>  
+> 
+> 
+> 
 
