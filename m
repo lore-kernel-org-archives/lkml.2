@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab1KNDrV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 22:47:21 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:15200 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab1KNDrU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 22:47:20 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzzz2dh2a8h668h839h93fh62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 14 Nov 2011 11:59:09 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 3/8] of: create of_phandle_args to simplify return of
- phandle parsing data
-Message-ID: <20111114035908.GA10236@S2100-06.ap.freescale.net>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-4-git-send-email-grant.likely@secretlab.ca>
+	id S1753246Ab1KND75 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 22:59:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52489 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab1KND74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 22:59:56 -0500
+Date: Sun, 13 Nov 2011 19:58:15 -0800
+From: Greg KH <gregkh@suse.de>
+To: wangyanqing <Udknight@gmail.com>, wd@denx.de, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]usb: serial: pl2303: rm id
+Message-ID: <20111114035815.GA17996@suse.de>
+References: <20111110060408.GA25028@udknight.homenetwork>
+ <20111114011130.GA4433@udknight.homenetwork>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320801583-12774-4-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <20111114011130.GA4433@udknight.homenetwork>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Mon, Nov 14, 2011 at 09:11:30AM +0800, wangyanqing wrote:
+> On Thu, Nov 10, 2011 at 02:04:08PM +0800, wangyanqing wrote:
+> > I get report from customer that his usb-serial
+> > converter doesn't work well,it sometimes work,
+> > but sometimes it doesn't.
+> > 
+> > The usb-serial converter's id:
+> > vendor_id product_id
+> > 0x4348    0x5523
+> > 
+> > Then I search the usb-serial codes, and there are
+> > two drivers announce support this device, pl2303
+> > and ch341, commit 026dfaf1 cause it. Through many
+> > times to test, ch341 works well with this device,
+> > and pl2303 doesn't work quite often(it just work quite little).
+> > 
+> > ch341 works well with this device, so we doesn't
+> > need pl2303 to support.I try to revert 026dfaf1 first,
+> > but it failed. So I prepare this patch by hand to revert it.
+> > 
+> > Signed-off-by: Wang YanQing <Udknight@gmail.com>
+> > ---
+> >  drivers/usb/serial/pl2303.c |    1 -
+> >  drivers/usb/serial/pl2303.h |    4 ----
+> >  2 files changed, 0 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+> > index 9083d1e..fc2d66f 100644
+> > --- a/drivers/usb/serial/pl2303.c
+> > +++ b/drivers/usb/serial/pl2303.c
+> > @@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
+> >  	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+> >  	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+> >  	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
+> > -	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
+> >  	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
+> >  	{ }					/* Terminating entry */
+> >  };
+> > diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+> > index 3d10d7f..c38b8c0 100644
+> > --- a/drivers/usb/serial/pl2303.h
+> > +++ b/drivers/usb/serial/pl2303.h
+> > @@ -145,10 +145,6 @@
+> >  #define ADLINK_VENDOR_ID		0x0b63
+> >  #define ADLINK_ND6530_PRODUCT_ID	0x6530
+> >  
+> > -/* WinChipHead USB->RS 232 adapter */
+> > -#define WINCHIPHEAD_VENDOR_ID		0x4348
+> > -#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
+> > -
+> >  /* SMART USB Serial Adapter */
+> >  #define SMART_VENDOR_ID	0x0b8c
+> >  #define SMART_PRODUCT_ID	0x2303
+> > -- 
+> > 1.7.3.4
+> > 
+> Hi all.
+> Maybe it should be noticed that not only one usb-serial converter base 
+> this chip have this issue, but there are about 50(even more) usb-serial 
+> coverter lines have the same issue, so we can't ignore it.
+> Of course we can make all the drivers work well, but we should make it
+> useful at the first.
 
-On Tue, Nov 08, 2011 at 06:19:38PM -0700, Grant Likely wrote:
-[...]
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 4948552..566deab 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -222,6 +222,13 @@ extern const void *of_get_property(const struct device_node *node,
->  #define for_each_property(pp, properties) \
->  	for (pp = properties; pp != NULL; pp = pp->next)
->  
-> +#define MAX_PHANDLE_ARGS 8
-> +struct of_phandle_args {
-> +	struct device_node *np;
-> +	int args_count;
-> +	uint32_t args[MAX_PHANDLE_ARGS];
-> +};
-> +
+Why not add the device id to the other driver at the same time, that
+would ensure that the device continues to work, right?
 
-I'm seeing a bunch of warnings like the one below when compiling imx
-with the series.  And moving the definition to somewhere before
-'#include <asm/prom.h>' in linux/of.h removes the warnings for me.
+thanks,
 
-  CC      arch/arm/kernel/devtree.o
-In file included from arch/arm/plat-mxc/include/mach/irqs.h:14:0,
-                 from arch/arm/include/asm/irq.h:4,
-                 from arch/arm/include/asm/prom.h:17,
-                 from include/linux/of.h:133,
-                 from arch/arm/kernel/devtree.c:17:
-include/asm-generic/gpio.h:133:24: warning: ‘struct of_phandle_args’ declared inside parameter list
-include/asm-generic/gpio.h:133:24: warning: its scope is only this definition or declaration, which is probably not what you want
-
--- 
-Regards,
-Shawn
-
+greg k-h
