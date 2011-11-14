@@ -1,40 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab1KNFXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 00:23:16 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:43523 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab1KNFXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 00:23:15 -0500
-Date: Mon, 14 Nov 2011 00:22:57 -0500 (EST)
-Message-Id: <20111114.002257.1441682753359852153.davem@davemloft.net>
-To: horti@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david.decotigny@google.com, ian.campbell@citrix.com,
-        rick.jones2@hp.com, eric.dumazet@gmail.com, maheshb@google.com
-Subject: Re: [PATCH net-next v2] net-forcedeth: Add internal loopback
- support for forcedeth NICs.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0a790bcdac9827d6e4a9162cc8f6b5bcb70acd4e.1321063429.git.horti@google.com>
-References: <cover.1321063429.git.horti@google.com>
-	<0a790bcdac9827d6e4a9162cc8f6b5bcb70acd4e.1321063429.git.horti@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1752505Ab1KNFYm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 00:24:42 -0500
+Received: from mga01.intel.com ([192.55.52.88]:53632 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251Ab1KNFYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 00:24:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,506,1315206000"; 
+   d="scan'208";a="84794439"
+Subject: Re: INFO: possible recursive locking detected: get_partial_node()
+ on 3.2-rc1
+From: Shaohua Li <shaohua.li@intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Julie Sullivan <kernelmail.jms@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <alpine.DEB.2.00.1111110857330.3557@router.home>
+References: <20111109090556.GA5949@zhy>
+	 <201111102335.06046.kernelmail.jms@gmail.com>
+	 <1320980671.22361.252.camel@sli10-conroe>
+	 <alpine.DEB.2.00.1111110857330.3557@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Nov 2011 13:34:13 +0800
+Message-ID: <1321248853.22361.280.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 13 Nov 2011 21:23:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sanjay Hortikar <horti@google.com>
-Date: Fri, 11 Nov 2011 18:11:21 -0800
-
-> Support enabling/disabling/querying internal loopback mode for
-> forcedeth NICs using ethtool.
+On Fri, 2011-11-11 at 23:02 +0800, Christoph Lameter wrote:
+> On Fri, 11 Nov 2011, Shaohua Li wrote:
 > 
-> Signed-off-by: Sanjay Hortikar <horti@google.com>
-> Signed-off-by: Mahesh Bandewar <maheshb@google.com>
+> > Looks this could be a real dead lock. we hold a lock to free a object,
+> > but the free need allocate a new object. if the new object and the freed
+> > object are from the same slab, there is a deadlock.
+> 
+> unfreeze partials is never called when going through get_partial_node()
+> so there is no deadlock AFAICT.
+the unfreeze_partial isn't called from get_partial_node(). I thought the
+code path is something like this: kmem_cache_free()->put_cpu_partial()
+(hold lock) ->unfreeze_partials() ->discard_slab ->debug_object_init()
+->kmem_cache_alloc->get_partial_node()(hold lock). Not sure if this will
+really happen, but looks like a deadlock.
+But anyway, discard_slab() can be move out of unfreeze_partials()
 
-Applied, thanks.
+> > discard_slab() doesn't need hold the lock if the slab is already removed
+> > from partial list. how about below patch, only compile tested.
+> 
+> In general I think it is good to move the call to discard_slab() out from
+> under the list_lock in unfreeze_partials(). Could you fold
+> discard_page_list into unfreeze_partials()? __flush_cpu_slab still calls
+> discard_page_list with disabled interrupts even after your patch.
+I'm afraid there is alloc-in-atomic() error, but Yong & Julie's test
+shows this is over thinking. Here is the updated patch. Yong & Julie, I
+added your report/test by, because the new patch should be just like the
+old one, but since I changed it a little bit, can you please have a
+quick check? Thanks!
+
+
+
+Subject: slub: move discard_slab out of node lock
+
+Lockdep reports there is potential deadlock for slub node list_lock.
+discard_slab() is called with the lock hold in unfreeze_partials(),
+which could trigger a slab allocation, which could hold the lock again.
+
+discard_slab() doesn't need hold the lock actually, if the slab is
+already removed from partial list.
+
+Reported-and-tested-by: Yong Zhang <yong.zhang0@gmail.com>
+Reported-and-tested-by: Julie Sullivan <kernelmail.jms@gmail.com>
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ mm/slub.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2011-11-11 16:17:39.000000000 +0800
++++ linux/mm/slub.c	2011-11-14 13:11:11.000000000 +0800
+@@ -1862,7 +1862,7 @@ static void unfreeze_partials(struct kme
+ {
+ 	struct kmem_cache_node *n = NULL;
+ 	struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
+-	struct page *page;
++	struct page *page, *discard_page = NULL;
+ 
+ 	while ((page = c->partial)) {
+ 		enum slab_modes { M_PARTIAL, M_FREE };
+@@ -1916,14 +1916,22 @@ static void unfreeze_partials(struct kme
+ 				"unfreezing slab"));
+ 
+ 		if (m == M_FREE) {
+-			stat(s, DEACTIVATE_EMPTY);
+-			discard_slab(s, page);
+-			stat(s, FREE_SLAB);
++			page->next = discard_page;
++			discard_page = page;
+ 		}
+ 	}
+ 
+ 	if (n)
+ 		spin_unlock(&n->list_lock);
++
++	while (discard_page) {
++		page = discard_page;
++		discard_page = discard_page->next;
++
++		stat(s, DEACTIVATE_EMPTY);
++		discard_slab(s, page);
++		stat(s, FREE_SLAB);
++	}
+ }
+ 
+ /*
+
+
