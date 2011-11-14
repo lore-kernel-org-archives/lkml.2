@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab1KNVQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 16:16:28 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39310 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab1KNVQ0 (ORCPT
+	id S1756502Ab1KNVRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 16:17:14 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:30285 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754868Ab1KNVRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 16:16:26 -0500
-Date: Mon, 14 Nov 2011 22:16:17 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 07/10] cgroup: introduce cgroup_taskset and use it in
- subsys->can_attach(), cancel_attach() and attach()
-Message-ID: <20111114211611.GI9446@somewhere>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-8-git-send-email-tj@kernel.org>
+	Mon, 14 Nov 2011 16:17:13 -0500
+Date: Mon, 14 Nov 2011 13:17:11 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Andrei Warkentin <andreiw@vmware.com>
+Message-ID: <210327451.46002.1321305431817.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <alpine.LNX.2.00.1111082056510.5763@swampdragon.chaosbits.net>
+Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320191193-8110-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:46:30PM -0700, Tejun Heo wrote:
-> Currently, there's no way to pass multiple tasks to cgroup_subsys
-> methods necessitating the need for separate per-process and per-task
-> methods.  This patch introduces cgroup_taskset which can be used to
-> pass multiple tasks and their associated cgroups to cgroup_subsys
-> methods.
+----- Original Message -----
+> From: "Jesper Juhl" <jj@chaosbits.net>
+> To: "Andrei Warkentin" <andreiw@vmware.com>
+> Cc: linux-kernel@vger.kernel.org
+> Sent: Tuesday, November 8, 2011 2:57:27 PM
+> Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
 > 
-> Three methods - can_attach(), cancel_attach() and attach() - are
-> converted to use cgroup_taskset.  This unifies passed parameters so
-> that all methods have access to all information.  Conversions in this
-> patchset are identical and don't introduce any behavior change.
+> On Tue, 8 Nov 2011, Andrei Warkentin wrote:
 > 
-> -v2: documentation updated as per Paul Menage's suggestion.
+> > 1 is a power of two, therefore rounddown_pow_of_two(1) should
+> > return 1. It does
+> > in case the argument is a variable but in case it's a constant it
+> > behaves
+> > wrong and returns 0. Probably nobody ever did it so this was never
+> > noticed,
+> > however net/drivers/vmxnet3 with latest GCC does and breaks on
+> > unicpu systems.
+> > 
+> > Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
+> > ---
+> >  include/linux/log2.h |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/log2.h b/include/linux/log2.h
+> > index 25b8086..ccda848 100644
+> > --- a/include/linux/log2.h
+> > +++ b/include/linux/log2.h
+> > @@ -185,7 +185,7 @@ unsigned long __rounddown_pow_of_two(unsigned
+> > long n)
+> >  #define rounddown_pow_of_two(n)			\
+> >  (						\
+> >  	__builtin_constant_p(n) ? (		\
+> > -		(n == 1) ? 0 :			\
+> > +		(n == 1) ? 1 :			\
+> >  		(1UL << ilog2(n))) :		\
+> >  	__rounddown_pow_of_two(n)		\
+> >   )
+> > 
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Paul Menage <paul@paulmenage.org>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: James Morris <jmorris@namei.org>
+> For what it's worth; looks good to me.
 
-Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
+Is that an Acked-by or a Reviewed-by?
+
+Thanks,
+A
