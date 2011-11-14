@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab1KNK2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 05:28:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40797 "EHLO mx1.redhat.com"
+	id S1754873Ab1KNK2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 05:28:40 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:17382 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab1KNK2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 05:28:19 -0500
-Date: Mon, 14 Nov 2011 11:29:23 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/4] mm: more intensive memory corruption debug
-Message-ID: <20111114102923.GB2513@redhat.com>
-References: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
- <1321014994-2426-2-git-send-email-sgruszka@redhat.com>
- <20111111142953.GM3083@suse.de>
+	id S1752803Ab1KNK2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 05:28:39 -0500
+Message-ID: <4EC0ED51.8030702@parallels.com>
+Date: Mon, 14 Nov 2011 14:28:33 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111111142953.GM3083@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>, Nathan Lynch <ntl@pobox.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serue@us.ibm.com>, Daniel Lezcano <dlezcano@fr.ibm.com>
+Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
+ pids
+References: <4EBCF4E7.4090002@parallels.com> <20111111152532.GA22640@redhat.com> <4EBD461E.1000106@parallels.com> <CAOS58YOW5KpP3OJDd5PqsMUg6PicnLW6jH_5Hb7WGPsnCYXGBw@mail.gmail.com> <CAOS58YOS77+WZt19qu_72DPgEPdwTdkD88J6RNR4a3x0h-2Qkw@mail.gmail.com> <4EBD4ACB.2070001@parallels.com> <20111111162200.GA24737@google.com> <4EBD522E.2000203@parallels.com> <20111111170244.GB24737@google.com> <4EBD57D4.1060503@parallels.com> <20111113192848.GC4633@redhat.com>
+In-Reply-To: <20111113192848.GC4633@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 02:29:53PM +0000, Mel Gorman wrote:
-> >  	if (PageBuddy(buddy) && page_order(buddy) == order) {
-> >  		VM_BUG_ON(page_count(buddy) != 0);
-> >  		return 1;
-> > @@ -518,9 +562,15 @@ static inline void __free_one_page(struct page *page,
-> >  			break;
-> >  
-> >  		/* Our buddy is free, merge with it and move up one order. */
-> > -		list_del(&buddy->lru);
-> > -		zone->free_area[order].nr_free--;
-> > -		rmv_page_order(buddy);
-> > +		if (page_is_corrupt_dbg(buddy)) {
-> > +			clear_page_corrupt_dbg(buddy);
-> > +			set_page_private(page, 0);
-> > +			__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+>> Hm, so intrusiveness is your main concern here, I see.
 > 
-> Why are the buddies not merged?
-I believe they are merged, but I'll double check.
-
-> >  static inline void expand(struct zone *zone, struct page *page,
-> > -	int low, int high, struct free_area *area,
-> > +	unsigned int low, unsigned int high, struct free_area *area,
-> >  	int migratetype)
-> >  {
-> >  	unsigned long size = 1 << high;
-> > @@ -746,9 +796,16 @@ static inline void expand(struct zone *zone, struct page *page,
-> >  		high--;
-> >  		size >>= 1;
-> >  		VM_BUG_ON(bad_range(zone, &page[size]));
-> > -		list_add(&page[size].lru, &area->free_list[migratetype]);
-> > -		area->nr_free++;
-> > -		set_page_order(&page[size], high);
-> > +		if (high < corrupt_dbg()) {
-> > +			INIT_LIST_HEAD(&page[size].lru);
-> > +			set_page_corrupt_dbg(&page[size]);
-> > +			set_page_private(&page[size], high);
-> > +			__mod_zone_page_state(zone, NR_FREE_PAGES, -(1 << high));
-> > +		} else {
+> To me, this is important.
 > 
-> Because high is a signed integer, I don't think this would necessarily
-> optimised away at compile time when DEBUG_PAGEALLOC is not set adding a
-> new branch to a heavily executed fast path.
-> 
-> For the fast paths, you should not add new branches if you can. Move the
-> debugging code to inline functions that only exist when DEBUG_PAGEALLOC
-> is set so there is no additional overhead in the !CONFIG_DEBUG_PAGEALLOC
-> case.
+> Let me repeat. It is not that I strongly against CLONE_CHILD_USEPIDS
+> (although yes, I can't say personally I like it very much ;). Just
+> I am trying to ensure we can't make something more clear/clean/simple,
+> at least from the kernel pov. Especially because you are trying to
+> establish the new user-visible API.
 
-I changed "high" type from int to unsigned int in the patch, and checked
-that this branch is removed by compiler in !CONFIG_DEBUG_PAGEALLOC case.
-But perhaps having this inside preprocessor checks is cleaner, so I'll do
-that.
+OK, I see. I think I will fix your comment then and will send the v2 set trying
+to get the feedback from wider audience. Oleg, Tejun, thank you for your ;)
 
-Thanks for the comments, I'll rework and repost.
-Stanislaw
+> Oleg.
+
