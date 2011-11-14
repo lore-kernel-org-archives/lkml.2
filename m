@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab1KNWMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 17:12:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43601 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751723Ab1KNWMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 17:12:42 -0500
-Message-ID: <4EC19253.6080201@zytor.com>
-Date: Mon, 14 Nov 2011 14:12:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Andrei Warkentin <awarkentin@vmware.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid memory
- addresses.
-References: <1145760360.50519.1321308673807.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <1145760360.50519.1321308673807.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756507Ab1KNWRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 17:17:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37448 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab1KNWRN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 17:17:13 -0500
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Date: Mon, 14 Nov 2011 23:16:48 +0100
+References: <20111107110149.GA5177@quad>
+	 <20111110180308.GD15738@erda.amd.com>
+	 <CABPqkBSyYjM7V8cy--WRBHJ8o9TU9WUD9mGE1E5HntYdm2BHyw@mail.gmail.com>
+	 <1321279937.1421.18.camel@twins>
+	 <CABPqkBSc-o+ysZEVx72acE7+AY8fLR8sqFDedKBwh8H60Z77cQ@mail.gmail.com>
+	 <1321286406.1421.30.camel@twins>
+	 <CABPqkBTJU5PWpLq3en3sECiAK2AvgLoR+AVqRoZmfNpp_bM_Ug@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321309008.1421.50.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2011 02:11 PM, Andrei Warkentin wrote:
->>
->> EOF seems wrong to me (not as bad as EFAULT, but still wrong).
->
-> Although that was what we had discussed, I do not return -EOF in the patch. As you
-> mention - that would be wrong. I played around with other devices (block, actually),
-> and if you attempt to read(2) beyond the end, read(2) simply returns 0, as in
-> zero bytes read out. Of course, lseek(2) beyond the end should return -EINVAL, as
-> well, so that is what that patch I CCd you on accomplishes.
->
+On Mon, 2011-11-14 at 22:43 +0100, Peter Zijlstra wrote:
+> 
+> Also, we don't need an exhaustive max flow solution, any flow that's
+> high enough to fit the required capacity will do, this too could
+> possibly be used to lower the (average) complexity bound.
 
-0 is EOF.
+I think that for the typically very dense graphs this in particular
+could be very helpful in keeping the actual runtime low. For a fully
+connected e*c it really doesn't matter how you program things, all flows
+will have the same max and iterating them all is just wasting time.
 
-This is not a block device -- comparing to block devices is pointless. 
-There is no "end" to /dev/mem, so this is a totally meaningless comparison.
-
-	-hpa
-
-
+We just need to figure out which of the many different algorithms are
+best on average for our particular constraint sets.
