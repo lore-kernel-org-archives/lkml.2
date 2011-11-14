@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab1KNRSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:18:17 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8803 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab1KNRSP convert rfc822-to-8bit (ORCPT
+	id S1755511Ab1KNRfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:35:20 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:47615
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752215Ab1KNRfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:18:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 14 Nov 2011 09:18:10 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Mon, 14 Nov 2011 09:18:07 -0800
-Subject: RE: [PATCH] pinctrl: indicate GPIO direction on single GPIO request
-Thread-Topic: [PATCH] pinctrl: indicate GPIO direction on single GPIO request
-Thread-Index: AcyirVadWEAPke7RSD6czZcmSyaDpAAQz5JA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740805AAE@HQMAIL01.nvidia.com>
-References: <1321261837-31320-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1321261837-31320-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Nov 2011 12:35:19 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zzbb2dK9371K1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Message-ID: <4EC15145.3030001@freescale.com>
+Date: Mon, 14 Nov 2011 11:35:01 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
+To: Liu Gang <Gang.Liu@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
+        <r58472@freescale.com>, Kai Jiang <Kai.Jiang@freescale.com>,
+        <r61911@freescale.com>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <B11780@freescale.com>
+Subject: Re: [PATCH 4/5, v3] powerpc/8xxx: Update device tree bus probe for
+ new RapidIO node binding
+References: <1321099352-21462-1-git-send-email-Gang.Liu@freescale.com> <1321099352-21462-4-git-send-email-Gang.Liu@freescale.com>
+In-Reply-To: <1321099352-21462-4-git-send-email-Gang.Liu@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Monday, November 14, 2011 2:11 AM:
-> When requesting a single GPIO pin to be muxed in, some controllers
-> will need to poke a different value into the control register
-> depending on whether the pin will be used for GPIO output or GPIO
-> input. So pass this info along for the gpio_request_enable()
-> function, we assume this is not needed for the gpio_free_disable()
-> function for the time being.
+On 11/12/2011 06:02 AM, Liu Gang wrote:
+> From: Kai Jiang <Kai.Jiang@freescale.com>
+> 
+> Update of_platform_bus_probe() RapidIO node to be compitable with
+> new RapidIO dts compatible property.
+> 
+> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
+> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+> ---
+>  arch/powerpc/platforms/85xx/corenet_ds.c   |    2 +-
+>  arch/powerpc/platforms/85xx/mpc85xx_mds.c  |    2 +-
+>  arch/powerpc/platforms/86xx/mpc86xx_hpcn.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/85xx/corenet_ds.c b/arch/powerpc/platforms/85xx/corenet_ds.c
+> index 802ad11..c48b661 100644
+> --- a/arch/powerpc/platforms/85xx/corenet_ds.c
+> +++ b/arch/powerpc/platforms/85xx/corenet_ds.c
+> @@ -112,7 +112,7 @@ static const struct of_device_id of_device_ids[] __devinitconst = {
+>  		.compatible	= "simple-bus"
+>  	},
+>  	{
+> -		.compatible	= "fsl,rapidio-delta",
+> +		.compatible	= "fsl,srio",
 
-I'm not sure this API change makes sense.
+fsl,srio is too vague.  We need to identify the specific hardware (or at
+least a concrete programming interface document), not just the bus  that
+the hardware implements.
 
-Functions gpio_direction_{input,output} already exist to configure the
-direction of a GPIO, and drivers should already be using them. These have
-to work to allow drivers to toggle the direction dynamically. Requiring
-them to additionally pass this same information to the pinmux driver when
-setting up the pinmux seems like extra redundant work.
-
-Instead, shouldn't it work like this:
-
-* If the pinmux driver implementation behind pinmux_request_gpio() needs
-to know the direction when configuring the HW, default to input for safety;
-that will prevent the SoC driving a signal on a GPIO that's driven by some
-other device.
-
-* Rely exclusively on gpio_direction_{input,output} to allow drivers to
-configure the direction.
-
-* If the pinmux HW needs programming in response to the gpio_direction_*
-calls, have the GPIO and pinmux driver internally communicate to achieve
-this.
-
-Does that seem reasonable?
-
--- 
-nvpublic
+-Scott
 
