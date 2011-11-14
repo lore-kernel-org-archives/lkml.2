@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1KNKTp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 05:19:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab1KNKTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 05:19:43 -0500
-Date: Mon, 14 Nov 2011 11:20:46 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 1/4] mm: remove debug_pagealloc_enabled
-Message-ID: <20111114102045.GA2513@redhat.com>
-References: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
- <20111111141221.GL3083@suse.de>
+	id S1754824Ab1KNKZZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 05:25:25 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:41480 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab1KNKZY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 05:25:24 -0500
+Date: Mon, 14 Nov 2011 15:33:06 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Ben Segall <bsegall@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [patch 3/3] From: Ben Segall <bsegall@google.com>
+Message-ID: <20111114100306.GA10520@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <20111108042632.977080206@google.com>
+ <20111108042736.683407863@google.com>
+ <4EBB3742.7060404@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111111141221.GL3083@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4EBB3742.7060404@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11111410-8878-0000-0000-0000003647FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 02:12:21PM +0000, Mel Gorman wrote:
-> On Fri, Nov 11, 2011 at 01:36:31PM +0100, Stanislaw Gruszka wrote:
-> > After we finish (no)bootmem, pages are passed to buddy allocator. Since
-> > debug_pagealloc_enabled is not set, we do not protect pages, what is
-> > not what we want with CONFIG_DEBUG_PAGEALLOC=y. That could be fixed by
-> > calling enable_debug_pagealloc() before free_all_bootmem(), but actually
-> > I do not see any reason why we need that global variable. Hence patch
-> > remove it.
-> > 
-> > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> > ---
-> >  arch/x86/mm/pageattr.c |    6 ------
-> >  include/linux/mm.h     |   10 ----------
-> >  init/main.c            |    5 -----
-> >  mm/debug-pagealloc.c   |    3 ---
-> >  4 files changed, 0 insertions(+), 24 deletions(-)
-> > 
-> > diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> > index f9e5267..5031eef 100644
-> > --- a/arch/x86/mm/pageattr.c
-> > +++ b/arch/x86/mm/pageattr.c
-> > @@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
-> >  	}
-> >  
-> >  	/*
-> > -	 * If page allocator is not up yet then do not call c_p_a():
-> > -	 */
-> > -	if (!debug_pagealloc_enabled)
-> > -		return;
-> > -
-> > -	/*
+[snip]
+
+> Since throttling occurs in the put_prev_task() path we do not get to observe
+> this delta against nr_running when making the decision to idle_balance().
 > 
-> According to commit [12d6f21e: x86: do not PSE on
-> CONFIG_DEBUG_PAGEALLOC=y], the intention of debug_pagealloc_enabled
-> was to force additional testing of splitting large pages due to
-> cpa. Presumably this was because when bootmem was retired, all the
-> pages would be mapped forcing the protection to be applied later
-> while the system was running and races would be more interesting.
+> Fix this by first enumerating cfs_rq throttle states so that we can distinguish
+> throttling cfs_rqs.  Then remove tasks that will be throttled in put_prev_task
+> from rq->nr_running/cfs_rq->h_nr_running when in account_cfs_rq_runtime,
+> rather than delaying until put_prev_task.
 > 
-> This patch is trading additional CPA testing for better detecting
-> of memory corruption with DEBUG_PAGEALLOC. I see no issue with this
-> per-se, but I'm cc'ing Ingo for comment as it was his patch and this
-> is something that should go by the x86 maintainers.
+> This allows schedule() to call idle_balance when we go idle due to throttling.
+> 
+> Using Kamalesh's nested-cgroup test case[1] we see the following improvement on
+> a 16 core system:
+> baseline: Average CPU Idle percentage 13.9667%
+>   +patch: Average CPU Idle percentage 3.53333%
+> [1]: https://lkml.org/lkml/2011/9/15/261
+> 
+> Signed-off-by: Ben Segall <bsegall@google.com>
+> Signed-off-by: Paul Turner <pjt@google.com>
 
-Not sure if I understand all of that (Ok, I clearly do not understend,
-I do not even know what CPA mean: change page address ?), but I think
-more splitting large pages testing was achived by this hunk
+  Tested-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 
--#ifdef CONFIG_DEBUG_PAGEALLOC
--       /* pse is not compatible with on-the-fly unmapping,
--        * disable it even if the cpus claim to support it.
--        */
--       setup_clear_cpu_cap(X86_FEATURE_PSE);
--#endif
+Thanks for the patch. I tested patches on the same test environment, over which 
+the cpu idle time was reported first at https://lkml.org/lkml/2011/6/7/352. In 
+brief, tests were run on 2 socket quad core machine with three level of nested 
+cgroups hierarchy and five cgroups created below the third level. Each of the 
+five cgroups, having 2,2,4,8,16 while1 or cpu-matrix (https://lkml.org/lkml/2011/11/4/107) 
+tasks attached to them respectively.
 
-of commit 12d6f21e, because changelog say:
+[1] CFS Bandwith tweaks, were the patches posted by Paul Turner (https://lkml.org/lkml/2011/11/7/603)
+[2] nohz idle balance RFC patch by Srivatsa Vaddagiri (https://lkml.org/lkml/2011/11/2/117)
 
-    get more testing of the c_p_a() code done by not turning off
-    PSE on DEBUG_PAGEALLOC.
+While running the cpu-matrix benchmark with the patches, there was an improvement 
+around ~50 to 55% and additional ~3% benefit in idle time with nohz idle balance
+patch. With while1 loop the improvment was around ~36 to 40% over tip and an 
+additional benefit of ~4 to 5% was seen with nohz idle balance patch.
 
-But to make PSE and DEBUG_PAGEALLOC work debug_pagealloc_enabled was
-introduced. Now CPA code was changed that PSE and DEBUG_PAGEALLOC works
-without problem (I tested that on pse cappable cpu), so I think
-debug_pagealloc_enabled is unneeded, or do I'm wrong?
+(1) cpu-matrix benchmark with nohz=on
+    ----------------------------------
 
-Stanislaw
+Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1       Average CPU Idle percentage 4.1%                        Average CPU Idle percentage 2.36667%                    Average CPU Idle percentage 2.23333%
+	Bandwidth shared with remaining non-Idle 95.9%          Bandwidth shared with remaining non-Idle 97.63333%      Bandwidth shared with remaining non-Idle 97.76667%
+
+2       Average CPU Idle percentage 4.23%                       Average CPU Idle percentage 2.3%                        Average CPU Idle percentage 2.16667%
+	Bandwidth shared with remaining non-Idle 95.77%         Bandwidth shared with remaining non-Idle 97.7%          Bandwidth shared with remaining non-Idle 97.83333%
+
+(2) cpu-matrix benchmark with nohz=off
+    -----------------------------------
+
+Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1       Average CPU Idle percentage 4.53333%                    Average CPU Idle percentage 2.43333%                    Average CPU Idle percentage 2.36667%
+	Bandwidth shared with remaining non-Idle 95.46667%      Bandwidth shared with remaining non-Idle 97.56667%      Bandwidth shared with remaining non-Idle 97.63333%
+
+2       Average CPU Idle percentage 4.4%                        Average CPU Idle percentage 2.36667%                    Average CPU Idle percentage 2.4%
+	Bandwidth shared with remaining non-Idle 95.6%          Bandwidth shared with remaining non-Idle 97.63333%      Bandwidth shared with remaining non-Idle 97.6%
+
+
+(3) while1 loop with nohz=on
+    -------------------------
+
+Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1       Average CPU Idle percentage 6.26667%                    Average CPU Idle percentage 2.5%                        Average CPU Idle percentage 2.23333%
+	Bandwidth shared with remaining non-Idle 93.73333%      Bandwidth shared with remaining non-Idle 97.5%          Bandwidth shared with remaining non-Idle 97.76667%
+
+2       Average CPU Idle percentage 6.73333%                    Average CPU Idle percentage 2.46667%                    Average CPU Idle percentage 2.13333%
+	Bandwidth shared with remaining non-Idle 93.26667%      Bandwidth shared with remaining non-Idle 97.53333%      Bandwidth shared with remaining non-Idle 97.86667%
+
+(4) while1 loop with nohz=off
+    --------------------------
+
+Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1       Average CPU Idle percentage 3.6%                        Average CPU Idle percentage 2.4%                        Average CPU Idle percentage 2.43333%
+	Bandwidth shared with remaining non-Idle 96.4%          Bandwidth shared with remaining non-Idle 97.6%          Bandwidth shared with remaining non-Idle 97.56667%
+
+2       Average CPU Idle percentage 3.46667%                    Average CPU Idle percentage 2.33333%                    Average CPU Idle percentage 2.4%
+	Bandwidth shared with remaining non-Idle 96.53333%      Bandwidth shared with remaining non-Idle 97.66667%      Bandwidth shared with remaining non-Idle 97.6%
+
+each cpu-matrix benchmark task was run as # perf sched cpu-matrix -s1k -i 1000 -p100
+
+		Kamalesh.
+
