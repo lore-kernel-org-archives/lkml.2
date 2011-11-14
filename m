@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab1KNT5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 14:57:53 -0500
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:46103 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753044Ab1KNT5w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 14:57:52 -0500
-X-Greylist: delayed 2106 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 14:57:51 EST
-Message-ID: <20111114201601.u3icblhkow8wcsso@mail.zih.tu-dresden.de>
-Date: Mon, 14 Nov 2011 20:16:01 +0100
-From: Martin Robert Byrnes <byrnesmartin2008@gmail.com>
-Reply-to: byrnesmartin2009@gmail.com
-To: undisclosed-recipients:;
-Subject: EMAIL FROM MARTIN BUSINESS PROPOSAL
+	id S1756137Ab1KNUBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 15:01:07 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60096
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754299Ab1KNUBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 15:01:05 -0500
+Date: Mon, 14 Nov 2011 15:01:00 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        bpm@sgi.com, xfs@oss.sgi.com
+Subject: Re: [PATCH] workqueue: make alloc_workqueue() take printf fmt and
+ args for name
+Message-ID: <20111114200100.GA18155@infradead.org>
+References: <20111114194248.GD30922@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
+In-Reply-To: <20111114194248.GD30922@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 14, 2011 at 11:42:48AM -0800, Tejun Heo wrote:
+> Christoph, you probably were seeing the rescuer_task->comm in ps
+> output.  wq->name currently is currently only used for error
+> reporting.
+> 
+> I don't really mind this patch going through a different tree as I
+> don't have any other wq changes scheduled at this point, so please
+> feel free to route this through xfs or -mm.
 
-My name is Martin Robert Byrnes and I am a United States citizen.  I was the
-head storage keeper for the United Nations storage facility in Iraq for 6
-years. During that time I was involved in some lucrative business deals with
-Iraqi citizens.
-
-Unfortunately I was transferred from Iraq before I was able to safely move my
-money out of Iraq.  Due to this I am in need of some assistance to move my
-money to ensure that it is safe.  I was transferred to Afghanistan which has
-limited my ability to be able to move my money on my own.  It is for this
-reason that I writing to you to ask for your assistance.
-
-To move forward together I am offering you a business proposal.  In order for
-your help in moving my money out of Iraq I am willing to offer you a  
-percentage
-of the total money.  The amounts involved in this proposal will be disclosed
-once we have established an open dialogue together.
-
-I appreciate your understanding and I know that I will hear from you  
-as soon as
-possible as this proposal is time sensitive.
-
-Martin Robert Byrnes
-CW5 OD
-(RET)
-EMAIL: byrnesmartin2009@gmail.com
-
-
-
+Ben pointed the bug out in a patch that I'd like to get into 3.2
+and -stable.  I'll probably repost it with a local workaround for now,
+and will switch to the nicer interface later.
 
