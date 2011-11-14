@@ -1,136 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1KNG7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 01:59:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43342 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab1KNG67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 01:58:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="75096330"
-Message-ID: <1321253936.13860.35.camel@yhuang-dev>
-Subject: Printk mulitple line message support
-From: Huang Ying <ying.huang@intel.com>
-To: Joe Perches <joe@perches.com>,
-        William Douglas <william.r.douglas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Nov 2011 14:58:56 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
+	id S1752634Ab1KNHOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 02:14:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44609 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1KNHOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 02:14:07 -0500
+Message-ID: <4EC0BF9B.2050300@gmail.com>
+Date: Mon, 14 Nov 2011 15:13:31 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH V2] ARM: NUC900: Add PCI driver support for NUC960
+References: <4EBE98FC.6070903@gmail.com>
+In-Reply-To: <4EBE98FC.6070903@gmail.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Modify PCI driver for nuc960 per Russell's comments as following:
+(1)Use the common PCI swizzle API.
+(2)Use the pr_err insteading of prink.
+(3)Request the IO resource in ioport_resource tree.
 
-In most cases, printk only guarantees messages from different printk
-calling will not be interleaved between each other.  But many printk
-users uses multiple line to form a complete message and call printk
-for each line.  So the following situation is possible for two printk
-users running on two CPUs.
-
-line 1 of message from printk user1
-line 1 of message from printk user2
-line 2 of message from printk user1
-line 2 of message from printk user2
-
-This makes kernel log hard to read.  One possible solution to this
-issue is to give a sequence number (or ID) to each complete message.
-So the above lines will be:
-
-{1}line 1 of message from printk user1
-{2}line 1 of message from printk user2
-{1}line 2 of message from printk user1
-{2}line 2 of message from printk user2
-
-Then some simple script can be used to group lines together according
-to sequence number in lines.
-
-What do you think about that?
-
-A simple patch to implement this is followed.
-
-Best Regards,
-Huang Ying
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 
 ---
- include/linux/printk.h |   24 ++++++++++++++++++++++++
- kernel/printk.c        |    7 +++++++
- 2 files changed, 31 insertions(+)
+ arch/arm/mach-w90x900/Kconfig                 |    1 +
+ arch/arm/mach-w90x900/Makefile                |    3 +
+ arch/arm/mach-w90x900/include/mach/map.h      |    4 +
+ arch/arm/mach-w90x900/include/mach/regs-pci.h |   37 +++++
+ arch/arm/mach-w90x900/nuc960.c                |    2 +
+ arch/arm/mach-w90x900/pci.c                   |  195
++++++++++++++++++++++++++
+ 6 files changed, 242 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-w90x900/include/mach/regs-pci.h
+ create mode 100644 arch/arm/mach-w90x900/pci.c
 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -149,6 +149,7 @@ static char *log_buf = __log_buf;
- static int log_buf_len = __LOG_BUF_LEN;
- static unsigned logged_chars; /* Number of chars produced since last read+clear operation */
- static int saved_console_loglevel = -1;
-+static atomic_t printk_seqno;
- 
- #ifdef CONFIG_KEXEC
- /*
-@@ -970,6 +971,12 @@ out_restore_irqs:
- EXPORT_SYMBOL(printk);
- EXPORT_SYMBOL(vprintk);
- 
-+unsigned int printk_ml_seqno(void)
+diff --git a/arch/arm/mach-w90x900/Kconfig b/arch/arm/mach-w90x900/Kconfig
+index 69bab32..17be262 100644
+--- a/arch/arm/mach-w90x900/Kconfig
++++ b/arch/arm/mach-w90x900/Kconfig
+@@ -41,6 +41,7 @@ menu "NUC960 Machines"
+ config MACH_W90N960EVB
+ 	bool "Nuvoton NUC960 Evaluation Board"
+ 	select CPU_NUC960
++	select PCI
+ 	help
+ 	   Say Y here if you are using the Nuvoton NUC960EVB
+
+diff --git a/arch/arm/mach-w90x900/Makefile b/arch/arm/mach-w90x900/Makefile
+index 828c032..0c35800 100644
+--- a/arch/arm/mach-w90x900/Makefile
++++ b/arch/arm/mach-w90x900/Makefile
+@@ -17,3 +17,6 @@ obj-$(CONFIG_CPU_NUC960)	+= nuc960.o
+ obj-$(CONFIG_MACH_W90P910EVB)	+= mach-nuc910evb.o
+ obj-$(CONFIG_MACH_W90P950EVB)	+= mach-nuc950evb.o
+ obj-$(CONFIG_MACH_W90N960EVB)	+= mach-nuc960evb.o
++
++# Add pci support for nuc960, nuc920
++obj-$(CONFIG_PCI)		+= pci.o
+diff --git a/arch/arm/mach-w90x900/include/mach/map.h
+b/arch/arm/mach-w90x900/include/mach/map.h
+index 1a20953..69f6c73 100644
+--- a/arch/arm/mach-w90x900/include/mach/map.h
++++ b/arch/arm/mach-w90x900/include/mach/map.h
+@@ -154,4 +154,8 @@
+ #define W90X900_PA_EMC		(0xB0003000)
+ #define W90X900_SZ_EMC		SZ_4K
+
++/* PCI interface controller */
++#define	W90X900_VA_PCI		W90X900_ADDR(0x00002000)
++#define	W90X900_PA_PCI		(0xB0002000)
++#define	W90X900_SZ_PCI		SZ_4K
+ #endif /* __ASM_ARCH_MAP_H */
+diff --git a/arch/arm/mach-w90x900/include/mach/regs-pci.h
+b/arch/arm/mach-w90x900/include/mach/regs-pci.h
+new file mode 100644
+index 0000000..d1975eb
+--- /dev/null
++++ b/arch/arm/mach-w90x900/include/mach/regs-pci.h
+@@ -0,0 +1,37 @@
++/*
++ * arch/arm/mach-w90x900/include/mach/regs-pci.h
++ *
++ * Copyright (c) 2011 Nuvoton technology corporation.
++ *
++ * Wan ZongShun <mcuos.com@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation;version 2 of the License.
++ *
++ */
++
++#ifndef __ASM_ARCH_REGS_PCI_H
++#define __ASM_ARCH_REGS_PCI_H
++
++#define PCI_BA    W90X900_VA_PCI /* PCI Control */
++/* PCI Control Registers */
++#define REG_PCICTR		(PCI_BA + 0x000)
++#define REG_PCISTR		(PCI_BA + 0x004)
++#define REG_PCILATIMER		(PCI_BA + 0x008)
++#define REG_PCIINTEN		(PCI_BA + 0x010)
++#define REG_PCIINT		(PCI_BA + 0x014)
++#define REG_CFGADDR		(PCI_BA + 0x020)
++#define REG_CFGDATA		(PCI_BA + 0x024)
++#define REG_PCIARB		(PCI_BA + 0x04C)
++#define REG_PCIBIST		(PCI_BA + 0x050)
++
++#define NUC900_PCI_IO_BASE	0xE0000000
++#define NUC900_PCI_IO_END	0xE000FFFF
++#define NUC900_PCI_IO_SIZE	0x10000
++
++#define NUC900_PCI_MEM_BASE	0xC0000000
++#define NUC900_PCI_MEM_END	0xDFFFEFFFF
++#define NUC900_PCI_MEM_SIZE	0x20000000
++
++#endif /* ___ASM_ARCH_REGS_PCI_H */
+diff --git a/arch/arm/mach-w90x900/nuc960.c b/arch/arm/mach-w90x900/nuc960.c
+index 8851a3a..0212964 100644
+--- a/arch/arm/mach-w90x900/nuc960.c
++++ b/arch/arm/mach-w90x900/nuc960.c
+@@ -19,6 +19,7 @@
+ #include <asm/mach/map.h>
+ #include <mach/hardware.h>
+ #include "cpu.h"
++#include "clock.h"
+
+ /* define specific CPU platform device */
+
+@@ -30,6 +31,7 @@ static struct platform_device *nuc960_dev[] __initdata = {
+ /* define specific CPU platform io map */
+
+ static struct map_desc nuc960evb_iodesc[] __initdata = {
++	IODESC_ENT(PCI),
+ };
+
+ /*Init NUC960 evb io*/
+diff --git a/arch/arm/mach-w90x900/pci.c b/arch/arm/mach-w90x900/pci.c
+new file mode 100644
+index 0000000..74095b0
+--- /dev/null
++++ b/arch/arm/mach-w90x900/pci.c
+@@ -0,0 +1,195 @@
++/*
++ * linux/arch/arm/mach-w90x900/pci.c
++ *
++ * Copyright (c) 2008 Nuvoton technology corporation.
++ *
++ * Wan ZongShun <mcuos.com@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation;version 2 of the License.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/pci.h>
++#include <linux/ioport.h>
++#include <linux/interrupt.h>
++#include <linux/spinlock.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++
++#include <mach/hardware.h>
++#include <asm/irq.h>
++#include <asm/system.h>
++#include <asm/mach/pci.h>
++
++#include <mach/regs-pci.h>
++#include <mach/regs-clock.h>
++#include <mach/regs-gcr.h>
++
++#define EXTAL15M	(0x03 << 2)
++#define CK33DIV5	(0x05 << 4)
++#define RESET_VAL1	0x20C0
++#define RESET_VAL2	0x20CF
++
++static int nuc900_read_config(struct pci_bus *bus, unsigned int devfn,
++				int where,  int size, unsigned int  *val)
 +{
-+	return atomic_inc_return(&printk_seqno);
++	unsigned int v;
++
++	__raw_writel(devfn * 0x100 + (where & 0xfffffffc), REG_CFGADDR);
++	v = __raw_readl(REG_CFGDATA);
++	switch (size) {
++	case 1:
++		*val = (v >> ((where % 4) * 8)) & 0xff;
++		break;
++	case 2:
++		*val = (v >> ((where % 4) * 8)) & 0xffff;
++		break;
++	default:
++		*val = v;
++		break;
++	}
++
++	return PCIBIOS_SUCCESSFUL;
 +}
-+EXPORT_SYMBOL_GPL(printk_ml_seqno);
 +
- #else
- 
- static void call_console_drivers(unsigned start, unsigned end)
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -116,6 +116,7 @@ extern int kptr_restrict;
- 
- void log_buf_kexec_setup(void);
- void __init setup_log_buf(int early);
-+unsigned int printk_ml_seqno(void);
- #else
- static inline __printf(1, 0)
- int vprintk(const char *s, va_list args)
-@@ -144,6 +145,11 @@ static inline void log_buf_kexec_setup(v
- static inline void setup_log_buf(int early)
- {
- }
 +
-+static unsigned int printk_ml_seqno(void)
++static int nuc900_write_config(struct pci_bus *bus, unsigned int devfn,
++					int where, int size, unsigned int val)
 +{
++	unsigned int v;
++
++	__raw_writel(devfn * 0x100 + where, REG_CFGADDR);
++
++	v = __raw_readl(REG_CFGDATA);
++
++	__raw_writel(devfn * 0x100 + where, REG_CFGADDR);
++
++	switch (size) {
++	case 1:
++		v &= ~(0xff << (where % 4) * 8);
++		v |= (val << (where % 4) * 8);
++		__raw_writel(val, REG_CFGDATA);
++		break;
++	case 2:
++		v &= ~(0xffff << (where % 4) * 8);
++		v |= (val << (where % 4) * 8);
++		__raw_writel(val, REG_CFGDATA);
++		break;
++	case 4:
++		__raw_writel(val, REG_CFGDATA);
++		break;
++	}
++	return PCIBIOS_SUCCESSFUL;
++}
++
++static struct pci_ops pci_nuc900_ops = {
++	.read	= nuc900_read_config,
++	.write	= nuc900_write_config,
++};
++
++static struct resource pci_io = {
++	.name	= "NUC900 PCI IO",
++	.start	= NUC900_PCI_IO_BASE,
++	.end	= NUC900_PCI_IO_BASE + NUC900_PCI_IO_SIZE - 1,
++	.flags	= IORESOURCE_IO,
++};
++
++static struct resource pci_mem = {
++	.name	= "nuc900 PCI Memory",
++	.start	= NUC900_PCI_MEM_BASE,
++	.end	= NUC900_PCI_MEM_BASE + NUC900_PCI_MEM_SIZE - 1,
++	.flags	= IORESOURCE_MEM,
++};
++
++static int __init pci_nuc900_setup_resources(struct resource **resource)
++{
++	int ret = 0;
++
++	ret = request_resource(&ioport_resource, &pci_io);
++	if (ret) {
++		pr_err("%s: failed to request resources: %d\n", __func__, ret);
++		goto out;
++	}
++	ret = request_resource(&iomem_resource, &pci_mem);
++	if (ret) {
++		pr_err("%s: failed to request resources: %d\n", __func__, ret);
++		goto release_io_mem;
++	}
++
++	/*
++	 * bus->resource[0] is the IO resource for this bus
++	 * bus->resource[1] is the mem resource for this bus
++	 * bus->resource[2] is the prefetch mem resource for this bus
++	 */
++	resource[0] = &pci_io;
++	resource[1] = &pci_mem;
++	resource[2] = NULL;
++
++	goto out;
++
++ release_io_mem:
++	release_resource(&pci_io);
++ out:
++	return ret;
++}
++
++int __init pci_nuc900_setup(int nr, struct pci_sys_data *sys)
++{
++	int ret = 0;
++
++	if (nr > 0)
++		return 0;
++
++	sys->mem_offset = 0;
++	sys->io_offset = 0;
++	ret = pci_nuc900_setup_resources(sys->resource);
++	if (ret)
++		pr_err("%s: failed to setup resources: %d\n", __func__, ret);
++
++	return !ret;
++}
++
++struct pci_bus *pci_nuc900_scan_bus(int nr, struct pci_sys_data *sys)
++{
++	return pci_scan_bus(sys->busnr, &pci_nuc900_ops, sys);
++}
++
++void __init pci_nuc900_preinit(void)
++{
++	/* CK33 from PLL0 */
++	__raw_writel(__raw_readl(REG_CLKSEL) & ~EXTAL15M, REG_CLKSEL);
++	/* PCI CLOCK = 200/6 = 33Mhz */
++	 __raw_writel(((__raw_readl(REG_CLKDIV) &
++				(~(0xf<<4))) | CK33DIV5), REG_CLKDIV);
++
++	/* enable PCI clock */
++	__raw_writel(__raw_readl(REG_CLKEN) | 0x4, REG_CLKEN);
++
++	__raw_writel(RESET_VAL1, REG_PCICTR);
++
++	mdelay(100);
++
++	__raw_writel(RESET_VAL2, REG_PCICTR);
++
++	mdelay(200);
++}
++
++static struct hw_pci nuc900_pci __initdata = {
++	.swizzle		= pci_std_swizzle,
++	.setup			= pci_nuc900_setup,
++	.nr_controllers		= 1,
++	.scan			= pci_nuc900_scan_bus,
++	.preinit		= pci_nuc900_preinit,
++};
++
++static int __init nuc900_pci_init(void)
++{
++	pci_common_init(&nuc900_pci);
 +	return 0;
 +}
- #endif
- 
- extern void dump_stack(void) __cold;
-@@ -192,6 +198,24 @@ extern void dump_stack(void) __cold;
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #endif
- 
-+#define PR_ML_FMT	"{%u}"
 +
-+#define pr_emerg_ml(seqno, fmt, ...)					\
-+	printk(KERN_EMERG PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+#define pr_alert_ml(seqno, fmt, ...)					\
-+	printk(KERN_ALERT PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+#define pr_crit_ml(seqno, fmt, ...)					\
-+	printk(KERN_CRIT PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+#define pr_err_ml(seqno, fmt, ...)					\
-+	printk(KERN_ERR PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+#define pr_warning_ml(seqno, fmt, ...)					\
-+	printk(KERN_WARNING PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+#define pr_warn_ml pr_warning_ml
-+#define pr_notice_ml(seqno, fmt, ...)					\
-+	printk(KERN_NOTICE PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+#define pr_info_ml(seqno, fmt, ...)					\
-+	printk(KERN_INFO PR_ML_FMT pr_fmt(fmt), seqno, ##__VA_ARGS__)
-+
- /*
-  * Print a one-time message (analogous to WARN_ONCE() et al):
-  */
-
++subsys_initcall(nuc900_pci_init);
+-- 
+1.7.0.4
 
