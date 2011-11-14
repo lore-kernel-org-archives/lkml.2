@@ -1,128 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab1KNMrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 07:47:07 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:51082 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587Ab1KNMrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 07:47:04 -0500
-Message-ID: <4EC10DC6.8070807@ilyx.ru>
-Date: Mon, 14 Nov 2011 16:47:02 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111108 Iceape/2.0.11
+	id S1754171Ab1KNMzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 07:55:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59741 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab1KNMzG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 07:55:06 -0500
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Ilya Zykov <ilya@ilyx.ru>
-Subject: [PATCH v3 2/2] TTY: tty flip buffer optimisation.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111110180308.GD15738@erda.amd.com>
+References: <20111107110149.GA5177@quad>
+	<20111110180308.GD15738@erda.amd.com>
+Date: Mon, 14 Nov 2011 13:55:04 +0100
+Message-ID: <CABPqkBSyYjM7V8cy--WRBHJ8o9TU9WUD9mGE1E5HntYdm2BHyw@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, free flip buffer (tty->buf.free) reserve memory for further used,
-only if driver send to ldisc less 257 bytes in one time.
-If driver send more, flip buffer reserve(kmalloc()) and then
-free(kfree()) every chunk more 256 bytes every time.
+Robert,
 
 
-This patch allow reserve more than 256 bytes chunks in free buffer.
-And have self-regulation chunk size ability(very useful for pty).
-Also we can control memory used(at the most TTY_BUFFER_MAX).
-And avoiding useless looking up buffer more then 256 byte size.
 
-With this patch I get follow results:
+On Thu, Nov 10, 2011 at 7:03 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 07.11.11 06:01:49, Stephane Eranian wrote:
+>>
+>> Major rewrite of the x86 event scheduling routine.
+>> The routine is shared between AMD and Intel.
+>>
+>> The existing code had an issue with certain combinations
+>> of constraints. As Robert Richter @ AMD demonstrated on
+>> AMD Bulldozer:
+>>
+>> e0 [3,0]
+>> e1 [2:0]
+>> e2 [2:0]
+>> e3 [2:0]
+>>
+>> With this list of events, the existing scheduling algorithm
+>> would never schedule e3. That's because it would always choose
+>> counter 0 for e0:
+>>   e0 -> 0
+>>   e1 -> 1
+>>   e2 -> 2
+>>   e3 -> X
+>>
+>> Robert Richter proposed a fix to the algorithm which was based
+>> on tagging constraints that overlap. He was using rollbacks to
+>> simulate recursion.
+>>
+>> We propose an alternate solution which is simpler, faster. This
+>> is a small modification to the existing algorithm. It adds some
+>> smart in how a counter is chosen for a given event. The first
+>
+> Posting a link to my patch set for reference:
+>
+>  https://lkml.org/lkml/2011/9/10/51
+>
+> What are the reasons to your alternate solution? Is it recursion, code
+> complexity, or a use case it does not fit in? I see recursion as the
+> main concern with my patch set, but its impact is known and limited.
+> Anyway, a algorithm without recursion would be generally better.
+>
+>> available counter is not systemtically selected. Instead, the
+>> algorithm checks how the constraints between the events overlap.
+>> For each counter, it assigns a weight which is the number of events
+>> which it can count for the event set. For each event, the algorithm
+>> assigns the counter with the smallest weight first.
+>
+> But this algorithm does not work for all cases and does not solve the
+> problem in general. Your idea to have weights for counters might be
+> the right approach.
+>
+> E.g. the algorithm fails with (all weights are the same):
+>
+>    c0 c1 c2
+>  e0 x     x
+>  e1    x  x
+>  e2 x  x
+>
+> ... leading to:
+>
+>  e0 -> c0
+>  e1 -> C1
+>  e3 -> X
+>
+> You basically have to recalculate the weights after you had assigned a
+> counter.
+>
+Yes, it does not yield an assignment which maximizes the PMU usage.
 
-ilya@serh:~/src/pty$ time ./bench_pty_buf 253
-chunk = 253. loop = 3952569.
-real	0m21.017s
-user	0m0.436s
-sys	0m17.749s
+I have been talking with co-workers experts in operational research
+about our problem. They all pointed to me to the max flow algorithm from
+Ford-Fulkerson (search for it on Wikipedia). I think it solves the complexity
+and recursion problems. My understanding is that the complexity is also
+more under control.
 
-ilya@serh:~/src/pty$ time ./bench_pty_buf 255
-chunk = 255. loop = 3921568.
-real	0m21.276s
-user	0m0.544s
-sys	0m17.329s
+I started experimenting with this algorithm. I will report in a few days.
+One thing for sure, it does provide the 'maximized' answer for your
+example above and also for your initial BD example.
 
-ilya@serh:~/src/pty$ time ./bench_pty_buf 257
-chunk = 257. loop = 3891050.
-real	0m21.652s
-user	0m0.512s
-sys	0m18.593s
 
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
-diff -uprN -X ../../dontdiff a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
---- a/drivers/tty/tty_buffer.c	2011-11-12 00:19:27.000000000 +0400
-+++ b/drivers/tty/tty_buffer.c	2011-11-14 15:55:45.000000000 +0400
-@@ -58,8 +58,21 @@ static struct tty_buffer *tty_buffer_all
- {
- 	struct tty_buffer *p;
- -	if (tty->buf.memory_used + size > 65536)
--		return NULL;
-+	if (tty->buf.memory_reserve + size > TTY_BUFFER_MAX) {
-+		/* If possible, free small chunks
-+				have been had total size = "size". */
-+		if (tty->buf.memory_reserve - tty->buf.memory_used >= size)
-+			while (tty->buf.memory_reserve + size >
-+							TTY_BUFFER_MAX) {
-+				p = tty->buf.free;
-+				tty->buf.free = p->next;
-+				tty->buf.memory_reserve -= p->size;
-+				WARN_ON(tty->buf.memory_reserve < 0);
-+				kfree(p);
-+			}
-+		else
-+			return NULL;
-+	}
- 	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
- 	if (p == NULL)
- 		return NULL;
-@@ -71,6 +84,7 @@ static struct tty_buffer *tty_buffer_all
- 	p->char_buf_ptr = (char *)(p->data);
- 	p->flag_buf_ptr = (unsigned char *)p->char_buf_ptr + size;
- 	tty->buf.memory_used += size;
-+	tty->buf.memory_reserve += size;
- 	return p;
- }
- @@ -91,11 +105,12 @@ static void tty_buffer_free(struct tty_s
- 	tty->buf.memory_used -= b->size;
- 	WARN_ON(tty->buf.memory_used < 0);
- -	if (b->size >= 512)
--		kfree(b);
--	else {
-+	if (tty->buf.free != NULL) {
- 		b->next = tty->buf.free;
- 		tty->buf.free = b;
-+	} else {
-+		tty->buf.free = b;
-+		b->next = NULL;
- 	}
- }
- @@ -517,6 +532,7 @@ void tty_buffer_init(struct tty_struct *
- 	tty->buf.tail = NULL;
- 	tty->buf.free = NULL;
- 	tty->buf.memory_used = 0;
-+	tty->buf.memory_reserve = 0;
- 	INIT_WORK(&tty->buf.work, flush_to_ldisc);
- }
- diff -uprN -X ../../dontdiff a/include/linux/tty.h b/include/linux/tty.h
---- a/include/linux/tty.h	2011-11-12 00:19:27.000000000 +0400
-+++ b/include/linux/tty.h	2011-11-14 14:51:21.000000000 +0400
-@@ -82,7 +82,7 @@ struct tty_buffer {
-  */
-  #define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
--
-+#define TTY_BUFFER_MAX		65536
-  struct tty_bufhead {
- 	struct work_struct work;
-@@ -90,6 +90,7 @@ struct tty_bufhead {
- 	struct tty_buffer *head;	/* Queue head */
- 	struct tty_buffer *tail;	/* Active buffer */
- 	struct tty_buffer *free;	/* Free queue head */
-+	int memory_reserve;		/* Buffer space used */
- 	int memory_used;		/* Buffer space used excluding
- 								free queue */
- };
+> But even if we do this, I am still not sure if that would cover all
+> cases.
+>
+>>
+>> In the example above, the new algoritm assigns:
+>>   e0 -> 3
+>>   e1 -> 0
+>>   e2 -> 1
+>>   e3 -> 2
+>>
+>> Because:
+>>   counter 0, weight = 4
+>>   counter 1, weight = 3
+>>   counter 2, weight = 3
+>>   counter 3, weight = 1
+>>
+>> We maximize PMU usage and ensure all events are measured.
+>>
+>> The patch also restructures the code to separate scheduling of
+>> constrained vs. unconstrained events. An unconstrained event is
+>> one that can be programmed into any of the generic counters. For
+>> those, we now use the simplest algorihtm possible: use next free
+>> counter. There is now a fast path which is beneficial on
+>> processors such as AMD64 Fam10h.
+>
+> I don't see the need for a differentiation between constraint and
+> unconstraint events. If loops are optimized in the constraint path
+> there is not much overhead anymore. This could be done by specifying
+> min and max limits for ranges. Special cases (unconstraint events,
+> fixed counter, etc.) make the code more complex. I don't think a good
+> algorithm will need this.
+>
+>> @@ -553,42 +530,179 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+>>       if (x86_pmu.num_counters_fixed)
+>>               wmax++;
+>>
+>> -     for (w = 1, num = n; num && w <= wmax; w++) {
+>> -             /* for each event */
+>> -             for (i = 0; num && i < n; i++) {
+>> -                     c = constraints[i];
+>> -                     hwc = &cpuc->event_list[i]->hw;
+>> +     /*
+>> +      * assign from most constrained to least constrained
+>> +      */
+>> +     for (w = 1, num = num_c; num && w <= wmax; w++) {
+>> +             /* for each constrained event */
+>> +             for (i = 0, e = c_events; i < num_c; i++, e++) {
+>> +
+>> +                     map_idx = (*e)->hw.map_idx;
+>> +                     c = constraints[map_idx];
+>>
+>>                       if (c->weight != w)
+>>                               continue;
+>>
+>> +                     min_wcnt = INT_MAX;
+>
+> Should be X86_PMC_IDX_MAX.
+>
+>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> index 1e9ebe5..2605244 100644
+>> --- a/include/linux/perf_event.h
+>> +++ b/include/linux/perf_event.h
+>> @@ -564,6 +564,7 @@ struct hw_perf_event {
+>>                       int             idx;
+>>                       int             last_cpu;
+>>                       struct hw_perf_event_extra extra_reg;
+>> +                     int             map_idx;
+>
+> This is not the right place. It is for all architectures but actually
+> locally only used. A local array in x86_schedule_events() would work
+> too.
+>
+> -Robert
+>
+>>               };
+>>               struct { /* software */
+>>                       struct hrtimer  hrtimer;
+>>
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
+>
