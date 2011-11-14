@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab1KNVah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 16:30:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34950 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755321Ab1KNVag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 16:30:36 -0500
-Message-ID: <4EC188A5.4040005@suse.cz>
-Date: Mon, 14 Nov 2011 22:31:17 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1755025Ab1KNVnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 16:43:10 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44466 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751942Ab1KNVnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 16:43:09 -0500
+Date: Mon, 14 Nov 2011 21:43:05 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] regmap: Do not call regcache_exit from
+ regcache_lzo_init error path
+Message-ID: <20111114214304.GI6528@opensource.wolfsonmicro.com>
+References: <1321263619-25891-1-git-send-email-lars@metafoo.de>
+ <1321263619-25891-5-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] scripts/tags.sh: Add Page flag function magic
-References: <1320340197-9063-1-git-send-email-sboyd@codeaurora.org> <4EC15B2D.5000407@codeaurora.org>
-In-Reply-To: <4EC15B2D.5000407@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321263619-25891-5-git-send-email-lars@metafoo.de>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 14.11.2011 19:17, Stephen Boyd napsal(a):
-> On 11/03/11 10:09, Stephen Boyd wrote:
->> It takes a while to find the macro-magically defined Page*()
->> functions defined in include/linux/page-flags.h if you're new to
->> the kernel. Add some magic to the tags script to transform these
->> macros into the actual functions they are, so that tag jumping in
->> the mm code is a bit easier.
->>
->> Signed-off-by: Stephen Boyd<sboyd@codeaurora.org>
->> ---
->>
->
-> ping?
+On Mon, Nov 14, 2011 at 10:40:19AM +0100, Lars-Peter Clausen wrote:
+> Calling regcache_exit from regcache_lzo_init is a layering violation and
+> might cause double frees. In case of an error only free those structures which
+> have been allocated in this function.
 
-Applied to kbuild.git#misc.
-
-Michal
+You should also be explaining here why the cleanup done the core exit
+function is still being done when the code is changed this way.  The
+fact that it may be a layering violation doesn't mean that the cleanup
+is actually being done anywhere else...
