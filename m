@@ -1,70 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1KNMMG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 07:12:06 -0500
-Received: from vsmtp3a.jaring.my ([192.228.250.249]:45839 "EHLO
-	vsmtp3.jaring.my" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753257Ab1KNMME (ORCPT
+	id S1754096Ab1KNMTl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 07:19:41 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:47187 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab1KNMTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 07:12:04 -0500
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 07:12:03 EST
-X-AuditID: c0e4faf8-b7b5bae000004fbd-c4-4ec101135213
-To: undisclosed-recipients:;
-Message-ID: <1321271805.4ec101fd85ac9@webmail.jaring.my>
-Date: Mon, 14 Nov 2011 19:56:45 +0800
-From: "Upcmail.nl Email Administrator" <info@upcmail.nl>
-Reply-to: alert.web@msn.com
-Subject: Beste upcmail.nl abonnees
+	Mon, 14 Nov 2011 07:19:40 -0500
+Message-ID: <4EC10711.4050906@atmel.com>
+Date: Mon, 14 Nov 2011 13:18:25 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-User-Agent: JARING Webmail v1.2 (http://www.jaring.my)
-X-Originating-IP: 115.242.40.205
-X-Brightmail-Tracker: H4sIAAAAAAAAA01Ta0xbZRjOd+4jnHko23qEqdhEowaGYwbfRCRLZvSoCdPonPGH2zEc205a
-	8BQILNEMCbs5IwPcRkcb3GBxXBwSbhs0XIysUBjdhOq6wphUBgSBIXSwgXhOCRv/nrzP7f2S
-	72VwzXk6gjGa0yXZLKboqBDidSpqNiYStSe9PFSjhboiLSydGMdhuAWDQG8zBfOn3Rj8fqWE
-	AmvjMgXnLuTh4Ax0UHDzjxYEpWNtOEz7Jik40+Ej4GJjPw0V9wM05NwtwmDowiwFuZ39OLhu
-	XMOhbKoawcWfrCTUNOeREPA6cTh/bRKHS0tODOr+nqJhdNGBgfekh4CFdicFi4WFBBTd8FHQ
-	bW/F4cjobyTcn+7FYOHKGAklK4sI/GO9JCz2TiAYrO2hwOdtoaCg9TsMaopzaPDk3aJgxDmI
-	oKZwEkFZfRkN109PUVBlVxbvb3moeAf27IwTCn6cJoTcb+yYcNk6SAsjJ3ooob7LTwpDzXph
-	rC9LOP5zASk45n2E0FTeSQgNw92Y8OvhOlI42mojhNaru4V/a58WXJ5d74V9EpKQLKUYMyU5
-	NnF/iGH41h0ibYDOmpk/gx1CddRxtIHhuVf48bERchVv4d1Dl5R5CKPhShA/23AsSGzitvK2
-	s6pIJcoUouIBUgmWA/6ktRlTMcE9x8+UeYMGSplb5/4hVKzhIvmbVxtoFYdzOr7RM4qvesP4
-	rmJ/UINz0fzleh+1ip/hc+vPBjWbuXh+Kv+Oghlluyi+Kk+fj56wrnNb17mt69ylCK9AXKbF
-	lJ62Y9sBUTaa9dtM2bVI+Wht/gcLTch2LKYDcQzShbLjUluShhQzLdmmDvQkg+k2s+VLymjj
-	Z6nJ2QbRYtgnZ6RIlg7EM7huEyv/p3Bssph9UJJT16hIhtBp2cLDxUkaTi+mS19IUpokr7Ex
-	DMPd7lrey1UO2F0ogjCnmiUdz3qWlaQwWdJLWZ8bU9If6zFmg9oWqrT1qhrWkiaaLEb9Kt+N
-	djDdf+a6EFP57REX0gTjIrQspS7GqVJDhvlR2tptTSCt8tpw9ns1MFS5vEd5E0oVplRVtwer
-	0sXHVMQhlDAfW30vn2fPvXHvhXgj+jrZ8n7nq+6iv0zhb1c5SnnHqX27P+hr8tp2ou3PLyXe
-	jXb3rWD2j/HbtKOaTnxxpuD6V3v9ifMruxKPsq8tB+J66Idzcvncuz9sbX0z1WvbEj/8UcaB
-	qC8ra/e/k/NU9FsbIz3SwT3PCh/GnvrlU/dgXEKLjrAYxO0v4bJF/B8olYClNgQAAA==
+To: Claudio Scordino <claudio@evidence.eu.com>, Greg KH <greg@kroah.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jesper Nilsson <Jesper.Nilsson@axis.com>,
+        Mikael Starvik <mikael.starvik@axis.com>,
+        Darron Black <darron@griffin.net>
+Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some variables
+References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4EB3A009.10502@evidence.eu.com> <4EB8F6B9.6010008@atmel.com> <4EB90902.4030200@evidence.eu.com> <20111108134804.07095c5d@lxorguk.ukuu.org.uk> <20111108142432.GA11293@kroah.com> <4EBA9385.7010806@evidence.eu.com>
+In-Reply-To: <4EBA9385.7010806@evidence.eu.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Beste upcmail.nl abonnees,
+On 11/09/2011 03:51 PM, Claudio Scordino :
+> Il 08/11/2011 15:24, Greg KH ha scritto:
+>> On Tue, Nov 08, 2011 at 01:48:04PM +0000, Alan Cox wrote:
+>>>> The modifications that I have proposed are very minimal, and most
+>>>> user-space code should continue to work without any difference. Any Cris
+>>>> user-space code will continue to work, because we didn't change the
+>>>> behavior of the driver. For Atmel user-space code, instead, the behavior
+>>>> of the driver changes only if flags are not set and delay variables
+>>>> contain a value different than 0 (which, hopefully, is not a very common
+>>>> situation). That's the reason why I preferred to not change the names of
+>>>> the variables, even if better names would be desirable.
+>>>
+>>> We have inconsistency between implementations. We don't have a change in
+>>> implementation. There isn't any way to resolve that except by fixing the
+>>> deviating implementation and doing it promptly.
+>>>
+>>> With my tty hat on I'm quite happy with this patch. The sooner it is
+>>> upstream the better.
+>>
+>> Ok, I'll push to get it to Linus for the next rc release.
+> 
+> Hi Greg,
+> 
+> 	in case you didn't push it yet, this is the patch with also the ack by Jesper.
+> 
+> Best regards,
+> 
+> 	Claudio
+> 
+> 
+> Subject: RS485: fix inconsistencies in the meaning of some variables
+> From: Claudio Scordino <claudio@evidence.eu.com>
+> 
+> The crisv10.c and the atmel_serial.c serial drivers intepret the fields of the
+> serial_rs485 structure in a different way.
+> In particular, crisv10.c uses SER_RS485_RTS_AFTER_SEND and 
+> SER_RS485_RTS_ON_SEND for the voltage of the RTS pin; atmel_serial.c, instead,
+> uses these values to know if a delay must be set before and after sending.
+> This patch makes the usage of these variables consistent across all drivers and
+> fixes the Documentation as well.
+>>From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to
+> set the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
+> understood by looking only at the value of delay_rts_before_send and 
+> delay_rts_after_send.
+> 
+> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+> Signed-off-by: Darron Black <darron@griffin.net>
+> Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-DIT bericht is van de upcmail.nl E-mail Beheerder IT Service aan onze al
-e-mail account subscribers.You zijn OM ons de onderstaande informatie OM
-Uw rekening te revalideren ALS gevolg van spam en upcmail.nl upgrade van
-De Nieuwe 2011 versie van spam, ALS Een-Abonnee U bent daarbij van Advies
-Aan de onderstaande informaion te Sturen:
+Surely too late, but I add it for the record:
 
-Gebruikersnaam:
-Wachtwoord:
-Bevestig Uw Wachtwoord:
-Alternatief E-mail:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Om te voorkomen dat-Het verwijderen van Uw geldige gehouden Onze databank,
-Gelieve te begrijpen dat-we Zegt maintaince DOEN OM Ruimte voor Nieuwe
-subscribers.Failure OM Zegt te DOEN zAL onmiddellijk Uw e-mailadres
-gedeactiveerd Uit Onze databank te Maken te creëren. Dank u VOOR Het
-gebruik van upcmail.nl.
 
-Thank You.
+> ---
+>  Documentation/serial/serial-rs485.txt |   14 +++++++++++---
+>  drivers/tty/serial/atmel_serial.c     |   16 +++-------------
+>  drivers/tty/serial/crisv10.c          |   10 ++--------
+>  include/linux/serial.h                |   14 ++++++++------
+>  4 files changed, 24 insertions(+), 30 deletions(-)
+> 
+> diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+> index 079cb3d..41c8378 100644
+> --- a/Documentation/serial/serial-rs485.txt
+> +++ b/Documentation/serial/serial-rs485.txt
+> @@ -97,15 +97,23 @@
+>  
+>  	struct serial_rs485 rs485conf;
+>  
+> -	/* Set RS485 mode: */
+> +	/* Enable RS485 mode: */
+>  	rs485conf.flags |= SER_RS485_ENABLED;
+>  
+> +	/* Set logical level for RTS pin equal to 1 when sending: */
+> +	rs485conf.flags |= SER_RS485_RTS_ON_SEND;
+> +	/* or, set logical level for RTS pin equal to 0 when sending: */
+> +	rs485conf.flags &= ~(SER_RS485_RTS_ON_SEND);
+> +
+> +	/* Set logical level for RTS pin equal to 1 after sending: */
+> +	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
+> +	/* or, set logical level for RTS pin equal to 0 after sending: */
+> +	rs485conf.flags &= ~(SER_RS485_RTS_AFTER_SEND);
+> +
+>  	/* Set rts delay before send, if needed: */
+> -	rs485conf.flags |= SER_RS485_RTS_BEFORE_SEND;
+>  	rs485conf.delay_rts_before_send = ...;
+>  
+>  	/* Set rts delay after send, if needed: */
+> -	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
+>  	rs485conf.delay_rts_after_send = ...;
+>  
+>  	/* Set this flag if you want to receive data even whilst sending data */
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index 4a0f86f..4c823f3 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -228,7 +228,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+>  	if (rs485conf->flags & SER_RS485_ENABLED) {
+>  		dev_dbg(port->dev, "Setting UART to RS485\n");
+>  		atmel_port->tx_done_mask = ATMEL_US_TXEMPTY;
+> -		if (rs485conf->flags & SER_RS485_RTS_AFTER_SEND)
+> +		if ((rs485conf->delay_rts_after_send) > 0)
+>  			UART_PUT_TTGR(port, rs485conf->delay_rts_after_send);
+>  		mode |= ATMEL_US_USMODE_RS485;
+>  	} else {
+> @@ -304,7 +304,7 @@ static void atmel_set_mctrl(struct uart_port *port, u_int mctrl)
+>  
+>  	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
+>  		dev_dbg(port->dev, "Setting UART to RS485\n");
+> -		if (atmel_port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
+> +		if ((atmel_port->rs485.delay_rts_after_send) > 0)
+>  			UART_PUT_TTGR(port,
+>  					atmel_port->rs485.delay_rts_after_send);
+>  		mode |= ATMEL_US_USMODE_RS485;
+> @@ -1228,7 +1228,7 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+>  
+>  	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
+>  		dev_dbg(port->dev, "Setting UART to RS485\n");
+> -		if (atmel_port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
+> +		if ((atmel_port->rs485.delay_rts_after_send) > 0)
+>  			UART_PUT_TTGR(port,
+>  					atmel_port->rs485.delay_rts_after_send);
+>  		mode |= ATMEL_US_USMODE_RS485;
+> @@ -1447,16 +1447,6 @@ static void __devinit atmel_of_init_port(struct atmel_uart_port *atmel_port,
+>  		rs485conf->delay_rts_after_send = rs485_delay[1];
+>  		rs485conf->flags = 0;
+>  
+> -		if (rs485conf->delay_rts_before_send == 0 &&
+> -		    rs485conf->delay_rts_after_send == 0) {
+> -			rs485conf->flags |= SER_RS485_RTS_ON_SEND;
+> -		} else {
+> -			if (rs485conf->delay_rts_before_send)
+> -				rs485conf->flags |= SER_RS485_RTS_BEFORE_SEND;
+> -			if (rs485conf->delay_rts_after_send)
+> -				rs485conf->flags |= SER_RS485_RTS_AFTER_SEND;
+> -		}
+> -
+>  		if (of_get_property(np, "rs485-rx-during-tx", NULL))
+>  			rs485conf->flags |= SER_RS485_RX_DURING_TX;
+>  
+> diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+> index b743504..1dfba7b 100644
+> --- a/drivers/tty/serial/crisv10.c
+> +++ b/drivers/tty/serial/crisv10.c
+> @@ -3234,9 +3234,8 @@ rs_write(struct tty_struct *tty,
+>  		e100_disable_rx(info);
+>  		e100_enable_rx_irq(info);
+>  #endif
+> -		if ((info->rs485.flags & SER_RS485_RTS_BEFORE_SEND) &&
+> -			(info->rs485.delay_rts_before_send > 0))
+> -				msleep(info->rs485.delay_rts_before_send);
+> +		if (info->rs485.delay_rts_before_send > 0)
+> +			msleep(info->rs485.delay_rts_before_send);
+>  	}
+>  #endif /* CONFIG_ETRAX_RS485 */
+>  
+> @@ -3693,10 +3692,6 @@ rs_ioctl(struct tty_struct *tty,
+>  
+>  		rs485data.delay_rts_before_send = rs485ctrl.delay_rts_before_send;
+>  		rs485data.flags = 0;
+> -		if (rs485data.delay_rts_before_send != 0)
+> -			rs485data.flags |= SER_RS485_RTS_BEFORE_SEND;
+> -		else
+> -			rs485data.flags &= ~(SER_RS485_RTS_BEFORE_SEND);
+>  
+>  		if (rs485ctrl.enabled)
+>  			rs485data.flags |= SER_RS485_ENABLED;
+> @@ -4531,7 +4526,6 @@ static int __init rs_init(void)
+>  		/* Set sane defaults */
+>  		info->rs485.flags &= ~(SER_RS485_RTS_ON_SEND);
+>  		info->rs485.flags |= SER_RS485_RTS_AFTER_SEND;
+> -		info->rs485.flags &= ~(SER_RS485_RTS_BEFORE_SEND);
+>  		info->rs485.delay_rts_before_send = 0;
+>  		info->rs485.flags &= ~(SER_RS485_ENABLED);
+>  #endif
+> diff --git a/include/linux/serial.h b/include/linux/serial.h
+> index 97ff8e2..3d86517 100644
+> --- a/include/linux/serial.h
+> +++ b/include/linux/serial.h
+> @@ -207,13 +207,15 @@ struct serial_icounter_struct {
+>  
+>  struct serial_rs485 {
+>  	__u32	flags;			/* RS485 feature flags */
+> -#define SER_RS485_ENABLED		(1 << 0)
+> -#define SER_RS485_RTS_ON_SEND		(1 << 1)
+> -#define SER_RS485_RTS_AFTER_SEND	(1 << 2)
+> -#define SER_RS485_RTS_BEFORE_SEND	(1 << 3)
+> +#define SER_RS485_ENABLED		(1 << 0)	/* If enabled */
+> +#define SER_RS485_RTS_ON_SEND		(1 << 1)	/* Logical level for
+> +							   RTS pin when
+> +							   sending */
+> +#define SER_RS485_RTS_AFTER_SEND	(1 << 2)	/* Logical level for
+> +							   RTS pin after sent*/
+>  #define SER_RS485_RX_DURING_TX		(1 << 4)
+> -	__u32	delay_rts_before_send;	/* Milliseconds */
+> -	__u32	delay_rts_after_send;	/* Milliseconds */
+> +	__u32	delay_rts_before_send;	/* Delay before send (milliseconds) */
+> +	__u32	delay_rts_after_send;	/* Delay after send (milliseconds) */
+>  	__u32	padding[5];		/* Memory is cheap, new structs
+>  					   are a royal PITA .. */
+>  };
 
-upcmail.nl E-mail Administrator
-Waarschuwing Code: ID67565434.
-----------------------------------------------------------------
-This e-mail has been sent via JARING webmail at http://www.jaring.my
 
+-- 
+Nicolas Ferre
