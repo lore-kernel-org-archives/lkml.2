@@ -1,139 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1KNXD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:03:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54020 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1KNXD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:03:28 -0500
-Date: Mon, 14 Nov 2011 15:03:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Colin Cross <ccross@android.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-Message-Id: <20111114150326.0ee60107.akpm@linux-foundation.org>
-In-Reply-To: <20111114140421.GA27150@suse.de>
-References: <20111114140421.GA27150@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755477Ab1KNXKV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:10:21 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39326 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754043Ab1KNXKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 18:10:19 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the final tree (pm tree related)
+Date: Tue, 15 Nov 2011 00:12:56 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+References: <20111114142423.fe126b8c8cfd275d7dd138cc@canb.auug.org.au>
+In-Reply-To: <20111114142423.fe126b8c8cfd275d7dd138cc@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111150012.56306.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Nov 2011 14:04:21 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+On Monday, November 14, 2011, Stephen Rothwell wrote:
+> Hi Rafael,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> mm/oom_kill.c: In function 'select_bad_process':
+> mm/oom_kill.c:326:5: error: implicit declaration of function '__thaw_task' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 23527e313ca5 ("PM / Freezer: Fix fallout of thaw_process()
+> -> __thaw_task() rename").  __thaw_task() is only declared id
+> CONFIG_FREEZER is set.  Commit 944e192db53c ("freezer: rename thaw_process()
+> to __thaw_task() and simplify the implementation") removed the second
+> declaration of thaw_process() without replacing it ...
+> 
+> I have added this patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 14 Nov 2011 14:19:32 +1100
+> Subject: [PATCH] freezer: fix more fallout from the thaw_process rename
+> 
+> Commit 944e192db53c "freezer: rename thaw_process() to __thaw_task()
+> and simplify the implementation" did not create a !CONFIG_FREEZER version
+> of __thaw_task().
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-> This patch seems to have gotten lost in the cracks and the discussion
-> on alternatives that started here https://lkml.org/lkml/2011/10/25/24
-> petered out without any alternative patches being posted. Lacking
-> a viable alternative patch, I'm reposting this patch because AFAIK,
-> this bug still exists.
-> 
-> Colin Cross reported;
-> 
->   Under the following conditions, __alloc_pages_slowpath can loop forever:
->   gfp_mask & __GFP_WAIT is true
->   gfp_mask & __GFP_FS is false
->   reclaim and compaction make no progress
->   order <= PAGE_ALLOC_COSTLY_ORDER
-> 
->   These conditions happen very often during suspend and resume,
->   when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
->   allocations into __GFP_WAIT.
-> 
->   The oom killer is not run because gfp_mask & __GFP_FS is false,
->   but should_alloc_retry will always return true when order is less
->   than PAGE_ALLOC_COSTLY_ORDER.
-> 
-> In his fix, he avoided retrying the allocation if reclaim made no
-> progress and __GFP_FS was not set. The problem is that this would
-> result in GFP_NOIO allocations failing that previously succeeded
-> which would be very unfortunate.
-> 
-> The big difference between GFP_NOIO and suspend converting GFP_KERNEL
-> to behave like GFP_NOIO is that normally flushers will be cleaning
-> pages and kswapd reclaims pages allowing GFP_NOIO to succeed after
-> a short delay. The same does not necessarily apply during suspend as
-> the storage device may be suspended.  Hence, this patch special cases
-> the suspend case to fail the page allocation if reclaim cannot make
-> progress. This might cause suspend to abort but that is better than
-> a livelock.
+I've applied your patch to linux-pm/pm-freezer and merged it into
+linux-pm/linux-next.
 
-Fair enough.
+Thanks,
+Rafael
 
+
+> ---
+>  include/linux/freezer.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 9dd443d..5402897 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -127,6 +127,20 @@ void pm_restrict_gfp_mask(void)
->  	saved_gfp_mask = gfp_allowed_mask;
->  	gfp_allowed_mask &= ~GFP_IOFS;
->  }
-> +
-> +static bool pm_suspending(void)
-> +{
-> +	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
-> +		return false;
-> +	return true;
-> +}
-
-This doesn't seem a terribly reliable way of detecting that PM has
-disabled the storage devices (which is what we really want to know
-here: kswapd got crippled).
-
-I guess it's safe for now, because PM is the only caller who alters
-gfp_allowed_mask (I assume).  But an explicit storage_is_unavaliable
-global which is set and cleared at exactly the correct time is clearer,
-more direct and future-safer, no?
-
-> +#else
-> +
-> +static bool pm_suspending(void)
-> +{
-> +	return false;
-> +}
->  #endif /* CONFIG_PM_SLEEP */
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index cc779bb..a9dccc6 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -166,6 +166,7 @@ static inline bool set_freezable_with_signal(void)
+>  #else /* !CONFIG_FREEZER */
+>  static inline bool frozen(struct task_struct *p) { return false; }
+>  static inline bool freezing(struct task_struct *p) { return false; }
+> +static inline void __thaw_task(struct task_struct *t) {}
 >  
->  #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
-> @@ -2214,6 +2228,14 @@ rebalance:
->  
->  			goto restart;
->  		}
-> +
-> +		/*
-> +		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
-> +		 * prevent reclaim making forward progress without
-> +		 * invoking OOM. Bail if we are suspending
-> +		 */
-> +		if (pm_suspending())
-> +			goto nopage;
-
-The comment doesn't tell the whole story: it's important that kswapd
-writeout was disabled?
-
---- a/mm/page_alloc.c~mm-avoid-livelock-on-__gfp_fs-allocations-fix
-+++ a/mm/page_alloc.c
-@@ -2263,9 +2263,10 @@ rebalance:
- 		}
- 
- 		/*
--		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
--		 * prevent reclaim making forward progress without
--		 * invoking OOM. Bail if we are suspending
-+		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent
-+		 * reclaim making forward progress without invoking OOM.
-+		 * Suspend also disables storage devices so kswapd cannot save
-+		 * us.  Bail if we are suspending.
- 		 */
- 		if (pm_suspending())
- 			goto nopage;
-_
+>  static inline bool __refrigerator(bool check_kthr_stop) { return false; }
+>  static inline int freeze_processes(void) { return -ENOSYS; }
+> 
 
