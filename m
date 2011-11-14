@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab1KNKZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 05:25:25 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:41480 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab1KNKZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 05:25:24 -0500
-Date: Mon, 14 Nov 2011 15:33:06 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Ben Segall <bsegall@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [patch 3/3] From: Ben Segall <bsegall@google.com>
-Message-ID: <20111114100306.GA10520@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <20111108042632.977080206@google.com>
- <20111108042736.683407863@google.com>
- <4EBB3742.7060404@google.com>
+	id S1754832Ab1KNK2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 05:28:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40797 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab1KNK2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 05:28:19 -0500
+Date: Mon, 14 Nov 2011 11:29:23 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/4] mm: more intensive memory corruption debug
+Message-ID: <20111114102923.GB2513@redhat.com>
+References: <1321014994-2426-1-git-send-email-sgruszka@redhat.com>
+ <1321014994-2426-2-git-send-email-sgruszka@redhat.com>
+ <20111111142953.GM3083@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EBB3742.7060404@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11111410-8878-0000-0000-0000003647FE
+In-Reply-To: <20111111142953.GM3083@suse.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[snip]
-
-> Since throttling occurs in the put_prev_task() path we do not get to observe
-> this delta against nr_running when making the decision to idle_balance().
+On Fri, Nov 11, 2011 at 02:29:53PM +0000, Mel Gorman wrote:
+> >  	if (PageBuddy(buddy) && page_order(buddy) == order) {
+> >  		VM_BUG_ON(page_count(buddy) != 0);
+> >  		return 1;
+> > @@ -518,9 +562,15 @@ static inline void __free_one_page(struct page *page,
+> >  			break;
+> >  
+> >  		/* Our buddy is free, merge with it and move up one order. */
+> > -		list_del(&buddy->lru);
+> > -		zone->free_area[order].nr_free--;
+> > -		rmv_page_order(buddy);
+> > +		if (page_is_corrupt_dbg(buddy)) {
+> > +			clear_page_corrupt_dbg(buddy);
+> > +			set_page_private(page, 0);
+> > +			__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
 > 
-> Fix this by first enumerating cfs_rq throttle states so that we can distinguish
-> throttling cfs_rqs.  Then remove tasks that will be throttled in put_prev_task
-> from rq->nr_running/cfs_rq->h_nr_running when in account_cfs_rq_runtime,
-> rather than delaying until put_prev_task.
+> Why are the buddies not merged?
+I believe they are merged, but I'll double check.
+
+> >  static inline void expand(struct zone *zone, struct page *page,
+> > -	int low, int high, struct free_area *area,
+> > +	unsigned int low, unsigned int high, struct free_area *area,
+> >  	int migratetype)
+> >  {
+> >  	unsigned long size = 1 << high;
+> > @@ -746,9 +796,16 @@ static inline void expand(struct zone *zone, struct page *page,
+> >  		high--;
+> >  		size >>= 1;
+> >  		VM_BUG_ON(bad_range(zone, &page[size]));
+> > -		list_add(&page[size].lru, &area->free_list[migratetype]);
+> > -		area->nr_free++;
+> > -		set_page_order(&page[size], high);
+> > +		if (high < corrupt_dbg()) {
+> > +			INIT_LIST_HEAD(&page[size].lru);
+> > +			set_page_corrupt_dbg(&page[size]);
+> > +			set_page_private(&page[size], high);
+> > +			__mod_zone_page_state(zone, NR_FREE_PAGES, -(1 << high));
+> > +		} else {
 > 
-> This allows schedule() to call idle_balance when we go idle due to throttling.
+> Because high is a signed integer, I don't think this would necessarily
+> optimised away at compile time when DEBUG_PAGEALLOC is not set adding a
+> new branch to a heavily executed fast path.
 > 
-> Using Kamalesh's nested-cgroup test case[1] we see the following improvement on
-> a 16 core system:
-> baseline: Average CPU Idle percentage 13.9667%
->   +patch: Average CPU Idle percentage 3.53333%
-> [1]: https://lkml.org/lkml/2011/9/15/261
-> 
-> Signed-off-by: Ben Segall <bsegall@google.com>
-> Signed-off-by: Paul Turner <pjt@google.com>
+> For the fast paths, you should not add new branches if you can. Move the
+> debugging code to inline functions that only exist when DEBUG_PAGEALLOC
+> is set so there is no additional overhead in the !CONFIG_DEBUG_PAGEALLOC
+> case.
 
-  Tested-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+I changed "high" type from int to unsigned int in the patch, and checked
+that this branch is removed by compiler in !CONFIG_DEBUG_PAGEALLOC case.
+But perhaps having this inside preprocessor checks is cleaner, so I'll do
+that.
 
-Thanks for the patch. I tested patches on the same test environment, over which 
-the cpu idle time was reported first at https://lkml.org/lkml/2011/6/7/352. In 
-brief, tests were run on 2 socket quad core machine with three level of nested 
-cgroups hierarchy and five cgroups created below the third level. Each of the 
-five cgroups, having 2,2,4,8,16 while1 or cpu-matrix (https://lkml.org/lkml/2011/11/4/107) 
-tasks attached to them respectively.
-
-[1] CFS Bandwith tweaks, were the patches posted by Paul Turner (https://lkml.org/lkml/2011/11/7/603)
-[2] nohz idle balance RFC patch by Srivatsa Vaddagiri (https://lkml.org/lkml/2011/11/2/117)
-
-While running the cpu-matrix benchmark with the patches, there was an improvement 
-around ~50 to 55% and additional ~3% benefit in idle time with nohz idle balance
-patch. With while1 loop the improvment was around ~36 to 40% over tip and an 
-additional benefit of ~4 to 5% was seen with nohz idle balance patch.
-
-(1) cpu-matrix benchmark with nohz=on
-    ----------------------------------
-
-Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-1       Average CPU Idle percentage 4.1%                        Average CPU Idle percentage 2.36667%                    Average CPU Idle percentage 2.23333%
-	Bandwidth shared with remaining non-Idle 95.9%          Bandwidth shared with remaining non-Idle 97.63333%      Bandwidth shared with remaining non-Idle 97.76667%
-
-2       Average CPU Idle percentage 4.23%                       Average CPU Idle percentage 2.3%                        Average CPU Idle percentage 2.16667%
-	Bandwidth shared with remaining non-Idle 95.77%         Bandwidth shared with remaining non-Idle 97.7%          Bandwidth shared with remaining non-Idle 97.83333%
-
-(2) cpu-matrix benchmark with nohz=off
-    -----------------------------------
-
-Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-1       Average CPU Idle percentage 4.53333%                    Average CPU Idle percentage 2.43333%                    Average CPU Idle percentage 2.36667%
-	Bandwidth shared with remaining non-Idle 95.46667%      Bandwidth shared with remaining non-Idle 97.56667%      Bandwidth shared with remaining non-Idle 97.63333%
-
-2       Average CPU Idle percentage 4.4%                        Average CPU Idle percentage 2.36667%                    Average CPU Idle percentage 2.4%
-	Bandwidth shared with remaining non-Idle 95.6%          Bandwidth shared with remaining non-Idle 97.63333%      Bandwidth shared with remaining non-Idle 97.6%
-
-
-(3) while1 loop with nohz=on
-    -------------------------
-
-Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-1       Average CPU Idle percentage 6.26667%                    Average CPU Idle percentage 2.5%                        Average CPU Idle percentage 2.23333%
-	Bandwidth shared with remaining non-Idle 93.73333%      Bandwidth shared with remaining non-Idle 97.5%          Bandwidth shared with remaining non-Idle 97.76667%
-
-2       Average CPU Idle percentage 6.73333%                    Average CPU Idle percentage 2.46667%                    Average CPU Idle percentage 2.13333%
-	Bandwidth shared with remaining non-Idle 93.26667%      Bandwidth shared with remaining non-Idle 97.53333%      Bandwidth shared with remaining non-Idle 97.86667%
-
-(4) while1 loop with nohz=off
-    --------------------------
-
-Run     Base (tip)                                              tip +  CFS Bandwith tweaks                              tip +  CFS Bandwith tweaks + nohz idle patch
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-1       Average CPU Idle percentage 3.6%                        Average CPU Idle percentage 2.4%                        Average CPU Idle percentage 2.43333%
-	Bandwidth shared with remaining non-Idle 96.4%          Bandwidth shared with remaining non-Idle 97.6%          Bandwidth shared with remaining non-Idle 97.56667%
-
-2       Average CPU Idle percentage 3.46667%                    Average CPU Idle percentage 2.33333%                    Average CPU Idle percentage 2.4%
-	Bandwidth shared with remaining non-Idle 96.53333%      Bandwidth shared with remaining non-Idle 97.66667%      Bandwidth shared with remaining non-Idle 97.6%
-
-each cpu-matrix benchmark task was run as # perf sched cpu-matrix -s1k -i 1000 -p100
-
-		Kamalesh.
-
+Thanks for the comments, I'll rework and repost.
+Stanislaw
