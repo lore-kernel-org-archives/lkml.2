@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab1KNFxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 00:53:20 -0500
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:57250 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751178Ab1KNFxS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 00:53:18 -0500
-From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-To: Yinghai Lu <yinghai.lu@oracle.com>, James Bottomley <jejb@kernel.org>
-CC: "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
-        "Moore, Eric" <Eric.Moore@lsi.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Nov 2011 11:23:10 +0530
-Subject: RE: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
-Thread-Topic: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
-Thread-Index: AcyfwqGDp+CJ2DAvShyW0oahJ83oPACzrzLA
-Message-ID: <A6888A6805518E4EA4AF7072A28264A6047262C8F4@inbmail02.lsi.com>
-References: <4EBBF646.8010705@oracle.com>
-In-Reply-To: <4EBBF646.8010705@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752877Ab1KNGDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 01:03:13 -0500
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:57297 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1KNGDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 01:03:12 -0500
+Message-ID: <4EC0AF85.8060206@snapgear.com>
+Date: Mon, 14 Nov 2011 16:04:53 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Subject: change of m68knommu git tree back to kernel.org
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A similar patch to fix this issue was already posted by Dan Carpenter.  
 
-Regards,
-Nagalakshmi
+Hi Stephen,
+
+The m68knommu git tree has now moved back onto kernel.org.
+Could you please pull the for-next branch of the m68knommu git tree
+from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+for the linux-next tree.
+
+Thanks
+Greg
 
 
------Original Message-----
-From: Yinghai Lu [mailto:yinghai.lu@oracle.com] 
-Sent: Thursday, November 10, 2011 9:35 PM
-To: James E.J. Bottomley; Nandigama, Nagalakshmi
-Cc: Desai, Kashyap; Moore, Eric; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
-
-
-Got panic:
-[  752.590700] BUG: unable to handle kernel NULL pointer dereference at 00000000000000f6
-[  752.598542] IP: [<ffffffff8160b5f3>] mpt2sas_scsih_reset_handler+0x168/0x183
-[  752.605595] PGD 175d43067 PUD 175d44067 PMD 0 
-[  752.610081] Oops: 0002 [#1] SMP 
-[  752.613342] CPU 0 
-[  752.615175] Modules linked in:
-[  752.618428] 
-[  752.619921] Pid: 9187, comm: sas2flash Not tainted 3.2.0-rc1-tip-yh-01580-g878f195-dirty #1288 Oracle Corporation Sun Blade
-[  752.632632] RIP: 0010:[<ffffffff8160b5f3>]  [<ffffffff8160b5f3>] mpt2sas_scsih_reset_handler+0x168/0x183
-
-it turns out it is introduced in
-
-_scsih_error_recovery_delete_devices() forget to alloc the event before using.
-
-It is introduced by:
-
-| commit 921cd8024b908f8f49f772c8d3a02381b4db2ed2
-| Author: nagalakshmi.nandigama@lsi.com <nagalakshmi.nandigama@lsi.com>
-| Date:   Wed Oct 19 15:36:26 2011 +0530
-|
-|    [SCSI] mpt2sas: New feature - Fast Load Support
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -2802,6 +2802,9 @@ _scsih_error_recovery_delete_devices(str
- 
- 	if (ioc->is_driver_loading)
- 		return;
-+	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
-+	if (!fw_event)
-+		return;
- 	fw_event->event = MPT2SAS_REMOVE_UNRESPONDING_DEVICES;
- 	fw_event->ioc = ioc;
- 	_scsih_fw_event_add(ioc, fw_event);
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
