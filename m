@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1KMX6h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 18:58:37 -0500
-Received: from mga14.intel.com ([143.182.124.37]:41629 "EHLO mga14.intel.com"
+	id S1753627Ab1KNAAG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 19:00:06 -0500
+Received: from smtp.newsguy.com ([74.209.136.69]:56463 "EHLO smtp.newsguy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab1KMX6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 18:58:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,503,1315206000"; 
-   d="scan'208";a="36652926"
-Date: Mon, 14 Nov 2011 01:02:50 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        device-drivers-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] mfd: adp5520: Ensure setting bits if new value is
- different from the old value
-Message-ID: <20111114000250.GC22218@sortiz-mobl>
-References: <1320030006.2690.8.camel@phoenix>
+	id S1750933Ab1KNAAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 19:00:05 -0500
+Message-ID: <4EC067CE.4050805@newsguy.com>
+Date: Sun, 13 Nov 2011 16:58:54 -0800
+From: Mike Dunn <mikedunn@newsguy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110917 Lightning/1.0b3pre Thunderbird/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320030006.2690.8.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+CC: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/16] mtd/docg3: add OOB layout to mtdinfo
+References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>	<1320912342-30147-8-git-send-email-robert.jarzmik@free.fr>	<4EBECB89.2020102@newsguy.com> <87vcqoiavr.fsf@free.fr>
+In-Reply-To: <87vcqoiavr.fsf@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On 11/13/2011 02:18 AM, Robert Jarzmik wrote:
+> I took a different approach.  I check an internal docg3 register to see if the
+> page was written. Or I could had have checked the Hamming code, as I don't think
+> it can be 0xff whatever the pagesize 7 bytes values.
+>
+> The reason behind is that the Hamming code is Ham(64, 57), ie. Ham(2^6,
+> 2^6-6-1). The means the 6 bits are enough to cover all codewords possibilities,
+> and 0xff is not one of them.
+>
+> So unless a bitflip in Hamming code, 0xff in it means blank page.
 
-On Mon, Oct 31, 2011 at 11:00:06AM +0800, Axel Lin wrote:
-> Current code checks if all the bit_mask bits are all zero is wrong.
-> We need to write new value if the bit mask fields of new value is
-> not equal to old value.
-I applied all 3 patches, thanks.
 
-Cheers,
-Samuel.
+Clever!
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+
+>  And I think
+> the ECC engine is even smarter, with the ECCCONF1_PAGE_IS_WRITTEN.
+
+
+I forgot about this.  If the hardware can indeed tell you, I guess this is the
+best way.  Sounds like I'll be updating my blank page detection.
+
+Mike
+
