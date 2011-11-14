@@ -1,107 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1KNQzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:55:04 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49355 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab1KNQzB (ORCPT
+	id S1755388Ab1KNQ52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:57:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44248 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab1KNQ51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 11:55:01 -0500
-Date: Mon, 14 Nov 2011 17:54:59 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] amd64_edac: Fix K8 revD and later chip select sizes
-Message-ID: <20111114165459.GA29762@aftab>
-References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
- <20111109144258.GD30472@aftab>
- <4EBA98A1.90902@ericsson.com>
- <20111109203546.GI14181@aftab>
- <CA+8MBbLuhhTZW9vB7GvLCd8Uu7bgfUqkO7wu4=Pt7EWyQx0LrQ@mail.gmail.com>
- <20111109210052.GJ14181@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111109210052.GJ14181@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Nov 2011 11:57:27 -0500
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=7A_0Q1ebongA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=4oU4j9XtBNDvMmPCNpsA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [ANNOUNCE] 3.2-rc1-rt1 - Compile errors also for rc1 vanilla
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tim Sander <tim.sander@hbm.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1111141049420.4902@ionos>
+References: <alpine.LFD.2.02.1111132213220.2694@ionos>
+	 <201111141014.06906.tim.sander@hbm.com>
+	 <alpine.LFD.2.02.1111141049420.4902@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Nov 2011 11:57:24 -0500
+Message-ID: <1321289844.11360.1.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-11-14 at 11:00 +0100, Thomas Gleixner wrote:
 
-Fix DRAM chip select sizes calculation for K8, revisions D and E.
+> As I said in the 3.0.9-rt25 release mail, 3.0-rt will be now
+> maintained by Steven Rostedt and will get bugfixes and stable updates.
 
-Reported-by: Niklas Söderlund <niklas.soderlund@ericsson.com
-Link: http://lkml.kernel.org/r/1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
+Yep, I'm currently setting up an environment similar to how the vanilla
+stable branch is being done. Hopefully today or tomorrow I'll have
+something running.
 
-@Niklas: would you please verify this patch fixes your issue?
+I've just came back from surgery, and I'm still not 100%, so please bare
+with me for the time being.
 
-Thanks.
+Thanks,
 
- drivers/edac/amd64_edac.c |   32 ++++++++++++++++++++++++++++----
- 1 files changed, 28 insertions(+), 4 deletions(-)
+-- Steve
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index c9eee6d..6a83d49 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1132,12 +1132,36 @@ static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
- 		return ddr2_cs_size(cs_mode, dclr & WIDTH_128);
- 	}
- 	else if (pvt->ext_model >= K8_REV_D) {
-+		unsigned diff;
- 		WARN_ON(cs_mode > 10);
- 
--		if (cs_mode == 3 || cs_mode == 8)
--			return 32 << (cs_mode - 1);
--		else
--			return 32 << cs_mode;
-+		/*
-+		 * the below calculation, besides trying to win an obfuscated C
-+		 * contest, maps cs_mode values to DIMM chip select sizes. The
-+		 * mappings are:
-+		 *
-+		 * cs_mode	CS size (mb)
-+		 * =======	============
-+		 * 0		32
-+		 * 1		64
-+		 * 2		128
-+		 * 3		128
-+		 * 4		256
-+		 * 5		512
-+		 * 6		256
-+		 * 7		512
-+		 * 8		1024
-+		 * 9		1024
-+		 * 10		2048
-+		 *
-+		 * Basically, it calculates a value with which to shift the
-+		 * smallest CS size of 32MB.
-+		 *
-+		 * ddr[23]_cs_size have a similar purpose.
-+		 */
-+		diff = cs_mode/3 + (unsigned)(cs_mode > 5);
-+
-+		return 32 << (cs_mode - diff);
- 	}
- 	else {
- 		WARN_ON(cs_mode > 6);
--- 
-1.7.8.rc0
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
