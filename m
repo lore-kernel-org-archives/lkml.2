@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1KNIQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 03:16:04 -0500
-Received: from linux-sh.org ([111.68.239.195]:44315 "EHLO linux-sh.org"
+	id S1753334Ab1KNIQD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 03:16:03 -0500
+Received: from linux-sh.org ([111.68.239.195]:44314 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab1KNIQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752190Ab1KNIQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Nov 2011 03:16:00 -0500
 Date: Mon, 14 Nov 2011 17:15:56 +0900
 From: Paul Mundt <lethal@linux-sh.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh fixes for 3.2-rc2
-Message-ID: <20111114081555.GN29807@linux-sh.org>
+Subject: [GIT PULL] rmobile fixes for 3.2-rc2
+Message-ID: <20111114081556.GA13597@linux-sh.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -20,49 +20,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is mostly odd fixes and the addition of a couple helpers that
-some stuff aimed at the next merge window wants. There's the shuffling
-over of the runtime PM platform stub that was in use by the ARM
-SH/R-Mobile code and using it generically for the rest of the SH
-platforms, too (this fixes up some regressions with the runtime PM code
-on SH platforms that tie their MSTP bits in to the clock framework but
-don't otherwise have their own private runtime PM implementations).
+Nothing terribly exciting here, either. In addition to build fixes for
+the recent cpuidle changes, the bulk of it is simply shuffling some code
+around for an upcoming board/CPU combination, and tidying up the in-tree
+variants in the process.
 
 Please pull from:
 
-        git://github.com/pmundt/linux-sh.git sh-fixes-for-linus
+	git://github.com/pmundt/linux-sh.git rmobile-fixes-for-linus
 
 Which contains:
 
-Kuninori Morimoto (2):
-      sh: clkfwk: add clk_rate_mult_range_round()
-      mailmap: Fix up some renesas attributions
+Kuninori Morimoto (7):
+      ARM: mach-shmobile: sh73a0: add MMC data pin pull-up
+      ARM: mach-shmobile: kota2: add comment out separator
+      ARM: mach-shmobile: clock-sh7372: remove un-necessary index
+      ARM: mach-shmobile: ap4evb: remove white space from end of line
+      ARM: mach-shmobile: move helper macro PORT_DATA_xx to sh_pfc.h
+      ARM: mach-shmobile: move helper macro PORT_xx to sh_pfc.h
+      ARM: mach-shmobile: move helper macro PORTCR to sh_pfc.h
 
-Nobuhiro Iwamatsu (1):
-      sh: Fix cached/uncaced address calculation in 29bit mode
+Magnus Damm (1):
+      ARM: mach-shmobile: cpuidle single/global and last_state fixes
 
-Paul Mundt (4):
-      sh: Wire up process_vm syscalls.
-      drivers: sh: Generalize runtime PM platform stub.
-      drivers: sh: Kill off dead pathname for runtime PM stub.
-      sh: clkfwk: Kill off remaining debugfs cruft.
-
-Phil Edworthy (1):
-      serial: sh-sci: Fix up SH-2A SCIF support.
-
- .mailmap                                           |    2 +
- arch/arm/mach-shmobile/Makefile                    |    2 +-
- arch/sh/include/asm/page.h                         |    5 +
- arch/sh/include/asm/unistd_32.h                    |    4 +-
- arch/sh/include/asm/unistd_64.h                    |    4 +-
- arch/sh/kernel/cpu/sh2a/setup-sh7203.c             |   16 ++-
- arch/sh/kernel/syscalls_32.S                       |    2 +
- arch/sh/kernel/syscalls_64.S                       |    2 +
- drivers/sh/Makefile                                |    8 ++
- drivers/sh/clk/core.c                              |  107 ++++----------------
- .../arm/mach-shmobile => drivers/sh}/pm_runtime.c  |    4 +-
- drivers/tty/serial/sh-sci.c                        |   19 ++++
- include/linux/serial_sci.h                         |    1 +
- include/linux/sh_clk.h                             |    4 +-
- 14 files changed, 82 insertions(+), 98 deletions(-)
- rename {arch/arm/mach-shmobile => drivers/sh}/pm_runtime.c (94%)
+ arch/arm/mach-shmobile/board-ag5evm.c        |   16 +-
+ arch/arm/mach-shmobile/board-ap4evb.c        |    2 +-
+ arch/arm/mach-shmobile/board-kota2.c         |    7 +
+ arch/arm/mach-shmobile/clock-sh7372.c        |    8 +-
+ arch/arm/mach-shmobile/cpuidle.c             |   52 +++---
+ arch/arm/mach-shmobile/include/mach/common.h |    4 +-
+ arch/arm/mach-shmobile/include/mach/sh73a0.h |    8 +
+ arch/arm/mach-shmobile/pfc-sh7367.c          |  122 +++----------
+ arch/arm/mach-shmobile/pfc-sh7372.c          |  262 ++++++++++++--------------
+ arch/arm/mach-shmobile/pfc-sh7377.c          |  159 ++++------------
+ arch/arm/mach-shmobile/pfc-sh73a0.c          |  193 ++++++++-----------
+ arch/arm/mach-shmobile/pm-sh7372.c           |   14 +-
+ include/linux/sh_pfc.h                       |   76 ++++++++
+ 13 files changed, 400 insertions(+), 523 deletions(-)
