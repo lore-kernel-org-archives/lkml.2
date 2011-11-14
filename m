@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab1KNXrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:47:46 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:43284 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab1KNXrn (ORCPT
+	id S1756732Ab1KNXyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:54:19 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56840 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab1KNXyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:47:43 -0500
-Date: Mon, 14 Nov 2011 18:47:36 -0500 (EST)
-Message-Id: <20111114.184736.1515821968538974735.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: rmallon@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, xiaosuo@gmail.com, greearb@candelatech.com,
-        loke.chetan@gmail.com, waltje@uWalt.NL.Mugnet.ORG,
-        gw4pts@gw4pts.ampr.org, waltje@linux.com, ross.biro@gmail.com,
-        alan@linux.intel.com
-Subject: Re: [PATCH] net/packet: remove dead code and unneeded variable
- from prb_setup_retire_blk_timer()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1111150049500.9919@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1111150034120.9919@swampdragon.chaosbits.net>
-	<20111114.184325.1962580278359413683.davem@davemloft.net>
-	<alpine.LNX.2.00.1111150049500.9919@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 Nov 2011 15:47:39 -0800 (PST)
+	Mon, 14 Nov 2011 18:54:17 -0500
+Date: Tue, 15 Nov 2011 00:54:10 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
+        akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 08/10] cgroup: don't use subsys->can_attach_task() or
+ ->attach_task()
+Message-ID: <20111114235405.GJ9446@somewhere>
+References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+ <1320191193-8110-9-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320191193-8110-9-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Tue, 15 Nov 2011 00:51:57 +0100 (CET)
-
-> On Mon, 14 Nov 2011, David Miller wrote:
+On Tue, Nov 01, 2011 at 04:46:31PM -0700, Tejun Heo wrote:
+> Now that subsys->can_attach() and attach() take @tset instead of
+> @task, they can handle per-task operations.  Convert
+> ->can_attach_task() and ->attach_task() users to use ->can_attach()
+> and attach() instead.  Most converions are straight-forward.
+> Noteworthy changes are,
 > 
->> From: Jesper Juhl <jj@chaosbits.net>
->> Date: Tue, 15 Nov 2011 00:37:33 +0100 (CET)
->> 
->> > David: You may want to pass on this one. I obviously didn't think it 
->> > through properly - sorry :-(
->> 
->> It's already in my tree and pushed out to kernel.org, what in the
->> world do you think "applied" means?
->> 
-> I'm sorry about that. I try to be careful with my patches, but sometimes 
-> mistakes slip through - I'm only human... I do my best, but I mess up 
-> sometimes and Ryan raised a good point that I had not considered when I 
-> prepared the patch - what would you have me do except reply to his mail as 
-> I did?
+> * In cgroup_freezer, remove unnecessary NULL assignments to unused
+>   methods.  It's useless and very prone to get out of sync, which
+>   already happened.
+> 
+> * In cpuset, PF_THREAD_BOUND test is checked for each task.  This
+>   doesn't make any practical difference but is conceptually cleaner.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
 
-Send a patch to fix things back up.
+Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
