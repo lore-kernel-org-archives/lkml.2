@@ -1,80 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab1KNUFP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 15:05:15 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64962 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab1KNUFN (ORCPT
+	id S1756161Ab1KNUGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 15:06:22 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64162 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494Ab1KNUGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 15:05:13 -0500
-Date: Mon, 14 Nov 2011 12:05:06 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] PM/Memory-hotplug: Avoid task freezing failures
-Message-ID: <20111114200506.GE30922@google.com>
-References: <20111110163825.4321.56320.stgit@srivatsabhat.in.ibm.com>
+	Mon, 14 Nov 2011 15:06:20 -0500
+Date: Mon, 14 Nov 2011 21:06:08 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
+        akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com
+Subject: Re: [PATCH 05/10] cgroup: subsys->attach_task() should be called
+ after migration
+Message-ID: <20111114200553.GG9446@somewhere>
+References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+ <1320191193-8110-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111110163825.4321.56320.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1320191193-8110-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 01, 2011 at 04:46:28PM -0700, Tejun Heo wrote:
+> cgroup_attach_task() calls subsys->attach_task() after
+> cgroup_task_migrate(); however, cgroup_attach_proc() calls it before
+> migration.  This actually affects some of the users.  Update
+> cgroup_attach_proc() such that ->attach_task() is called after
+> migration.
 
-On Thu, Nov 10, 2011 at 10:12:43PM +0530, Srivatsa S. Bhat wrote:
-> The lock_system_sleep() function is used in the memory hotplug code at
-> several places in order to implement mutual exclusion with hibernation.
-> However, this function tries to acquire the 'pm_mutex' lock using
-> mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
-> get the lock. This would lead to task freezing failures and hence
-> hibernation failure as a consequence, even though the hibernation call path
-> successfully acquired the lock.
-> 
-> This patch fixes this issue by modifying lock_system_sleep() to use
-> mutex_lock_interruptible() instead of mutex_lock(), so that it blocks in the
-> TASK_INTERRUPTIBLE state. This would allow the freezer to freeze the blocked
-> task. Also, since the freezer could use signals to freeze tasks, it is quite
-> likely that mutex_lock_interruptible() returns -EINTR (and fails to acquire
-> the lock). Hence we keep retrying in a loop until we acquire the lock. Also,
-> we call try_to_freeze() within the loop, so that we don't cause freezing
-> failures due to busy looping.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-...
->  static inline void lock_system_sleep(void)
->  {
-> -	mutex_lock(&pm_mutex);
-> +	/*
-> +	 * We should not use mutex_lock() here because, in case we fail to
-> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
-> +	 * state, which would lead to task freezing failures. As a
-> +	 * consequence, hibernation would fail (even though it had acquired
-> +	 * the 'pm_mutex' lock).
-> +	 *
-> +	 * Note that mutex_lock_interruptible() returns -EINTR if we happen
-> +	 * to get a signal when we are waiting to acquire the lock (and this
-> +	 * is very likely here because the freezer could use signals to freeze
-> +	 * tasks). Hence we have to keep retrying until we get the lock. But
-> +	 * we have to use try_to_freeze() in the loop, so that we don't cause
-> +	 * freezing failures due to busy looping.
-> +	 */
-> +	while (mutex_lock_interruptible(&pm_mutex))
-> +		try_to_freeze();
-
-Hmmm... is this a problem that we need to worry about?  If not, I'm
-not sure this is a good idea.  What if the task calling
-lock_system_sleep() is a userland one and has actual outstanding
-signal?  It would busy spin until it acquire pm_mutex.  Maybe that's
-okay too given how pm_mutex is used but it's still nasty.  If this
-isn't a real problem, maybe leave this alone for now?
-
-Thanks.
-
--- 
-tejun
+That's already upstream.
