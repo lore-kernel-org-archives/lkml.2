@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab1KNWFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 17:05:21 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47385 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755094Ab1KNWFR (ORCPT
+	id S1756486Ab1KNWLP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 17:11:15 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:43448 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755148Ab1KNWLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 17:05:17 -0500
-X-Sasl-enc: R5zZTvZqN/Uv1hGBqHy4IbUjROrvke1a0zNl97/j5nin 1321308316
-Date: Mon, 14 Nov 2011 13:54:55 -0800
-From: Greg KH <greg@kroah.com>
-To: Andrew Worsley <amworsley@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>,
-        Johan Hovold <jhovold@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix Corruption issue in USB ftdi driver
- drivers/usb/serial/ftdi_sio.c
-Message-ID: <20111114215455.GA16018@kroah.com>
-References: <CA+Y=x3=xEa6XVspsodhbKOArtZ7VMYSMLhpF4WZ1sFNfaJ_E9g@mail.gmail.com>
- <20111101113607.15b254c6@bob.linux.org.uk>
- <CA+Y=x3k+jxN7LEk64mHkFQkkQhWa_KX7Uh+Uwuk0u87c+FiG_Q@mail.gmail.com>
- <20111102113104.3a641f7a@bob.linux.org.uk>
- <CA+Y=x3=iPBW4UcWbsD2VX3nfbxwMBCwAYS4176iseZ-Niy+oKw@mail.gmail.com>
+	Mon, 14 Nov 2011 17:11:14 -0500
+Date: Mon, 14 Nov 2011 14:11:13 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <1145760360.50519.1321308673807.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <4EC18F5E.2040407@zytor.com>
+Subject: Re: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid
+ memory addresses.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+Y=x3=iPBW4UcWbsD2VX3nfbxwMBCwAYS4176iseZ-Niy+oKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 04:06:31PM +1100, Andrew Worsley wrote:
-> Avoid unnecessary Control URBs that reset the data/parity or baud rate
-> to the currently set settings which can cause the FTDI chip to glitch
-> it's serial output and cause a corruption of a character it is
-> currently outputting.
+Hi Peter,
+
+----- Original Message -----
+> From: "H. Peter Anvin" <hpa@zytor.com>
+> To: "Andrei Warkentin" <awarkentin@vmware.com>
+> Cc: linux-kernel@vger.kernel.org
+> Sent: Monday, November 14, 2011 4:59:58 PM
+> Subject: Re: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid memory addresses.
 > 
-> Signed-off-by: amworsley@gmail.com
-> 
-> ---
-> 
-> ....
-> > It shouldn't be unless the apps you are running are doing odd things.
-> > I'd not expect parity to keep changing certainly. What may be occuring
-> > is that some of these devices only handle RTS/CTS flow and force the
-> > flag on, indicating it back to the app. If the app ignores that then it
-> > may end up trying to clear it several times.
-> 
-> Okay - Thanks I will try stracing the process and see if it is issuing
-> all the requests. I thought
-> it might be the line discipline trying to flow control the input. I've
-> lost my box for the moment so that
-> will be tomorrow perhaps.
-> 
-> ....
-> 
-> >> +
-> >>         /* NOTE These routines can get interrupted by
-> >>            ftdi_sio_read_bulk_callback  - need to examine what this
-> >> means - don't see any problems yet */
-> >>
-> >> +    if ((old_termios->c_cflag & (CSIZE|PARODD|CSTOPB|PARODD)) ==
-> >> +        (termios->c_cflag & (CSIZE|PARODD|CSTOPB|PARODD)))
+> On 11/14/2011 01:21 PM, Andrei Warkentin wrote:
 > >
-> > I think you need
+> > I know you're very busy, but I was wondering if you could
+> > give your two cents on this change. This change grew from
+> > our discussion on LKML last week.
 > >
-> > CSIZE (for CS7/8 switch)
-> > PARODD (parity odd/even)
-> > CMSPAR (parity mark/space v odd/even)
-> > CSTOPB (stop bits)
-> >
-> > while you have PARODD twice.
-> >
-> > Otherwise this looks correct.
+> > Thanks ahead,
+> > A
 > 
-> 
->   Woops - yep that was wrong. I attach a new patch - with CMSPAR and
-> PARENB which I assume is also parity related.
+> EOF seems wrong to me (not as bad as EFAULT, but still wrong).
 
-Much better, thanks, but the tabs all seem to have been removed from
-this patch, making it impossible to apply.
+Although that was what we had discussed, I do not return -EOF in the patch. As you
+mention - that would be wrong. I played around with other devices (block, actually),
+and if you attempt to read(2) beyond the end, read(2) simply returns 0, as in
+zero bytes read out. Of course, lseek(2) beyond the end should return -EINVAL, as
+well, so that is what that patch I CCd you on accomplishes.
 
-Also, I need a "clean" patch, against the 3.1 tree at the least, in
-order to be able to apply this, not against a previous version of your
-patch.
-
-Also, run your patch through the scripts/checkpatch.pl script to ensure
-it is correct before sending it out.
-
-Care to fix this up and resend so that I can apply this?
-
-thanks,
-
-greg k-h
+A
