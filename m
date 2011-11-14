@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab1KNPZk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 10:25:40 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17244 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab1KNPZi (ORCPT
+	id S1754898Ab1KNPbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 10:31:48 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34165 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754328Ab1KNPbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 10:25:38 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 14 Nov 2011 07:25:20 -0800
-Date: Mon, 14 Nov 2011 17:25:18 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, "Olof Johansson" <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 01/10] arm/tegra: initial device tree for tegra30
-Message-ID: <20111114152518.GJ19069@tbergstrom-lnx.Nvidia.com>
-References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
- <1321010541-31337-2-git-send-email-pdeschrijver@nvidia.com>
- <4EBDE766.5080505@gmail.com>
+	Mon, 14 Nov 2011 10:31:46 -0500
+Date: Mon, 14 Nov 2011 10:31:45 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: lkml <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
+In-Reply-To: <1321247661.6599.110.camel@minggr>
+Message-ID: <Pine.LNX.4.44L0.1111141028140.2035-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4EBDE766.5080505@gmail.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 12, 2011 at 04:26:30AM +0100, Rob Herring wrote:
-> On 11/11/2011 05:22 AM, Peter De Schrijver wrote:
-> > This patch adds the initial device tree for tegra30
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> > ---
-> >  arch/arm/boot/dts/tegra30.dtsi |  127 ++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 127 insertions(+), 0 deletions(-)
-> >  create mode 100644 arch/arm/boot/dts/tegra30.dtsi
-> > 
-> > diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-> > new file mode 100644
-> > index 0000000..fabe243
-> > --- /dev/null
-> > +++ b/arch/arm/boot/dts/tegra30.dtsi
-> > @@ -0,0 +1,127 @@
-> > +/include/ "skeleton.dtsi"
-> > +
-> > +/ {
-> > +	compatible = "nvidia,tegra30";
-> 
-> Needs documentation.
-> 
-> > +	interrupt-parent = <&intc>;
-> > +
-> > +	intc: interrupt-controller@50041000 {
-> > +		compatible = "nvidia,tegra30-gic", "nvidia,tegra20-gic";
-> > +		interrupt-controller;
-> > +		#interrupt-cells = <1>;
-> 
-> Is the Tegra GIC really different from a standard A9 gic? You need to
-> update to use the gic binding. The cells should be 3 for example.
+On Mon, 14 Nov 2011, Lin Ming wrote:
 
-It has an extra 'legacy' interrupt controller like tegra20 has. This is used
-when waking up the CPU from power off mode.
+> Current patches has a bug that system suspend fails if ata port was
+> runtime suspended.
+> 
+> disk suspend issues sync cache and stop device commands that obviously
+> need ata port to be active. So we need to runtime resume ata port first.
 
-Cheers,
+This is wrong.  If the port is already suspended then so are all the 
+drives below the port.  Hence there is no need to sync the cache or 
+stop the device.
 
-Peter.
+> Alan, Tejun
+> 
+> How about below fix?
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index fa3a591..ebb87fbf 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -50,6 +50,7 @@
+>  #include <linux/string_helpers.h>
+>  #include <linux/async.h>
+>  #include <linux/slab.h>
+> +#include <linux/pm_runtime.h>
+>  #include <asm/uaccess.h>
+>  #include <asm/unaligned.h>
+>  
+> @@ -2762,6 +2763,14 @@ static int sd_suspend(struct device *dev, pm_message_t mesg)
+>  	if (!sdkp)
+>  		return 0;	/* this can happen */
+>  
+> +	/*
+> +	 * Resume parent device to handle sync cache and
+> +	 * stop device commands
+> +	 */
+> +	ret = pm_runtime_get_sync(dev->parent);
+> +	if (ret)
+> +		goto exit;
+> +
+>  	if (sdkp->WCE) {
+>  		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
+>  		ret = sd_sync_cache(sdkp);
+
+This is not the right approach.  You should look instead at 
+scsi_dev_type_suspend() in scsi_pm.c.  If the device is already runtime 
+suspended then the routine should return immediately.
+
+Alan Stern
+
