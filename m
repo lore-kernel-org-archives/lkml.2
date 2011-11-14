@@ -1,88 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab1KNBMq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 20:12:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63119 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab1KNBMp (ORCPT
+	id S1753811Ab1KNBOZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 20:14:25 -0500
+Received: from 75-63-108-1.uvs.hstntx.sbcglobal.net ([75.63.108.1]:48560 "EHLO
+	mail.griffin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab1KNBOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 20:12:45 -0500
-Date: Mon, 14 Nov 2011 09:11:30 +0800
-From: wangyanqing <udknight@gmail.com>
-To: gregkh@suse.de
-Cc: wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]usb: serial: pl2303: rm id
-Message-ID: <20111114011130.GA4433@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>, gregkh@suse.de,
-	wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
-References: <20111110060408.GA25028@udknight.homenetwork>
+	Sun, 13 Nov 2011 20:14:21 -0500
+X-Greylist: delayed 2188 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Nov 2011 20:14:21 EST
+Message-ID: <4EC062B7.2090100@griffin.net>
+Date: Sun, 13 Nov 2011 18:37:11 -0600
+From: Darron Black <darron@griffin.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110060408.GA25028@udknight.homenetwork>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Claudio Scordino <claudio@evidence.eu.com>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jesper Nilsson <Jesper.Nilsson@axis.com>,
+        Mikael Starvik <mikael.starvik@axis.com>
+Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some variables
+References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4EB3A009.10502@evidence.eu.com> <4EB8F6B9.6010008@atmel.com> <4EB90902.4030200@evidence.eu.com> <20111108134804.07095c5d@lxorguk.ukuu.org.uk> <20111108142432.GA11293@kroah.com> <4EBA9385.7010806@evidence.eu.com> <20111113215318.GA2966@pengutronix.de>
+In-Reply-To: <20111113215318.GA2966@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.9
+X-Spam_score_int: -28
+X-Spam_bar: --
+X-Spam_report: Spam detection software, running on the system "mail.griffin.net", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ @@CONTACT_ADDRESS@@ for details.
+ Content preview:  On 11/13/2011 03:53 PM, Wolfram Sang wrote: > Hi, > > I have
+    been working on a patch series which adds hardware RS485 to the 8250 > according
+    to the latest developments. The series will be posted tomorrow after > some
+    more tests. However, there is one thing I wondered about: > >> From now on,
+    SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to >> set
+    the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
+    >> understood by looking only at the value of delay_rts_before_send and >>
+    delay_rts_after_send. > Do I overlook something or is SER_RS485_RTS_AFTER_SEND
+    always the inverted > signal of SER_RS485_RTS_ON_SEND. So why do we need
+   both? (BTW > SER_RS485_RTS_ON_SEND is a non-obvious name, I think. But changing
+    it will > probably break even more users?) It allows the application to configure
+    RTS to not toggle at all in one of those two scenarios. [...] 
+ Content analysis details:   (-2.9 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+ -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+ -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 02:04:08PM +0800, wangyanqing wrote:
-> I get report from customer that his usb-serial
-> converter doesn't work well,it sometimes work,
-> but sometimes it doesn't.
-> 
-> The usb-serial converter's id:
-> vendor_id product_id
-> 0x4348    0x5523
-> 
-> Then I search the usb-serial codes, and there are
-> two drivers announce support this device, pl2303
-> and ch341, commit 026dfaf1 cause it. Through many
-> times to test, ch341 works well with this device,
-> and pl2303 doesn't work quite often(it just work quite little).
-> 
-> ch341 works well with this device, so we doesn't
-> need pl2303 to support.I try to revert 026dfaf1 first,
-> but it failed. So I prepare this patch by hand to revert it.
-> 
-> Signed-off-by: Wang YanQing <Udknight@gmail.com>
-> ---
->  drivers/usb/serial/pl2303.c |    1 -
->  drivers/usb/serial/pl2303.h |    4 ----
->  2 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-> index 9083d1e..fc2d66f 100644
-> --- a/drivers/usb/serial/pl2303.c
-> +++ b/drivers/usb/serial/pl2303.c
-> @@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
->  	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
->  	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
->  	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
-> -	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
->  	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
->  	{ }					/* Terminating entry */
->  };
-> diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
-> index 3d10d7f..c38b8c0 100644
-> --- a/drivers/usb/serial/pl2303.h
-> +++ b/drivers/usb/serial/pl2303.h
-> @@ -145,10 +145,6 @@
->  #define ADLINK_VENDOR_ID		0x0b63
->  #define ADLINK_ND6530_PRODUCT_ID	0x6530
->  
-> -/* WinChipHead USB->RS 232 adapter */
-> -#define WINCHIPHEAD_VENDOR_ID		0x4348
-> -#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
-> -
->  /* SMART USB Serial Adapter */
->  #define SMART_VENDOR_ID	0x0b8c
->  #define SMART_PRODUCT_ID	0x2303
-> -- 
-> 1.7.3.4
-> 
-Hi all.
-Maybe it should be noticed that not only one usb-serial converter base 
-this chip have this issue, but there are about 50(even more) usb-serial 
-coverter lines have the same issue, so we can't ignore it.
-Of course we can make all the drivers work well, but we should make it
-useful at the first.
+On 11/13/2011 03:53 PM, Wolfram Sang wrote:
+> Hi,
+>
+> I have been working on a patch series which adds hardware RS485 to the 8250
+> according to the latest developments. The series will be posted tomorrow after
+> some more tests. However, there is one thing I wondered about:
+>
+>>  From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to
+>> set the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
+>> understood by looking only at the value of delay_rts_before_send and
+>> delay_rts_after_send.
+> Do I overlook something or is SER_RS485_RTS_AFTER_SEND always the inverted
+> signal of SER_RS485_RTS_ON_SEND. So why do we need both? (BTW
+> SER_RS485_RTS_ON_SEND is a non-obvious name, I think. But changing it will
+> probably break even more users?)
+It allows the application to configure RTS to not toggle at all in one 
+of those two scenarios.
+
+Perhaps the RTS toggle after transmit delay needs to be large, and 
+they'd rather do it in userspace than block in the driver. I also recall 
+a protocol that would send a master assertion command and hold on to RTS 
+afterwards. I can easily imagine needing to quickly transmit something, 
+hold on to RTS for a while, then finish your transmit later.
+
+However, I don't have any concrete examples of needing this outside that 
+vague recollection of a master assertion sequence in an old embedded 
+platform far away from Linux.
+
+>> diff --git a/include/linux/serial.h b/include/linux/serial.h
+>> index 97ff8e2..3d86517 100644
+>> --- a/include/linux/serial.h
+>> +++ b/include/linux/serial.h
+>> @@ -207,13 +207,15 @@ struct serial_icounter_struct {
+>>
+>>   struct serial_rs485 {
+>>   	__u32	flags;			/* RS485 feature flags */
+>> -#define SER_RS485_ENABLED		(1<<  0)
+>> -#define SER_RS485_RTS_ON_SEND		(1<<  1)
+>> -#define SER_RS485_RTS_AFTER_SEND	(1<<  2)
+>> -#define SER_RS485_RTS_BEFORE_SEND	(1<<  3)
+>> +#define SER_RS485_ENABLED		(1<<  0)	/* If enabled */
+>> +#define SER_RS485_RTS_ON_SEND		(1<<  1)	/* Logical level for
+>> +							   RTS pin when
+>> +							   sending */
+>> +#define SER_RS485_RTS_AFTER_SEND	(1<<  2)	/* Logical level for
+>> +							   RTS pin after sent*/
+> Nit: 80 char should be broken here, because that is not readable. Or put the
+> comment above the define.
+>
+> Thanks,
+>
+>     Wolfram
+>
+
