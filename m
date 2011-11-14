@@ -1,120 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab1KNQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:24:09 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55018 "EHLO
+	id S1755350Ab1KNQYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:24:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:55362 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab1KNQYI (ORCPT
+	with ESMTP id S1755298Ab1KNQYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 11:24:08 -0500
+	Mon, 14 Nov 2011 11:24:15 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 00/15] ARM: Add support for the Large Physical Address Extensions
-Date: Mon, 14 Nov 2011 16:23:36 +0000
-Message-Id: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v9 07/15] ARM: LPAE: Introduce the 3-level page table format definitions
+Date: Mon, 14 Nov 2011 16:23:43 +0000
+Message-Id: <1321287831-24560-8-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
-X-OriginalArrivalTime: 14 Nov 2011 16:24:04.0835 (UTC) FILETIME=[D39E5330:01CCA2E9]
-X-MC-Unique: 111111416240600501
+In-Reply-To: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
+References: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 14 Nov 2011 16:24:06.0803 (UTC) FILETIME=[D4CA9E30:01CCA2E9]
+X-MC-Unique: 111111416241300801
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGOJMF019364
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGOalU019368
 
-This is version 9 of the set of patches adding support for the Large
-Physical Address Extensions on the ARM architecture (available with the
-Cortex-A15 and Cortex-A7 processors).
+This patch introduces the pgtable-3level*.h files with definitions
+specific to the LPAE page table format (3 levels of page tables).
 
-This patch set against 3.2-rc1 is available on this branch:
+Each table is 4KB and has 512 64-bit entries. An entry can point to a
+40-bit physical address. The young, write and exec software bits share
+the corresponding hardware bits (negated). Other software bits use spare
+bits in the PTE.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux.git for-next
+The patch also changes some variable types from unsigned long or int to
+pteval_t or pgprot_t.
 
-The patch set also includes Russell's nopud patch with an additional
-fix-up to be reviewed (they are not in mainline yet but LPAE depends on
-them).
-
-
-Changelog (from v8, updates following review):
-
-- Removed the ATAG_MEM64 patch.
-- Removed the different PMD_SECT_XN definition for asm.
-- proc-v7.S fixes for SMP/UP instructions pairing.
-- Removed references to PHYS_OFFSET in proc-v7.S and added comment about
-  VMSPLIT_1G.
-- pr_fmt() definition removed from idmap.c.
-- ARCH_DMA_ADDR_T_64BIT now defaults to false without any dependencies.
-  Platforms should select this explicitly.
-- Reordered the nopud fixup with Russell's nopud patch.
-
-Known issues:
-
-- idmap_add_pmd() still cannot be called in an atomic context but the
-  kexec patches re-implement the setup_mm_for_reboot() function and it
-  no longer calls identity_mapping_add().
-
-
-Catalin Marinas (12):
-  ARM: pgtable: Fix compiler warning in ioremap.c introduced by nopud
-  ARM: LPAE: Move page table maintenance macros to pgtable-2level.h
-  ARM: LPAE: Move the FSR definitions to separate files
-  ARM: LPAE: Factor out classic-MMU specific code into proc-v7-2level.S
-  ARM: LPAE: Introduce the 3-level page table format definitions
-  ARM: LPAE: Page table maintenance for the 3-level format
-  ARM: LPAE: MMU setup for the 3-level page table format
-  ARM: LPAE: Invalidate the TLB before freeing the PMD
-  ARM: LPAE: Add fault handling support
-  ARM: LPAE: Add context switching support
-  ARM: LPAE: Add identity mapping support for the 3-level page table
-    format
-  ARM: LPAE: Add the Kconfig entries
-
-Russell King (1):
-  ARM: pgtable: switch to use pgtable-nopud.h
-
-Will Deacon (2):
-  ARM: LPAE: add ISBs around MMU enabling code
-  ARM: LPAE: mark memory banks with start > ULONG_MAX as highmem
-
- arch/arm/Kconfig                            |    2 +-
- arch/arm/boot/compressed/head.S             |    1 +
- arch/arm/include/asm/assembler.h            |   11 ++
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
  arch/arm/include/asm/page.h                 |    4 +
- arch/arm/include/asm/pgalloc.h              |   26 ++++-
- arch/arm/include/asm/pgtable-2level.h       |   41 ++++++
- arch/arm/include/asm/pgtable-3level-hwdef.h |   77 ++++++++++++
- arch/arm/include/asm/pgtable-3level-types.h |   70 +++++++++++
- arch/arm/include/asm/pgtable-3level.h       |  155 +++++++++++++++++++++++
+ arch/arm/include/asm/pgtable-3level-hwdef.h |   77 ++++++++++++++++++++
+ arch/arm/include/asm/pgtable-3level-types.h |   70 ++++++++++++++++++
+ arch/arm/include/asm/pgtable-3level.h       |  102 +++++++++++++++++++++++++++
  arch/arm/include/asm/pgtable-hwdef.h        |    4 +
- arch/arm/include/asm/pgtable.h              |   43 +------
- arch/arm/include/asm/proc-fns.h             |   21 +++
- arch/arm/include/asm/system.h               |    8 ++
- arch/arm/include/asm/tlb.h                  |   12 ++-
- arch/arm/kernel/head.S                      |   47 +++++++-
- arch/arm/kernel/hw_breakpoint.c             |    8 +-
- arch/arm/kernel/sleep.S                     |    2 +
- arch/arm/mm/Kconfig                         |   17 +++
- arch/arm/mm/alignment.c                     |    2 +-
- arch/arm/mm/context.c                       |   19 +++-
- arch/arm/mm/fault.c                         |  111 +++--------------
- arch/arm/mm/fault.h                         |   27 ++++-
- arch/arm/mm/fsr-2level.c                    |   78 ++++++++++++
- arch/arm/mm/fsr-3level.c                    |   68 ++++++++++
- arch/arm/mm/idmap.c                         |   34 +++++-
- arch/arm/mm/ioremap.c                       |   39 ++++---
- arch/arm/mm/mmu.c                           |   46 +++++++-
- arch/arm/mm/pgd.c                           |   51 +++++++-
- arch/arm/mm/proc-macros.S                   |    5 +-
- arch/arm/mm/proc-v7-2level.S                |  171 ++++++++++++++++++++++++++
- arch/arm/mm/proc-v7-3level.S                |  151 +++++++++++++++++++++++
- arch/arm/mm/proc-v7.S                       |  177 +++------------------------
- 32 files changed, 1205 insertions(+), 323 deletions(-)
+ arch/arm/include/asm/pgtable.h              |    4 +
+ 6 files changed, 261 insertions(+), 0 deletions(-)
  create mode 100644 arch/arm/include/asm/pgtable-3level-hwdef.h
  create mode 100644 arch/arm/include/asm/pgtable-3level-types.h
  create mode 100644 arch/arm/include/asm/pgtable-3level.h
- create mode 100644 arch/arm/mm/fsr-2level.c
- create mode 100644 arch/arm/mm/fsr-3level.c
- create mode 100644 arch/arm/mm/proc-v7-2level.S
- create mode 100644 arch/arm/mm/proc-v7-3level.S
 
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index ca94653..97b440c 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -151,7 +151,11 @@ extern void __cpu_copy_user_highpage(struct page *to, struct page *from,
+ #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
+ extern void copy_page(void *to, const void *from);
+ 
++#ifdef CONFIG_ARM_LPAE
++#include <asm/pgtable-3level-types.h>
++#else
+ #include <asm/pgtable-2level-types.h>
++#endif
+ 
+ #endif /* CONFIG_MMU */
+ 
+diff --git a/arch/arm/include/asm/pgtable-3level-hwdef.h b/arch/arm/include/asm/pgtable-3level-hwdef.h
+new file mode 100644
+index 0000000..d795282
+--- /dev/null
++++ b/arch/arm/include/asm/pgtable-3level-hwdef.h
+@@ -0,0 +1,77 @@
++/*
++ * arch/arm/include/asm/pgtable-3level-hwdef.h
++ *
++ * Copyright (C) 2011 ARM Ltd.
++ * Author: Catalin Marinas <catalin.marinas@arm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef _ASM_PGTABLE_3LEVEL_HWDEF_H
++#define _ASM_PGTABLE_3LEVEL_HWDEF_H
++
++/*
++ * Hardware page table definitions.
++ *
++ * + Level 1/2 descriptor
++ *   - common
++ */
++#define PMD_TYPE_MASK		(_AT(pmdval_t, 3) << 0)
++#define PMD_TYPE_FAULT		(_AT(pmdval_t, 0) << 0)
++#define PMD_TYPE_TABLE		(_AT(pmdval_t, 3) << 0)
++#define PMD_TYPE_SECT		(_AT(pmdval_t, 1) << 0)
++#define PMD_BIT4		(_AT(pmdval_t, 0))
++#define PMD_DOMAIN(x)		(_AT(pmdval_t, 0))
++
++/*
++ *   - section
++ */
++#define PMD_SECT_BUFFERABLE	(_AT(pmdval_t, 1) << 2)
++#define PMD_SECT_CACHEABLE	(_AT(pmdval_t, 1) << 3)
++#define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
++#define PMD_SECT_AF		(_AT(pmdval_t, 1) << 10)
++#define PMD_SECT_nG		(_AT(pmdval_t, 1) << 11)
++#define PMD_SECT_XN		(_AT(pmdval_t, 1) << 54)
++#define PMD_SECT_AP_WRITE	(_AT(pmdval_t, 0))
++#define PMD_SECT_AP_READ	(_AT(pmdval_t, 0))
++#define PMD_SECT_TEX(x)		(_AT(pmdval_t, 0))
++
++/*
++ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
++ */
++#define PMD_SECT_UNCACHED	(_AT(pmdval_t, 0) << 2)	/* strongly ordered */
++#define PMD_SECT_BUFFERED	(_AT(pmdval_t, 1) << 2)	/* normal non-cacheable */
++#define PMD_SECT_WT		(_AT(pmdval_t, 2) << 2)	/* normal inner write-through */
++#define PMD_SECT_WB		(_AT(pmdval_t, 3) << 2)	/* normal inner write-back */
++#define PMD_SECT_WBWA		(_AT(pmdval_t, 7) << 2)	/* normal inner write-alloc */
++
++/*
++ * + Level 3 descriptor (PTE)
++ */
++#define PTE_TYPE_MASK		(_AT(pteval_t, 3) << 0)
++#define PTE_TYPE_FAULT		(_AT(pteval_t, 0) << 0)
++#define PTE_TYPE_PAGE		(_AT(pteval_t, 3) << 0)
++#define PTE_BUFFERABLE		(_AT(pteval_t, 1) << 2)		/* AttrIndx[0] */
++#define PTE_CACHEABLE		(_AT(pteval_t, 1) << 3)		/* AttrIndx[1] */
++#define PTE_EXT_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
++#define PTE_EXT_AF		(_AT(pteval_t, 1) << 10)	/* Access Flag */
++#define PTE_EXT_NG		(_AT(pteval_t, 1) << 11)	/* nG */
++#define PTE_EXT_XN		(_AT(pteval_t, 1) << 54)	/* XN */
++
++/*
++ * 40-bit physical address supported.
++ */
++#define PHYS_MASK_SHIFT		(40)
++#define PHYS_MASK		((1ULL << PHYS_MASK_SHIFT) - 1)
++
++#endif
+diff --git a/arch/arm/include/asm/pgtable-3level-types.h b/arch/arm/include/asm/pgtable-3level-types.h
+new file mode 100644
+index 0000000..921aa30
+--- /dev/null
++++ b/arch/arm/include/asm/pgtable-3level-types.h
+@@ -0,0 +1,70 @@
++/*
++ * arch/arm/include/asm/pgtable-3level-types.h
++ *
++ * Copyright (C) 2011 ARM Ltd.
++ * Author: Catalin Marinas <catalin.marinas@arm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef _ASM_PGTABLE_3LEVEL_TYPES_H
++#define _ASM_PGTABLE_3LEVEL_TYPES_H
++
++#include <asm/types.h>
++
++typedef u64 pteval_t;
++typedef u64 pmdval_t;
++typedef u64 pgdval_t;
++
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
++
++/*
++ * These are used to make use of C type-checking..
++ */
++typedef struct { pteval_t pte; } pte_t;
++typedef struct { pmdval_t pmd; } pmd_t;
++typedef struct { pgdval_t pgd; } pgd_t;
++typedef struct { pteval_t pgprot; } pgprot_t;
++
++#define pte_val(x)      ((x).pte)
++#define pmd_val(x)      ((x).pmd)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)   ((x).pgprot)
++
++#define __pte(x)        ((pte_t) { (x) } )
++#define __pmd(x)        ((pmd_t) { (x) } )
++#define __pgd(x)	((pgd_t) { (x) } )
++#define __pgprot(x)     ((pgprot_t) { (x) } )
++
++#else	/* !STRICT_MM_TYPECHECKS */
++
++typedef pteval_t pte_t;
++typedef pmdval_t pmd_t;
++typedef pgdval_t pgd_t;
++typedef pteval_t pgprot_t;
++
++#define pte_val(x)	(x)
++#define pmd_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++
++#define __pte(x)	(x)
++#define __pmd(x)	(x)
++#define __pgd(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif	/* STRICT_MM_TYPECHECKS */
++
++#endif	/* _ASM_PGTABLE_3LEVEL_TYPES_H */
+diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+new file mode 100644
+index 0000000..79bf0ac
+--- /dev/null
++++ b/arch/arm/include/asm/pgtable-3level.h
+@@ -0,0 +1,102 @@
++/*
++ * arch/arm/include/asm/pgtable-3level.h
++ *
++ * Copyright (C) 2011 ARM Ltd.
++ * Author: Catalin Marinas <catalin.marinas@arm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef _ASM_PGTABLE_3LEVEL_H
++#define _ASM_PGTABLE_3LEVEL_H
++
++/*
++ * With LPAE, there are 3 levels of page tables. Each level has 512 entries of
++ * 8 bytes each, occupying a 4K page. The first level table covers a range of
++ * 512GB, each entry representing 1GB. Since we are limited to 4GB input
++ * address range, only 4 entries in the PGD are used.
++ *
++ * There are enough spare bits in a page table entry for the kernel specific
++ * state.
++ */
++#define PTRS_PER_PTE		512
++#define PTRS_PER_PMD		512
++#define PTRS_PER_PGD		4
++
++#define PTE_HWTABLE_PTRS	(PTRS_PER_PTE)
++#define PTE_HWTABLE_OFF		(0)
++#define PTE_HWTABLE_SIZE	(PTRS_PER_PTE * sizeof(u64))
++
++/*
++ * PGDIR_SHIFT determines the size a top-level page table entry can map.
++ */
++#define PGDIR_SHIFT		30
++
++/*
++ * PMD_SHIFT determines the size a middle-level page table entry can map.
++ */
++#define PMD_SHIFT		21
++
++#define PMD_SIZE		(1UL << PMD_SHIFT)
++#define PMD_MASK		(~(PMD_SIZE-1))
++#define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
++#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++
++/*
++ * section address mask and size definitions.
++ */
++#define SECTION_SHIFT		21
++#define SECTION_SIZE		(1UL << SECTION_SHIFT)
++#define SECTION_MASK		(~(SECTION_SIZE-1))
++
++#define USER_PTRS_PER_PGD	(PAGE_OFFSET / PGDIR_SIZE)
++
++/*
++ * "Linux" PTE definitions for LPAE.
++ *
++ * These bits overlap with the hardware bits but the naming is preserved for
++ * consistency with the classic page table format.
++ */
++#define L_PTE_PRESENT		(_AT(pteval_t, 3) << 0)		/* Valid */
++#define L_PTE_FILE		(_AT(pteval_t, 1) << 2)		/* only when !PRESENT */
++#define L_PTE_BUFFERABLE	(_AT(pteval_t, 1) << 2)		/* AttrIndx[0] */
++#define L_PTE_CACHEABLE		(_AT(pteval_t, 1) << 3)		/* AttrIndx[1] */
++#define L_PTE_USER		(_AT(pteval_t, 1) << 6)		/* AP[1] */
++#define L_PTE_RDONLY		(_AT(pteval_t, 1) << 7)		/* AP[2] */
++#define L_PTE_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
++#define L_PTE_YOUNG		(_AT(pteval_t, 1) << 10)	/* AF */
++#define L_PTE_XN		(_AT(pteval_t, 1) << 54)	/* XN */
++#define L_PTE_DIRTY		(_AT(pteval_t, 1) << 55)	/* unused */
++#define L_PTE_SPECIAL		(_AT(pteval_t, 1) << 56)	/* unused */
++
++/*
++ * To be used in assembly code with the upper page attributes.
++ */
++#define L_PTE_XN_HIGH		(1 << (54 - 32))
++#define L_PTE_DIRTY_HIGH	(1 << (55 - 32))
++
++/*
++ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
++ */
++#define L_PTE_MT_UNCACHED	(_AT(pteval_t, 0) << 2)	/* strongly ordered */
++#define L_PTE_MT_BUFFERABLE	(_AT(pteval_t, 1) << 2)	/* normal non-cacheable */
++#define L_PTE_MT_WRITETHROUGH	(_AT(pteval_t, 2) << 2)	/* normal inner write-through */
++#define L_PTE_MT_WRITEBACK	(_AT(pteval_t, 3) << 2)	/* normal inner write-back */
++#define L_PTE_MT_WRITEALLOC	(_AT(pteval_t, 7) << 2)	/* normal inner write-alloc */
++#define L_PTE_MT_DEV_SHARED	(_AT(pteval_t, 4) << 2)	/* device */
++#define L_PTE_MT_DEV_NONSHARED	(_AT(pteval_t, 4) << 2)	/* device */
++#define L_PTE_MT_DEV_WC		(_AT(pteval_t, 1) << 2)	/* normal non-cacheable */
++#define L_PTE_MT_DEV_CACHED	(_AT(pteval_t, 3) << 2)	/* normal inner write-back */
++#define L_PTE_MT_MASK		(_AT(pteval_t, 7) << 2)
++
++#endif /* _ASM_PGTABLE_3LEVEL_H */
+diff --git a/arch/arm/include/asm/pgtable-hwdef.h b/arch/arm/include/asm/pgtable-hwdef.h
+index 1831111..8426229 100644
+--- a/arch/arm/include/asm/pgtable-hwdef.h
++++ b/arch/arm/include/asm/pgtable-hwdef.h
+@@ -10,6 +10,10 @@
+ #ifndef _ASMARM_PGTABLE_HWDEF_H
+ #define _ASMARM_PGTABLE_HWDEF_H
+ 
++#ifdef CONFIG_ARM_LPAE
++#include <asm/pgtable-3level-hwdef.h>
++#else
+ #include <asm/pgtable-2level-hwdef.h>
++#endif
+ 
+ #endif
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 44b9247..aec18ab 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -25,7 +25,11 @@
+ #include <mach/vmalloc.h>
+ #include <asm/pgtable-hwdef.h>
+ 
++#ifdef CONFIG_ARM_LPAE
++#include <asm/pgtable-3level.h>
++#else
+ #include <asm/pgtable-2level.h>
++#endif
+ 
+ /*
+  * Just any arbitrary offset to the start of the vmalloc VM area: the
 
