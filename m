@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1KNWdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 17:33:10 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:49940 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751775Ab1KNWdI (ORCPT
+	id S1756554Ab1KNWkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 17:40:16 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61155 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab1KNWkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 17:33:08 -0500
-Date: Mon, 14 Nov 2011 14:33:08 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <379707293.52012.1321309988256.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4EC19253.6080201@zytor.com>
-Subject: Re: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid
- memory addresses.
+	Mon, 14 Nov 2011 17:40:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Mon, 14 Nov 2011 14:39:51 -0800
+X-Google-Sender-Auth: G5cmTG1mX8cJDRItNnxIKtsTtmY
+Message-ID: <CAB=NE6UB6TySinKTjPused7RLAUrd13BKWhD2PNzHE+fhUgQiw@mail.gmail.com>
+Subject: [ANN] compat-wireless stable updates: 3.2-rc1, 3.1.1, 3.0.9
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I went back to my beehive and got busy updating the stable snapshots
+of compat-wireless [0] with a slew of new stable kernel updates. One
+for 3.2-rc1 [1], another for 3.1.1 [2] and then one for 3.0.9 [3].
+These are now based on the shiny new linux-stable.git [4] tree now
+maintained by Greg. Please report any issues observed. Thanks to all
+the contributors to these releases, particularly Hauke Mehrtens, I'm
+mainly just a patch monkey now.
 
------ Original Message -----
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> To: "Andrei Warkentin" <awarkentin@vmware.com>
-> Cc: linux-kernel@vger.kernel.org
-> Sent: Monday, November 14, 2011 5:12:35 PM
-> Subject: Re: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid memory addresses.
-> 
-> On 11/14/2011 02:11 PM, Andrei Warkentin wrote:
-> >>
-> >> EOF seems wrong to me (not as bad as EFAULT, but still wrong).
-> >
-> > Although that was what we had discussed, I do not return -EOF in
-> > the patch. As you
-> > mention - that would be wrong. I played around with other devices
-> > (block, actually),
-> > and if you attempt to read(2) beyond the end, read(2) simply
-> > returns 0, as in
-> > zero bytes read out. Of course, lseek(2) beyond the end should
-> > return -EINVAL, as
-> > well, so that is what that patch I CCd you on accomplishes.
-> >
-> 
-> 0 is EOF.
-> 
+[0] http://wireless.kernel.org/en/users/Download/stable
+[1] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.2/compat-wireless-3.2-rc1-1.tar.bz2
+[2] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.1/compat-wireless-3.1.1-1.tar.bz2
+[3] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.0/compat-wireless-3.0.9-1.tar.bz2
+[4] git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 
-Ah, whoops, silly me.
-
-> This is not a block device -- comparing to block devices is
-> pointless.
-> There is no "end" to /dev/mem, so this is a totally meaningless
-> comparison.
-
-Oh ok, I looked at other arches, like IA64, and now see why
-using valid_phys_addr_range as an "end" test is meaningless.
-
-Thanks,
-A
+  Luis
