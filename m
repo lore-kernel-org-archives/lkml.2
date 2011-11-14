@@ -1,76 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab1KNKvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 05:51:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36298 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab1KNKvW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 05:51:22 -0500
-Subject: Re: [PATCH] perf: do not set task_ctx pointer in cpuctx if there is
- no events in the context
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Mon, 14 Nov 2011 11:50:54 +0100
-In-Reply-To: <20111113160605.GW3225@redhat.com>
-References: <20111023171033.GI17571@redhat.com>
-	 <20111103074104.GG14726@redhat.com> <1320670811.18053.33.camel@twins>
-	 <20111113160605.GW3225@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321267854.1421.4.camel@twins>
-Mime-Version: 1.0
+	id S1755037Ab1KNLFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 06:05:16 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35004 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754418Ab1KNLFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 06:05:15 -0500
+Message-ID: <4EC0F5A5.7070304@linux.vnet.ibm.com>
+Date: Mon, 14 Nov 2011 16:34:05 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Len Brown <lenb@kernel.org>, Ferenc Wagner <wferi@niif.hu>,
+        "Tomas M." <tmezzadra@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        g.trinabh@gmail.com, j-pihet@ti.com, khilman@ti.com,
+        arjan@linux.intel.com, len.brown@intel.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend
+ regression)
+References: <4EBD46DF.6060507@gmail.com> <201111120250.14151.rjw@sisk.pl> <87k475cxvf.fsf@tac.ki.iif.hu> <201111122317.27576.rjw@sisk.pl>
+In-Reply-To: <201111122317.27576.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111411-6078-0000-0000-0000045C19A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-13 at 18:06 +0200, Gleb Natapov wrote:
-> On Mon, Nov 07, 2011 at 02:00:11PM +0100, Peter Zijlstra wrote:
-> > On Thu, 2011-11-03 at 09:41 +0200, Gleb Natapov wrote:
-> > > Ingo, Peter can you look into this please.
-> > 
-> > queued it and the jump_label thing.
-> I see jump_label thing in tip/perf/core but not this one yet. This is
-> good because this one needs amendment :) See below.
+Thanks a lot Ferenc and Tomas for reporting the problem and testing the fix.
+Thanks a ton Rafael for plugging the bug with an amazing turn around time !!
 
-Weird ass stuff, because my copy still applies to tip/master. Ingo, wtf
-is up?
+-- Deepthi
 
+On Sunday 13 November 2011 03:47 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> After commit e978aa7d7d57d04eb5f88a7507c4fb98577def77 (cpuidle: Move
+> dev->last_residency update to driver enter routine; remove
+> dev->last_state) setting acpi_idle_suspend to 1 by
+> acpi_processor_suspend() causes the ACPI cpuidle routines to return
+> error codes continuously, which in turn causes cpuidle to lock up
+> (hard).  However, acpi_idle_suspend doesn't appear to be useful for
+> any particular purpose (it's racy and doesn't really provide any real
+> protection), so it can be removed, which makes the problem go away.
+> 
+> Reported-and-tested-by: Tomas M. <tmezzadra@gmail.com>
+> Reported-and-tested-by: Ferenc Wagner <wferi@niif.hu>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 > ---
+>  drivers/acpi/processor_idle.c |   29 -----------------------------
+>  1 file changed, 29 deletions(-)
 > 
-> Do not set task_ctx pointer during sched_in if there is no
-> events associated with the context.  Otherwise if during task
-> execution total number of events in the system will become zero
-> perf_event_context_sched_out() will not be called and cpuctx->task_ctx
-> will be left with a stale value. Also perf_event_sched_in() shouldn't try
-> to schedule task events in this case otherwise cpuctx->task_ctx->is_active
-> will not be cleared during sched_out and will become incorrect.
+> Index: linux/drivers/acpi/processor_idle.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/processor_idle.c
+> +++ linux/drivers/acpi/processor_idle.c
+> @@ -224,7 +224,6 @@ static void lapic_timer_state_broadcast(
+>  /*
+>   * Suspend / resume control
+>   */
+> -static int acpi_idle_suspend;
+>  static u32 saved_bm_rld;
 > 
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-
---- missing right there
-
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index d1a1bee..7210657 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -2171,9 +2171,10 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
->  	 */
->  	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
->  
-> -	perf_event_sched_in(cpuctx, ctx, task);
-> +	if (ctx->nr_events)
-> +		cpuctx->task_ctx = ctx;
->  
-> -	cpuctx->task_ctx = ctx;
-> +	perf_event_sched_in(cpuctx, cpuctx->task_ctx, task);
->  
->  	perf_pmu_enable(ctx->pmu);
->  	perf_ctx_unlock(cpuctx, ctx);
+>  static void acpi_idle_bm_rld_save(void)
+> @@ -243,21 +242,13 @@ static void acpi_idle_bm_rld_restore(voi
+> 
+>  int acpi_processor_suspend(struct acpi_device * device, pm_message_t state)
+>  {
+> -	if (acpi_idle_suspend == 1)
+> -		return 0;
+> -
+>  	acpi_idle_bm_rld_save();
+> -	acpi_idle_suspend = 1;
+>  	return 0;
+>  }
+> 
+>  int acpi_processor_resume(struct acpi_device * device)
+>  {
+> -	if (acpi_idle_suspend == 0)
+> -		return 0;
+> -
+>  	acpi_idle_bm_rld_restore();
+> -	acpi_idle_suspend = 0;
+>  	return 0;
+>  }
+> 
+> @@ -763,13 +754,6 @@ static int acpi_idle_enter_c1(struct cpu
+> 
+>  	local_irq_disable();
+> 
+> -	/* Do not access any ACPI IO ports in suspend path */
+> -	if (acpi_idle_suspend) {
+> -		local_irq_enable();
+> -		cpu_relax();
+> -		return -EINVAL;
+> -	}
+> -
+>  	lapic_timer_state_broadcast(pr, cx, 1);
+>  	kt1 = ktime_get_real();
+>  	acpi_idle_do_entry(cx);
+> @@ -810,13 +794,6 @@ static int acpi_idle_enter_simple(struct
+> 
+>  	local_irq_disable();
+> 
+> -	if (acpi_idle_suspend) {
+> -		local_irq_enable();
+> -		cpu_relax();
+> -		return -EINVAL;
+> -	}
+> -
+> -
+>  	if (cx->entry_method != ACPI_CSTATE_FFH) {
+>  		current_thread_info()->status &= ~TS_POLLING;
+>  		/*
+> @@ -895,12 +872,6 @@ static int acpi_idle_enter_bm(struct cpu
+>  	if (unlikely(!pr))
+>  		return -EINVAL;
+> 
+> -
+> -	if (acpi_idle_suspend) {
+> -		cpu_relax();
+> -		return -EINVAL;
+> -	}
+> -
+>  	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
+>  		if (drv->safe_state_index >= 0) {
+>  			return drv->states[drv->safe_state_index].enter(dev,
+> 
 > --
-> 			Gleb.
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
