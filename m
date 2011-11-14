@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab1KNA1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 19:27:33 -0500
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:40495 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515Ab1KNA1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 19:27:31 -0500
-Message-ID: <4EC060D0.5000808@snapgear.com>
-Date: Mon, 14 Nov 2011 10:29:04 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	id S1755026Ab1KNA1v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 19:27:51 -0500
+Received: from mga03.intel.com ([143.182.124.21]:42240 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754873Ab1KNA1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 19:27:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,503,1315206000"; 
+   d="scan'208";a="74337473"
+Date: Mon, 14 Nov 2011 01:32:03 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mfd: add #ifdef CONFIG_DEBUG_FS guard for
+ ab8500_debug_resources
+Message-ID: <20111114003203.GK22218@sortiz-mobl>
+References: <1320890178.13074.1.camel@phoenix>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Kars de Jong <jongk@linux-m68k.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the m68k
- tree
-References: <20111114110305.5b04e0b5509cd0489c7d9440@canb.auug.org.au>
-In-Reply-To: <20111114110305.5b04e0b5509cd0489c7d9440@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320890178.13074.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Axel,
 
-On 14/11/11 10:03, Stephen Rothwell wrote:
-> Today's linux-next merge of the m68knommu tree got a conflict in
-> arch/m68k/Kconfig.debug between commit 049755db2c3f ("m68k/mvme16x: Add
-> support for EARLY_PRINTK") from the m68k tree and commit d0106cf0aa29
-> ("m68k: support configure time command line for MMU m68k") from the
-> m68knommu tree.
->
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+On Thu, Nov 10, 2011 at 09:56:18AM +0800, Axel Lin wrote:
+> Fix below build warning if CONFIG_DEBUG_FS is disabled.
+> 
+>   CC      drivers/mfd/ab8500-core.o
+> drivers/mfd/ab8500-core.c:623: warning: 'ab8500_debug_resources' defined but not used
+> 
+Thanks for the fix, I applied this one to my for-linus branch.
 
-Thanks for the heads up. Geert's irq changes have been pushed in now,
-so I will rebase my patches and fix up the few bits of breakage you
-have seen.
-
-Thanks
-Greg
-
+Cheers,
+Samuel.
 
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Intel Open Source Technology Centre
+http://oss.intel.com/
