@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1KNTee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 14:34:34 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20329 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab1KNTed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 14:34:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,510,1315206000"; 
-   d="scan'208";a="85068356"
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
- idle load balancing scalability
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Venki Pallipadi <venki@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+	id S1756056Ab1KNThM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 14:37:12 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33298 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011Ab1KNThK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 14:37:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740805B13@HQMAIL01.nvidia.com>
+References: <1321074108-10025-1-git-send-email-inderpal.singh@linaro.org>
+	<CACRpkdbC=w5vRvgLVpAcmcampt-baTydpLHBexak4RzxUcO32Q@mail.gmail.com>
+	<CAJuYYwSvRYWdoccSN3nU7G4zXyTjt7vkjAd_vDx=QchG+yd5Cg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805B13@HQMAIL01.nvidia.com>
+Date: Tue, 15 Nov 2011 01:07:09 +0530
+Message-ID: <CAJuYYwQNQZmMYgwcZr1M2dxfhjuJvL6AimfkQQoG_arxi6UwGg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: SAMSUNG: Save/restore GPIO drive strength across suspend/resume
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Inderpal Singh <inderpal.singh@linaro.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Nov 2011 11:37:49 -0800
-In-Reply-To: <1321263161.30500.7.camel@twins>
-References: <1319060737.2604.38.camel@schen9-DESK>
-	 <m2wrc0xpbg.fsf@firstfloor.org>
-	 <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
-	 <4FF5AC937153B0459463C1A88EB478F20135D6ECB5@orsmsx505.amr.corp.intel.com>
-	 <1320191558.28097.44.camel@sbsiddha-desk.sc.intel.com>
-	 <1321263161.30500.7.camel@twins>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321299469.16760.5.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-14 at 01:32 -0800, Peter Zijlstra wrote:
-> On Tue, 2011-11-01 at 16:52 -0700, Suresh Siddha wrote:
-> > @@ -3317,6 +3317,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
-> >  
-> >         cpu_rq(cpu)->cpu_power = power;
-> >         sdg->sgp->power = power;
-> > +       atomic_set(&sdg->sgp->nr_busy_cpus, sdg->group_weight);
-> >  }
-> >  
-> >  static void update_group_power(struct sched_domain *sd, int cpu)
-> > @@ -3339,6 +3340,7 @@ static void update_group_power(struct sched_domain *sd, int cpu)
-> >         } while (group != child->groups);
-> >  
-> >         sdg->sgp->power = power;
-> > +       atomic_set(&sdg->sgp->nr_busy_cpus, sdg->group_weight);
-> >  } 
-> 
-> So we run this rather frequently, and it will trample all over:
-> 
-> > +                */
-> > +               for_each_domain(cpu, sd)
-> > +                       atomic_dec(&sd->groups->sgp->nr_busy_cpus);
-> 
-> because I cannot see any serialization between those sites.
+On 15 November 2011 00:30, Stephen Warren <swarren@nvidia.com> wrote:
+> Thomas Abraham wrote at Monday, November 14, 2011 6:57 AM:
+>> On 12 November 2011 16:30, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> > On Sat, Nov 12, 2011 at 6:01 AM, Inderpal Singh
+>> > <inderpal.singh@linaro.org> wrote:
+>> >
+>> >> GPIO driver strength settings are not preserved across suspend/resume
+>> >> for s5pc100, s5pv210 and Exynos platforms which has been the cause of
+>> >> mmc/sd card read/write failures after resume. Fix this by saving and
+>> >> restoring the GPIO driver strength register settings across suspend/resume.
+>> >>
+>> >> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+>> >
+>> > On a related theme: I am thinking about how to support preserving
+>> > drive strength (etc) across suspend/resume and deepsleep in the
+>> > pincontrol subsystem.
+>> >
+>> > Currently I am playing with the idea to let pin groups have states,
+>> > as the different configurations seem to be 90% or so about very
+>> > specific sleep modes, so say:
+>> >
+>> > pinconf_set_group_state("mmcgroup", PINCONF_STATE_ACTIVE);
+>> > pinconf_set_group_state("mmcgroup", PINCONF_STATE_SUSPENDED);
+>> > pinconf_set_group_state("mmcgroup", PINCONF_STATE_SLEEP);
+>>
+>>
+>> The API name suggests that power state is set based on a pin group.
+>> For a driver, the following could be convenient as the driver transits
+>> through various power management states.
+>>
+>> struct pinmux pmx;
+>> pmx = pinmux_get(dev, "i2c0");
+>>
+>> [...]
+>>
+>> pinmux_set_state(pmx, PINCONF_STATE_SLEEP);
+>> [...]
+>> pinmux_set_state(pmx, PINCONF_STATE_ACTIVE);
+>
+> That seems a more consistent driver-oriented API, yes.
+>
+> I'd of course lean towards adding the pin config data into the mapping
+> table, and using the existing feature struct pinmux_map name field to
+> name those states, and allowing dynamic transitioning between states,
+> rather than adding a complete new API and namespace for these states.
 
-That was an overlook from myside. I moved the initialization of this to
-init_sched_groups_power() now and there is no need to re-do this
-everytime we call the update_group_power().
+I am not sure how this works, but with dynamic transitioning, will it
+be possible to program the pinmux registers dynamically when a
+driver/controller decides to idle for sometime and come back up again
+(not a system wide suspend-resume cycle). There might be a need for
+the driver to inform the pinmux subsystem of this case and allow the
+pinmux subsystem to re-program pinmux registers as required.
 
-> Also, isn't it rather weird to just assume all cpus are busy in
-> update_group_power()? If you would actually set the right value in
-> update_cpu_power() you could use a straight sum in update_group_power()
-> and get a more or less accurate number out.
+Thanks,
+Thomas.
 
-I will post an updated patch soon (once we complete the performance
-analysis of this patch with respect to other workloads) but the below
-hunk gives an idea of what I am planning to do now.
 
-@@ -7369,6 +7384,7 @@ static void init_sched_groups_power(int cpu, struct sched_
-                return;
- 
-        update_group_power(sd, cpu);
-+       atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
- }
- 
- /*
-
-thanks,
-suresh
-
+>
+> --
+> nvpublic
+>
+>
