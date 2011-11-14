@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab1KNFPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 00:15:48 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:55072 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab1KNFPq (ORCPT
+	id S1751567Ab1KNFS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 00:18:59 -0500
+Received: from webmail.innova-red.net ([200.10.202.10]:58739 "EHLO
+	mail.innova-red.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab1KNFS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 00:15:46 -0500
-Date: Mon, 14 Nov 2011 00:15:14 -0500 (EST)
-Message-Id: <20111114.001514.2212530697656360412.davem@davemloft.net>
-To: david.decotigny@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ian.campbell@citrix.com, eric.dumazet@gmail.com,
-        jeffrey.t.kirsher@intel.com, jpirko@redhat.com, joe@perches.com,
-        szymon@janc.net.pl, rick.jones2@hp.com, AAbdulla@nvidia.com
-Subject: Re: [PATCH FIX net v2] forcedeth: fix stats on hardware without
- extended stats support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51c23650f3fc6e48b652a7ab322ca09a1cb7cbcc.1321064621.git.david.decotigny@google.com>
-References: <cover.1321064621.git.david.decotigny@google.com>
-	<51c23650f3fc6e48b652a7ab322ca09a1cb7cbcc.1321064621.git.david.decotigny@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 13 Nov 2011 21:15:19 -0800 (PST)
+	Mon, 14 Nov 2011 00:18:58 -0500
+X-Greylist: delayed 4555 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 00:18:57 EST
+Cc: recipient list not shown:;
+Message-ID: <b246d95dca120e96e83de0fd715e1f53.squirrel@webmail.innova-red.net>
+Date: Mon, 14 Nov 2011 01:01:43 -0300
+Subject: Business Proposal
+From: "Mr. Vincent Cheng" <izagui@retina.ar>
+Reply-To: chengvincent036@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.20-RC2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <david.decotigny@google.com>
-Date: Fri, 11 Nov 2011 18:27:34 -0800
 
-> This change makes sure that tx_packets/rx_bytes ifconfig counters are
-> updated even on NICs that don't provide hardware support for these
-> stats: they are now updated in software. For the sake of consistency,
-> we also now have tx_bytes updated in software (hardware counters
-> include ethernet CRC, and software doesn't account for it).
-> 
-> This reverts parts of:
->  - "forcedeth: statistics optimization" (21828163b2)
->  - "forcedeth: Improve stats counters" (0bdfea8ba8)
->  - "forcedeth: remove unneeded stats updates" (4687f3f364)
-> 
-> Tested:
->   pktgen + loopback (http://patchwork.ozlabs.org/patch/124698/)
->   reports identical tx_packets/rx_packets and tx_bytes/rx_bytes.
-> 
-> Signed-off-by: David Decotigny <david.decotigny@google.com>
 
-Applied, thanks.
+
+I am Mr. Vincent Cheng, GBS, JP Chairman of the Hong Kong and Shanghai
+Banking Corporation Limited. I have a business proposal of Twenty Two
+million Five Hundred Thousand United State Dollars only for you to
+transact with me from my bank to your country.Having gone through a
+methodical search, I decided to contact you hoping that you will find this
+proposal interesting. Please on your confirmation of this message and
+indicating your interest
+
+All confirmable documents to back up the claims will be made available to
+you prior to your acceptance and as soon as I receive your return mail Via
+my email address:chengvincent036@yahoo.com.hk and I will let you know what
+is required of you,your earliest response to this letter will be
+appreciated.
+
+Endeavour to let me know your decision rather than keep me waiting
+
+Best Regards,
+Mr. Vincent Cheng
