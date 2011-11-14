@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab1KNJW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 04:22:58 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:48360 "EHLO a.mx.secunet.com"
+	id S1754072Ab1KNJbQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 04:31:16 -0500
+Received: from sh.osrg.net ([192.16.179.4]:35341 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab1KNJW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 04:22:57 -0500
-Date: Mon, 14 Nov 2011 10:22:52 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
-        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dm: verity target
-Message-ID: <20111114092252.GA11359@secunet.com>
-References: <20111110074408.GE10138@secunet.com>
- <1321032884-14621-1-git-send-email-msb@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321032884-14621-1-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 14 Nov 2011 09:22:52.0688 (UTC) FILETIME=[FC3EB900:01CCA2AE]
+	id S1753938Ab1KNJbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 04:31:14 -0500
+Date: Mon, 14 Nov 2011 18:30:47 +0900 (JST)
+Message-Id: <20111114.183047.139564117.ryusuke@osrg.net>
+To: thomas@m3y3r.de
+Cc: linux-kernel@vger.kernel.org, linux-nilfs@vger.kernel.org
+Subject: Re: [PATCH] nilfs2: unbreak compat ioctl
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <1321180334.1624.23.camel@localhost.localdomain>
+References: <1320697117.1396.4.camel@localhost.localdomain>
+	<20111110.124918.255392182.ryusuke@osrg.net>
+	<1321180334.1624.23.camel@localhost.localdomain>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 14 Nov 2011 18:30:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 09:34:44AM -0800, Mandeep Singh Baines wrote:
->
-> +/**
-> + * dm_bht_compute_hash: hashes a page of data
-> + */
-> +static int dm_bht_compute_hash(struct dm_bht *bht, struct page *pg,
-> +			       unsigned int offset, u8 *digest)
-> +{
-> +	struct shash_desc *hash_desc = bht->hash_desc[smp_processor_id()];
-> +	void *data;
-> +	int err;
+On Sun, 13 Nov 2011 11:32:14 +0100, Thomas Meyer wrote:
+> Am Donnerstag, den 10.11.2011, 12:49 +0900 schrieb Ryusuke Konishi:
+> > But, this patch looks to prevent compat_sys_ioctl() from handling
+> > other compatible ioctls that compat_ioctl_check_table function
+> > detects.  For instance, fiemap (FS_IOC_FIEMAP) is handled via the
+> > function.
+> > 
+> > I think we should only redirect own ioctl commands
+> > (i.e. NILFS_IOCTL_xxxx) to the nilfs_ioctl() call.
+> 
+> Hello Ryusuke,
+> 
+> something like this?
 
-You don't need to have one shash_desc per cpu. As the shash interface is
-synchronous, you could either allocate a new shash_desc with every call
-to dm_bht_compute_hash, or just place the shash_desc with the context to
-the stack of this function. The easiest thing would be to add the
-shash transformation direct to dm_bht and then something like
+Thanks, it looks fine to me.
 
-        struct {
-                struct shash_desc desc;        
-                char ctx[crypto_shash_descsize(bht->tfm)];                                                
-        } hash_desc;
+I'll send it upstream after testing it against a 64-bit kernel
+environment with a 32-bit userspace.
 
-	hash_desc.desc.tfm = bmt->tfm;
+Regards,
+Ryusuke Konishi
 
-The intermediate and final digest values are stored to hash_desc.ctx.
-This is local, hence it's reentrant.
 
-> +
-> +	/* Note, this is synchronous. */
-> +	if (crypto_shash_init(hash_desc)) {
-> +		DMCRIT("failed to reinitialize crypto hash (proc:%d)",
-> +			smp_processor_id());
-> +		return -EINVAL;
-> +	}
-> +	data = kmap_atomic(pg);
-> +	err = crypto_shash_update(hash_desc, data + offset, PAGE_SIZE);
-> +	kunmap_atomic(data);
-> +	if (err) {
-> +		DMCRIT("crypto_hash_update failed");
-> +		return -EINVAL;
-> +	}
-> +	if (crypto_shash_update(hash_desc, bht->salt, sizeof(bht->salt))) {
-> +		DMCRIT("crypto_hash_update failed");
-> +		return -EINVAL;
-> +	}
-> +	if (crypto_shash_final(hash_desc, digest)) {
-> +		DMCRIT("crypto_hash_final failed");
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-
-[snip]
-
-> + * TODO(wad): All hash storage memory is pre-allocated and freed once an
-> + * entire branch has been verified.
-> + */
-> +struct dm_bht {
-> +	/* Configured values */
-> +	int depth;  /* Depth of the tree including the root */
-> +	unsigned int block_count;  /* Number of blocks hashed */
-> +	unsigned int block_size;  /* Size of a hash block */
-> +	char hash_alg[CRYPTO_MAX_ALG_NAME];
-> +	unsigned char salt[DM_BHT_SALT_SIZE];
-> +
-> +	/* Computed values */
-> +	unsigned int node_count;  /* Data size (in hashes) for each entry */
-> +	unsigned int node_count_shift;  /* first bit set - 1 */
-> +	/* There is one per CPU so that verified can be simultaneous. */
-> +	struct shash_desc *hash_desc[NR_CPUS];  /* Container for the hash alg */
-
-As mentioned above, you don't need to have one shash_desc per cpu.
-Replace this with a 'struct crypto_shash *tfm;' and add this transformation
-to the local hash_desc.
-
+> kind regards
+> thomas
+> 
+> From 241cc9e8c7d6b8218d307117b0d4a0dabbe1d94e Mon Sep 17 00:00:00 2001
+> From: Thomas Meyer <thomas@m3y3r.de>
+> Date: Mon, 7 Nov 2011 20:59:02 +0100
+> Subject: [PATCH] nilfs2: unbreak compat ioctl
+> 
+> I guess commit 828b1c50ae11e6dda68f8dfefe43b74c7182b157 incidentally broke
+> all other NILFS compat ioctls. make them work again.
+> 
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> ---
+>  fs/nilfs2/ioctl.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+> index 41d6743..3e65427 100644
+> --- a/fs/nilfs2/ioctl.c
+> +++ b/fs/nilfs2/ioctl.c
+> @@ -842,6 +842,19 @@ long nilfs_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  	case FS_IOC32_GETVERSION:
+>  		cmd = FS_IOC_GETVERSION;
+>  		break;
+> +	case NILFS_IOCTL_CHANGE_CPMODE:
+> +	case NILFS_IOCTL_DELETE_CHECKPOINT:
+> +	case NILFS_IOCTL_GET_CPINFO:
+> +	case NILFS_IOCTL_GET_CPSTAT:
+> +	case NILFS_IOCTL_GET_SUINFO:
+> +	case NILFS_IOCTL_GET_SUSTAT:
+> +	case NILFS_IOCTL_GET_VINFO:
+> +	case NILFS_IOCTL_GET_BDESCS:
+> +	case NILFS_IOCTL_CLEAN_SEGMENTS:
+> +	case NILFS_IOCTL_SYNC:
+> +	case NILFS_IOCTL_RESIZE:
+> +	case NILFS_IOCTL_SET_ALLOC_RANGE:
+> +		break;
+>  	default:
+>  		return -ENOIOCTLCMD;
+>  	}
+> -- 
+> 1.7.7.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
