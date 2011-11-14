@@ -1,125 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1KNQYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:24:15 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55153 "EHLO
+	id S1755436Ab1KNQ0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:26:53 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:55301 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab1KNQYM (ORCPT
+	with ESMTP id S1755305Ab1KNQYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 11:24:12 -0500
+	Mon, 14 Nov 2011 11:24:14 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH v9 02/15] ARM: pgtable: switch to use pgtable-nopud.h
-Date: Mon, 14 Nov 2011 16:23:38 +0000
-Message-Id: <1321287831-24560-3-git-send-email-catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v9 06/15] ARM: LPAE: add ISBs around MMU enabling code
+Date: Mon, 14 Nov 2011 16:23:42 +0000
+Message-Id: <1321287831-24560-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
 References: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Nov 2011 16:24:05.0413 (UTC) FILETIME=[D3F68550:01CCA2E9]
-X-MC-Unique: 111111416240904401
+X-OriginalArrivalTime: 14 Nov 2011 16:24:06.0522 (UTC) FILETIME=[D49FBDA0:01CCA2E9]
+X-MC-Unique: 111111416241202501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGR9YT019419
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGR9i2019423
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Will Deacon <will.deacon@arm.com>
 
-Nick Piggin noted upon introducing 4level-fixup.h:
+Before we enable the MMU, we must ensure that the TTBR registers contain
+sane values. After the MMU has been enabled, we jump to the *virtual*
+address of the following function, so we also need to ensure that the
+SCTLR write has taken effect.
 
-| Add a temporary "fallback" header so architectures can run with
-| the 4level pagetables patch without modification. All architectures
-| should be converted to use the folding headers (include/asm-generic/
-| pgtable-nop?d.h) as soon as possible, and the fallback header removed.
+This patch adds ISB instructions around the SCTLR write to ensure the
+visibility of the above.
 
-This makes ARM compliant with this statement.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/pgalloc.h |    2 +-
- arch/arm/include/asm/pgtable.h |   23 +++++++++++++----------
- arch/arm/include/asm/tlb.h     |    1 +
- 3 files changed, 15 insertions(+), 11 deletions(-)
+ arch/arm/boot/compressed/head.S  |    1 +
+ arch/arm/include/asm/assembler.h |   11 +++++++++++
+ arch/arm/kernel/head.S           |    2 ++
+ arch/arm/kernel/sleep.S          |    2 ++
+ 4 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
-index 3e08fd3..7418894 100644
---- a/arch/arm/include/asm/pgalloc.h
-+++ b/arch/arm/include/asm/pgalloc.h
-@@ -30,7 +30,7 @@
-  */
- #define pmd_alloc_one(mm,addr)		({ BUG(); ((pmd_t *)2); })
- #define pmd_free(mm, pmd)		do { } while (0)
--#define pgd_populate(mm,pmd,pte)	BUG()
-+#define pud_populate(mm,pmd,pte)	BUG()
- 
- extern pgd_t *pgd_alloc(struct mm_struct *mm);
- extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index 9451dce..a1aca79 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -11,15 +11,16 @@
- #define _ASMARM_PGTABLE_H
- 
- #include <linux/const.h>
--#include <asm-generic/4level-fixup.h>
- #include <asm/proc-fns.h>
- 
- #ifndef CONFIG_MMU
- 
-+#include <asm-generic/4level-fixup.h>
- #include "pgtable-nommu.h"
- 
- #else
- 
-+#include <asm-generic/pgtable-nopud.h>
- #include <asm/memory.h>
- #include <mach/vmalloc.h>
- #include <asm/pgtable-hwdef.h>
-@@ -164,20 +165,22 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
- #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index c2effc9..c5d6025 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -659,6 +659,7 @@ __armv7_mmu_cache_on:
+ 		mcrne	p15, 0, r3, c2, c0, 0	@ load page table pointer
+ 		mcrne	p15, 0, r1, c3, c0, 0	@ load domain access control
+ #endif
++		mcr	p15, 0, r0, c7, c5, 4	@ ISB
+ 		mcr	p15, 0, r0, c1, c0, 0	@ load control register
+ 		mrc	p15, 0, r0, c1, c0, 0	@ and read it back
+ 		mov	r0, #0
+diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
+index 29035e8..b6e65de 100644
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -187,6 +187,17 @@
+ #endif
  
  /*
-- * The "pgd_xxx()" functions here are trivial for a folded two-level
-- * setup: the pgd is never bad, and a pmd always exists (as it's folded
-- * into the pgd entry)
-+ * The "pud_xxx()" functions here are trivial when the pmd is folded into
-+ * the pud: the pud entry is never bad, always exists, and can't be set or
-+ * cleared.
++ * Instruction barrier
++ */
++	.macro	instr_sync
++#if __LINUX_ARM_ARCH__ >= 7
++	isb
++#elif __LINUX_ARM_ARCH__ == 6
++	mcr	p15, 0, r0, c7, c5, 4
++#endif
++	.endm
++
++/*
+  * SMP data memory barrier
   */
--#define pgd_none(pgd)		(0)
--#define pgd_bad(pgd)		(0)
--#define pgd_present(pgd)	(1)
--#define pgd_clear(pgdp)		do { } while (0)
--#define set_pgd(pgd,pgdp)	do { } while (0)
-+#define pud_none(pud)		(0)
-+#define pud_bad(pud)		(0)
-+#define pud_present(pud)	(1)
-+#define pud_clear(pudp)		do { } while (0)
- #define set_pud(pud,pudp)	do { } while (0)
- 
- 
- /* Find an entry in the second-level page table.. */
--#define pmd_offset(dir, addr)	((pmd_t *)(dir))
-+static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
-+{
-+	return (pmd_t *)pud;
-+}
- 
- #define pmd_none(pmd)		(!pmd_val(pmd))
- #define pmd_present(pmd)	(pmd_val(pmd))
-diff --git a/arch/arm/include/asm/tlb.h b/arch/arm/include/asm/tlb.h
-index 265f908..b509e44 100644
---- a/arch/arm/include/asm/tlb.h
-+++ b/arch/arm/include/asm/tlb.h
-@@ -204,6 +204,7 @@ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
- 
- #define pte_free_tlb(tlb, ptep, addr)	__pte_free_tlb(tlb, ptep, addr)
- #define pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
-+#define pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
- 
- #define tlb_migrate_finish(mm)		do { } while (0)
- 
+ 	.macro	smp_dmb mode
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 566c54c..6ee994c 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -400,8 +400,10 @@ ENDPROC(__enable_mmu)
+ 	.align	5
+ __turn_mmu_on:
+ 	mov	r0, r0
++	instr_sync
+ 	mcr	p15, 0, r0, c1, c0, 0		@ write control reg
+ 	mrc	p15, 0, r3, c0, c0, 0		@ read id reg
++	instr_sync
+ 	mov	r3, r3
+ 	mov	r3, r13
+ 	mov	pc, r3
+diff --git a/arch/arm/kernel/sleep.S b/arch/arm/kernel/sleep.S
+index 020e99c..4ac45fe 100644
+--- a/arch/arm/kernel/sleep.S
++++ b/arch/arm/kernel/sleep.S
+@@ -56,8 +56,10 @@ ENDPROC(cpu_suspend_abort)
+ 	.align	5
+ ENTRY(cpu_resume_mmu)
+ 	ldr	r3, =cpu_resume_after_mmu
++	instr_sync
+ 	mcr	p15, 0, r0, c1, c0, 0	@ turn on MMU, I-cache, etc
+ 	mrc	p15, 0, r0, c0, c0, 0	@ read id reg
++	instr_sync
+ 	mov	r0, r0
+ 	mov	r0, r0
+ 	mov	pc, r3			@ jump to virtual address
 
