@@ -1,44 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1KNImb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 03:42:31 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36753 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab1KNIma convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 03:42:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPM=9twNXMbexaUg2MVC_ZCZczM57U6NsRMZVs8wPFv6f0KUSQ@mail.gmail.com>
-References: <CADDKRnCq_h5YPcSCoOnW3q+8Q8r5UV3Wj6oJ4UE5UV+Keb1M1Q@mail.gmail.com>
-	<CADDKRnD6oL-WAdDowLoC9e8nqNdg9_coCaS49rfTY2PxCCwZvw@mail.gmail.com>
-	<CAPM=9twNXMbexaUg2MVC_ZCZczM57U6NsRMZVs8wPFv6f0KUSQ@mail.gmail.com>
-Date: Mon, 14 Nov 2011 09:42:28 +0100
-Message-ID: <CADDKRnBU2SXRam4t4VxQHuJ+hYw=8BjstYEVr7hJuK4AxDjWgQ@mail.gmail.com>
-Subject: Re: [v32-rc1+] radeon kernel crash
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753654Ab1KNIs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 03:48:58 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:24589 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab1KNIs5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:3:2>);
+	Mon, 14 Nov 2011 03:48:57 -0500
+Message-Id: <4EC0E4040200007800060B1C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 14 Nov 2011 08:48:52 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Kevin Cernekee" <cernekee@gmail.com>,
+        "Rusty Russell" <rusty@rustcorp.com.au>
+Cc: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/2] module: Fix performance regression on
+	 modules with large symbol tables
+References: <73defb5e4bca04a6431392cc341112b1@localhost>
+ <e80b536093214489c32ce319b54b0f80@localhost>
+In-Reply-To: <e80b536093214489c32ce319b54b0f80@localhost>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/13 Dave Airlie <airlied@gmail.com>:
-> On Sun, Nov 13, 2011 at 2:20 PM, Jörg Otte <jrg.otte@googlemail.com> wrote:
->> The following commit causes the kernel to crash:
->> commit 8f3f1c9a22a6420e28c2d3eff59b832893bc8efc
->>  "drm/radeon/kms/pm: switch to dynamically allocating clock mode array"
->>
->> It happens at a very early stage. So I have no logs, no displays, no
->> nothing.
->> Reverting 8f3f1c9a22a6420e28c2d3eff59b832893bc8efc fixes the problem.
->> HW is a Thinkpad T43.
->
-> Fix is in my drm-fixes tree, will send to Linus now.
->
-> Dave.
->
+>>> On 13.11.11 at 04:08, Kevin Cernekee <cernekee@gmail.com> wrote:
+> Commit 554bdfe5acf3715e87c8d5e25a4f9a896ac9f014 (module: reduce string
+> table for loaded modules) introduced an optimization to shrink the size of
+> the resident string table.  Part of this involves calling bitmap_weight()
+> on the strmap bitmap once for each core symbol.  strmap contains one bit
+> for each byte of the module's strtab.
+> 
+> For kernel modules with a large number of symbols, the addition of the
+> bitmap_weight() operation to each iteration of the add_kallsyms() loop
+> resulted in a significant "insmod" performance regression from 2.6.31
+> to 2.6.32.  bitmap_weight() is expensive when the bitmap is large.
+> 
+> The proposed alternative optimizes the common case in this loop
+> (is_core_symbol() == true, and the symbol name is not a duplicate), while
+> penalizing the exceptional case of a duplicate symbol.
+> 
+> My test was run on a 600 MHz MIPS processor, using a kernel module with
+> 15,000 "core" symbols and 10,000 symbols in .init.text.  .strtab takes up
+> 250,227 bytes.
+> 
+> Original code: insmod takes 3.39 seconds
+> Patched code: insmod takes 0.07 seconds
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> ---
+> 
+> V2:
+> 
+> Properly handle cases where different symtab entries point to strtab
+> substrings (suffix merging).  Mostly Rusty's work.  Also, add comments.
+> 
+> My test case for suffix merging was:
+> 
+> $ nm --no-sort alphabet.ko
+> 00000000 t hello
+> 00000014 t init
+> 00000000 d retcode
+> 00000000 r __mod_retcodetype8
+> 00000000 r __param_retcode
+> 00000000 r __param_str_retcode
+> 00000000 r $LC0
+> 00000018 r __module_depends
+> 00000000 r ____versions
+> 00000021 r __mod_vermagic5
+> 00000050 T uvwxyz
+> 00000000 D __this_module
+> 00000048 T yz
+> 00000000 T qrstuvwxyz
+> 00000060 T rstuvwxyz
+> 00000014 T init_module
+> 00000040 T wxyz
+> 00000068 T tuvwxyz
+>          U printk
+> 00000058 T vwxyz
+>          U param_ops_int
+> 
+> "qrstuvwxyz" is in .init.text (non-core symbol); all others were core
+> symbols.  The symtab entries for all substrings were hexedited to
+> point to the respective portion of the "qrstuvwxyz" strtab entry.
+> 
+> I verified that "rstuvwxyz" (without the 'q') was copied to core_strtab
+> when the loop hit "uvwxyz", and that the substrings all used that entry.
+> 
+> 
+>  kernel/module.c |   40 +++++++++++++++++++++++++++++++++-------
+>  1 files changed, 33 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/module.c b/kernel/module.c
+> index cf9f1b6..6c87305 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2246,22 +2246,48 @@ static void add_kallsyms(struct module *mod, const 
+> struct load_info *info)
+>  		mod->symtab[i].st_info = elf_type(&mod->symtab[i], info);
+>  
+>  	mod->core_symtab = dst = mod->module_core + info->symoffs;
+> +	mod->core_strtab = s = mod->module_core + info->stroffs;
+>  	src = mod->symtab;
+>  	*dst = *src;
+> +	*s++ = 0;
+>  	for (ndst = i = 1; i < mod->num_symtab; ++i, ++src) {
+> +		const char *name;
+>  		if (!is_core_symbol(src, info->sechdrs, info->hdr->e_shnum))
+>  			continue;
+>  		dst[ndst] = *src;
+> -		dst[ndst].st_name = bitmap_weight(info->strmap,
+> -						  dst[ndst].st_name);
+> +
+> +		name = &mod->strtab[src->st_name];
+> +		if (unlikely(!test_bit(src->st_name, info->strmap))) {
+> +			/* Symbol name has already been copied; find it. */
+> +			char *dup;
+> +
+> +			for (dup = mod->core_strtab; strcmp(dup, name); dup++)
+> +				BUG_ON(dup > s);
 
-Fix works, thank you very much.
-Joerg
+Aren't you concerned that this again will be rather slow? It would be
+pretty easy to accelerate by comparing only with the tail of each string
+(as nothing else can possibly match), moving from string to string instead
+of from character to character.
+
+Jan
+
+> +
+> +			dst[ndst].st_name = dup - mod->core_strtab;
+> +		} else {
+> +			/*
+> +			 * Copy the symbol name to mod->core_strtab.
+> +			 * "name" might point to the middle of a longer strtab
+> +			 * entry, so backtrack to the first "required" byte
+> +			 * of the string.
+> +			 */
+> +			unsigned start = src->st_name, len = 0;
+> +
+> +			for (; test_bit(start - 1, info->strmap) &&
+> +			       mod->strtab[start - 1]; start--)
+> +				len++;
+> +
+> +			dst[ndst].st_name = len + s - mod->core_strtab;
+> +			len += strlen(name) + 1;
+> +
+> +			memcpy(s, &mod->strtab[start], len);
+> +			s += len;
+> +			bitmap_clear(info->strmap, start, len);
+> +		}
+>  		++ndst;
+>  	}
+>  	mod->core_num_syms = ndst;
+> -
+> -	mod->core_strtab = s = mod->module_core + info->stroffs;
+> -	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
+> -		if (test_bit(i, info->strmap))
+> -			*++s = mod->strtab[i];
+>  }
+>  #else
+>  static inline void layout_symtab(struct module *mod, struct load_info 
+> *info)
+
+
+
