@@ -1,61 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab1KNWnX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 17:43:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22837 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751654Ab1KNWnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 17:43:22 -0500
-Message-ID: <1321310590.16847.3.camel@dcbw.foobar.com>
-Subject: Re: [PATCH] Net, libertas: Resolve memory leak in
- if_spi_host_to_card()
-From: Dan Williams <dcbw@redhat.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrey Yurovsky <andrey@cozybit.com>, Colin McCabe <colin@cozybit.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 14 Nov 2011 16:43:10 -0600
-In-Reply-To: <alpine.LNX.2.00.1111132211580.3368@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1111132211580.3368@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1753373Ab1KNXD3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:03:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54020 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab1KNXD2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 18:03:28 -0500
+Date: Mon, 14 Nov 2011 15:03:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Colin Cross <ccross@android.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Message-Id: <20111114150326.0ee60107.akpm@linux-foundation.org>
+In-Reply-To: <20111114140421.GA27150@suse.de>
+References: <20111114140421.GA27150@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-13 at 22:14 +0100, Jesper Juhl wrote:
-> If we hit the default case in the switch in if_spi_host_to_card() we'll leak
-> the memory we allocated for 'packet'. This patch resolves the leak by freeing
-> the allocated memory in that case.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+On Mon, 14 Nov 2011 14:04:21 +0000
+Mel Gorman <mgorman@suse.de> wrote:
 
-Acked-by: Dan Williams <dcbw@redhat.com>
+> This patch seems to have gotten lost in the cracks and the discussion
+> on alternatives that started here https://lkml.org/lkml/2011/10/25/24
+> petered out without any alternative patches being posted. Lacking
+> a viable alternative patch, I'm reposting this patch because AFAIK,
+> this bug still exists.
+> 
+> Colin Cross reported;
+> 
+>   Under the following conditions, __alloc_pages_slowpath can loop forever:
+>   gfp_mask & __GFP_WAIT is true
+>   gfp_mask & __GFP_FS is false
+>   reclaim and compaction make no progress
+>   order <= PAGE_ALLOC_COSTLY_ORDER
+> 
+>   These conditions happen very often during suspend and resume,
+>   when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
+>   allocations into __GFP_WAIT.
+> 
+>   The oom killer is not run because gfp_mask & __GFP_FS is false,
+>   but should_alloc_retry will always return true when order is less
+>   than PAGE_ALLOC_COSTLY_ORDER.
+> 
+> In his fix, he avoided retrying the allocation if reclaim made no
+> progress and __GFP_FS was not set. The problem is that this would
+> result in GFP_NOIO allocations failing that previously succeeded
+> which would be very unfortunate.
+> 
+> The big difference between GFP_NOIO and suspend converting GFP_KERNEL
+> to behave like GFP_NOIO is that normally flushers will be cleaning
+> pages and kswapd reclaims pages allowing GFP_NOIO to succeed after
+> a short delay. The same does not necessarily apply during suspend as
+> the storage device may be suspended.  Hence, this patch special cases
+> the suspend case to fail the page allocation if reclaim cannot make
+> progress. This might cause suspend to abort but that is better than
+> a livelock.
 
-> ---
->  drivers/net/wireless/libertas/if_spi.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
->  Compile tested only due to lack of hardware.
-> 
-> diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
-> index 11b69b3..728baa4 100644
-> --- a/drivers/net/wireless/libertas/if_spi.c
-> +++ b/drivers/net/wireless/libertas/if_spi.c
-> @@ -995,6 +995,7 @@ static int if_spi_host_to_card(struct lbs_private *priv,
->  		spin_unlock_irqrestore(&card->buffer_lock, flags);
->  		break;
->  	default:
-> +		kfree(packet);
->  		netdev_err(priv->dev, "can't transfer buffer of type %d\n",
->  			   type);
->  		err = -EINVAL;
-> -- 
-> 1.7.7.3
-> 
-> 
+Fair enough.
 
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 9dd443d..5402897 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -127,6 +127,20 @@ void pm_restrict_gfp_mask(void)
+>  	saved_gfp_mask = gfp_allowed_mask;
+>  	gfp_allowed_mask &= ~GFP_IOFS;
+>  }
+> +
+> +static bool pm_suspending(void)
+> +{
+> +	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
+> +		return false;
+> +	return true;
+> +}
+
+This doesn't seem a terribly reliable way of detecting that PM has
+disabled the storage devices (which is what we really want to know
+here: kswapd got crippled).
+
+I guess it's safe for now, because PM is the only caller who alters
+gfp_allowed_mask (I assume).  But an explicit storage_is_unavaliable
+global which is set and cleared at exactly the correct time is clearer,
+more direct and future-safer, no?
+
+> +#else
+> +
+> +static bool pm_suspending(void)
+> +{
+> +	return false;
+> +}
+>  #endif /* CONFIG_PM_SLEEP */
+>  
+>  #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+> @@ -2214,6 +2228,14 @@ rebalance:
+>  
+>  			goto restart;
+>  		}
+> +
+> +		/*
+> +		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
+> +		 * prevent reclaim making forward progress without
+> +		 * invoking OOM. Bail if we are suspending
+> +		 */
+> +		if (pm_suspending())
+> +			goto nopage;
+
+The comment doesn't tell the whole story: it's important that kswapd
+writeout was disabled?
+
+--- a/mm/page_alloc.c~mm-avoid-livelock-on-__gfp_fs-allocations-fix
++++ a/mm/page_alloc.c
+@@ -2263,9 +2263,10 @@ rebalance:
+ 		}
+ 
+ 		/*
+-		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
+-		 * prevent reclaim making forward progress without
+-		 * invoking OOM. Bail if we are suspending
++		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent
++		 * reclaim making forward progress without invoking OOM.
++		 * Suspend also disables storage devices so kswapd cannot save
++		 * us.  Bail if we are suspending.
+ 		 */
+ 		if (pm_suspending())
+ 			goto nopage;
+_
 
