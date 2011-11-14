@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab1KNUj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 15:39:57 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:41247 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756253Ab1KNUj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 15:39:56 -0500
-Date: Mon, 14 Nov 2011 15:36:08 -0500 (EST)
-Message-Id: <20111114.153608.2064552703690099046.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: sim@hostway.ca, tglx@linutronix.de, netdev@vger.kernel.org,
-        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org, davej@redhat.com,
-        schwidefsky@de.ibm.com, mingo@elte.hu
-Subject: Re: [3.1] Divide by zero in __tcp_select_window()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1320787405.26025.10.camel@edumazet-laptop>
-References: <20111108205411.GA23642@hostway.ca>
-	<1320787405.26025.10.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 Nov 2011 12:36:12 -0800 (PST)
+	id S1756263Ab1KNUoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 15:44:32 -0500
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:56776 "EHLO
+	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753565Ab1KNUob convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 15:44:31 -0500
+Message-ID: <20111114214401.ox8wx8rpr4g0kk4c@mail.zih.tu-dresden.de>
+Date: Mon, 14 Nov 2011 21:44:01 +0100
+From: Martin Robert Byrnes <byrnesmartin2008@gmail.com>
+Reply-to: byrnesmartin2009@gmail.com
+To: undisclosed-recipients:;
+Subject: EMAIL FROM MARTIN BUSINESS PROPOSAL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 08 Nov 2011 22:23:25 +0100
 
-> OK, it seems we let a timer running while we free the socket (same error
-> path than your previous bug report, because of the NULL route)
-> 
-> We arm this keepalive timer in tcp_create_openreq_child()
-> 
-> net/ipv4/tcp_minisocks.c:513
-> 	if (sock_flag(newsk, SOCK_KEEPOPEN))
-> 		inet_csk_reset_keepalive_timer(newsk,
-> 			keepalive_time_when(newtp));
-> 
-> I would try to add a call to tcp_clear_xmit_timers() as well
-> 
-> Please try following patch :
+My name is Martin Robert Byrnes and I am a United States citizen.  I was the
+head storage keeper for the United Nations storage facility in Iraq for 6
+years. During that time I was involved in some lucrative business deals with
+Iraqi citizens.
 
-We've been waiting quite some time to get some testing validation on
-this patch, but I think it's correct.
+Unfortunately I was transferred from Iraq before I was able to safely move my
+money out of Iraq.  Due to this I am in need of some assistance to move my
+money to ensure that it is safe.  I was transferred to Afghanistan which has
+limited my ability to be able to move my money on my own.  It is for this
+reason that I writing to you to ask for your assistance.
 
-Eric can you formally submit this?  Thanks!
+To move forward together I am offering you a business proposal.  In order for
+your help in moving my money out of Iraq I am willing to offer you a  
+percentage
+of the total money.  The amounts involved in this proposal will be disclosed
+once we have established an open dialogue together.
+
+I appreciate your understanding and I know that I will hear from you  
+as soon as
+possible as this proposal is time sensitive.
+
+Martin Robert Byrnes
+CW5 OD
+(RET)
+EMAIL: byrnesmartin2009@gmail.com
+
+
+
+
