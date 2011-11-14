@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab1KNXmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:42:49 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:48948 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab1KNXms (ORCPT
+	id S1756704Ab1KNXm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:42:57 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:46237 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab1KNXmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:42:48 -0500
-Date: Mon, 14 Nov 2011 18:42:40 -0500 (EST)
-Message-Id: <20111114.184240.1832866874941847383.davem@davemloft.net>
-To: grundler@chromium.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, allan@asix.com.tw,
-        freddy@asix.com.tw
-Subject: Re: [PATCH 5/5] net-next:asix: update VERSION and white space
- changes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1321312921-7748-5-git-send-email-grundler@chromium.org>
-References: <1321312921-7748-1-git-send-email-grundler@chromium.org>
-	<1321312921-7748-5-git-send-email-grundler@chromium.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 Nov 2011 15:42:44 -0800 (PST)
+	Mon, 14 Nov 2011 18:42:55 -0500
+Date: Tue, 15 Nov 2011 00:48:43 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Ryan Mallon <rmallon@gmail.com>
+cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Changli Gao <xiaosuo@gmail.com>, Ben Greear <greearb@candelatech.com>,
+        Chetan Loke <loke.chetan@gmail.com>, waltje@uWalt.NL.Mugnet.ORG,
+        gw4pts@gw4pts.ampr.org, waltje@linux.com, ross.biro@gmail.com,
+        alan@linux.intel.com
+Subject: Re: [PATCH] net/packet: remove dead code and unneeded variable from
+ prb_setup_retire_blk_timer()
+In-Reply-To: <4EC1A65E.5040607@gmail.com>
+Message-ID: <alpine.LNX.2.00.1111150046350.9919@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1111132247440.3368@swampdragon.chaosbits.net> <4EC0AA31.9040403@gmail.com> <alpine.LNX.2.00.1111150034120.9919@swampdragon.chaosbits.net> <4EC1A65E.5040607@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Grundler <grundler@chromium.org>
-Date: Mon, 14 Nov 2011 15:22:01 -0800
+On Tue, 15 Nov 2011, Ryan Mallon wrote:
 
-> No functional changes. Three things targeted:
-> o update VERSION to reflect previous changes.
-> o fix up white space/formatting of some lines
-> o define 150 to be AX_SWRESET_MDELAY (self documenting code)
+> On 15/11/11 10:37, Jesper Juhl wrote:
 > 
-> Signed-off-by: Grant Grundler <grundler@chromium.org>
+> > On Mon, 14 Nov 2011, Ryan Mallon wrote:
+> > 
+> >> On 14/11/11 08:55, Jesper Juhl wrote:
+> >>
+> >>> We test for 'tx_ring' being != zero and BUG() if that's the case. So after
+> >>> that check there is no way that 'tx_ring' could be anything _but_ zero, so
+> >>> testing it again is just dead code. Once that dead code is removed, the
+> >>> 'pkc' local variable becomes entirely redundant, so remove that as well.
+> >>
+> >>
+> >> What if CONFIG_BUG=n?
+> >>
+> > 
+> > Arrgh, I didn't consider that (should have, but didn't).. In that case 
+> > we'll have 
+> > #define BUG() do {} while(0)
+> > which is not going to work all that peachy with my change...
+> > 
+> > David: You may want to pass on this one. I obviously didn't think it 
+> > through properly - sorry :-(
+> > 
+> 
+> 
+> It's something I've never been entirely clear on. How are you meant to
+> handle something which really is a fatal bug if CONFIG_BUG=n?
+> 
+> I think there are several places in the kernel where the expectation is
+> that BUG() causes a panic that probably don't behave nicely at all
+> (though I guess that might be the expected behaviour) if CONFIG_BUG=n.
+> 
+You have a point. Perhaps the proper solution would be to remove 
+CONFIG_BUG so that it is always enabled...?  As you say, if something is a 
+fatal bug there is no sane way to continue, so why do we even allow 
+people/systems to try???
+That way lies madness it would seem...
 
-Why have such a wonderful set of real bug fixes that I can apply right
-now and send off to Linus's tree, only to sabotage it with whitespace
-changes at the end which are no appropriate?
 
-Please, just submit this without the whitespace and other cleanup
-stuff.  Restrict it to real bug fixes, and I'll push it around.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-The whitespace and other bits can be submitted for net-next afterwards.
