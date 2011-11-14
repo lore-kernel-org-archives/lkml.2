@@ -1,167 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab1KNLIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 06:08:14 -0500
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:45626
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752119Ab1KNLIN (ORCPT
+	id S1755141Ab1KNLNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 06:13:00 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:18034 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab1KNLM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 06:08:13 -0500
-Message-ID: <4EC0F690.8060308@compulab.co.il>
-Date: Mon, 14 Nov 2011 13:08:00 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
+	Mon, 14 Nov 2011 06:12:59 -0500
+Message-ID: <4EC0F75D.4060102@atmel.com>
+Date: Mon, 14 Nov 2011 12:11:25 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: indicate GPIO direction on single GPIO request
-References: <1321261837-31320-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1321261837-31320-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.1.2
+To: Darron Black <darron@griffin.net>,
+        Claudio Scordino <claudio@evidence.eu.com>
+CC: Wolfram Sang <w.sang@pengutronix.de>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jesper Nilsson <Jesper.Nilsson@axis.com>,
+        Mikael Starvik <mikael.starvik@axis.com>
+Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some variables
+References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4EB3A009.10502@evidence.eu.com> <4EB8F6B9.6010008@atmel.com> <4EB90902.4030200@evidence.eu.com> <20111108134804.07095c5d@lxorguk.ukuu.org.uk> <20111108142432.GA11293@kroah.com> <4EBA9385.7010806@evidence.eu.com> <20111113215318.GA2966@pengutronix.de> <4EC062B7.2090100@griffin.net>
+In-Reply-To: <4EC062B7.2090100@griffin.net>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On 11/14/11 11:10, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On 11/14/2011 01:37 AM, Darron Black :
+> On 11/13/2011 03:53 PM, Wolfram Sang wrote:
+>> Hi,
+>>
+>> I have been working on a patch series which adds hardware RS485 to the
+>> 8250
+>> according to the latest developments. The series will be posted
+>> tomorrow after
+>> some more tests. However, there is one thing I wondered about:
+>>
+>>>  From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will
+>>> be used to
+>>> set the voltage of the RTS pin (as in the crisv10.c driver); the
+>>> delay will be
+>>> understood by looking only at the value of delay_rts_before_send and
+>>> delay_rts_after_send.
+>> Do I overlook something or is SER_RS485_RTS_AFTER_SEND always the
+>> inverted
+>> signal of SER_RS485_RTS_ON_SEND. So why do we need both? (BTW
+>> SER_RS485_RTS_ON_SEND is a non-obvious name, I think. But changing it
+>> will
+>> probably break even more users?)
+> It allows the application to configure RTS to not toggle at all in one
+> of those two scenarios.
 > 
-> When requesting a single GPIO pin to be muxed in, some controllers
-> will need to poke a different value into the control register
-> depending on whether the pin will be used for GPIO output or GPIO
-> input. So pass this info along for the gpio_request_enable()
-> function, we assume this is not needed for the gpio_free_disable()
-> function for the time being.
+> Perhaps the RTS toggle after transmit delay needs to be large, and
+> they'd rather do it in userspace than block in the driver. I also recall
+> a protocol that would send a master assertion command and hold on to RTS
+> afterwards. I can easily imagine needing to quickly transmit something,
+> hold on to RTS for a while, then finish your transmit later.
 > 
-> Suggested-by: Thomas Abraham <thomas.abraham@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/pinctrl/pinmux.c       |   16 +++++++++++-----
->  include/linux/pinctrl/pinmux.h |   14 ++++++++++----
->  2 files changed, 21 insertions(+), 9 deletions(-)
+> However, I don't have any concrete examples of needing this outside that
+> vague recollection of a master assertion sequence in an old embedded
+> platform far away from Linux.
+
+Darron, Claudio,
+
+This explanation makes sense. Thanks for this.
+
+Bye,
+
+
+>>> diff --git a/include/linux/serial.h b/include/linux/serial.h
+>>> index 97ff8e2..3d86517 100644
+>>> --- a/include/linux/serial.h
+>>> +++ b/include/linux/serial.h
+>>> @@ -207,13 +207,15 @@ struct serial_icounter_struct {
+>>>
+>>>   struct serial_rs485 {
+>>>       __u32    flags;            /* RS485 feature flags */
+>>> -#define SER_RS485_ENABLED        (1<<  0)
+>>> -#define SER_RS485_RTS_ON_SEND        (1<<  1)
+>>> -#define SER_RS485_RTS_AFTER_SEND    (1<<  2)
+>>> -#define SER_RS485_RTS_BEFORE_SEND    (1<<  3)
+>>> +#define SER_RS485_ENABLED        (1<<  0)    /* If enabled */
+>>> +#define SER_RS485_RTS_ON_SEND        (1<<  1)    /* Logical level for
+>>> +                               RTS pin when
+>>> +                               sending */
+>>> +#define SER_RS485_RTS_AFTER_SEND    (1<<  2)    /* Logical level for
+>>> +                               RTS pin after sent*/
+>> Nit: 80 char should be broken here, because that is not readable. Or
+>> put the
+>> comment above the define.
+>>
+>> Thanks,
+>>
+>>     Wolfram
+>>
 > 
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-> index d27b77d..ef2f812 100644
-> --- a/drivers/pinctrl/pinmux.c
-> +++ b/drivers/pinctrl/pinmux.c
-> @@ -100,10 +100,13 @@ struct pinmux_hog {
->   *	means that you want to mux in the pin for use as GPIO number NN
->   * @gpio_range: the range matching the GPIO pin if this is a request for a
->   *	single GPIO pin
-> + * @gpio_direction: if the pin is muxed for GPIO, this provides the direction
-> + *	of the GPIO @true means output, @false means input
+> 
 
-can this be gpio_direction_out (throughout the patch)?
-so the true/false values will make more sense?
-
->   */
->  static int pin_request(struct pinctrl_dev *pctldev,
->  		       int pin, const char *function,
-> -		       struct pinctrl_gpio_range *gpio_range)
-> +		       struct pinctrl_gpio_range *gpio_range,
-> +		       bool gpio_direction)
->  {
->  	struct pin_desc *desc;
->  	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-> @@ -148,7 +151,8 @@ static int pin_request(struct pinctrl_dev *pctldev,
->  	 */
->  	if (gpio_range && ops->gpio_request_enable)
->  		/* This requests and enables a single GPIO pin */
-> -		status = ops->gpio_request_enable(pctldev, gpio_range, pin);
-> +	  status = ops->gpio_request_enable(pctldev, gpio_range, pin,
-> +					    gpio_direction);
->  	else if (ops->request)
->  		status = ops->request(pctldev, pin);
->  	else
-> @@ -218,8 +222,10 @@ static const char *pin_free(struct pinctrl_dev *pctldev, int pin,
->  /**
->   * pinmux_request_gpio() - request a single pin to be muxed in as GPIO
->   * @gpio: the GPIO pin number from the GPIO subsystem number space
-> + * @direction: the direction of the GPIO, @true means output, @false
-> + *	means input
->   */
-> -int pinmux_request_gpio(unsigned gpio)
-> +int pinmux_request_gpio(unsigned gpio, bool direction)
->  {
->  	char gpiostr[16];
->  	const char *function;
-> @@ -242,7 +248,7 @@ int pinmux_request_gpio(unsigned gpio)
->  	if (!function)
->  		return -EINVAL;
->  
-> -	ret = pin_request(pctldev, pin, function, range);
-> +	ret = pin_request(pctldev, pin, function, range, direction);
->  	if (ret < 0)
->  		kfree(function);
->  
-> @@ -360,7 +366,7 @@ static int acquire_pins(struct pinctrl_dev *pctldev,
->  
->  	/* Try to allocate all pins in this group, one by one */
->  	for (i = 0; i < num_pins; i++) {
-> -		ret = pin_request(pctldev, pins[i], func, NULL);
-> +	  ret = pin_request(pctldev, pins[i], func, NULL, false);
->  		if (ret) {
->  			dev_err(&pctldev->dev,
->  				"could not get pin %d for function %s "
-> diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
-> index bb7a979..7d3841f 100644
-> --- a/include/linux/pinctrl/pinmux.h
-> +++ b/include/linux/pinctrl/pinmux.h
-> @@ -54,7 +54,12 @@ struct pinctrl_dev;
->   *	Implement this only if you can mux every pin individually as GPIO. The
->   *	affected GPIO range is passed along with an offset(pin number) into that
->   *	specific GPIO range - function selectors and pin groups are orthogonal
-> - *	to this, the core will however make sure the pins do not collide
-> + *	to this, the core will however make sure the pins do not collide. Since
-> + *	controllers may be needing different configurations depending on
-> + *	whether the GPIO is configured as input or output, a direction
-> + *	indicator is passed along
-> + * @gpio_disable_free: free up GPIO muxing on a certain pin, the reverse of
-> + *	@gpio_request_enable
->   */
->  struct pinmux_ops {
->  	int (*request) (struct pinctrl_dev *pctldev, unsigned offset);
-> @@ -72,14 +77,15 @@ struct pinmux_ops {
->  			 unsigned group_selector);
->  	int (*gpio_request_enable) (struct pinctrl_dev *pctldev,
->  				    struct pinctrl_gpio_range *range,
-> -				    unsigned offset);
-> +				    unsigned offset,
-> +				    bool direction);
->  	void (*gpio_disable_free) (struct pinctrl_dev *pctldev,
->  				   struct pinctrl_gpio_range *range,
->  				   unsigned offset);
->  };
->  
->  /* External interface to pinmux */
-> -extern int pinmux_request_gpio(unsigned gpio);
-> +extern int pinmux_request_gpio(unsigned gpio, bool direction);
->  extern void pinmux_free_gpio(unsigned gpio);
->  extern struct pinmux * __must_check pinmux_get(struct device *dev, const char *name);
->  extern void pinmux_put(struct pinmux *pmx);
-> @@ -88,7 +94,7 @@ extern void pinmux_disable(struct pinmux *pmx);
->  
->  #else /* !CONFIG_PINMUX */
->  
-> -static inline int pinmux_request_gpio(unsigned gpio)
-> +static inline int pinmux_request_gpio(unsigned gpio, bool direction)
->  {
->  	return 0;
->  }
 
 -- 
-Regards,
-Igor.
+Nicolas Ferre
