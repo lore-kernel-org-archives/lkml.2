@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab1KNTMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 14:12:34 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43067 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab1KNTMc (ORCPT
+	id S1755946Ab1KNTPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 14:15:22 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63611 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab1KNTPV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 14:12:32 -0500
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] cs5535-mfd: fix section mismatch
-Date: Mon, 14 Nov 2011 20:12:24 +0000
-Message-ID: <4772540.dYKFp8bB6F@localhost>
-User-Agent: KMail/4.7.3 (Linux/3.1.0; KDE/4.7.3; x86_64; ; )
+	Mon, 14 Nov 2011 14:15:21 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20111108184934.5180.26968.stgit@bhelgaas.mtv.corp.google.com>
+References: <20111108184934.5180.26968.stgit@bhelgaas.mtv.corp.google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 14 Nov 2011 12:14:58 -0700
+Message-ID: <CAErSpo72W4ONPUEB9MmVK4xu9HN19=X19ZA_8fy=pa8wCgvEWw@mail.gmail.com>
+Subject: Re: [RESEND PATCH] x86: mpparse: fix mp_bus_not_pci handling
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silence following warnings:
-WARNING: drivers/mfd/cs5535-mfd.o(.data+0x20): Section mismatch in reference from the variable cs5535_mfd_drv to the function .devinit.text:cs5535_mfd_probe()
-The variable cs5535_mfd_drv references
-the function __devinit cs5535_mfd_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+On Tue, Nov 8, 2011 at 11:49 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
+> Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
+> except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
+> not the only non-PCI bus, so it's better to always set mp_bus_not_pci
+> and clear it only for PCI.
+>
+> The workaround was to boot with "noapic".  Dan verified that with this
+> patch, his system boots without "noapic".
 
-WARNING: drivers/mfd/cs5535-mfd.o(.data+0x28): Section mismatch in reference from the variable cs5535_mfd_drv to the function .devexit.text:cs5535_mfd_remove()
-The variable cs5535_mfd_drv references
-the function __devexit cs5535_mfd_remove()
-If the reference is valid then annotate the
-variable with __exit* (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+We broke the poor user's system, and he went to the trouble to file a
+nice bug report and even bisect it.
 
-Rename the variable from *_drv to *_driver so
-modpost ignore the OK references to __devinit/__devexit
-functions.
+Can we please do him the courtesy of looking at this patch?
 
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
---
-diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
-index 155fa04..e488a78 100644
---- a/drivers/mfd/cs5535-mfd.c
-+++ b/drivers/mfd/cs5535-mfd.c
-@@ -179,7 +179,7 @@ static struct pci_device_id cs5535_mfd_pci_tbl[] = {
- };
- MODULE_DEVICE_TABLE(pci, cs5535_mfd_pci_tbl);
- 
--static struct pci_driver cs5535_mfd_drv = {
-+static struct pci_driver cs5535_mfd_driver = {
-        .name = DRV_NAME,
-        .id_table = cs5535_mfd_pci_tbl,
-        .probe = cs5535_mfd_probe,
-@@ -188,12 +188,12 @@ static struct pci_driver cs5535_mfd_drv = {
- 
- static int __init cs5535_mfd_init(void)
- {
--       return pci_register_driver(&cs5535_mfd_drv);
-+       return pci_register_driver(&cs5535_mfd_driver);
- }
- 
- static void __exit cs5535_mfd_exit(void)
- {
--       pci_unregister_driver(&cs5535_mfd_drv);
-+       pci_unregister_driver(&cs5535_mfd_driver);
- }
- 
- module_init(cs5535_mfd_init);
---
-1.7.3.1
+> Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
+> Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
+> Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
+> Cc: stable@kernel.org # 2.6.26+
+> Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  arch/x86/kernel/mpparse.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+> index 9103b89..0741b062 100644
+> --- a/arch/x86/kernel/mpparse.c
+> +++ b/arch/x86/kernel/mpparse.c
+> @@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
+>        }
+>  #endif
+>
+> +       set_bit(m->busid, mp_bus_not_pci);
+>        if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
+> -               set_bit(m->busid, mp_bus_not_pci);
+>  #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
+>                mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
+>  #endif
+>
+>
