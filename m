@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1KNQYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:24:53 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55699 "EHLO
+	id S1755425Ab1KNQZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:25:11 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:55650 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab1KNQYU (ORCPT
+	with ESMTP id S1755352Ab1KNQYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Nov 2011 11:24:20 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 13/15] ARM: LPAE: Add identity mapping support for the 3-level page table format
-Date: Mon, 14 Nov 2011 16:23:49 +0000
-Message-Id: <1321287831-24560-14-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v9 12/15] ARM: LPAE: Add context switching support
+Date: Mon, 14 Nov 2011 16:23:48 +0000
+Message-Id: <1321287831-24560-13-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
 References: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Nov 2011 16:24:08.0460 (UTC) FILETIME=[D5C774C0:01CCA2E9]
-X-MC-Unique: 111111416241805301
+X-OriginalArrivalTime: 14 Nov 2011 16:24:08.0194 (UTC) FILETIME=[D59EDE20:01CCA2E9]
+X-MC-Unique: 111111416241708301
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGPAwL019384
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGPSg9019388
 
-With LPAE, the pgd is a separate page table with entries pointing to the
-pmd. The identity_mapping_add() function needs to ensure that the pgd is
-populated before populating the pmd level. The do..while blocks now loop
-over the pmd in order to have the same implementation for the two page
-table formats. The pmd_addr_end() definition has been removed and the
-generic one used instead. The pmd clean-up is done in the pgd_free()
-function.
+With LPAE, TTBRx registers are 64-bit. The ASID is stored in TTBR0
+rather than a separate Context ID register. This patch makes the
+necessary changes to handle context switching on LPAE.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
+ arch/arm/mm/context.c |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
 
-The idmap_add_pmd() function cannot be called in an atomic context. The
-setup_mm_for_reboot() function is being re-implemented as part of the
-kexec patches and no longer calls identity_mapping_add().
-
- arch/arm/mm/idmap.c |   34 ++++++++++++++++++++++++++++++++--
- 1 files changed, 32 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
-index 2be9139..267db72 100644
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -4,6 +4,31 @@
- #include <asm/pgalloc.h>
- #include <asm/pgtable.h>
+diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
+index 93aac06..ee9bb36 100644
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -22,6 +22,21 @@ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+ DEFINE_PER_CPU(struct mm_struct *, current_mm);
+ #endif
  
 +#ifdef CONFIG_ARM_LPAE
-+static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
-+	unsigned long prot)
-+{
-+	pmd_t *pmd;
-+	unsigned long next;
-+
-+	if (pud_none_or_clear_bad(pud) || (pud_val(*pud) & L_PGD_SWAPPER)) {
-+		pmd = pmd_alloc_one(&init_mm, addr);
-+		if (!pmd) {
-+			pr_warning("Failed to allocate identity pmd.\n");
-+			return;
-+		}
-+		pud_populate(&init_mm, pud, pmd);
-+		pmd += pmd_index(addr);
-+	} else
-+		pmd = pmd_offset(pud, addr);
-+
-+	do {
-+		next = pmd_addr_end(addr, end);
-+		*pmd = __pmd((addr & PMD_MASK) | prot);
-+		flush_pmd_entry(pmd);
-+	} while (pmd++, addr = next, addr != end);
++#define cpu_set_asid(asid) {						\
++	unsigned long ttbl, ttbh;					\
++	asm volatile(							\
++	"	mrrc	p15, 0, %0, %1, c2		@ read TTBR0\n"	\
++	"	mov	%1, %2, lsl #(48 - 32)		@ set ASID\n"	\
++	"	mcrr	p15, 0, %0, %1, c2		@ set TTBR0\n"	\
++	: "=&r" (ttbl), "=&r" (ttbh)					\
++	: "r" (asid & ~ASID_MASK));					\
 +}
-+#else	/* !CONFIG_ARM_LPAE */
- static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
- 	unsigned long prot)
- {
-@@ -15,6 +40,7 @@ static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
- 	pmd[1] = __pmd(addr);
- 	flush_pmd_entry(pmd);
- }
-+#endif	/* CONFIG_ARM_LPAE */
- 
- static void idmap_add_pud(pgd_t *pgd, unsigned long addr, unsigned long end,
- 	unsigned long prot)
-@@ -32,7 +58,7 @@ void identity_mapping_add(pgd_t *pgd, unsigned long addr, unsigned long end)
- {
- 	unsigned long prot, next;
- 
--	prot = PMD_TYPE_SECT | PMD_SECT_AP_WRITE;
-+	prot = PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_SECT_AF;
- 	if (cpu_architecture() <= CPU_ARCH_ARMv5TEJ && !cpu_is_xscale())
- 		prot |= PMD_BIT4;
- 
-@@ -46,7 +72,11 @@ void identity_mapping_add(pgd_t *pgd, unsigned long addr, unsigned long end)
- #ifdef CONFIG_SMP
- static void idmap_del_pmd(pud_t *pud, unsigned long addr, unsigned long end)
- {
--	pmd_t *pmd = pmd_offset(pud, addr);
-+	pmd_t *pmd;
++#else
++#define cpu_set_asid(asid) \
++	asm("	mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (asid))
++#endif
 +
-+	if (pud_none_or_clear_bad(pud))
-+		return;
-+	pmd = pmd_offset(pud, addr);
- 	pmd_clear(pmd);
+ /*
+  * We fork()ed a process, and we need a new context for the child
+  * to run in.  We reserve version 0 for initial tasks so we will
+@@ -37,7 +52,7 @@ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
+ static void flush_context(void)
+ {
+ 	/* set the reserved ASID before flushing the TLB */
+-	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (0));
++	cpu_set_asid(0);
+ 	isb();
+ 	local_flush_tlb_all();
+ 	if (icache_is_vivt_asid_tagged()) {
+@@ -99,7 +114,7 @@ static void reset_context(void *info)
+ 	set_mm_context(mm, asid);
+ 
+ 	/* set the new ASID */
+-	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (mm->context.id));
++	cpu_set_asid(mm->context.id);
+ 	isb();
  }
  
 
