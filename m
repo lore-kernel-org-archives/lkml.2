@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab1KNQHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:07:16 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58757 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752799Ab1KNQHO (ORCPT
+	id S1755239Ab1KNQUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:20:43 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5738 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1KNQUm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 11:07:14 -0500
-Date: Mon, 14 Nov 2011 16:08:14 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH v3 2/2] TTY: tty flip buffer optimisation.
-Message-ID: <20111114160814.2f9de9a9@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EC137F6.1050509@ilyx.ru>
-References: <4EC10DC6.8070807@ilyx.ru>
-	<4EC124EB.4050203@suse.cz>
-	<20111114150523.2abdf7a1@lxorguk.ukuu.org.uk>
-	<4EC137F6.1050509@ilyx.ru>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Nov 2011 11:20:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 14 Nov 2011 08:20:41 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Rob Herring <robherring2@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 14 Nov 2011 08:20:38 -0800
+Subject: RE: [PATCH v4 01/10] arm/tegra: initial device tree for tegra30
+Thread-Topic: [PATCH v4 01/10] arm/tegra: initial device tree for tegra30
+Thread-Index: Acyi52K74TeMhaH3R9mvCDDxYuem4wAAaa8Q
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740805A80@HQMAIL01.nvidia.com>
+References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
+ <1321010541-31337-2-git-send-email-pdeschrijver@nvidia.com>
+ <4EBDE766.5080505@gmail.com>
+ <20111114152518.GJ19069@tbergstrom-lnx.Nvidia.com>
+ <4EC13699.5030205@gmail.com>
+ <20111114160633.GK19069@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20111114160633.GK19069@tbergstrom-lnx.Nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For avoid complexity we need remove free buffer at all.
-> And use kmalloc()-kfree() for every chunk. Don't need tty_buffer_find().
-> It will be fast and easy.
+Peter De Schrijver wrote at Monday, November 14, 2011 9:07 AM:
+> On Mon, Nov 14, 2011 at 04:41:13PM +0100, Rob Herring wrote:
+> > On 11/14/2011 09:25 AM, Peter De Schrijver wrote:
+> > > On Sat, Nov 12, 2011 at 04:26:30AM +0100, Rob Herring wrote:
+> > >> On 11/11/2011 05:22 AM, Peter De Schrijver wrote:
+> > >>> This patch adds the initial device tree for tegra30
+...
+> > >>> +	interrupt-parent = <&intc>;
+> > >>> +
+> > >>> +	intc: interrupt-controller@50041000 {
+> > >>> +		compatible = "nvidia,tegra30-gic", "nvidia,tegra20-gic";
+> > >>> +		interrupt-controller;
+> > >>> +		#interrupt-cells = <1>;
+> > >>
+> > >> Is the Tegra GIC really different from a standard A9 gic? You need to
+> > >> update to use the gic binding. The cells should be 3 for example.
+> > >
+> > > It has an extra 'legacy' interrupt controller like tegra20 has. This is used
+> > > when waking up the CPU from power off mode.
+> >
+> > Although that is probably not part of the GIC h/w (i.e. at a different
+> > address) and should be described in the dts separately. That doesn't
+> > change the GIC binding or the fact that you are using
+> > arch/arm/common/gic.c though. Whether you have a different compatible
+> > string or not is not really the issue. That can already be supported if
+> > necessary. The issue is you are not using the existing GIC binding as a
+> > starting point and that has implications on every node using a GIC
+> > interrupt.
+> >
+> 
+> The GIC is the same as the one used on tegra20. So I copied the binding from
+> tegra20.dtsi. Is that one wrong too then?
 
-The buffer cycling was added because it speeds up some cases (as you
-found), and because its needed for high speed serial on some very low end
-devices. From your benchmarks it's also speeding up pty/tty so it's
-clearly relevant.
+The existing Tegra20 .dtsi file doesn't use the new GIC bindings yet
+either, which as Peter points out is where he copied the GIC node from.
+My suggestion is that we merge the Tegra30 .dtsi as shown above, and then
+do a single pass to convert both tegra20.dtsi and tegra30.dtsi over to the
+new GIC binding, to prevent blocking the merge of tegra30.dtsi on the GIC
+binding rework. Does that sound fair?
 
-Alan
+-- 
+nvpublic
+
