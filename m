@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab1KNQZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:25:11 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55650 "EHLO
+	id S1755403Ab1KNQZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:25:37 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:55533 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab1KNQYU (ORCPT
+	with ESMTP id S1755295Ab1KNQYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 11:24:20 -0500
+	Mon, 14 Nov 2011 11:24:18 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 12/15] ARM: LPAE: Add context switching support
-Date: Mon, 14 Nov 2011 16:23:48 +0000
-Message-Id: <1321287831-24560-13-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v9 10/15] ARM: LPAE: Invalidate the TLB before freeing the PMD
+Date: Mon, 14 Nov 2011 16:23:46 +0000
+Message-Id: <1321287831-24560-11-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
 References: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Nov 2011 16:24:08.0194 (UTC) FILETIME=[D59EDE20:01CCA2E9]
-X-MC-Unique: 111111416241708301
+X-OriginalArrivalTime: 14 Nov 2011 16:24:07.0663 (UTC) FILETIME=[D54DD7F0:01CCA2E9]
+X-MC-Unique: 111111416241508601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGPSg9019388
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGPitm019392
 
-With LPAE, TTBRx registers are 64-bit. The ASID is stored in TTBR0
-rather than a separate Context ID register. This patch makes the
-necessary changes to handle context switching on LPAE.
+Similar to the PTE freeing, this patch introduced __pmd_free_tlb() which
+invalidates the TLB before freeing a PMD page. This is needed because on
+newer processors the entry in the upper page table may be cached by the
+TLB and point to random data after the PMD has been freed.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/mm/context.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/tlb.h |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index 93aac06..ee9bb36 100644
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -22,6 +22,21 @@ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
- DEFINE_PER_CPU(struct mm_struct *, current_mm);
- #endif
- 
-+#ifdef CONFIG_ARM_LPAE
-+#define cpu_set_asid(asid) {						\
-+	unsigned long ttbl, ttbh;					\
-+	asm volatile(							\
-+	"	mrrc	p15, 0, %0, %1, c2		@ read TTBR0\n"	\
-+	"	mov	%1, %2, lsl #(48 - 32)		@ set ASID\n"	\
-+	"	mcrr	p15, 0, %0, %1, c2		@ set TTBR0\n"	\
-+	: "=&r" (ttbl), "=&r" (ttbh)					\
-+	: "r" (asid & ~ASID_MASK));					\
-+}
-+#else
-+#define cpu_set_asid(asid) \
-+	asm("	mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (asid))
-+#endif
-+
- /*
-  * We fork()ed a process, and we need a new context for the child
-  * to run in.  We reserve version 0 for initial tasks so we will
-@@ -37,7 +52,7 @@ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
- static void flush_context(void)
- {
- 	/* set the reserved ASID before flushing the TLB */
--	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (0));
-+	cpu_set_asid(0);
- 	isb();
- 	local_flush_tlb_all();
- 	if (icache_is_vivt_asid_tagged()) {
-@@ -99,7 +114,7 @@ static void reset_context(void *info)
- 	set_mm_context(mm, asid);
- 
- 	/* set the new ASID */
--	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (mm->context.id));
-+	cpu_set_asid(mm->context.id);
- 	isb();
+diff --git a/arch/arm/include/asm/tlb.h b/arch/arm/include/asm/tlb.h
+index b509e44..5d3ed7e3 100644
+--- a/arch/arm/include/asm/tlb.h
++++ b/arch/arm/include/asm/tlb.h
+@@ -202,8 +202,17 @@ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
+ 	tlb_remove_page(tlb, pte);
  }
  
++static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
++				  unsigned long addr)
++{
++#ifdef CONFIG_ARM_LPAE
++	tlb_add_flush(tlb, addr);
++	tlb_remove_page(tlb, virt_to_page(pmdp));
++#endif
++}
++
+ #define pte_free_tlb(tlb, ptep, addr)	__pte_free_tlb(tlb, ptep, addr)
+-#define pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
++#define pmd_free_tlb(tlb, pmdp, addr)	__pmd_free_tlb(tlb, pmdp, addr)
+ #define pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
+ 
+ #define tlb_migrate_finish(mm)		do { } while (0)
 
