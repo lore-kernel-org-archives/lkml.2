@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab1KNBKc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 20:10:32 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:41733 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751071Ab1KNBKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 20:10:31 -0500
-Message-ID: <1321233030.15834.12.camel@Joe-Laptop>
-Subject: Re: [PATCH] brcmsmac: Use current logging styles
-From: Joe Perches <joe@perches.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 13 Nov 2011 17:10:30 -0800
-In-Reply-To: <20111113170825.6633b17e@nehalam.linuxnetplumber.net>
-References: <1321213264.15834.4.camel@Joe-Laptop>
-	 <20111113170825.6633b17e@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752855Ab1KNBMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 20:12:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63119 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1KNBMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 20:12:45 -0500
+Date: Mon, 14 Nov 2011 09:11:30 +0800
+From: wangyanqing <udknight@gmail.com>
+To: gregkh@suse.de
+Cc: wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]usb: serial: pl2303: rm id
+Message-ID: <20111114011130.GA4433@udknight.homenetwork>
+Mail-Followup-To: wangyanqing <Udknight@gmail.com>, gregkh@suse.de,
+	wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
+References: <20111110060408.GA25028@udknight.homenetwork>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111110060408.GA25028@udknight.homenetwork>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-13 at 17:08 -0800, Stephen Hemminger wrote:
-> On Sun, 13 Nov 2011 11:41:04 -0800
-> Joe Perches <joe@perches.com> wrote:
+On Thu, Nov 10, 2011 at 02:04:08PM +0800, wangyanqing wrote:
+> I get report from customer that his usb-serial
+> converter doesn't work well,it sometimes work,
+> but sometimes it doesn't.
 > 
-> > Add and use pr_fmt and pr_<level>
-> > Remove useless double parentheses from macros.
-> > Remove function names from format strings, add to pr_debug use.
-> > Coalesce formats.
-> > Remove uncompileable undeclared variable in a DMA_NONE use.
+> The usb-serial converter's id:
+> vendor_id product_id
+> 0x4348    0x5523
 > 
-> If you are going to change it why not got all the way to netdev_XXX and dev_XXX macros
-> instead.
-
-No dev always available, simpler change,
-mirrors the changes in brcmfmac.
-
+> Then I search the usb-serial codes, and there are
+> two drivers announce support this device, pl2303
+> and ch341, commit 026dfaf1 cause it. Through many
+> times to test, ch341 works well with this device,
+> and pl2303 doesn't work quite often(it just work quite little).
+> 
+> ch341 works well with this device, so we doesn't
+> need pl2303 to support.I try to revert 026dfaf1 first,
+> but it failed. So I prepare this patch by hand to revert it.
+> 
+> Signed-off-by: Wang YanQing <Udknight@gmail.com>
+> ---
+>  drivers/usb/serial/pl2303.c |    1 -
+>  drivers/usb/serial/pl2303.h |    4 ----
+>  2 files changed, 0 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+> index 9083d1e..fc2d66f 100644
+> --- a/drivers/usb/serial/pl2303.c
+> +++ b/drivers/usb/serial/pl2303.c
+> @@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+>  	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+>  	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
+> -	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
+>  	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
+>  	{ }					/* Terminating entry */
+>  };
+> diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+> index 3d10d7f..c38b8c0 100644
+> --- a/drivers/usb/serial/pl2303.h
+> +++ b/drivers/usb/serial/pl2303.h
+> @@ -145,10 +145,6 @@
+>  #define ADLINK_VENDOR_ID		0x0b63
+>  #define ADLINK_ND6530_PRODUCT_ID	0x6530
+>  
+> -/* WinChipHead USB->RS 232 adapter */
+> -#define WINCHIPHEAD_VENDOR_ID		0x4348
+> -#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
+> -
+>  /* SMART USB Serial Adapter */
+>  #define SMART_VENDOR_ID	0x0b8c
+>  #define SMART_PRODUCT_ID	0x2303
+> -- 
+> 1.7.3.4
+> 
+Hi all.
+Maybe it should be noticed that not only one usb-serial converter base 
+this chip have this issue, but there are about 50(even more) usb-serial 
+coverter lines have the same issue, so we can't ignore it.
+Of course we can make all the drivers work well, but we should make it
+useful at the first.
