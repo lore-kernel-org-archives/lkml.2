@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab1KNPpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 10:45:39 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53338 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754582Ab1KNPpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 10:45:38 -0500
-Date: Mon, 14 Nov 2011 15:45:36 +0000
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] regmap: Do not call regcache_exit from
-	regcache_lzo_init error path
-Message-ID: <20111114154536.GB12690@opensource.wolfsonmicro.com>
-References: <1321263619-25891-1-git-send-email-lars@metafoo.de> <1321263619-25891-5-git-send-email-lars@metafoo.de>
+	id S1755046Ab1KNPrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 10:47:07 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:51087 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753181Ab1KNPrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 10:47:06 -0500
+Message-ID: <4EC137F6.1050509@ilyx.ru>
+Date: Mon, 14 Nov 2011 19:47:02 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111108 Iceape/2.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321263619-25891-5-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH v3 2/2] TTY: tty flip buffer optimisation.
+References: <4EC10DC6.8070807@ilyx.ru>	<4EC124EB.4050203@suse.cz> <20111114150523.2abdf7a1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111114150523.2abdf7a1@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 10:40:19AM +0100, Lars-Peter Clausen wrote:
-> Calling regcache_exit from regcache_lzo_init is a layering violation and
-> might cause double frees. In case of an error only free those structures which
-> have been allocated in this function.
+Alan Cox wrote:
+
+>> Hi, the results are indeed nice. However is there any *real* load other
+>> than this tailor-made microbenchmark where the added code complexity is
+>> worth it?
 > 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  drivers/base/regmap/regcache-lzo.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+> I'm wondering if we need the complexity in the first place. Certainly 256
+> does seem a bit small for pty/tty traffic. A 'real world' benchmark would
+> be an ls -lR / on a machine with a fast graphics card or in console mode
 > 
-> diff --git a/drivers/base/regmap/regcache-lzo.c b/drivers/base/regmap/regcache-lzo.c
-> index 226ffc1..b7d1614 100644
-> --- a/drivers/base/regmap/regcache-lzo.c
-> +++ b/drivers/base/regmap/regcache-lzo.c
-> @@ -15,6 +15,8 @@
->  
->  #include "internal.h"
->  
-> +static int regcache_lzo_exit(struct regmap *map);
-> +
->  struct regcache_lzo_ctx {
->  	void *wmem;
->  	void *dst;
-> @@ -193,7 +195,7 @@ static int regcache_lzo_init(struct regmap *map)
->  
->  	return 0;
->  err:
-> -	regcache_exit(map);
-> +	regcache_lzo_exit(map);
->  	return ret;
->  }
->  
-> -- 
-> 1.7.7.1
+> ie
 > 
+> ls -lR /		# prime cache
+> time ls -lR /
+> 
+> and there are cases where people do a lot of traffic over a pty like this
+> so I don't think it's entirely fake.
+> 
+> I don't like the complexity but we could certainly go from using 256 byte
+> buffers to "tty->buf.bufsize" and make it configurable without
+> that complexity.
+> 
+> Alan
 > 
 
-All of them look good.
 
-Acked-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+For avoid complexity we need remove free buffer at all.
+And use kmalloc()-kfree() for every chunk. Don't need tty_buffer_find().
+It will be fast and easy.
+Ilya.
+
