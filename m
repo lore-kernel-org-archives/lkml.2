@@ -1,117 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1KNGy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 01:54:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15097 "EHLO mx1.redhat.com"
+	id S1753847Ab1KNG6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 01:58:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54946 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751974Ab1KNGy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 01:54:58 -0500
-Date: Mon, 14 Nov 2011 08:56:06 +0200
+	id S1752921Ab1KNG6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 01:58:36 -0500
+Date: Mon, 14 Nov 2011 08:59:02 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
-Message-ID: <20111114065606.GA3779@redhat.com>
-References: <patchbomb.1320306168@localhost6.localdomain6>
- <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
- <20111113210256.GA31621@redhat.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com, penberg@kernel.org
+Subject: Re: [PATCHv2 RFC] virtio-spec: flexible configuration layout
+Message-ID: <20111114065902.GB3779@redhat.com>
+References: <20111101124223.GA14060@redhat.com>
+ <8739e7uy87.fsf@rustcorp.com.au>
+ <20111102233110.GA20289@redhat.com>
+ <20111108214021.GA4538@redhat.com>
+ <20111109195901.GA28155@redhat.com>
+ <1320870287.3730.6.camel@lappy>
+ <20111109205208.GA28599@redhat.com>
+ <1320872248.3730.11.camel@lappy>
+ <87aa83qoao.fsf@rustcorp.com.au>
+ <20111113151427.GA16749@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111113210256.GA31621@redhat.com>
+In-Reply-To: <20111113151427.GA16749@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 11:03:13PM +0200, Michael S. Tsirkin wrote:
-> On Thu, Nov 03, 2011 at 06:12:53PM +1030, Rusty Russell wrote:
-> > A virtio driver does virtqueue_add_buf() multiple times before finally
-> > calling virtqueue_kick(); previously we only exposed the added buffers
-> > in the virtqueue_kick() call.  This means we don't need a memory
-> > barrier in virtqueue_add_buf(), but it reduces concurrency as the
-> > device (ie. host) can't see the buffers until the kick.
+On Sun, Nov 13, 2011 at 05:14:27PM +0200, Michael S. Tsirkin wrote:
+> On Fri, Nov 11, 2011 at 02:54:31PM +1030, Rusty Russell wrote:
+> > On Wed, 09 Nov 2011 22:57:28 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > > On Wed, 2011-11-09 at 22:52 +0200, Michael S. Tsirkin wrote:
+> > > > On Wed, Nov 09, 2011 at 10:24:47PM +0200, Sasha Levin wrote:
+> > > > > It'll be a bit harder deprecating it in the future.
+> > > > 
+> > > > Harder than ... what ?
+> > > 
+> > > Harder than allowing devices not to present it at all if new layout
+> > > config is used. Right now the simple implementation is to use MMIO for
+> > > config and device specific, and let it fallback to legacy for ISR and
+> > > notifications (and therefore, this is probably how everybody will
+> > > implement it), which means that when you do want to deprecate legacy,
+> > > there will be extra work to be done then, instead of doing it now.
 > > 
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > Indeed, I'd like to see two changes to your proposal:
+> > 
+> > (1) It should be all or nothing.  If a driver can find the virtio header
+> >     capability, it should only use the capabilties.  Otherwise, it
+> >     should fall back to legacy.
 > 
-> In the past I played with a patch like this, but I didn't see a
-> performance gain either way. Do you see any gain?
+> Okay, but going forward, if we add more capabilities, we probably won't
+> want to require them and fail to load if not there.  That's really why I
+> wanted to make the failover ignore any capability separately - to make
+> this future proof.  I'm not terribly fixated on this, it just seemed a
+> bit more symmetrical to treat all capabilities in the same way. Hmm?
 > 
-> I'm a bit concerned that with this patch, a buggy driver that
-> adds more than 2^16 descriptors without a kick
-> would seem to work sometimes. Let's add WARN_ON(vq->num_added > (1 << 16))?
-
-Thinking about it more - it might be tricky for drivers
-to ensure this. add used to fail when vq is full, but now
-driver might do get between add and notify:
-	lock
-	add_buf * N
-	prep
-	unlock
-	lock
-	get_buf * N
-	unlock
-	lock
-	add_buf
-	prep
-	unlock
-	notify
-
-and since add was followed by get, this doesn't fail.
-
-So the right thing to do I think is to either ignore indexes and assume
-a kick is needed, something like:
-if vq->num_added >= (1 << 15))
-	needs_kick = true
-(note: maybe it's 1<<16, and maybe >, but 1<<15 is plenty anyway)
-
-Or alternatively, fail add when num_added is too large.
-
-> > ---
-> >  drivers/virtio/virtio_ring.c |   37 ++++++++++++++++++++++---------------
-> >  1 file changed, 22 insertions(+), 15 deletions(-)
+> >     Your draft suggests a mix is possible;
+> >     I prefer a clean failure (ie. one day don't present a BAR 0 *at
+> >     all*, so ancient drivers just fail to load.).
+> 
+> Just to clarify, as written in draft this is possible with the current
+> spec proposal.  So I'm guessing there's some other motivation that you
+> had in mind?
+> 
+> > (2) There's no huge win in keeping the same layout.  Let's make some
+> >     cleanups.
+> 
+> About this last point - what cleanups do you have in mind?  Just move
+> some registers around?  I guess we could put feature bits near each
+> other, and move device status towards the end to avoid wasting 3 bytes.
+> The win seems minimal, but the change does make legacy hypervisor
+> support in guests more cumbersome, as we need to spread coditional code
+> around instead of localizing it in the initialization path.
+> 
+> >    There are more users ahead of us then behind us (I
+> >     hope!).
+> 
+> In that case isn't it safe to assume we'll find some uses
+> for the reserved registers?
+> 
+> > But I think this is the right direction!
 > > 
-> > diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> > --- a/drivers/virtio/virtio_ring.c
-> > +++ b/drivers/virtio/virtio_ring.c
-> > @@ -227,9 +227,15 @@ add_head:
-> >  
-> >  	/* Put entry in available array (but don't update avail->idx until they
-> >  	 * do sync). */
-> > -	avail = ((vq->vring.avail->idx + vq->num_added++) & (vq->vring.num-1));
-> > +	avail = (vq->vring.avail->idx & (vq->vring.num-1));
-> >  	vq->vring.avail->ring[avail] = head;
-> >  
-> > +	/* Descriptors and available array need to be set before we expose the
-> > +	 * new available array entries. */
-> > +	virtio_wmb();
-> > +	vq->vring.avail->idx++;
-> > +	vq->num_added++;
-> > +
-> >  	pr_debug("Added buffer head %i to %p\n", head, vq);
-> >  	END_USE(vq);
-> >  
-> > @@ -248,13 +254,10 @@ bool virtqueue_kick_prepare(struct virtq
-> >  	 * new available array entries. */
-> >  	virtio_wmb();
-> >  
-> > -	old = vq->vring.avail->idx;
-> > -	new = vq->vring.avail->idx = old + vq->num_added;
-> > +	old = vq->vring.avail->idx - vq->num_added;
-> > +	new = vq->vring.avail->idx;
-> >  	vq->num_added = 0;
-> >  
-> > -	/* Need to update avail index before checking if we should notify */
-> > -	virtio_mb();
-> > -
-> >  	if (vq->event) {
-> >  		needs_kick = vring_need_event(vring_avail_event(&vq->vring),
-> >  					      new, old);
-> > 
-> > 
-> > _______________________________________________
-> > Virtualization mailing list
-> > Virtualization@lists.linux-foundation.org
-> > https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+> > Thanks,
+> > Rusty.
+
+Note: waiting on response to the above before I tweak the
+spec again.
+
+-- 
+MST
