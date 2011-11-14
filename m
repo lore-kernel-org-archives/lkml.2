@@ -1,152 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1KNQ1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 11:27:30 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55111 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab1KNQYL (ORCPT
+	id S1755308Ab1KNQjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 11:39:44 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:47529 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1KNQjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 11:24:11 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 03/15] ARM: LPAE: Move page table maintenance macros to pgtable-2level.h
-Date: Mon, 14 Nov 2011 16:23:39 +0000
-Message-Id: <1321287831-24560-4-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
-References: <1321287831-24560-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Nov 2011 16:24:05.0678 (UTC) FILETIME=[D41EF4E0:01CCA2E9]
-X-MC-Unique: 111111416240900301
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 14 Nov 2011 11:39:43 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4EC1444E.5080108@cam.ac.uk>
+Date: Mon, 14 Nov 2011 16:39:42 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: myungjoo.ham@gmail.com
+CC: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Ben Hutchings <bhutchings@solarflare.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, dg77.kim@samsung.com,
+        kyungmin.park@samsung.com
+Subject: Re: [RFC PATCH 0/2] HWMON: add in-kernel interfaces to read sensor
+ values.
+References: <1320389433-1671-1-git-send-email-myungjoo.ham@samsung.com> <1321044403.2757.23.camel@bwh-desktop> <CAJ0PZbQsTYZvoVMgZ_L5uPUxCTbzH72zzUqUkvXNnmqiDOGY=g@mail.gmail.com>
+In-Reply-To: <CAJ0PZbQsTYZvoVMgZ_L5uPUxCTbzH72zzUqUkvXNnmqiDOGY=g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAEGRso3019436
 
-The page table maintenance macros need to be duplicated between the
-classic and the LPAE MMU so this patch moves those that are not common
-to the pgtable-2level.h file.
+On 11/14/2011 01:31 AM, MyungJoo Ham wrote:
+> On Sat, Nov 12, 2011 at 5:46 AM, Ben Hutchings
+> <bhutchings@solarflare.com> wrote:
+>> On Fri, 2011-11-04 at 15:50 +0900, MyungJoo Ham wrote:
+>>> We have been reading hwmon values (TMU, the SoC-core temperature sensor,
+>>> and NTC, the ambient or battery surface temperature sensor) for
+>>> Charger-Manager. However, because hwmon does not have in-kernel interface,
+>>> we have been using undesired method, including "../../../fs/*.h".
+>>>
+>>> This patch is to provide in-kernel interface for hwmon:
+>>> hwmon_get_value and hwmon_set_value. In order to use these two functions,
+>>> the hwmon driver should provide its sysfs attributes to hwmon framework
+>>> as well. If the hwmon driver does not provide (by providing NULL), the users
+>>> of the hwmon won't be able to use hwmon_get/set_value();
+>>> The sysfs attribute (struct attribuyte_group *) is provided with
+>>> hwmon_device_register; adding the second parameter to hwmon_device_register().
+>>> The 2/2 patch shows the changes in device drivers due to this.
+>> [...]
+>>
+>> This is an improvement, but I don't think it is quite enough.  As I
+>> understand the hwmon sysfs interface, all sensor values should be
+>> integers.  So the in-kernel interface should also work with integers,
+>> not strings.
+>>
+>> As a first implementation you could perhaps parse the strings back to
+>> integers.  However in the longer term the driver API should be changed
+>> so that hwmon drivers fully describe their sensors to the core and the
+>> core takes care of exposing them through sysfs and the in-kernel API.
+> 
+> I agree.
+> 
+> I'll let it the in-kernel interfaces provide integer value although it will
+> simply parse strings as you've addressed until we have some other
+> interfaces for sysfs entries in hwmon device drivers.
+> 
+> 
+To throw another option into the mix, you could make it an IIO driver
+and sit hwmon on top of that (there is already a simple driver for
+doing this) - IIO has in kernel interfaces of the type
+you want.  Not everything is there yet though.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/include/asm/pgtable-2level.h |   41 +++++++++++++++++++++++++++++++++
- arch/arm/include/asm/pgtable.h        |   38 ------------------------------
- 2 files changed, 41 insertions(+), 38 deletions(-)
-
-diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
-index 470457e..2317a71 100644
---- a/arch/arm/include/asm/pgtable-2level.h
-+++ b/arch/arm/include/asm/pgtable-2level.h
-@@ -140,4 +140,45 @@
- #define L_PTE_MT_DEV_CACHED	(_AT(pteval_t, 0x0b) << 2)	/* 1011 */
- #define L_PTE_MT_MASK		(_AT(pteval_t, 0x0f) << 2)
- 
-+#ifndef __ASSEMBLY__
-+
-+/*
-+ * The "pud_xxx()" functions here are trivial when the pmd is folded into
-+ * the pud: the pud entry is never bad, always exists, and can't be set or
-+ * cleared.
-+ */
-+#define pud_none(pud)		(0)
-+#define pud_bad(pud)		(0)
-+#define pud_present(pud)	(1)
-+#define pud_clear(pudp)		do { } while (0)
-+#define set_pud(pud,pudp)	do { } while (0)
-+
-+static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
-+{
-+	return (pmd_t *)pud;
-+}
-+
-+#define pmd_bad(pmd)		(pmd_val(pmd) & 2)
-+
-+#define copy_pmd(pmdpd,pmdps)		\
-+	do {				\
-+		pmdpd[0] = pmdps[0];	\
-+		pmdpd[1] = pmdps[1];	\
-+		flush_pmd_entry(pmdpd);	\
-+	} while (0)
-+
-+#define pmd_clear(pmdp)			\
-+	do {				\
-+		pmdp[0] = __pmd(0);	\
-+		pmdp[1] = __pmd(0);	\
-+		clean_pmd_entry(pmdp);	\
-+	} while (0)
-+
-+/* we don't need complex calculations here as the pmd is folded into the pgd */
-+#define pmd_addr_end(addr,end) (end)
-+
-+#define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
-+
-+#endif /* __ASSEMBLY__ */
-+
- #endif /* _ASM_PGTABLE_2LEVEL_H */
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index a1aca79..44b9247 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -164,41 +164,8 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
- /* to find an entry in a kernel page-table-directory */
- #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
- 
--/*
-- * The "pud_xxx()" functions here are trivial when the pmd is folded into
-- * the pud: the pud entry is never bad, always exists, and can't be set or
-- * cleared.
-- */
--#define pud_none(pud)		(0)
--#define pud_bad(pud)		(0)
--#define pud_present(pud)	(1)
--#define pud_clear(pudp)		do { } while (0)
--#define set_pud(pud,pudp)	do { } while (0)
--
--
--/* Find an entry in the second-level page table.. */
--static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
--{
--	return (pmd_t *)pud;
--}
--
- #define pmd_none(pmd)		(!pmd_val(pmd))
- #define pmd_present(pmd)	(pmd_val(pmd))
--#define pmd_bad(pmd)		(pmd_val(pmd) & 2)
--
--#define copy_pmd(pmdpd,pmdps)		\
--	do {				\
--		pmdpd[0] = pmdps[0];	\
--		pmdpd[1] = pmdps[1];	\
--		flush_pmd_entry(pmdpd);	\
--	} while (0)
--
--#define pmd_clear(pmdp)			\
--	do {				\
--		pmdp[0] = __pmd(0);	\
--		pmdp[1] = __pmd(0);	\
--		clean_pmd_entry(pmdp);	\
--	} while (0)
- 
- static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- {
-@@ -207,10 +174,6 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- 
- #define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
- 
--/* we don't need complex calculations here as the pmd is folded into the pgd */
--#define pmd_addr_end(addr,end)	(end)
--
--
- #ifndef CONFIG_HIGHPTE
- #define __pte_map(pmd)		pmd_page_vaddr(*(pmd))
- #define __pte_unmap(pte)	do { } while (0)
-@@ -232,7 +195,6 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- #define pte_page(pte)		pfn_to_page(pte_pfn(pte))
- #define mk_pte(page,prot)	pfn_pte(page_to_pfn(page), prot)
- 
--#define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
- #define pte_clear(mm,addr,ptep)	set_pte_ext(ptep, __pte(0), 0)
- 
- #if __LINUX_ARM_ARCH__ < 6
+Jonathan
 
