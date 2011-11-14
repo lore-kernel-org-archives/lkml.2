@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab1KNVRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 16:17:14 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:30285 "EHLO
+	id S1756493Ab1KNVVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 16:21:41 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:30768 "EHLO
 	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754868Ab1KNVRN (ORCPT
+	by vger.kernel.org with ESMTP id S1755237Ab1KNVVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 16:17:13 -0500
-Date: Mon, 14 Nov 2011 13:17:11 -0800 (PST)
+	Mon, 14 Nov 2011 16:21:40 -0500
+Date: Mon, 14 Nov 2011 13:21:40 -0800 (PST)
 From: Andrei Warkentin <awarkentin@vmware.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Andrei Warkentin <andreiw@vmware.com>
-Message-ID: <210327451.46002.1321305431817.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <alpine.LNX.2.00.1111082056510.5763@swampdragon.chaosbits.net>
-Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <2018804336.46235.1321305700330.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1320881479-16711-1-git-send-email-andreiw@vmware.com>
+Subject: Re: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid
+ memory addresses.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
@@ -23,48 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
+
 ----- Original Message -----
-> From: "Jesper Juhl" <jj@chaosbits.net>
-> To: "Andrei Warkentin" <andreiw@vmware.com>
-> Cc: linux-kernel@vger.kernel.org
-> Sent: Tuesday, November 8, 2011 2:57:27 PM
-> Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+> From: "Andrei Warkentin" <andreiw@vmware.com>
+> To: linux-kernel@vger.kernel.org
+> Cc: "Andrei Warkentin" <andreiw@vmware.com>, "H. Peter Anvin" <hpa@zytor.com>
+> Sent: Wednesday, November 9, 2011 6:31:19 PM
+> Subject: [PATCH] /dev/mem: Fix wrong error on accessing beyond valid memory addresses.
 > 
-> On Tue, 8 Nov 2011, Andrei Warkentin wrote:
+> Currently this returns -EFAULT, but it really should be returning 0,
+> as in - 0 bytes read or written. This is what you would get by
+> opening a block device, seeking to the end, and trying to read
+> something. Additionally, make lseek() check the sought-to offset
+> to pass the valid_phys_addr_range test.
 > 
-> > 1 is a power of two, therefore rounddown_pow_of_two(1) should
-> > return 1. It does
-> > in case the argument is a variable but in case it's a constant it
-> > behaves
-> > wrong and returns 0. Probably nobody ever did it so this was never
-> > noticed,
-> > however net/drivers/vmxnet3 with latest GCC does and breaks on
-> > unicpu systems.
-> > 
-> > Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
-> > ---
-> >  include/linux/log2.h |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/log2.h b/include/linux/log2.h
-> > index 25b8086..ccda848 100644
-> > --- a/include/linux/log2.h
-> > +++ b/include/linux/log2.h
-> > @@ -185,7 +185,7 @@ unsigned long __rounddown_pow_of_two(unsigned
-> > long n)
-> >  #define rounddown_pow_of_two(n)			\
-> >  (						\
-> >  	__builtin_constant_p(n) ? (		\
-> > -		(n == 1) ? 0 :			\
-> > +		(n == 1) ? 1 :			\
-> >  		(1UL << ilog2(n))) :		\
-> >  	__rounddown_pow_of_two(n)		\
-> >   )
-> > 
-> 
-> For what it's worth; looks good to me.
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
+> ---
 
-Is that an Acked-by or a Reviewed-by?
+I know you're very busy, but I was wondering if you could
+give your two cents on this change. This change grew from
+our discussion on LKML last week.
 
-Thanks,
+Thanks ahead,
 A
