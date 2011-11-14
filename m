@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab1KNO3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 09:29:19 -0500
-Received: from mail-am1.bigfish.com ([213.199.180.138]:25528 "EHLO
-	AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753525Ab1KNO3S (ORCPT
+	id S1754384Ab1KNOiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 09:38:54 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25882 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab1KNOix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 09:29:18 -0500
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LUNMWM-02-CCL-02
-X-M-MSG: 
-Date: Mon, 14 Nov 2011 15:29:09 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Dave Airlie <airlied@linux.ie>
-CC: David Woodhouse <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, <intel-gfx@lists.freedesktop.org>
-Subject: Re: [PATCH] iommu/intel: Fix build failure with intel-gtt and
- !intel-iommu
-Message-ID: <20111114142909.GF14704@amd.com>
-References: <20111111134832.GI13213@amd.com>
- <1321019553.2027.47.camel@shinybook.infradead.org>
- <20111114132647.GD14704@amd.com>
- <alpine.DEB.2.00.1111141334340.8973@skynet.skynet.ie>
+	Mon, 14 Nov 2011 09:38:53 -0500
+Date: Mon, 14 Nov 2011 09:37:16 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Len Brown <lenb@kernel.org>
+Cc: len.brown@intel.com, jeremy@goop.org, xen-devel@lists.xensource.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org,
+        mingo@redhat.com, bp@alien8.de, hpa@zytor.com, tj@kernel.org,
+        tglx@linutronix.de, trenn@suse.de
+Subject: Re: [Xen-devel] [PATCH 1/3] cpuidle: If disable_cpuidle() is called,
+ set pm_idle to default_idle.
+Message-ID: <20111114143716.GB8317@phenom.dumpdata.com>
+References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
+ <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
+ <20111110040644.GA5434@phenom.dumpdata.com>
+ <CAJvTdKnSLD8q3QqcFVY7u-eyhTnN=2rQ3rTmd1qeJ7nGz4y5Bg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1111141334340.8973@skynet.skynet.ie>
+In-Reply-To: <CAJvTdKnSLD8q3QqcFVY7u-eyhTnN=2rQ3rTmd1qeJ7nGz4y5Bg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090201.4EC127AA.008E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 01:35:13PM +0000, Dave Airlie wrote:
+On Sun, Nov 13, 2011 at 01:00:15AM -0500, Len Brown wrote:
+> > And just found that there is a BZ for this as well:
+> > https://bugzilla.redhat.com/show_bug.cgi?id=739499
+> >
+> > And this patch fixes the Linux kernel to boot under Amazon EC2.
 > 
+> doesn't matter.
 > 
-> > 
-> > > But I'm fairly sure this was already noticed and a patch is on its way
-> > > upstream already.
-> > 
-> > It is not yet fixed upstream. I plan to send fixes to Linus soon. Any
-> > objection against me including this if its not fixed until then?
+> Working around an Amazon EC2 bug in a newly compiled upstream kernel
+> isn't going to help with any of the kernels that don't include that workaround.
+
+Prior to 3.1 we did have a solution for this - we would use the default_idle
+and not pick and/choose one based on the CPUID flags.
+
+It was not really a choice made by "hypervisor wrongly advertises the
+MWAIT flag", but rather that we want to use the safe_halt, which ends up
+calling the yield hypercall.
+
+That is the optimal solution irregardless of what version of hypervisor
+is being used.
+
 > 
-> Does a08185a3eb658854b29c05bcbfac0f85038ffe9f in Linus tree not fix it?
-
-Oops, tested the wrong tree. It is fixed indeed. Sorry for the noise :)
-
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+> Amazon EC2 should not advertise MWAIT support that it does not have,
+> and all kernels should run on it w/o any workaround.
+> 
+> Len Brown, Intel Open Source Technology Center
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
