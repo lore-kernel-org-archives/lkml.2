@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab1KNTbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 14:31:15 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64002 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab1KNTbN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 14:31:13 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Natanji <natanji@gmail.com>
-Subject: Re: Regression in thinkpad-acpi events
-Date: Mon, 14 Nov 2011 20:31:06 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <4EBAC3B5.5060405@gmail.com>
-In-Reply-To: <4EBAC3B5.5060405@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201111142031.06663.maciej.rutecki@gmail.com>
+	id S1756028Ab1KNTee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 14:34:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20329 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753448Ab1KNTed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 14:34:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,510,1315206000"; 
+   d="scan'208";a="85068356"
+Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
+ idle load balancing scalability
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Venki Pallipadi <venki@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Nov 2011 11:37:49 -0800
+In-Reply-To: <1321263161.30500.7.camel@twins>
+References: <1319060737.2604.38.camel@schen9-DESK>
+	 <m2wrc0xpbg.fsf@firstfloor.org>
+	 <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
+	 <4FF5AC937153B0459463C1A88EB478F20135D6ECB5@orsmsx505.amr.corp.intel.com>
+	 <1320191558.28097.44.camel@sbsiddha-desk.sc.intel.com>
+	 <1321263161.30500.7.camel@twins>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1321299469.16760.5.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 9 listopada 2011 o 19:17:25 Natanji wrote:
-> Hello everyone,
-> first time posting on this last, and I'm not subscribed, so please CC
-> any replies to me. ;)
+On Mon, 2011-11-14 at 01:32 -0800, Peter Zijlstra wrote:
+> On Tue, 2011-11-01 at 16:52 -0700, Suresh Siddha wrote:
+> > @@ -3317,6 +3317,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+> >  
+> >         cpu_rq(cpu)->cpu_power = power;
+> >         sdg->sgp->power = power;
+> > +       atomic_set(&sdg->sgp->nr_busy_cpus, sdg->group_weight);
+> >  }
+> >  
+> >  static void update_group_power(struct sched_domain *sd, int cpu)
+> > @@ -3339,6 +3340,7 @@ static void update_group_power(struct sched_domain *sd, int cpu)
+> >         } while (group != child->groups);
+> >  
+> >         sdg->sgp->power = power;
+> > +       atomic_set(&sdg->sgp->nr_busy_cpus, sdg->group_weight);
+> >  } 
 > 
-> I'm running Kernel version 3.1-4 using Arch Linux (32 Bit) on a Thinkpad
-> X60 Tablet. Since upgrading from a pre-3.1 kernel to a post-3.1 kernel,
-> the Thinkpad-specific ACPI events (from thinkpad-acpi) are completely gone.
+> So we run this rather frequently, and it will trample all over:
 > 
-> This can be observed by using the acpi_listen command. For instance, no
-> ACPI events happen when swiveling the display, and the sleep button returns
-> 	button/sleep SBTN 00000080 00000000
-> instead of the previous
-> 	ibm/hotkey HKEY 00000080 00001004
+> > +                */
+> > +               for_each_domain(cpu, sd)
+> > +                       atomic_dec(&sd->groups->sgp->nr_busy_cpus);
 > 
-> The bug was reported in the Arch Linux bugtracker [1] and it was
-> suggested to report this upstream, so this is what I did now. Sadly I
-> have no idea how I could find out if this is indeed a kernel bug or not;
-> I have never compiled my own kernel so what I can give you is probably
-> limited. But I suppose quite a few members of this list use a Thinkpad.
-> If there is anything else I can help out with, just tell me.
-> 
-> [1] https://bugs.archlinux.org/index.php?do=details&task_id=26658
+> because I cannot see any serialization between those sites.
 
-Can you check that 3.1 works or not? Or try bisection that it is regression 
-after 3.0 or 3.1 kernel.
+That was an overlook from myside. I moved the initialization of this to
+init_sched_groups_power() now and there is no need to re-do this
+everytime we call the update_group_power().
 
-Regards
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+> Also, isn't it rather weird to just assume all cpus are busy in
+> update_group_power()? If you would actually set the right value in
+> update_cpu_power() you could use a straight sum in update_group_power()
+> and get a more or less accurate number out.
+
+I will post an updated patch soon (once we complete the performance
+analysis of this patch with respect to other workloads) but the below
+hunk gives an idea of what I am planning to do now.
+
+@@ -7369,6 +7384,7 @@ static void init_sched_groups_power(int cpu, struct sched_
+                return;
+ 
+        update_group_power(sd, cpu);
++       atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
+ }
+ 
+ /*
+
+thanks,
+suresh
+
