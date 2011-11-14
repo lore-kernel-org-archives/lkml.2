@@ -1,108 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab1KNXMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:12:53 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:35810 "EHLO smtp.outflux.net"
+	id S1756291Ab1KNXMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:12:52 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:36658 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755230Ab1KNXMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755069Ab1KNXMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Nov 2011 18:12:49 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 2/3] erst: pass back allocated buffer for pstore
-Date: Mon, 14 Nov 2011 15:12:37 -0800
-Message-Id: <1321312358-11234-3-git-send-email-keescook@chromium.org>
+Subject: [PATCH 0/3] pstore: pass allocated memory region back to caller
+Date: Mon, 14 Nov 2011 15:12:35 -0800
+Message-Id: <1321312358-11234-1-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1321312358-11234-1-git-send-email-keescook@chromium.org>
-References: <1321312358-11234-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since pstore cannot hold the buf_lock while it populates the VFS, the backend
-needs to do it instead, and provide an allocated buffer with the contents.
+Since pstore's buf_lock cannot be held while doing the VFS population,
+these patches make it the backend's responsibility to pass up an allocated
+buffer instead during reads.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/acpi/apei/erst.c |   21 ++++++++++++++++-----
- 1 files changed, 16 insertions(+), 5 deletions(-)
+[   59.691019] BUG: sleeping function called from invalid context at .../mm/slub.c:847
+[   59.691019] in_atomic(): 0, irqs_disabled(): 1, pid: 1819, name: mount
+[   59.691019] Pid: 1819, comm: mount Not tainted 3.0.8 #1
+[   59.691019] Call Trace:
+[   59.691019]  [<810252d5>] __might_sleep+0xc3/0xca
+[   59.691019]  [<810a26e6>] kmem_cache_alloc+0x32/0xf3
+[   59.691019]  [<810b53ac>] ? __d_lookup_rcu+0x6f/0xf4
+[   59.691019]  [<810b68b1>] alloc_inode+0x2a/0x64
+[   59.691019]  [<810b6903>] new_inode+0x18/0x43
+[   59.691019]  [<81142447>] pstore_get_inode.isra.1+0x11/0x98
+[   59.691019]  [<81142623>] pstore_mkfile+0xae/0x26f
+[   59.691019]  [<810a2a66>] ? kmem_cache_free+0x19/0xb1
+[   59.691019]  [<8116c821>] ? ida_get_new_above+0x140/0x158
+[   59.691019]  [<811708ea>] ? __init_rwsem+0x1e/0x2c
+[   59.691019]  [<810b67e8>] ? inode_init_always+0x111/0x1b0
+[   59.691019]  [<8102127e>] ? should_resched+0xd/0x27
+[   59.691019]  [<8137977f>] ? _cond_resched+0xd/0x21
+[   59.691019]  [<81142abf>] pstore_get_records+0x52/0xa7
+[   59.691019]  [<8114254b>] pstore_fill_super+0x7d/0x91
+[   59.691019]  [<810a7ff5>] mount_single+0x46/0x82
+[   59.691019]  [<8114231a>] pstore_mount+0x15/0x17
+[   59.691019]  [<811424ce>] ? pstore_get_inode.isra.1+0x98/0x98
+[   59.691019]  [<810a8199>] mount_fs+0x5a/0x12d
+[   59.691019]  [<810b9174>] ? alloc_vfsmnt+0xa4/0x14a
+[   59.691019]  [<810b9474>] vfs_kern_mount+0x4f/0x7d
+[   59.691019]  [<810b9d7e>] do_kern_mount+0x34/0xb2
+[   59.691019]  [<810bb15f>] do_mount+0x5fc/0x64a
+[   59.691019]  [<810912fb>] ? strndup_user+0x2e/0x3f
+[   59.691019]  [<810bb3cb>] sys_mount+0x66/0x99
+[   59.691019]  [<8137b537>] sysenter_do_call+0x12/0x26
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 1274080..b8b97d6 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -932,7 +932,8 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
- static int erst_open_pstore(struct pstore_info *psi);
- static int erst_close_pstore(struct pstore_info *psi);
- static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
--			   struct timespec *time, struct pstore_info *psi);
-+			   struct timespec *time, char **buf,
-+			   struct pstore_info *psi);
- static int erst_writer(enum pstore_type_id type, u64 *id, unsigned int part,
- 		       size_t size, struct pstore_info *psi);
- static int erst_clearer(enum pstore_type_id type, u64 id,
-@@ -986,17 +987,20 @@ static int erst_close_pstore(struct pstore_info *psi)
- }
- 
- static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
--			   struct timespec *time, struct pstore_info *psi)
-+			   struct timespec *time, char **buf,
-+			   struct pstore_info *psi)
- {
- 	int rc;
- 	ssize_t len = 0;
- 	u64 record_id;
- 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
- 					(erst_info.buf - sizeof(*rcd));
-+	unsigned long flags;
- 
- 	if (erst_disable)
- 		return -ENODEV;
- 
-+	spin_lock_irqsave(&erst_info.buf_lock, flags);
- skip:
- 	rc = erst_get_record_id_next(&reader_pos, &record_id);
- 	if (rc)
-@@ -1004,7 +1008,7 @@ skip:
- 
- 	/* no more record */
- 	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
--		rc = -1;
-+		rc = -EINVAL;
- 		goto out;
- 	}
- 
-@@ -1013,13 +1017,19 @@ skip:
- 	/* The record may be cleared by others, try read next record */
- 	if (len == -ENOENT)
- 		goto skip;
--	else if (len < 0) {
--		rc = -1;
-+	else if (len < sizeof(*rcd)) {
-+		rc = -EIO;
- 		goto out;
- 	}
- 	if (uuid_le_cmp(rcd->hdr.creator_id, CPER_CREATOR_PSTORE) != 0)
- 		goto skip;
- 
-+	*buf = kmalloc(len, GFP_KERNEL);
-+	if (*buf == NULL) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+	memcpy(*buf, erst_info.buf, len - sizeof(*rcd));
- 	*id = record_id;
- 	if (uuid_le_cmp(rcd->sec_hdr.section_type,
- 			CPER_SECTION_TYPE_DMESG) == 0)
-@@ -1037,6 +1047,7 @@ skip:
- 	time->tv_nsec = 0;
- 
- out:
-+	spin_unlock_irqrestore(&erst_info.buf_lock, flags);
- 	return (rc < 0) ? rc : (len - sizeof(*rcd));
- }
- 
--- 
-1.7.0.4
+
 
