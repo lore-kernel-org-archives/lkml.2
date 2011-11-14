@@ -1,62 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1KNJdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 04:33:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44995 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab1KNJdL convert rfc822-to-8bit (ORCPT
+	id S1754092Ab1KNJgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 04:36:09 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35654 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab1KNJgI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 04:33:11 -0500
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
- idle load balancing scalability
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Venki Pallipadi <venki@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Nov 2011 10:32:41 +0100
-In-Reply-To: <1320191558.28097.44.camel@sbsiddha-desk.sc.intel.com>
-References: <1319060737.2604.38.camel@schen9-DESK>
-	 <m2wrc0xpbg.fsf@firstfloor.org>
-	 <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
-	 <4FF5AC937153B0459463C1A88EB478F20135D6ECB5@orsmsx505.amr.corp.intel.com>
-	 <1320191558.28097.44.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 14 Nov 2011 04:36:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJuYYwRy-oy6MXxrPs+CZU=C2VcvV=-fVfju5Jfc1jJRp1ousg@mail.gmail.com>
+References: <1321000263-20000-1-git-send-email-linus.walleij@stericsson.com>
+	<CAJuYYwRy-oy6MXxrPs+CZU=C2VcvV=-fVfju5Jfc1jJRp1ousg@mail.gmail.com>
+Date: Mon, 14 Nov 2011 10:36:07 +0100
+Message-ID: <CACRpkdZvnD_UfuYwoexdCHRmON_o_ec8=dnOaDNhBrRz1WjMfw@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: add a generic pin config interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321263161.30500.7.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-01 at 16:52 -0700, Suresh Siddha wrote:
-> @@ -3317,6 +3317,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
->  
->         cpu_rq(cpu)->cpu_power = power;
->         sdg->sgp->power = power;
-> +       atomic_set(&sdg->sgp->nr_busy_cpus, sdg->group_weight);
->  }
->  
->  static void update_group_power(struct sched_domain *sd, int cpu)
-> @@ -3339,6 +3340,7 @@ static void update_group_power(struct sched_domain *sd, int cpu)
->         } while (group != child->groups);
->  
->         sdg->sgp->power = power;
-> +       atomic_set(&sdg->sgp->nr_busy_cpus, sdg->group_weight);
->  } 
+On Fri, Nov 11, 2011 at 12:26 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
-So we run this rather frequently, and it will trample all over:
+> [Me]
+>> +ret = pin_config(128, PIN_CONFIG_BIAS_PULL_UP, 100000);
+>
+> struct pinctrl_dev* is required as the first parameter in this example.
 
-> +                */
-> +               for_each_domain(cpu, sd)
-> +                       atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+Thanks, fixed it.
 
-because I cannot see any serialization between those sites.
+>> +enum pin_config_param {
+>> +       PIN_CONFIG_BIAS_DISABLE,
+>> +       PIN_CONFIG_BIAS_HIGH_IMPEDANCE,
+>> +       PIN_CONFIG_BIAS_PULL_UP,
+>> +       PIN_CONFIG_BIAS_PULL_DOWN,
+>> +       PIN_CONFIG_BIAS_HIGH,
+>> +       PIN_CONFIG_BIAS_GROUND,
+>> +       PIN_CONFIG_DRIVE_PUSH_PULL,
+>> +       PIN_CONFIG_DRIVE_OPEN_DRAIN,
+>> +       PIN_CONFIG_DRIVE_OPEN_SOURCE,
+>> +       PIN_CONFIG_DRIVE_OFF,
+>> +       PIN_CONFIG_INPUT_SCHMITT,
+>> +       PIN_CONFIG_INPUT_SCHMITT_OFF,
+>> +       PIN_CONFIG_SLEW_RATE_RISING,
+>> +       PIN_CONFIG_SLEW_RATE_FALLING,
+>> +       PIN_CONFIG_LOAD_CAPACITANCE,
+>> +       PIN_CONFIG_POWER_SOURCE,
+>> +       PIN_CONFIG_LOW_POWER_MODE,
+>> +       PIN_CONFIG_NORMAL_POWER_MODE,
+>> +       PIN_CONFIG_WAKEUP_ENABLE,
+>> +       PIN_CONFIG_WAKEUP_DISABLE,
+>> +       PIN_CONFIG_END,
+>> +};
+>
+> Samsung parts have a 'drive strength' config option for the pads. The
+> drive strength is represented as 1x, 2x, 4x, etc .. depending on the
+> SoC. The config param that can be used to represent drive strength in
+> this case could be PIN_CONFIG_POWER_SOURCE. Or should there be another
+> config param for representing drive strength? Otherwise, the above
+> config param options are sufficient for all existing Samsung SoC's.
 
-Also, isn't it rather weird to just assume all cpus are busy in
-update_group_power()? If you would actually set the right value in
-update_cpu_power() you could use a straight sum in update_group_power()
-and get a more or less accurate number out.
+I strongly suspect that you want to use
+PIN_CONFIG_DRIVE_PUSH_PULL with a custom argument
+representing the drive strength as "data" passed in the call.
+
+Moste "strong" driving is done by push/pull (the others are just oddities)
+and if you want to specify a number representing drive strength, the
+data parameter is there to do exactly that. For this drive mode the
+parameter does not have defined semantics, so you can interpret it
+the way you need in your driver.
+
+That said, 1x, 2x, 4x aren't exactly scientific - what does this really
+represent, speaking electronics?
+
+On some forum I found this:
+http://www.edaboard.com/thread74140.html
+
+   gate drive strength
+   The symbols, 1X, 2X, 3X...etc in an ASIC flow in used for
+   convinience. What it means is a gate with 2X drive strength
+   will have the same rise/fall time while driving a capacitance
+   of 2C farads as that of a gate with X drive strength driving a
+   capacitance of C farads. You can look at the schematic and
+   see that gates with 2X drive strengths have approximately
+   twice the widths on output pull up/pull down trasistors as
+   comapred to the same gate with 1X drive strength.
+   Similarly definitions for 3X, 4X etc.
+
+   This is to ensure that ratio of width to load capacitance
+   remains constant, thus resulting in the same transition
+   times. It is desired that the transition times in an ASIC
+   chip be within a certain limit (DRV critereon). This will
+   be met if the following rule is followed -
+
+   If 1X drive strength is sufficient to drive a load of C farads
+   (ie, transition time is satisfactory) then 2X drive is
+   satisfactory to drive loads between C farads and 2C farads,
+   3X drive is sufficient to drive loads between 2C and 3C
+   farads....etc.
 
 
+In practice is seems: 2x = 2 transistors in driver stage, 4x =
+4 transistors in driver stage etc.
+
+Maybe we should simply standardize the semantics of the
+data argument to PIN_CONFIG_DRIVE_PUSH_PULL
+to mean "x times nominal load capacitance with equal
+rise/fall times"?
+
+Alternatively we could use the
+PIN_CONFIG_SLEW_RATE_RISING and
+PIN_CONFIG_SLEW_RATE_FALLING for this,
+however there I defined the semantics to be in
+nanoseconds, assuming that electronics that can control
+this have more delicate amplifiers, and in this case I
+think it is more about limiting the rise/fall time by shunting
+in resistances in the circuit.
+
+Yours,
+Linus Walleij
