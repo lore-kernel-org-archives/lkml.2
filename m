@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1KNChb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 21:37:31 -0500
-Received: from lo.gmane.org ([80.91.229.12]:53106 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754123Ab1KNChV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 21:37:21 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH v2] kdump: Add udev events for memory online/offline
-Date: Mon, 14 Nov 2011 02:37:06 +0000 (UTC)
-Message-ID: <j9pusg$hr5$2@dough.gmane.org>
-References: <1319645292.3321.24.camel@br98xy6r>
-	<20111026192449.GE355@redhat.com>
-	<20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
-	<1319707965.2830.1.camel@br98xy6r>
-	<20111028154630.77c7b96c.akpm@linux-foundation.org>
-	<1320067306.2796.34.camel@br98xy6r>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 180.129.196.69
-User-Agent: Pan/0.133 (House of Butterflies)
-Cc: kexec@lists.infradead.org
+	id S1754123Ab1KNCkd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 21:40:33 -0500
+Received: from smtp.microsoft.com ([131.107.115.214]:25563 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab1KNCkb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 21:40:31 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "joe@perches.com" <joe@perches.com>
+Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Topic: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Index: AQHMlb5tFmjUXJbXLkiQVEJ5ygNb75WeV3qAgAJF/pCAAN+mgIAKW5AA///o3SA=
+Date: Mon, 14 Nov 2011 02:40:30 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA6C1D4@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1319841316-29136-1-git-send-email-kys@microsoft.com>
+ <20111105064739.GA31111@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA68580@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20111107055109.GA21095@core.coreip.homeip.net>
+ <alpine.LNX.2.00.1111132100000.15187@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1111132100000.15187@pobox.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Oct 2011 14:21:46 +0100, Michael Holzheu wrote:
-
-> On Fri, 2011-10-28 at 15:46 -0700, Andrew Morton wrote:
->> On Thu, 27 Oct 2011 11:32:45 +0200
-> 
-> [snip]
-> 
->> I think a safer place from which to send the uevent is
->> memory_block_change_state() or even memory_block_action().  Because if
->> either of those functions later gets new callers, those callers might
->> forget to send the uevent?
-> 
-> Ok fine. I put the code into memory_block_change_state(). This also has
-> the advantage that we are serialized by "mem->state_mutex". Not sure if
-> we need that, but for CPU hotplug the udev events are also serialized
-> with a lock. See  "drivers/base/cpu.c" -> cpu_hotplug_driver_lock()
-> 
-> Do you think the following patch is acceptable? 
 
 
-Yes.
+> -----Original Message-----
+> From: Jiri Kosina [mailto:jkosina@suse.cz]
+> Sent: Sunday, November 13, 2011 3:01 PM
+> To: Dmitry Torokhov
+> Cc: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> joe@perches.com
+> Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+> 
+> On Sun, 6 Nov 2011, Dmitry Torokhov wrote:
+> 
+> > > I am not a hid expert; but all  hid low level drivers appear to do this.
+> > > Initially, I was directly invoking hid_connect() directly and based on your
+> > > Input, I chose to use hid_hw_start() which all other drivers are using.
+> >
+> > Note that the users of hid_hw_start() actually are not low level
+> > drivers, such as usbhid or bluetooth hidp, but higher-level drivers,
+> > such as hid-wacom, hid-a4tech, etc. Since your driver is a low-level
+> > driver (a provider so to speak) it should not call hid_hw_start() on its
+> > own but rather wait for the hid code to do it.
+> >
+> > Still, I am not a HID expert either so I'll defer to Jiri here.
+> 
+> Hi,
+> 
+> my understanding is that hv driver is actually a bit special in this
+> respect -- it's actually all-in-one both low-level and high-level driver.
+> I take it that there is not ever going to be a different high-level driver
+> using low-level hv transport (is that correct, KY?), so this might indeed
+> be an acceptable layout of the driver.
 
-> ---
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> Currently no udev events for memory hotplug "online" and "offline" are
-> generated:
-> 
-> # udevadm monitor
-> # echo offline > /sys/devices/system/memory/memory4/state ==> No event
-> 
-> When kdump is loaded, kexec detects the current memory configuration and
-> stores it in the pre-allocated ELF core header. Therefore, for kdump it
-> is necessary to reload the kdump kernel with kexec when the memory
-> configuration changes (e.g. for online/offline hotplug memory).
-> 
-> In order to do this automatically, udev rules should be used. This
-> kernel patch adds udev events for "online" and "offline". Together with
-> this kernel patch, the following udev rules for online/offline have to
-> be added to "/etc/udev/rules.d/98-kexec.rules":
-> 
-> SUBSYSTEM=="memory", ACTION=="online", PROGRAM="/etc/init.d/kdump
-> restart" SUBSYSTEM=="memory", ACTION=="offline",
-> PROGRAM="/etc/init.d/kdump restart"
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+You are right Jiri. While this is a low level transport driver, there will never be a another
+higher level driver using this transport.
 
+Regards,
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-
-Thanks.
-
+K. Y
