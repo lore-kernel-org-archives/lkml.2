@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab1KNRix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:38:53 -0500
-Received: from mail-pz0-f56.google.com ([209.85.210.56]:35389 "EHLO
-	mail-pz0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab1KNRiw (ORCPT
+	id S1755541Ab1KNRjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:39:31 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55265 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab1KNRj3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:38:52 -0500
-X-Greylist: delayed 1311 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 12:38:52 EST
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Mon, 14 Nov 2011 09:17:00 -0800 (PST)
-In-Reply-To: <fa.fbhctle.45ecr4@ifi.uio.no>
-Reply-To: fa.linux.kernel@googlegroups.com
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=82.137.10.128;
- posting-account=UA4oigoAAABcRNT3kOl20-BjSkhI4J7l
-NNTP-Posting-Host: 82.137.10.128
-References: <fa.fbhctle.45ecr4@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
+	Mon, 14 Nov 2011 12:39:29 -0500
 MIME-Version: 1.0
-Message-ID: <3808299.2313.1321291021220.JavaMail.geo-discussion-forums@yqoo7>
-Subject: Re: [PATCH] improving JOB kernel/user interface
-From: dutuuradu@gmail.com
-To: fa.linux.kernel@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, jlan@engr.sgi.com, erikj@sgi.com, jh@sgi.com,
-        chrisw@osdl.org, Limin Gu <limin@engr.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1321286406.1421.30.camel@twins>
+References: <20111107110149.GA5177@quad>
+	<20111110180308.GD15738@erda.amd.com>
+	<CABPqkBSyYjM7V8cy--WRBHJ8o9TU9WUD9mGE1E5HntYdm2BHyw@mail.gmail.com>
+	<1321279937.1421.18.camel@twins>
+	<CABPqkBSc-o+ysZEVx72acE7+AY8fLR8sqFDedKBwh8H60Z77cQ@mail.gmail.com>
+	<1321286406.1421.30.camel@twins>
+Date: Mon, 14 Nov 2011 18:39:29 +0100
+Message-ID: <CABPqkBTJU5PWpLq3en3sECiAK2AvgLoR+AVqRoZmfNpp_bM_Ug@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I want to introduce you to a web site that I recently found to make big income online.
+On Mon, Nov 14, 2011 at 5:00 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-11-14 at 15:26 +0100, Stephane Eranian wrote:
+>> There is an edge from the source to all the events.
+>> There is an edge from all the counters to the sync.
+>> There is an edge between an event and a counter, if
+>> it can count the event.
+>>
+>> The capacity of any edge is 1.
+>
+> Ah indeed.
+>
+> So that gives:
+>
+>  E = e+e*c+c ~= O(c^2); since e<=c
+>  V = 2+e+c   ~= O(c)
+>
+> Then going by:
+>
+> http://en.wikipedia.org/wiki/Maximum_flow_problem
+>
+> we have to stay away from Edmonds-Karp.
+>
+> Ford-Fulkerson would end up being O(E * c) = O(c^3), since max |f| is c.
+> Which is pretty much identical to all these O(V^2 E) = O(c^3) as well.
+>
+> Dinitz blocking flow with dynamic trees looks more interesting at O(c^2
+> log(c)). Push relabel with dynamic trees looks to be best at O(c^2),
+> since V^2/E ends up being c^2/c^2 = 1.
+>
+> Creating the graph itself will be O(c^2) as well, due to E.
+>
+I think we are in the special case of a bi-partite graph with unit capacities,
+thus the complexity can be reduced even more.
 
-It works all around the clock, and for not just days or weeks, but for months and months, making you big of cash.
-$0.00 invest - earn hunders daily.
-It's real and easy way to make cash in online.
-
-Go to the link below to get it:
- http://www.gainmoneyfast.com/-53134/3759.htm 
-
-
-See you, 
-             radu 
+See Special Cases in http://en.wikipedia.org/wiki/Dinic%27s_algorithm
