@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab1KNLl5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 06:41:57 -0500
-Received: from icebox.esperi.org.uk ([81.187.191.129]:39478 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab1KNLl4 (ORCPT
+	id S1755167Ab1KNLmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 06:42:22 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:36164
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752091Ab1KNLmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 06:41:56 -0500
-From: Nix <nix@esperi.org.uk>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Mark Seaborn <mseaborn@chromium.org>, linux-kernel@vger.kernel.org,
-        Markus Gutschke <markus@chromium.org>
-Subject: Re: [3.1 REGRESSION] Commit 5cec93c216db77c45f7ce970d46283bcb1933884 breaks the Chromium seccomp sandbox
-References: <8762inleno.fsf@spindle.srvr.nix>
-	<CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
-	<CAL82V5M6TgDme3swFKxF2ZXqTtcCPEr_+FK1F6zXzKr_scmQew@mail.gmail.com>
-	<CAObL_7H5Ktva16xTj9QBq6v2k66q5H13Vyvv_Piju6vTiaC9cA@mail.gmail.com>
-Emacs: the only text editor known to get indigestion.
-Date: Mon, 14 Nov 2011 11:41:51 +0000
-In-Reply-To: <CAObL_7H5Ktva16xTj9QBq6v2k66q5H13Vyvv_Piju6vTiaC9cA@mail.gmail.com>
-	(Andrew Lutomirski's message of "Mon, 14 Nov 2011 00:38:48 -0800")
-Message-ID: <87fwhrj5hc.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.91 (gnu/linux)
+	Mon, 14 Nov 2011 06:42:21 -0500
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LUNF6G-01-2DW-02
+X-M-MSG: 
+Date: Mon, 14 Nov 2011 12:42:13 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: LKML <linux-kernel@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: nommu warning message
+Message-ID: <20111114114213.GC14704@amd.com>
+References: <4EBD65F5.8090808@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=4 Fuz1=4 Fuz2=4
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4EBD65F5.8090808@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 Nov 2011, Andrew Lutomirski stated:
-
-> On Sun, Nov 13, 2011 at 10:50 PM, Mark Seaborn <mseaborn@chromium.org> wrote:
->> I think the problem is that seccomp-sandbox attempts to patch the
->> vsyscall page.
-
-I grepped for vsyscall to try to avoid making an idiot of myself like
-this. A shame I misspelt it. :/
-
-> The vsyscall code is now:
->
->         mov $__NR_whatever %rax
->         syscall
->         ret
+On Fri, Nov 11, 2011 at 12:14:13PM -0600, Larry Finger wrote:
+> For the driver rtl8192cu (a USB wireless device), the current
+> version loads the 15KB firmware asynchronously one 32-bit quantity
+> at a time. Although inefficient. this method works with USB 1.1 and
+> USB 2.0 adapters; however, it fails on at least one USB 3.0 adapter
+> with "xhci_hcd 0000:05:00.0: ERROR no room on ep ring" errors.
 > 
-> It used to be weirder, but we changed to to avoid breaking things like
-> this.  The secret is that, if vsyscall=emulate, the vsyscall page is
-> not executable and we use the page fault to invoke
-> do_emulate_vsyscall.  But userspace can't tell it's not executable
-> without actually jumping there, and with vsyscall=native, it's just a
-> normal syscall.
->
-> I'll try to build a sandboxing copy of chromium tomorrow to see if I
-> can reproduce it.
+> These errors are believed to arise from small, fixed-size ep rings.
+> There is a vendor driver that works with that same hardware. The
+> major difference is that it uses synchronous block writes of 254
+> bytes. When I tried this with the in-kernel driver, each block write
+> yields a warning as shown below:
+> 
+> nommu_map_single: overflow 41000340d020+254 of device mask ffffffff
 
-If you look at line 909 of seccompsandbox/library.cc (in
-http://git.chromium.org/external/seccompsandbox.git) the problem does
-indeed jump out at you. That nice manual disassembly using == isn't
-going to work anymore. It even helpfully dies with a message saying that
-it can't patch the vsyscall page, but the message gets thrown away by
-some higher layer.
+Strange. This means that your system uses the nommu DMA driver. But for
+your hardware the GART or SWIOTLB should be used.
 
-I suspect we want two functions and something to recognize what the
-vsyscall page looks like and choose between them, rather than making
-this already tricky function even uglier.
+Even more strange is the address used for the device. I don't believe is
+is correct, otherwise your Laptop would have a very huge amount of RAM
+:)
 
-(To build Chromium with sandboxing, the recipe is little more than
-making sure you haven't passed in -Dselinux, and starting Chromium with
---enable-seccomp-sandbox. It's turned off by default because it slows
-Chromium down, not because it doesn't work. :) )
+The I think there are two issues here: Why is your system using nommu
+and not GART? Can you check that GART and SWIOTLB are enabled in your
+kernel config? Second, why is your system using the wrong address? This
+looks like some kind of driver bug to mee.
+
+
+	Joerg
 
 -- 
-NULL && (void)
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
