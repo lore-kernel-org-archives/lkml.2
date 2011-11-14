@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab1KNRjb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:39:31 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55265 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab1KNRj3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:39:29 -0500
+	id S1755524Ab1KNRkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:40:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58627 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab1KNRkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 12:40:01 -0500
+Date: Mon, 14 Nov 2011 18:39:47 +0100 (CET)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost6.localdomain6
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Compile error with allmodconfig and
+ CONFIG_PREEMPT_RT_FULL=y
+In-Reply-To: <20111114165148.GB2372@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1111141837100.6707@localhost6.localdomain6>
+References: <1321235083-21756-1-git-send-email-jkacur@redhat.com> <1321235083-21756-2-git-send-email-jkacur@redhat.com> <20111114165148.GB2372@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1321286406.1421.30.camel@twins>
-References: <20111107110149.GA5177@quad>
-	<20111110180308.GD15738@erda.amd.com>
-	<CABPqkBSyYjM7V8cy--WRBHJ8o9TU9WUD9mGE1E5HntYdm2BHyw@mail.gmail.com>
-	<1321279937.1421.18.camel@twins>
-	<CABPqkBSc-o+ysZEVx72acE7+AY8fLR8sqFDedKBwh8H60Z77cQ@mail.gmail.com>
-	<1321286406.1421.30.camel@twins>
-Date: Mon, 14 Nov 2011 18:39:29 +0100
-Message-ID: <CABPqkBTJU5PWpLq3en3sECiAK2AvgLoR+AVqRoZmfNpp_bM_Ug@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 5:00 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-11-14 at 15:26 +0100, Stephane Eranian wrote:
->> There is an edge from the source to all the events.
->> There is an edge from all the counters to the sync.
->> There is an edge between an event and a counter, if
->> it can count the event.
->>
->> The capacity of any edge is 1.
->
-> Ah indeed.
->
-> So that gives:
->
->  E = e+e*c+c ~= O(c^2); since e<=c
->  V = 2+e+c   ~= O(c)
->
-> Then going by:
->
-> http://en.wikipedia.org/wiki/Maximum_flow_problem
->
-> we have to stay away from Edmonds-Karp.
->
-> Ford-Fulkerson would end up being O(E * c) = O(c^3), since max |f| is c.
-> Which is pretty much identical to all these O(V^2 E) = O(c^3) as well.
->
-> Dinitz blocking flow with dynamic trees looks more interesting at O(c^2
-> log(c)). Push relabel with dynamic trees looks to be best at O(c^2),
-> since V^2/E ends up being c^2/c^2 = 1.
->
-> Creating the graph itself will be O(c^2) as well, due to E.
->
-I think we are in the special case of a bi-partite graph with unit capacities,
-thus the complexity can be reduced even more.
 
-See Special Cases in http://en.wikipedia.org/wiki/Dinic%27s_algorithm
+
+On Mon, 14 Nov 2011, Paul E. McKenney wrote:
+
+> On Mon, Nov 14, 2011 at 02:44:43AM +0100, John Kacur wrote:
+> > ERROR: "in_serving_softirq" [net/sched/cls_cgroup.ko] undefined!
+> > 
+> > The above can be fixed by exporting in_serving_softirq
+> > 
+> > Signed-off-by: John Kacur <jkacur@redhat.com>
+> > 
+> > The above patch was originally for 3.0.9-rt25
+> > But I also needed to cherry-pick it for 3.2-rc1-rt1
+> > ---
+> >  kernel/softirq.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/softirq.c b/kernel/softirq.c
+> > index 3db1d6f..5452432 100644
+> > --- a/kernel/softirq.c
+> > +++ b/kernel/softirq.c
+> > @@ -447,6 +447,7 @@ int in_serving_softirq(void)
+> >  	preempt_enable();
+> >  	return res;
+> >  }
+> > +EXPORT_SYMBOL(in_serving_softirq);
+> 
+> Why not EXPORT_SYMBOL_GPL?
+
+I have no problem with that, note however that the upstream file has
+
+EXPORT_SYMBOL(irq_stat);
+EXPORT_SYMBOL(local_bh_disable);
+EXPORT_SYMBOL(_local_bh_enable);
+EXPORT_SYMBOL(local_bh_enable);
+EXPORT_SYMBOL(local_bh_enable_ip);
+EXPORT_SYMBOL(__tasklet_schedule);
+EXPORT_SYMBOL(__tasklet_hi_schedule);
+EXPORT_SYMBOL(__tasklet_hi_schedule_first);
+EXPORT_SYMBOL(tasklet_init);
+EXPORT_SYMBOL(tasklet_kill);
+EXPORT_SYMBOL(__send_remote_softirq);
+EXPORT_SYMBOL(send_remote_softirq);
+
+Any reason we can't change all of those to EXPORT_SYMBOL_GPL?
+
+> 
+> With that change,
+> 
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Not yet ready for mainline, because mainline does not yet have
+> in_serving_softirq().  Therefore not queued for -rcu.
+> 
+> 							Thanx, Paul
+> 
+> >  /*
+> >   * Called with bh and local interrupts disabled. For full RT cpu must
