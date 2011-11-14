@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab1KNBOZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 20:14:25 -0500
-Received: from 75-63-108-1.uvs.hstntx.sbcglobal.net ([75.63.108.1]:48560 "EHLO
-	mail.griffin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab1KNBOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 20:14:21 -0500
-X-Greylist: delayed 2188 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Nov 2011 20:14:21 EST
-Message-ID: <4EC062B7.2090100@griffin.net>
-Date: Sun, 13 Nov 2011 18:37:11 -0600
-From: Darron Black <darron@griffin.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	id S1754977Ab1KNBOm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 20:14:42 -0500
+Received: from smtp.newsguy.com ([74.209.136.69]:65507 "EHLO smtp.newsguy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752029Ab1KNBOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 20:14:41 -0500
+Message-ID: <4EC0794B.3010604@newsguy.com>
+Date: Sun, 13 Nov 2011 18:13:31 -0800
+From: Mike Dunn <mikedunn@newsguy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110917 Lightning/1.0b3pre Thunderbird/3.1.12
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Claudio Scordino <claudio@evidence.eu.com>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jesper Nilsson <Jesper.Nilsson@axis.com>,
-        Mikael Starvik <mikael.starvik@axis.com>
-Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some variables
-References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4EB3A009.10502@evidence.eu.com> <4EB8F6B9.6010008@atmel.com> <4EB90902.4030200@evidence.eu.com> <20111108134804.07095c5d@lxorguk.ukuu.org.uk> <20111108142432.GA11293@kroah.com> <4EBA9385.7010806@evidence.eu.com> <20111113215318.GA2966@pengutronix.de>
-In-Reply-To: <20111113215318.GA2966@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+CC: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, dedekind1@gmail.com
+Subject: Re: [PATCH v2 13/16] mtd/docg3: add ECC correction code
+References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr> <1320912342-30147-14-git-send-email-robert.jarzmik@free.fr> <4EBECDCB.306@newsguy.com> <87mxc0ia3e.fsf@free.fr>
+In-Reply-To: <87mxc0ia3e.fsf@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Spam_score: -2.9
-X-Spam_score_int: -28
-X-Spam_bar: --
-X-Spam_report: Spam detection software, running on the system "mail.griffin.net", has
- identified this incoming email as possible spam.  The original message
- has been attached to this so you can view it (if it isn't spam) or label
- similar future email.  If you have any questions, see
- @@CONTACT_ADDRESS@@ for details.
- Content preview:  On 11/13/2011 03:53 PM, Wolfram Sang wrote: > Hi, > > I have
-    been working on a patch series which adds hardware RS485 to the 8250 > according
-    to the latest developments. The series will be posted tomorrow after > some
-    more tests. However, there is one thing I wondered about: > >> From now on,
-    SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to >> set
-    the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
-    >> understood by looking only at the value of delay_rts_before_send and >>
-    delay_rts_after_send. > Do I overlook something or is SER_RS485_RTS_AFTER_SEND
-    always the inverted > signal of SER_RS485_RTS_ON_SEND. So why do we need
-   both? (BTW > SER_RS485_RTS_ON_SEND is a non-obvious name, I think. But changing
-    it will > probably break even more users?) It allows the application to configure
-    RTS to not toggle at all in one of those two scenarios. [...] 
- Content analysis details:   (-2.9 points, 5.0 required)
-  pts rule name              description
- ---- ---------------------- --------------------------------------------------
- -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
- -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2011 03:53 PM, Wolfram Sang wrote:
-> Hi,
+On 11/13/2011 02:35 AM, Robert Jarzmik wrote:
+> Mike Dunn <mikedunn@newsguy.com> writes:
 >
-> I have been working on a patch series which adds hardware RS485 to the 8250
-> according to the latest developments. The series will be posted tomorrow after
-> some more tests. However, there is one thing I wondered about:
->
->>  From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to
->> set the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
->> understood by looking only at the value of delay_rts_before_send and
->> delay_rts_after_send.
-> Do I overlook something or is SER_RS485_RTS_AFTER_SEND always the inverted
-> signal of SER_RS485_RTS_ON_SEND. So why do we need both? (BTW
-> SER_RS485_RTS_ON_SEND is a non-obvious name, I think. But changing it will
-> probably break even more users?)
-It allows the application to configure RTS to not toggle at all in one 
-of those two scenarios.
-
-Perhaps the RTS toggle after transmit delay needs to be large, and 
-they'd rather do it in userspace than block in the driver. I also recall 
-a protocol that would send a master assertion command and hold on to RTS 
-afterwards. I can easily imagine needing to quickly transmit something, 
-hold on to RTS for a while, then finish your transmit later.
-
-However, I don't have any concrete examples of needing this outside that 
-vague recollection of a master assertion sequence in an old embedded 
-platform far away from Linux.
-
->> diff --git a/include/linux/serial.h b/include/linux/serial.h
->> index 97ff8e2..3d86517 100644
->> --- a/include/linux/serial.h
->> +++ b/include/linux/serial.h
->> @@ -207,13 +207,15 @@ struct serial_icounter_struct {
 >>
->>   struct serial_rs485 {
->>   	__u32	flags;			/* RS485 feature flags */
->> -#define SER_RS485_ENABLED		(1<<  0)
->> -#define SER_RS485_RTS_ON_SEND		(1<<  1)
->> -#define SER_RS485_RTS_AFTER_SEND	(1<<  2)
->> -#define SER_RS485_RTS_BEFORE_SEND	(1<<  3)
->> +#define SER_RS485_ENABLED		(1<<  0)	/* If enabled */
->> +#define SER_RS485_RTS_ON_SEND		(1<<  1)	/* Logical level for
->> +							   RTS pin when
->> +							   sending */
->> +#define SER_RS485_RTS_AFTER_SEND	(1<<  2)	/* Logical level for
->> +							   RTS pin after sent*/
-> Nit: 80 char should be broken here, because that is not readable. Or put the
-> comment above the define.
+>> Where do you check for reads of a blank page?
+> On stack frame above. Look at doc_read_oob():
+> 		if ((block0 >= DOC_LAYOUT_BLOCK_FIRST_DATA) &&
+> 		    (eccconf1 & DOC_ECCCONF1_BCH_SYNDROM_ERR) &&
+> 		    (eccconf1 & DOC_ECCCONF1_PAGE_IS_WRITTEN) &&
+>                                 \---> this is the key
+> 		    (ops->mode != MTD_OPS_RAW) &&
+> 		    (nbdata == DOC_LAYOUT_PAGE_SIZE)) {
+> 			ret = doc_ecc_bch_fix_data(docg3, buf, hwecc);
 >
-> Thanks,
+> Here you see that I'll make the error correction only if the page was written
+> before. If it's blank, I continue reading without attempting ECC correction.
+
+
+G4 probably has this capability too.  If so, I'll be improving my blank page
+detection.  I *really* have to go through your driver in its entirety to see
+what other insights you have.  Currently getting pulled in multiple directions.
+
+
+>> Not specifically related to this patch, but... are you sure you want to
+>> initialize the ecc on every read?  I'm sure it's not necessary; you can just
+>> leave it on; maybe turn it off if doing raw reads.  I know this is the case for
+>> both the P3 and G4 when running under PalmOS / TrueFFS library.  I notice that
+>> this function has delays and polls the status register in between calls to
+>> cpu_relax(), so the performance hit is probably not insignificant, especiallu
+>> when done for every 512 byte page.
+> Well, that's some info.
+> And yes, it adds some latency.
+> Now for the necessity, I'm not fully convinced. I know that the ECC register is
+> set up differently for reads and writes (that's the
+> DOC_ECCCONF0_READ_MODE). When doc_read_oob() is called, I don't know if the
+> previous action was a read or a write ...
 >
->     Wolfram
+> What I could do to improve performance would be to store in the docg3 private
+> data if last action was a read or a write, and perform the doc_*_page_ecc_init()
+> only if action changes. What do you think ?
 >
+
+
+Never mind.  Sorry.  I was thinking DOC_ECCCONF1, which I write to during
+initialization to (I believe) enable ecc.  Anyway, you have a better handle on
+the internals of the chip than I do.  I'm still looking forward to comparing
+your code to my old P3 test code (which mostly just parrots what I observed
+during operation).  Until then I'll keep my opinions on register sequences, etc,
+to myself!'
+
+Good job!
+
+Mike
 
