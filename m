@@ -1,88 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1KNRrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:47:46 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63307 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab1KNRrn convert rfc822-to-8bit (ORCPT
+	id S1755629Ab1KNRsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:48:14 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59378 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755596Ab1KNRsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:47:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111111094509.0de1c139@jbarnes-desktop>
-References: <20111110004339.5866.28478.stgit@amt.stowe>
-	<20111110004351.5866.40960.stgit@amt.stowe>
-	<20111111094509.0de1c139@jbarnes-desktop>
-Date: Mon, 14 Nov 2011 10:47:42 -0700
-Message-ID: <CAL-B5D3kHX5mysVQk+btD2VSsNi=3E17s1b0fNDD7USyBfG6nw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] PCI: Maintain a list of FW-assigned BIOS BAR values
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
-        bhelgaas@google.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Nov 2011 12:48:13 -0500
+Date: Mon, 14 Nov 2011 17:49:16 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY: tty flip buffer with synchronous line disciplines.
+Message-ID: <20111114174916.648c2952@lxorguk.ukuu.org.uk>
+In-Reply-To: <4EC152D0.3020808@ilyx.ru>
+References: <4EC152D0.3020808@ilyx.ru>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 10:45 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Wed, 09 Nov 2011 17:43:51 -0700
-> Myron Stowe <myron.stowe@redhat.com> wrote:
->
->> From: Myron Stowe <mstowe@redhat.com>
->>
->> Commit 58c84eda075 introduced functionality to try and reinstate the
->> original BIOS BAR addresses of a PCI device when normal resource
->> assignment attempts fail.  To keep track of the BIOS BAR addresses,
->> struct pci_dev was augmented with an array to hold the BAR addresses
->> of the PCI device: 'resource_size_t fw_addr[DEVICE_COUNT_RESOURCE]'.
->>
->> The reinstatement of BAR addresses is an uncommon event leaving the
->> 'fw_addr' array unused normally.  As the use of struct pci_dev is so
->> prevalent, this seems wasteful.
->>
->> This patch introduces a stand alone data structure and corresponding set
->> of interfacing routines for maintaining a list of FW-assigned BIOS BAR
->> value temporary entries.
->>
->> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
->> ---
->>
->>  drivers/pci/setup-res.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/pci.h     |    1 +
->>  2 files changed, 74 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
->> index ad8c4ae..ab45c11 100644
->> --- a/drivers/pci/setup-res.c
->> +++ b/drivers/pci/setup-res.c
->> @@ -26,6 +26,79 @@
->>  #include "pci.h"
->>
->>
->> +/*
->> + * This list of dynamic mappings is for temporarly maintaining
->> + * original BIOS BAR addresses for possbile reinstatement.
->> + */
->> +struct pci_fwaddrmap {
->> +     struct list_head list;
->> +     struct pci_dev *dev;
->> +     resource_size_t fw_addr[DEVICE_COUNT_RESOURCE];
->> +     unsigned long refcount;
->> +};
->> +
->> +static LIST_HEAD(pci_fwaddrmappings);
->> +static DEFINE_SPINLOCK(pci_fwaddrmap_lock);
->
-> Is the refcounting really needed?  Can't we just free the whole list at
-> some point to simplify things a bit?
+On Mon, 14 Nov 2011 21:41:36 +0400
+Ilya Zykov <ilya@ilyx.ru> wrote:
 
-No, refcounting is not absolutely necessary, it's just the approach I came
-up with initially.  I'll look into just freeing the entire list once we are done
-with it.
+> For use flip buffer with synchronous line disciplines(n_hdlc, ppp_synctty).
 
-Myron
->
-> --
-> Jesse Barnes, Intel Open Source Technology Center
->
+If you are doing synchronous protocols then they shouldn't be going via
+the tty loopback in the first place. Why can't you use tuntap and the
+like for synchronous protocols ? Stuffing them through the tty layer is a
+bad hack anyway and not one we should encourage further.
+
+> +	if ((b = tty->buf.tail) != NULL  && !tty->pty_sync)
+>  		left = b->size - b->used;
+
+What stops tty->pty_sync changing under the line discipline btw ?
+
+Alan
