@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1KNRlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:41:08 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60164 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab1KNRlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:41:06 -0500
-Date: Mon, 14 Nov 2011 09:40:59 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET block:for-3.2/core] cleanup io_context interface
-Message-ID: <20111114174059.GA30922@google.com>
-References: <1319932187-7631-1-git-send-email-tj@kernel.org>
- <20111103150816.GD4417@google.com>
- <4EB3AD7B.4050800@kernel.dk>
- <CAOS58YM+=K=qXrfjKtGv3-QqB=H7KcLzsW5b5M2-wLkm7nbOFw@mail.gmail.com>
- <4EB3F6B5.1010606@kernel.dk>
+	id S1755547Ab1KNRlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:41:21 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:49654 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752472Ab1KNRlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 12:41:18 -0500
+Date: Mon, 14 Nov 2011 09:27:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Luis Henriques <henrix@camandro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        stable@vger.kernel.org
+Subject: Re: Linus GIT - INFO: possible circular locking dependency detected
+Message-ID: <20111114172744.GA5924@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAHFgRy8S0xLfhZxTUOEH5A0PL_Fb79-0-gmbQ=9h2D-xMqt1hA@mail.gmail.com>
+ <20111103204930.GA3599@hades>
+ <20111105093146.GA14338@albatros>
+ <20111108155716.33c04ce1.akpm@linux-foundation.org>
+ <20111109001723.GA26225@kroah.com>
+ <20111109004013.GA30562@kroah.com>
+ <20111109191155.GB2490@hades>
+ <1320868332.19727.19.camel@twins>
+ <20111109200553.GA3043@hades>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EB3F6B5.1010606@kernel.dk>
+In-Reply-To: <20111109200553.GA3043@hades>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11111417-5930-0000-0000-000001881ABA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Jens.
+On Wed, Nov 09, 2011 at 08:05:53PM +0000, Luis Henriques wrote:
+> On Wed, Nov 09, 2011 at 08:52:12PM +0100, Peter Zijlstra wrote:
+> > On Wed, 2011-11-09 at 19:11 +0000, Luis Henriques wrote:
+> > > [   12.948038] -> #0 (&sig->cred_guard_mutex){+.+.+.}:
+> > > [   12.948038]        [<ffffffff8108ff9f>] __lock_acquire+0x17bf/0x2020
+> > > [   12.948038]        [<ffffffff81092e4f>] lock_acquire+0xaf/0x1f0
+> > > [   12.948038]        [<ffffffff8135b2a5>] __mutex_lock_common+0x65/0x4d0
+> > > [   12.948038]        [<ffffffff8135b76b>] mutex_lock_killable_nested+0x1b/0x20
+> > > [   12.948038]        [<ffffffff811b301e>] lock_trace+0x2e/0x80
+> > > [   12.948038]        [<ffffffff811b73ab>] proc_readfd_common+0x5b/0x4b0
+> > > [   12.948038]        [<ffffffff811b7835>] proc_readfd+0x15/0x20
+> > > [   12.948038]        [<ffffffff8115f8f0>] vfs_readdir+0xb0/0xd0
+> > > [   12.948038]        [<ffffffff8115fa09>] sys_getdents+0x89/0x100
+> > > [   12.948038]        [<ffffffff8135e8c2>] system_call_fastpath+0x16/0x1b
+> > > 
+> > > sb->s_type->i_mutex_key is shown as being acquired in the execve path,
+> > > which seems to be wrong -- it was acquired in the vfs_readdir (on the 2nd
+> > > trace).
+> > > 
+> > > This means that the initial analysis from Vasiliy is incorrect, as he
+> > > assumed the execve path.  Or Am I interpreting this log incorrectly?
+> > > (Probably I am...). 
+> > 
+> > ->#0 shows where sig->cred_guard_mutex was taken, as it was the first
+> > lock there is no nesting yet and therefore the ->i_mutex_key#6 thing
+> > should not be associated with this stacktrace.
+> > 
+> > ->#1 shows where ->i_mutex_key#6 was taken while holding
+> > ->cred_guard_mutex (but doesn't explicitly show where that was taken).
+> > 
+> > Mostly ->#0 information is useless in lockdep reports and can be safely
+> > ignored.
+> 
+> Interesting.  Thank you for the clarification.  I understood it the other
+> way around, as the log starts with:
+> 
+> [   12.948038] exe/36 is trying to acquire lock:
+> [   12.948038]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811b301e>] lock_trace+0x2e/0x80
+> [   12.948038] 
+> [   12.948038] but task is already holding lock:
+> [   12.948038]  (&sb->s_type->i_mutex_key#6){+.+.+.}, at: [<ffffffff8115f8b8>] vfs_readdir+0x78/0xd0
+> 
+> This is why I thought the "useless information" was in ->#1 (for the
+> i_mutex_key#6).
 
-On Fri, Nov 04, 2011 at 03:29:09PM +0100, Jens Axboe wrote:
-> That matches my expectations as well. They will be queued up shortly,
-> pushed to for-next in a week or so. I'll have time to go over these
-> early next week!
+FWIW, I am seeing this as well now that I have rebased -rcu to 3.2-rc1.
 
-Any progress?
+							Thanx, Paul
 
-Thanks.
-
--- 
-tejun
