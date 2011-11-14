@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1KNRlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 12:41:21 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:49654 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab1KNRlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 12:41:18 -0500
-Date: Mon, 14 Nov 2011 09:27:44 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Luis Henriques <henrix@camandro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        stable@vger.kernel.org
-Subject: Re: Linus GIT - INFO: possible circular locking dependency detected
-Message-ID: <20111114172744.GA5924@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAHFgRy8S0xLfhZxTUOEH5A0PL_Fb79-0-gmbQ=9h2D-xMqt1hA@mail.gmail.com>
- <20111103204930.GA3599@hades>
- <20111105093146.GA14338@albatros>
- <20111108155716.33c04ce1.akpm@linux-foundation.org>
- <20111109001723.GA26225@kroah.com>
- <20111109004013.GA30562@kroah.com>
- <20111109191155.GB2490@hades>
- <1320868332.19727.19.camel@twins>
- <20111109200553.GA3043@hades>
+	id S1755559Ab1KNRlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 12:41:42 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:51092 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755343Ab1KNRll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 12:41:41 -0500
+Message-ID: <4EC152D0.3020808@ilyx.ru>
+Date: Mon, 14 Nov 2011 21:41:36 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111108 Iceape/2.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111109200553.GA3043@hades>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11111417-5930-0000-0000-000001881ABA
+To: Alan Cox <alan@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>
+Subject: [PATCH] TTY: tty flip buffer with synchronous line disciplines.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 08:05:53PM +0000, Luis Henriques wrote:
-> On Wed, Nov 09, 2011 at 08:52:12PM +0100, Peter Zijlstra wrote:
-> > On Wed, 2011-11-09 at 19:11 +0000, Luis Henriques wrote:
-> > > [   12.948038] -> #0 (&sig->cred_guard_mutex){+.+.+.}:
-> > > [   12.948038]        [<ffffffff8108ff9f>] __lock_acquire+0x17bf/0x2020
-> > > [   12.948038]        [<ffffffff81092e4f>] lock_acquire+0xaf/0x1f0
-> > > [   12.948038]        [<ffffffff8135b2a5>] __mutex_lock_common+0x65/0x4d0
-> > > [   12.948038]        [<ffffffff8135b76b>] mutex_lock_killable_nested+0x1b/0x20
-> > > [   12.948038]        [<ffffffff811b301e>] lock_trace+0x2e/0x80
-> > > [   12.948038]        [<ffffffff811b73ab>] proc_readfd_common+0x5b/0x4b0
-> > > [   12.948038]        [<ffffffff811b7835>] proc_readfd+0x15/0x20
-> > > [   12.948038]        [<ffffffff8115f8f0>] vfs_readdir+0xb0/0xd0
-> > > [   12.948038]        [<ffffffff8115fa09>] sys_getdents+0x89/0x100
-> > > [   12.948038]        [<ffffffff8135e8c2>] system_call_fastpath+0x16/0x1b
-> > > 
-> > > sb->s_type->i_mutex_key is shown as being acquired in the execve path,
-> > > which seems to be wrong -- it was acquired in the vfs_readdir (on the 2nd
-> > > trace).
-> > > 
-> > > This means that the initial analysis from Vasiliy is incorrect, as he
-> > > assumed the execve path.  Or Am I interpreting this log incorrectly?
-> > > (Probably I am...). 
-> > 
-> > ->#0 shows where sig->cred_guard_mutex was taken, as it was the first
-> > lock there is no nesting yet and therefore the ->i_mutex_key#6 thing
-> > should not be associated with this stacktrace.
-> > 
-> > ->#1 shows where ->i_mutex_key#6 was taken while holding
-> > ->cred_guard_mutex (but doesn't explicitly show where that was taken).
-> > 
-> > Mostly ->#0 information is useless in lockdep reports and can be safely
-> > ignored.
-> 
-> Interesting.  Thank you for the clarification.  I understood it the other
-> way around, as the log starts with:
-> 
-> [   12.948038] exe/36 is trying to acquire lock:
-> [   12.948038]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811b301e>] lock_trace+0x2e/0x80
-> [   12.948038] 
-> [   12.948038] but task is already holding lock:
-> [   12.948038]  (&sb->s_type->i_mutex_key#6){+.+.+.}, at: [<ffffffff8115f8b8>] vfs_readdir+0x78/0xd0
-> 
-> This is why I thought the "useless information" was in ->#1 (for the
-> i_mutex_key#6).
+For use flip buffer with synchronous line disciplines(n_hdlc, ppp_synctty).
+We need only one line patch and one bit maybe in "struct tty_struct"
+for turn on sync mode. If we turn on this mode on async line, nothing wrong,
+we loose only something performance. It works because we won't split our frame. 
+For turn on sync mode I propose new ioctl() for pty. Although it maybe useful
+for other drivers too. 
+Restriction: We can't use frame more than TTY_BUFFER_PAGE(1792) bytes. It will be split.
 
-FWIW, I am seeing this as well now that I have rebased -rcu to 3.2-rc1.
+It's main idea:
 
-							Thanx, Paul
+diff -uprN -X ../../dontdiff a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+--- a/drivers/tty/tty_buffer.c	2011-11-12 00:19:27.000000000 +0400
++++ b/drivers/tty/tty_buffer.c	2011-11-14 20:29:50.000000000 +0400
+@@ -207,7 +207,7 @@ int tty_buffer_request_room(struct tty_s
+ 	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+ 	   remove this conditional if its worth it. This would be invisible
+ 	   to the callers */
+-	if ((b = tty->buf.tail) != NULL)
++	if ((b = tty->buf.tail) != NULL  && !tty->pty_sync)
+ 		left = b->size - b->used;
+ 	else
+ 		left = 0;
 
+
+Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
+---
+diff -uprN -X ../../dontdiff a/drivers/tty/pty.c b/drivers/tty/pty.c
+--- a/drivers/tty/pty.c	2011-11-12 00:19:27.000000000 +0400
++++ b/drivers/tty/pty.c	2011-11-14 20:34:07.000000000 +0400
+@@ -187,6 +187,22 @@ static int pty_signal(struct tty_struct
+ 	return 0;
+ }
+ 
++/* Set the sync flag on a pty */
++static int pty_set_sync(struct tty_struct *tty, int __user *arg)
++{
++	int val;
++	if (get_user(val, arg) || put_user(tty->pty_sync, arg))
++		return -EFAULT;
++	if (val) {
++		tty->pty_sync = 1;
++		tty->link->pty_sync = 1;
++	} else {
++		tty->pty_sync = 0;
++		tty->link->pty_sync = 0;
++	}
++	return 0;
++}
++
+ static void pty_flush_buffer(struct tty_struct *tty)
+ {
+ 	struct tty_struct *to = tty->link;
+@@ -509,6 +525,8 @@ static int pty_unix98_ioctl(struct tty_s
+ 		return put_user(tty->index, (unsigned int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+ 		return pty_signal(tty, (int) arg);
++	case TIOCSYNC: /* Set pty sync*/
++		return pty_set_sync(tty, (int __user *)arg);
+ 	}
+ 
+ 	return -ENOIOCTLCMD;
+diff -uprN -X ../../dontdiff a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+--- a/drivers/tty/tty_buffer.c	2011-11-12 00:19:27.000000000 +0400
++++ b/drivers/tty/tty_buffer.c	2011-11-14 20:29:50.000000000 +0400
+@@ -207,7 +207,7 @@ int tty_buffer_request_room(struct tty_s
+ 	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+ 	   remove this conditional if its worth it. This would be invisible
+ 	   to the callers */
+-	if ((b = tty->buf.tail) != NULL)
++	if ((b = tty->buf.tail) != NULL  && !tty->pty_sync)
+ 		left = b->size - b->used;
+ 	else
+ 		left = 0;
+diff -uprN -X ../../dontdiff a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+--- a/include/asm-generic/ioctls.h	2011-11-12 00:19:27.000000000 +0400
++++ b/include/asm-generic/ioctls.h	2011-11-14 20:28:15.000000000 +0400
+@@ -74,6 +74,7 @@
+ #define TCSETXW		0x5435
+ #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
+ #define TIOCVHANGUP	0x5437
++#define TIOCSYNC	_IOWR('T', 0x38, int)  /* Sync Pty */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+diff -uprN -X ../../dontdiff a/include/linux/tty.h b/include/linux/tty.h
+--- a/include/linux/tty.h	2011-11-12 00:19:27.000000000 +0400
++++ b/include/linux/tty.h	2011-11-14 20:28:56.000000000 +0400
+@@ -280,7 +280,7 @@ struct tty_struct {
+ 	int count;
+ 	struct winsize winsize;		/* termios mutex */
+ 	unsigned char stopped:1, hw_stopped:1, flow_stopped:1, packet:1;
+-	unsigned char low_latency:1, warned:1;
++	unsigned char low_latency:1, warned:1, pty_sync:1;
+ 	unsigned char ctrl_status;	/* ctrl_lock */
+ 	unsigned int receive_room;	/* Bytes free for queue */
+ 
