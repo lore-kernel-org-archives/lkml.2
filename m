@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab1KNGuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 01:50:50 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55511 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1KNGut convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 01:50:49 -0500
+	id S1753263Ab1KNGy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 01:54:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab1KNGy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 01:54:58 -0500
+Date: Mon, 14 Nov 2011 08:56:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
+Message-ID: <20111114065606.GA3779@redhat.com>
+References: <patchbomb.1320306168@localhost6.localdomain6>
+ <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
+ <20111113210256.GA31621@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
-References: <8762inleno.fsf@spindle.srvr.nix>
-	<CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
-Date: Sun, 13 Nov 2011 22:50:47 -0800
-X-Google-Sender-Auth: UC8u5mI_x52eoCfBL6TpMYgXm2s
-Message-ID: <CAL82V5M6TgDme3swFKxF2ZXqTtcCPEr_+FK1F6zXzKr_scmQew@mail.gmail.com>
-Subject: Re: [3.1 REGRESSION] Commit 5cec93c216db77c45f7ce970d46283bcb1933884
- breaks the Chromium seccomp sandbox
-From: Mark Seaborn <mseaborn@chromium.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Nix <nix@esperi.org.uk>, linux-kernel@vger.kernel.org,
-        Markus Gutschke <markus@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111113210256.GA31621@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 November 2011 18:36, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> On Sun, Nov 13, 2011 at 4:40 PM, Nix <nix@esperi.org.uk> wrote:
-> > With this commit installed:
-> >
-> > commit 5cec93c216db77c45f7ce970d46283bcb1933884
-> > Author: Andy Lutomirski <luto@MIT.EDU>
-> > Date:   Sun Jun 5 13:50:24 2011 -0400
-> >
-> >    x86-64: Emulate legacy vsyscalls
-> >
-> > With CONFIG_SECCOMP set, and the Chromium seccomp sandbox compiled in
-> > and enabled (which is not the default), on a system running glibc 2.12.x
-> > (thus, relying on emulated vsyscalls), Chromium renderers sometimes hang
-> > or abruptly abort before rendering anything (both of which show as pages
-> > that never complete rendering and eventually get a Chromium kill request
-> > dialog). The hang is consistent for a given page, but not all pages
-> > hang. (One that *does* hang is the chrome://extensions page, so network
-> > access is not the problem here.)
-> >
-> > vsyscall=native does not help.
-> >
-> > Turning off CONFIG_SECCOMP, or running Chromium with the seccomp sandbox
-> > disabled, fixes it.
-> >
-> > I speculate that do_emulate_vsyscall() is broken, but it's hard to debug
-> > the Chromium renderer sandboxing to see what's failing because the
-> > multiple layers of sandboxing get in the way, as they are designed to :)
->
-> I don't buy that explanation -- with vsyscall=native,
-> do_emulate_vsyscall shouldn't be called at all.  I have a much simpler
-> explanation: the Chromium sandbox is calling vsyscalls in seccomp
-> mode, which has no business working.
+On Sun, Nov 13, 2011 at 11:03:13PM +0200, Michael S. Tsirkin wrote:
+> On Thu, Nov 03, 2011 at 06:12:53PM +1030, Rusty Russell wrote:
+> > A virtio driver does virtqueue_add_buf() multiple times before finally
+> > calling virtqueue_kick(); previously we only exposed the added buffers
+> > in the virtqueue_kick() call.  This means we don't need a memory
+> > barrier in virtqueue_add_buf(), but it reduces concurrency as the
+> > device (ie. host) can't see the buffers until the kick.
+> > 
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> In the past I played with a patch like this, but I didn't see a
+> performance gain either way. Do you see any gain?
+> 
+> I'm a bit concerned that with this patch, a buggy driver that
+> adds more than 2^16 descriptors without a kick
+> would seem to work sometimes. Let's add WARN_ON(vq->num_added > (1 << 16))?
 
-I think the problem is that seccomp-sandbox attempts to patch the
-vsyscall page.  It replaces the SYSCALL instructions in this page with
-jumps to seccomp-sandbox's handler.  (More accurately, seccomp-sandbox
-creates a patched copy of the vsyscall page.  It redirects glibc's
-indirect jumps so that they go to the patched copy of the vsyscall
-page instead of to the original.)  The code for this is in
-patchVSystemCalls() in library.cc
-(http://code.google.com/p/seccompsandbox/source/browse/trunk/library.cc).
+Thinking about it more - it might be tricky for drivers
+to ensure this. add used to fail when vq is full, but now
+driver might do get between add and notify:
+	lock
+	add_buf * N
+	prep
+	unlock
+	lock
+	get_buf * N
+	unlock
+	lock
+	add_buf
+	prep
+	unlock
+	notify
 
-If the vsyscall page's code no longer invokes the kernel via SYSCALL
-instructions but via some other trap, seccomp-sandbox's trick will no
-longer work, because it doesn't know to patch the instructions that do
-this new trap.
+and since add was followed by get, this doesn't fail.
 
-Mark
+So the right thing to do I think is to either ignore indexes and assume
+a kick is needed, something like:
+if vq->num_added >= (1 << 15))
+	needs_kick = true
+(note: maybe it's 1<<16, and maybe >, but 1<<15 is plenty anyway)
+
+Or alternatively, fail add when num_added is too large.
+
+> > ---
+> >  drivers/virtio/virtio_ring.c |   37 ++++++++++++++++++++++---------------
+> >  1 file changed, 22 insertions(+), 15 deletions(-)
+> > 
+> > diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> > --- a/drivers/virtio/virtio_ring.c
+> > +++ b/drivers/virtio/virtio_ring.c
+> > @@ -227,9 +227,15 @@ add_head:
+> >  
+> >  	/* Put entry in available array (but don't update avail->idx until they
+> >  	 * do sync). */
+> > -	avail = ((vq->vring.avail->idx + vq->num_added++) & (vq->vring.num-1));
+> > +	avail = (vq->vring.avail->idx & (vq->vring.num-1));
+> >  	vq->vring.avail->ring[avail] = head;
+> >  
+> > +	/* Descriptors and available array need to be set before we expose the
+> > +	 * new available array entries. */
+> > +	virtio_wmb();
+> > +	vq->vring.avail->idx++;
+> > +	vq->num_added++;
+> > +
+> >  	pr_debug("Added buffer head %i to %p\n", head, vq);
+> >  	END_USE(vq);
+> >  
+> > @@ -248,13 +254,10 @@ bool virtqueue_kick_prepare(struct virtq
+> >  	 * new available array entries. */
+> >  	virtio_wmb();
+> >  
+> > -	old = vq->vring.avail->idx;
+> > -	new = vq->vring.avail->idx = old + vq->num_added;
+> > +	old = vq->vring.avail->idx - vq->num_added;
+> > +	new = vq->vring.avail->idx;
+> >  	vq->num_added = 0;
+> >  
+> > -	/* Need to update avail index before checking if we should notify */
+> > -	virtio_mb();
+> > -
+> >  	if (vq->event) {
+> >  		needs_kick = vring_need_event(vring_avail_event(&vq->vring),
+> >  					      new, old);
+> > 
+> > 
+> > _______________________________________________
+> > Virtualization mailing list
+> > Virtualization@lists.linux-foundation.org
+> > https://lists.linuxfoundation.org/mailman/listinfo/virtualization
