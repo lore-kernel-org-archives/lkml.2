@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab1KNXML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 18:12:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39336 "EHLO ogre.sisk.pl"
+	id S1756448Ab1KNXMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 18:12:53 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:35810 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592Ab1KNXMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 18:12:09 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: build failure after merge of the pm tree (and warning)
-Date: Tue, 15 Nov 2011 00:14:50 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-References: <20111114131730.ae09bb18b87e67f61a97275e@canb.auug.org.au>
-In-Reply-To: <20111114131730.ae09bb18b87e67f61a97275e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111150014.50898.rjw@sisk.pl>
+	id S1755230Ab1KNXMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 18:12:49 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 2/3] erst: pass back allocated buffer for pstore
+Date: Mon, 14 Nov 2011 15:12:37 -0800
+Message-Id: <1321312358-11234-3-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1321312358-11234-1-git-send-email-keescook@chromium.org>
+References: <1321312358-11234-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 14, 2011, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/dma/dmatest.c: In function 'dmatest_func':
-> drivers/dma/dmatest.c:255:2: error: implicit declaration of function 'set_freezable_with_signal' [-Werror=implicit-function-declaration]
-> 
-> Caused by commit cd3bc8fbc2d5 ("freezer: kill unused
-> set_freezable_with_signal()") interacting with commit 981ed70d8e4f
-> ("dmatest: make dmatest threads freezable") from Linus' tree (merged into
-> v3.2-rc1).
-> 
-> I reverted the pm tree commit for today.
+Since pstore cannot hold the buf_lock while it populates the VFS, the backend
+needs to do it instead, and provide an allocated buffer with the contents.
 
-Thanks, I've added the following patch to linux-pm/linux-next, which should
-fix this problem (Tejun, if that's not the right thing to do, please let me
-know).
-
-Rafael
-
-
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: Freezer: Make dmatest_func() use set_freezable()
+ drivers/acpi/apei/erst.c |   21 ++++++++++++++++-----
+ 1 files changed, 16 insertions(+), 5 deletions(-)
 
-According to the commit cd3bc8fbc2d55ae0918184fb34992054dc4eb710
-(freezer: kill unused set_freezable_with_signal()) changelog,
-it should be sufficient to use set_freezable() instead of
-set_freezable_with_signal(), which has been removed, in
-dmatest_func(), so do that and fix a build issue.
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index 1274080..b8b97d6 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -932,7 +932,8 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ static int erst_open_pstore(struct pstore_info *psi);
+ static int erst_close_pstore(struct pstore_info *psi);
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-			   struct timespec *time, struct pstore_info *psi);
++			   struct timespec *time, char **buf,
++			   struct pstore_info *psi);
+ static int erst_writer(enum pstore_type_id type, u64 *id, unsigned int part,
+ 		       size_t size, struct pstore_info *psi);
+ static int erst_clearer(enum pstore_type_id type, u64 id,
+@@ -986,17 +987,20 @@ static int erst_close_pstore(struct pstore_info *psi)
+ }
+ 
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-			   struct timespec *time, struct pstore_info *psi)
++			   struct timespec *time, char **buf,
++			   struct pstore_info *psi)
+ {
+ 	int rc;
+ 	ssize_t len = 0;
+ 	u64 record_id;
+ 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+ 					(erst_info.buf - sizeof(*rcd));
++	unsigned long flags;
+ 
+ 	if (erst_disable)
+ 		return -ENODEV;
+ 
++	spin_lock_irqsave(&erst_info.buf_lock, flags);
+ skip:
+ 	rc = erst_get_record_id_next(&reader_pos, &record_id);
+ 	if (rc)
+@@ -1004,7 +1008,7 @@ skip:
+ 
+ 	/* no more record */
+ 	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
+-		rc = -1;
++		rc = -EINVAL;
+ 		goto out;
+ 	}
+ 
+@@ -1013,13 +1017,19 @@ skip:
+ 	/* The record may be cleared by others, try read next record */
+ 	if (len == -ENOENT)
+ 		goto skip;
+-	else if (len < 0) {
+-		rc = -1;
++	else if (len < sizeof(*rcd)) {
++		rc = -EIO;
+ 		goto out;
+ 	}
+ 	if (uuid_le_cmp(rcd->hdr.creator_id, CPER_CREATOR_PSTORE) != 0)
+ 		goto skip;
+ 
++	*buf = kmalloc(len, GFP_KERNEL);
++	if (*buf == NULL) {
++		rc = -ENOMEM;
++		goto out;
++	}
++	memcpy(*buf, erst_info.buf, len - sizeof(*rcd));
+ 	*id = record_id;
+ 	if (uuid_le_cmp(rcd->sec_hdr.section_type,
+ 			CPER_SECTION_TYPE_DMESG) == 0)
+@@ -1037,6 +1047,7 @@ skip:
+ 	time->tv_nsec = 0;
+ 
+ out:
++	spin_unlock_irqrestore(&erst_info.buf_lock, flags);
+ 	return (rc < 0) ? rc : (len - sizeof(*rcd));
+ }
+ 
+-- 
+1.7.0.4
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/dma/dmatest.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux/drivers/dma/dmatest.c
-===================================================================
---- linux.orig/drivers/dma/dmatest.c
-+++ linux/drivers/dma/dmatest.c
-@@ -252,7 +252,7 @@ static int dmatest_func(void *data)
- 	int			i;
- 
- 	thread_name = current->comm;
--	set_freezable_with_signal();
-+	set_freezable();
- 
- 	ret = -ENOMEM;
- 
