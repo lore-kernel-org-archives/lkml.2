@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1KNNyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 08:54:20 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42575 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1KNNyT (ORCPT
+	id S1752779Ab1KNN4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 08:56:35 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35257 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab1KNN4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 08:54:19 -0500
-Date: Mon, 14 Nov 2011 14:54:08 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 03/10] threadgroup: extend threadgroup_lock() to cover
- exit and exec
-Message-ID: <20111114135404.GD9446@somewhere>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
- <20111113164426.GB9446@somewhere>
+	Mon, 14 Nov 2011 08:56:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111113164426.GB9446@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdbC=w5vRvgLVpAcmcampt-baTydpLHBexak4RzxUcO32Q@mail.gmail.com>
+References: <1321074108-10025-1-git-send-email-inderpal.singh@linaro.org>
+	<CACRpkdbC=w5vRvgLVpAcmcampt-baTydpLHBexak4RzxUcO32Q@mail.gmail.com>
+Date: Mon, 14 Nov 2011 19:26:33 +0530
+Message-ID: <CAJuYYwSvRYWdoccSN3nU7G4zXyTjt7vkjAd_vDx=QchG+yd5Cg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: SAMSUNG: Save/restore GPIO drive strength across suspend/resume
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Inderpal Singh <inderpal.singh@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 05:44:32PM +0100, Frederic Weisbecker wrote:
-> On Tue, Nov 01, 2011 at 04:46:26PM -0700, Tejun Heo wrote:
-> > threadgroup_lock() protected only protected against new addition to
-> > the threadgroup, which was inherently somewhat incomplete and
-> > problematic for its only user cgroup.  On-going migration could race
-> > against exec and exit leading to interesting problems - the symmetry
-> > between various attach methods, task exiting during method execution,
-> > ->exit() racing against attach methods, migrating task switching basic
-> > properties during exec and so on.
-> > 
-> > This patch extends threadgroup_lock() such that it protects against
-> > all three threadgroup altering operations - fork, exit and exec.  For
-> > exit, threadgroup_change_begin/end() calls are added to exit path.
-> > For exec, threadgroup_[un]lock() are updated to also grab and release
-> > cred_guard_mutex.
-> > 
-> > With this change, threadgroup_lock() guarantees that the target
-> > threadgroup will remain stable - no new task will be added, no new
-> > PF_EXITING will be set and exec won't happen.
-> > 
-> > The next patch will update cgroup so that it can take full advantage
-> > of this change.
-> 
-> I don't want to nitpick really, but IMHO the races involved in exit and exec
-> are too different, specific and complicated on their own to be solved in a
-> single one patch. This should be split in two things.
-> 
-> The specific problems and their fix need to be described more in detail
-> in the changelog because the issues are very tricky.
-> 
-> The exec case:
-> 
-> IIUC, the race in exec is about the group leader that can be changed
-> to become the exec'ing thread, making while_each_thread() unsafe.
-> We also have other things happening there like all the other threads
-> in the group that get killed, but that should be handled by the threadgroup_change_begin()
-> you put in the exit path.
-> The old leader is also killed but release_task() -> __unhash_process() is called
-> for it manually from the exec path. However this thread too should be covered by your
-> synchronisation in exit().
-> 
-> So after your protection in the exit path, the only thing to protect against in exec
-> is that group_leader that can change concurrently. But I may be missing something in the picture.
-> Also note this is currently protected by the tasklist readlock. Cred guard mutex is
-> certainly better, I just don't remember if you remove the tasklist lock in a
-> further patch.
+Hi Linus,
 
-Ah recalling what Ben Blum said, we also need the leader to stay stable because it
-is excpected to be passed in ->can_attach(), ->attach(), ->cancel_attach(), ...
-Although that's going to change after your patches that pass a flex array.
+On 12 November 2011 16:30, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sat, Nov 12, 2011 at 6:01 AM, Inderpal Singh
+> <inderpal.singh@linaro.org> wrote:
+>
+>> GPIO driver strength settings are not preserved across suspend/resume
+>> for s5pc100, s5pv210 and Exynos platforms which has been the cause of
+>> mmc/sd card read/write failures after resume. Fix this by saving and
+>> restoring the GPIO driver strength register settings across suspend/resume.
+>>
+>> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+>
+> On a related theme: I am thinking about how to support preserving
+> drive strength (etc) across suspend/resume and deepsleep in the
+> pincontrol subsystem.
+>
+> Currently I am playing with the idea to let pin groups have states,
+> as the different configurations seem to be 90% or so about very
+> specific sleep modes, so say:
+>
+> pinconf_set_group_state("mmcgroup", PINCONF_STATE_ACTIVE);
+> pinconf_set_group_state("mmcgroup", PINCONF_STATE_SUSPENDED);
+> pinconf_set_group_state("mmcgroup", PINCONF_STATE_SLEEP);
+
+
+The API name suggests that power state is set based on a pin group.
+For a driver, the following could be convenient as the driver transits
+through various power management states.
+
+struct pinmux pmx;
+pmx = pinmux_get(dev, "i2c0");
+
+[...]
+
+pinmux_set_state(pmx, PINCONF_STATE_SLEEP);
+[...]
+pinmux_set_state(pmx, PINCONF_STATE_ACTIVE);
+
+
+>
+> This would then instruct each pin controller driver to configure
+> each pin apropriately for the given state, and that cross-references
+> to a table keeping track of the preset per-pin for each state.
+>
+> My intuitive idea is that letting the core keep track of the state of
+> every pin and letting pin groups harness the settings for a group
+> of pins is the proper approach to the problem.
+>
+> Do you think something like this will work for the S5P:s?
+
+
+Adding the responsibility of managing/configuring registers for
+different power states to a pin group does seem suitable for Exynos.
+Along with the pin list, a implementation of a pin group could include
+a callback to manage the registers for a particular pin state. Such a
+callback could be reused for all the pin groups as required.
+
+Thanks,
+Thomas.
+
+>
+> Yours,
+> Linus Walleij
+>
