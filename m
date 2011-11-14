@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab1KNLNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 06:13:00 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:18034 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab1KNLM7 (ORCPT
+	id S1755155Ab1KNLl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 06:41:57 -0500
+Received: from icebox.esperi.org.uk ([81.187.191.129]:39478 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab1KNLl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 06:12:59 -0500
-Message-ID: <4EC0F75D.4060102@atmel.com>
-Date: Mon, 14 Nov 2011 12:11:25 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+	Mon, 14 Nov 2011 06:41:56 -0500
+From: Nix <nix@esperi.org.uk>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Mark Seaborn <mseaborn@chromium.org>, linux-kernel@vger.kernel.org,
+        Markus Gutschke <markus@chromium.org>
+Subject: Re: [3.1 REGRESSION] Commit 5cec93c216db77c45f7ce970d46283bcb1933884 breaks the Chromium seccomp sandbox
+References: <8762inleno.fsf@spindle.srvr.nix>
+	<CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
+	<CAL82V5M6TgDme3swFKxF2ZXqTtcCPEr_+FK1F6zXzKr_scmQew@mail.gmail.com>
+	<CAObL_7H5Ktva16xTj9QBq6v2k66q5H13Vyvv_Piju6vTiaC9cA@mail.gmail.com>
+Emacs: the only text editor known to get indigestion.
+Date: Mon, 14 Nov 2011 11:41:51 +0000
+In-Reply-To: <CAObL_7H5Ktva16xTj9QBq6v2k66q5H13Vyvv_Piju6vTiaC9cA@mail.gmail.com>
+	(Andrew Lutomirski's message of "Mon, 14 Nov 2011 00:38:48 -0800")
+Message-ID: <87fwhrj5hc.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.91 (gnu/linux)
 MIME-Version: 1.0
-To: Darron Black <darron@griffin.net>,
-        Claudio Scordino <claudio@evidence.eu.com>
-CC: Wolfram Sang <w.sang@pengutronix.de>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jesper Nilsson <Jesper.Nilsson@axis.com>,
-        Mikael Starvik <mikael.starvik@axis.com>
-Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some variables
-References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4EB3A009.10502@evidence.eu.com> <4EB8F6B9.6010008@atmel.com> <4EB90902.4030200@evidence.eu.com> <20111108134804.07095c5d@lxorguk.ukuu.org.uk> <20111108142432.GA11293@kroah.com> <4EBA9385.7010806@evidence.eu.com> <20111113215318.GA2966@pengutronix.de> <4EC062B7.2090100@griffin.net>
-In-Reply-To: <4EC062B7.2090100@griffin.net>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-URT-Metrics: spindle 1060; Body=4 Fuz1=4 Fuz2=4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2011 01:37 AM, Darron Black :
-> On 11/13/2011 03:53 PM, Wolfram Sang wrote:
->> Hi,
->>
->> I have been working on a patch series which adds hardware RS485 to the
->> 8250
->> according to the latest developments. The series will be posted
->> tomorrow after
->> some more tests. However, there is one thing I wondered about:
->>
->>>  From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will
->>> be used to
->>> set the voltage of the RTS pin (as in the crisv10.c driver); the
->>> delay will be
->>> understood by looking only at the value of delay_rts_before_send and
->>> delay_rts_after_send.
->> Do I overlook something or is SER_RS485_RTS_AFTER_SEND always the
->> inverted
->> signal of SER_RS485_RTS_ON_SEND. So why do we need both? (BTW
->> SER_RS485_RTS_ON_SEND is a non-obvious name, I think. But changing it
->> will
->> probably break even more users?)
-> It allows the application to configure RTS to not toggle at all in one
-> of those two scenarios.
+On 14 Nov 2011, Andrew Lutomirski stated:
+
+> On Sun, Nov 13, 2011 at 10:50 PM, Mark Seaborn <mseaborn@chromium.org> wrote:
+>> I think the problem is that seccomp-sandbox attempts to patch the
+>> vsyscall page.
+
+I grepped for vsyscall to try to avoid making an idiot of myself like
+this. A shame I misspelt it. :/
+
+> The vsyscall code is now:
+>
+>         mov $__NR_whatever %rax
+>         syscall
+>         ret
 > 
-> Perhaps the RTS toggle after transmit delay needs to be large, and
-> they'd rather do it in userspace than block in the driver. I also recall
-> a protocol that would send a master assertion command and hold on to RTS
-> afterwards. I can easily imagine needing to quickly transmit something,
-> hold on to RTS for a while, then finish your transmit later.
-> 
-> However, I don't have any concrete examples of needing this outside that
-> vague recollection of a master assertion sequence in an old embedded
-> platform far away from Linux.
+> It used to be weirder, but we changed to to avoid breaking things like
+> this.  The secret is that, if vsyscall=emulate, the vsyscall page is
+> not executable and we use the page fault to invoke
+> do_emulate_vsyscall.  But userspace can't tell it's not executable
+> without actually jumping there, and with vsyscall=native, it's just a
+> normal syscall.
+>
+> I'll try to build a sandboxing copy of chromium tomorrow to see if I
+> can reproduce it.
 
-Darron, Claudio,
+If you look at line 909 of seccompsandbox/library.cc (in
+http://git.chromium.org/external/seccompsandbox.git) the problem does
+indeed jump out at you. That nice manual disassembly using == isn't
+going to work anymore. It even helpfully dies with a message saying that
+it can't patch the vsyscall page, but the message gets thrown away by
+some higher layer.
 
-This explanation makes sense. Thanks for this.
+I suspect we want two functions and something to recognize what the
+vsyscall page looks like and choose between them, rather than making
+this already tricky function even uglier.
 
-Bye,
-
-
->>> diff --git a/include/linux/serial.h b/include/linux/serial.h
->>> index 97ff8e2..3d86517 100644
->>> --- a/include/linux/serial.h
->>> +++ b/include/linux/serial.h
->>> @@ -207,13 +207,15 @@ struct serial_icounter_struct {
->>>
->>>   struct serial_rs485 {
->>>       __u32    flags;            /* RS485 feature flags */
->>> -#define SER_RS485_ENABLED        (1<<  0)
->>> -#define SER_RS485_RTS_ON_SEND        (1<<  1)
->>> -#define SER_RS485_RTS_AFTER_SEND    (1<<  2)
->>> -#define SER_RS485_RTS_BEFORE_SEND    (1<<  3)
->>> +#define SER_RS485_ENABLED        (1<<  0)    /* If enabled */
->>> +#define SER_RS485_RTS_ON_SEND        (1<<  1)    /* Logical level for
->>> +                               RTS pin when
->>> +                               sending */
->>> +#define SER_RS485_RTS_AFTER_SEND    (1<<  2)    /* Logical level for
->>> +                               RTS pin after sent*/
->> Nit: 80 char should be broken here, because that is not readable. Or
->> put the
->> comment above the define.
->>
->> Thanks,
->>
->>     Wolfram
->>
-> 
-> 
-
+(To build Chromium with sandboxing, the recipe is little more than
+making sure you haven't passed in -Dselinux, and starting Chromium with
+--enable-seccomp-sandbox. It's turned off by default because it slows
+Chromium down, not because it doesn't work. :) )
 
 -- 
-Nicolas Ferre
+NULL && (void)
