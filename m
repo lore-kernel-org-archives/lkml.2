@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1KNChJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 21:37:09 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55271 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab1KNChI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 21:37:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <8762inleno.fsf@spindle.srvr.nix>
-References: <8762inleno.fsf@spindle.srvr.nix>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 13 Nov 2011 18:36:46 -0800
-X-Google-Sender-Auth: XSssmuGpaz5Fp43b1TjaWJgt_gw
-Message-ID: <CAObL_7H5m_VEq-NTM1-i4ehnHwOHPq=tjai_rV0zDs0X8xGdsQ@mail.gmail.com>
-Subject: Re: [3.1 REGRESSION] Commit 5cec93c216db77c45f7ce970d46283bcb1933884
- breaks the Chromium seccomp sandbox
-To: Nix <nix@esperi.org.uk>
-Cc: linux-kernel@vger.kernel.org, mseaborn@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754745Ab1KNChb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 21:37:31 -0500
+Received: from lo.gmane.org ([80.91.229.12]:53106 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754123Ab1KNChV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 21:37:21 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH v2] kdump: Add udev events for memory online/offline
+Date: Mon, 14 Nov 2011 02:37:06 +0000 (UTC)
+Message-ID: <j9pusg$hr5$2@dough.gmane.org>
+References: <1319645292.3321.24.camel@br98xy6r>
+	<20111026192449.GE355@redhat.com>
+	<20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
+	<1319707965.2830.1.camel@br98xy6r>
+	<20111028154630.77c7b96c.akpm@linux-foundation.org>
+	<1320067306.2796.34.camel@br98xy6r>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 180.129.196.69
+User-Agent: Pan/0.133 (House of Butterflies)
+Cc: kexec@lists.infradead.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 4:40 PM, Nix <nix@esperi.org.uk> wrote:
-> With this commit installed:
->
-> commit 5cec93c216db77c45f7ce970d46283bcb1933884
-> Author: Andy Lutomirski <luto@MIT.EDU>
-> Date:   Sun Jun 5 13:50:24 2011 -0400
->
->    x86-64: Emulate legacy vsyscalls
->
-> With CONFIG_SECCOMP set, and the Chromium seccomp sandbox compiled in
-> and enabled (which is not the default), on a system running glibc 2.12.x
-> (thus, relying on emulated vsyscalls), Chromium renderers sometimes hang
-> or abruptly abort before rendering anything (both of which show as pages
-> that never complete rendering and eventually get a Chromium kill request
-> dialog). The hang is consistent for a given page, but not all pages
-> hang. (One that *does* hang is the chrome://extensions page, so network
-> access is not the problem here.)
->
-> vsyscall=native does not help.
->
-> Turning off CONFIG_SECCOMP, or running Chromium with the seccomp sandbox
-> disabled, fixes it.
->
-> I speculate that do_emulate_vsyscall() is broken, but it's hard to debug
-> the Chromium renderer sandboxing to see what's failing because the
-> multiple layers of sandboxing get in the way, as they are designed to :)
+On Mon, 31 Oct 2011 14:21:46 +0100, Michael Holzheu wrote:
 
-I don't buy that explanation -- with vsyscall=native,
-do_emulate_vsyscall shouldn't be called at all.  I have a much simpler
-explanation: the Chromium sandbox is calling vsyscalls in seccomp
-mode, which has no business working.
+> On Fri, 2011-10-28 at 15:46 -0700, Andrew Morton wrote:
+>> On Thu, 27 Oct 2011 11:32:45 +0200
+> 
+> [snip]
+> 
+>> I think a safer place from which to send the uevent is
+>> memory_block_change_state() or even memory_block_action().  Because if
+>> either of those functions later gets new callers, those callers might
+>> forget to send the uevent?
+> 
+> Ok fine. I put the code into memory_block_change_state(). This also has
+> the advantage that we are serialized by "mem->state_mutex". Not sure if
+> we need that, but for CPU hotplug the udev events are also serialized
+> with a lock. See  "drivers/base/cpu.c" -> cpu_hotplug_driver_lock()
+> 
+> Do you think the following patch is acceptable? 
 
-The attached patch (in vsyscall=native mode) should help diagnose
-exactly what's wrong.  But I wouldn't be surprised if you can trigger
-the exact same failure on older kernels by doing
 
-# echo acpi_pm >/sys/devices/system/clocksource/clocksource0/current_clocksource
+Yes.
 
-and then going to the broken page.  Just because vgettimeofday
-sometimes doesn't issue a syscall (and is therefore not caught by the
-seccomp code) doesn't mean it never issues a syscall.
+> ---
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> Currently no udev events for memory hotplug "online" and "offline" are
+> generated:
+> 
+> # udevadm monitor
+> # echo offline > /sys/devices/system/memory/memory4/state ==> No event
+> 
+> When kdump is loaded, kexec detects the current memory configuration and
+> stores it in the pre-allocated ELF core header. Therefore, for kdump it
+> is necessary to reload the kdump kernel with kexec when the memory
+> configuration changes (e.g. for online/offline hotplug memory).
+> 
+> In order to do this automatically, udev rules should be used. This
+> kernel patch adds udev events for "online" and "offline". Together with
+> this kernel patch, the following udev rules for online/offline have to
+> be added to "/etc/udev/rules.d/98-kexec.rules":
+> 
+> SUBSYSTEM=="memory", ACTION=="online", PROGRAM="/etc/init.d/kdump
+> restart" SUBSYSTEM=="memory", ACTION=="offline",
+> PROGRAM="/etc/init.d/kdump restart"
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-If the crash is in vtime instead, then there's an argument to be made
-that time and vtime should be allowed in seccomp mode, in which case
-it's an easy change to make.  But if I'm right, I think that Chromium
-should stop using vsyscalls from inside the sandbox.
 
---Andy
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks.
+
