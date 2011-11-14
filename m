@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab1KNA0N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 19:26:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38016 "EHLO ogre.sisk.pl"
+	id S1754965Ab1KNA0Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 19:26:25 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38036 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab1KNA0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 19:26:08 -0500
+	id S1754912Ab1KNA0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 19:26:20 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [update][PATCH 2/7] PM / Domains: Introduce "save/restore state" device callbacks
-Date: Mon, 14 Nov 2011 01:24:51 +0100
+Subject: [update][PATCH 6/7] PM / Domains: Add default power off governor function (v4)
+Date: Mon, 14 Nov 2011 01:27:49 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Linux-sh list" <linux-sh@vger.kernel.org>,
@@ -22,173 +22,207 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111140124.51347.rjw@sisk.pl>
+Message-Id: <201111140127.50019.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The current PM domains code uses device drivers' .runtime_suspend()
-and .runtime_resume() callbacks as the "save device state" and
-"restore device state" operations, which may not be appropriate in
-general, because it forces drivers to assume that they always will
-be used with generic PM domains.  However, in theory, the same
-hardware may be used in devices that don't belong to any PM
-domain, in which case it would be necessary to add "fake" PM
-domains to satisfy the above assumption.  It also may be located in
-a PM domain that's not handled with the help of the generic code.
-
-To allow device drivers that may be used along with the generic PM
-domains code of more flexibility, introduce new device callbacks,
-.save_state() and .restore_state(), that can be supplied by the
-drivers in addition to their "standard" runtime PM callbacks.  This
-will allow the drivers to be designed to work with generic PM domains
-as well as without them.
-
-For backwards compatibility, introduce default .save_state() and
-.restore_state() callback routines for PM domains that will execute
-a device driver's .runtime_suspend() and .runtime_resume() callbacks,
-respectively, for the given device if the driver doesn't provide its
-own implementations of .save_state() and .restore_state().
+Add a function deciding whether or not a given PM domain should
+be powered off on the basis of the PM QoS constraints of devices
+belonging to it and their PM QoS timing data.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   68 ++++++++++++++++++++++++++++++++++++--------
- include/linux/pm_domain.h   |    2 +
- 2 files changed, 58 insertions(+), 12 deletions(-)
+ drivers/base/power/domain.c          |   12 +++
+ drivers/base/power/domain_governor.c |  110 +++++++++++++++++++++++++++++++++++
+ include/linux/pm_domain.h            |    7 ++
+ 3 files changed, 129 insertions(+)
 
 Index: linux/include/linux/pm_domain.h
 ===================================================================
 --- linux.orig/include/linux/pm_domain.h
 +++ linux/include/linux/pm_domain.h
-@@ -26,6 +26,8 @@ struct dev_power_governor {
- struct gpd_dev_ops {
- 	int (*start)(struct device *dev);
- 	int (*stop)(struct device *dev);
-+	int (*save_state)(struct device *dev);
-+	int (*restore_state)(struct device *dev);
- 	bool (*active_wakeup)(struct device *dev);
+@@ -57,8 +57,13 @@ struct generic_pm_domain {
+ 	bool suspend_power_off;	/* Power status before system suspend */
+ 	bool dev_irq_safe;	/* Device callbacks are IRQ-safe */
+ 	int (*power_off)(struct generic_pm_domain *domain);
++	s64 power_off_latency_ns;
+ 	int (*power_on)(struct generic_pm_domain *domain);
++	s64 power_on_latency_ns;
+ 	struct gpd_dev_ops dev_ops;
++	s64 break_even_ns;	/* Power break even for the entire domain. */
++	s64 max_off_time_ns;	/* Maximum allowed "suspended" time. */
++	ktime_t power_off_time;
  };
  
+ static inline struct generic_pm_domain *pd_to_genpd(struct dev_pm_domain *pd)
+@@ -76,6 +81,8 @@ struct gpd_link {
+ struct gpd_timing_data {
+ 	s64 stop_latency_ns;
+ 	s64 start_latency_ns;
++	s64 save_state_latency_ns;
++	s64 restore_state_latency_ns;
+ 	s64 break_even_ns;
+ };
+ 
+Index: linux/drivers/base/power/domain_governor.c
+===================================================================
+--- linux.orig/drivers/base/power/domain_governor.c
++++ linux/drivers/base/power/domain_governor.c
+@@ -10,6 +10,7 @@
+ #include <linux/kernel.h>
+ #include <linux/pm_domain.h>
+ #include <linux/pm_qos.h>
++#include <linux/hrtimer.h>
+ 
+ /**
+  * default_stop_ok - Default PM domain governor routine for stopping devices.
+@@ -28,6 +29,115 @@ bool default_stop_ok(struct device *dev)
+ 		&& td->break_even_ns < dev->power.max_time_suspended_ns;
+ }
+ 
++/**
++ * default_power_down_ok - Default generic PM domain power off governor routine.
++ * @pd: PM domain to check.
++ *
++ * This routine must be executed under the PM domain's lock.
++ */
++static bool default_power_down_ok(struct dev_pm_domain *pd)
++{
++	struct generic_pm_domain *genpd = pd_to_genpd(pd);
++	struct gpd_link *link;
++	struct pm_domain_data *pdd;
++	s64 min_dev_off_time_ns;
++	s64 off_on_time_ns;
++	ktime_t time_now = ktime_get();
++
++	off_on_time_ns = genpd->power_off_latency_ns +
++				genpd->power_on_latency_ns;
++	/*
++	 * It doesn't make sense to remove power from the domain if saving
++	 * the state of all devices in it and the power off/power on operations
++	 * take too much time.
++	 *
++	 * All devices in this domain have been stopped already at this point.
++	 */
++	list_for_each_entry(pdd, &genpd->dev_list, list_node) {
++		if (pdd->dev->driver)
++			off_on_time_ns +=
++				to_gpd_data(pdd)->td.save_state_latency_ns;
++	}
++
++	/*
++	 * Check if subdomains can be off for enough time.
++	 *
++	 * All subdomains have been powered off already at this point.
++	 */
++	list_for_each_entry(link, &genpd->master_links, master_node) {
++		struct generic_pm_domain *sd = link->slave;
++		s64 sd_max_off_ns = sd->max_off_time_ns;
++
++		if (sd_max_off_ns < 0)
++			continue;
++
++		sd_max_off_ns -= ktime_to_ns(ktime_sub(time_now,
++						       sd->power_off_time));
++		/*
++		 * Check if the subdomain is allowed to be off long enough for
++		 * the current domain to turn off and on (that's how much time
++		 * it will have to wait worst case).
++		 */
++		if (sd_max_off_ns <= off_on_time_ns)
++			return false;
++	}
++
++	/*
++	 * Check if the devices in the domain can be off enough time.
++	 */
++	min_dev_off_time_ns = -1;
++	list_for_each_entry(pdd, &genpd->dev_list, list_node) {
++		struct gpd_timing_data *td;
++		struct device *dev = pdd->dev;
++		s64 dev_off_time_ns;
++
++		if (!dev->driver || dev->power.max_time_suspended_ns < 0)
++			continue;
++
++		td = &to_gpd_data(pdd)->td;
++		dev_off_time_ns = dev->power.max_time_suspended_ns -
++			(td->start_latency_ns + td->restore_state_latency_ns +
++				ktime_to_ns(ktime_sub(time_now,
++						dev->power.suspend_time)));
++		if (dev_off_time_ns <= off_on_time_ns)
++			return false;
++
++		if (min_dev_off_time_ns > dev_off_time_ns
++		    || min_dev_off_time_ns < 0)
++			min_dev_off_time_ns = dev_off_time_ns;
++	}
++
++	if (min_dev_off_time_ns < 0) {
++		/*
++		 * There are no latency constraints, so the domain can spend
++		 * arbitrary time in the "off" state.
++		 */
++		genpd->max_off_time_ns = -1;
++		return true;
++	}
++
++	/*
++	 * The difference between the computed minimum delta and the time needed
++	 * to turn the domain on is the maximum theoretical time this domain can
++	 * spend in the "off" state.
++	 */
++	min_dev_off_time_ns -= genpd->power_on_latency_ns;
++
++	/*
++	 * If the difference between the computed minimum delta and the time
++	 * needed to turn the domain off and back on on is smaller than the
++	 * domain's power break even time, removing power from the domain is not
++	 * worth it.
++	 */
++	if (genpd->break_even_ns >
++	    min_dev_off_time_ns - genpd->power_off_latency_ns)
++		return false;
++
++	genpd->max_off_time_ns = min_dev_off_time_ns;
++	return true;
++}
++
+ struct dev_power_governor simple_qos_governor = {
+ 	.stop_ok = default_stop_ok,
++	.power_down_ok = default_power_down_ok,
+ };
 Index: linux/drivers/base/power/domain.c
 ===================================================================
 --- linux.orig/drivers/base/power/domain.c
 +++ linux/drivers/base/power/domain.c
-@@ -56,6 +56,16 @@ static int genpd_start_dev(struct generi
- 	return GENPD_DEV_CALLBACK(genpd, int, start, dev);
- }
+@@ -398,6 +398,17 @@ static int pm_genpd_poweroff(struct gene
+ 	}
  
-+static int genpd_save_dev(struct generic_pm_domain *genpd, struct device *dev)
-+{
-+	return GENPD_DEV_CALLBACK(genpd, int, save_state, dev);
-+}
+ 	genpd->status = GPD_STATE_POWER_OFF;
++	genpd->power_off_time = ktime_get();
 +
-+static int genpd_restore_dev(struct generic_pm_domain *genpd, struct device *dev)
-+{
-+	return GENPD_DEV_CALLBACK(genpd, int, restore_state, dev);
-+}
++	/* Update PM QoS information for devices in the domain. */
++	list_for_each_entry_reverse(pdd, &genpd->dev_list, list_node) {
++		struct gpd_timing_data *td = &to_gpd_data(pdd)->td;
 +
- static bool genpd_sd_counter_dec(struct generic_pm_domain *genpd)
- {
- 	bool ret = false;
-@@ -217,7 +227,6 @@ static int __pm_genpd_save_device(struct
- {
- 	struct generic_pm_domain_data *gpd_data = to_gpd_data(pdd);
- 	struct device *dev = pdd->dev;
--	struct device_driver *drv = dev->driver;
- 	int ret = 0;
++		pm_runtime_update_max_time_suspended(pdd->dev,
++					td->start_latency_ns +
++					td->restore_state_latency_ns +
++					genpd->power_on_latency_ns);
++	}
  
- 	if (gpd_data->need_restore)
-@@ -225,11 +234,9 @@ static int __pm_genpd_save_device(struct
- 
- 	mutex_unlock(&genpd->lock);
- 
--	if (drv && drv->pm && drv->pm->runtime_suspend) {
--		genpd_start_dev(genpd, dev);
--		ret = drv->pm->runtime_suspend(dev);
--		genpd_stop_dev(genpd, dev);
--	}
-+	genpd_start_dev(genpd, dev);
-+	ret = genpd_save_dev(genpd, dev);
-+	genpd_stop_dev(genpd, dev);
- 
- 	mutex_lock(&genpd->lock);
- 
-@@ -250,18 +257,15 @@ static void __pm_genpd_restore_device(st
- {
- 	struct generic_pm_domain_data *gpd_data = to_gpd_data(pdd);
- 	struct device *dev = pdd->dev;
--	struct device_driver *drv = dev->driver;
- 
- 	if (!gpd_data->need_restore)
- 		return;
- 
- 	mutex_unlock(&genpd->lock);
- 
--	if (drv && drv->pm && drv->pm->runtime_resume) {
--		genpd_start_dev(genpd, dev);
--		drv->pm->runtime_resume(dev);
--		genpd_stop_dev(genpd, dev);
--	}
-+	genpd_start_dev(genpd, dev);
-+	genpd_restore_dev(genpd, dev);
-+	genpd_stop_dev(genpd, dev);
- 
- 	mutex_lock(&genpd->lock);
- 
-@@ -1358,6 +1362,44 @@ int pm_genpd_remove_callbacks(struct dev
- EXPORT_SYMBOL_GPL(pm_genpd_remove_callbacks);
- 
- /**
-+ * pm_genpd_default_save_state - Default "save device state" for PM domians.
-+ * @dev: Device to handle.
-+ */
-+static int pm_genpd_default_save_state(struct device *dev)
-+{
-+	int (*cb)(struct device *__dev);
-+	struct device_driver *drv = dev->driver;
-+
-+	cb = dev_gpd_data(dev)->ops.save_state;
-+	if (cb)
-+		return cb(dev);
-+
-+	if (drv && drv->pm && drv->pm->runtime_suspend)
-+		return drv->pm->runtime_suspend(dev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pm_genpd_default_restore_state - Default PM domians "restore device state".
-+ * @dev: Device to handle.
-+ */
-+static int pm_genpd_default_restore_state(struct device *dev)
-+{
-+	int (*cb)(struct device *__dev);
-+	struct device_driver *drv = dev->driver;
-+
-+	cb = dev_gpd_data(dev)->ops.restore_state;
-+	if (cb)
-+		return cb(dev);
-+
-+	if (drv && drv->pm && drv->pm->runtime_resume)
-+		return drv->pm->runtime_resume(dev);
-+
-+	return 0;
-+}
-+
-+/**
-  * pm_genpd_init - Initialize a generic I/O PM domain object.
-  * @genpd: PM domain object to initialize.
-  * @gov: PM domain governor to associate with the domain (may be NULL).
-@@ -1400,6 +1442,8 @@ void pm_genpd_init(struct generic_pm_dom
- 	genpd->domain.ops.restore_noirq = pm_genpd_restore_noirq;
- 	genpd->domain.ops.restore = pm_genpd_restore;
- 	genpd->domain.ops.complete = pm_genpd_complete;
-+	genpd->dev_ops.save_state = pm_genpd_default_save_state;
-+	genpd->dev_ops.restore_state = pm_genpd_default_restore_state;
- 	mutex_lock(&gpd_list_lock);
- 	list_add(&genpd->gpd_list_node, &gpd_list);
- 	mutex_unlock(&gpd_list_lock);
+ 	list_for_each_entry(link, &genpd->slave_links, slave_node) {
+ 		genpd_sd_counter_dec(link->master);
+@@ -1417,6 +1428,7 @@ void pm_genpd_init(struct generic_pm_dom
+ 	genpd->resume_count = 0;
+ 	genpd->device_count = 0;
+ 	genpd->suspended_count = 0;
++	genpd->max_off_time_ns = -1;
+ 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
+ 	genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
+ 	genpd->domain.ops.runtime_idle = pm_generic_runtime_idle;
 
