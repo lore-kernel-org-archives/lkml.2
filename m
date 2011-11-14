@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1KNArx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Nov 2011 19:47:53 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53511 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab1KNArw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Nov 2011 19:47:52 -0500
-Date: Sun, 13 Nov 2011 16:47:45 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: KY Srinivasan <kys@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "joe@perches.com" <joe@perches.com>
-Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-Message-ID: <20111114004745.GA3666@core.coreip.homeip.net>
-References: <1319841316-29136-1-git-send-email-kys@microsoft.com>
- <20111105064739.GA31111@core.coreip.homeip.net>
- <6E21E5352C11B742B20C142EB499E0481AA68580@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20111107055109.GA21095@core.coreip.homeip.net>
- <alpine.LNX.2.00.1111132100000.15187@pobox.suse.cz>
+	id S1755015Ab1KNAte (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Nov 2011 19:49:34 -0500
+Received: from ozlabs.org ([203.10.76.45]:57148 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab1KNAta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Nov 2011 19:49:30 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: mst@redhat.com, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
+In-Reply-To: <20111113210256.GA31621@redhat.com>
+References: <patchbomb.1320306168@localhost6.localdomain6> <f3831c1617c86a51d875.1320306173@localhost6.localdomain6> <20111113210256.GA31621@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 14 Nov 2011 11:13:57 +1030
+Message-ID: <87lirjpm7m.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1111132100000.15187@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 09:01:28PM +0100, Jiri Kosina wrote:
-> On Sun, 6 Nov 2011, Dmitry Torokhov wrote:
-> 
-> > > I am not a hid expert; but all  hid low level drivers appear to do this.
-> > > Initially, I was directly invoking hid_connect() directly and based on your
-> > > Input, I chose to use hid_hw_start() which all other drivers are using.
+On Sun, 13 Nov 2011 23:03:14 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Thu, Nov 03, 2011 at 06:12:53PM +1030, Rusty Russell wrote:
+> > A virtio driver does virtqueue_add_buf() multiple times before finally
+> > calling virtqueue_kick(); previously we only exposed the added buffers
+> > in the virtqueue_kick() call.  This means we don't need a memory
+> > barrier in virtqueue_add_buf(), but it reduces concurrency as the
+> > device (ie. host) can't see the buffers until the kick.
 > > 
-> > Note that the users of hid_hw_start() actually are not low level
-> > drivers, such as usbhid or bluetooth hidp, but higher-level drivers,
-> > such as hid-wacom, hid-a4tech, etc. Since your driver is a low-level
-> > driver (a provider so to speak) it should not call hid_hw_start() on its
-> > own but rather wait for the hid code to do it.
-> > 
-> > Still, I am not a HID expert either so I'll defer to Jiri here.
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 > 
-> Hi,
-> 
-> my understanding is that hv driver is actually a bit special in this 
-> respect -- it's actually all-in-one both low-level and high-level driver. 
-> I take it that there is not ever going to be a different high-level driver 
-> using low-level hv transport (is that correct, KY?), so this might indeed 
-> be an acceptable layout of the driver.
-> 
+> In the past I played with a patch like this, but I didn't see a
+> performance gain either way. Do you see any gain?
 
-I actually do not see anything of a high-level driver in hv-mouse. It is
-a pure transport driver that channels everything through hid-input...
+No, but I haven't run it on real hardware.  lguest may see a win with
+this in theory, since the virtqueue processing is fully async, so I'll
+run some tests.
 
-Thanks.
+> I'm a bit concerned that with this patch, a buggy driver that
+> adds more than 2^16 descriptors without a kick
+> would seem to work sometimes. Let's add WARN_ON(vq->num_added > (1 << 16))?
 
--- 
-Dmitry
+Hmm, I guess it could wait for the add to fail before doing a kick, but
+noone does that at the moment, so I've added a slight variant:
+
+	WARN_ON(vq->num_added > vq->vring.num);
+
+Thanks,
+Rusty.
