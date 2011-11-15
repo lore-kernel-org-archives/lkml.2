@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab1KOWpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 17:45:45 -0500
-Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:64815 "EHLO
-	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab1KOWpo convert rfc822-to-8bit (ORCPT
+	id S932641Ab1KOWyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 17:54:41 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60286 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756800Ab1KOWyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 17:45:44 -0500
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "scottwood@freescale.com" <scottwood@freescale.com>,
-        "B04825@freescale.com" <B04825@freescale.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
-Date: Tue, 15 Nov 2011 16:45:18 -0600
-Subject: Re: [RFC PATCH 0/2] powerpc: CPU cache op cleanup
-Thread-Topic: [RFC PATCH 0/2] powerpc: CPU cache op cleanup
-Thread-Index: Acyj6EEknfFcajp9QgaPLlYRsuJh5A==
-Message-ID: <022078B9-CD41-4D24-B44A-F85256A69D0A@boeing.com>
-References: <1320986410.21206.48.camel@pasglop>
- <1321324332-22964-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <1321396146.3170.11.camel@pasglop>
-In-Reply-To: <1321396146.3170.11.camel@pasglop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Nov 2011 17:54:39 -0500
+X-Sasl-enc: k428GTXsXLnoaSZf6TWdg39ZCa3HegiJ51YmEpQUxCP2 1321397678
+Date: Tue, 15 Nov 2011 14:54:08 -0800
+From: Greg KH <greg@kroah.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        Neil Horman <nhorman@redhat.com>, Steve Dickson <steved@redhat.com>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] KEYS: Fix a NULL pointer deref in the user-defined key
+ type
+Message-ID: <20111115225408.GA31763@kroah.com>
+References: <20111115220945.18768.20275.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111115220945.18768.20275.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 15, 2011, at 17:29, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-11-14 at 21:32 -0500, Kyle Moffett wrote:
->> Unfortunately, I've been staring at PPC asm for long enough that I
->> have a migraine headache and I'm going to have to stop here for now.
->> If somebody else wants to tackle fixing up the 32-bit copy_page() and
->> __copy_tofrom_user() routines it would be highly appreciated. 
+On Tue, Nov 15, 2011 at 10:09:45PM +0000, David Howells wrote:
+> Fix a NULL pointer deref in the user-defined key type whereby updating a
+> negative key into a fully instantiated key will cause an oops to occur when the
+> code attempts to free the non-existent old payload.
 > 
-> Yeah that's the one everybody's avoiding :-)
+> This results in an oops that looks something like the following:
 > 
-> What about my idea of instead compiling it multiple times with a
-> different size and fixing up the branch to call the right one ?
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+> IP: [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+> PGD 3391d067 PUD 3894a067 PMD 0
+> Oops: 0002 [#1] SMP
+> CPU 1
+> Modules linked in:
+> 
+> Pid: 4354, comm: keyctl Not tainted 3.1.0-fsdevel+ #1140                  /DG965RY
 
-I guess that's doable, although I have to admit that idea almost gives
-me more of a headache than trying to fix up the 32-bit ASM.
+Ah, so this patch should also go into the 3.1-stable tree?  Any older
+ones as welL?
 
-One thing that bothers me in particular is that both 32/64 versions of
-__copy_tofrom_user() are dramatically overcomplicated for what they
-ought to be doing.
+thanks,
 
-It would seem that if we get a page fault during an unaligned copy, we
-ought to just give up and fall back to a simple byte-by-byte copy loop
-from wherever we left off.  That would eliminate 90% of the ugly
-special cases without actually hurting performance, right?
-
-For a page-fault during a cacheline-aligned copy, we should be able to
-handle the exception and retry from the last cacheline without much
-logic, again with good performance.
-
-With that said, I'm curious about the origin of the PPC32 ASM.  In
-particular, it looks like it was generated by GCC at some point in the
-distant past, and I'm wondering if there's a good way to rewrite that
-file in C and trick GCC into generating the relevant exception tables
-for it?
-
-Cheers,
-Kyle Moffett
-
---
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
+greg k-h
