@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab1KOWpJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 17:45:09 -0500
-Received: from gate.crashing.org ([63.228.1.57]:50028 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932629Ab1KOWpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 17:45:05 -0500
-Message-ID: <1321397030.3170.15.camel@pasglop>
-Subject: Re: [PATCH -v2 00/16] PCI: Re-factor PCI's 'latency timer' setup
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
-        linux@arm.linux.org.uk, vapier@gentoo.org, dhowells@redhat.com,
-        ysato@users.sourceforge.jp, tony.luck@intel.com, fenghua.yu@intel.com,
-        monstr@monstr.eu, ralf@linux-mips.org, paulus@samba.org,
-        lethal@linux-sh.org, davem@davemloft.net, cmetcalf@tilera.com,
-        gxt@mprc.pku.edu.cn, tglx@linutronix.de, mingo@redhat.com,
-        chris@zankel.net, linux-kernel@vger.kernel.org
-Date: Wed, 16 Nov 2011 09:43:50 +1100
-In-Reply-To: <20111111095930.22abd773@jbarnes-desktop>
-References: <20111028214726.20088.30551.stgit@amt.stowe>
-	 <20111111095930.22abd773@jbarnes-desktop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932660Ab1KOWpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 17:45:45 -0500
+Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:64815 "EHLO
+	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932456Ab1KOWpo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 17:45:44 -0500
+From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "scottwood@freescale.com" <scottwood@freescale.com>,
+        "B04825@freescale.com" <B04825@freescale.com>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
+Date: Tue, 15 Nov 2011 16:45:18 -0600
+Subject: Re: [RFC PATCH 0/2] powerpc: CPU cache op cleanup
+Thread-Topic: [RFC PATCH 0/2] powerpc: CPU cache op cleanup
+Thread-Index: Acyj6EEknfFcajp9QgaPLlYRsuJh5A==
+Message-ID: <022078B9-CD41-4D24-B44A-F85256A69D0A@boeing.com>
+References: <1320986410.21206.48.camel@pasglop>
+ <1321324332-22964-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <1321396146.3170.11.camel@pasglop>
+In-Reply-To: <1321396146.3170.11.camel@pasglop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-11 at 09:59 -0800, Jesse Barnes wrote:
-> On Fri, 28 Oct 2011 15:47:26 -0600
-> Myron Stowe <myron.stowe@redhat.com> wrote:
+On Nov 15, 2011, at 17:29, Benjamin Herrenschmidt wrote:
+> On Mon, 2011-11-14 at 21:32 -0500, Kyle Moffett wrote:
+>> Unfortunately, I've been staring at PPC asm for long enough that I
+>> have a migraine headache and I'm going to have to stop here for now.
+>> If somebody else wants to tackle fixing up the 32-bit copy_page() and
+>> __copy_tofrom_user() routines it would be highly appreciated. 
 > 
-> > The 'latency timer' of PCI devices, both Type 0 and Type 1,
-> > is setup in architecture-specific code [see: pcibios_set_master()].
-> > There are two approaches being taken by all the architectures - check
-> > if the 'latency timer' is currently set between 16 and 255 and if not
-> > bring it within bounds, or, do nothing (and then there is the
-> > gratuitously different parisc implementation).
-> > 
-> > There is nothing architecture-specific about PCI's 'latency timer' so
-> > this patch pulls the setup functionality up into the PCI core by
-> > creating a generic 'pcibios_set_master()' function using the '__weak'
-> > attribute which can be used by all architectures as a default which,
-> > if necessary, can then be over-ridden by architecture-specific code.
+> Yeah that's the one everybody's avoiding :-)
 > 
-> I have acks from Chris, Ralf, and Mike.  Any other arch maintainers
-> want to ack or nack this before it goes into my -next branch?
+> What about my idea of instead compiling it multiple times with a
+> different size and fixing up the branch to call the right one ?
 
-I somewhat missed the original patch. As long as it's a nop for ppc, I
-don't care tho :-)
+I guess that's doable, although I have to admit that idea almost gives
+me more of a headache than trying to fix up the 32-bit ASM.
+
+One thing that bothers me in particular is that both 32/64 versions of
+__copy_tofrom_user() are dramatically overcomplicated for what they
+ought to be doing.
+
+It would seem that if we get a page fault during an unaligned copy, we
+ought to just give up and fall back to a simple byte-by-byte copy loop
+from wherever we left off.  That would eliminate 90% of the ugly
+special cases without actually hurting performance, right?
+
+For a page-fault during a cacheline-aligned copy, we should be able to
+handle the exception and retry from the last cacheline without much
+logic, again with good performance.
+
+With that said, I'm curious about the origin of the PPC32 ASM.  In
+particular, it looks like it was generated by GCC at some point in the
+distant past, and I'm wondering if there's a good way to rewrite that
+file in C and trick GCC into generating the relevant exception tables
+for it?
 
 Cheers,
-Ben.
+Kyle Moffett
 
-
+--
+Curious about my work on the Debian powerpcspe port?
+I'm keeping a blog here: http://pureperl.blogspot.com/
