@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab1KOAuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:50:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31775 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab1KOAuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:50:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="75508717"
-Message-ID: <1321318201.13860.51.camel@yhuang-dev>
-Subject: Re: Printk mulitple line message support
-From: Huang Ying <ying.huang@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: William Douglas <william.r.douglas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Nov 2011 08:50:01 +0800
-In-Reply-To: <1321281640.2004.6.camel@Joe-Laptop>
-References: <1321253936.13860.35.camel@yhuang-dev>
-	 <1321281640.2004.6.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752846Ab1KOAvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:51:42 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42542 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab1KOAvl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 19:51:41 -0500
+Date: Tue, 15 Nov 2011 01:51:35 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
+        akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com
+Subject: Re: [PATCH 09/10] cgroup, cpuset: don't use ss->pre_attach()
+Message-ID: <20111115005131.GK9446@somewhere>
+References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+ <1320191193-8110-10-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320191193-8110-10-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-14 at 22:40 +0800, Joe Perches wrote:
-> On Mon, 2011-11-14 at 14:58 +0800, Huang Ying wrote:
-> > Hi,
-> > 
-> > In most cases, printk only guarantees messages from different printk
-> > calling will not be interleaved between each other.  But many printk
-> > users uses multiple line to form a complete message and call printk
-> > for each line.  So the following situation is possible for two printk
-> > users running on two CPUs.
-> > 
-> > line 1 of message from printk user1
-> > line 1 of message from printk user2
-> > line 2 of message from printk user1
-> > line 2 of message from printk user2
-> > 
-> > This makes kernel log hard to read.  One possible solution to this
-> > issue is to give a sequence number (or ID) to each complete message.
-> > So the above lines will be:
-> > 
-> > {1}line 1 of message from printk user1
-> > {2}line 1 of message from printk user2
-> > {1}line 2 of message from printk user1
-> > {2}line 2 of message from printk user2
-> > 
-> > Then some simple script can be used to group lines together according
-> > to sequence number in lines.
-> > 
-> > What do you think about that?
+On Tue, Nov 01, 2011 at 04:46:32PM -0700, Tejun Heo wrote:
+> ->pre_attach() is supposed to be called before migration, which is
+> observed during process migration but task migration does it the other
+> way around.  The only ->pre_attach() user is cpuset which can do the
+> same operaitons in ->can_attach().  Collapse cpuset_pre_attach() into
+> cpuset_can_attach().
 > 
-> This makes the typical multi-part but non-interleaved
-> output difficult to read.
-
-With a simple script, we can strip out the sequence # easily.
-
-> How about determining if there is interleaving and
-> emitting sequence # only in those cases?
+> -v2: Patch contamination from later patch removed.  Spotted by Paul
+>      Menage.
 > 
-> Perhaps test the atomic for the last sequence #.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Paul Menage <paul@paulmenage.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
 
-So we will have no sequence # prefix for printk user1's lines if printk
-user 2 comes in the middle?  Something as follow?
-
-line 1 of message from printk user1
-{2}line 1 of message from printk user2
-line 2 of message from printk user1
-{2}line 2 of message from printk user2
-
-This will make it hard for a script to sort the lines.  Where should it
-insert lines from printk user2 in the sort result?
-
-Best Regards,
-Huang Ying
-
-
+Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
