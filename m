@@ -1,110 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab1KOB7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 20:59:50 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52309 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802Ab1KOB7s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 20:59:48 -0500
-Date: Tue, 15 Nov 2011 12:59:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: New Char/Misc tree to be added to linux-next
-Message-Id: <20111115125939.dd90968640fc7c50bd9a4c77@canb.auug.org.au>
-In-Reply-To: <20111115001419.GA31817@kroah.com>
-References: <20111115001419.GA31817@kroah.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__15_Nov_2011_12_59_39_+1100_NeIaZTS=Lg/ibStP"
+	id S1755068Ab1KOCAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 21:00:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754819Ab1KOCAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 21:00:42 -0500
+Date: Tue, 15 Nov 2011 03:00:09 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
+ allocations
+Message-ID: <20111115020009.GE4414@redhat.com>
+References: <20111110100616.GD3083@suse.de>
+ <20111110142202.GE3083@suse.de>
+ <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
+ <20111110161331.GG3083@suse.de>
+ <20111110151211.523fa185.akpm@linux-foundation.org>
+ <20111111100156.GI3083@suse.de>
+ <20111114160345.01e94987.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111114160345.01e94987.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Nov_2011_12_59_39_+1100_NeIaZTS=Lg/ibStP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 14, 2011 at 04:03:45PM -0800, Andrew Morton wrote:
+> On Fri, 11 Nov 2011 10:01:56 +0000
+> Mel Gorman <mgorman@suse.de> wrote:
+> > A 1000-hour compute job will have its pages collapsed into hugepages by
+> > khugepaged so they might not have the huge pages at the very beginning
+> > but they get them. With khugepaged in place, there should be no need for
+> > an additional tuneable.
+> 
+> OK...
 
-Hi Greg,
+It's good idea to keep it monitored. But I guess the reduced rate will
+only materialize at temporary VM stress times.
 
-On Mon, 14 Nov 2011 16:14:19 -0800 Greg KH <greg@kroah.com> wrote:
->
-> Arnd and I are going to maintain the drivers/char/* and drivers/misc/*
-> directories with the goal of getting them under control, or at least a
-> false-sense of control :)
->=20
-> So could you please add my new git tree:
-> 	git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
->=20
-> which contains the two branches, "char-misc-linus" to hold patches to
-> send to Linus for this merge window, and "char-misc-next" to hold
-> patches for the next merge window.
+> Fair enough.  One slight problem though:
+> 
+> akpm:/usr/src/25> grep -r thp_collapse_alloc_failed Documentation 
+> akpm:/usr/src/25> 
 
-OK, I will add this tree tomorrow with you and Arnd as contacts.  [Aside:
-did you consider naming the branches merely "fixes" (or something) and
-"next"?]
+I didn't fill that gap but I was reading the code again and I don't
+see why we keep retrying for -EAGAIN in the !sync case. Maybe the
+below is good (untested). I doubt it's good to spend cpu to retry the
+trylock or to retry the migrate on a pinned page by O_DIRECT. In fact
+as far as THP success rate is concerned maybe we should "goto out"
+instead of "goto fail" but I didn't change to that as compaction even
+if it fails a subpage may still be successful at creating order
+1/2/3/4...8 pages. I only avoid 9 loops to retry a trylock or a page
+under O_DIRECT. Maybe that will save a bit of CPU, I doubt it can
+decrease the success rate in any significant way. I'll test it at the
+next build...
 
-I guess there is actually quite a lot of scope for overlap with other
-trees touching stuff in drivers/char ... just something to keep an eye on.
+====
+From: Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH] migrate: !sync don't retry
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+For !sync it's not worth retrying because we won't lock_page even
+after the second pass. So make -EAGAIN behave like -EBUSY in the !sync
+should be faster. The difference between -EAGAIN and -EBUSY remains as
+usual for the sync case, where -EAGAIN will retry, while -EBUSY will
+not.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ mm/migrate.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__15_Nov_2011_12_59_39_+1100_NeIaZTS=Lg/ibStP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOwceLAAoJEECxmPOUX5FEhUgP/1Vn8WhUq36JDspP//OKnBoG
-0z2Vsuv7E7la0X8i0mXBMT0aF7+oK13BRmyUk0f4xkm6W3xxw+BhGjFL4C40kO+a
-otOyQ7k8uZrcJQ5wTeKhm7v0gS/2LeVoTjYlFcTETtwj5keGobIUMh6i3RNX4cMj
-qwCMxkpx77/GhGghR40JkYxDA9JVAfPrVVaTleGfWnBkf11wteenej8Mp44xDsNV
-S5Pcpq+1YrZX2XOP6t5OFtw6TvvBg79h+JUJHlHxm6nITmCGrn+tHAXPAWCywzHy
-xj/osVzvupWlLO6q2cdZQEh2dnm5xVPzqXDA3Ezm6ulLbSbnCXzrPScN2QUMZCu8
-1ueJVEqoNn51fU4P9wWB7AJOLawbqsXLchdev0ahAvTqzuEwd55Ibd88cpFTdp+6
-m1jBAXZdUHM3UHB4ez2DjGWM9MHhh0/FtNWAVthXz9jSoWuB/p4ucsC1B8A9lwW2
-blRIcw+xsMKLcYVLt6gwQRq+xTWn+2fR8/r7GZLo6aHacBKUBpF5+PoeHfd7OCzm
-r81w4VyVt34WZ2haeWjCUEtY33Sh7VOegcusY15CpswmIuBoW0Li7By+DFyNpa7j
-FB90IxTe/VswF/nfim1easneR4H1aJKIMHzKMbGSkpCZlcaaXJADiN8uOUsv7byi
-1NsEHIOUHPUmyFde9/36
-=qqa9
------END PGP SIGNATURE-----
-
---Signature=_Tue__15_Nov_2011_12_59_39_+1100_NeIaZTS=Lg/ibStP--
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 578e291..7d97a14 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -680,11 +680,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 		 * For !sync, there is no point retrying as the retry loop
+ 		 * is expected to be too short for PageWriteback to be cleared
+ 		 */
+-		if (!sync) {
+-			rc = -EBUSY;
+-			goto uncharge;
+-		}
+-		if (!force)
++		if (!force || !sync)
+ 			goto uncharge;
+ 		wait_on_page_writeback(page);
+ 	}
+@@ -794,7 +790,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 
+ 	rc = __unmap_and_move(page, newpage, force, offlining, sync);
+ out:
+-	if (rc != -EAGAIN) {
++	if (rc != -EAGAIN || !sync) {
+ 		/*
+ 		 * A page that has been migrated has all references
+ 		 * removed and will be freed. A page that has not been
+@@ -874,7 +870,7 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ out:
+ 	unlock_page(hpage);
+ 
+-	if (rc != -EAGAIN) {
++	if (rc != -EAGAIN || !sync) {
+ 		list_del(&hpage->lru);
+ 		put_page(hpage);
+ 	}
+@@ -934,11 +930,14 @@ int migrate_pages(struct list_head *from,
+ 			case -ENOMEM:
+ 				goto out;
+ 			case -EAGAIN:
++				if (!sync)
++					goto fail;
+ 				retry++;
+ 				break;
+ 			case 0:
+ 				break;
+ 			default:
++			fail:
+ 				/* Permanent failure */
+ 				nr_failed++;
+ 				break;
+@@ -981,11 +980,14 @@ int migrate_huge_pages(struct list_head *from,
+ 			case -ENOMEM:
+ 				goto out;
+ 			case -EAGAIN:
++				if (!sync)
++					goto fail;
+ 				retry++;
+ 				break;
+ 			case 0:
+ 				break;
+ 			default:
++			fail:
+ 				/* Permanent failure */
+ 				nr_failed++;
+ 				break;
