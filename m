@@ -1,156 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab1KOKVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 05:21:09 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:45675 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab1KOKVI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 05:21:08 -0500
-X-AuditID: cbfee61a-b7cf1ae00000208e-eb-4ec23d09443d
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Peiyong Feng'" <peiyong.feng.kernel@gmail.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1321006467-15824-1-git-send-email-peiyong.feng.kernel@gmail.com>
- <CAJuYYwRueftNrWofo744vWXPa+vkgv3r4CyOr_Q_GNrcfct4YA@mail.gmail.com>
- <CAN_1RdvdeXHdM50utA8objg46Q2GM23pwzAiB7itswrTm1FqSQ@mail.gmail.com>
-In-reply-to: <CAN_1RdvdeXHdM50utA8objg46Q2GM23pwzAiB7itswrTm1FqSQ@mail.gmail.com>
-Subject: RE: [PATCH] Add dm9000 network support for OK6410 board.
-Date: Tue, 15 Nov 2011 19:20:56 +0900
-Message-id: <006201cca380$43998e20$caccaa60$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acygd0cFgGt2vn54RW++u+fzI9X7KwDBpGkw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1754824Ab1KOKYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 05:24:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5433 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753736Ab1KOKYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 05:24:05 -0500
+Message-ID: <4EC23DB0.3020306@redhat.com>
+Date: Tue, 15 Nov 2011 18:23:44 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Amerigo Wang <amwang@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        Lennart Poettering <lennart@poettering.net>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [Patch] tmpfs: add fallocate support
+References: <1321346525-10187-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <1321346525-10187-1-git-send-email-amwang@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peiyong Feng wrote:
-> 
-Hi Peiyong,
+CC: Lennart Poettering <lennart@poettering.net>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Thanks for your submitting and replying.
-But you need to make sure your e-mail uses text-typed instead of html before
-replying.
-
-And there are comments below.
-
-> Well, The OK6410 board is based on smdk6410 board.
-> And there many other boards that also are based on smdk6410 like mini6410
-board.
+On 2011/11/15 16:42, Amerigo Wang wrote:
+> This patch adds fallocate support to tmpfs. I tested this patch
+> with the following test case,
 >
-> The reasons why I modified smdk6410 board file are as follows: 
-> A. Almost all the devices on OK6410 is supported in smdk6410, and the
-device drivers of smdk6410 can work well in OK6410.
+> 	% sudo mount -t tmpfs -o size=100 tmpfs /mnt
+> 	% touch /mnt/foobar
+> 	% echo hi>  /mnt/foobar
+> 	% fallocate -o 3 -l 5000 /mnt/foobar
+> 	fallocate: /mnt/foobar: fallocate failed: No space left on device
+> 	% fallocate -o 3 -l 3000 /mnt/foobar
+> 	% ls -l /mnt/foobar
+> 	-rw-rw-r-- 1 wangcong wangcong 3003 Nov 15 16:10 /mnt/foobar
+> 	% dd if=/dev/zero of=/mnt/foobar seek=3 bs=1 count=3000
+> 	3000+0 records in
+> 	3000+0 records out
+> 	3000 bytes (3.0 kB) copied, 0.0153224 s, 196 kB/s
+> 	% hexdump -C /mnt/foobar
+> 	00000000  68 69 0a 00 00 00 00 00  00 00 00 00 00 00 00 00  |hi..............|
+> 	00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+> 	*
+> 	00000bb0  00 00 00 00 00 00 00 00  00 00 00                 |...........|
+> 	00000bbb
+> 	% cat /mnt/foobar
+> 	hi
 >
-Okay, you mean, just your OK6410 can work with smdk6410.
-
-> B. If we just make other board file like mini6410 which is also based on
-smdk6410, there maybe too many files that are as the same of smdk6410.
+> Signed-off-by: WANG Cong<amwang@redhat.com>
 >
-Okay, you mean, we don't need duplicated codes.
-
-Right, but how do you think that if the dm9000 or something cannot be used
-on smdk6410?
-Nevertheless, we _really_ need to add it for other board not smdk6410?
-
-Actually, there are codes for SMSC Lan9115 at mach-smdk6410.c......
-
-If you want to use mach-smdk6410.c on your ok6410, well, let us think the
-way.
-
-> 2011/11/11 Thomas Abraham <thomas.abraham@linaro.org>
-> On 11 November 2011 15:44, peiyong feng <peiyong.feng.kernel@gmail.com>
-wrote:
-> > Signed-off-by: peiyong feng <peiyong.feng.kernel@gmail.com>
-> > ---
-> >  arch/arm/mach-s3c64xx/mach-smdk6410.c |    1 +
-> >  arch/arm/plat-samsung/devs.c          |   40
-+++++++++++++++++++++++++++++++++
-> >  2 files changed, 41 insertions(+), 0 deletions(-)
-> If the change is intended for OK6410 board, any reason for modifying
-> mach-smdk6410.c board file?
+> ---
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index d672250..438b7b8 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -30,6 +30,7 @@
+>   #include<linux/mm.h>
+>   #include<linux/export.h>
+>   #include<linux/swap.h>
+> +#include<linux/falloc.h>
 >
-> >
-> > diff --git a/arch/arm/mach-s3c64xx/mach-smdk6410.c
-b/arch/arm/mach-s3c64xx/mach-smdk6410.c
-> > index 8bc8edd..71e817a 100644
-> > --- a/arch/arm/mach-s3c64xx/mach-smdk6410.c
-> > +++ b/arch/arm/mach-s3c64xx/mach-smdk6410.c
-> > @@ -276,6 +276,7 @@ static struct platform_device *smdk6410_devices[]
-__initdata = {
-> >        &s3c_device_fb,
-> >        &s3c_device_ohci,
-> >        &s3c_device_usb_hsotg,
-> > +       &s3c_device_dm9000,
-> >        &samsung_asoc_dma,
-> >        &s3c64xx_device_iisv4,
-> >        &samsung_device_keypad,
-> > diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-> > index 4ca8b57..38edc1a 100644
-> > --- a/arch/arm/plat-samsung/devs.c
-> > +++ b/arch/arm/plat-samsung/devs.c
-> > @@ -29,6 +29,7 @@
-> >  #include <linux/mtd/partitions.h>
-> >  #include <linux/mmc/host.h>
-> > #include <linux/ioport.h>
-> > +#include <linux/dm9000.h>
-> >
-> >  #include <asm/irq.h>
-> >  #include <asm/pmu.h>
-> > @@ -1401,6 +1402,45 @@ void __init s5p_ehci_set_platdata(struct
-s5p_ehci_platdata *pd)
-> >  }
-> >  #endif /* CONFIG_S5P_DEV_USB_EHCI */
-> >
-> > +/* Ethernet */
-> > +#ifdef CONFIG_DM9000
-> > +#define S3C64XX_PA_DM9000      (0x18000000)
-> > +#define S3C64XX_SZ_DM9000      SZ_1M
-> > +#define S3C64XX_VA_DM9000      S3C_ADDR(0x03b00300)
-> There could be other boards based on other samsung soc's which would
-> be using dm9000. So arch/arm/plat-samsung/devs.c might not be correct
-> place for these additions. And, there is S3C64XX_PA_XM0CSN0 in
-> mach-s3c64xx/include/mach/map.h which should be reused instead of
-> these new macros.
+>   static struct vfsmount *shm_mnt;
 >
-Yes right.
-
-Peiyong, you need to think that your codes affect others or not before
-submitting.
-
-> Please refer to other board files in arch/arm/mach-s3c64xx for
-> reference on adding dm9000 support for OK6410 board.
+> @@ -1431,6 +1432,102 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
+>   	return error;
+>   }
 >
-> Regards,
-> Thomas.
+> +static long shmem_fallocate(struct file *file, int mode,
+> +			    loff_t offset, loff_t len)
+> +{
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+> +	struct address_space *mapping = inode->i_mapping;
+> +	struct shmem_inode_info *info = SHMEM_I(inode);
+> +	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+> +	pgoff_t start = DIV_ROUND_UP(offset, PAGE_CACHE_SIZE);
+> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
+> +	pgoff_t index = start;
+> +	gfp_t gfp = mapping_gfp_mask(mapping);
+> +	loff_t i_size = i_size_read(inode);
+> +	struct page *page = NULL;
+> +	int ret;
+> +
+> +	if ((offset + len)<= i_size)
+> +		return 0;
+> +
+> +	if (!(mode&  FALLOC_FL_KEEP_SIZE)) {
+> +		ret = inode_newsize_ok(inode, (offset + len));
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	if (start == end) {
+> +		if (!(mode&  FALLOC_FL_KEEP_SIZE))
+> +			i_size_write(inode, offset + len);
+> +		return 0;
+> +	}
+> +
+> +	if (shmem_acct_block(info->flags))
+> +		return -ENOSPC;
+> +
+> +	if (sbinfo->max_blocks) {
+> +		unsigned long blocks = (end - index) * BLOCKS_PER_PAGE;
+> +		if (blocks + percpu_counter_sum(&sbinfo->used_blocks)
+> +				>= sbinfo->max_blocks) {
+> +			ret = -ENOSPC;
+> +			goto unacct;
+> +		}
+> +	}
+> +
+> +	while (index<  end) {
+> +		if (sbinfo->max_blocks)
+> +			percpu_counter_add(&sbinfo->used_blocks, BLOCKS_PER_PAGE);
+> +
+> +		page = shmem_alloc_page(gfp, info, index);
+> +		if (!page) {
+> +			ret = -ENOMEM;
+> +			goto decused;
+> +		}
+> +
+> +		SetPageSwapBacked(page);
+> +		__set_page_locked(page);
+> +		ret = mem_cgroup_cache_charge(page, current->mm,
+> +						gfp&  GFP_RECLAIM_MASK);
+> +		if (!ret)
+> +			ret = shmem_add_to_page_cache(page, mapping, index,
+> +						gfp, NULL);
+> +		if (ret)
+> +			goto unlock;
+> +		lru_cache_add_anon(page);
+> +
+> +		spin_lock(&info->lock);
+> +		info->alloced++;
+> +		inode->i_blocks += BLOCKS_PER_PAGE;
+> +		inode->i_ctime = inode->i_mtime = CURRENT_TIME;
+> +		shmem_recalc_inode(inode);
+> +		spin_unlock(&info->lock);
+> +
+> +		clear_highpage(page);
+> +		flush_dcache_page(page);
+> +		SetPageUptodate(page);
+> +		unlock_page(page);
+> +		page_cache_release(page);
+> +		cond_resched();
+> +		index++;
+> +		if (!(mode&  FALLOC_FL_KEEP_SIZE))
+> +			i_size_write(inode, index<<  PAGE_CACHE_SHIFT);
+> +	}
+> +
+> +	goto unacct;
+> +
+> +unlock:
+> +	if (page) {
+> +		unlock_page(page);
+> +		page_cache_release(page);
+> +	}
+> +decused:
+> +	if (sbinfo->max_blocks)
+> +		percpu_counter_sub(&sbinfo->used_blocks, BLOCKS_PER_PAGE);
+> +unacct:
+> +	shmem_unacct_blocks(info->flags, 1);
+> +	return ret;
+> +}
+> +
+>   static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+>   {
+>   	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
+> @@ -2286,6 +2383,7 @@ static const struct file_operations shmem_file_operations = {
+>   	.fsync		= noop_fsync,
+>   	.splice_read	= shmem_file_splice_read,
+>   	.splice_write	= generic_file_splice_write,
+> +	.fallocate	= shmem_fallocate,
+>   #endif
+>   };
 >
-> > +
-> > +static struct resource dm9000_resources[] = {
-> > +       [0] = {
-> > +               .start          = S3C64XX_PA_DM9000,
-> > +               .end            = S3C64XX_PA_DM9000 + 3,
-
-What is '3'?
-
-> > +               .flags          = IORESOURCE_MEM,
-
-And you can use DEFINE_RES_MEM macro here.
-
-(snip)
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
 
