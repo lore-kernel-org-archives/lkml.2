@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1KOMzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:55:53 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56534 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab1KOMzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:55:51 -0500
-Date: Tue, 15 Nov 2011 16:53:33 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <greg@kroah.com>, Theodore Tso <tytso@mit.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC 1/3] procfs: parse mount options
-Message-ID: <20111115125332.GA8486@albatros>
-References: <20111115112151.GA3002@albatros>
- <CAM_iQpUAqDmP571R3NkYOmPC7yAEMaHTFmmQCm5hLUXV5Fh8xQ@mail.gmail.com>
+	id S1754658Ab1KOM6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:58:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746Ab1KOM6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:58:06 -0500
+Date: Tue, 15 Nov 2011 14:59:12 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        penberg@kernel.org, mingo@elte.hu
+Subject: Re: [RFC 0/5] virtio-pci,kvm tools: Support new virtio-pci spec in
+ kvm tools
+Message-ID: <20111115125911.GD31208@redhat.com>
+References: <20111114181854.GA24953@redhat.com>
+ <1321314197-5265-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAM_iQpUAqDmP571R3NkYOmPC7yAEMaHTFmmQCm5hLUXV5Fh8xQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1321314197-5265-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Américo,
+On Tue, Nov 15, 2011 at 01:43:12AM +0200, Sasha Levin wrote:
+> This patch series contains two fixes for the RFC patch send by Michael. These
+> patches are pretty basic and should probably be merged into the next version
+> of that patch.
 
-On Tue, Nov 15, 2011 at 19:48 +0800, Américo Wang wrote:
-> On Tue, Nov 15, 2011 at 7:21 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > +
-> > +static int proc_parse_options(char *options, struct pid_namespace *pid)
-> > +{
-> > +       char *p;
-> > +       substring_t args[MAX_OPT_ARGS];
-> > +       int option;
+Yes, will do, thanks!
+
+> Other two patches add support to the new virtio-pci spec in KVM tools, allowing
+> for easy testing of any future virtio-pci kernel side patches. The usermode code
+> isn't complete, but it's working properly and should be enough for functionality
+> testing.
 > 
+> Michael S. Tsirkin (1):
+>   virtio-pci: flexible configuration layout
 > 
-> 'option' is unused?
-
-Right.
-
-> > +               switch (token) {
-> > +               default:
+> Sasha Levin (4):
+>   virtio-pci: Fix compilation issue
+>   iomap: Don't ignore offset
+>   kvm tools: Free up the MSI-X PBA BAR
+>   kvm tools: Support new virtio-pci configuration layout
 > 
+>  drivers/virtio/virtio_pci.c        |  184 ++++++++++++++++++++++--
+>  include/asm-generic/io.h           |    4 +
+>  include/asm-generic/iomap.h        |   11 ++
+>  include/linux/pci_regs.h           |    4 +
+>  include/linux/virtio_pci.h         |   41 ++++++
+>  lib/iomap.c                        |   41 +++++-
+>  tools/kvm/include/kvm/pci.h        |   13 ++-
+>  tools/kvm/include/kvm/virtio-pci.h |    5 +-
+>  tools/kvm/virtio/pci.c             |  275 ++++++++++++++++++++++++++++++++----
+>  9 files changed, 530 insertions(+), 48 deletions(-)
 > 
-> This switch block reads odd...
-
-It will be used in 2/3 patch.
-
-> > +                       pr_err("proc: unrecognized mount option \"%s\" "
-> > +                              "or missing value", p);
-> 
-> "\n" is needed.
-
-Correct.  Thank you!
-
-> > +                       return 0;
-> > +               }
-> > +       }
-> > +
-> > +       return 1;
-> > +}
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+> -- 
+> 1.7.8.rc1
