@@ -1,130 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab1KOT6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:58:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:37451 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab1KOT6q (ORCPT
+	id S932200Ab1KOUCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 15:02:13 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64843 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab1KOUCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:58:46 -0500
-Message-ID: <1321387118.27038.17.camel@fourier>
-Subject: Re: [PATCH] i915: Fix bug where screen brightness is not restored
-From: Kamal Mostafa <kamal@canonical.com>
-To: Alex Davis <alex14641@yahoo.com>, Keith Packard <keithp@keithp.com>,
-        "mjg@redhat.com" <mjg@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org
-Date: Tue, 15 Nov 2011 11:58:38 -0800
-In-Reply-To: <1321324952.13838.YahooMailNeo@web130105.mail.mud.yahoo.com>
-References: <1321324952.13838.YahooMailNeo@web130105.mail.mud.yahoo.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-iFt7jtqXXUldpoHNBEU5"
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 15 Nov 2011 15:02:12 -0500
+Message-ID: <4EC2C53E.7020503@gmail.com>
+Date: Tue, 15 Nov 2011 21:02:06 +0100
+From: Carla Sella <carla.sella@gmail.com>
+Reply-To: carla.sella@gmail.com
+Organization: Carla Sella
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: BUG: suspend/resume does not work on G62 notebook PC
+References: <4EB53C46.1060301@gmail.com> <20111108010406.GC16800@kroah.com>
+In-Reply-To: <20111108010406.GC16800@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-iFt7jtqXXUldpoHNBEU5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+>
+> Can you try the 3.2-rc1 release?
+>
 
-On Mon, 2011-11-14 at 18:42 -0800, Alex Davis wrote:
-> From: Alex Davis<alex14641@yahoo.com>
->=20
-> This patch fixes an issue where the screen would remain dark when
->=20
-> a key was pressed when the laptop lid was reopened or after the
-> laptop had gone into power-save mode.
-
-[cross-posting to intel-gfx]
-
-Keith, also note that Alex and I did respond to your request to test the
-already committed patch "drm/i915/panel: Always record the backlight
-level again (but cleverly)".  We both determined that patch does *not*
-fix the problem.  Alex's patch below does fix it.
-
-Matthew, any comment on the question that I fielded?:
-
->> Why does intel_panel_disable_backlight even want to set the
->> brightness to 0 anyway?...  Its only caller is just about to turn
->> off power to the panel.  Is that call to
->> intel_panel_{,actually_}set_backlight(dev, 0) really necessary
->> or useful on *any* systems?
-
- -Kamal
+Hello,
+I installed kernel 3.2.0-rc1 but I'm having the same problems, this is
+the output of "sudo /usr/share/checkbox/scripts/suspend_test --full":
 
 
-> It seems that there are a number of people with different machines
-> that have this problem:
->=20
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/872652
-> https://launchpad.net/~kamalmostafa/+archive/stuck-backlight
-> and https://bugs.freedesktop.org/show_bug.cgi?id=3D41926
->=20
-> This patch is against Linux 3.1
->=20
-> Putting printk's in ./drivers/gpu/drm/i915/intel_panel.c showed that=20
-> intel_get_brightness was being called after the panel was disabled,
-> which caused a 0 to be saved as the value to restore the brightness.=20
-> intel_panel_disable_backlight merely sets the brightness to 0. Commenting
-> out this call allows the correct brightness value to be saved.
->=20
-> Signed-off-by: Alex Davis <alex14641@yahoo.com>
-> Tested-by: Kamal Mostafa <kamal@canonical.com>
-> -----
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/in=
-tel_panel.c
-> index a9e0c7b..6f56676 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -262,8 +262,6 @@ void intel_panel_disable_backlight(struct drm_device =
-*dev)
->                 dev_priv->backlight_level =3D intel_panel_get_backlight(d=
-ev);
->                 dev_priv->backlight_enabled =3D false;
->         }
-> -
-> -       intel_panel_set_backlight(dev, 0);
->  }
->=20
->  void intel_panel_enable_backlight(struct drm_device *dev)
->=20
-> =20
->=20
-> I code, therefore I am
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" i=
-n
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->=20
+-------------------------------------------------------------------------------------
+letozaf@letozaf-HP-G62:~$ sudo /usr/share/checkbox/scripts/suspend_test
+--full
+This script will attempt to suspend and resume your computer a number of
+times.
+Should the machine fail to resume, first attempt to manually resume it.  If
+that fails power your system off and on which will generate an apport bug
+report automatically.
+
+Press CTRL-C now to abort testing ...
+
+*** TEST 1 -- suspend triggered via dbus message
+*** please ensure your AC cord is attached
+*** machine will suspend for 20 seconds
+*** press return when ready
 
 
---=-iFt7jtqXXUldpoHNBEU5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+SUSPEND FAILED, did not go to sleep
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+*** TEST 2 -- suspend with AC disconnected
+*** please ensure your AC cord is detached
+*** machine will suspend for 20 seconds
+*** press return when ready
 
-iQIcBAABCAAGBQJOwsRuAAoJEOf3EFVUCeQiJ4MP/jpPD4fmnpUY1DcoTIZSTZFS
-x3INDaHVEu4FjWijrMrxLdaWmnVNKMx4COJMnhlicQpIBJgbrBH1+jaiZTPTr4Rd
-EHqqhdfk/GHWIZ/Dm4UwMCO9OkgXrWHZgc3+T7Ydhi14ionTpOC65pBbMdWCdH9A
-5xcoNBglhucYK0j5yQBlBg5pZYpE4vP9SXgkuciCtNjego0PekNWODRURGkP0yJ7
-ez6o16pTYM0SSvDXSEoW1CGHuKdpp8/miNLabHObKQE/UOMYwJRoYCu+ymVVEls5
-TnIc43iqSs52gBbKNj/Guyql61AuIaMy+FLdt3kXsOB02a0Gus9bAKiN0Tj1ytmj
-Hn3EplZXTY8l4d+fX73wCgKHi4XPCEio9zO1VLCjV1J59rEqb6ebMx6/5mgQhwVA
-Ui8mB1wu/Oh1ZUStk95kHQOstG5GfFB5qfpwstuEvhJLpFtmQvOhEfv/9wvArpRj
-sUrIgG5O12PG4QDFO5fyo7FLxS45njUavajlPKX3j++Jcgt93+HfepX74vdB3CYB
-1oWQ+HRe0fUbUCzuUSPGm/UcBUV1Fvi/vTGKw7J7sKDgv7O1xKCaLueOgavwYkUs
-XPyx24yrksxX/pW4bzfQOtVHOkuNdV6V4sOFqijg/R0yIjVz3a7XNSXQ75Jg00Q/
-kYzkJSQr/UTUQ2n7nEPH
-=qxd3
------END PGP SIGNATURE-----
 
---=-iFt7jtqXXUldpoHNBEU5--
+SUSPEND FAILED, did not go to sleep
+
+*** TEST 3 -- suspend with AC connected
+*** please ensure your AC cord is attached
+*** machine will suspend for 20 seconds
+*** press return when ready
+
+
+SUSPEND FAILED, did not go to sleep
+
+*** TEST 4 -- loss of AC while suspended
+*** please remove the AC cord while the machine is suspended
+*** machine will suspend for 20 seconds
+*** press return when ready
+
+
+SUSPEND FAILED, did not go to sleep
+
+*** TEST 5 -- return of AC while suspended
+*** please insert the AC cord while the machine is suspended
+*** machine will suspend for 20 seconds
+*** press return when ready
+
+
+SUSPEND FAILED, did not go to sleep
+
+*** TEST 6 -- battery drain during suspend
+*** calculates overall power drain during a long-term suspend
+*** please ensure your AC cord is detached
+*** machine will suspend for 20 minutes
+*** press return when ready
+
+
+SUSPEND FAILED, did not go to sleep
+before: 3872 mWh
+after: 3840 mWh
+consumed: 32 mW
+sleep seconds: 1236 sec
+overall usage: 93 mW
+
+*** TEST 7 -- 30 iteration variable delay suspend/resume stress test
+*** please ensure your AC cord is attached
+*** machine will suspend for 20 seconds
+*** NOTE: there will be no further user interaction from this point
+*** press return when ready
+
+delay 60 ...
+SUSPEND FAILED, did not go to sleep
+wait for 60 seconds
+delay 58 ...
+SUSPEND FAILED, did not go to sleep
+wait for 58 seconds
+delay 56 ...
+SUSPEND FAILED, did not go to sleep
+wait for 56 seconds
+delay 54 ...
+SUSPEND FAILED, did not go to sleep
+wait for 54 seconds
+delay 52 ...
+SUSPEND FAILED, did not go to sleep
+wait for 52 seconds
+delay 50 ...
+SUSPEND FAILED, did not go to sleep
+wait for 50 seconds
+delay 48 ...
+SUSPEND FAILED, did not go to sleep
+wait for 48 seconds
+delay 46 ...
+SUSPEND FAILED, did not go to sleep
+wait for 46 seconds
+delay 44 ...
+SUSPEND FAILED, did not go to sleep
+wait for 44 seconds
+delay 42 ...
+SUSPEND FAILED, did not go to sleep
+wait for 42 seconds
+delay 40 ...
+SUSPEND FAILED, did not go to sleep
+wait for 40 seconds
+delay 38 ...
+SUSPEND FAILED, did not go to sleep
+wait for 38 seconds
+delay 36 ...
+SUSPEND FAILED, did not go to sleep
+wait for 36 seconds
+delay 34 ...
+SUSPEND FAILED, did not go to sleep
+wait for 34 seconds
+delay 32 ...
+SUSPEND FAILED, did not go to sleep
+wait for 32 seconds
+delay 30 ...
+SUSPEND FAILED, did not go to sleep
+wait for 30 seconds
+delay 28 ...
+SUSPEND FAILED, did not go to sleep
+wait for 28 seconds
+delay 26 ...
+SUSPEND FAILED, did not go to sleep
+wait for 26 seconds
+delay 24 ...
+SUSPEND FAILED, did not go to sleep
+wait for 24 seconds
+delay 22 ...
+SUSPEND FAILED, did not go to sleep
+wait for 22 seconds
+delay 20 ...
+SUSPEND FAILED, did not go to sleep
+wait for 20 seconds
+delay 18 ...
+SUSPEND FAILED, did not go to sleep
+wait for 18 seconds
+delay 16 ...
+SUSPEND FAILED, did not go to sleep
+wait for 16 seconds
+delay 14 ...
+SUSPEND FAILED, did not go to sleep
+wait for 14 seconds
+delay 12 ...
+SUSPEND FAILED, did not go to sleep
+wait for 12 seconds
+delay 10 ...
+SUSPEND FAILED, did not go to sleep
+wait for 10 seconds
+delay 8 ...
+SUSPEND FAILED, did not go to sleep
+wait for 8 seconds
+delay 6 ...
+SUSPEND FAILED, did not go to sleep
+wait for 6 seconds
+delay 4 ...
+SUSPEND FAILED, did not go to sleep
+wait for 4 seconds
+delay 2 ...
+SUSPEND FAILED, did not go to sleep
+wait for 2 seconds
+
+*** Please report your results on the Ubuntu WIKI:
+    https://wiki.ubuntu.com/KernelTeam/SuspendResumeTesting
+
+      Battery Consumption: 93 mW
+letozaf@letozaf-HP-G62:~$
+
+
+---------------------------------------------------------------------------
+
+
+Test 1 did not work.
+But all the other tests seemed to work as my laptop went on suspension,
+but when it come back from suspension, after about 30 seconds I got the
+message : "SUSPEND FAILED, did not go to sleep".
+As it did this also on the last test, this test lasted very long like
+about 50 minutes, more or less.
+
+Also the "Hibernate/Resume smoke test " did not work, my laptop's screen
+went black for about 5 seconds and then I got the lock screen asking me
+for my password to go back to my session.
+
+
+
+--
+Carla Sella
+email:carla.sella@gmail.com
+https://launchpad.net/~carla-sella
+
+
 
