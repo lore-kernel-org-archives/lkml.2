@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1KOASZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:18:25 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:45272 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab1KOASW (ORCPT
+	id S1753646Ab1KOASy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:18:54 -0500
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:54143 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab1KOASx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:18:22 -0500
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 19:18:22 EST
+	Mon, 14 Nov 2011 19:18:53 -0500
 From: David Decotigny <david.decotigny@google.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -19,76 +18,66 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
         Ayaz Abdulla <AAbdulla@nvidia.com>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v3 0/9] forcedeth: stats & debug enhancements
-Date: Mon, 14 Nov 2011 16:11:10 -0800
-Message-Id: <cover.1321313729.git.david.decotigny@google.com>
+Subject: [PATCH net-next v3 4/9] forcedeth: expose module parameters in /sys/module
+Date: Mon, 14 Nov 2011 16:11:14 -0800
+Message-Id: <558f3ff3d373b1cdcbebebe842816b3c91438728.1321313729.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
+References: <cover.1321313729.git.david.decotigny@google.com>
+In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
+References: <cover.1321313729.git.david.decotigny@google.com>
 Organization: Google, Inc.
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These changes implement the ndo_get_stats64 API and add a few more
-stats and debugging features for forcedeth. They also ensure that
-stats updates are correct in SMP systems, 32 or 64-bits.
-
-Changes since v2:
-  - patch 1/9 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
-    stats on hardware without extended stats support")
-  - removed patch 5/10 "stats for rx_packets based on hardware
-    registers" because packets&bytes stats are updated in software
-    only (898bdf2cb43e)
-
-Changes since v1:
-  - patch 1/10 is the same as
-    http://patchwork.ozlabs.org/patch/125017/ (targetting net)
-  - other patches updated to take patch 1/10 into account
-  - various commit message updates
+In particular, debug_tx_timeout can be updated at runtime.
 
 
-Tested:
-  ~150Mbps incoming TCP, ethtool -S in a loop, x86_64 16-way:
-     tx_bytes: 5441989419
-     rx_packets: 5439224
-     tx_timeout: 0
-     tx_packets: 5456705
-     rx_bytes: 5566763850
 
-Tested:
-  pktgen + loopback report same RX/TX packets and bytes stats
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Tested:
-  tests above with Kconfig DEBUG_PAGEALLOC DEBUG_MUTEXES
-  DEBUG_SPINLOCK LOCKUP_DETECTOR DEBUG_RT_MUTEXES DEBUG_LOCK_ALLOC
-  PROVE_LOCKING DEBUG_ATOMIC_SLEEP DEBUG_STACK_USAGE DEBUG_KOBJECT
-  DEBUG_VM DEBUG_LIST DEBUG_SG DEBUG_NOTIFIERS TEST_KSTRTOX
-  STRICT_DEVMEM DEBUG_STACKOVERFLOW
-
-
-############################################
-# Patch Set Summary:
-
-David Decotigny (6):
-  forcedeth: expose module parameters in /sys/module
-  forcedeth: implement ndo_get_stats64() API
-  forcedeth: account for dropped RX frames
-  forcedeth: new ethtool stat counter for TX timeouts
-  forcedeth: stats updated with a deferrable timer
-  forcedeth: whitespace/indentation fixes
-
-Mike Ditto (1):
-  forcedeth: Add messages to indicate using MSI or MSI-X
-
-Sameer Nanda (1):
-  forcedeth: allow to silence "TX timeout" debug messages
-
-david decotigny (1):
-  forcedeth: fix stats on hardware without extended stats support
-
- drivers/net/ethernet/nvidia/forcedeth.c |  342 ++++++++++++++++++++++---------
- 1 files changed, 246 insertions(+), 96 deletions(-)
-
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 9b917ff..ee8cce5 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -6153,23 +6153,23 @@ static void __exit exit_nic(void)
+ 	pci_unregister_driver(&driver);
+ }
+ 
+-module_param(max_interrupt_work, int, 0);
++module_param(max_interrupt_work, int, S_IRUGO);
+ MODULE_PARM_DESC(max_interrupt_work, "forcedeth maximum events handled per interrupt");
+-module_param(optimization_mode, int, 0);
++module_param(optimization_mode, int, S_IRUGO);
+ MODULE_PARM_DESC(optimization_mode, "In throughput mode (0), every tx & rx packet will generate an interrupt. In CPU mode (1), interrupts are controlled by a timer. In dynamic mode (2), the mode toggles between throughput and CPU mode based on network load.");
+-module_param(poll_interval, int, 0);
++module_param(poll_interval, int, S_IRUGO);
+ MODULE_PARM_DESC(poll_interval, "Interval determines how frequent timer interrupt is generated by [(time_in_micro_secs * 100) / (2^10)]. Min is 0 and Max is 65535.");
+-module_param(msi, int, 0);
++module_param(msi, int, S_IRUGO);
+ MODULE_PARM_DESC(msi, "MSI interrupts are enabled by setting to 1 and disabled by setting to 0.");
+-module_param(msix, int, 0);
++module_param(msix, int, S_IRUGO);
+ MODULE_PARM_DESC(msix, "MSIX interrupts are enabled by setting to 1 and disabled by setting to 0.");
+-module_param(dma_64bit, int, 0);
++module_param(dma_64bit, int, S_IRUGO);
+ MODULE_PARM_DESC(dma_64bit, "High DMA is enabled by setting to 1 and disabled by setting to 0.");
+-module_param(phy_cross, int, 0);
++module_param(phy_cross, int, S_IRUGO);
+ MODULE_PARM_DESC(phy_cross, "Phy crossover detection for Realtek 8201 phy is enabled by setting to 1 and disabled by setting to 0.");
+-module_param(phy_power_down, int, 0);
++module_param(phy_power_down, int, S_IRUGO);
+ MODULE_PARM_DESC(phy_power_down, "Power down phy and disable link when interface is down (1), or leave phy powered up (0).");
+-module_param(debug_tx_timeout, bool, 0);
++module_param(debug_tx_timeout, bool, S_IRUGO|S_IWUSR);
+ MODULE_PARM_DESC(debug_tx_timeout,
+ 		 "Dump tx related registers and ring when tx_timeout happens");
+ 
 -- 
 1.7.3.1
 
