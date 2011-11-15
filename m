@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1KOOyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 09:54:33 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48900 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab1KOOyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 09:54:31 -0500
-Date: Tue, 15 Nov 2011 06:54:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
-Message-ID: <20111115145425.GL30922@google.com>
-References: <Pine.LNX.4.44L0.1111141028140.2035-100000@iolanthe.rowland.org>
- <1321347089.26084.2.camel@minggr>
+	id S1753342Ab1KOPAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 10:00:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58418 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab1KOPAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 10:00:51 -0500
+Date: Tue, 15 Nov 2011 15:00:47 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
+ allocations
+Message-ID: <20111115150047.GG27150@suse.de>
+References: <20111110100616.GD3083@suse.de>
+ <20111110142202.GE3083@suse.de>
+ <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
+ <20111110161331.GG3083@suse.de>
+ <20111110151211.523fa185.akpm@linux-foundation.org>
+ <20111111100156.GI3083@suse.de>
+ <20111114160345.01e94987.akpm@linux-foundation.org>
+ <20111115020009.GE4414@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1321347089.26084.2.camel@minggr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111115020009.GE4414@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 04:51:29PM +0800, Lin Ming wrote:
-> > This is not the right approach.  You should look instead at 
-> > scsi_dev_type_suspend() in scsi_pm.c.  If the device is already runtime 
-> > suspended then the routine should return immediately.
+On Tue, Nov 15, 2011 at 03:00:09AM +0100, Andrea Arcangeli wrote:
+> On Mon, Nov 14, 2011 at 04:03:45PM -0800, Andrew Morton wrote:
+> > On Fri, 11 Nov 2011 10:01:56 +0000
+> > Mel Gorman <mgorman@suse.de> wrote:
+> > > A 1000-hour compute job will have its pages collapsed into hugepages by
+> > > khugepaged so they might not have the huge pages at the very beginning
+> > > but they get them. With khugepaged in place, there should be no need for
+> > > an additional tuneable.
+> > 
+> > OK...
 > 
-> How about below?
+> It's good idea to keep it monitored. But I guess the reduced rate will
+> only materialize at temporary VM stress times.
 > 
-> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> index d329f8b..94b60bd 100644
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
-> @@ -20,6 +20,9 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
->  	struct device_driver *drv;
->  	int err;
->  
-> +	if (pm_runtime_suspended(dev))
-> +		return 0;
-> +
+> > Fair enough.  One slight problem though:
+> > 
+> > akpm:/usr/src/25> grep -r thp_collapse_alloc_failed Documentation 
+> > akpm:/usr/src/25> 
+> 
+> I didn't fill that gap but I was reading the code again and I don't
+> see why we keep retrying for -EAGAIN in the !sync case. Maybe the
+> below is good (untested). I doubt it's good to spend cpu to retry the
+> trylock or to retry the migrate on a pinned page by O_DIRECT.
 
-Something to be careful about is there are different types of suspend
-states (PMSG_*).  IIUC, runtime PM is using PMSG_SUSPEND.  Other
-states may or may not be compatible with PMSG_SUSPEND expectations, so
-you can skip suspend operation if the newly requested state is
-PMSG_SUSPEND but otherwise the controller needs to be woken up and
-told to comply to the new state.
+The retry happens on the expectation that the page is not locked
+for very long. Pinning for O_DIRECT would be an exception. Readahead
+pages would be another. I don't have data on how often we encounter
+a page that is locked for a very short period of time versus being
+locked for IO and even if I did, it would be depend on the workload
+and the amount of RAM.
 
-Thanks.
+> In fact
+> as far as THP success rate is concerned maybe we should "goto out"
+> instead of "goto fail" but I didn't change to that as compaction even
+> if it fails a subpage may still be successful at creating order
+> 1/2/3/4...8 pages. I only avoid 9 loops to retry a trylock or a page
+> under O_DIRECT. Maybe that will save a bit of CPU, I doubt it can
+> decrease the success rate in any significant way. I'll test it at the
+> next build...
+> 
+> ====
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> Subject: [PATCH] migrate: !sync don't retry
+> 
+> For !sync it's not worth retrying because we won't lock_page even
+> after the second pass.
+
+Except in the cases where the page was locked for a very short
+period of time. I think this will have an impact on success rates for
+minimal latency savings but I cannot predict how much of an impact.
 
 -- 
-tejun
+Mel Gorman
+SUSE Labs
