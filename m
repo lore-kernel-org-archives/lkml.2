@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab1KOBnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 20:43:14 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54431 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753010Ab1KOBnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 20:43:12 -0500
-Message-ID: <4EC1C41C.2020603@cn.fujitsu.com>
-Date: Tue, 15 Nov 2011 09:45:00 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Paul Menage <paul@paulmenage.org>, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+	id S1754871Ab1KOBwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 20:52:41 -0500
+Received: from mga14.intel.com ([143.182.124.37]:31835 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754489Ab1KOBwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 20:52:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,512,1315206000"; 
+   d="scan'208";a="37081306"
+Message-ID: <1321321957.13860.64.camel@yhuang-dev>
+Subject: Re: Printk mulitple line message support
+From: Huang Ying <ying.huang@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: William Douglas <william.r.douglas@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Turner <pjt@google.com>
-Subject: Re: [PATCH] Replace Paul Menage with Tejun Heo as cgroups maintainer
-References: <1321320612-57855-1-git-send-email-paul@paulmenage.org> <20111115013655.GH30922@google.com>
-In-Reply-To: <20111115013655.GH30922@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-15 09:43:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-15 09:43:04,
-	Serialize complete at 2011-11-15 09:43:04
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 15 Nov 2011 09:52:37 +0800
+In-Reply-To: <1321319883.8944.7.camel@Joe-Laptop>
+References: <1321253936.13860.35.camel@yhuang-dev>
+	 <1321281640.2004.6.camel@Joe-Laptop> <1321318201.13860.51.camel@yhuang-dev>
+	 <1321319883.8944.7.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-2 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(also cc Paul Turner)
+On Tue, 2011-11-15 at 09:18 +0800, Joe Perches wrote:
+> On Tue, 2011-11-15 at 08:50 +0800, Huang Ying wrote:
+> > On Mon, 2011-11-14 at 22:40 +0800, Joe Perches wrote:
+> > > On Mon, 2011-11-14 at 14:58 +0800, Huang Ying wrote:
+> > > > Hi,
+> > > > 
+> > > > In most cases, printk only guarantees messages from different printk
+> > > > calling will not be interleaved between each other.  But many printk
+> > > > users uses multiple line to form a complete message and call printk
+> > > > for each line.  So the following situation is possible for two printk
+> > > > users running on two CPUs.
+> > > > 
+> > > > line 1 of message from printk user1
+> > > > line 1 of message from printk user2
+> > > > line 2 of message from printk user1
+> > > > line 2 of message from printk user2
+> > > > 
+> > > > This makes kernel log hard to read.  One possible solution to this
+> > > > issue is to give a sequence number (or ID) to each complete message.
+> > > > So the above lines will be:
+> > > > 
+> > > > {1}line 1 of message from printk user1
+> > > > {2}line 1 of message from printk user2
+> > > > {1}line 2 of message from printk user1
+> > > > {2}line 2 of message from printk user2
+> > > > 
+> > > > Then some simple script can be used to group lines together according
+> > > > to sequence number in lines.
+> > > > 
+> > > > What do you think about that?
+> > > 
+> > > This makes the typical multi-part but non-interleaved
+> > > output difficult to read.
+> > 
+> > With a simple script, we can strip out the sequence # easily.
+> > 
+> > > How about determining if there is interleaving and
+> > > emitting sequence # only in those cases?
+> > > 
+> > > Perhaps test the atomic for the last sequence #.
+> > 
+> > So we will have no sequence # prefix for printk user1's lines if printk
+> > user 2 comes in the middle?  Something as follow?
+> > 
+> > line 1 of message from printk user1
+> > {2}line 1 of message from printk user2
+> > line 2 of message from printk user1
+> > {2}line 2 of message from printk user2
+> > 
+> > This will make it hard for a script to sort the lines.  Where should it
+> > insert lines from printk user2 in the sort result?
+> 
+> 90+% it's the previous line.
+> 
+> I believe you are not solving any real problem
+> with pr_<level>_ml.
+> 
+> Most all interleaved complete line uses have some
+> pr_fmt prefix that distinguishes between the sources.
 
-09:36, Tejun Heo wrote:
-> (cc'ing akpm, Ingo and Frederic)
-> 
-> On Mon, Nov 14, 2011 at 05:30:12PM -0800, Paul Menage wrote:
->> As is probably painfully obvious, I don't have time to be a cgroups
->> maintainer.  Rather than have me continue to hope that I'll magically
->> find more spare time, instead Tejun has kindly agreed to take over the
->> role, along with Li Zefan.
->>
->> Signed-off-by: Paul Menage <paul@paulmenage.org>
->> ---
->>
->> Tejun, Li - can I get your acks before I send this on to mainline?
-> 
-> Sure,
-> 
->  Acked-by: Tejun Heo <tj@kernel.org>
-> 
+Except dev_<level> and netdev_<level>, it appears that many general
+pr_<level> do not have the prefix.
 
-Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+> A perhaps larger problem is interleaved partial
+> lines with pr_cont.
 
-> I'll set up cgroup korg git tree and do standard for-next / for-fixes
+In an interleaved situation, how to determine <level> for pr_cont?
+Maybe we should avoid use it if we care about interleaving?
 
-Thanks. I would have done this if not having restored my kernel.org
-account. :)
+> I believe that an initiator/terminator is necessary
+> for reassembly.  Something that could be used
+> with pr_<level>, dev_<level>, netdev_<level>, et al.
+> 
+> mp_start(&cookie)
+> pr_<level>(fmt, ...);
 
-> branch management.  I won't be committing patches unless co-acked by
-> Li Zefan.
-> 
-> If anyone objects / has better ideas, please speak up.
-> 
-> Thank you.
-> 
->>  MAINTAINERS |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 4808256..055b7f6 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -1926,7 +1926,7 @@ S:	Maintained
->>  F:	drivers/connector/
->>  
->>  CONTROL GROUPS (CGROUPS)
->> -M:	Paul Menage <paul@paulmenage.org>
->> +M:	Tejun Heo <tj@kernel.org>
->>  M:	Li Zefan <lizf@cn.fujitsu.com>
->>  L:	containers@lists.linux-foundation.org
->>  S:	Maintained
->> -- 
->> 1.7.5.4
->>
-> 
+Do not need cookie here?
+
+> pr_mp_cont(&cookie, fmt, ...);
+> pr_mp_cont(&cookie, fmt "\n", ...);
+> mp_end(&cookie);
+
+With initiator/terminator the kernel log will be more structural, but
+that will make kernel log a little harder to read too.
+
+Best Regards,
+Huang Ying
+
+
