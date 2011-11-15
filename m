@@ -1,45 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab1KOTWB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:22:01 -0500
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:38203 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab1KOTWA (ORCPT
+	id S1757271Ab1KOTXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:23:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53726 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751620Ab1KOTXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:22:00 -0500
-Subject: Re: How to remove 2000+ lines from 400+ defconfig files?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dave Jones <davej@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+	Tue, 15 Nov 2011 14:23:21 -0500
+Date: Tue, 15 Nov 2011 19:23:19 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20111115185728.GA16643@redhat.com>
-References: <1321362602.20271.192.camel@x61.thuisdomein>
-	 <alpine.LNX.2.00.1111151412360.15187@pobox.suse.cz>
-	 <1321371462.20271.201.camel@x61.thuisdomein> <4EC2B1F7.6090108@suse.cz>
-	 <20111115185728.GA16643@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Nov 2011 20:21:29 +0100
-Message-ID: <1321384889.20271.217.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/2] regmap: Do not call regcache_exit from
+ regcache_rbtree_init error path
+Message-ID: <20111115192318.GA4058@opensource.wolfsonmicro.com>
+References: <20111114214304.GI6528@opensource.wolfsonmicro.com>
+ <1321360481-17783-1-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321360481-17783-1-git-send-email-lars@metafoo.de>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 13:57 -0500, Dave Jones wrote:
-> It seems to me that these files have always been very neglected.
+On Tue, Nov 15, 2011 at 01:34:40PM +0100, Lars-Peter Clausen wrote:
+> Calling regcache_exit from regcache_rbtree_init is first of all a layering
+> violation and secondly will cause double frees. regcache_exit will free buffers
 
-Almost all of them (ie, 426 of 437) had one or more outdated macros (ie,
-mentioned a macro that I could not link to a current Kconfig symbol).
-
-With some, or perhaps a lot of, effort we might learn how long they've
-been neglected. For that we need to know when every one of those 161
-Kconfig symbols got dropped and see what the oldest Kconfig symbol
-(turned into a macro) is in each of those 426 Kconfig files. But I'm not
-sure if that actually would tell us much. I guess it's easier to just
-conclude that, yes, they are rather neglected.
-
-
-Paul Bolle
-
+Applied, thanks.
