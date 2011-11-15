@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1KOANu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:13:50 -0500
-Received: from mail-ww0-f74.google.com ([74.125.82.74]:62178 "EHLO
-	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756802Ab1KOALr (ORCPT
+	id S1754193Ab1KOAO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:14:28 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41724 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751735Ab1KOAOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:11:47 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>, Mike Ditto <mditto@google.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v3 2/9] forcedeth: Add messages to indicate using MSI or MSI-X
-Date: Mon, 14 Nov 2011 16:11:12 -0800
-Message-Id: <97a5a50baaca7b272dfb7a1a06e88df4888f12b9.1321313729.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
-References: <cover.1321313729.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
-References: <cover.1321313729.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Mon, 14 Nov 2011 19:14:24 -0500
+X-Sasl-enc: u1SGgC/FsdCHfqUReHOto8rlzfzHmKM3KcNbn8VRsV64 1321316064
+Date: Mon, 14 Nov 2011 16:14:19 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: New Char/Misc tree to be added to linux-next
+Message-ID: <20111115001419.GA31817@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Ditto <mditto@google.com>
+Hi Stephen,
 
-This adds a few debug messages to indicate whether PCIe interrupts are
-signaled with MSI or MSI-X.
+Arnd and I are going to maintain the drivers/char/* and drivers/misc/*
+directories with the goal of getting them under control, or at least a
+false-sense of control :)
 
+So could you please add my new git tree:
+	git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
 
+which contains the two branches, "char-misc-linus" to hold patches to
+send to Linus for this merge window, and "char-misc-next" to hold
+patches for the next merge window.
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+thanks,
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 374625b..fe17e42 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -3810,6 +3810,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 				writel(0, base + NvRegMSIXMap0);
- 				writel(0, base + NvRegMSIXMap1);
- 			}
-+			netdev_info(dev, "MSI-X enabled\n");
- 		}
- 	}
- 	if (ret != 0 && np->msi_flags & NV_MSI_CAPABLE) {
-@@ -3831,6 +3832,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 			writel(0, base + NvRegMSIMap1);
- 			/* enable msi vector 0 */
- 			writel(NVREG_MSI_VECTOR_0_ENABLED, base + NvRegMSIIrqMask);
-+			netdev_info(dev, "MSI enabled\n");
- 		}
- 	}
- 	if (ret != 0) {
--- 
-1.7.3.1
-
+greg k-h
