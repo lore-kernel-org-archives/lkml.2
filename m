@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092Ab1KOLCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 06:02:36 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43713 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754996Ab1KOLCf (ORCPT
+	id S1755126Ab1KOLKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 06:10:40 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:16625 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab1KOLKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 06:02:35 -0500
+	Tue, 15 Nov 2011 06:10:39 -0500
+X-SpamScore: -25
+X-BigFish: VPS-25(zz9371K1432N98dK4015Lzz1202hzz15d4R8275bhz32i668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LUP8CS-01-2W9-02
+X-M-MSG: 
+Date: Tue, 15 Nov 2011 12:10:01 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
+Message-ID: <20111115111001.GB5627@amd.com>
+References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+ <20111115103926.GA5627@amd.com>
+ <CAK=WgbZ=0HctjLREv1oXEa=5ryY7C_6srO1Nt5uMowH+FyaHJQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4EBE4A80.6090607@parallels.com>
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
- <1320182360-20043-15-git-send-email-glommer@parallels.com>
- <4EBD94A0.9070703@google.com> <4EBE4A80.6090607@parallels.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 15 Nov 2011 03:02:03 -0800
-Message-ID: <CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
-Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
-        jbottomley@parallels.com, fweisbec@gmail.com,
-        Balbir Singh <bsingharora@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbZ=0HctjLREv1oXEa=5ryY7C_6srO1Nt5uMowH+FyaHJQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 12, 2011 at 2:29 AM, Glauber Costa <glommer@parallels.com> wrote:
-> On 11/11/2011 07:33 PM, Paul Turner wrote:
->>
->> On 11/01/2011 02:19 PM, Glauber Costa wrote:
->>>
->>> Now that we're providing all cpuacct capability in cpu cgroup,
->>> default CPUACCT to n. We still maintain it for compatiblity for
->>> anyone that need an independent set of tasks to be managed by it
->>> relatively to cpu cgroup, but encourage the use of cpucgroup for that.
->>>
->>> Proposing schedule of deprecation for 3.5
->>>
->>
->>
->> I'd like to see a little more separation beyond 1 linear series here.
->>
->>
->> We're doing the following things
->>
->> 1. Migrating the existing cpuacct functionality into cpu
->> 2. Deprecating cpuacct
->> 3. Adding new functionality
->>
->> I would like to consider (3) separately from 1/2 which we can and should
->> accomplish immediately due to the over-head it's currently introducing.
->> It seems less than optimal to hinge resolving that on reaching agreement
->> for the new bits.
->>
->> It also helps that the the migrated functionality in (1) is just
->> exporting state that is already being maintained by cpu so those changes
->> end up being quite small and non-invasive.
->
-> So you'd like me to submit a new series, that does not do per-cgroup
-> /proc/stat first?
->
+On Tue, Nov 15, 2011 at 12:45:33PM +0200, Ohad Ben-Cohen wrote:
+> Hi Joerg,
+> 
+> On Tue, Nov 15, 2011 at 12:39 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> > It doesn't apply cleanly, can you please rebase the code, collect the
+> > Acked-by's and resend?
+> 
+> Sure. I planned on resending after the "hardware pgsize" patches are
+> merged, but please tell me if you prefer it the other way around.
 
-Yes, I think there's a fair amount of discussion remaining on
-/proc/stat and the right way to integrate it with the cpu subsystem
-despite it being a not entirely natural fit.  Something I proposed at
-Prague and that we could explore here is the idea of a co-mounted
-controller.  In this example it would only be mountable with cpu so
-you could always depend on the cpu hierarchy being there; likewise we
-can put (jump-labeled) touchpoints within the cpu-subsystem to call
-out for updates as appropriate when the co-mount exists.
+It is almost merged :) I just had to struggle with some compile errors
+from upstream in my tests. But I think I will finish testing today and
+push everything out.
 
-However, this does not force us to bring all of
-the required data-structures into cpu/sched and allows us to have the
-config enabled with no memory cost if users choose to mount cpu and
-not "cpu-proc".  This is just one proposal and there may be other ways
-to do it, but I'm really not keen on stuffing it into cpu.  What do
-you think?
+Thanks,
 
-Note: There's some clean-up to sched.c going on to pull out
-data-structures and make it not a monolithic .c-#include beast.  This
-will remove some of the symbol visibility requirements that would have
-required you to be in cpu/sched.c before.
+	Joerg
 
-On the other hand, I don't think much discussion remains for cpuacct,
-everyone's pretty unanimous in that they'd like to see it deprecated.
-By splitting this up we can close out that quickly while we figure out the
-best way to resolve the above.
+-- 
+AMD Operating System Research Center
 
-Thanks!
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-- Paul
