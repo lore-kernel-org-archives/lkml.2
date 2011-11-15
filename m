@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab1KOPOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 10:14:05 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35053 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024Ab1KOPNm (ORCPT
+	id S1756179Ab1KOPOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 10:14:30 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33288 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756024Ab1KOPO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 10:13:42 -0500
-Subject: [RFC PATCH v5 1/9] fadump: Add documentation for firmware-assisted
-	dump.
+	Tue, 15 Nov 2011 10:14:28 -0500
+Subject: [RFC PATCH v5 7/9] fadump: Introduce cleanup routine to invalidate
+	/proc/vmcore.
 To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -19,285 +19,67 @@ Cc: Amerigo Wang <amwang@redhat.com>, Kexec-ml <kexec@lists.infradead.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Ananth Narayan <ananth@in.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
         Anton Blanchard <anton@samba.org>
-Date: Tue, 15 Nov 2011 20:43:34 +0530
-Message-ID: <20111115151334.16533.5790.stgit@mars.in.ibm.com>
+Date: Tue, 15 Nov 2011 20:44:18 +0530
+Message-ID: <20111115151418.16533.51406.stgit@mars.in.ibm.com>
 In-Reply-To: <20111115151145.16533.16384.stgit@mars.in.ibm.com>
 References: <20111115151145.16533.16384.stgit@mars.in.ibm.com>
 User-Agent: StGit/0.15-1-ged5e-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 11111506-3568-0000-0000-000000B6A214
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-Documentation for firmware-assisted dump. This document is based on the
-original documentation written for phyp assisted dump by Linas Vepstas
-and Manish Ahuja, with few changes to reflect the current implementation.
+With the firmware-assisted dump support we don't require a reboot when we
+are in second kernel after crash. The second kernel after crash is a normal
+kernel boot and has knowledge about entire system RAM with the page tables
+initialized for entire system RAM. Hence once the dump is saved to disk, we
+can just release the reserved memory area for general use and continue
+with second kernel as production kernel.
 
-Change in v3:
-- Modified the documentation to reflect introdunction of fadump_registered
-  sysfs file and few minor changes.
-
-Change in v2:
-- Modified the documentation to reflect the change of fadump_region
-  file under debugfs filesystem.
+Hence when we release the reserved memory that contains dump data, the
+'/proc/vmcore' will not be valid anymore. Hence this patch introduces
+a cleanup routine that invalidates and removes the /proc/vmcore file. This
+routine will be invoked before we release the reserved dump memory area.
 
 Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 ---
- Documentation/powerpc/firmware-assisted-dump.txt |  243 ++++++++++++++++++++++
- 1 files changed, 243 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/powerpc/firmware-assisted-dump.txt
+ fs/proc/vmcore.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/powerpc/firmware-assisted-dump.txt b/Documentation/powerpc/firmware-assisted-dump.txt
-new file mode 100644
-index 0000000..3248b5d
---- /dev/null
-+++ b/Documentation/powerpc/firmware-assisted-dump.txt
-@@ -0,0 +1,243 @@
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index cd99bf5..fae5526 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -699,3 +699,26 @@ static int __init vmcore_init(void)
+ 	return 0;
+ }
+ module_init(vmcore_init)
 +
-+                   Firmware-Assisted Dump
-+                   ------------------------
-+                       July 2011
++/* Cleanup function for vmcore module. */
++void vmcore_cleanup(void)
++{
++	struct list_head *pos, *next;
 +
-+The goal of firmware-assisted dump is to enable the dump of
-+a crashed system, and to do so from a fully-reset system, and
-+to minimize the total elapsed time until the system is back
-+in production use.
++	if (proc_vmcore) {
++		remove_proc_entry(proc_vmcore->name, proc_vmcore->parent);
++		proc_vmcore = NULL;
++	}
 +
-+Comparing with kdump or other strategies, firmware-assisted
-+dump offers several strong, practical advantages:
++	/* clear the vmcore list. */
++	list_for_each_safe(pos, next, &vmcore_list) {
++		struct vmcore *m;
 +
-+-- Unlike kdump, the system has been reset, and loaded
-+   with a fresh copy of the kernel.  In particular,
-+   PCI and I/O devices have been reinitialized and are
-+   in a clean, consistent state.
-+-- Once the dump is copied out, the memory that held the dump
-+   is immediately available to the running kernel. A further
-+   reboot isn't required.
-+
-+The above can only be accomplished by coordination with,
-+and assistance from the Power firmware. The procedure is
-+as follows:
-+
-+-- The first kernel registers the sections of memory with the
-+   Power firmware for dump preservation during OS initialization.
-+   These registered sections of memory are reserved by the first
-+   kernel during early boot.
-+
-+-- When a system crashes, the Power firmware will save
-+   the low memory (boot memory of size larger of 5% of system RAM
-+   or 256MB) of RAM to the previous registered region. It will
-+   also save system registers, and hardware PTE's.
-+
-+   NOTE: The term 'boot memory' means size of the low memory chunk
-+         that is required for a kernel to boot successfully when
-+         booted with restricted memory. By default, the boot memory
-+         size will be the larger of 5% of system RAM or 256MB.
-+         Alternatively, user can also specify boot memory size
-+         through boot parameter 'fadump_reserve_mem=' which will
-+         override the default calculated size.
-+
-+-- After the low memory (boot memory) area has been saved, the
-+   firmware will reset PCI and other hardware state.  It will
-+   *not* clear the RAM. It will then launch the bootloader, as
-+   normal.
-+
-+-- The freshly booted kernel will notice that there is a new
-+   node (ibm,dump-kernel) in the device tree, indicating that
-+   there is crash data available from a previous boot. During
-+   the early boot OS will reserve rest of the memory above
-+   boot memory size effectively booting with restricted memory
-+   size. This will make sure that the second kernel will not
-+   touch any of the dump memory area.
-+
-+-- User-space tools will read /proc/vmcore to obtain the contents
-+   of memory, which holds the previous crashed kernel dump in ELF
-+   format. The userspace tools may copy this info to disk, or
-+   network, nas, san, iscsi, etc. as desired.
-+
-+-- Once the userspace tool is done saving dump, it will echo
-+   '1' to /sys/kernel/fadump_release_mem to release the reserved
-+   memory back to general use, except the memory required for
-+   next firmware-assisted dump registration.
-+
-+   e.g.
-+     # echo 1 > /sys/kernel/fadump_release_mem
-+
-+Please note that the firmware-assisted dump feature
-+is only available on Power6 and above systems with recent
-+firmware versions.
-+
-+Implementation details:
-+----------------------
-+
-+During boot, a check is made to see if firmware supports
-+this feature on that particular machine. If it does, then
-+we check to see if an active dump is waiting for us. If yes
-+then everything but boot memory size of RAM is reserved during
-+early boot (See Fig. 2). This area is released once we finish
-+collecting the dump from user land scripts (e.g. kdump scripts)
-+that are run. If there is dump data, then the
-+/sys/kernel/fadump_release_mem file is created, and the reserved
-+memory is held.
-+
-+If there is no waiting dump data, then only the memory required
-+to hold CPU state, HPTE region, boot memory dump and elfcore
-+header, is reserved at the top of memory (see Fig. 1). This area
-+is *not* released: this region will be kept permanently reserved,
-+so that it can act as a receptacle for a copy of the boot memory
-+content in addition to CPU state and HPTE region, in the case a
-+crash does occur.
-+
-+  o Memory Reservation during first kernel
-+
-+  Low memory                                        Top of memory
-+  0      boot memory size                                       |
-+  |           |                       |<--Reserved dump area -->|
-+  V           V                       |   Permanent Reservation V
-+  +-----------+----------/ /----------+---+----+-----------+----+
-+  |           |                       |CPU|HPTE|  DUMP     |ELF |
-+  +-----------+----------/ /----------+---+----+-----------+----+
-+        |                                           ^
-+        |                                           |
-+        \                                           /
-+         -------------------------------------------
-+          Boot memory content gets transferred to
-+          reserved area by firmware at the time of
-+          crash
-+                   Fig. 1
-+
-+  o Memory Reservation during second kernel after crash
-+
-+  Low memory                                        Top of memory
-+  0      boot memory size                                       |
-+  |           |<------------- Reserved dump area ----------- -->|
-+  V           V                                                 V
-+  +-----------+----------/ /----------+---+----+-----------+----+
-+  |           |                       |CPU|HPTE|  DUMP     |ELF |
-+  +-----------+----------/ /----------+---+----+-----------+----+
-+        |                                                    |
-+        V                                                    V
-+   Used by second                                    /proc/vmcore
-+   kernel to boot
-+                   Fig. 2
-+
-+Currently the dump will be copied from /proc/vmcore to a
-+a new file upon user intervention. The dump data available through
-+/proc/vmcore will be in ELF format. Hence the existing kdump
-+infrastructure (kdump scripts) to save the dump works fine with
-+minor modifications.
-+
-+The tools to examine the dump will be same as the ones
-+used for kdump.
-+
-+How to enable firmware-assisted dump (fadump):
-+-------------------------------------
-+
-+1. Set config option CONFIG_FA_DUMP=y and build kernel.
-+2. Boot into linux kernel with 'fadump=1' kernel cmdline option.
-+3. Optionally, user can also set 'fadump_reserve_mem=' kernel cmdline
-+   to specify size of the memory to reserve for boot memory dump
-+   preservation.
-+
-+NOTE: If firmware-assisted dump fails to reserve memory then it will
-+   fallback to existing kdump mechanism if 'crashkernel=' option
-+   is set at kernel cmdline.
-+
-+Sysfs/debugfs files:
-+------------
-+
-+Firmware-assisted dump feature uses sysfs file system to hold
-+the control files and debugfs file to display memory reserved region.
-+
-+Here is the list of files under kernel sysfs:
-+
-+ /sys/kernel/fadump_enabled
-+
-+    This is used to display the fadump status.
-+    0 = fadump is disabled
-+    1 = fadump is enabled
-+
-+ /sys/kernel/fadump_registered
-+
-+    This is used to display the fadump registration status as well
-+    as to control (start/stop) the fadump registration.
-+    0 = fadump is not registered.
-+    1 = fadump is registered and ready to handle system crash.
-+
-+    To register fadump echo 1 > /sys/kernel/fadump_registered and
-+    echo 0 > /sys/kernel/fadump_registered for un-register and stop the
-+    fadump. Once the fadump is un-registered, the system crash will not
-+    be handled and vmcore will not be captured.
-+
-+ /sys/kernel/fadump_release_mem
-+
-+    This file is available only when fadump is active during
-+    second kernel. This is used to release the reserved memory
-+    region that are held for saving crash dump. To release the
-+    reserved memory echo 1 to it:
-+
-+    echo 1  > /sys/kernel/fadump_release_mem
-+
-+    After echo 1, the content of the /sys/kernel/debug/powerpc/fadump_region
-+    file will change to reflect the new memory reservations.
-+
-+Here is the list of files under powerpc debugfs:
-+(Assuming debugfs is mounted on /sys/kernel/debug directory.)
-+
-+ /sys/kernel/debug/powerpc/fadump_region
-+
-+    This file shows the reserved memory regions if fadump is
-+    enabled otherwise this file is empty. The output format
-+    is:
-+    <region>: [<start>-<end>] <reserved-size> bytes, Dumped: <dump-size>
-+
-+    e.g.
-+    Contents when fadump is registered during first kernel
-+
-+    # cat /sys/kernel/debug/powerpc/fadump_region
-+    CPU : [0x0000006ffb0000-0x0000006fff001f] 0x40020 bytes, Dumped: 0x0
-+    HPTE: [0x0000006fff0020-0x0000006fff101f] 0x1000 bytes, Dumped: 0x0
-+    DUMP: [0x0000006fff1020-0x0000007fff101f] 0x10000000 bytes, Dumped: 0x0
-+
-+    Contents when fadump is active during second kernel
-+
-+    # cat /sys/kernel/debug/powerpc/fadump_region
-+    CPU : [0x0000006ffb0000-0x0000006fff001f] 0x40020 bytes, Dumped: 0x40020
-+    HPTE: [0x0000006fff0020-0x0000006fff101f] 0x1000 bytes, Dumped: 0x1000
-+    DUMP: [0x0000006fff1020-0x0000007fff101f] 0x10000000 bytes, Dumped: 0x10000000
-+        : [0x00000010000000-0x0000006ffaffff] 0x5ffb0000 bytes, Dumped: 0x5ffb0000
-+
-+NOTE: Please refer to Documentation/filesystems/debugfs.txt on
-+      how to mount the debugfs filesystem.
-+
-+
-+TODO:
-+-----
-+ o Need to come up with the better approach to find out more
-+   accurate boot memory size that is required for a kernel to
-+   boot successfully when booted with restricted memory.
-+ o The fadump implementation introduces a fadump crash info structure
-+   in the scratch area before the ELF core header. The idea of introducing
-+   this structure is to pass some important crash info data to the second
-+   kernel which will help second kernel to populate ELF core header with
-+   correct data before it gets exported through /proc/vmcore. The current
-+   design implementation does not address a possibility of introducing
-+   additional fields (in future) to this structure without affecting
-+   compatibility. Need to come up with the better approach to address this.
-+   The possible approaches are:
-+	1. Introduce version field for version tracking, bump up the version
-+	whenever a new field is added to the structure in future. The version
-+	field can be used to find out what fields are valid for the current
-+	version of the structure.
-+	2. Reserve the area of predefined size (say PAGE_SIZE) for this
-+	structure and have unused area as reserved (initialized to zero)
-+	for future field additions.
-+   The advantage of approach 1 over 2 is we don't need to reserve extra space.
-+---
-+Author: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-+This document is based on the original documentation written for phyp
-+assisted dump by Linas Vepstas and Manish Ahuja.
++		m = list_entry(pos, struct vmcore, list);
++		list_del(&m->list);
++		kfree(m);
++	}
++	kfree(elfcorebuf);
++	elfcorebuf = NULL;
++}
++EXPORT_SYMBOL_GPL(vmcore_cleanup);
 
