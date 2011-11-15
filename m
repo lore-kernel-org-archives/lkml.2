@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab1KOLY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 06:24:28 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53692 "EHLO
+	id S1755302Ab1KOLZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 06:25:57 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59965 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab1KOLY0 (ORCPT
+	with ESMTP id S1755084Ab1KOLZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 06:24:26 -0500
-Date: Tue, 15 Nov 2011 15:22:08 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <greg@kroah.com>,
-        Theodore Tso <tytso@MIT.EDU>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [RFC 3/3] procfs: add documentation for procfs mount options
-Message-ID: <20111115112208.GC3002@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 15 Nov 2011 06:25:56 -0500
+From: Sangwook Lee <sangwook.lee@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
+Cc: ralf@linux-mips.org, juhosg@openwrt.org, rodrigue@qca.qualcomm.com,
+        linville@tuxdriver.com, rmanohar@qca.qualcomm.com, patches@linaro.org,
+        Sangwook Lee <sangwook.lee@linaro.org>
+Subject: [PATCH] ath9k: rename ath9k_platform.h to ath_platform.h
+Date: Tue, 15 Nov 2011 11:23:44 +0000
+Message-Id: <1321356224-5053-1-git-send-email-sangwook.lee@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vasiliy Kulikov <seooon@openwall.com>
---
- Documentation/filesystems/proc.txt |   39 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
+The patch series proposes to rename ath9k_platform.h to "ath_platform.h
+This header file handles platform data used only for ath9k,
+but it can used by ath6k as well. We can take "wl12xx.h" as
+as a example. Please let us change this file name so that
+other Atheors WLANs use this file for their own platform data
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 0ec91f0..518987e 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -41,6 +41,8 @@ Table of Contents
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
+Signed-off-by: Sangwook Lee <sangwook.lee@linaro.org>
+---
+ arch/mips/ath79/dev-ar913x-wmac.c                  |    2 +-
+ drivers/net/wireless/ath/ath9k/ahb.c               |    2 +-
+ drivers/net/wireless/ath/ath9k/init.c              |    2 +-
+ drivers/net/wireless/ath/ath9k/pci.c               |    2 +-
+ include/linux/{ath9k_platform.h => ath_platform.h} |    0
+ 5 files changed, 4 insertions(+), 4 deletions(-)
+ rename include/linux/{ath9k_platform.h => ath_platform.h} (100%)
+
+diff --git a/arch/mips/ath79/dev-ar913x-wmac.c b/arch/mips/ath79/dev-ar913x-wmac.c
+index 48f425a..bc8869c 100644
+--- a/arch/mips/ath79/dev-ar913x-wmac.c
++++ b/arch/mips/ath79/dev-ar913x-wmac.c
+@@ -13,7 +13,7 @@
+ #include <linux/delay.h>
+ #include <linux/irq.h>
+ #include <linux/platform_device.h>
+-#include <linux/ath9k_platform.h>
++#include <linux/ath_platform.h>
  
-+  4	Configuring procfs
-+  4.1	Mount options
+ #include <asm/mach-ath79/ath79.h>
+ #include <asm/mach-ath79/ar71xx_regs.h>
+diff --git a/drivers/net/wireless/ath/ath9k/ahb.c b/drivers/net/wireless/ath/ath9k/ahb.c
+index 85a54cd..d84bee6 100644
+--- a/drivers/net/wireless/ath/ath9k/ahb.c
++++ b/drivers/net/wireless/ath/ath9k/ahb.c
+@@ -18,7 +18,7 @@
  
- ------------------------------------------------------------------------------
- Preface
-@@ -1542,3 +1544,40 @@ a task to set its own or one of its thread siblings comm value. The comm value
- is limited in size compared to the cmdline value, so writing anything longer
- then the kernel's TASK_COMM_LEN (currently 16 chars) will result in a truncated
- comm value.
-+
-+
-+------------------------------------------------------------------------------
-+Configuring procfs
-+------------------------------------------------------------------------------
-+
-+4.1	Mount options
-+---------------------
-+
-+The following mount options are supported:
-+
-+	hidepid=	Set /proc/<pid>/ access mode.
-+	gid=		Set the group authorized to learn processes information.
-+
-+hidepid=0 means classic mode - everybody may access all /proc/<pid>/ directories
-+(default).
-+
-+hidepid=1 means users may not access any /proc/<pid>/ directories, but their
-+own.  Sensitive files like cmdline, sched*, status are now protected against
-+other users.  This makes impossible to learn whether any user runs
-+specific program (given the program doesn't reveal itself by its behaviour).
-+As an additional bonus, as /proc/<pid>/cmdline is unaccessible for other users,
-+poorly written programs passing sensitive information via program arguments are
-+now protected against local eavesdroppers.
-+
-+hidepid=2 means hidepid=1 plus all /proc/<pid>/ will be fully invisible to other
-+users.  It doesn't mean that it hides a fact whether a process with a specific
-+pid value exists (it can be learned by other means, e.g. by "kill -0 $PID"),
-+but it hides process' uid and gid, which may be learned by stat()'ing
-+/proc/<pid>/ otherwise.  It greatly complicates intruder's task of gathering info
-+about running processes, whether some daemon runs with elevated privileges,
-+whether other user runs some sensitive program, whether other users run any
-+program at all, etc.
-+
-+gid= defines a group authorized to learn processes information otherwise
-+prohibited by hidepid=.  If you use some daemon like identd which have to learn
-+information about processes information, just add identd to this group.
---
+ #include <linux/nl80211.h>
+ #include <linux/platform_device.h>
+-#include <linux/ath9k_platform.h>
++#include <linux/ath_platform.h>
+ #include "ath9k.h"
+ 
+ static const struct platform_device_id ath9k_platform_id_table[] = {
+diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
+index af1b325..0c82aea 100644
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -16,7 +16,7 @@
+ 
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
+-#include <linux/ath9k_platform.h>
++#include <linux/ath_platform.h>
+ 
+ #include "ath9k.h"
+ 
+diff --git a/drivers/net/wireless/ath/ath9k/pci.c b/drivers/net/wireless/ath/ath9k/pci.c
+index edb0b4b..2f031b8 100644
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -17,7 +17,7 @@
+ #include <linux/nl80211.h>
+ #include <linux/pci.h>
+ #include <linux/pci-aspm.h>
+-#include <linux/ath9k_platform.h>
++#include <linux/ath_platform.h>
+ #include "ath9k.h"
+ 
+ static DEFINE_PCI_DEVICE_TABLE(ath_pci_id_table) = {
+diff --git a/include/linux/ath9k_platform.h b/include/linux/ath_platform.h
+similarity index 100%
+rename from include/linux/ath9k_platform.h
+rename to include/linux/ath_platform.h
+-- 
+1.7.4.1
+
