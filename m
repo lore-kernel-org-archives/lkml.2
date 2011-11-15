@@ -1,116 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab1KONZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 08:25:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49486 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752859Ab1KONZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 08:25:16 -0500
-Date: Tue, 15 Nov 2011 13:25:13 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111115132513.GF27150@suse.de>
-References: <20111110100616.GD3083@suse.de>
- <20111110142202.GE3083@suse.de>
- <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
- <20111110161331.GG3083@suse.de>
- <20111110151211.523fa185.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
- <20111111101414.GJ3083@suse.de>
- <20111114154408.10de1bc7.akpm@linux-foundation.org>
+	id S1755524Ab1KON1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 08:27:21 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:47487 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754512Ab1KON1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 08:27:19 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6530"; a="135406118"
+Message-ID: <4108533d3f51753179703e04299ecab7.squirrel@www.codeaurora.org>
+In-Reply-To: <001d01cca2b1$f4921ff0$ddb65fd0$%jun@samsung.com>
+References: <620ec9ffa6bdbba9ae5f76998e36f8dc.squirrel@www.codeaurora.org>
+    <001001cca043$395dbfc0$ac193f40$%jun@samsung.com>
+    <CANfBPZ-Zn+R4GosEL-RJxh8gduAr8e+qN876uPwDkHfiEpdERw@mail.gmail.com>
+    <001d01cca2b1$f4921ff0$ddb65fd0$%jun@samsung.com>
+Date: Tue, 15 Nov 2011 05:27:19 -0800 (PST)
+Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 
+     device
+From: merez@codeaurora.org
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: "'S, Venkatraman'" <svenkatr@ti.com>, merez@codeaurora.org,
+        linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, dh.han@samsung.com
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20111114154408.10de1bc7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 03:44:08PM -0800, Andrew Morton wrote:
-> On Fri, 11 Nov 2011 10:14:14 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > On Thu, Nov 10, 2011 at 03:37:32PM -0800, David Rientjes wrote:
-> > > On Thu, 10 Nov 2011, Andrew Morton wrote:
-> > > 
-> > > > > This patch once again prevents sync migration for transparent
-> > > > > hugepage allocations as it is preferable to fail a THP allocation
-> > > > > than stall.
-> > > > 
-> > > > Who said?  ;) Presumably some people would prefer to get lots of
-> > > > huge pages for their 1000-hour compute job, and waiting a bit to get
-> > > > those pages is acceptable.
-> > > > 
-> > > 
-> > > Indeed.  It seems like the behavior would better be controlled with 
-> > > /sys/kernel/mm/transparent_hugepage/defrag which is set aside specifically 
-> > > to control defragmentation for transparent hugepages and for that 
-> > > synchronous compaction should certainly apply.
-> > 
-> > With khugepaged in place, it's adding a tunable that is unnecessary and
-> > will not be used. Even if such a tuneable was created, the default
-> > behaviour should be "do not stall".
-> 
-> (who said?)
-> 
-> Let me repeat my cruelly unanswered question: do we have sufficient
-> instrumentation in place so that operators can determine that this
-> change is causing them to get less huge pages than they'd like?
-> 
+>> >> >> >> > +               phys_segments +=  next->nr_phys_segments;
+>> >> >> >> > +               if (phys_segments > max_phys_segs) {
+>> >> >> >> > +                       blk_requeue_request(q, next);
+>> >> >> >> > +                       break;
+>> >> >> >> > +               }
+>> >> >> >> I mentioned this before - if the next request is not packable
+>> and
+>> >> >> requeued,
+>> >> >> >> blk_fetch_request will retrieve it again and this while loop
+>> will
+>> >> never terminate.
+>> >> >> >>
+>> >> >> > If next request is not packable, it is requeued and 'break'
+>> >> terminates
+>> >> >> this loop.
+>> >> >> > So it not infinite.
+>> >> >> Right !! But that doesn't help finding the commands that are
+>> packable.
+>> >> Ideally, you'd need to pack all neighbouring requests into one packed
+>> >> command.
+>> >> >> The way CFQ works, it is not necessary that the fetch would return
+>> all
+>> >> outstanding
+>> >> >> requests that are packable (unless you invoke a forced dispatch)
+>> It
+>> >> would be good to see some numbers on the number of pack hits /
+>> >> misses
+>> >> >> that
+>> >> >> you would encounter with this logic, on a typical usecase.
+>> >> > Is it considered only for CFQ scheduler? How about other I/O
+>> scheduler?
+>> >> If all requests are drained from scheduler queue forcedly,
+>> >> > the number of candidate to be packed can be increased.
+>> >> > However we may lose the unique CFQ's strength and MMC D/D may take
+>> the
+>> >> CFQ's duty.
+>> >> > Basically, this patch accommodates the origin order requests from
+>> I/O
+>> >> scheduler.
+>> >> >
+>> >>
+>> >> In order to better utilize the packed commands feature and achieve
+>> the
+>> >> best performance improvements I think that the command packing should
+>> be
+>> >> done in the block layer, according to the scheduler policy.
+>> >> That is, the scheduler should be aware of the capability of the
+>> device to
+>> >> receive a request list and its constrains (such as maximum number of
+>> >> requests, max number of sectors etc) and use this information as a
+>>  factor
+>> >> to its algorithm.
+>> >> This way you keep the decision making in the hands of the scheduler
+>> while
+>> >> the MMC layer will only have to send this list as a packed command.
+>> >>
+>> > Yes, it would be another interesting approach.
+>> > Command packing you mentioned means gathering request among same
+>> direction(read/write)?
+>> > Currently I/O scheduler may know device constrains which MMC driver
+>> informs
+>> > with the exception of order information for packed command.
+>> > But I think the dependency of I/O scheduler may be able to come up.
+>> > How can MMC layer treat packed command with I/O scheduler which
+>> doesn't support this?
+>>
+>> The very act of packing presumes some sorting and re-ordering at the
+>> I/O scheduler level.
+>> When no such sorting is done (ex. noop), MMC should resort to
+>> non-packed execution, respecting the system configuration choice.
+>>
+>> Looking deeper into this, I think a better approach would be to set
+>> the prep_rq_fn of the request_queue, with a custom mmc function that
+>> decides if the requests are packable or not, and return a
+>> BLKPREP_DEFER for those that can't be packed.
+>
+> MMC layer anticipates the favorable requests for packing from I/O
+> scheduler.
+> Obviously request order from I/O scheduler might be poor for packing and
+> requests can't be packed.
+> But that doesn't mean mmc layer need to wait a better pack-case.
+> BLKPREP_DEFER may give rise to I/O latency. Top of request will be
+> deferred next time.
+> If request can't be packed, it'd rather be sent at once than delayed
+> by returning a BLKPREP_DEFER for better responsiveness.
+>
+> Thanks.
+> Seungwon Jeon.
+The decision whether a request is packable or not should not be made per
+request, therefore I don't see the need for using req_prep_fn. The MMC
+layer can peek each request and decide if to pack it or not when preparing
+the packed list (as suggested in this patch). The scheduler changes will
+improve the probability of getting a list that can be packed.
+My suggestion for the scheduler change is:
+The block layer will be notified of the packing limits via new queue
+limits (in blk-settings). We can make it generic to allow all kinds of
+requests lists. Example for the new queue limits can be:
+Is_reqs_list_supported
+Max_num_of_read_reqs_in_list
+Max_num_of_write_reqs_in_list
+max_blk_cnt_in_list
+Is_list_interleaved (optional - to support read and write requests to be
+linked together, not the case for eMMC4.5)
+The scheduler, that will have all the required info in the queue limits,
+will be able to decide which requests can be in the same list and move all
+of them to the dispatch queue (in one elevator_dispatch_fn call).
 
-Unless we add a mel_did_it counter to vmstat, they won't be able to
-identify that it was this patch in particular.
+I see 2 options for preparing the list:
 
-> Because some people really really want those huge pages.  If we go and
-> silently deprive them of those huge pages via changes like this, how do
-> they *know* it's happening?
-> 
+Option 1. blk_fetch_request will prepare the list and return a list of
+requests (will require a change in struct request to include the list but
+can be more generic).
 
-The counters in vmstat will give them a hint but it will not tell them
-*why* they are not getting the huge pages they want. That would require
-further analysis using a combination of ftrace, /proc/buddyinfo,
-/proc/pagetypeinfo and maybe /proc/kpageflags depending on how
-important the issue is.
+Option 2. The MMC layer will prepare the list. After fetching one request
+the MMC layer can call blk_peek_request and check if the next request is
+packable or not. By keeping all the calls to blk_peek_request under the
+same queue lock we can guarantee to get the requests that the scheduler
+pushed to the dispatch queue (this requires mmc_blk_chk_packable to move
+to block.c). If the request is packable the MMC layer will call
+blk_start_request to dequeue the request. This way there is no need to
+re-queue the requests that cannot be packed.
 
-> And what are their options for making the kernel try harder to get
-> those pages?
-> 
+Going back to this patch - the usage of blk_peek_request+blk_start_request
+instead of blk_fetch_request can be done in mmc_blk_chk_packable in order
+to eliminate the need to requeue commands and loose performance.
 
-Fine control is limited. If it is really needed, I would not oppose
-a patch that allows the use of sync compaction via a new setting in
-/sys/kernel/mm/transparent_hugepage/defrag. However, I think it is
-a slippery slope to expose implementation details like this and I'm
-not currently planning to implement such a patch.
+Thanks,
+Maya Erez
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
-If they have root access, they have the option of writing to
-/proc/sys/vm/compact_memory to manually trigger compaction. If
-that does not free enough huge pages, they could use
-/proc/sys/vm/drop_caches followed by /proc/sys/vm/compact_memory and
-then start the target application. If that was too heavy, they could
-write a balloon application which forces some percentage of memory
-to be reclaimed by allocating anonymous memory, calling mlock on it,
-unmapping the memory and then writing to /proc/sys/vm/compact_memory .
-It would be very heavy handed but it could be a preparation step for
-running a job that absolutely must get huge pages without khugepaged
-running.
-
-> And how do we communicate all of this to those operators?
-
-The documentation patch will help to some extent but more creative
-manipulation of the system to increase the success rate of huge
-page allocations and how to analyse it is not documented. This is
-largely because the analysis is conducted on a case-by-case basis.
-Mailing "help help" to linux-mm and hoping someone on the internet
-can hear you scream may be the only option.
-
--- 
-Mel Gorman
-SUSE Labs
