@@ -1,303 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab1KONx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 08:53:29 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:58800 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728Ab1KONx2 (ORCPT
+	id S1755583Ab1KON7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 08:59:30 -0500
+Received: from mailout03.t-online.de ([194.25.134.81]:39455 "EHLO
+	mailout03.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab1KON72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 08:53:28 -0500
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] virtio-mmio: Devices parameter parsing
-Date: Tue, 15 Nov 2011 13:53:05 +0000
-Message-Id: <1321365185-2928-1-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 15 Nov 2011 13:53:22.0081 (UTC) FILETIME=[F0215110:01CCA39D]
-X-MC-Unique: 111111513532501201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 15 Nov 2011 08:59:28 -0500
+Message-ID: <4EC27039.6010904@t-online.de>
+Date: Tue, 15 Nov 2011 14:59:21 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        Greg KH <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jeff Mahoney <jeffm@suse.com>
+Subject: kernel 3.1.1 / 3.1.0 reiserfs locking problems
+References: <4EAE5DE3.2020205@t-online.de> <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
+In-Reply-To: <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ID: EZ+s2uZSQhMf8Ls1+W25jkAKGGXOhVLDQgF6f8-pAekH+GCXhFJf00MU5K7hXsSZVe
+X-TOI-MSGID: 73616916-69ba-42fa-8b81-5799f7fe3734
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAFDrap0023856
 
-This patch adds an option to instantiate guest virtio-mmio devices
-basing on a kernel command line (or module) parameter, for example:
+Am 31.10.2011 16:08, schrieb Linus Torvalds:
 
-	virtio_mmio.devices=0x100@0x100b0000:48,1K@0x1001e000:74
+With kernel 3.1.1 there is another reiserfs related lock probleme:
 
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
- drivers/virtio/Kconfig       |   25 ++++++
- drivers/virtio/virtio_mmio.c |  170 +++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 194 insertions(+), 1 deletions(-)
+Nov 15 11:37:27 golem kernel: [ 1986.896976]
+Nov 15 11:37:27 golem kernel: [ 1986.896979] =================================
+Nov 15 11:37:27 golem kernel: [ 1986.896990] [ INFO: inconsistent lock state ]
+Nov 15 11:37:27 golem kernel: [ 1986.896997] 3.1.1-main #8
+Nov 15 11:37:27 golem kernel: [ 1986.897001] ---------------------------------
+Nov 15 11:37:27 golem kernel: [ 1986.897007] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+Nov 15 11:37:27 golem kernel: [ 1986.897016] kswapd0/16 [HC0[0]:SC0[0]:HE1:SE1] takes:
+Nov 15 11:37:27 golem kernel: [ 1986.897023]  (&REISERFS_SB(s)->lock){+.+.?.}, at: [<c01f8bd4>] reiserfs_write_lock+0x20/0x2a
+Nov 15 11:37:27 golem kernel: [ 1986.897044] {RECLAIM_FS-ON-W} state was registered at:
+Nov 15 11:37:27 golem kernel: [ 1986.897050]   [<c014a5b9>] mark_held_locks+0xae/0xd0
+Nov 15 11:37:27 golem kernel: [ 1986.897060]   [<c014aab3>] lockdep_trace_alloc+0x7d/0x91
+Nov 15 11:37:27 golem kernel: [ 1986.897068]   [<c0190ee0>] kmem_cache_alloc+0x1a/0x93
+Nov 15 11:37:27 golem kernel: [ 1986.897078]   [<c01e7728>] reiserfs_alloc_inode+0x13/0x3d
+Nov 15 11:37:27 golem kernel: [ 1986.897088]   [<c01a5b06>] alloc_inode+0x14/0x5f
+Nov 15 11:37:27 golem kernel: [ 1986.897097]   [<c01a5cb9>] iget5_locked+0x62/0x13a
+Nov 15 11:37:27 golem kernel: [ 1986.897106]   [<c01e99e0>] reiserfs_fill_super+0x410/0x8b9
+Nov 15 11:37:27 golem kernel: [ 1986.897114]   [<c01953da>] mount_bdev+0x10b/0x159
+Nov 15 11:37:27 golem kernel: [ 1986.897123]   [<c01e764d>] get_super_block+0x10/0x12
+Nov 15 11:37:27 golem kernel: [ 1986.897131]   [<c0195b38>] mount_fs+0x59/0x12d
+Nov 15 11:37:27 golem kernel: [ 1986.897138]   [<c01a80d1>] vfs_kern_mount+0x45/0x7a
+Nov 15 11:37:27 golem kernel: [ 1986.897147]   [<c01a83e3>] do_kern_mount+0x2f/0xb0
+Nov 15 11:37:27 golem kernel: [ 1986.897155]   [<c01a987a>] do_mount+0x5c2/0x612
+Nov 15 11:37:27 golem kernel: [ 1986.897163]   [<c01a9a72>] sys_mount+0x61/0x8f
+Nov 15 11:37:27 golem kernel: [ 1986.897170]   [<c044060c>] sysenter_do_call+0x12/0x32
+Nov 15 11:37:27 golem kernel: [ 1986.897181] irq event stamp: 7509691
+Nov 15 11:37:27 golem kernel: [ 1986.897186] hardirqs last  enabled at (7509691): [<c0190f34>] kmem_cache_alloc+0x6e/0x93
+Nov 15 11:37:27 golem kernel: [ 1986.897197] hardirqs last disabled at (7509690): [<c0190eea>] kmem_cache_alloc+0x24/0x93
+Nov 15 11:37:27 golem kernel: [ 1986.897209] softirqs last  enabled at (7508896): [<c01294bd>] __do_softirq+0xee/0xfd
+Nov 15 11:37:27 golem kernel: [ 1986.897222] softirqs last disabled at (7508859): [<c01030ed>] do_softirq+0x50/0x9d
+Nov 15 11:37:27 golem kernel: [ 1986.897234]
+Nov 15 11:37:27 golem kernel: [ 1986.897235] other info that might help us debug this:
+Nov 15 11:37:27 golem kernel: [ 1986.897242]  Possible unsafe locking scenario:
+Nov 15 11:37:27 golem kernel: [ 1986.897244]
+Nov 15 11:37:27 golem kernel: [ 1986.897250]        CPU0
+Nov 15 11:37:27 golem kernel: [ 1986.897254]        ----
+Nov 15 11:37:27 golem kernel: [ 1986.897257]   lock(&REISERFS_SB(s)->lock);
+Nov 15 11:37:27 golem kernel: [ 1986.897265] <Interrupt>
+Nov 15 11:37:27 golem kernel: [ 1986.897269]     lock(&REISERFS_SB(s)->lock);
+Nov 15 11:37:27 golem kernel: [ 1986.897276]
+Nov 15 11:37:27 golem kernel: [ 1986.897277]  *** DEADLOCK ***
+Nov 15 11:37:27 golem kernel: [ 1986.897278]
+Nov 15 11:37:27 golem kernel: [ 1986.897286] no locks held by kswapd0/16.
+Nov 15 11:37:27 golem kernel: [ 1986.897291]
+Nov 15 11:37:27 golem kernel: [ 1986.897292] stack backtrace:
+Nov 15 11:37:27 golem kernel: [ 1986.897299] Pid: 16, comm: kswapd0 Not tainted 3.1.1-main #8
+Nov 15 11:37:27 golem kernel: [ 1986.897306] Call Trace:
+Nov 15 11:37:27 golem kernel: [ 1986.897314]  [<c0439e76>] ? printk+0xf/0x11
+Nov 15 11:37:27 golem kernel: [ 1986.897324]  [<c01482d1>] print_usage_bug+0x20e/0x21a
+Nov 15 11:37:27 golem kernel: [ 1986.897332]  [<c01479b8>] ? print_irq_inversion_bug+0x172/0x172
+Nov 15 11:37:27 golem kernel: [ 1986.897341]  [<c014855c>] mark_lock+0x27f/0x483
+Nov 15 11:37:27 golem kernel: [ 1986.897349]  [<c0148d88>] __lock_acquire+0x628/0x1472
+Nov 15 11:37:27 golem kernel: [ 1986.897358]  [<c0149fae>] lock_acquire+0x47/0x5e
+Nov 15 11:37:27 golem kernel: [ 1986.897366]  [<c01f8bd4>] ? reiserfs_write_lock+0x20/0x2a
+Nov 15 11:37:27 golem kernel: [ 1986.897384]  [<c01f8bd4>] ? reiserfs_write_lock+0x20/0x2a
+Nov 15 11:37:27 golem kernel: [ 1986.897397]  [<c043b5ef>] mutex_lock_nested+0x35/0x26f
+Nov 15 11:37:27 golem kernel: [ 1986.897409]  [<c01f8bd4>] ? reiserfs_write_lock+0x20/0x2a
+Nov 15 11:37:27 golem kernel: [ 1986.897421]  [<c01f8bd4>] reiserfs_write_lock+0x20/0x2a
+Nov 15 11:37:27 golem kernel: [ 1986.897433]  [<c01e2edd>] map_block_for_writepage+0xc9/0x590
+Nov 15 11:37:27 golem kernel: [ 1986.897448]  [<c01b1706>] ? create_empty_buffers+0x33/0x8f
+Nov 15 11:37:27 golem kernel: [ 1986.897461]  [<c0121124>] ? get_parent_ip+0xb/0x31
+Nov 15 11:37:27 golem kernel: [ 1986.897472]  [<c043ef7f>] ? sub_preempt_count+0x81/0x8e
+Nov 15 11:37:27 golem kernel: [ 1986.897485]  [<c043cae0>] ? _raw_spin_unlock+0x27/0x3d
+Nov 15 11:37:27 golem kernel: [ 1986.897496]  [<c0121124>] ? get_parent_ip+0xb/0x31
+Nov 15 11:37:27 golem kernel: [ 1986.897508]  [<c01e355d>] reiserfs_writepage+0x1b9/0x3e7
+Nov 15 11:37:27 golem kernel: [ 1986.897521]  [<c0173b40>] ? clear_page_dirty_for_io+0xcb/0xde
+Nov 15 11:37:27 golem kernel: [ 1986.897533]  [<c014a6e3>] ? trace_hardirqs_on_caller+0x108/0x138
+Nov 15 11:37:27 golem kernel: [ 1986.897546]  [<c014a71e>] ? trace_hardirqs_on+0xb/0xd
+Nov 15 11:37:27 golem kernel: [ 1986.897559]  [<c0177b38>] shrink_page_list+0x34f/0x5e2
+Nov 15 11:37:27 golem kernel: [ 1986.897572]  [<c01780a7>] shrink_inactive_list+0x172/0x22c
+Nov 15 11:37:27 golem kernel: [ 1986.897585]  [<c0178464>] shrink_zone+0x303/0x3b1
+Nov 15 11:37:27 golem kernel: [ 1986.897597]  [<c043cae0>] ? _raw_spin_unlock+0x27/0x3d
+Nov 15 11:37:27 golem kernel: [ 1986.897611]  [<c01788c9>] kswapd+0x3b7/0x5f2
+Nov 15 11:37:27 golem kernel: [ 1986.897622]  [<c01788c9>] ? kswapd+0x3b7/0x5f2
+Nov 15 11:37:27 golem kernel: [ 1986.897637]  [<c0138cde>] ? wake_up_bit+0x1b/0x1b
+Nov 15 11:37:27 golem kernel: [ 1986.897649]  [<c0178512>] ? shrink_zone+0x3b1/0x3b1
+Nov 15 11:37:27 golem kernel: [ 1986.897661]  [<c0138a87>] kthread+0x61/0x66
+Nov 15 11:37:27 golem kernel: [ 1986.897673]  [<c0138a26>] ? __init_kthread_worker+0x42/0x42
+Nov 15 11:37:27 golem kernel: [ 1986.897686]  [<c0440bba>] kernel_thread_helper+0x6/0xd
 
-Hi All,
+I don´t know exactly what I was doing at that time  - probably I edited a _huge_ image gimp.
 
-When Sasha asked me if there is any way of instantiating the mmio devices
-from kernel command line I answered no and that I believed that the correct
-way of doing that would be passing a Device Tree with it. But then someone
-else asked me the same so I figured out that I was probably wrong and there
-is a need for that...
 
-Here it goes, then. As it's easy to shoot yourself in the foot with that
-(just specify bogus base address and watch as your system is going to hell ;-)
-it's an option that must be explicitly enabled.
-
-I hope it will be useful in DT-less qemu/KVM use cases.
-
-All comments most welcomed!
-
-Cheers!
-
-Pawel
-
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-index 816ed08..61f3a79 100644
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -46,4 +46,29 @@ config VIRTIO_BALLOON
- 
-  	 If unsure, say N.
- 
-+config VIRTIO_MMIO_CMDLINE_DEVICES
-+	bool "Memory mapped virtio devices parameter parsing"
-+	depends on VIRTIO_MMIO
-+	---help---
-+	 Allow virtio-mmio devices instantiation via the kernel command line
-+	 or module parameter. Be aware that using incorrect parameters (base
-+	 address in particular) can crash your system - you have been warned.
-+
-+	 The format for the parameter is as follows:
-+
-+		[virtio_mmio.]devices=<device>[<delim><device>]
-+
-+	 where:
-+		<device>   := <size>@<baseaddr>:<irq>
-+		<delim>    := ',' or ';'
-+		<size>     := size (can use standard suffixes like K or M)
-+		<baseaddr> := physical base address
-+		<irq>      := interrupt number (as passed to request_irq())
-+
-+	 Example kernel command line parameter:
-+
-+		virtio_mmio.devices=0x100@0x100b0000:48,1K@0x1001e000:74
-+
-+	 If unsure, say 'N'.
-+
- endmenu
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index acc5e43..1f25bb9 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -6,6 +6,47 @@
-  * This module allows virtio devices to be used over a virtual, memory mapped
-  * platform device.
-  *
-+ * The guest device(s) may be instantiated in one of three equivalent ways:
-+ *
-+ * 1. Static platform device in board's code, eg.:
-+ *
-+ *	static struct platform_device v2m_virtio_device = {
-+ *		.name = "virtio-mmio",
-+ *		.id = -1,
-+ *		.num_resources = 2,
-+ *		.resource = (struct resource []) {
-+ *			{
-+ *				.start = 0x1001e000,
-+ *				.end = 0x1001e0ff,
-+ *				.flags = IORESOURCE_MEM,
-+ *			}, {
-+ *				.start = 42 + 32,
-+ *				.end = 42 + 32,
-+ *				.flags = IORESOURCE_IRQ,
-+ *			},
-+ *		}
-+ *	};
-+ *
-+ * 2. Device Tree node, eg.:
-+ *
-+ *		virtio_block@1e000 {
-+ *			compatible = "virtio,mmio";
-+ *			reg = <0x1e000 0x100>;
-+ *			interrupts = <42>;
-+ *		}
-+ *
-+ * 3. Kernel module (or command line) parameter
-+ *		[virtio_mmio.]devices=<device>[<delim><device>]
-+ *    where:
-+ *		<device>   := <size>@<baseaddr>:<irq>
-+ *		<delim>    := ',' or ';'
-+ *		<size>     := size (can use standard suffixes like K or M)
-+ *		<baseaddr> := physical base address
-+ *		<irq>      := interrupt number (as passed to request_irq())
-+ *    eg.:
-+ *		virtio_mmio.devices=0x100@0x100b0000:48,1K@0x1001e000:74
-+ *
-+ *
-  * Registers layout (all 32-bit wide):
-  *
-  * offset d. name             description
-@@ -42,6 +83,8 @@
-  * See the COPYING file in the top-level directory.
-  */
- 
-+#define pr_fmt(fmt) "virtio-mmio: " fmt
-+
- #include <linux/highmem.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-@@ -443,6 +486,127 @@ static int __devexit virtio_mmio_remove(struct platform_device *pdev)
- 
- 
- 
-+/* Devices list parameter */
-+
-+#if defined(CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES)
-+
-+static char *virtio_mmio_cmdline_devices;
-+module_param_named(devices, virtio_mmio_cmdline_devices, charp, 0);
-+
-+static struct device virtio_mmio_cmdline_parent = {
-+	.init_name = "virtio-mmio-cmdline",
-+};
-+
-+static int virtio_mmio_register_cmdline_devices(void)
-+{
-+	int err;
-+	int id = 0;
-+	char *device = NULL;
-+	char *token;
-+
-+	err = device_register(&virtio_mmio_cmdline_parent);
-+	if (err)
-+		return err;
-+
-+	/* Split colon-or-semicolon-separated devices */
-+	while ((token = strsep(&virtio_mmio_cmdline_devices, ",;")) != NULL) {
-+		struct resource resources[] = {
-+			{
-+				.flags = IORESOURCE_IRQ,
-+			}, {
-+				.flags = IORESOURCE_MEM,
-+			}
-+		};
-+		char *size, *base;
-+		unsigned long long val;
-+
-+		if (!*token)
-+			continue;
-+
-+		kfree(device);
-+		device = kstrdup(token, GFP_KERNEL);
-+
-+		/* Split memory and IRQ resources */
-+		base = strsep(&token, ":");
-+		if (base == token || !token || !*token) {
-+			pr_err("No IRQ in '%s'!\n", device);
-+			continue;
-+		}
-+
-+		/* Get IRQ */
-+		if (kstrtoull(token, 0, &val) != 0) {
-+			pr_err("Wrong IRQ in '%s'!\n", device);
-+			continue;
-+		}
-+		resources[0].start = val;
-+		resources[0].end = val;
-+
-+		/* Split base address and size */
-+		size = strsep(&base, "@");
-+		if (size == base || !base || !*base) {
-+			pr_err("No base in '%s'!\n", device);
-+			continue;
-+		}
-+
-+		/* Get base address */
-+		if (kstrtoull(base, 0, &val) != 0) {
-+			pr_err("Wrong base in '%s'!\n", device);
-+			continue;
-+		}
-+		resources[1].start = val;
-+		resources[1].end = val;
-+
-+		/* Get size */
-+		resources[1].end += memparse(size, &token) - 1;
-+		if (size == token || *token) {
-+			pr_err("Wrong size in '%s'!\n", device);
-+			continue;
-+		}
-+
-+		pr_info("Registering device %d at 0x%x-0x%x, IRQ %u.\n",
-+				id, resources[1].start, resources[1].end,
-+				resources[0].start);
-+
-+		platform_device_register_resndata(&virtio_mmio_cmdline_parent,
-+				"virtio-mmio", id, resources,
-+				ARRAY_SIZE(resources), NULL, 0);
-+
-+		id++;
-+	}
-+
-+	kfree(device);
-+
-+	return 0;
-+}
-+
-+static int virtio_mmio_unregister_cmdline_device(struct device *dev,
-+		void *data)
-+{
-+	platform_device_unregister(to_platform_device(dev));
-+
-+	return 0;
-+}
-+
-+static void virtio_mmio_unregister_cmdline_devices(void)
-+{
-+	device_for_each_child(&virtio_mmio_cmdline_parent, NULL,
-+			virtio_mmio_unregister_cmdline_device);
-+	device_unregister(&virtio_mmio_cmdline_parent);
-+}
-+
-+#else
-+
-+static int virtio_mmio_register_cmdline_devices(void)
-+{
-+	return 0;
-+}
-+
-+static void virtio_mmio_unregister_cmdline_devices(void)
-+{
-+}
-+
-+#endif
-+
- /* Platform driver */
- 
- static struct of_device_id virtio_mmio_match[] = {
-@@ -463,11 +627,15 @@ static struct platform_driver virtio_mmio_driver = {
- 
- static int __init virtio_mmio_init(void)
- {
--	return platform_driver_register(&virtio_mmio_driver);
-+	int err = virtio_mmio_register_cmdline_devices();
-+
-+	return err ? err : platform_driver_register(&virtio_mmio_driver);
- }
- 
- static void __exit virtio_mmio_exit(void)
- {
-+	virtio_mmio_unregister_cmdline_devices();
-+
- 	platform_driver_unregister(&virtio_mmio_driver);
- }
- 
--- 
-1.6.3.3
-
+> [ Added a few more people to the cc ]
+>
+> On Mon, Oct 31, 2011 at 1:35 AM, Knut Petersen
+> <Knut_Petersen@t-online.de>  wrote:
+>> After a " rm -r /verybigdir" (about 12G on a 25G reiserfs 3.6partition)
+>> I found the following report about a circular locking dependency in
+>> kernel 3.1.0
+> Heh. There is even a comment about the ordering violation:
+>
+> /* We use I_MUTEX_CHILD here to silence lockdep. It's safe because xattr
+>   * mutation ops aren't called during rename or splace, which are the
+>   * only other users of I_MUTEX_CHILD. It violates the ordering, but that's
+>   * better than allocating another subclass just for this code. */
+>
+> and apparently the comment is wrong: we *do* end up looking up xattrs
+> during splice, due to the security_inode_need_killpriv() thing.
+>
+> So I think this needs a suid (or sgid) file that has xattrs and is removed.
+>
+> That said, I suspect this is a false positive, because the actual
+> unlink can never happen while somebody is splicing to/from the same
+> file at the same time (because then the iput wouldn't be the last one
+> for the inode, and the file removal would be delayed until the file
+> has been closed for the last time).
+>
+> But the hacky use of "I_MUTEX_CHILD" is basically not the proper way
+> to silence the lockdep splat.
+>
+> Anybody?
+>
+>                    Linus
+>
 
