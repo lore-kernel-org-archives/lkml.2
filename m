@@ -1,35 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1KOMie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:38:34 -0500
-Received: from mail.fy.edu.tw ([140.127.86.149]:42132 "EHLO mail.fy.edu.tw"
+	id S1753954Ab1KOMim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:38:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43304 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752749Ab1KOMid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:38:33 -0500
-X-Greylist: delayed 26636 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 07:38:33 EST
-From: "Customer s Help Desk" <support1@customerhelpdesk.org>
-Reply-To: helpdesk-12010@hotmail.com
-Subject: Dear (Email-Account) owner,
-Date: Tue, 15 Nov 2011 12:56:14 +0800
-Message-Id: <20111115045725.M49041@customerhelpdesk.org>
-X-Mailer: Open WebMail 2.51 20050228
-X-OriginatingIP: 115.242.70.97 (ns096)
+	id S1753542Ab1KOMik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:38:40 -0500
+Date: Tue, 15 Nov 2011 14:38:14 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH RFC] perf, core: disable pmu while context rotation only
+ if needed
+Message-ID: <20111115123814.GE3225@redhat.com>
+References: <20111115113414.GD3225@redhat.com>
+ <1321358833.1421.62.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=big5
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321358833.1421.62.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear (Email-Account) owner,
+On Tue, Nov 15, 2011 at 01:07:13PM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-15 at 13:34 +0200, Gleb Natapov wrote:
+> > 
+> > Currently pmu is disabled and re-enabled on each timer interrupt even
+> > when no rotation or frequency adjustment is needed. On Intel CPU this
+> > results in two writes into PERF_GLOBAL_CTRL MSR per tick. On bare metal
+> > it does not cause significant slowdown, but when running perf in a virtual
+> > machine it leads to 20% slowdown on my machine.
+> 
+> 
+> I detest asymmetric locking like that, does something like the below
+> also work for you?
+> 
+It does.
 
-You have exceeded your email quota limit of 500MB and you are advice to
-expand your email quota limit within 48 hours. You need to upgrade your
-email quota limit to 2.5GB. You can use the below web link to upgrade your
-email account:
+>  
+> +	if (!rotate && !freq)
+> +		goto done;
+> +
+>  	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+>  	perf_pmu_disable(cpuctx->ctx.pmu);
+> +
+> +	if (!freq)
+> +		goto rotate;
+> +
+Why goto, why not
 
-http://www.123contactform.com/contact-form-HelpdeskCentre000-239230.html
+	if (freq) {
+>  	perf_ctx_adjust_freq(&cpuctx->ctx, interval);
+>  	if (ctx)
+>  		perf_ctx_adjust_freq(ctx, interval);
+        }
 
-Thank you for using our web-mail
-Copyright &#169;2011 Admin Email Helpdesk Centre
+And the same with next goto.
+
+>  
+> +rotate:
+>  	if (!rotate)
+> -		goto done;
+> +		goto unlock;
+>  
+>  	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
+>  	if (ctx)
+> @@ -2413,12 +2432,13 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+>  
+>  	perf_event_sched_in(cpuctx, ctx, current);
+>  
+> +unlock:
+> +	perf_pmu_enable(cpuctx->ctx.pmu);
+> +	perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+> +
+>  done:
+>  	if (remove)
+>  		list_del_init(&cpuctx->rotation_list);
+> -
+> -	perf_pmu_enable(cpuctx->ctx.pmu);
+> -	perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+>  }
+>  
+>  void perf_event_task_tick(void)
+
+--
+			Gleb.
