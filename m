@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab1KOWkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 17:40:33 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:47503 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001Ab1KOWkc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 17:40:32 -0500
-Subject: [PATCH] sched: avoid unnecessary overflow in sched_clock
-In-Reply-To: <20111115215920.6239.23656.stgit@dungbeetle.mtv.corp.google.com>
-To: John Stultz <johnstul@us.ibm.com>, Salman Qazi <sqazi@google.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-From: Salman Qazi <sqazi@google.com>
-Date: Tue, 15 Nov 2011 14:12:06 -0800
-Message-ID: <20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1757549Ab1KOWlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 17:41:44 -0500
+Received: from gate.crashing.org ([63.228.1.57]:49976 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755001Ab1KOWln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 17:41:43 -0500
+Message-ID: <1321396889.3170.13.camel@pasglop>
+Subject: Re: [RFC PATCH 00/17] powerpc/e500: separate e500 from e500mc
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Timur Tabi <B04825@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 16 Nov 2011 09:41:29 +1100
+In-Reply-To: <4A0007C2-1C2C-4162-98E8-ACCA4E673AFE@boeing.com>
+References: <4E42AB6F.1050900@freescale.com>
+	 <1320883399-15911-1-git-send-email-Kyle.D.Moffett@boeing.com>
+	 <FF2BF3F3-1158-4747-AEEC-03D6A7C462D9@kernel.crashing.org>
+	 <C0DED343-76A8-457E-BF54-E52DFCAC83A8@boeing.com>
+	 <58FDDDA5-26C4-493B-A00D-81DD94A5C26A@kernel.crashing.org>
+	 <20111110165455.GE11983@schlenkerla.am.freescale.net>
+	 <15AB1C61-181F-4454-AF99-772B73DE0AA5@boeing.com>
+	 <1320986410.21206.48.camel@pasglop>
+	 <4A0007C2-1C2C-4162-98E8-ACCA4E673AFE@boeing.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Added the missing signed-off-by line)
+On Mon, 2011-11-14 at 20:36 -0600, Moffett, Kyle D wrote:
+> So when you are clearing a whole page, there are only 2 things you can do
+> wrong with "dcbz":
+> 
+>   (1) Call "dcbz" with an address outside of the page you want to zero.
+> 
+>   (2) Omit calls "dcbz" to dcbz for some physical cachelines in the page.
+> 
+> Now, that's a totally different story from the userspace memset() calls
+> that caused the problem originally, because they were frequently given
+> memory much smaller than a page to clear, and if you didn't know exactly
+> how many bytes a "dcbz" was going to clear you couldn't use it at all.
 
-In hundreds of days, the __cycles_2_ns calculation in sched_clock
-has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
-the final value to become zero.  We can solve this without losing
-any precision.
+Right. That's why we pass the cache line sizes to userspace via the elf
+AUX table so they don't do stupid things like that :-)
 
-We can decompose TSC into quotient and remainder of division by the
-scale factor, and then use this to convert TSC into nanoseconds.
+> But the kernel doesn't do that anywhere, it just uses it for page clears. 
 
-Signed-off-by: Salman Qazi <sqazi@google.com>
----
- arch/x86/include/asm/timer.h |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
+Right, so we could easily precalc the count & increment and use a "soft"
+loop.
 
-diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-index fa7b917..431793e 100644
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -32,6 +32,22 @@ extern int no_timer_check;
-  *  (mathieu.desnoyers@polymtl.ca)
-  *
-  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
-+ *
-+ * In:
-+ *
-+ * ns = cycles * cyc2ns_scale / SC
-+ *
-+ * Although we may still have enough bits to store the value of ns,
-+ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
-+ * leading to an incorrect result.
-+ *
-+ * To avoid this, we can decompose 'cycles' into quotient and remainder
-+ * of division by SC.  Then,
-+ *
-+ * ns = (quot * SC + rem) * cyc2ns_scale / SC
-+ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
-+ *
-+ *			- sqazi@google.com
-  */
- 
- DECLARE_PER_CPU(unsigned long, cyc2ns);
-@@ -41,9 +57,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
- 
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
- {
-+	unsigned long long quot;
-+	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
-+	quot = (cyc >> CYC2NS_SCALE_FACTOR);
-+	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
-+	ns += quot * per_cpu(cyc2ns, cpu) +
-+		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
- 	return ns;
- }
- 
+Cheers,
+Ben.
+
 
