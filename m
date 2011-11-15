@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab1KOQoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 11:44:32 -0500
-Received: from emh01.mail.saunalahti.fi ([62.142.5.107]:33516 "EHLO
-	emh01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab1KOQoa (ORCPT
+	id S1756879Ab1KORMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 12:12:54 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42962 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756554Ab1KORMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 11:44:30 -0500
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 11:44:30 EST
-Message-ID: <4EC29534.7010502@adurom.com>
-Date: Tue, 15 Nov 2011 18:37:08 +0200
-From: Kalle Valo <kvalo@adurom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Sangwook Lee <sangwook.lee@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        ralf@linux-mips.org, juhosg@openwrt.org, rodrigue@qca.qualcomm.com,
-        linville@tuxdriver.com, rmanohar@qca.qualcomm.com, patches@linaro.org
-Subject: Re: [PATCH] ath9k: rename ath9k_platform.h to ath_platform.h
-References: <1321356224-5053-1-git-send-email-sangwook.lee@linaro.org>
-In-Reply-To: <1321356224-5053-1-git-send-email-sangwook.lee@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Antivirus: VAMS
+	Tue, 15 Nov 2011 12:12:52 -0500
+From: Grant Grundler <grundler@chromium.org>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Allan Chou <allan@asix.com.tw>, Freddy Xin <freddy@asix.com.tw>,
+        Grant Grundler <grundler@google.com>
+Subject: [PATCH 1/5] net-next:asix:PHY_MODE_RTL8211CL should be 0xC
+Date: Tue, 15 Nov 2011 09:12:39 -0800
+Message-Id: <1321377163-26308-1-git-send-email-grundler@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sangwook,
+From: Grant Grundler <grundler@google.com>
 
-On 11/15/2011 01:23 PM, Sangwook Lee wrote:
-> The patch series proposes to rename ath9k_platform.h to "ath_platform.h
-> This header file handles platform data used only for ath9k,
-> but it can used by ath6k as well. We can take "wl12xx.h" as
-> as a example. Please let us change this file name so that
-> other Atheors WLANs use this file for their own platform data
+Use correct value for rtl phy support.
+(rtl phy are in AX88178 devices like NWU220G and USB2-ET1000).
 
-ath9k and ath6kl are very different devices, I'm not sure if sharing a
-platfrom struct between the two is really a good idea. Most likely there
-is very little the two drivers can share. What are your plans here?
+Signed-off-by: Allan Chou <allan@asix.com.tw>
+Tested-by: Grant Grundler <grundler@chromium.org>
+---
+ drivers/net/usb/asix.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I myself was thinking that we would have include/linux/ath6kl.h
-dedicated just for ath6kl. That would makes things simpler.
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index e81e22e..873860d 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -163,7 +163,7 @@
+ #define MARVELL_CTRL_TXDELAY	0x0002
+ #define MARVELL_CTRL_RXDELAY	0x0080
+ 
+-#define	PHY_MODE_RTL8211CL	0x0004
++#define	PHY_MODE_RTL8211CL	0x000C
+ 
+ /* This structure cannot exceed sizeof(unsigned long [5]) AKA 20 bytes */
+ struct asix_data {
+-- 
+1.7.3.1
 
-Kalle
