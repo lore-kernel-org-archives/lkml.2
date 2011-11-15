@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab2DRAVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:21:12 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56159 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab2DRAVJ (ORCPT
+	id S1754093Ab2DRAWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:22:52 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33305 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab2DRAVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:21:09 -0400
-Message-Id: <8675ae$5bugrc@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6684"; a="180306796"
+	Tue, 17 Apr 2012 20:21:11 -0400
+Message-Id: <6e201a$5e4itm@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6684"; a="182602678"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 15 Nov 2011 16:31:48 -0600
-Subject: [PATCH 06/10] various Kconfig cleanup and old platform build code removal
+Date: Tue, 15 Nov 2011 16:58:11 -0600
+Subject: [PATCH 07/10] Hexagon: misc compile warning/error cleanup due to missing headers
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixed warnings/errors for EXPORT_SYMBOL, linux_binprm, elf related
+defines
+
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 ---
- arch/hexagon/Kconfig  |   21 ++++-----------------
- arch/hexagon/Makefile |    5 -----
- 2 files changed, 4 insertions(+), 22 deletions(-)
+ arch/hexagon/kernel/dma.c    |    1 +
+ arch/hexagon/kernel/ptrace.c |    1 +
+ arch/hexagon/kernel/time.c   |    1 +
+ arch/hexagon/kernel/vdso.c   |    1 +
+ 4 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index 3126fc6..e00d158 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -13,8 +13,8 @@ config HEXAGON
- 	# select ARCH_REQUIRE_GPIOLIB
- 	# select HAVE_CLK
- 	# select IRQ_PER_CPU
--	select HAVE_IRQ_WORK
- 	# select GENERIC_PENDING_IRQ if SMP
-+	select HAVE_IRQ_WORK
- 	select GENERIC_ATOMIC64
- 	select HAVE_PERF_EVENTS
- 	select HAVE_GENERIC_HARDIRQS
-@@ -25,7 +25,7 @@ config HEXAGON
- 	select HAVE_ARCH_TRACEHOOK
- 	select NO_IOPORT
- 	select GENERIC_IOMAP
--	# mostly generic routines, with some accelerated ones
-+	select STACKTRACE_SUPPORT
- 	---help---
- 	  Qualcomm Hexagon is a processor architecture designed for high
- 	  performance and low power across a wide variety of applications.
-@@ -72,15 +72,6 @@ config GENERIC_CSUM
- config GENERIC_IRQ_PROBE
- 	def_bool y
+diff --git a/arch/hexagon/kernel/dma.c b/arch/hexagon/kernel/dma.c
+index e8d52cc..2b48751 100644
+--- a/arch/hexagon/kernel/dma.c
++++ b/arch/hexagon/kernel/dma.c
+@@ -22,6 +22,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/genalloc.h>
+ #include <asm/dma-mapping.h>
++#include <linux/module.h>
  
--#config ZONE_DMA
--#	bool
--#	default y
--
--config HAS_DMA
--	bool
--	select HAVE_DMA_ATTRS
--	default y
--
- config NEED_SG_DMA_LENGTH
- 	def_bool y
+ struct dma_map_ops *dma_ops;
+ EXPORT_SYMBOL(dma_ops);
+diff --git a/arch/hexagon/kernel/ptrace.c b/arch/hexagon/kernel/ptrace.c
+index 32342de..96c3b2c 100644
+--- a/arch/hexagon/kernel/ptrace.c
++++ b/arch/hexagon/kernel/ptrace.c
+@@ -28,6 +28,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/regset.h>
+ #include <linux/user.h>
++#include <linux/elf.h>
  
-@@ -113,14 +104,11 @@ config GENERIC_BUG
- 	def_bool y
- 	depends on BUG
+ #include <asm/user.h>
  
--config BUG
--	def_bool y
--
- menu "Machine selection"
+diff --git a/arch/hexagon/kernel/time.c b/arch/hexagon/kernel/time.c
+index ea9e34f..36ba641 100644
+--- a/arch/hexagon/kernel/time.c
++++ b/arch/hexagon/kernel/time.c
+@@ -28,6 +28,7 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
++#include <linux/module.h>
  
- choice
- 	prompt "System type"
--	default HEXAGON_ARCH_V2
-+	default HEXAGON_COMET
+ #include <asm/timer-regs.h>
+ #include <asm/hexagon_vm.h>
+diff --git a/arch/hexagon/kernel/vdso.c b/arch/hexagon/kernel/vdso.c
+index f212a45..5d39f42 100644
+--- a/arch/hexagon/kernel/vdso.c
++++ b/arch/hexagon/kernel/vdso.c
+@@ -21,6 +21,7 @@
+ #include <linux/err.h>
+ #include <linux/mm.h>
+ #include <linux/vmalloc.h>
++#include <linux/binfmts.h>
  
- config HEXAGON_COMET
- 	bool "Comet Board"
-@@ -193,8 +181,7 @@ source "kernel/Kconfig.hz"
- source "kernel/time/Kconfig"
+ #include <asm/vdso.h>
  
- config GENERIC_GPIO
--	bool "Generic GPIO support"
--	default n
-+	def_bool n
- 
- endmenu
- 
-diff --git a/arch/hexagon/Makefile b/arch/hexagon/Makefile
-index 0c4de87..7e32265 100644
---- a/arch/hexagon/Makefile
-+++ b/arch/hexagon/Makefile
-@@ -51,8 +51,3 @@ head-y := arch/hexagon/kernel/head.o \
- core-y += arch/hexagon/kernel/ \
- 	arch/hexagon/mm/ \
- 	arch/hexagon/lib/
--
--#	arch/hexagon/platform/common/
--#
--#core-$(CONFIG_HEXAGON_COMET)		+= arch/hexagon/platform/comet/
--#machine-$(CONFIG_HEXAGON_COMET)		:= comet
 -- 
 1.7.1
 
