@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab1KORan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 12:30:43 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37156 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab1KORal (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 12:30:41 -0500
-Date: Tue, 15 Nov 2011 17:30:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Wan ZongShun <mcuos.com@gmail.com>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] ARM: NUC900: Add PCI driver support for NUC960
-Message-ID: <20111115173023.GC9581@n2100.arm.linux.org.uk>
-References: <4EBE98FC.6070903@gmail.com> <4EC0BF9B.2050300@gmail.com>
+	id S1756970Ab1KORdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 12:33:44 -0500
+Received: from claw.goop.org ([74.207.240.146]:42776 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756825Ab1KORdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 12:33:43 -0500
+Message-ID: <4EC2A274.8080801@goop.org>
+Date: Tue, 15 Nov 2011 09:33:40 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC0BF9B.2050300@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Rik van Riel <riel@redhat.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <75efb251-7a5e-4aca-91e2-f85627090363@default> <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy> <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com> <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com> <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default> <20111031223717.GI3466@redhat.com> <1b2e4f74-7058-4712-85a7-84198723e3ee@default 4EB1AD53.2000600@redhat.com> <cb397723-5297-493d-9bbd-522a6400a5a6@default> <4EC29367.9040106@redhat.com>
+In-Reply-To: <4EC29367.9040106@redhat.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 03:13:31PM +0800, Wan ZongShun wrote:
-> +#define NUC900_PCI_MEM_BASE	0xC0000000
-> +#define NUC900_PCI_MEM_END	0xDFFFEFFFF
-> +#define NUC900_PCI_MEM_SIZE	0x20000000
+On 11/15/2011 08:29 AM, Rik van Riel wrote:
+> On 11/02/2011 05:14 PM, Dan Magenheimer wrote:
+>
+>> It occurs to me that batching could be done locally without
+>> changing the in-kernel "API" (i.e. frontswap_ops)... the
+>> guest-side KVM tmem-backend-driver could do the compression
+>> into guest-side memory and make a single
+>> hypercall=vmexit/vmenter whenever it has collected enough for
+>> a batch.
+>
+> That seems like the best way to do it, indeed.
+>
+> Do the current hooks allow that mode of operation,
+> or do the hooks only return after the entire operation
+> has completed?
 
-NUC900_PCI_MEM_END has more than 32 bits.
+The APIs are synchronous, but need only return once the memory has been
+dealt with in some way.  If you were batching before making a hypercall,
+then the implementation would just have to make a copy into its private
+memory and you'd have to make sure that lookups on batched but
+unsubmitted pages work.
 
-> +#define NUC900_PCI_IO_BASE	0xE0000000
-> +#define NUC900_PCI_IO_END	0xE000FFFF
-> +#define NUC900_PCI_IO_SIZE	0x10000
-...
-> +static struct resource pci_io = {
-> +	.name	= "NUC900 PCI IO",
-> +	.start	= NUC900_PCI_IO_BASE,
-> +	.end	= NUC900_PCI_IO_BASE + NUC900_PCI_IO_SIZE - 1,
-> +	.flags	= IORESOURCE_IO,
-> +};
-...
-> +static int __init pci_nuc900_setup_resources(struct resource **resource)
-> +{
-> +	int ret = 0;
-> +
-> +	ret = request_resource(&ioport_resource, &pci_io);
-> +	if (ret) {
-> +		pr_err("%s: failed to request resources: %d\n", __func__, ret);
-> +		goto out;
-> +	}
-...
-> +	/*
-> +	 * bus->resource[0] is the IO resource for this bus
-> +	 * bus->resource[1] is the mem resource for this bus
-> +	 * bus->resource[2] is the prefetch mem resource for this bus
-> +	 */
-> +	resource[0] = &pci_io;
-> +	resource[1] = &pci_mem;
-> +	resource[2] = NULL;
+(It's been a while since I've looked at these patches, but I'm assuming
+nothing fundamental has changed about them lately.)
 
-This is better, but still not correct.
-
-1. in mach/io.h:
-
--#define IO_SPACE_LIMIT	0xffffffff
-+#define IO_SPACE_LIMIT	0xffff
-
--#define __io(a)	__typesafe_io(a)
-+#define __io(a)	((void __iomem __force *)(a) + VA_OF_IO_SPACE)
-
-where VA_OF_IO_SPACE is correctly named and typed.
-
-2. set resource[0] = &ioport_resource and get rid of pci_io entirely.
-
-3. if (!request_mem_region(PA_OF_IO_SPACE, 64K, "PCI IO emulation space"))
-	pr_warn("Unable to request PCI IO space\n");
-   in your pre-init function.
+    J
