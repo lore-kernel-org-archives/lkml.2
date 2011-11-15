@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab1KOVO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 16:14:29 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9848 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab1KOVO2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 16:14:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 15 Nov 2011 13:14:25 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Denis Kuzmenko <linux@solonet.org.ua>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Nov 2011 13:14:25 -0800
-Subject: RE: [PATCH] gpio/gpio-sysfs: Try to export busy GPIO line leads to
- wrong GPIO line exporting
-Thread-Topic: [PATCH] gpio/gpio-sysfs: Try to export busy GPIO line leads to
- wrong GPIO line exporting
-Thread-Index: Acyj1FMHQ86TUvN7TBOdiZhItz2oGAABrCVQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740805E7F@HQMAIL01.nvidia.com>
-References: <4EBF1DD1.8090600@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740805B5B@HQMAIL01.nvidia.com>
- <4EC1A0BE.3000901@solonet.org.ua> <4EC2CA45.7070605@solonet.org.ua>
-In-Reply-To: <4EC2CA45.7070605@solonet.org.ua>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932427Ab1KOVQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:16:14 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:37648 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932307Ab1KOVQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 16:16:12 -0500
+Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jean Delvare <khali@linux-fr.org>
+CC: Tabi Timur-B04825 <B04825@freescale.com>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tang Yuantian-B29983 <B29983@freescale.com>
+In-Reply-To: <20111115210528.0f9a0948@endymion.delvare>
+References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+	 <20111115095445.3d34e99e@endymion.delvare>
+	 <CAOZdJXVq=0pbrPM_-+Kjf3NhON8oN3Me64R6c9qBiAEFuRsDOw@mail.gmail.com>
+	 <1321384487.2309.363.camel@groeck-laptop>
+	 <20111115210528.0f9a0948@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 15 Nov 2011 13:14:40 -0800
+Message-ID: <1321391680.2309.374.camel@groeck-laptop>
 MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote at Tuesday, November 15, 2011 1:24 PM:
-> On 11/15/2011 01:14 AM, Denis Kuzmenko wrote:
-> > On 11/14/2011 10:45 PM, Stephen Warren wrote:
-> >> Denis Kuzmenko wrote at Saturday, November 12, 2011 6:31 PM:
+On Tue, 2011-11-15 at 15:05 -0500, Jean Delvare wrote:
+> On Tue, 15 Nov 2011 11:14:47 -0800, Guenter Roeck wrote:
+> > On Tue, 2011-11-15 at 14:02 -0500, Tabi Timur-B04825 wrote:
+> > > I think it's very important to keep the order as-is, if at all
+> > > possible.  This driver is very old and the hardware is used on all of
+> > > our SOCs, dating back several years.  It would be a nightmare to test
+> > > it all over again.
 > >
-> > Looks like userspace doesn't retries write. Here is trace:
-> >
-> > open("/sys/class/gpio/export", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
-> > ioctl(3, SNDCTL_TMR_TIMEBASE or TCGETS, 0xbef76c64) = -1 ENOTTY (Inappropriate ioctl for device)
-> > brk(0x30e000)                           = 0x30e000
-> > write(3, "37\n", 3)                     = -1 EBUSY (Device or resource busy)
-> > close(3)                                = 0
-> > exit(0)                                 = ?
-> >
-> > this was made by simple self-written program:
-> > 	fopen("/sys/class/gpio/export", "w"); fprintf(fp, "37\n");
+> > I'll see if I can work around that. 1-byte block reads may be tricky,
+> > though, but maybe I can get that working as well.
 > 
-> That was userspace - problem in not reproducible with a code above.
-> The only way I know to reproduce is:
-> echo 37 > /sys/class/gpio/export
+> IMHO it's OK if 1-byte blocks are not supported. In practice the length
+> of blocks seems to be known in advance and it's never 1. We can revisit
+> if this is ever needed in practice for this specific bus driver.
 > 
-> Traces are generated:
-> 
-...
-> stat("/lib/ld-uClibc.so.0", {st_mode=S_IFREG|0755, st_size=21200, ...}) = 0
+I think I have a workaround for that condition. The workaround will only
+apply if the length is 1, so the risk associated with it is low. I'll
+test it and let you know if it works.
 
-Hmmm. I'd be tempted to look at the stdio implementation in uClibc first, or
-possibly the shell you're running.
+Guenter
 
-> write(1, "37\n", 3)                     = -1 EBUSY (Device or resource busy)
-> write(1, "3", 1)                        = -1 EBUSY (Device or resource busy)
-> write(1, "3", 1)                        = -1 EBUSY (Device or resource busy)
-
-My ARM system running some random build of Debian Wheezy doesn't repro
-that; I see the first write() fail, and then no more writes are attempted.
-
-For the record, I tried GPIO 570 (an invalid value), and got back
--EINVAL, and GPIO 57 (a valid but already requested GPIO) and got back
--EBUSY. Both had the same behavior.
-
--- 
-nvpublic
 
