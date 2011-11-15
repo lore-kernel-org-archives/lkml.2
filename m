@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab1KOAMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:12:42 -0500
-Received: from mail-fx0-f74.google.com ([209.85.161.74]:61253 "EHLO
-	mail-fx0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab1KOALt (ORCPT
+	id S932105Ab1KOAMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:12:40 -0500
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:32891 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756860Ab1KOALu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:11:49 -0500
+	Mon, 14 Nov 2011 19:11:50 -0500
 From: David Decotigny <david.decotigny@google.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,11 +16,11 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <bhutchings@solarflare.com>,
         Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
         Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>, Sameer Nanda <snanda@google.com>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v3 8/9] forcedeth: stats updated with a deferrable timer
-Date: Mon, 14 Nov 2011 16:11:18 -0800
-Message-Id: <6a56ea00fc2319ead99aebbd6cbcbb10114dfda1.1321313729.git.david.decotigny@google.com>
+Subject: [PATCH net-next v3 3/9] forcedeth: allow to silence "TX timeout" debug messages
+Date: Mon, 14 Nov 2011 16:11:13 -0800
+Message-Id: <47650719c85908eb4dff05f5d243cc0e9e181748.1321313729.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <cover.1321313729.git.david.decotigny@google.com>
 References: <cover.1321313729.git.david.decotigny@google.com>
@@ -32,33 +32,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark stats timer as deferrable: punctuality in waking the stats timer
-callback doesn't matter much, as it is responsible only to avoid
-integer wraparound.
+From: Sameer Nanda <snanda@google.com>
 
-We need at least 1 other timer to fire within 17s (fully loaded 1Gbps)
-to avoid wrap-arounds. Desired period is still 10s.
+This adds a new module parameter "debug_tx_timeout" to silence most
+debug messages in case of TX timeout. These messages don't provide a
+signal/noise ratio high enough for production systems and, with ~30kB
+logged each time, they tend to add to a cascade effect if the system
+is already under stress (memory pressure, disk, etc.).
+
+By default, the parameter is clear, meaning that only a single warning
+will be reported.
 
 
 
 Signed-off-by: David Decotigny <david.decotigny@google.com>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/nvidia/forcedeth.c |   98 ++++++++++++++++++-------------
+ 1 files changed, 57 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index dd24035..50133f1 100644
+index fe17e42..9b917ff 100644
 --- a/drivers/net/ethernet/nvidia/forcedeth.c
 +++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -5540,7 +5540,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 	init_timer(&np->nic_poll);
- 	np->nic_poll.data = (unsigned long) dev;
- 	np->nic_poll.function = nv_do_nic_poll;	/* timer handler */
--	init_timer(&np->stats_poll);
-+	init_timer_deferrable(&np->stats_poll);
- 	np->stats_poll.data = (unsigned long) dev;
- 	np->stats_poll.function = nv_do_stats_poll;	/* timer handler */
+@@ -892,6 +892,11 @@ enum {
+ static int dma_64bit = NV_DMA_64BIT_ENABLED;
  
+ /*
++ * Debug output control for tx_timeout
++ */
++static bool debug_tx_timeout = false;
++
++/*
+  * Crossover Detection
+  * Realtek 8201 phy + some OEM boards do not work properly.
+  */
+@@ -2477,56 +2482,64 @@ static void nv_tx_timeout(struct net_device *dev)
+ 	u32 status;
+ 	union ring_type put_tx;
+ 	int saved_tx_limit;
+-	int i;
+ 
+ 	if (np->msi_flags & NV_MSI_X_ENABLED)
+ 		status = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQSTAT_MASK;
+ 	else
+ 		status = readl(base + NvRegIrqStatus) & NVREG_IRQSTAT_MASK;
+ 
+-	netdev_info(dev, "Got tx_timeout. irq: %08x\n", status);
++	netdev_warn(dev, "Got tx_timeout. irq status: %08x\n", status);
+ 
+-	netdev_info(dev, "Ring at %lx\n", (unsigned long)np->ring_addr);
+-	netdev_info(dev, "Dumping tx registers\n");
+-	for (i = 0; i <= np->register_size; i += 32) {
+-		netdev_info(dev,
+-			    "%3x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
+-			    i,
+-			    readl(base + i + 0), readl(base + i + 4),
+-			    readl(base + i + 8), readl(base + i + 12),
+-			    readl(base + i + 16), readl(base + i + 20),
+-			    readl(base + i + 24), readl(base + i + 28));
+-	}
+-	netdev_info(dev, "Dumping tx ring\n");
+-	for (i = 0; i < np->tx_ring_size; i += 4) {
+-		if (!nv_optimized(np)) {
+-			netdev_info(dev,
+-				    "%03x: %08x %08x // %08x %08x // %08x %08x // %08x %08x\n",
+-				    i,
+-				    le32_to_cpu(np->tx_ring.orig[i].buf),
+-				    le32_to_cpu(np->tx_ring.orig[i].flaglen),
+-				    le32_to_cpu(np->tx_ring.orig[i+1].buf),
+-				    le32_to_cpu(np->tx_ring.orig[i+1].flaglen),
+-				    le32_to_cpu(np->tx_ring.orig[i+2].buf),
+-				    le32_to_cpu(np->tx_ring.orig[i+2].flaglen),
+-				    le32_to_cpu(np->tx_ring.orig[i+3].buf),
+-				    le32_to_cpu(np->tx_ring.orig[i+3].flaglen));
+-		} else {
++	if (unlikely(debug_tx_timeout)) {
++		int i;
++
++		netdev_info(dev, "Ring at %lx\n", (unsigned long)np->ring_addr);
++		netdev_info(dev, "Dumping tx registers\n");
++		for (i = 0; i <= np->register_size; i += 32) {
+ 			netdev_info(dev,
+-				    "%03x: %08x %08x %08x // %08x %08x %08x // %08x %08x %08x // %08x %08x %08x\n",
++				    "%3x: %08x %08x %08x %08x "
++				    "%08x %08x %08x %08x\n",
+ 				    i,
+-				    le32_to_cpu(np->tx_ring.ex[i].bufhigh),
+-				    le32_to_cpu(np->tx_ring.ex[i].buflow),
+-				    le32_to_cpu(np->tx_ring.ex[i].flaglen),
+-				    le32_to_cpu(np->tx_ring.ex[i+1].bufhigh),
+-				    le32_to_cpu(np->tx_ring.ex[i+1].buflow),
+-				    le32_to_cpu(np->tx_ring.ex[i+1].flaglen),
+-				    le32_to_cpu(np->tx_ring.ex[i+2].bufhigh),
+-				    le32_to_cpu(np->tx_ring.ex[i+2].buflow),
+-				    le32_to_cpu(np->tx_ring.ex[i+2].flaglen),
+-				    le32_to_cpu(np->tx_ring.ex[i+3].bufhigh),
+-				    le32_to_cpu(np->tx_ring.ex[i+3].buflow),
+-				    le32_to_cpu(np->tx_ring.ex[i+3].flaglen));
++				    readl(base + i + 0), readl(base + i + 4),
++				    readl(base + i + 8), readl(base + i + 12),
++				    readl(base + i + 16), readl(base + i + 20),
++				    readl(base + i + 24), readl(base + i + 28));
++		}
++		netdev_info(dev, "Dumping tx ring\n");
++		for (i = 0; i < np->tx_ring_size; i += 4) {
++			if (!nv_optimized(np)) {
++				netdev_info(dev,
++					    "%03x: %08x %08x // %08x %08x "
++					    "// %08x %08x // %08x %08x\n",
++					    i,
++					    le32_to_cpu(np->tx_ring.orig[i].buf),
++					    le32_to_cpu(np->tx_ring.orig[i].flaglen),
++					    le32_to_cpu(np->tx_ring.orig[i+1].buf),
++					    le32_to_cpu(np->tx_ring.orig[i+1].flaglen),
++					    le32_to_cpu(np->tx_ring.orig[i+2].buf),
++					    le32_to_cpu(np->tx_ring.orig[i+2].flaglen),
++					    le32_to_cpu(np->tx_ring.orig[i+3].buf),
++					    le32_to_cpu(np->tx_ring.orig[i+3].flaglen));
++			} else {
++				netdev_info(dev,
++					    "%03x: %08x %08x %08x "
++					    "// %08x %08x %08x "
++					    "// %08x %08x %08x "
++					    "// %08x %08x %08x\n",
++					    i,
++					    le32_to_cpu(np->tx_ring.ex[i].bufhigh),
++					    le32_to_cpu(np->tx_ring.ex[i].buflow),
++					    le32_to_cpu(np->tx_ring.ex[i].flaglen),
++					    le32_to_cpu(np->tx_ring.ex[i+1].bufhigh),
++					    le32_to_cpu(np->tx_ring.ex[i+1].buflow),
++					    le32_to_cpu(np->tx_ring.ex[i+1].flaglen),
++					    le32_to_cpu(np->tx_ring.ex[i+2].bufhigh),
++					    le32_to_cpu(np->tx_ring.ex[i+2].buflow),
++					    le32_to_cpu(np->tx_ring.ex[i+2].flaglen),
++					    le32_to_cpu(np->tx_ring.ex[i+3].bufhigh),
++					    le32_to_cpu(np->tx_ring.ex[i+3].buflow),
++					    le32_to_cpu(np->tx_ring.ex[i+3].flaglen));
++			}
+ 		}
+ 	}
+ 
+@@ -6156,6 +6169,9 @@ module_param(phy_cross, int, 0);
+ MODULE_PARM_DESC(phy_cross, "Phy crossover detection for Realtek 8201 phy is enabled by setting to 1 and disabled by setting to 0.");
+ module_param(phy_power_down, int, 0);
+ MODULE_PARM_DESC(phy_power_down, "Power down phy and disable link when interface is down (1), or leave phy powered up (0).");
++module_param(debug_tx_timeout, bool, 0);
++MODULE_PARM_DESC(debug_tx_timeout,
++		 "Dump tx related registers and ring when tx_timeout happens");
+ 
+ MODULE_AUTHOR("Manfred Spraul <manfred@colorfullife.com>");
+ MODULE_DESCRIPTION("Reverse Engineered nForce ethernet driver");
 -- 
 1.7.3.1
 
