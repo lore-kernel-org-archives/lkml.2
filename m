@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1KOMkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:40:05 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6814 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab1KOMkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:40:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 15 Nov 2011 04:40:03 -0800
-From: vbyravarasu@nvidia.com
-To: linux-kernel@vger.kernel.org
-Cc: venu byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] bcd: limit bin2bcd input value to lie between 0-99
-Date: Tue, 15 Nov 2011 18:10:39 +0530
-Message-Id: <1321360839-26451-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-X-NVConfidentiality: public
+	id S1753426Ab1KOMmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:42:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26689 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752036Ab1KOMmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:42:04 -0500
+From: Weiping Pan <wpan@redhat.com>
+Cc: Weiping Pan <wpan@redhat.com>,
+        Patrick McHardy <kaber@trash.net> (maintainer:VLAN (802.1Q)),
+        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
+	[GENERAL]),
+        netdev@vger.kernel.org (open list:VLAN (802.1Q)),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH V2] vlan:return error when real dev is enslaved
+Date: Tue, 15 Nov 2011 20:44:16 +0800
+Message-Id: <d7ea491a500c99c0b4839ddcedab027a3c865c59.1321360959.git.wpan@redhat.com>
+In-Reply-To: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com>
+References: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: venu byravarasu <vbyravarasu@nvidia.com>
+Qinhuibin reported a kernel panic when he do some operation about vlan.
+https://lkml.org/lkml/2011/11/6/218
 
-If bin2bcd gets a value which is more than 100,
-there are chances that it may store non decimal
-value in the most significant nibble.
+The operation is as below:
+ifconfig eth2 up
+modprobe bonding
+modprobe 8021q
+ifconfig bond0 up
+ifenslave bond0 eth2
+vconfig add eth2 3300
+vconfig add bond0 33
+vconfig rem eth2.3300
 
-e.g. say val passed to bin2bcd is 112.
-In that case the expected value to be returned by
-this function is 12.
-However, without the fix being added it would
-be 112.
+the panic stack is as below:
+[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
+[<ffffffff80378917>] notifier_call_chain+0x37/0x70
+[<ffffffff80372122>] panic+0xa2/0x195
+[<ffffffff80376ed8>] oops_end+0xd8/0x140
+[<ffffffff8001bea7>] no_context+0xf7/0x280
+[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
+[<ffffffff80376318>] page_fault+0x28/0x30
+[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
+[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
+[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
+[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
+[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
+[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
+[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
+[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
+[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
+[<00007f108a2b8bd7>] 0x7f108a2b8bd7
+And the nic is as below:
+[root@localhost ~]# ethtool -i eth2
+driver: igb
+version: 3.0.6-k2
+firmware-version: 1.2-1
+bus-info: 0000:04:00.0
+kernel version：
+2.6.32.12-0.7 also happen in 2.6.32-131
 
-Signed-off-by: venu byravarasu <vbyravarasu@nvidia.com>
+For kernel 2.6.32, the reason of this bug is that when we do "vconfig add bond0 33",
+adapter->vlgrp is overwritten in igb_vlan_rx_register. So when we do "vconfig rem
+eth2.3300", it can't find the correct vlgrp.
+
+And this bug is avoided by vlan cleanup patchset from Jiri Pirko
+<jpirko@redhat.com>, especially commit b2cb09b1a772(igb: do vlan cleanup).
+
+But it is not a correct operation to creat a vlan interface on eth2
+when it have been enslaved by bond0, so this patch is to return error
+when the real dev is already enslaved.
+
+Changelog:
+V2: use pr_err instead of pr_info
+
+Signed-off-by: Weiping Pan <wpan@redhat.com>
 ---
- lib/bcd.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ net/8021q/vlan.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/lib/bcd.c b/lib/bcd.c
-index d74257f..d715474 100644
---- a/lib/bcd.c
-+++ b/lib/bcd.c
-@@ -9,6 +9,7 @@ EXPORT_SYMBOL(bcd2bin);
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 5471628..7ce50ba 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -148,6 +148,11 @@ int vlan_check_real_dev(struct net_device *real_dev, u16 vlan_id)
+ 	const char *name = real_dev->name;
+ 	const struct net_device_ops *ops = real_dev->netdev_ops;
  
- unsigned char bin2bcd(unsigned val)
- {
-+	val %= 100;
- 	return ((val / 10) << 4) + val % 10;
- }
- EXPORT_SYMBOL(bin2bcd);
++	if (real_dev->flags & IFF_SLAVE) {
++		pr_err("Error, %s was already enslaved\n", name);
++		return -EOPNOTSUPP;
++	}
++
+ 	if (real_dev->features & NETIF_F_VLAN_CHALLENGED) {
+ 		pr_info("VLANs not supported on %s\n", name);
+ 		return -EOPNOTSUPP;
 -- 
-1.7.1.1
+1.7.4.4
 
