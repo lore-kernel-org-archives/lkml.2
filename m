@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1KOIgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:36:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753484Ab1KOIgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:36:01 -0500
-From: Weiping Pan <wpan@redhat.com>
-Cc: Weiping Pan <wpan@redhat.com>,
-        Patrick McHardy <kaber@trash.net> (maintainer:VLAN (802.1Q)),
-        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
-	[GENERAL]),
-        netdev@vger.kernel.org (open list:VLAN (802.1Q)),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] vlan:return error when real dev is enslaved
-Date: Tue, 15 Nov 2011 16:36:52 +0800
-Message-Id: <c897fa89d5ea94c6624e8cdab9787aa83526f994.1321343212.git.wpan@redhat.com>
+	id S1753813Ab1KOIlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:41:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37635 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab1KOIlK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:41:10 -0500
+Date: Tue, 15 Nov 2011 16:40:59 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.2-rc1-rt2
+Message-ID: <20111115084059.GA23250@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LFD.2.02.1111150050590.4902@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1111150050590.4902@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qinhuibin reported a kernel panic when he do some operation about vlan.
-https://lkml.org/lkml/2011/11/6/218
+On Tue, Nov 15, 2011 at 02:15:52AM +0100, Thomas Gleixner wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.2-rc1-rt2 release.
+> 
+> Changes vs. 3.2-rc1-rt2:
+> 
+>   * Add missing softirq export (John Kacur)
+> 
+>   * Fix rcu macro substitution (John Kacur)
+> 
+>   * Fix device mapper BUG_ON (Reported by Luis Claudio)
+> 
+>   * Fix x86 aesni (crypto) preemption problem (Peter Zijlstra,
+>     reported by Carsten Emde)
+> 
+>   * Fix UP (tiny) RCU build issues (Reported by Tim Sanders)
 
-The operation is as below:
-ifconfig eth2 up
-modprobe bonding
-modprobe 8021q
-ifconfig bond0 up
-ifenslave bond0 eth2
-vconfig add eth2 3300
-vconfig add bond0 33
-vconfig rem eth2.3300
+Got below warning:
 
-the panic stack is as below:
-[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
-[<ffffffff80378917>] notifier_call_chain+0x37/0x70
-[<ffffffff80372122>] panic+0xa2/0x195
-[<ffffffff80376ed8>] oops_end+0xd8/0x140
-[<ffffffff8001bea7>] no_context+0xf7/0x280
-[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
-[<ffffffff80376318>] page_fault+0x28/0x30
-[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
-[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
-[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
-[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
-[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
-[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
-[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
-[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
-[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
-[<00007f108a2b8bd7>] 0x7f108a2b8bd7
-And the nic is as below:
-[root@localhost ~]# ethtool -i eth2
-driver: igb
-version: 3.0.6-k2
-firmware-version: 1.2-1
-bus-info: 0000:04:00.0
-kernel version：
-2.6.32.12-0.7 also happen in 2.6.32-131
+[    8.459702] BUG: sleeping function called from invalid context at linux/kernel/rtmutex.c:645
+[    8.459705] in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: swapper/0
+[    8.459707] 1 lock held by swapper/0/1:
+[    8.459708]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81154c45>] prepare_bprm_creds+0x35/0x80
+[    8.459717] Pid: 1, comm: swapper/0 Not tainted 3.2.0-rc1-rt2-11311-g3c4c0e7-dirty #10
+[    8.459718] Call Trace:
+[    8.459724]  [<ffffffff81040c4e>] __might_sleep+0x12e/0x1e0
+[    8.459730]  [<ffffffff815f4d74>] rt_spin_lock+0x24/0x60
+[    8.459735]  [<ffffffff8114506e>] memcg_check_events+0x11e/0x230
+[    8.459739]  [<ffffffff81146c5a>] T.1144+0x8a/0xf0
+[    8.459743]  [<ffffffff81146d16>] __mem_cgroup_commit_charge_lrucare+0x56/0x180
+[    8.459747]  [<ffffffff810430c9>] ? sub_preempt_count+0xa9/0xe0
+[    8.459751]  [<ffffffff81147d08>] mem_cgroup_cache_charge+0xd8/0xe0
+[    8.459756]  [<ffffffff81103a49>] add_to_page_cache_locked+0x49/0x100
+[    8.459760]  [<ffffffff8110344f>] ? find_get_page+0xdf/0x1a0
+[    8.459764]  [<ffffffff81103b22>] add_to_page_cache_lru+0x22/0x50
+[    8.459767]  [<ffffffff81103ca5>] do_read_cache_page+0x75/0x1a0
+[    8.459774]  [<ffffffff812695f0>] ? nfs_follow_link+0xc0/0xc0
+[    8.459777]  [<ffffffff81103e1c>] read_cache_page_async+0x1c/0x20
+[    8.459781]  [<ffffffff81103e2e>] read_cache_page+0xe/0x20
+[    8.459785]  [<ffffffff81269589>] nfs_follow_link+0x59/0xc0
+[    8.459789]  [<ffffffff8115de07>] path_openat+0x2a7/0x470
+[    8.459793]  [<ffffffff8115e0e9>] do_filp_open+0x49/0xa0
+[    8.459798]  [<ffffffff81155b22>] open_exec+0x32/0xf0
+[    8.459803]  [<ffffffff811a3e0b>] load_elf_binary+0x85b/0x1d30
+[    8.459810]  [<ffffffff81096d55>] ? __lock_acquire+0x4f5/0xbf0
+[    8.459816]  [<ffffffff8100a819>] ? native_sched_clock+0x29/0x80
+[    8.459821]  [<ffffffff8108429f>] ? local_clock+0x4f/0x60
+[    8.459824]  [<ffffffff815f4658>] ? rt_spin_lock_slowunlock+0x78/0x80
+[    8.459828]  [<ffffffff81091a39>] ? trace_hardirqs_off_caller+0x29/0x120
+[    8.459832]  [<ffffffff8109119e>] ? put_lock_stats+0xe/0x40
+[    8.459836]  [<ffffffff815f4658>] ? rt_spin_lock_slowunlock+0x78/0x80
+[    8.459840]  [<ffffffff811a35b0>] ? elf_map+0x1d0/0x1d0
+[    8.459843]  [<ffffffff810430c9>] ? sub_preempt_count+0xa9/0xe0
+[    8.459847]  [<ffffffff811a35b0>] ? elf_map+0x1d0/0x1d0
+[    8.459850]  [<ffffffff81154748>] search_binary_handler+0x1c8/0x4b0
+[    8.459854]  [<ffffffff811545d7>] ? search_binary_handler+0x57/0x4b0
+[    8.459858]  [<ffffffff81156876>] do_execve_common+0x276/0x330
+[    8.459862]  [<ffffffff811569ba>] do_execve+0x3a/0x40
+[    8.459866]  [<ffffffff8100bdca>] sys_execve+0x4a/0x80
+[    8.459871]  [<ffffffff815f85e8>] kernel_execve+0x68/0xd0
+[    8.459877]  [<ffffffff81000333>] ? run_init_process+0x23/0x30
+[    8.459881]  [<ffffffff81000398>] init_post+0x58/0xd0
+[    8.459888]  [<ffffffff81b5e6bd>] kernel_init+0x156/0x160
+[    8.459892]  [<ffffffff815f8574>] kernel_thread_helper+0x4/0x10
+[    8.459896]  [<ffffffff810423bc>] ? finish_task_switch+0x8c/0x110
+[    8.459900]  [<ffffffff815f5bab>] ? _raw_spin_unlock_irq+0x3b/0x70
+[    8.459903]  [<ffffffff815f5f61>] ? retint_restore_args+0xe/0xe
+[    8.459907]  [<ffffffff81b5e567>] ? parse_early_options+0x20/0x20
+[    8.459911]  [<ffffffff815f8570>] ? gs_change+0xb/0xb
 
-For kernel 2.6.32, the reason of this bug is that when we do "vconfig add bond0 33",
-adapter->vlgrp is overwritten in igb_vlan_rx_register. So when we do "vconfig rem
-eth2.3300", it can't find the correct vlgrp.
-
-And this bug is avoided by vlan cleanup patchset from Jiri Pirko
-<jpirko@redhat.com>, especially commit b2cb09b1a772(igb: do vlan cleanup).
-
-But it is not a correct operation to creat a vlan interface on eth2
-when it have been enslaved by bond0, so this patch is to return error
-when the real dev is already enslaved.
-
-Signed-off-by: Weiping Pan <wpan@redhat.com>
----
- net/8021q/vlan.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-index 5471628..8ba9226 100644
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -148,6 +148,11 @@ int vlan_check_real_dev(struct net_device *real_dev, u16 vlan_id)
- 	const char *name = real_dev->name;
- 	const struct net_device_ops *ops = real_dev->netdev_ops;
- 
-+	if (real_dev->flags & IFF_SLAVE) {
-+		pr_info("Error, %s was already enslaved\n", name);
-+		return -EOPNOTSUPP;
-+	}
-+
- 	if (real_dev->features & NETIF_F_VLAN_CHALLENGED) {
- 		pr_info("VLANs not supported on %s\n", name);
- 		return -EOPNOTSUPP;
--- 
-1.7.4
-
+Thanks,
+Yong
