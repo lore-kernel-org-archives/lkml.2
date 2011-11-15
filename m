@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab1KOMaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:30:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62909 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab1KOMaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:30:21 -0500
-Date: Tue, 15 Nov 2011 17:59:36 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH v2 09/11] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20111115122902.GA26378@amit-x200.redhat.com>
-References: <cover.1317311033.git.amit.shah@redhat.com>
- <5b7834c9a30254220f9c079ba54d29abaf63db8f.1317311033.git.amit.shah@redhat.com>
- <20111002093324.GD29706@redhat.com>
+	id S1752027Ab1KOMbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:31:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40785 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab1KOMbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:31:49 -0500
+Message-ID: <4EC25B91.9050806@gmail.com>
+Date: Tue, 15 Nov 2011 20:31:13 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111002093324.GD29706@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] ARM: NUC900: add clock source select for ac97 and i2s
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Sun) 02 Oct 2011 [11:33:26], Michael S. Tsirkin wrote:
-> On Thu, Sep 29, 2011 at 09:19:40PM +0530, Amit Shah wrote:
-> > Remove all the vqs on hibernation and re-create them after restoring
-> > from a hibernated image.  This keeps networking working across
-> > hibernation.
-> > 
-> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > ---
-> >  drivers/net/virtio_net.c |   28 ++++++++++++++++++++++++++++
-> >  1 files changed, 28 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index dcd4b01..8b9ed43 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -1131,6 +1131,30 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
-> >  	free_netdev(vi->dev);
-> >  }
-> >  
-> > +#ifdef CONFIG_PM
-> > +static int virtnet_freeze(struct virtio_device *vdev)
-> > +{
-> > +	struct virtnet_info *vi = vdev->priv;
-> 
-> I'm guessing we need to do something like netif_device_detach here,
-> otherwise guest might be in the process of using the vq for transmit at
-> this point.
+This patch is to add clock source select for ac97 and i2s,
+since I will implement the i2s driver, so this "nuc900-audio" is not
+yet specific for AC97.
 
-Done.
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 
-> I think we also must make sure NAPI RX handler is not in progress.
+---
+ arch/arm/mach-w90x900/clksel.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-How to do that?  napi_disable() / napi_enable() doesn't seem right
-(and it doesn't work, too).  pci_disable_device() in the suspend
-routine may work?
-
-> We also might need to mask interrupts from the device
-> to prevent TX or RX from getting rescheduled?
-
-pci_disable_device() will help this too, right?
-
-		Amit
+diff --git a/arch/arm/mach-w90x900/clksel.c b/arch/arm/mach-w90x900/clksel.c
+index 3de4a52..76ccabe 100644
+--- a/arch/arm/mach-w90x900/clksel.c
++++ b/arch/arm/mach-w90x900/clksel.c
+@@ -48,7 +48,8 @@ static void clock_source_select(const char *dev_id,
+unsigned int clkval)
+ 		offset = ATAOFFSET;
+ 	else if (strcmp(dev_id, "nuc900-lcd") == 0)
+ 		offset = LCDOFFSET;
+-	else if (strcmp(dev_id, "nuc900-audio") == 0)
++	else if (strcmp(dev_id, "nuc900-audio-ac97") == 0 ||
++				strcmp(dev_id, "nuc900-audio-i2s") == 0)
+ 		offset = AUDOFFSET;
+ 	else
+ 		offset = CPUOFFSET;
+-- 
+1.7.0.4
