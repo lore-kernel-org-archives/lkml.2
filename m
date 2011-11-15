@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab1KOTjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:39:24 -0500
-Received: from pserver.infoseka.lt ([78.158.28.5]:54224 "EHLO infoseka.lt"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757212Ab1KOTjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:39:24 -0500
-Message-ID: <f31a086da5eabf100248492b3f07a4f7.squirrel@webmail.infoseka.lt>
-Date: Mon, 14 Nov 2011 09:37:07 +0200 (EET)
-Subject: We need company representatives in Europe, America,and Canada.
-From: "ITOCHU Corporation" <infoitochu@mail.com>
-Reply-To: mreizokobayashi11@hotmail.com
-User-Agent: SquirrelMail/1.4.15
-MIME-Version: 1.0
-Content-Type: text/plain;charset=lt_LT
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1757404Ab1KOTvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:51:22 -0500
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:45188 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757386Ab1KOTvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 14:51:20 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: Joe Perches <joe@perches.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Mike Ditto <mditto@google.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v4 2/8] forcedeth: Add messages to indicate using MSI or MSI-X
+Date: Tue, 15 Nov 2011 11:51:12 -0800
+Message-Id: <945345f2f0c401c2d17d2b28bff279e7b3d859db.1321386214.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <97a5a50baaca7b272dfb7a1a06e88df4888f12b9.1321384662.git.david.decotigny@google.com>
+References: <97a5a50baaca7b272dfb7a1a06e88df4888f12b9.1321384662.git.david.decotigny@google.com>
+In-Reply-To: <cover.1321386214.git.david.decotigny@google.com>
+References: <cover.1321386214.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ITOCHU Corporation
-5-1, Kita-Aoyama 2-chome
-Minato-ku, Tokyo 107-8077, Japan
-website: http://www.itochu.co.jp/main/top.html
+From: Mike Ditto <mditto@google.com>
 
-Dear,
-
-I am Mr. Eizoko Bayashi. I represent ITOCHU Corporation based here in
-Japan.
-So If you are interested in this business transaction,forward to us your
-contact information.
-
-Regards.
-Mr. Eizoko Bayashi.
+This adds a few kernel messages to indicate whether PCIe interrupts
+are signaled with MSI or MSI-X.
 
 
 
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 374625b..fe17e42 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -3810,6 +3810,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 				writel(0, base + NvRegMSIXMap0);
+ 				writel(0, base + NvRegMSIXMap1);
+ 			}
++			netdev_info(dev, "MSI-X enabled\n");
+ 		}
+ 	}
+ 	if (ret != 0 && np->msi_flags & NV_MSI_CAPABLE) {
+@@ -3831,6 +3832,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 			writel(0, base + NvRegMSIMap1);
+ 			/* enable msi vector 0 */
+ 			writel(NVREG_MSI_VECTOR_0_ENABLED, base + NvRegMSIIrqMask);
++			netdev_info(dev, "MSI enabled\n");
+ 		}
+ 	}
+ 	if (ret != 0) {
+-- 
+1.7.3.1
 
