@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab1KOV0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 16:26:08 -0500
-Received: from imr3.ericy.com ([198.24.6.13]:54280 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932363Ab1KOV0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 16:26:06 -0500
-Subject: Re: [PATCH v7] hwmon: Add driver for EXYNOS4 TMU
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Donggeun Kim <dg77.kim@samsung.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1321389279.20271.241.camel@x61.thuisdomein>
-References: <1315388948-20346-1-git-send-email-dg77.kim@samsung.com>
-	 <1321389279.20271.241.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Tue, 15 Nov 2011 13:24:13 -0800
-Message-ID: <1321392253.2309.379.camel@groeck-laptop>
+	id S932489Ab1KOV0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:26:46 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:56301 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932415Ab1KOV0p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 16:26:45 -0500
+Message-ID: <4EC2D8AA.6080701@xenotime.net>
+Date: Tue, 15 Nov 2011 13:24:58 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+To: Rajendra Nayak <rnayak@ti.com>
+CC: linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [PATCH] Documentation: Fix minor typos in pinctrl.txt
+References: <1321335378-29064-1-git-send-email-rnayak@ti.com>
+In-Reply-To: <1321335378-29064-1-git-send-email-rnayak@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 15:34 -0500, Paul Bolle wrote:
-> (This is an attempt to do a bit of review after the fact. See, this
-> appears to be to the patch that ended up as commit
-> 9d97e5c81e15afaef65d00f077f863c94f750839 in the mainline tree. Since
-> that tree is at v3.2-rc2 now this might be in time for v3.2. If my
-> comments have merit, that is.)
+On 11/14/2011 09:36 PM, Rajendra Nayak wrote:
+> Fix some minor typos in the pinctrl documentation.
 > 
-> On Wed, 2011-09-07 at 18:49 +0900, Donggeun Kim wrote:
-> > This patch allows to read temperature
-> > from TMU(Thermal Management Unit) of SAMSUNG EXYNOS4 series of SoC.
-> [...]
-> > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> > index 0b62c3c..c6fb761 100644
-> > --- a/drivers/hwmon/Kconfig
-> > +++ b/drivers/hwmon/Kconfig
-> > @@ -303,6 +303,16 @@ config SENSORS_DS1621
-> >  	  This driver can also be built as a module.  If so, the module
-> >  	  will be called ds1621.
-> >  
-> > +config SENSORS_EXYNOS4_TMU
-> > +	tristate "Temperature sensor on Samsung EXYNOS4"
-> > +	depends on EXYNOS4_DEV_TMU
+> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+> ---
+>  Documentation/pinctrl.txt |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
 > 
-> It doesn't look like that Kconfig symbol is part of the tree just yet.
-> That means people will not be able to build this driver from the
-> mainline tree. Why is this dependency needed? In a (rather quick) scan
-> of the code of this driver I couldn't spot anything not yet available in
-> the tree.
-> 
-I have to defer to the driver author for that. Maybe the dependency was
-renamed at some point, or removed altogether.
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> index b04cb7d..c849a09 100644
+> --- a/Documentation/pinctrl.txt
+> +++ b/Documentation/pinctrl.txt
+> @@ -91,7 +91,7 @@ int __init foo_probe(void)
+>  Pins usually have fancier names than this. You can find these in the dataheet
 
-> > +	help
-> > +	  If you say yes here you get support for TMU (Thermal Managment
-> > +	  Unit) on SAMSUNG EXYNOS4 series of SoC.
-> > +
-> > +	  This driver can also be built as a module. If so, the module
-> > +	  will be called exynos4-tmu.
-> > +
-> >  config SENSORS_I5K_AMB
-> >  	tristate "FB-DIMM AMB temperature sensor on Intel 5000 series chipsets"
-> >  	depends on PCI && EXPERIMENTAL
-> [...]
-> > diff --git a/drivers/hwmon/exynos4_tmu.c b/drivers/hwmon/exynos4_tmu.c
-> > new file mode 100644
-> > index 0000000..0170c90
-> > --- /dev/null
-> > +++ b/drivers/hwmon/exynos4_tmu.c
-> [...]
-> > +#ifdef CONFIG_PM
-> > +static int exynos4_tmu_suspend(struct platform_device *pdev, pm_message_t state)
-> > +{
-> > +	exynos4_tmu_control(pdev, false);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int exynos4_tmu_resume(struct platform_device *pdev)
-> > +{
-> > +	exynos4_tmu_initialize(pdev);
-> > +	exynos4_tmu_control(pdev, true);
-> > +
-> > +	return 0;
-> > +}
-> > +#else
-> > +#define exynos4_tmu_suspend NULL
-> > +#define exynos4_tmu_resume NULL
-> > +#endif
-> > +
-> > +static struct platform_driver exynos4_tmu_driver = {
-> > +	.driver = {
-> > +		.name   = "exynos4-tmu",
-> > +		.owner  = THIS_MODULE,
-> > +	},
-> > +	.probe = exynos4_tmu_probe,
-> > +	.remove	= __devexit_p(exynos4_tmu_remove),
-> > +	.suspend = exynos4_tmu_suspend,
-> > +	.resume = exynos4_tmu_resume,
-> > +};
-> 
-> A common idiom seems to be (I'm speaking from memory here) to
-> wrap .suspend and .resume inside an "#ifdef CONFIG_PM" / "#endif" pair.
-> That would allow to drop both "#define exynos4_tmu_suspend NULL" and
-> "#define exynos4_tmu_resume NULL" above. Would that work here too?
-> 
-Seems to be a matter of opinion. I personally don't care one way or the
-other, but I was told some time ago that the above method would be
-preferred over using a second #ifdef.
+fix typo:                                                               datasheet
 
-Guenter
+>  for your chip. Notice that the core pinctrl.h file provides a fancy macro
+>  called PINCTRL_PIN() to create the struct entries. As you can see I enumerated
+> -the pins from 0 in the upper left corner to 63 in the lower right corner,
+> +the pins from 0 in the lower left corner to 63 in the upper right corner,
+
+fix run-on sentences:
+
+   the pins from 0 in the lower left corner to 63 in the upper right corner.
+   This enumeration was arbitrarily chosen; in practice you need to think
+
+>  this enumeration was arbitrarily chosen, in practice you need to think
+>  through your numbering system so that it matches the layout of registers
+>  and such things in your driver, or the code may become complicated. You must
 
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
