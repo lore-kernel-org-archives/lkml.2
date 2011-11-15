@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab1KOMbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:31:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40785 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab1KOMbt (ORCPT
+	id S1753375Ab1KOMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:34:09 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:2347
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751784Ab1KOMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:31:49 -0500
-Message-ID: <4EC25B91.9050806@gmail.com>
-Date: Tue, 15 Nov 2011 20:31:13 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Tue, 15 Nov 2011 07:34:08 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/2] regmap: Do not call regcache_exit from regcache_rbtree_init error path
+Date: Tue, 15 Nov 2011 13:34:40 +0100
+Message-ID: <1321360481-17783-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.1
+In-Reply-To: <20111114214304.GI6528@opensource.wolfsonmicro.com>
+References: <20111114214304.GI6528@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] ARM: NUC900: add clock source select for ac97 and i2s
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to add clock source select for ac97 and i2s,
-since I will implement the i2s driver, so this "nuc900-audio" is not
-yet specific for AC97.
+Calling regcache_exit from regcache_rbtree_init is first of all a layering
+violation and secondly will cause double frees. regcache_exit will free buffers
+allocated by the core, but the core will also free the same buffers when the
+cacheops init callback returns an error. Thus we end up with a double free.
+Fix this by not calling regcache_exit but only free those buffers which, have
+been allocated in this function.
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
-
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- arch/arm/mach-w90x900/clksel.c |    3 ++-
+ drivers/base/regmap/regcache-rbtree.c |    3 ++-
  1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-w90x900/clksel.c b/arch/arm/mach-w90x900/clksel.c
-index 3de4a52..76ccabe 100644
---- a/arch/arm/mach-w90x900/clksel.c
-+++ b/arch/arm/mach-w90x900/clksel.c
-@@ -48,7 +48,8 @@ static void clock_source_select(const char *dev_id,
-unsigned int clkval)
- 		offset = ATAOFFSET;
- 	else if (strcmp(dev_id, "nuc900-lcd") == 0)
- 		offset = LCDOFFSET;
--	else if (strcmp(dev_id, "nuc900-audio") == 0)
-+	else if (strcmp(dev_id, "nuc900-audio-ac97") == 0 ||
-+				strcmp(dev_id, "nuc900-audio-i2s") == 0)
- 		offset = AUDOFFSET;
- 	else
- 		offset = CPUOFFSET;
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index e314984..e71320f 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -17,6 +17,7 @@
+ 
+ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
+ 				 unsigned int value);
++static int regcache_rbtree_exit(struct regmap *map);
+ 
+ struct regcache_rbtree_node {
+ 	/* the actual rbtree node holding this block */
+@@ -149,7 +150,7 @@ static int regcache_rbtree_init(struct regmap *map)
+ 	return 0;
+ 
+ err:
+-	regcache_exit(map);
++	regcache_rbtree_exit(map);
+ 	return ret;
+ }
+ 
 -- 
-1.7.0.4
+1.7.7.1
+
+
