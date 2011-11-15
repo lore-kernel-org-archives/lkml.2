@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab1KOPiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 10:38:11 -0500
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:55399 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756325Ab1KOPiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 10:38:10 -0500
-Subject: Re: How to remove 2000+ lines from 400+ defconfig files?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1111151412360.15187@pobox.suse.cz>
-References: <1321362602.20271.192.camel@x61.thuisdomein>
-	 <alpine.LNX.2.00.1111151412360.15187@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Nov 2011 16:37:42 +0100
-Message-ID: <1321371462.20271.201.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756445Ab1KOPiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 10:38:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33643 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756346Ab1KOPix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 10:38:53 -0500
+Date: Tue, 15 Nov 2011 16:38:51 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlb: release pages in the error path of hugetlb_cow()
+Message-ID: <20111115153851.GB7551@tiehlicka.suse.cz>
+References: <CAJd=RBC5Q48r0sYeqF9bucaBJPv3LR4UTAannUZ8KXxoXY_Qcw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBC5Q48r0sYeqF9bucaBJPv3LR4UTAannUZ8KXxoXY_Qcw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 14:14 +0100, Jiri Kosina wrote:
-> I am fine taking those through trivial.git and handling the fallout.
+On Fri 11-11-11 21:01:20, Hillf Danton wrote:
+> If fail to prepare anon_vma, {new, old}_page should be released, or they will
+> escape the track and/or control of memory management.
 
-Great.
+Looks good (intrduced by in .36 by 0fe6e20b: hugetlb, rmap: add reverse
+mapping for hugepage). The failure case is really not probable but I
+guess this is still a candidate for stable kernel.
 
-> The only ones I'd have objections to taking immediately are those which are 
-> actually still referenced somewhere in the code.
-> For those, either taking them through appropriate maintainers, or having 
-> their Acked-by would be required.
+> 
+> Thanks
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-I don't mind. That shouldn't be a lot of extra work for me. 
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-But, I do have a naive question: are defconfigs meant to be drop in
-replacements for .config files or is one supposed to first feed them to
-the config tools to generate an up to date .config? Since, if one is
-supposed to feed them to the config tools first it doesn't matter
-whether the (outdated) macros are still used somewhere in the code,
-doesn't it? The config tools will simply drop all macros they can't
-match with Kconfig symbols. (Or don't they? Michal?)
+> ---
+> 
+> --- a/mm/hugetlb.c	Fri Nov 11 20:36:32 2011
+> +++ b/mm/hugetlb.c	Fri Nov 11 20:43:06 2011
+> @@ -2422,6 +2422,8 @@ retry_avoidcopy:
+>  	 * anon_vma prepared.
+>  	 */
+>  	if (unlikely(anon_vma_prepare(vma))) {
+> +		page_cache_release(new_page);
+> +		page_cache_release(old_page);
+>  		/* Caller expects lock to be held */
+>  		spin_lock(&mm->page_table_lock);
+>  		return VM_FAULT_OOM;
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
-Paul Bolle
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
