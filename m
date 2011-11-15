@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1KOAjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:39:15 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65241 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1KOAjO convert rfc822-to-8bit (ORCPT
+	id S1752441Ab1KOAp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:45:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47899 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab1KOAp4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:39:14 -0500
+	Mon, 14 Nov 2011 19:45:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111114.184240.1832866874941847383.davem@davemloft.net>
-References: <1321312921-7748-1-git-send-email-grundler@chromium.org>
-	<1321312921-7748-5-git-send-email-grundler@chromium.org>
-	<20111114.184240.1832866874941847383.davem@davemloft.net>
-Date: Mon, 14 Nov 2011 16:39:13 -0800
-X-Google-Sender-Auth: boDy07ThCra58TOqkeLhTxnVjcM
-Message-ID: <CANEJEGstEcWx=WD5ZfBrErOpzi+PTQys1hF0scPdVADwQFY+Yw@mail.gmail.com>
-Subject: Re: [PATCH 5/5] net-next:asix: update VERSION and white space changes
-From: Grant Grundler <grundler@chromium.org>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, allan@asix.com.tw,
-        freddy@asix.com.tw
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+8MBb+z2ChjVYfBQ_2m2PvtQicYYv9FCa5ZFnGH2j1UvE-sdg@mail.gmail.com>
+References: <1321312358-11234-1-git-send-email-keescook@chromium.org>
+	<CA+8MBb+z2ChjVYfBQ_2m2PvtQicYYv9FCa5ZFnGH2j1UvE-sdg@mail.gmail.com>
+Date: Mon, 14 Nov 2011 16:45:55 -0800
+X-Google-Sender-Auth: QCgPqPtk_wHRT13e9rQFclcby4g
+Message-ID: <CAGXu5jKbBfSK5njG-HY9bsPwcOWN_TzWTLfQftNQREBQeG8HXA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] pstore: pass allocated memory region back to caller
+From: Kees Cook <keescook@chromium.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 3:42 PM, David Miller <davem@davemloft.net> wrote:
-> From: Grant Grundler <grundler@chromium.org>
-> Date: Mon, 14 Nov 2011 15:22:01 -0800
+On Mon, Nov 14, 2011 at 3:55 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> On Mon, Nov 14, 2011 at 3:12 PM, Kees Cook <keescook@chromium.org> wrote:
+>> Since pstore's buf_lock cannot be held while doing the VFS population,
+>> these patches make it the backend's responsibility to pass up an allocated
+>> buffer instead during reads.
 >
->> No functional changes. Three things targeted:
->> o update VERSION to reflect previous changes.
->> o fix up white space/formatting of some lines
->> o define 150 to be AX_SWRESET_MDELAY (self documenting code)
->>
->> Signed-off-by: Grant Grundler <grundler@chromium.org>
+> The split into three parts is good for review purposes - but I'll
+> squish them all together
+> into one commit to avoid breaking bisectability.
+
+Okay, sounds good.
+
+> I'm trying to work out whether I should be worried about the removal
+> of the locks
+> around the:
 >
-> Why have such a wonderful set of real bug fixes that I can apply right
-> now and send off to Linus's tree, only to sabotage it with whitespace
-> changes at the end which are no appropriate?
+>   (*open)(...)
+>   while (size = (*read)(...)) {
+>   }
+>   (*close)()
 >
-> Please, just submit this without the whitespace and other cleanup
-> stuff. Â Restrict it to real bug fixes, and I'll push it around.
+> section in pstore_get_records().  If someone tries to simultaneously mount
+> pstore in multiple places - will the upper level mount code serialize? I don't
+> think the backends will be happy if multiple callers execute that at the same
+> time.
 
-No Problem! :)
+How should it be handled? We can't hold any lock while doing the VFS work.
 
-I wasn't expecting this to go to linus immediately but it makes that it should.
+-Kees
 
-> The whitespace and other bits can be submitted for net-next afterwards.
-
-Will do.
-
-cheers,
-grant
+-- 
+Kees Cook
+ChromeOS Security
