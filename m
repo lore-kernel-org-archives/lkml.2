@@ -1,95 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab1KOKaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 05:30:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38924 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754574Ab1KOKaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 05:30:12 -0500
-Date: Tue, 15 Nov 2011 10:30:07 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Colin Cross <ccross@android.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-Message-ID: <20111115103007.GB27150@suse.de>
-References: <20111114140421.GA27150@suse.de>
- <20111114183812.GC4414@redhat.com>
+	id S1754873Ab1KOKbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 05:31:04 -0500
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:20016 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754574Ab1KOKbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 05:31:02 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EADA+wk5R8itd/2dsb2JhbABDqWmBBoFyAQEEATocIxAIA0YUJQMhiBUCuwcSiQ9jBJQviH+IfQ
+Date: Tue, 15 Nov 2011 11:28:03 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Richard Purdie <rpurdie@linux.intel.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ARCH_PXA_ADX
+Message-ID: <20111115102803.GC23376@infomag.iguana.be>
+References: <1321351777.20271.166.camel@x61.thuisdomein> <20111115101817.GA6907@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111114183812.GC4414@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111115101817.GA6907@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 07:38:12PM +0100, Andrea Arcangeli wrote:
-> On Mon, Nov 14, 2011 at 02:04:21PM +0000, Mel Gorman wrote:
-> > In his fix, he avoided retrying the allocation if reclaim made no
-> > progress and __GFP_FS was not set. The problem is that this would
-> > result in GFP_NOIO allocations failing that previously succeeded
-> > which would be very unfortunate.
+Hi All,
+
+> > 2) So it seems these two drivers could never have been built from the
+> > mainline tree. (I'm starting to think that the config tools should
+> > somehow check stuff like this.)
+> > 
+> > 3) Is the above correct? If it is, why shouldn't I submit the trivial
+> > patch to remove both these drivers?
 > 
-> GFP_NOFS are made by filesystems/buffers to avoid locking up on fs/vfs
-> locking. Those also should be able to handle failure gracefully but
-> userland is more likely to get a -ENOMEM from these (for example
-> during direct-io) if those fs allocs fails.
+> Yes, all of that is correct. Unfortunately, I never got around to mainlining
+> the rest of the code. Feel free to remove both drivers and add my Acked-by.
 
-I was also vaguely recalling Roland's talk at day 2 of kernel summit
-(reported at http://lwn.net/Articles/464500/) where he talked about
-error handling. One point he made was that some filesystems ran into
-problems in the event of memory allocation failure. I didn't audit
-if the block layer handles it better but one way or the other I did
-not want to throw the the block or filesystem layers curve balls.
+I will remove the watchdog driver out of my trees and sent it to Linus.
 
-> So clearly it sounds risky
-> to apply the modification quoted above and risk having any GFP_NOFS
-> fail. Said that I'm afraid we're not deadlock safe with current code
-> that cannot fail but there's no easy solution and no way to fix it in
-> the short term, and it's only a theoretical concern.
+Kind regards,
+Wim.
 
-It's still a valid concern. The expectation is that we are protected
-from deadlocks a combination of mempools and the watermarks forcing
-processes to stall in direct reclaim leaving a cushion of pages for
-reclaim using PF_MEMALLOC to always make forward progress. Patches
-that break how watermarks work tend to lead to deadlock.
-
-> For !__GFP_FS allocations, __GFP_NOFAIL is the default for order <=
-> PAGE_ALLOC_COSTLY_ORDER and __GFP_NORETRY is the default for order >
-> PAGE_ALLOC_COSTLY_ORDER. This inconsistency is not so clean in my
-> view.
-
-Is your concern that the behaviour of the allocator changes quite
-significantly for orders < PAGE_ALLOC_COSTLY_ORDER?
-
-I agree with you that it would be nicer if there was a gradual scaling
-back of how much work the allocator did that depended on order. To
-date there has not been much pressure or motivation to implement it.
-
-> Also for GFP_KERNEL/USER/__GFP_FS regular allocations the
-> __GFP_NOFAIL looks more like a __GFP_MAY_OOM.  But if we fix that and
-> we drop __GFP_NORETRY, and we set __GFP_NOFAIL within the
-> GFP_NOFS/NOIO #defines (to remove the magic PAGE_ALLOC_COSTLY_ORDER
-> check in should_alloc_retry) we may loop forever if somebody allocates
-> several mbytes of huge contiguous RAM with GFP_NOIO. So at least
-> there's a practical explanation for the current code.
-> 
-
-Yep.
-
-> Patch looks good to me (and safer) even if I don't like keeping
-> infinite loops from a purely theoretical standpoint.
-
->From a more practical point of view, I am generally more concerned
-with abnormally large stalls from within the page allocator which
-is what patches like "Do not stall in synchronous compaction for THP
-allocations" address.
-
--- 
-Mel Gorman
-SUSE Labs
