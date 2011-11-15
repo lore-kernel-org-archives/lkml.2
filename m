@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab1KONOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 08:14:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48633 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754831Ab1KONOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 08:14:16 -0500
-Date: Tue, 15 Nov 2011 14:14:15 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: How to remove 2000+ lines from 400+ defconfig files?
-In-Reply-To: <1321362602.20271.192.camel@x61.thuisdomein>
-Message-ID: <alpine.LNX.2.00.1111151412360.15187@pobox.suse.cz>
-References: <1321362602.20271.192.camel@x61.thuisdomein>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755463Ab1KONQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 08:16:40 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39124 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1KONQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 08:16:39 -0500
+Date: Tue, 15 Nov 2011 13:16:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Patrick Combes <p-combes@ti.com>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Hugo Dupras <h-dupras@ti.com>
+Subject: Re: [RFC][PATCH] gpiolib: add irq_wake (power-management) sysfs
+ file
+Message-ID: <20111115131636.GA31028@sirena.org.uk>
+References: <1321004406-15663-1-git-send-email-p-combes@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321004406-15663-1-git-send-email-p-combes@ti.com>
+X-Cookie: diplomacy, n:
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Nov 2011, Paul Bolle wrote:
+On Fri, Nov 11, 2011 at 10:40:06AM +0100, Patrick Combes wrote:
 
-> Michal, Jiri,
+> By calling poll() on the /sys/class/gpio/gpioN/value sysfs file, usermode
+> application can take benefit of gpio interrupts.
+> However, depending on the power state reached, this interrupt may not wake-up
+> the CPU.
+> This patch creates a new sysfs file /sys/class/gpio/gpioN/irq_wake to enable
+> usermode application to set the wake properties of a gpio IRQ.
+> This option can be set or not for each gpio to preserve power consumption (e.g
+> embedded systems).
 
-[ adding LKML to CC ]
+There's already device global control for this in sysfs via the power
+framework - 
 
-> 0) While, slowly, working through the accumulated Kconfig cruft I
-> noticed quite a number of outdated (Kconfig) macros in (almost) all
-> defconfig files. A few days ago I counted 161 outdated Kconfig macros,
-> totaling 2189 lines in 426 defconfig files. Please see below for a draft
-> commit log, with a sort-of-impressive stat. (A few of these macros are
-> still used in the code. I already sent out messages to try to clean up
-> that too.)
-> 
-> 1) They create false negatives while grepping for outdated stuff. At
-> some point I decided to write a script to remove all of them.
-> 
-> 2) Is it worth the trouble to try to remove all that from the mainline
-> tree? If it is, how would you propose I try to get something like this
-> commit merged?
+Also...
 
-I am fine taking those through trivial.git and handling the fallout. The 
-only ones I'd have objections to taking immediately are those which are 
-actually still referenced somewhere in the code.
-For those, either taking them through appropriate maintainers, or having 
-their Acked-by would be required.
+> +	else if (sysfs_streq(buf, "enable") || sysfs_streq(buf, "1"))
+> +		status = enable_irq_wake(gpio_to_irq(gpio));
+> +	else if (sysfs_streq(buf, "disable") || sysfs_streq(buf, "0"))
+> +		status = disable_irq_wake(gpio_to_irq(gpio));
+> +	else
+> +		status = -EINVAL;
 
-Thanks,
+...this doesn't do anything to stop userspace doing multiple enables and
+disables.
 
--- 
-Jiri Kosina
-SUSE Labs
+> +	if (gpio_irq_data)
+> +		status = sprintf(buf, " Wakeup %s\n",
+> +					irqd_is_wakeup_set(gpio_irq_data)
+> +					? " enable" : "disable");
+
+This is *really* non-idiomatic for sysfs output, you'd expect the sysfs
+output to look like the input.  It's supposed to machine parsable...
