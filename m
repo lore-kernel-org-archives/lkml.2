@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab1KOCc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 21:32:58 -0500
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:45576
-	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755034Ab1KOCc5 (ORCPT
+	id S1755398Ab1KOCdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 21:33:06 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:53373 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059Ab1KOCdC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 21:32:57 -0500
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-To: <linuxppc-dev@lists.ozlabs.org>
-Cc: <linux-kernel@vger.kernel.org>, <benh@kernel.crashing.org>,
-        <galak@kernel.crashing.org>, <scottwood@freescale.com>,
-        <B04825@freescale.com>, <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 0/2] powerpc: CPU cache op cleanup
-Date: Mon, 14 Nov 2011 21:32:09 -0500
-Message-Id: <1321324332-22964-1-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1320986410.21206.48.camel@pasglop>
-References: <1320986410.21206.48.camel@pasglop>
+	Mon, 14 Nov 2011 21:33:02 -0500
+Date: Mon, 14 Nov 2011 21:32:55 -0500 (EST)
+Message-Id: <20111114.213255.2061756136146824209.davem@davemloft.net>
+To: grundler@chromium.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, allan@asix.com.tw,
+        freddy@asix.com.tw
+Subject: Re: [PATCH 5/5] net-next:asix: update VERSION and white space
+ changes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CANEJEGuzdxDuVysuAJPcdC7-mywa8B8JggVHe_VMTK_1j4QguQ@mail.gmail.com>
+References: <1321312921-7748-5-git-send-email-grundler@chromium.org>
+	<20111114.184240.1832866874941847383.davem@davemloft.net>
+	<CANEJEGuzdxDuVysuAJPcdC7-mywa8B8JggVHe_VMTK_1j4QguQ@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 Nov 2011 18:32:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, so I have a work-in-progress patch for cleaning up the CPU cache
-handling, and I'd like some comments on the approach.
+From: Grant Grundler <grundler@chromium.org>
+Date: Mon, 14 Nov 2011 16:54:35 -0800
 
-It's not really split up, and it's kind of a huge patch because it
-tries to tackle a lot of things at once.  Unfortunately, I'm having a
-hard time finding good clean places to break things apart.
+> On Mon, Nov 14, 2011 at 3:42 PM, David Miller <davem@davemloft.net> wrote:
+> ...
+>> Please, just submit this without the whitespace and other cleanup
+>> stuff.  Restrict it to real bug fixes, and I'll push it around.
+> 
+> I just sent a "v2" of 5/5 patch which only has the VERSION change. Is
+> that sufficient or should I resend all 5?
 
-Furthermore, I know 100% that it is not complete on PPC32 yet, and it
-almost certainly does not build on PPC64 yet either.
-
-These are the only files in arch/powerpc/ which have known-incorrect
-references to L1_CACHE_* variables:
-  arch/powerpc/lib/copy_32.S
-  arch/powerpc/kernel/misc_32.S
-
-Unfortunately, I've been staring at PPC asm for long enough that I
-have a migraine headache and I'm going to have to stop here for now.
-If somebody else wants to tackle fixing up the 32-bit copy_page() and
-__copy_tofrom_user() routines it would be highly appreciated.
-
-Cheers,
-Kyle Moffett
-
---
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
-
+Just respinning #5 is fine, thanks.
