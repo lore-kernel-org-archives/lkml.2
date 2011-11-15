@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab1KOMmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:42:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26689 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036Ab1KOMmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:42:04 -0500
-From: Weiping Pan <wpan@redhat.com>
-Cc: Weiping Pan <wpan@redhat.com>,
-        Patrick McHardy <kaber@trash.net> (maintainer:VLAN (802.1Q)),
-        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
-	[GENERAL]),
-        netdev@vger.kernel.org (open list:VLAN (802.1Q)),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH V2] vlan:return error when real dev is enslaved
-Date: Tue, 15 Nov 2011 20:44:16 +0800
-Message-Id: <d7ea491a500c99c0b4839ddcedab027a3c865c59.1321360959.git.wpan@redhat.com>
-In-Reply-To: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com>
-References: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com>
+	id S1753542Ab1KOMsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:48:05 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15423 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab1KOMsD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:48:03 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6530"; a="137747770"
+Message-ID: <faba552e7bd19ee5399c73c2b478a34d.squirrel@www.codeaurora.org>
+In-Reply-To: <001e01cca2b2$3b449310$b1cdb930$%jun@samsung.com>
+References: <620ec9ffa6bdbba9ae5f76998e36f8dc.squirrel@www.codeaurora.org>
+    <001001cca043$395dbfc0$ac193f40$%jun@samsung.com>
+    <CANfBPZ-Zn+R4GosEL-RJxh8gduAr8e+qN876uPwDkHfiEpdERw@mail.gmail.com>
+    <ea21d88d904af165cb911354e3f51ea6.squirrel@www.codeaurora.org>
+    <001e01cca2b2$3b449310$b1cdb930$%jun@samsung.com>
+Date: Tue, 15 Nov 2011 04:48:02 -0800 (PST)
+Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 
+     device
+From: merez@codeaurora.org
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: merez@codeaurora.org, "'S, Venkatraman'" <svenkatr@ti.com>,
+        linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, dh.han@samsung.com
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qinhuibin reported a kernel panic when he do some operation about vlan.
-https://lkml.org/lkml/2011/11/6/218
-
-The operation is as below:
-ifconfig eth2 up
-modprobe bonding
-modprobe 8021q
-ifconfig bond0 up
-ifenslave bond0 eth2
-vconfig add eth2 3300
-vconfig add bond0 33
-vconfig rem eth2.3300
-
-the panic stack is as below:
-[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
-[<ffffffff80378917>] notifier_call_chain+0x37/0x70
-[<ffffffff80372122>] panic+0xa2/0x195
-[<ffffffff80376ed8>] oops_end+0xd8/0x140
-[<ffffffff8001bea7>] no_context+0xf7/0x280
-[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
-[<ffffffff80376318>] page_fault+0x28/0x30
-[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
-[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
-[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
-[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
-[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
-[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
-[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
-[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
-[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
-[<00007f108a2b8bd7>] 0x7f108a2b8bd7
-And the nic is as below:
-[root@localhost ~]# ethtool -i eth2
-driver: igb
-version: 3.0.6-k2
-firmware-version: 1.2-1
-bus-info: 0000:04:00.0
-kernel versionï¼š
-2.6.32.12-0.7 also happen in 2.6.32-131
-
-For kernel 2.6.32, the reason of this bug is that when we do "vconfig add bond0 33",
-adapter->vlgrp is overwritten in igb_vlan_rx_register. So when we do "vconfig rem
-eth2.3300", it can't find the correct vlgrp.
-
-And this bug is avoided by vlan cleanup patchset from Jiri Pirko
-<jpirko@redhat.com>, especially commit b2cb09b1a772(igb: do vlan cleanup).
-
-But it is not a correct operation to creat a vlan interface on eth2
-when it have been enslaved by bond0, so this patch is to return error
-when the real dev is already enslaved.
-
-Changelog:
-V2: use pr_err instead of pr_info
-
-Signed-off-by: Weiping Pan <wpan@redhat.com>
----
- net/8021q/vlan.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-index 5471628..7ce50ba 100644
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -148,6 +148,11 @@ int vlan_check_real_dev(struct net_device *real_dev, u16 vlan_id)
- 	const char *name = real_dev->name;
- 	const struct net_device_ops *ops = real_dev->netdev_ops;
- 
-+	if (real_dev->flags & IFF_SLAVE) {
-+		pr_err("Error, %s was already enslaved\n", name);
-+		return -EOPNOTSUPP;
-+	}
-+
- 	if (real_dev->features & NETIF_F_VLAN_CHALLENGED) {
- 		pr_info("VLANs not supported on %s\n", name);
- 		return -EOPNOTSUPP;
--- 
-1.7.4.4
+>> >>> >> >> > +       if (rqc)
+>> >>> >> >> > +               reqs = mmc_blk_chk_packable(mq, rqc);
+>> >>>
+>> >>> It would be best to keep all the calls to blk_fetch_request in the
+>> same
+>> >>> location. Therefore, I suggest to move the call to
+>> mmc_blk_chk_packable
+>> >>> to
+>> >>> mmc/card/queue.c after the first request is fetched.
+>> >>
+>> >> At the first time, I considered that way.
+>> >> I'll do more, if possible.
+> I considered more.
+> I think that mmc_blk_chk_packable would rather be called only for r/w type
+> than all request type(e.g. discard, flush).
+>
+mmc_blk_chk_packable can check the cmd_flags of the request to verify it's
+not a flush/disacrad etc. In such cases will not pack.
 
