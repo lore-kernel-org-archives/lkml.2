@@ -1,48 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab1KOFtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 00:49:09 -0500
-Received: from outmail148095.authsmtp.com ([62.13.148.95]:54346 "EHLO
-	outmail148095.authsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751124Ab1KOFtH (ORCPT
+	id S1751666Ab1KOFvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 00:51:45 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:32973 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab1KOFvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 00:49:07 -0500
-X-Greylist: delayed 1915 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 00:49:07 EST
-From: Ben Pfaff <blp@cs.stanford.edu>
-To: jidanni@jidanni.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Documentation/input/input.txt.gz has a bug
-References: <8762im2n5f.fsf@jidanni.org>
-Reply-To: Ben Pfaff <blp@cs.stanford.edu>
-Date: Mon, 14 Nov 2011 21:13:08 -0800
-In-Reply-To: <8762im2n5f.fsf@jidanni.org> (jidanni@jidanni.org's message of
-	"Tue, 15 Nov 2011 09:24:28 +0800")
-Message-ID: <87y5vihst7.fsf@blp.benpfaff.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 15 Nov 2011 00:51:43 -0500
+X-AuditID: b753bd60-9aa63ba00000359c-c1-4ec1fdecd810
+X-AuditID: b753bd60-9aa63ba00000359c-c1-4ec1fdecd810
+Message-ID: <4EC1FDE5.5080800@hitachi.com>
+Date: Tue, 15 Nov 2011 14:51:33 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Server-Quench: 04c5286f-0f49-11e1-97bb-002264978518
-X-AuthReport-Spam: If SPAM / abuse - report it at: http://www.authsmtp.com/abuse
-X-AuthRoute: OCdwYQ8QAVZfSBwy AThCFzNJTwsiPBEK DBMeOw5HJEYITQBc chwbOAMOd3sbWxYD A2cKS1RRWlx3U2d9 JQ1XcwRZfE5GQQdq UldLR1BXCwQmQW13 A2lFLWBycwBGenw+ ZkJkVj5bWBd/d057 FFNUQ2kPeGZhPWEC WUcKJR5UcAFIeBtM bVh6VXtDAzANdg4/ FBI2MjYtNCleLyIS QwcVME5VQEATAyJ6 WwAeWzo9VU0MXG06 ZxY7JTYA
-X-Authentic-SMTP: 61633331373532.1014:706
-X-AuthFastPath: 0 (Was 255)
-X-AuthVirus-Status: No virus detected - but ensure you scan with your own anti-virus system.
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 3/5] x86: add a sysctl parameter to panic on stack
+ overflow
+References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp> <20111107055301.7928.91628.stgit@ltc219.sdl.hitachi.co.jp> <20111110195538.GB22646@phenom.dumpdata.com>
+In-Reply-To: <20111110195538.GB22646@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jidanni@jidanni.org writes:
+(2011/11/11 4:55), Konrad Rzeszutek Wilk wrote:
+> On Mon, Nov 07, 2011 at 02:53:01PM +0900, Mitsuo Hayasaka wrote:
+>> This patch adds kernel.panic_on_stackoverflow sysctl parameter,
+>> which can cause a panic when detecting the stack overflow.
+> 
+> Why would we want to panic?
 
-> /usr/share/doc/linux-doc-3.0.0/Documentation/input/input.txt.gz
-> Has an error at "(c, 13, 32)" or needs an explanation added:
->
->   Doing a cat /dev/input/mouse0 (c, 13, 32) will verify that a mouse
-> is also emulated, characters should appear if you move it.
+This is because in general a stack overflow may corrupt data and
+the additional corruption may occur due to reading of them unless
+systems stop. This option is useful for systems that need a high
+reliability, although it is disabled by default.
 
-I think that it's correct:
+In addition, it is also useful for analyzing the reason why it
+occurred using kdump which is a crash dumping mechanism.
 
-    $ ls -l /dev/input/mouse0
-    crw------- 1 root root 13, 32 Nov 12 09:14 /dev/input/mouse0
--- 
-Ben Pfaff 
-http://benpfaff.org
+>>
+>> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+>> Cc: Randy Dunlap <rdunlap@xenotime.net>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> ---
+>>
+>>  Documentation/sysctl/kernel.txt |   13 +++++++++++++
+>>  arch/x86/kernel/irq_64.c        |    2 ++
+>>  include/linux/kernel.h          |    1 +
+>>  include/linux/sysctl.h          |    1 +
+>>  kernel/sysctl.c                 |    9 +++++++++
+>>  kernel/sysctl_binary.c          |    1 +
+>>  6 files changed, 27 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+>> index 704e474..eb8d263 100644
+>> --- a/Documentation/sysctl/kernel.txt
+>> +++ b/Documentation/sysctl/kernel.txt
+>> @@ -48,6 +48,7 @@ show up in /proc/sys/kernel:
+>>  - panic
+>>  - panic_on_oops
+>>  - panic_on_unrecovered_nmi
+>> +- panic_on_stackoverflow
+>>  - pid_max
+>>  - powersave-nap               [ PPC only ]
+>>  - printk
+>> @@ -385,6 +386,18 @@ Controls the kernel's behaviour when an oops or BUG is encountered.
+>>  
+>>  ==============================================================
+>>  
+>> +panic_on_stackoverflow:
+>> +
+>> +Controls the kernel's behaviour when detecting stack overflow.
+>> +This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+>> +
+>> +0: try to continue operation.
+>> +
+>> +1: panic immediately.
+>> +
+>> +==============================================================
+>> +
+>> +
+>>  pid_max:
+>>  
+>>  PID allocation wrap value.  When the kernel's next PID value
+>> diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
+>> index 530cfd0..d720813 100644
+>> --- a/arch/x86/kernel/irq_64.c
+>> +++ b/arch/x86/kernel/irq_64.c
+>> @@ -20,6 +20,8 @@
+>>  #include <asm/idle.h>
+>>  #include <asm/apic.h>
+>>  
+>> +int sysctl_panic_on_stackoverflow;
+> 
+> __read_mostly
+> 
+>> +
+>>  DEFINE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+>>  EXPORT_PER_CPU_SYMBOL(irq_stat);
+>>  
+>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>> index 8eefcf7..19b3595 100644
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -339,6 +339,7 @@ extern int panic_timeout;
+>>  extern int panic_on_oops;
+>>  extern int panic_on_unrecovered_nmi;
+>>  extern int panic_on_io_nmi;
+>> +extern int sysctl_panic_on_stackoverflow;
+>>  extern const char *print_tainted(void);
+>>  extern void add_taint(unsigned flag);
+>>  extern int test_taint(unsigned flag);
+>> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+>> index 9a1ec10..4b9dc3d 100644
+>> --- a/include/linux/sysctl.h
+>> +++ b/include/linux/sysctl.h
+>> @@ -153,6 +153,7 @@ enum
+>>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+>> +	KERN_PANIC_ON_STACKOVERFLOW = 77, /* int: panic on stack overflow */
+>>  };
+>>  
+>>  
+>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>> index 11d65b5..08a18f9 100644
+>> --- a/kernel/sysctl.c
+>> +++ b/kernel/sysctl.c
+>> @@ -792,6 +792,15 @@ static struct ctl_table kern_table[] = {
+>>  		.mode		= 0644,
+>>  		.proc_handler	= proc_dointvec,
+>>  	},
+>> +#if defined(CONFIG_DEBUG_STACKOVERFLOW)
+>> +	{
+>> +		.procname	= "panic_on_stackoverflow",
+>> +		.data		= &sysctl_panic_on_stackoverflow,
+>> +		.maxlen		= sizeof(int),
+>> +		.mode		= 0644,
+>> +		.proc_handler	= proc_dointvec,
+>> +	},
+>> +#endif
+>>  	{
+>>  		.procname	= "bootloader_type",
+>>  		.data		= &bootloader_type,
+>> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+>> index 6318b51..24fc654 100644
+>> --- a/kernel/sysctl_binary.c
+>> +++ b/kernel/sysctl_binary.c
+>> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+>>  	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+>>  	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+>>  	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
+>> +	{ CTL_INT,	KERN_PANIC_ON_STACKOVERFLOW,	"panic_on_stackoverflow" },
+> 
+> This shouldn't be wrapped in the #ifdef?
+> 
+>>  	{}
+>>  };
+>>  
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
