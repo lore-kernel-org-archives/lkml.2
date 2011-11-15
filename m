@@ -1,157 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab1KOUWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 15:22:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49484 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757064Ab1KOUWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 15:22:40 -0500
-Message-ID: <4EC2CA45.7070605@solonet.org.ua>
-Date: Tue, 15 Nov 2011 22:23:33 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	id S1757433Ab1KOUXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 15:23:05 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:37612 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754176Ab1KOUXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 15:23:03 -0500
+Date: Tue, 15 Nov 2011 14:23:14 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, xfs-masters@oss.sgi.com
+Subject: Re: [PATCH] [BUGFIX] xfs: use doalloc flag in xfs_qm_dqattach_one()
+Message-ID: <20111115202314.GE29840@sgi.com>
+References: <20111110013310.3408.41745.stgit@ltc219.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio/gpio-sysfs: Try to export busy GPIO line leads to
- wrong GPIO line exporting
-References: <4EBF1DD1.8090600@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740805B5B@HQMAIL01.nvidia.com> <4EC1A0BE.3000901@solonet.org.ua>
-In-Reply-To: <4EC1A0BE.3000901@solonet.org.ua>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111110013310.3408.41745.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 11/15/2011 01:14 AM, Denis Kuzmenko wrote:
-> On 11/14/2011 10:45 PM, Stephen Warren wrote:
->> Denis Kuzmenko wrote at Saturday, November 12, 2011 6:31 PM:
+On Thu, Nov 10, 2011 at 10:33:10AM +0900, Mitsuo Hayasaka wrote:
+> The doalloc arg in xfs_qm_dqattach_one() is a flag that indicates
+> whether a new area to handle quota information will be allocated
+> if needed. Originally, it was passed to xfs_qm_dqget(), but has
+> been removed by the following commit (probably by mistake):
 > 
-> Looks like userspace doesn't retries write. Here is trace:
+> 	commit 8e9b6e7fa4544ea8a0e030c8987b918509c8ff47
+> 	Author: Christoph Hellwig <hch@lst.de>
+> 	Date:   Sun Feb 8 21:51:42 2009 +0100
 > 
-> open("/sys/class/gpio/export", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
-> ioctl(3, SNDCTL_TMR_TIMEBASE or TCGETS, 0xbef76c64) = -1 ENOTTY (Inappropriate ioctl for device)
-> brk(0x30e000)                           = 0x30e000
-> write(3, "37\n", 3)                     = -1 EBUSY (Device or resource busy)
-> close(3)                                = 0
-> exit(0)                                 = ?
+> 	xfs: remove the unused XFS_QMOPT_DQLOCK flag
 > 
-> this was made by simple self-written program:
-> 	fopen("/sys/class/gpio/export", "w"); fprintf(fp, "37\n");
+> As the result, xfs_qm_dqget() called from xfs_qm_dqattach_one()
+> never allocates the new area even if it is needed.
+> 
+> This patch gives the doalloc arg to xfs_qm_dqget() in
+> xfs_qm_dqattach_one() to fix this problem.
+> 
+> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+> Cc: Alex Elder <aelder@sgi.com>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> ---
+> 
+>  fs/xfs/xfs_qm.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+> index 9a0aa76..95ba6dc 100644
+> --- a/fs/xfs/xfs_qm.c
+> +++ b/fs/xfs/xfs_qm.c
+> @@ -674,7 +674,8 @@ xfs_qm_dqattach_one(
+>  	 * disk and we didn't ask it to allocate;
+>  	 * ESRCH if quotas got turned off suddenly.
+>  	 */
+> -	error = xfs_qm_dqget(ip->i_mount, ip, id, type, XFS_QMOPT_DOWARN, &dqp);
+> +	error = xfs_qm_dqget(ip->i_mount, ip, id, type,
+> +			     doalloc | XFS_QMOPT_DOWARN, &dqp);
+>  	if (error)
+>  		return error;
+>  
 
-That was userspace - problem in not reproducible with a code above.
-The only way I know to reproduce is:
-echo 37 > /sys/class/gpio/export
+Looks like the only caller of xfs_qm_dqattach_one with XFS_QMOPT_DOALLOC
+possibly set is xfs_qm_dqattach_locked, which does so based upon its
+argument 'flags'.  AFAICS the only caller of xfs_qm_dqattach_locked that
+sets this flag is xfs_qm_vop_dqalloc, which is called by
+xfs_ioctl_setattr, xfs_setattr_nonsize, xfs_create, and xfs_symlink.
 
-Traces are generated:
+xfs_ioctl_setattr|xfs_setattr_nonsize|xfs_create|xfs_symlink
+  xfs_qm_vop_dqalloc
+    xfs_qm_dqattach_locked(ip, XFS_QMOPT_DQALLOC
+      xfs_qm_dqattach_one
 
-execve("./test-gpio.sh", ["./test-gpio.sh"], [/* 15 vars */]) = 0
-mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|0x4000000, -1, 0) = 0x400c0000
-open("/lib/libc.so.0", O_RDONLY)        = 3
-fstat(3, {st_mode=S_IFREG|0755, st_size=244456, ...}) = 0
-mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|0x4000000, -1, 0) = 0x40183000
-read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0(\0\1\0\0\0 \204\0\0004\0\0\0"..., 4096) = 4096
-mmap2(NULL, 294912, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x401b9000
-mmap2(0x401b9000, 237612, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED, 3, 0) = 0x401b9000
-mmap2(0x401fb000, 4848, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED, 3, 0x3a) = 0x401fb000
-mmap2(0x401fd000, 12940, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x401fd000
-close(3)                                = 0
-munmap(0x40183000, 4096)                = 0
-stat("/lib/ld-uClibc.so.0", {st_mode=S_IFREG|0755, st_size=21200, ...}) = 0
-mprotect(0x401fb000, 4096, PROT_READ)   = 0
-mprotect(0x4005f000, 4096, PROT_READ)   = 0
-ioctl(0, SNDCTL_TMR_TIMEBASE or TCGETS, {B115200 opost isig icanon echo ...}) = 0
-ioctl(1, SNDCTL_TMR_TIMEBASE or TCGETS, {B115200 opost isig icanon echo ...}) = 0
-getuid32()                              = 0
-brk(0)                                  = 0xb63000
-brk(0xb64000)                           = 0xb64000
-brk(0xb65000)                           = 0xb65000
-getpid()                                = 540
-rt_sigaction(SIGCHLD, {SIG_DFL, [CHLD], SA_RESTART|0x4000000}, {SIG_DFL, [], 0}, 8) = 0
-rt_sigaction(SIGHUP, {SIG_DFL, [HUP], SA_RESTART|0x4000000}, {SIG_DFL, [], 0}, 8) = 0
-getppid()                               = 539
-stat64("/root", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
-stat64(".", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
-open("./test-gpio.sh", O_RDONLY|O_LARGEFILE) = 3
-fcntl64(3, F_DUPFD, 10)                 = 10
-close(3)                                = 0
-fcntl64(10, F_SETFD, FD_CLOEXEC)        = 0
-rt_sigaction(SIGINT, NULL, {SIG_DFL, [], 0}, 8) = 0
-rt_sigaction(SIGINT, {0x2f724, ~[], 0x4000000 /* SA_??? */}, NULL, 8) = 0
-rt_sigaction(SIGQUIT, NULL, {SIG_DFL, [], 0}, 8) = 0
-rt_sigaction(SIGQUIT, {SIG_IGN, [], 0x4000000 /* SA_??? */}, NULL, 8) = 0
-rt_sigaction(SIGTERM, NULL, {SIG_DFL, [], 0}, 8) = 0
-rt_sigaction(SIGTERM, {SIG_DFL, [], 0x4000000 /* SA_??? */}, NULL, 8) = 0
-read(10, "#!/bin/sh\necho 37 > /sys/class/g"..., 1023) = 43
-open("/sys/class/gpio/export", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 3
-fcntl64(1, F_DUPFD, 10)                 = 11
-dup2(3, 1)                              = 1
-close(3)                                = 0
-wait4(-1, 0xbed568d4, WNOHANG, NULL)    = -1 ECHILD (No child processes)
-fcntl64(1, F_GETFL)                     = 0x20001 (flags O_WRONLY|O_LARGEFILE)
-write(1, "37\n", 3)                     = -1 EBUSY (Device or resource busy)
-write(1, "3", 1)                        = -1 EBUSY (Device or resource busy)
-write(1, "3", 1)                        = -1 EBUSY (Device or resource busy)
-dup2(11, 1)                             = 1
-close(11)                               = 0
-write(1, "3", 13)                        = 1
-read(10, "", 1023)                      = 0
-exit(255)                               = ?
+I tried a few things to see if I could hit a problem without the patch
+but no luck.
 
-Traces added to kernel:
+Anyway... Looks good.
 
-export_store: 0x33 
-export_store: 0x37 
-export_store: 0xa 
-export_store: 37
-
-------------[ cut here ]------------
-WARNING: at drivers/gpio/gpiolib.c:650 export_store+0xe8/0x148()
-Modules linked in:
-[<c0028064>] (unwind_backtrace+0x0/0xf0) from [<c0039234>] (warn_slowpath_common+0x48/0x60)
-[<c0039234>] (warn_slowpath_common+0x48/0x60) from [<c0039268>] (warn_slowpath_null+0x1c/0x24)
-[<c0039268>] (warn_slowpath_null+0x1c/0x24) from [<c0182df0>] (export_store+0xe8/0x148)
-[<c0182df0>] (export_store+0xe8/0x148) from [<c01b1bf0>] (class_attr_store+0x30/0xcc)
-[<c01b1bf0>] (class_attr_store+0x30/0xcc) from [<c00db9ac>] (sysfs_write_file+0xfc/0x180)
-[<c00db9ac>] (sysfs_write_file+0xfc/0x180) from [<c0093304>] (vfs_write+0xac/0x13c)
-[<c0093304>] (vfs_write+0xac/0x13c) from [<c0093578>] (sys_write+0x40/0x6c)
-[<c0093578>] (sys_write+0x40/0x6c) from [<c0023ffc>] (__sys_trace_return+0x0/0x24)
----[ end trace a23bd23b77702f39 ]---
-export_store: 0x33 
-export_store: 3
-------------[ cut here ]------------
-WARNING: at drivers/gpio/gpiolib.c:650 export_store+0xe8/0x148()
-Modules linked in:
-[<c0028064>] (unwind_backtrace+0x0/0xf0) from [<c0039234>] (warn_slowpath_common+0x48/0x60)
-[<c0039234>] (warn_slowpath_common+0x48/0x60) from [<c0039268>] (warn_slowpath_null+0x1c/0x24)
-[<c0039268>] (warn_slowpath_null+0x1c/0x24) from [<c0182df0>] (export_store+0xe8/0x148)
-[<c0182df0>] (export_store+0xe8/0x148) from [<c01b1bf0>] (class_attr_store+0x30/0xcc)
-[<c01b1bf0>] (class_attr_store+0x30/0xcc) from [<c00db9ac>] (sysfs_write_file+0xfc/0x180)
-[<c00db9ac>] (sysfs_write_file+0xfc/0x180) from [<c0093304>] (vfs_write+0xac/0x13c)
-[<c0093304>] (vfs_write+0xac/0x13c) from [<c0093578>] (sys_write+0x40/0x6c)
-[<c0093578>] (sys_write+0x40/0x6c) from [<c0023ffc>] (__sys_trace_return+0x0/0x24)
----[ end trace a23bd23b77702f3a ]---
-export_store: 0x33 
-export_store: 3
-------------[ cut here ]------------
-WARNING: at drivers/gpio/gpiolib.c:650 export_store+0xe8/0x148()
-Modules linked in:
-[<c0028064>] (unwind_backtrace+0x0/0xf0) from [<c0039234>] (warn_slowpath_common+0x48/0x60)
-[<c0039234>] (warn_slowpath_common+0x48/0x60) from [<c0039268>] (warn_slowpath_null+0x1c/0x24)
-[<c0039268>] (warn_slowpath_null+0x1c/0x24) from [<c0182df0>] (export_store+0xe8/0x148)
-[<c0182df0>] (export_store+0xe8/0x148) from [<c01b1bf0>] (class_attr_store+0x30/0xcc)
-[<c01b1bf0>] (class_attr_store+0x30/0xcc) from [<c00db9ac>] (sysfs_write_file+0xfc/0x180)
-[<c00db9ac>] (sysfs_write_file+0xfc/0x180) from [<c0093304>] (vfs_write+0xac/0x13c)
-[<c0093304>] (vfs_write+0xac/0x13c) from [<c0093578>] (sys_write+0x40/0x6c)
-[<c0093578>] (sys_write+0x40/0x6c) from [<c0023ffc>] (__sys_trace_return+0x0/0x24)
----[ end trace a23bd23b77702f3b ]---
-
-Can someone point me where the problem can be? 
-Should i search it in command interpreter or in libc?
-
--- 
-Best regards, Denis Kuzmenko.
+Reviewed-by: Ben Myers <bpm@sgi.com>
