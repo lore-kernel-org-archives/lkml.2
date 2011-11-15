@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab1KOKp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 05:45:56 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:34320 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908Ab1KOKpy (ORCPT
+	id S1755073Ab1KOK5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 05:57:31 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:45878 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab1KOK5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 05:45:54 -0500
-MIME-Version: 1.0
-X-Originating-IP: [109.186.61.145]
-In-Reply-To: <20111115103926.GA5627@amd.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com> <20111115103926.GA5627@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 15 Nov 2011 12:45:33 +0200
-Message-ID: <CAK=WgbZ=0HctjLREv1oXEa=5ryY7C_6srO1Nt5uMowH+FyaHJQ@mail.gmail.com>
-Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 15 Nov 2011 05:57:30 -0500
+Subject: Re: ARCH_PXA_ADX
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Richard Purdie <rpurdie@linux.intel.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20111115102803.GC23376@infomag.iguana.be>
+References: <1321351777.20271.166.camel@x61.thuisdomein>
+	 <20111115101817.GA6907@avionic-0098.mockup.avionic-design.de>
+	 <20111115102803.GC23376@infomag.iguana.be>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Nov 2011 11:57:16 +0100
+Message-ID: <1321354636.20271.173.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Tue, 2011-11-15 at 11:28 +0100, Wim Van Sebroeck wrote:
+> On Tue, 2011-11-15 at 11:18 +0100, Thierry Reding wrote:
+> > [...] Feel free to remove both drivers and add my Acked-by.
 
-On Tue, Nov 15, 2011 at 12:39 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> It doesn't apply cleanly, can you please rebase the code, collect the
-> Acked-by's and resend?
+I see. Thanks.
 
-Sure. I planned on resending after the "hardware pgsize" patches are
-merged, but please tell me if you prefer it the other way around.
+> I will remove the watchdog driver out of my trees and sent it to Linus.
 
-Thanks,
-Ohad.
+Great.
+
+I hope to submit the trivial patch to drop the backlight driver in the
+near future. But if someone else does that before I do, that's fine with
+me too.
+
+
+Paul Bolle
+
