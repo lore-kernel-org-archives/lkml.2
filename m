@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab1KOT1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:27:23 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:44661 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab1KOT1T (ORCPT
+	id S1757362Ab1KOT16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:27:58 -0500
+Received: from mail-ww0-f74.google.com ([74.125.82.74]:49653 "EHLO
+	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab1KOT0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:27:19 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Suresh Jayaraman'" <sjayaraman@suse.com>
-Cc: <linux-kernel@vger.kernel.org>, <ap@solarrain.com>,
-        "'linux-cifs'" <linux-cifs@vger.kernel.org>
-References: <00c001cca300$4b512b80$e1f38280$@lucidpixels.com> <4EC269FC.1060104@suse.com>
-In-Reply-To: <4EC269FC.1060104@suse.com>
-Subject: RE: kernel 3.1.1 - cifs issue - ls: cannot access /cifs_mnt: Cannot allocate memory
-Date: Tue, 15 Nov 2011 14:27:11 -0500
-Message-ID: <004b01cca3cc$932e4240$b98ac6c0$@lucidpixels.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQLZrMe+81ABFycPwSqDEaFeFY6RxgEseDgwk4rbqFA=
-Content-Language: en-us
+	Tue, 15 Nov 2011 14:26:07 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v4 8/8] forcedeth: stats updated with a deferrable timer
+Date: Tue, 15 Nov 2011 11:25:41 -0800
+Message-Id: <ba205b5e371d4bb8a8f765ee663597238679c650.1321384662.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321384662.git.david.decotigny@google.com>
+References: <cover.1321384662.git.david.decotigny@google.com>
+In-Reply-To: <cover.1321384662.git.david.decotigny@google.com>
+References: <cover.1321384662.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark stats timer as deferrable: punctuality in waking the stats timer
+callback doesn't matter much, as it is responsible only to avoid
+integer wraparound.
+
+We need at least 1 other timer to fire within 17s (fully loaded 1Gbps)
+to avoid wrap-arounds. Desired period is still 10s.
 
 
------Original Message-----
-From: Suresh Jayaraman [mailto:sjayaraman@suse.com] 
-Sent: Tuesday, November 15, 2011 8:33 AM
-To: Justin Piszcz
-Cc: linux-kernel@vger.kernel.org; ap@solarrain.com; linux-cifs
-Subject: Re: kernel 3.1.1 - cifs issue - ls: cannot access /cifs_mnt: Cannot
-allocate memory
 
-[Cc linux-cifs@vger.kernel.org]
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On 11/15/2011 12:34 AM, Justin Piszcz wrote:
-> Hi,
-> 
-> CIFS "works" when I mount a Windows 7 host from my Linux host
-(3.1.1-x86_64)
-> but if I turn my machine off (Windows) and turn it back on, I get the
-> following error, is this normal? With NFS as a hardmount it just recovers,
-> with CIFS do I need to setup some sort of canary to unmount/remount?
-> 
->  $ ls /cifs_mnt
-> ls: cannot access /cifs_mnt: Cannot allocate memory
-> 
-
-This looks like a problem specific to Windows 7 or above. Quick tests on
-my test machines shows that cifs attempts to connect, times out,
-attempts to reconnect and gets -EHOSTUNREACH in case of both Windows
-Servers and Samba Servers. This is the expected behavior.
-
-OTOH, this sounds like a problem related to an error due to the Windows
-server being unable to allocate from the system nonpaged pool (seen in
-the past). Do you see anything that is related to the error in Windows
-Event viewer?
-
-Hi,
-
-Yes, you are correct--
-
-The server was unable to allocate from the system nonpaged pool because the
-server reached the configured limit for nonpaged pool allocations.
-
-Justin.
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 7284f40..b5c85de 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -5538,7 +5538,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
+ 	init_timer(&np->nic_poll);
+ 	np->nic_poll.data = (unsigned long) dev;
+ 	np->nic_poll.function = nv_do_nic_poll;	/* timer handler */
+-	init_timer(&np->stats_poll);
++	init_timer_deferrable(&np->stats_poll);
+ 	np->stats_poll.data = (unsigned long) dev;
+ 	np->stats_poll.function = nv_do_stats_poll;	/* timer handler */
+ 
+-- 
+1.7.3.1
 
