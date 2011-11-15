@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab1KOHx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 02:53:58 -0500
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:48655 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753446Ab1KOHxy (ORCPT
+	id S1753704Ab1KOHyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 02:54:04 -0500
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:47778 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753446Ab1KOHx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 02:53:54 -0500
+	Tue, 15 Nov 2011 02:53:59 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Greg KH <greg@kroah.com>
 Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
@@ -14,50 +14,41 @@ Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
         Linux USB Mailing List <linux-usb@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 00/13] Sparse fixes
-Date: Tue, 15 Nov 2011 09:53:27 +0200
-Message-Id: <1321343620-10794-1-git-send-email-balbi@ti.com>
+Subject: [PATCH 06/13] usb: storage: isd200: fix sparse warning
+Date: Tue, 15 Nov 2011 09:53:33 +0200
+Message-Id: <1321343620-10794-7-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.8.rc0
+In-Reply-To: <1321343620-10794-1-git-send-email-balbi@ti.com>
+References: <1321343620-10794-1-git-send-email-balbi@ti.com>
 Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Fix the following sparse warning:
 
-Here are a few sparse fixups for the storage drivers.
-Compile tested with allyesconfig and allmodconfig.
+| drivers/usb/storage/freecom.c:122:22: warning: symbol
+|	'freecom_usb_ids' was not declared. Should it
+|	be static?
 
-Felipe Balbi (13):
-  usb: storage: alauda: fix sparse warnings
-  usb: storage: cypress: fix sparse warning
-  usb: storage: datafab: fix sparse warning
-  usb: storage: ene_ub6250: fix sparse warnings
-  usb: storage: freecom: fix sparse warning
-  usb: storage: isd200: fix sparse warning
-  usb: storage: jumpshot: fix sparse warning
-  usb: storage: karma: fix sparse warning
-  usb: storage: onetouch: fix sparse warning
-  usb: storagE: realtek_cr: fix sparse warnings
-  usb: storage: sddr09: fix sparse warning
-  usb: storage: sddr55: fix sparse warning
-  usb: storage: shuttle_usbat: fix sparse warning
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/usb/storage/isd200.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- drivers/usb/storage/alauda.c        |    2 +-
- drivers/usb/storage/cypress_atacb.c |    2 +-
- drivers/usb/storage/datafab.c       |    2 +-
- drivers/usb/storage/ene_ub6250.c    |   12 ++++++------
- drivers/usb/storage/freecom.c       |    2 +-
- drivers/usb/storage/isd200.c        |    2 +-
- drivers/usb/storage/jumpshot.c      |    2 +-
- drivers/usb/storage/karma.c         |    2 +-
- drivers/usb/storage/onetouch.c      |    2 +-
- drivers/usb/storage/realtek_cr.c    |   11 +++++------
- drivers/usb/storage/sddr09.c        |    2 +-
- drivers/usb/storage/sddr55.c        |    2 +-
- drivers/usb/storage/shuttle_usbat.c |    2 +-
- 13 files changed, 22 insertions(+), 23 deletions(-)
-
+diff --git a/drivers/usb/storage/isd200.c b/drivers/usb/storage/isd200.c
+index ffc4193..7b81303 100644
+--- a/drivers/usb/storage/isd200.c
++++ b/drivers/usb/storage/isd200.c
+@@ -76,7 +76,7 @@ static int isd200_Initialization(struct us_data *us);
+ { USB_DEVICE_VER(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax), \
+   .driver_info = (flags)|(USB_US_TYPE_STOR<<24) }
+ 
+-struct usb_device_id isd200_usb_ids[] = {
++static struct usb_device_id isd200_usb_ids[] = {
+ #	include "unusual_isd200.h"
+ 	{ }		/* Terminating entry */
+ };
 -- 
 1.7.8.rc0
 
