@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab1KOKkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 05:40:06 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:25549
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754545Ab1KOKkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 05:40:03 -0500
-X-SpamScore: -17
-X-BigFish: VPS-17(zz98dK4015Lzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LUP6YM-01-1DR-02
-X-M-MSG: 
-Date: Tue, 15 Nov 2011 11:39:26 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
-Message-ID: <20111115103926.GA5627@amd.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+	id S1754936Ab1KOKm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 05:42:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39735 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754654Ab1KOKm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 05:42:27 -0500
+Date: Tue, 15 Nov 2011 10:42:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Colin Cross <ccross@android.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Message-ID: <20111115104223.GC27150@suse.de>
+References: <20111114140421.GA27150@suse.de>
+ <20111114150326.0ee60107.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+In-Reply-To: <20111114150326.0ee60107.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+On Mon, Nov 14, 2011 at 03:03:26PM -0800, Andrew Morton wrote:
+> > <SNIP>
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 9dd443d..5402897 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -127,6 +127,20 @@ void pm_restrict_gfp_mask(void)
+> >  	saved_gfp_mask = gfp_allowed_mask;
+> >  	gfp_allowed_mask &= ~GFP_IOFS;
+> >  }
+> > +
+> > +static bool pm_suspending(void)
+> > +{
+> > +	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
+> > +		return false;
+> > +	return true;
+> > +}
+> 
+> This doesn't seem a terribly reliable way of detecting that PM has
+> disabled the storage devices (which is what we really want to know
+> here: kswapd got crippled).
+> 
 
-On Sun, Sep 25, 2011 at 06:58:52AM -0400, Ohad Ben-Cohen wrote:
-> Ohad Ben-Cohen (5):
->   ARM: dev_archdata: add private iommu extension
->   ARM: OMAP: omap_device: add a method to set iommu private archdata
->   ARM: OMAP: iommu: declare a private iommu binding struct
->   ARM: OMAP3: bind omap3isp_device to its iommu device
->   iommu/omap: eliminate the public omap_find_iommu_device() method
+It only works because PM is the only caller that alters
+gfp_allowed_mask at runtime after early boot completes. We also check
+if suspend is in progress in mm/swapfile.c#try_to_free_swap() using
+the gfp_allowed_mask.
 
-It doesn't apply cleanly, can you please rebase the code, collect the
-Acked-by's and resend?
+> I guess it's safe for now, because PM is the only caller who alters
+> gfp_allowed_mask (I assume). 
 
-Thanks,
+You assume correctly.
 
-	Joerg
+> But an explicit storage_is_unavaliable
+> global which is set and cleared at exactly the correct time is clearer,
+> more direct and future-safer, no?
+> 
+
+It feels overkill to allocate more global storage for it when
+gfp_allowed_mask is already there but I could rename pm_suspending() to
+pm_disabled_storage(), make try_to_free_swap() use the same helper but
+leave the implementation the same. This would clarify the situation.
+
+> > +#else
+> > +
+> > +static bool pm_suspending(void)
+> > +{
+> > +	return false;
+> > +}
+> >  #endif /* CONFIG_PM_SLEEP */
+> >  
+> >  #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+> > @@ -2214,6 +2228,14 @@ rebalance:
+> >  
+> >  			goto restart;
+> >  		}
+> > +
+> > +		/*
+> > +		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
+> > +		 * prevent reclaim making forward progress without
+> > +		 * invoking OOM. Bail if we are suspending
+> > +		 */
+> > +		if (pm_suspending())
+> > +			goto nopage;
+> 
+> The comment doesn't tell the whole story: it's important that kswapd
+> writeout was disabled?
+> 
+
+Writeout is disabled for flushers as well but your comment covers both
+and clarifies the situation. Thanks
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Mel Gorman
+SUSE Labs
