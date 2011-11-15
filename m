@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1KOKnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 05:43:47 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:1793
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754884Ab1KOKnp (ORCPT
+	id S1755029Ab1KOKp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 05:45:56 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34320 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908Ab1KOKpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 05:43:45 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: <b35362@freescale.com>
-To: <dwmw2@infradead.org>, <Artem.Bityutskiy@nokia.com>
-CC: <linux-mtd@lists.infradead.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <scottwood@freescale.com>,
-        Liu Shuo <b35362@freescale.com>,
-        Jerry Huang <Chang-Ming.Huang@freescale.com>,
-        Tang Yuantian <b29983@freescale.com>
-Subject: [PATCH 2/3] mtd/nand : set Nand flash page address to FBAR and FPAR correctly
-Date: Tue, 15 Nov 2011 17:29:14 +0800
-Message-ID: <1321349355-1639-2-git-send-email-b35362@freescale.com>
-X-Mailer: git-send-email 1.6.4
-In-Reply-To: <1321349355-1639-1-git-send-email-b35362@freescale.com>
-References: <1321349355-1639-1-git-send-email-b35362@freescale.com>
+	Tue, 15 Nov 2011 05:45:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+X-Originating-IP: [109.186.61.145]
+In-Reply-To: <20111115103926.GA5627@amd.com>
+References: <1316948337-7924-1-git-send-email-ohad@wizery.com> <20111115103926.GA5627@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 15 Nov 2011 12:45:33 +0200
+Message-ID: <CAK=WgbZ=0HctjLREv1oXEa=5ryY7C_6srO1Nt5uMowH+FyaHJQ@mail.gmail.com>
+Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Shuo <b35362@freescale.com>
+Hi Joerg,
 
-If we use the Nand flash chip whose number of pages in a block is greater
-than 64(for large page), we must treat the low bit of FBAR as being the
-high bit of the page address due to the limitation of FCM, it simply uses
-the low 6-bits (for large page) of the combined block/page address as the
-FPAR component, rather than considering the actual block size.
+On Tue, Nov 15, 2011 at 12:39 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> It doesn't apply cleanly, can you please rebase the code, collect the
+> Acked-by's and resend?
 
-Signed-off-by: Liu Shuo <b35362@freescale.com>
-Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
-Signed-off-by: Tang Yuantian <b29983@freescale.com>
-Signed-off-by: Li Yang <leoli@freescale.com>
----
- drivers/mtd/nand/fsl_elbc_nand.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+Sure. I planned on resending after the "hardware pgsize" patches are
+merged, but please tell me if you prefer it the other way around.
 
-diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
-index 1bfcdef..c2c231b 100644
---- a/drivers/mtd/nand/fsl_elbc_nand.c
-+++ b/drivers/mtd/nand/fsl_elbc_nand.c
-@@ -166,15 +166,22 @@ static void set_addr(struct mtd_info *mtd, int column, int page_addr, int oob)
- 
- 	elbc_fcm_ctrl->page = page_addr;
- 
--	out_be32(&lbc->fbar,
--		 page_addr >> (chip->phys_erase_shift - chip->page_shift));
--
- 	if (priv->page_size) {
-+		/*
-+		 * large page size chip : FPAR[PI] save the lowest 6 bits,
-+		 *                        FBAR[BLK] save the other bits.
-+		 */
-+		out_be32(&lbc->fbar, page_addr >> 6);
- 		out_be32(&lbc->fpar,
- 			 ((page_addr << FPAR_LP_PI_SHIFT) & FPAR_LP_PI) |
- 			 (oob ? FPAR_LP_MS : 0) | column);
- 		buf_num = (page_addr & 1) << 2;
- 	} else {
-+		/*
-+		 * small page size chip : FPAR[PI] save the lowest 5 bits,
-+		 *                        FBAR[BLK] save the other bits.
-+		 */
-+		out_be32(&lbc->fbar, page_addr >> 5);
- 		out_be32(&lbc->fpar,
- 			 ((page_addr << FPAR_SP_PI_SHIFT) & FPAR_SP_PI) |
- 			 (oob ? FPAR_SP_MS : 0) | column);
--- 
-1.7.1
-
-
+Thanks,
+Ohad.
