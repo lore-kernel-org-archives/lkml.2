@@ -1,228 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab1KOUCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 15:02:13 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64843 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab1KOUCM (ORCPT
+	id S932210Ab1KOUEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 15:04:30 -0500
+Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:42188 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932077Ab1KOUE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 15:02:12 -0500
-Message-ID: <4EC2C53E.7020503@gmail.com>
-Date: Tue, 15 Nov 2011 21:02:06 +0100
-From: Carla Sella <carla.sella@gmail.com>
-Reply-To: carla.sella@gmail.com
-Organization: Carla Sella
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+	Tue, 15 Nov 2011 15:04:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=jidanni.org; h=from:to:cc:subject
+	:references:date:message-id:mime-version:content-type; q=dns; s=
+	jidanni.org; b=lPZYHCGQIbPinH/+1xiY+vLSsBRmYixj/ETv2LhZRJZEJkDyn
+	RdncU7P92pkqUttE9bred7a4yPbmW8xV/tMAzc+SPqzXtGbKleMCqnJcb/tHyKQA
+	/oUhetA2xhy8xWOJr+nFNbqC93fmsv6Rz2B964RkDXHE+71BZ6UJS13iqw=
+From: jidanni@jidanni.org
+To: rdunlap@xenotime.net
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Documentation/input/input.txt.gz has a bug
+References: <4EC2BEF6.7070906@xenotime.net>
+Date: Wed, 16 Nov 2011 04:04:24 +0800
+Message-ID: <87ty655f07.fsf@jidanni.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: BUG: suspend/resume does not work on G62 notebook PC
-References: <4EB53C46.1060301@gmail.com> <20111108010406.GC16800@kroah.com>
-In-Reply-To: <20111108010406.GC16800@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->
-> Can you try the 3.2-rc1 release?
->
-
-Hello,
-I installed kernel 3.2.0-rc1 but I'm having the same problems, this is
-the output of "sudo /usr/share/checkbox/scripts/suspend_test --full":
-
-
--------------------------------------------------------------------------------------
-letozaf@letozaf-HP-G62:~$ sudo /usr/share/checkbox/scripts/suspend_test
---full
-This script will attempt to suspend and resume your computer a number of
-times.
-Should the machine fail to resume, first attempt to manually resume it.  If
-that fails power your system off and on which will generate an apport bug
-report automatically.
-
-Press CTRL-C now to abort testing ...
-
-*** TEST 1 -- suspend triggered via dbus message
-*** please ensure your AC cord is attached
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 2 -- suspend with AC disconnected
-*** please ensure your AC cord is detached
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 3 -- suspend with AC connected
-*** please ensure your AC cord is attached
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 4 -- loss of AC while suspended
-*** please remove the AC cord while the machine is suspended
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 5 -- return of AC while suspended
-*** please insert the AC cord while the machine is suspended
-*** machine will suspend for 20 seconds
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-
-*** TEST 6 -- battery drain during suspend
-*** calculates overall power drain during a long-term suspend
-*** please ensure your AC cord is detached
-*** machine will suspend for 20 minutes
-*** press return when ready
-
-
-SUSPEND FAILED, did not go to sleep
-before: 3872 mWh
-after: 3840 mWh
-consumed: 32 mW
-sleep seconds: 1236 sec
-overall usage: 93 mW
-
-*** TEST 7 -- 30 iteration variable delay suspend/resume stress test
-*** please ensure your AC cord is attached
-*** machine will suspend for 20 seconds
-*** NOTE: there will be no further user interaction from this point
-*** press return when ready
-
-delay 60 ...
-SUSPEND FAILED, did not go to sleep
-wait for 60 seconds
-delay 58 ...
-SUSPEND FAILED, did not go to sleep
-wait for 58 seconds
-delay 56 ...
-SUSPEND FAILED, did not go to sleep
-wait for 56 seconds
-delay 54 ...
-SUSPEND FAILED, did not go to sleep
-wait for 54 seconds
-delay 52 ...
-SUSPEND FAILED, did not go to sleep
-wait for 52 seconds
-delay 50 ...
-SUSPEND FAILED, did not go to sleep
-wait for 50 seconds
-delay 48 ...
-SUSPEND FAILED, did not go to sleep
-wait for 48 seconds
-delay 46 ...
-SUSPEND FAILED, did not go to sleep
-wait for 46 seconds
-delay 44 ...
-SUSPEND FAILED, did not go to sleep
-wait for 44 seconds
-delay 42 ...
-SUSPEND FAILED, did not go to sleep
-wait for 42 seconds
-delay 40 ...
-SUSPEND FAILED, did not go to sleep
-wait for 40 seconds
-delay 38 ...
-SUSPEND FAILED, did not go to sleep
-wait for 38 seconds
-delay 36 ...
-SUSPEND FAILED, did not go to sleep
-wait for 36 seconds
-delay 34 ...
-SUSPEND FAILED, did not go to sleep
-wait for 34 seconds
-delay 32 ...
-SUSPEND FAILED, did not go to sleep
-wait for 32 seconds
-delay 30 ...
-SUSPEND FAILED, did not go to sleep
-wait for 30 seconds
-delay 28 ...
-SUSPEND FAILED, did not go to sleep
-wait for 28 seconds
-delay 26 ...
-SUSPEND FAILED, did not go to sleep
-wait for 26 seconds
-delay 24 ...
-SUSPEND FAILED, did not go to sleep
-wait for 24 seconds
-delay 22 ...
-SUSPEND FAILED, did not go to sleep
-wait for 22 seconds
-delay 20 ...
-SUSPEND FAILED, did not go to sleep
-wait for 20 seconds
-delay 18 ...
-SUSPEND FAILED, did not go to sleep
-wait for 18 seconds
-delay 16 ...
-SUSPEND FAILED, did not go to sleep
-wait for 16 seconds
-delay 14 ...
-SUSPEND FAILED, did not go to sleep
-wait for 14 seconds
-delay 12 ...
-SUSPEND FAILED, did not go to sleep
-wait for 12 seconds
-delay 10 ...
-SUSPEND FAILED, did not go to sleep
-wait for 10 seconds
-delay 8 ...
-SUSPEND FAILED, did not go to sleep
-wait for 8 seconds
-delay 6 ...
-SUSPEND FAILED, did not go to sleep
-wait for 6 seconds
-delay 4 ...
-SUSPEND FAILED, did not go to sleep
-wait for 4 seconds
-delay 2 ...
-SUSPEND FAILED, did not go to sleep
-wait for 2 seconds
-
-*** Please report your results on the Ubuntu WIKI:
-    https://wiki.ubuntu.com/KernelTeam/SuspendResumeTesting
-
-      Battery Consumption: 93 mW
-letozaf@letozaf-HP-G62:~$
-
-
----------------------------------------------------------------------------
-
-
-Test 1 did not work.
-But all the other tests seemed to work as my laptop went on suspension,
-but when it come back from suspension, after about 30 seconds I got the
-message : "SUSPEND FAILED, did not go to sleep".
-As it did this also on the last test, this test lasted very long like
-about 50 minutes, more or less.
-
-Also the "Hibernate/Resume smoke test " did not work, my laptop's screen
-went black for about 5 seconds and then I got the lock screen asking me
-for my password to go back to my session.
-
-
-
---
-Carla Sella
-email:carla.sella@gmail.com
-https://launchpad.net/~carla-sella
-
-
-
+>>>>> "RD" == Randy Dunlap <rdunlap@xenotime.net> writes:
+RD>   Doing a
+RD> $ cat /dev/input/mouse
+RD> (which is char device 13,32) will verify that a mouse is also
+RD> emulated; characters should appear if you move it.
+Looks great. Thanks!
+RD> Do you want to submit a patch?
+Please do it for me, as it's only a 1.5 per lifetime thing. Thanks.
