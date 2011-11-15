@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab1KOQDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 11:03:32 -0500
-Received: from 8bytes.org ([88.198.83.132]:47860 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756546Ab1KOQDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 11:03:31 -0500
-Date: Tue, 15 Nov 2011 17:03:27 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU fix for 3.2
-Message-ID: <20111115160326.GA2975@8bytes.org>
+	id S1756640Ab1KOQF2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 11:05:28 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:24354 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756102Ab1KOQF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 11:05:27 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 3fLueY0VM1lp8iW.b7DeP0riDxFb.izGpWxHu_8It_H6mcA
+ 6XdTKDj6_0mC525v97JKEWyVrKmNCBaX2TT4puOlpavRG2EGVg51z6EKfpyI
+ 9WDnwHQ3a3wkJJ3mNZ3ldzK83jw_c_2fE_Q8YBVNehxwRmOX06lNftnS1JpO
+ BqA3lP1LPTE6_bx2WZtqp28T7clPGAWTjwZBL8sJ3z2_5W2PEvzTGTvIyMra
+ de7FygiFKtobRFxtCSVu4NxKvFCYoP9Ab.ZipuYbZuyKlcdYMy9yB_jib7tv
+ c3SeCMeSzIvQMThldzentSLQZMCBE0RsgcIPfQa87uPzDXBRdnCml4ZB1cTX
+ ba_BHiHyfBUbz4KFuInOjEcS.MJOZeMj07fnJk3w3PahpYFHcDVrdq13rDYB
+ fiVn7U2H4rIDYThergxhGFw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 15 Nov 2011 10:05:25 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Jan Kara <jack@suse.cz>
+cc: Andrew Watts <akwatts@ymail.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [OOPS]: Kernel 3.1 (ext3?)
+In-Reply-To: <20111114195352.GB17328@quack.suse.cz>
+Message-ID: <alpine.DEB.2.00.1111151004050.22502@router.home>
+References: <20111110132929.GA11417@zeus> <20111114195352.GB17328@quack.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 14 Nov 2011, Jan Kara wrote:
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Thu 10-11-11 08:29:37, Andrew Watts wrote:
+> > I had the following kernel panic today on 3.1 (machine was compiling code
+> > unattended). It would appear to be a bug/regression introduced sometime
+> > between 2.6.39.4 and 3.1.
+>   Hmm, the report is missing a line (top one) saying why the kernel
+> actually crashed. Can you add that?
+>
+>   Also it seems you are using SLUB allocator, right? This seems like a
+> problem there so adding some CCs.
 
-Hi Linus,
+Likely some data corruption. Enable slub debugging by passing
 
-The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
+slub_debug
 
-  Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
+on the kernel commandline please to get some information as to where and
+when this happens.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu/fixes
-
-Ming Lei (1):
-      iommu: omap: Fix compile failure
-
- drivers/iommu/omap-iommu-debug.c |    1 +
- drivers/iommu/omap-iovmm.c       |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-This patch fixes a compile failure on ARM-OMAP when some parts of the
-IOMMU driver are configured as a module. Please pull.
-
-The commit-id I ask you to pull is
-
-	08f2e6312c67fed80df9342e06ad36daf11eb80b
-
-on my development machine.
-
-Thanks,
-
-	Joerg
-
-
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOwo1OAAoJECvwRC2XARrjFSMP/RXAqnzohFtHcqP8O5L95FXa
-l7mdAa6kFwqeV9sb5fN0dwTOnILyhRXRrYRlfjYxaWcDevabk9Z2Wb17VPQZCuAP
-OnjYSXSdNUalGIOxaxloK8vXuNWiAboFGjhPPTmJiKveSH9oWsmHAeX6QgEp2z+R
-NvI4Ux4qB2kimnPkhaJTrvavQdolIiSavZbRKrGeLPumLVUpQRfegrIbUS6nWDsu
-a9sWqwnBebyl5MShhoCKYmluRr2b7QeED6NHs4rT4AqJ9jQ2trT5Nev04w3uzW+g
-SlV6AAtxkDPCBrAHMBo0E1M3K/nCXjBG/wllEkCzT148CMrIVtavQbl7dDepelVh
-vO3GR0Z/e1SvLLrWgG/QX9DhY41afaGcuUBiIxvVLS0r0tZxzzJ27/NR3Tnf/qfc
-aJoHHbhOdNbqdx67zSLcReFVW6d9T4Rua8VDkOtn2eBO1aw6If1x+r1BVqKOtfZP
-pZgraALqAcDmZCPhajWDy/F8FzfxBcJABG8CD6QC8jOb/eTeSGSri5AXI9DsGfSh
-qlRNOXuX0iw9rEchuMGdv2CwrtAScPzvGtmBIGw1i2JZ6V7MXrRjGp4YiR7JivrS
-7r5zL6iK/pG3ZxhWHJrJZal6Uu5QiIIwXvbCvWihxkbeSfzFMJBi2hkvFOVm/hQn
-44dP1f+aPLOtZPcL8Wof
-=mFJ7
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
