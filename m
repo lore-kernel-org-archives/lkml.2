@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab1KOBFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 20:05:49 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50784 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753561Ab1KOBFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 20:05:40 -0500
-X-Sasl-enc: BohwWxBd6KwMC45CzSRvwtAkQsvnOaDQXht4emHv016I 1321319138
-Date: Mon, 14 Nov 2011 17:03:29 -0800
-From: Greg KH <greg@kroah.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH pm 1/2] usb_storage: don't use set_freezable_with_signal()
-Message-ID: <20111115010329.GA26429@kroah.com>
-References: <20111101003726.GM18855@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101003726.GM18855@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753973Ab1KOBKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 20:10:44 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:56459 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752420Ab1KOBKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 20:10:43 -0500
+Date: Mon, 14 Nov 2011 17:10:39 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: David Decotigny <david.decotigny@google.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>
+Subject: Re: [PATCH net-next v3 5/9] forcedeth: implement ndo_get_stats64()
+ API
+Message-ID: <20111114171039.34a04369@nehalam.linuxnetplumber.net>
+In-Reply-To: <e2dd16618bc1bd5108e6dea3c7531ee229e4c699.1321313729.git.david.decotigny@google.com>
+References: <cover.1321313729.git.david.decotigny@google.com>
+	<e2dd16618bc1bd5108e6dea3c7531ee229e4c699.1321313729.git.david.decotigny@google.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 05:37:26PM -0700, Tejun Heo wrote:
-> The current implementation of set_freezable_with_signal() is buggy and
-> tricky to get right.  usb-storage is the only user and its use can be
-> avoided trivially.
+On Mon, 14 Nov 2011 16:11:15 -0800
+David Decotigny <david.decotigny@google.com> wrote:
+
+> This commit implements the ndo_get_stats64() API for forcedeth. Since
+> these stats are being updated from different contexts (process and
+> timer), this commit adds protection (locking + atomic variables).
 > 
-> All usb-storage wants is to be able to sleep with timeout and get
-> woken up if freezing() becomes true.  This can be trivially
-> implemented by doing interruptible wait w/ freezing() included in the
-> wait condition.  There's no reason to use set_freezable_with_signal().
+> Tested:
+>   - 16-way SMP x86_64 ->
+>     RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
+>   - pktgen + loopback: identical rx_bytes/tx_bytes and rx_packets/tx_packets
 > 
-> Perform interruptible wait on freezing() instead of using
-> set_freezable_with_signal(), which is scheduled for removal.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Seth Forshee <seth.forshee@canonical.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> Signed-off-by: David Decotigny <david.decotigny@google.com>
 > ---
+>  drivers/net/ethernet/nvidia/forcedeth.c |  182 ++++++++++++++++++++++++-------
+>  1 files changed, 141 insertions(+), 41 deletions(-)
 > 
-> These two patches are on top of "freezer: fix various bugs and
-> simplify implementation, take#2" patchset[1] and are also available in
-> the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-kill-freezable_with_signal
-> 
-> If usb-storage ppl are okay with it, I think routing this through pm
-> would be the easiest.  Oh, and this definitely is for the next merge
-> window.
+> diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+> index ee8cce5..a67c1f4 100644
+> --- a/drivers/net/ethernet/nvidia/forcedeth.c
+> +++ b/drivers/net/ethernet/nvidia/forcedeth.c
+> @@ -692,6 +692,21 @@ struct nv_ethtool_stats {
+>  #define NV_DEV_STATISTICS_V2_COUNT (NV_DEV_STATISTICS_V3_COUNT - 3)
+>  #define NV_DEV_STATISTICS_V1_COUNT (NV_DEV_STATISTICS_V2_COUNT - 6)
+>  
+> +/* driver statistics */
+> +struct nv_driver_stat {
+> +	atomic_t delta;  /* increase since last nv_update_stats() */
+> +	u64 total;  /* cumulative, requires netdev_priv(dev)->stats_lock */
+> +};
 
-I'm fine with it going that way:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Please existing u64_stats_sync rather than inventing your own
+method. The u64_stats_sync is faster and does require locking.
