@@ -1,383 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab1KOHdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 02:33:10 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5897 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752695Ab1KOHdJ (ORCPT
+	id S1752660Ab1KOHsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 02:48:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46416 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab1KOHso convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 02:33:09 -0500
-From: <oskar.andero@sonyericsson.com>
-Date: Tue, 15 Nov 2011 08:34:00 +0100
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
-Subject: Re: [PATCH v2] input: add driver support for Sharp gp2ap002a00f
- proximity sensor
-Message-ID: <20111115073400.GD9307@caracas.corpusers.net>
-References: <1321285158-7123-1-git-send-email-oskar.andero@sonyericsson.com>
- <20111114170352.GA12659@core.coreip.homeip.net>
+	Tue, 15 Nov 2011 02:48:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111114170352.GA12659@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAHQjnOOMq9icOWY-b1z0YaJKZcx-b=Kv9ZT9dnwHAjVM5=hCrQ@mail.gmail.com>
+References: <1321333132-17662-1-git-send-email-pullip.cho@samsung.com>
+	<1321333132-17662-2-git-send-email-pullip.cho@samsung.com>
+	<CAH9JG2UDZ92zFiiPQYxbNJgLqcqGv_D9dFNdqJa2o+BxiUzygg@mail.gmail.com>
+	<CAHQjnOOMq9icOWY-b1z0YaJKZcx-b=Kv9ZT9dnwHAjVM5=hCrQ@mail.gmail.com>
+Date: Tue, 15 Nov 2011 16:48:42 +0900
+X-Google-Sender-Auth: dA5crReKerJ0b_5ZWEO3FN1vIYY
+Message-ID: <CAHQjnOPrjc37tYc05OZqi5cJnQJn61OoqVAX6OvH=J4e6rL1Wg@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] ARM: EXYNOS: Change System MMU platform device definitions
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        YoungLak Kim <younglak1004.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Tue, Nov 15, 2011 at 3:12 PM, KyongHo Cho <pullip.cho@samsung.com> wrote:
+> On Tue, Nov 15, 2011 at 2:37 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+>>> @@ -988,6 +989,21 @@ static struct platform_device *universal_devices[]
+>>> __initdata = {
+>>>       &cam_i_core_fixed_reg_dev,
+>>>       &cam_s_if_fixed_reg_dev,
+>>>       &s5p_device_fimc_md,
+>>> +     &SYSMMU_PLATDEV(sss),
+>>> +     &SYSMMU_PLATDEV(jpeg),
+>>> +     &SYSMMU_PLATDEV(fimd1),
+>>> +     &SYSMMU_PLATDEV(2d),
+>>> +     &SYSMMU_PLATDEV(rot),
+>>> +     &SYSMMU_PLATDEV(mdma),
+>>> +     &SYSMMU_PLATDEV(tv),
+>>> +     &SYSMMU_PLATDEV(mfc_l),
+>>> +     &SYSMMU_PLATDEV(mfc_r),
+>>> +     &SYSMMU_PLATDEV(fimc0),
+>>> +     &SYSMMU_PLATDEV(fimc1),
+>>> +     &SYSMMU_PLATDEV(fimc2),
+>>> +     &SYSMMU_PLATDEV(fimc3),
+>>> +     &SYSMMU_PLATDEV(fimd0),
+>>> +     &SYSMMU_PLATDEV(pcie),
+>> Platform device is optional for each board and pcie doesn't used at
+>> mobile board. Does it require to register all platform devices at
+>> board?
+>
+> Of course we make them selectable in menuconfig according
+Of course we make them
+Sorry
+> to the selection of their host devices. But the array definition will
+> contain lots of #ifdef.
+>
 
-On 18:03 Mon 14 Nov     , Dmitry Torokhov wrote:
-> Hi Courtney,
-> 
-> On Mon, Nov 14, 2011 at 04:39:18PM +0100, oskar.andero@sonyericsson.com wrote:
-> > From: Courtney Cavin <courtney.cavin@sonyericsson.com>
-> > 
-> 
-> The driver looks much better, a few more comments still.
-> 
-> > +
-> > +#include <linux/i2c.h>
-> > +#include <linux/irq.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/input.h>
-> > +#include <linux/module.h>
-> > +#include <linux/workqueue.h>
-> 
-> As Shubhrajyoti mentioned workqueue.h is probably not needed.
-> 
-> > +#include <linux/interrupt.h>
-> > +#include <linux/gpio.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/input/gp2ap002a00f.h>
-> > +
-> > +struct gp2a_data {
-> > +	struct input_dev *device;
-> > +	const struct gp2a_platform_data *pdata;
-> > +	struct i2c_client *i2c_client;
-> > +};
-> > +
-> > +enum gp2a_addr {
-> > +	GP2A_ADDR_PROX	= 0x0,
-> > +	GP2A_ADDR_GAIN	= 0x1,
-> > +	GP2A_ADDR_HYS	= 0x2,
-> > +	GP2A_ADDR_CYCLE	= 0x3,
-> > +	GP2A_ADDR_OPMOD	= 0x4,
-> > +	GP2A_ADDR_CON	= 0x6
-> > +};
-> > +
-> > +enum gp2a_controls {
-> > +	GP2A_CTRL_SSD	= 0x01
-> > +};
-> > +
-> > +static int gp2a_enable(struct gp2a_data *dt)
-> > +{
-> > +	return i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_OPMOD,
-> > +					 GP2A_CTRL_SSD);
-> > +}
-> > +
-> > +static int gp2a_disable(struct gp2a_data *dt)
-> > +{
-> > +	return i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_OPMOD,
-> > +					 0x00);
-> > +}
-> > +
-> > +static int __devinit gp2a_initialize(struct gp2a_data *dt)
-> > +{
-> > +	int error;
-> > +
-> > +	error = i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_GAIN,
-> > +					  0x08);
-> > +	if (error < 0)
-> > +		return error;
-> > +
-> > +	error = i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_HYS,
-> > +					  0xc2);
-> > +	if (error < 0)
-> > +		return error;
-> > +
-> > +	error = i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_CYCLE,
-> > +					  0x04);
-> > +	if (error < 0)
-> > +		return error;
-> > +
-> > +	error = gp2a_disable(dt);
-> > +
-> > +	return error;
-> > +}
-> > +
-> > +static int gp2a_report(struct gp2a_data *dt)
-> > +{
-> > +	int vo = gpio_get_value(dt->pdata->vout_gpio);
-> > +
-> > +	input_report_key(dt->device, SW_FRONT_PROXIMITY, !vo);
-> 
-> Switch is not a key, so please use input_report_switch().
+Sorry. I omitted 'can' from "Of course we 'can' make them selectable"
 
-Ok. Agreed.
-
-> > +	input_sync(dt->device);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static irqreturn_t gp2a_irq(int irq, void *handle)
-> > +{
-> > +	struct gp2a_data *dt = handle;
-> > +
-> > +	gp2a_report(dt);
-> > +
-> > +	return IRQ_HANDLED;
-> > +}
-> > +
-> > +static int gp2a_device_open(struct input_dev *dev)
-> > +{
-> > +	struct gp2a_data *dt = input_get_drvdata(dev);
-> > +	int error;
-> > +
-> > +	error = gp2a_enable(dt);
-> > +	if (error < 0) {
-> > +		dev_err(&dev->dev, "unable to activate, err %d\n", error);
-> > +		return error;
-> > +	}
-> > +
-> > +	gp2a_report(dt);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void gp2a_device_close(struct input_dev *dev)
-> > +{
-> > +	struct gp2a_data *dt = input_get_drvdata(dev);
-> > +	int error;
-> > +
-> > +	error = gp2a_disable(dt);
-> > +	if (error < 0)
-> > +		dev_err(&dev->dev, "unable to deactivate, err %d\n", error);
-> > +}
-> > +
-> > +static int __devinit gp2a_probe(struct i2c_client *client,
-> > +				const struct i2c_device_id *id)
-> > +{
-> > +	const struct gp2a_platform_data *pdata;
-> > +	struct gp2a_data *dt;
-> > +	int error;
-> > +
-> > +	pdata = client->dev.platform_data;
-> > +	if (!pdata)
-> > +		return -EINVAL;
-> > +
-> > +	if (pdata->hw_setup) {
-> > +		error = pdata->hw_setup(client);
-> > +		if (error < 0)
-> > +			return error;
-> > +	}
-> > +
-> > +	error = gpio_direction_input(pdata->vout_gpio);
-> > +	if (error < 0)
-> > +		goto err_hw_shutdown;
-> > +
-> > +	dt = kzalloc(sizeof(struct gp2a_data), GFP_KERNEL);
-> > +	if (!dt) {
-> > +		error = -ENOMEM;
-> > +		goto err_hw_shutdown;
-> > +	}
-> > +
-> > +	dt->pdata = pdata;
-> > +	dt->i2c_client = client;
-> > +	i2c_set_clientdata(client, dt);
-> > +
-> > +	error = gp2a_initialize(dt);
-> > +	if (error < 0)
-> > +		goto err_free_dt;
-> > +
-> > +	dt->device = input_allocate_device();
-> > +	if (!dt->device) {
-> > +		error = -ENOMEM;
-> > +		goto err_free_dt;
-> > +	}
-> > +	input_set_drvdata(dt->device, dt);
-> > +
-> > +	error = request_threaded_irq(client->irq, NULL,
-> > +			gp2a_irq, IRQF_TRIGGER_RISING |
-> > +			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-> > +			GP2A_I2C_NAME, dt);
-> > +	if (error) {
-> > +		dev_err(&dt->device->dev, "irq request failed\n");
-> 
-> You are leaking dt->device here. Please add a separate label for
-> input_free_device(dt->device).
-
-Yes, you are right.
-
-> > +		goto err_free_dt;
-> > +	}
-> > +
-> > +	dt->device->open = gp2a_device_open;
-> > +	dt->device->close = gp2a_device_close;
-> > +	dt->device->name = GP2A_I2C_NAME;
-> > +	dt->device->id.bustype = BUS_I2C;
-> > +
-> > +	input_set_capability(dt->device, EV_KEY, SW_FRONT_PROXIMITY);
-> 
-> Should be EV_SW instead of EV_KEY.
-> 
-> > +
-> > +	error = input_register_device(dt->device);
-> > +	if (error) {
-> > +		dev_err(&dt->device->dev, "device registration failed\n");
-> > +		input_free_device(dt->device);
-> 
-> If you swap request_threaded_irq() and input_register_device() so that
-> registration is the last action error handling will be much simpler.
-
-Sure. I'll look in to it.
-
-> > +		goto err_free_irq;
-> > +	}
-> > +
-> > +	device_init_wakeup(&client->dev, pdata->wakeup);
-> > +
-> > +	return 0;
-> > +
-> > +err_free_irq:
-> > +	free_irq(client->irq, dt);
-> > +err_free_dt:
-> > +	kfree(dt);
-> > +err_hw_shutdown:
-> > +	if (pdata->hw_shutdown)
-> > +		pdata->hw_shutdown(client);
-> > +	return error;
-> > +}
-> > +
-> > +static int __devexit gp2a_remove(struct i2c_client *client)
-> > +{
-> > +	struct gp2a_data *dt = i2c_get_clientdata(client);
-> > +
-> > +	device_init_wakeup(&client->dev, false);
-> > +
-> > +	free_irq(client->irq, dt);
-> > +	input_unregister_device(dt->device);
-> > +	if (dt->pdata->hw_shutdown)
-> > +		dt->pdata->hw_shutdown(client);
-> > +	kfree(dt);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +#ifdef CONFIG_PM_SLEEP
-> > +static int gp2a_suspend(struct device *dev)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	struct gp2a_data *dt = i2c_get_clientdata(client);
-> > +	int error;
-> > +
-> > +	if (device_may_wakeup(&client->dev)) {
-> > +		enable_irq_wake(client->irq);
-> > +	} else {
-> 
-> This needs locking WRT open/close. Please acquire dt->device->mutex and
-> only disable if dt->device->users != 0. Similar shoudl be done for
-> resume.
-
-I see what you mean. I will fix it.
-
-> > +		error = gp2a_disable(dt);
-> > +		if (error < 0)
-> > +			return error;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int gp2a_resume(struct device *dev)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	struct gp2a_data *dt = i2c_get_clientdata(client);
-> > +	int error;
-> > +
-> > +	if (device_may_wakeup(&client->dev)) {
-> > +		disable_irq_wake(client->irq);
-> > +	} else {
-> > +		error = gp2a_enable(dt);
-> > +		if (error < 0)
-> > +			return error;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +#endif
-> > +
-> > +static SIMPLE_DEV_PM_OPS(gp2a_pm, gp2a_suspend, gp2a_resume);
-> > +
-> > +static const struct i2c_device_id gp2a_i2c_id[] = {
-> > +	{ GP2A_I2C_NAME, 0 },
-> > +	{ }
-> > +};
-> > +
-> > +static struct i2c_driver gp2a_i2c_driver = {
-> > +	.driver = {
-> > +		.name	= GP2A_I2C_NAME,
-> > +		.owner	= THIS_MODULE,
-> > +		.pm	= &gp2a_pm
-> > +	},
-> > +	.probe		= gp2a_probe,
-> > +	.remove		= __devexit_p(gp2a_remove),
-> > +	.id_table	= gp2a_i2c_id
-> > +};
-> > +
-> > +static int __init gp2a_init(void)
-> > +{
-> > +	return i2c_add_driver(&gp2a_i2c_driver);
-> > +}
-> > +
-> > +static void __exit gp2a_exit(void)
-> > +{
-> > +	i2c_del_driver(&gp2a_i2c_driver);
-> > +}
-> > +
-> > +module_init(gp2a_init);
-> > +module_exit(gp2a_exit);
-> > +
-> > +MODULE_AUTHOR("Courtney Cavin <courtney.cavin@sonyericsson.com>");
-> > +MODULE_DESCRIPTION("Sharp GP2AP002A00F I2C Proximity/Opto sensor driver");
-> > +MODULE_LICENSE("GPL v2");
-> > diff --git a/include/linux/input/gp2ap002a00f.h b/include/linux/input/gp2ap002a00f.h
-> > new file mode 100644
-> > index 0000000..aad2fd4
-> > --- /dev/null
-> > +++ b/include/linux/input/gp2ap002a00f.h
-> > @@ -0,0 +1,22 @@
-> > +#ifndef _GP2AP002A00F_H_
-> > +#define _GP2AP002A00F_H_
-> > +
-> > +#include <linux/i2c.h>
-> > +
-> > +#define GP2A_I2C_NAME "gp2ap002a00f"
-> > +
-> > +/**
-> > + * struct gp2a_platform_data - Sharp gp2ap002a00f proximity platform data
-> > + * @vout_gpio: The gpio connected to the object detected pin (VOUT)
-> > + * @wakeup: Set to true if the proximity can wake the device from suspend
-> > + * @hw_setup: Callback for setting up hardware such as gpios and vregs
-> > + * @hw_shutdown: Callback for properly shutting down hardware
-> > + */
-> > +struct gp2a_platform_data {
-> > +	int vout_gpio;
-> > +	bool wakeup;
-> > +	int (*hw_setup)(struct i2c_client *client);
-> > +	int (*hw_shutdown)(struct i2c_client *client);
-> > +};
-> > +
-> > +#endif
-> > -- 
-> > 1.7.7
-> > 
-
-Thanks for your comments! I'll prepare v3 later today.
-
--Oskar
+> And I defined System MMU dev for PCIe for future use
+> although it is useless in mobile devices.
+>
+>>>
+>>> +static void __init sysmmu_init(void)
+>>> +{
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(fimc0, &exynos4_device_pd[PD_CAM].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(fimc1, &exynos4_device_pd[PD_CAM].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(fimc2, &exynos4_device_pd[PD_CAM].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(fimc3, &exynos4_device_pd[PD_CAM].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(jpeg, &exynos4_device_pd[PD_CAM].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(mfc_l, &exynos4_device_pd[PD_MFC].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(mfc_r, &exynos4_device_pd[PD_MFC].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(fimd0, &exynos4_device_pd[PD_LCD0].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(rot, &exynos4_device_pd[PD_LCD0].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(mdma, &exynos4_device_pd[PD_LCD0].dev);
+>>> +     ASSIGN_SYSMMU_POWERDOMAIN(tv, &exynos4_device_pd[PD_TV].dev);
+>>> +
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(fimc0).dev, &s5p_device_fimc0.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(fimc1).dev, &s5p_device_fimc1.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(fimc2).dev, &s5p_device_fimc2.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(fimc3).dev, &s5p_device_fimc3.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(mfc_l).dev, &s5p_device_mfc.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(mfc_r).dev, &s5p_device_mfc.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(fimd0).dev, &s5p_device_fimd0.dev);
+>>> +     sysmmu_set_owner(&SYSMMU_PLATDEV(tv).dev, &s5p_device_mixer.dev);
+>>> +}
+>>> +
+>>>  static void __init universal_machine_init(void)
+>>>  {
+>>>       universal_sdhci_init();
+>>> @@ -1040,6 +1080,8 @@ static void __init universal_machine_init(void)
+>>>
+>>>       universal_camera_init();
+>>>
+>>> +     sysmmu_init();
+>> I think how do you implement the sysmm_init at cpu or common file? and
+>> board select it to use iommu or not. no need to implement the almost
+>> same codes at each board.
+>>
+> It is not easy to move sysmmu_init() out from mach_*.c files because System MMU
+> configuration is vary from boards and APs. It is just machine-specific.
+>
+>> Otherwise looks good.
+>>
+> Thank you :)
+>
+> KyongHo.
+>
