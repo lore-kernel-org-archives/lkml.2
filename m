@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab1KOLZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 06:25:57 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59965 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084Ab1KOLZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 06:25:56 -0500
-From: Sangwook Lee <sangwook.lee@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
-Cc: ralf@linux-mips.org, juhosg@openwrt.org, rodrigue@qca.qualcomm.com,
-        linville@tuxdriver.com, rmanohar@qca.qualcomm.com, patches@linaro.org,
-        Sangwook Lee <sangwook.lee@linaro.org>
-Subject: [PATCH] ath9k: rename ath9k_platform.h to ath_platform.h
-Date: Tue, 15 Nov 2011 11:23:44 +0000
-Message-Id: <1321356224-5053-1-git-send-email-sangwook.lee@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755347Ab1KOLem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 06:34:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755103Ab1KOLel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 06:34:41 -0500
+Date: Tue, 15 Nov 2011 13:34:14 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH RFC] perf, core: disable pmu while context rotation only if
+ needed
+Message-ID: <20111115113414.GD3225@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch series proposes to rename ath9k_platform.h to "ath_platform.h
-This header file handles platform data used only for ath9k,
-but it can used by ath6k as well. We can take "wl12xx.h" as
-as a example. Please let us change this file name so that
-other Atheors WLANs use this file for their own platform data
+Currently pmu is disabled and re-enabled on each timer interrupt even
+when no rotation or frequency adjustment is needed. On Intel CPU this
+results in two writes into PERF_GLOBAL_CTRL MSR per tick. On bare metal
+it does not cause significant slowdown, but when running perf in a virtual
+machine it leads to 20% slowdown on my machine.
 
-Signed-off-by: Sangwook Lee <sangwook.lee@linaro.org>
----
- arch/mips/ath79/dev-ar913x-wmac.c                  |    2 +-
- drivers/net/wireless/ath/ath9k/ahb.c               |    2 +-
- drivers/net/wireless/ath/ath9k/init.c              |    2 +-
- drivers/net/wireless/ath/ath9k/pci.c               |    2 +-
- include/linux/{ath9k_platform.h => ath_platform.h} |    0
- 5 files changed, 4 insertions(+), 4 deletions(-)
- rename include/linux/{ath9k_platform.h => ath_platform.h} (100%)
-
-diff --git a/arch/mips/ath79/dev-ar913x-wmac.c b/arch/mips/ath79/dev-ar913x-wmac.c
-index 48f425a..bc8869c 100644
---- a/arch/mips/ath79/dev-ar913x-wmac.c
-+++ b/arch/mips/ath79/dev-ar913x-wmac.c
-@@ -13,7 +13,7 @@
- #include <linux/delay.h>
- #include <linux/irq.h>
- #include <linux/platform_device.h>
--#include <linux/ath9k_platform.h>
-+#include <linux/ath_platform.h>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index bdcd413..83c87d8 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2317,7 +2317,7 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ 	}
+ }
  
- #include <asm/mach-ath79/ath79.h>
- #include <asm/mach-ath79/ar71xx_regs.h>
-diff --git a/drivers/net/wireless/ath/ath9k/ahb.c b/drivers/net/wireless/ath/ath9k/ahb.c
-index 85a54cd..d84bee6 100644
---- a/drivers/net/wireless/ath/ath9k/ahb.c
-+++ b/drivers/net/wireless/ath/ath9k/ahb.c
-@@ -18,7 +18,7 @@
+-static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
++static bool perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period, bool pmu_disabled)
+ {
+ 	struct perf_event *event;
+ 	struct hw_perf_event *hwc;
+@@ -2347,6 +2347,11 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ 		if (!event->attr.freq || !event->attr.sample_freq)
+ 			continue;
  
- #include <linux/nl80211.h>
- #include <linux/platform_device.h>
--#include <linux/ath9k_platform.h>
-+#include <linux/ath_platform.h>
- #include "ath9k.h"
++		if (!pmu_disabled) {
++			perf_pmu_disable(ctx->pmu);
++			pmu_disabled = true;
++		}
++
+ 		event->pmu->read(event);
+ 		now = local64_read(&event->count);
+ 		delta = now - hwc->freq_count_stamp;
+@@ -2355,6 +2360,8 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ 		if (delta > 0)
+ 			perf_adjust_period(event, period, delta);
+ 	}
++
++	return pmu_disabled;
+ }
  
- static const struct platform_device_id ath9k_platform_id_table[] = {
-diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
-index af1b325..0c82aea 100644
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -16,7 +16,7 @@
+ /*
+@@ -2380,6 +2387,7 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ 	u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
+ 	struct perf_event_context *ctx = NULL;
+ 	int rotate = 0, remove = 1;
++	bool pmu_disabled = false;
  
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
--#include <linux/ath9k_platform.h>
-+#include <linux/ath_platform.h>
+ 	if (cpuctx->ctx.nr_events) {
+ 		remove = 0;
+@@ -2395,10 +2403,9 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ 	}
  
- #include "ath9k.h"
+ 	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+-	perf_pmu_disable(cpuctx->ctx.pmu);
+-	perf_ctx_adjust_freq(&cpuctx->ctx, interval);
++	pmu_disabled = perf_ctx_adjust_freq(&cpuctx->ctx, interval, pmu_disabled);
+ 	if (ctx)
+-		perf_ctx_adjust_freq(ctx, interval);
++		pmu_disabled = perf_ctx_adjust_freq(ctx, interval, pmu_disabled);
  
-diff --git a/drivers/net/wireless/ath/ath9k/pci.c b/drivers/net/wireless/ath/ath9k/pci.c
-index edb0b4b..2f031b8 100644
---- a/drivers/net/wireless/ath/ath9k/pci.c
-+++ b/drivers/net/wireless/ath/ath9k/pci.c
-@@ -17,7 +17,7 @@
- #include <linux/nl80211.h>
- #include <linux/pci.h>
- #include <linux/pci-aspm.h>
--#include <linux/ath9k_platform.h>
-+#include <linux/ath_platform.h>
- #include "ath9k.h"
+ 	if (!rotate)
+ 		goto done;
+@@ -2417,7 +2424,8 @@ done:
+ 	if (remove)
+ 		list_del_init(&cpuctx->rotation_list);
  
- static DEFINE_PCI_DEVICE_TABLE(ath_pci_id_table) = {
-diff --git a/include/linux/ath9k_platform.h b/include/linux/ath_platform.h
-similarity index 100%
-rename from include/linux/ath9k_platform.h
-rename to include/linux/ath_platform.h
--- 
-1.7.4.1
-
+-	perf_pmu_enable(cpuctx->ctx.pmu);
++	if (pmu_disabled)
++		perf_pmu_enable(cpuctx->ctx.pmu);
+ 	perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+ }
+ 
+--
+			Gleb.
