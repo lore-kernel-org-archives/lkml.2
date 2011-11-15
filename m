@@ -1,58 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab1KOLXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 06:23:33 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42395 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab1KOLXc convert rfc822-to-8bit (ORCPT
+	id S1755221Ab1KOLYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 06:24:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36513 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207Ab1KOLYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 06:23:32 -0500
+	Tue, 15 Nov 2011 06:24:10 -0500
+Date: Tue, 15 Nov 2011 15:21:51 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <greg@kroah.com>,
+        Theodore Tso <tytso@MIT.EDU>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [RFC 1/3] procfs: parse mount options
+Message-ID: <20111115112151.GA3002@albatros>
 MIME-Version: 1.0
-In-Reply-To: <1321346525-10187-1-git-send-email-amwang@redhat.com>
-References: <1321346525-10187-1-git-send-email-amwang@redhat.com>
-Date: Tue, 15 Nov 2011 13:23:31 +0200
-X-Google-Sender-Auth: 2g0xmmZkobmCTXMzYdcf0rKpmiM
-Message-ID: <CAOJsxLEXbWbEhqX2YfzcQhyLJrY0H2ifCJCvGkoFHZsYAZEMPA@mail.gmail.com>
-Subject: Re: [Patch] tmpfs: add fallocate support
-From: Pekka Enberg <penberg@kernel.org>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds support of procfs mount options.
+Actual mount options are coming in the next patches.
 
-On Tue, Nov 15, 2011 at 10:42 AM, Amerigo Wang <amwang@redhat.com> wrote:
-> This patch adds fallocate support to tmpfs. I tested this patch
-> with the following test case,
->
->        % sudo mount -t tmpfs -o size=100 tmpfs /mnt
->        % touch /mnt/foobar
->        % echo hi > /mnt/foobar
->        % fallocate -o 3 -l 5000 /mnt/foobar
->        fallocate: /mnt/foobar: fallocate failed: No space left on device
->        % fallocate -o 3 -l 3000 /mnt/foobar
->        % ls -l /mnt/foobar
->        -rw-rw-r-- 1 wangcong wangcong 3003 Nov 15 16:10 /mnt/foobar
->        % dd if=/dev/zero of=/mnt/foobar seek=3 bs=1 count=3000
->        3000+0 records in
->        3000+0 records out
->        3000 bytes (3.0 kB) copied, 0.0153224 s, 196 kB/s
->        % hexdump -C /mnt/foobar
->        00000000  68 69 0a 00 00 00 00 00  00 00 00 00 00 00 00 00  |hi..............|
->        00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
->        *
->        00000bb0  00 00 00 00 00 00 00 00  00 00 00                 |...........|
->        00000bbb
->        % cat /mnt/foobar
->        hi
->
-> Signed-off-by: WANG Cong <amwang@redhat.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+--
+ fs/proc/inode.c    |   10 +++++++++
+ fs/proc/internal.h |    1 +
+ fs/proc/root.c     |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 65 insertions(+), 2 deletions(-)
 
-What's the use case for this?
-
-                        Pekka
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 7737c54..9b9f92a 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -7,6 +7,7 @@
+ #include <linux/time.h>
+ #include <linux/proc_fs.h>
+ #include <linux/kernel.h>
++#include <linux/pid_namespace.h>
+ #include <linux/mm.h>
+ #include <linux/string.h>
+ #include <linux/stat.h>
+@@ -17,7 +18,9 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/sysctl.h>
++#include <linux/seq_file.h>
+ #include <linux/slab.h>
++#include <linux/mount.h>
+ 
+ #include <asm/system.h>
+ #include <asm/uaccess.h>
+@@ -102,12 +105,19 @@ void __init proc_init_inodecache(void)
+ 					     init_once);
+ }
+ 
++static int proc_show_options(struct seq_file *seq, struct vfsmount *vfs)
++{
++	return 0;
++}
++
+ static const struct super_operations proc_sops = {
+ 	.alloc_inode	= proc_alloc_inode,
+ 	.destroy_inode	= proc_destroy_inode,
+ 	.drop_inode	= generic_delete_inode,
+ 	.evict_inode	= proc_evict_inode,
+ 	.statfs		= simple_statfs,
++	.remount_fs	= proc_remount,
++	.show_options	= proc_show_options,
+ };
+ 
+ static void __pde_users_dec(struct proc_dir_entry *pde)
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 7838e5c..2925775 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -117,6 +117,7 @@ void pde_put(struct proc_dir_entry *pde);
+ 
+ int proc_fill_super(struct super_block *);
+ struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
++int proc_remount(struct super_block *sb, int *flags, char *data);
+ 
+ /*
+  * These are generic /proc routines that use the internal
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 9a8a2b7..1486bb0 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -18,6 +18,7 @@
+ #include <linux/bitops.h>
+ #include <linux/mount.h>
+ #include <linux/pid_namespace.h>
++#include <linux/parser.h>
+ 
+ #include "internal.h"
+ 
+@@ -36,6 +37,49 @@ static int proc_set_super(struct super_block *sb, void *data)
+ 	return err;
+ }
+ 
++enum {
++	Opt_err,
++};
++
++static const match_table_t tokens = {
++	{Opt_err, NULL},
++};
++
++static int proc_parse_options(char *options, struct pid_namespace *pid)
++{
++	char *p;
++	substring_t args[MAX_OPT_ARGS];
++	int option;
++
++	pr_debug("proc: options = %s\n", options);
++
++	if (!options)
++		return 1;
++
++	while ((p = strsep(&options, ",")) != NULL) {
++		int token;
++		if (!*p)
++			continue;
++
++		args[0].to = args[0].from = 0;
++		token = match_token(p, tokens, args);
++		switch (token) {
++		default:
++			pr_err("proc: unrecognized mount option \"%s\" "
++			       "or missing value", p);
++			return 0;
++		}
++	}
++
++	return 1;
++}
++
++int proc_remount(struct super_block *sb, int *flags, char *data)
++{
++	struct pid_namespace *pid = sb->s_fs_info;
++	return !proc_parse_options(data, pid);
++}
++
+ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
+@@ -43,11 +87,15 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	struct super_block *sb;
+ 	struct pid_namespace *ns;
+ 	struct proc_inode *ei;
++	char *options;
+ 
+-	if (flags & MS_KERNMOUNT)
++	if (flags & MS_KERNMOUNT) {
+ 		ns = (struct pid_namespace *)data;
+-	else
++		options = NULL;
++	} else {
+ 		ns = current->nsproxy->pid_ns;
++		options = data;
++	}
+ 
+ 	sb = sget(fs_type, proc_test_super, proc_set_super, ns);
+ 	if (IS_ERR(sb))
+@@ -55,6 +103,10 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 
+ 	if (!sb->s_root) {
+ 		sb->s_flags = flags;
++		if (!proc_parse_options(options, ns)) {
++			deactivate_locked_super(sb);
++			return ERR_PTR(-EINVAL);
++		}
+ 		err = proc_fill_super(sb);
+ 		if (err) {
+ 			deactivate_locked_super(sb);
+--
