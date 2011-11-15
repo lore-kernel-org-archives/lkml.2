@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1KOOVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 09:21:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755870Ab1KOOVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 09:21:44 -0500
-Date: Tue, 15 Nov 2011 16:23:00 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH v2 09/11] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20111115142259.GA16395@redhat.com>
-References: <cover.1317311033.git.amit.shah@redhat.com>
- <5b7834c9a30254220f9c079ba54d29abaf63db8f.1317311033.git.amit.shah@redhat.com>
- <20111002093324.GD29706@redhat.com>
- <20111115122902.GA26378@amit-x200.redhat.com>
- <20111115125127.GA31208@redhat.com>
- <20111115140346.GC26378@amit-x200.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115140346.GC26378@amit-x200.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755973Ab1KOOZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 09:25:31 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:57087 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755654Ab1KOOZa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 09:25:30 -0500
+Subject: Re: [PATCH] virtio-mmio: Correct the name of the guest features
+ selector
+From: Pawel Moll <pawel.moll@arm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+In-Reply-To: <1321366638-28408-1-git-send-email-levinsasha928@gmail.com>
+References: <1321366638-28408-1-git-send-email-levinsasha928@gmail.com>
+Date: Tue, 15 Nov 2011 14:25:22 +0000
+Message-ID: <1321367122.3137.142.camel@hornet.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 15 Nov 2011 14:25:23.0007 (UTC) FILETIME=[69175CF0:01CCA3A2]
+X-MC-Unique: 111111514252701101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 07:33:46PM +0530, Amit Shah wrote:
-> On (Tue) 15 Nov 2011 [14:51:27], Michael S. Tsirkin wrote:
-> > On Tue, Nov 15, 2011 at 05:59:36PM +0530, Amit Shah wrote:
-> > > On (Sun) 02 Oct 2011 [11:33:26], Michael S. Tsirkin wrote:
-> > > > On Thu, Sep 29, 2011 at 09:19:40PM +0530, Amit Shah wrote:
-> > > > > Remove all the vqs on hibernation and re-create them after restoring
-> > > > > from a hibernated image.  This keeps networking working across
-> > > > > hibernation.
-> > > > > 
-> > > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > > > ---
-> > > > >  drivers/net/virtio_net.c |   28 ++++++++++++++++++++++++++++
-> > > > >  1 files changed, 28 insertions(+), 0 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > > > > index dcd4b01..8b9ed43 100644
-> > > > > --- a/drivers/net/virtio_net.c
-> > > > > +++ b/drivers/net/virtio_net.c
-> > > > > @@ -1131,6 +1131,30 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
-> > > > >  	free_netdev(vi->dev);
-> > > > >  }
-> > > > >  
-> > > > > +#ifdef CONFIG_PM
-> > > > > +static int virtnet_freeze(struct virtio_device *vdev)
-> > > > > +{
-> > > > > +	struct virtnet_info *vi = vdev->priv;
-> > > > 
-> > > > I'm guessing we need to do something like netif_device_detach here,
-> > > > otherwise guest might be in the process of using the vq for transmit at
-> > > > this point.
-> > > 
-> > > Done.
-> > > 
-> > > > I think we also must make sure NAPI RX handler is not in progress.
-> > > 
-> > > How to do that?  napi_disable() / napi_enable() doesn't seem right
-> > > (and it doesn't work, too).  pci_disable_device() in the suspend
-> > > routine may work?
-> > > 
-> > > > We also might need to mask interrupts from the device
-> > > > to prevent TX or RX from getting rescheduled?
-> > > 
-> > > pci_disable_device() will help this too, right?
-> > > 
-> > > 		Amit
-> > 
-> > No, why would it help?
-> 
-> IRQs will be disabled after the call to pci_disable_device(),
-> isn't that sufficient?
-> 
-> 		Amit
+On Tue, 2011-11-15 at 14:17 +0000, Sasha Levin wrote:
+> Guest features selector spelling mistake.
+>
+> diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
+> index 27c7ede..5c7b6f0 100644
+> --- a/include/linux/virtio_mmio.h
+> +++ b/include/linux/virtio_mmio.h
+> @@ -63,7 +63,7 @@
+>  #define VIRTIO_MMIO_GUEST_FEATURES	0x020
+>  
+>  /* Activated features set selector - Write Only */
+> -#define VIRTIO_MMIO_GUEST_FEATURES_SET	0x024
+> +#define VIRTIO_MMIO_GUEST_FEATURES_SEL	0x024
+>  
+>  /* Guest's memory page size in bytes - Write Only */
+>  #define VIRTIO_MMIO_GUEST_PAGE_SIZE	0x028
 
-They will?
- * pci_disable_device - Disable PCI device after use
- * @dev: PCI device to be disabled
- *
- * Signal to the system that the PCI device is not in use by the system
- * anymore.  This only involves disabling PCI bus-mastering, if active.
- *
- * Note we don't actually disable the device until all callers of
- * pci_enable_device() have called pci_disable_device().
+Damn. Sorry about it. But if you change the header you'll need to change
+the driver:
+
+diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+index 1f25bb9..10bb8b9 100644
+--- a/drivers/virtio/virtio_mmio.c
++++ b/drivers/virtio/virtio_mmio.c
+@@ -161,7 +161,7 @@ static void vm_finalize_features(struct virtio_device *vdev)
+        vring_transport_features(vdev);
+ 
+        for (i = 0; i < ARRAY_SIZE(vdev->features); i++) {
+-               writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SET);
++               writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SEL);
+                writel(vdev->features[i],
+                                vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES);
+        }
+
+Cheers!
+
+Paweł
 
 
--- 
-MST
