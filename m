@@ -1,33 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab1KOIqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:46:51 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65185 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab1KOIqt convert rfc822-to-8bit (ORCPT
+	id S1754164Ab1KOIqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:46:23 -0500
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:48089 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754077Ab1KOIqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:46:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <c897fa89d5ea94c6624e8cdab9787aa83526f994.1321343212.git.wpan@redhat.com>
-References: <c897fa89d5ea94c6624e8cdab9787aa83526f994.1321343212.git.wpan@redhat.com>
-Date: Tue, 15 Nov 2011 16:46:48 +0800
-Message-ID: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com>
-Subject: Re: [PATCH] vlan:return error when real dev is enslaved
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Weiping Pan <wpan@redhat.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        "open list:VLAN (802.1Q)" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Nov 2011 03:46:21 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH/RESEND #3 4/7] arm: omap: smartreflex: move late_initcall() closer to its argument
+Date: Tue, 15 Nov 2011 10:46:02 +0200
+Message-Id: <1321346765-16633-5-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.8.rc0
+In-Reply-To: <1321346765-16633-1-git-send-email-balbi@ti.com>
+References: <1321346765-16633-1-git-send-email-balbi@ti.com>
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 4:36 PM, Weiping Pan <wpan@redhat.com> wrote:
-> +       if (real_dev->flags & IFF_SLAVE) {
-> +               pr_info("Error, %s was already enslaved\n", name);
-> +               return -EOPNOTSUPP;
-> +       }
+no functional changes, trivial patch.
 
-Use pr_err() then.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/smartreflex.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+index bb3bfc0..97375d2 100644
+--- a/arch/arm/mach-omap2/smartreflex.c
++++ b/arch/arm/mach-omap2/smartreflex.c
+@@ -1095,12 +1095,12 @@ static int __init sr_init(void)
+ 
+ 	return 0;
+ }
++late_initcall(sr_init);
+ 
+ static void __exit sr_exit(void)
+ {
+ 	platform_driver_unregister(&smartreflex_driver);
+ }
+-late_initcall(sr_init);
+ module_exit(sr_exit);
+ 
+ MODULE_DESCRIPTION("OMAP Smartreflex Driver");
+-- 
+1.7.8.rc0
+
