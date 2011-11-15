@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab1KOIui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:50:38 -0500
-Received: from trent.utfs.org ([194.246.123.103]:52892 "EHLO trent.utfs.org"
+	id S1754301Ab1KOIve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:51:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12066 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab1KOIuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:50:37 -0500
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 03:50:37 EST
-Date: Tue, 15 Nov 2011 00:44:19 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linuxppc-dev@lists.ozlabs.org
-Subject: 3.2.0-rc1 panic on PowerPC
-Message-ID: <alpine.DEB.2.01.1111150035560.8000@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1753997Ab1KOIvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:51:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="75509503"
+Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+In-Reply-To: <Pine.LNX.4.44L0.1111141028140.2035-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1111141028140.2035-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Nov 2011 16:51:29 +0800
+Message-ID: <1321347089.26084.2.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2011-11-14 at 23:31 +0800, Alan Stern wrote:
+> On Mon, 14 Nov 2011, Lin Ming wrote:
+> 
+> > Current patches has a bug that system suspend fails if ata port was
+> > runtime suspended.
+> > 
+> > disk suspend issues sync cache and stop device commands that obviously
+> > need ata port to be active. So we need to runtime resume ata port first.
+> 
+> This is wrong.  If the port is already suspended then so are all the 
+> drives below the port.  Hence there is no need to sync the cache or 
+> stop the device.
 
-I noticed a few crashes on this PowerBook G4 lately, starting somewhere in 
-3.2.0-rc1. The crashes are really rare and as I'm not on the system all 
-the time I did not notice most of them. By the time I did, the screen was 
-blank already and I had to hard-reset the box. But not this time:
+Ah, got it now!
 
-  http://nerdbynature.de/bits/3.2.0-rc1/oops/
+> 
+> > Alan, Tejun
+> > 
+> > How about below fix?
+> > 
+> > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> > index fa3a591..ebb87fbf 100644
+> > --- a/drivers/scsi/sd.c
+> > +++ b/drivers/scsi/sd.c
+> > @@ -50,6 +50,7 @@
+> >  #include <linux/string_helpers.h>
+> >  #include <linux/async.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/pm_runtime.h>
+> >  #include <asm/uaccess.h>
+> >  #include <asm/unaligned.h>
+> >  
+> > @@ -2762,6 +2763,14 @@ static int sd_suspend(struct device *dev, pm_message_t mesg)
+> >  	if (!sdkp)
+> >  		return 0;	/* this can happen */
+> >  
+> > +	/*
+> > +	 * Resume parent device to handle sync cache and
+> > +	 * stop device commands
+> > +	 */
+> > +	ret = pm_runtime_get_sync(dev->parent);
+> > +	if (ret)
+> > +		goto exit;
+> > +
+> >  	if (sdkp->WCE) {
+> >  		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
+> >  		ret = sd_sync_cache(sdkp);
+> 
+> This is not the right approach.  You should look instead at 
+> scsi_dev_type_suspend() in scsi_pm.c.  If the device is already runtime 
+> suspended then the routine should return immediately.
 
-When the crash occured, the system was failry loaded (CPU and disk I/O 
-wise), so that may have triggered it. I tried to type off the stack trace, 
-I hope there are not too many typos, see below.
+How about below?
 
-The machine is fairly old, so maybe it's "just" bad RAM or something, I 
-wouldn't be suprised. But maybe not, the box us pretty stable most of the 
-time and only now I notice these rare crashes.
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index d329f8b..94b60bd 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -20,6 +20,9 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
+ 	struct device_driver *drv;
+ 	int err;
+ 
++	if (pm_runtime_suspended(dev))
++		return 0;
++
+ 	err = scsi_device_quiesce(to_scsi_device(dev));
+ 	if (err == 0) {
+ 		drv = dev->driver;
 
-If anyone could take a quick look...?
 
-Thank you,
-Christian.
+> 
+> Alan Stern
+> 
 
-Instruction dump:
-92c40008 68000001 0f000000 80040000 5400003c 90040000 817f000c 380bffff
-901f000c 2f090000 81640018 81440014 <916a0004> 914b0000 92840014 92a49918
-Kernel panic - not syncing: Fatal exception in interrupt
-Call Trace:
-show_stack+0x70/0x1bc (unreliable)
-panic+0xc8/0x220
-die+0x2ac/0x2b8
-bad_page_fault+0xbc/0x104
-handle_page_fault+0x7c/0x80
-Exception: 300 at T.975+0x3f4/0x570
-LR = T.957+0x300/0x570
-kmem_cache_alloc+0x150/0x150
-__aloc_skb+0x50/0x148
-tcp_send_ack+0x35/0x138
-tcp_delay_timer+0x140/0x244
-run_timer_softirq+0x1a0/0x2ec
-__do_softirq+0xf4/0x1bc
-call_do_softirq+0x14/0x24
-do_softirq+0xfc/0x128
-irq_exit+0xa0/0xa4
-timer_interrupt+0x148/0x180
-ret_from_except+0x0/0x14
-cpu_idle+0xa0/0x118
-rest_init+0xf0/0x114
-start_kernel+0x2d0/0x2f0
-0x3444
-Rebooting in 180 seconds..
 
--- 
-BOFH excuse #184:
-
-loop found in loop in redundant loopback
