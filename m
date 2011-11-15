@@ -1,200 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab1KOIMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:12:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10747 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab1KOIMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:12:32 -0500
-Message-ID: <4EC21F67.10905@redhat.com>
-Date: Tue, 15 Nov 2011 16:14:31 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1753592Ab1KOI3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:29:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64096 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab1KOI3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:29:32 -0500
+Date: Tue, 15 Nov 2011 00:29:26 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: oskar.andero@sonyericsson.com
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
+        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
+Subject: Re: [PATCH v2] input: add driver support for Sharp gp2ap002a00f
+ proximity sensor
+Message-ID: <20111115082926.GA13157@core.coreip.homeip.net>
+References: <1321285158-7123-1-git-send-email-oskar.andero@sonyericsson.com>
+ <20111114170352.GA12659@core.coreip.homeip.net>
+ <20111115075629.GE9307@caracas.corpusers.net>
 MIME-Version: 1.0
-To: tim@edgecast.com
-CC: WANG Cong <xiyou.wangcong@gmail.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: Crash during vmcore_init
-References: <1318376345.2050.20.camel@boudreau> <j9r5m5$b18$1@dough.gmane.org> <1321296650.2066.17.camel@boudreau>
-In-Reply-To: <1321296650.2066.17.camel@boudreau>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111115075629.GE9307@caracas.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2011 02:50 AM, Tim Hartrick wrote:
+On Tue, Nov 15, 2011 at 08:56:29AM +0100, oskar.andero@sonyericsson.com wrote:
+> Hi again Dmitry,
+> 
+> Just a quick question before I post v3.
+> 
+> On 18:03 Mon 14 Nov     , Dmitry Torokhov wrote:
+> > Hi Courtney,
+> > 
+> > On Mon, Nov 14, 2011 at 04:39:18PM +0100, oskar.andero@sonyericsson.com wrote:
+> > > From: Courtney Cavin <courtney.cavin@sonyericsson.com>
+> > > 
+> > 
+> > The driver looks much better, a few more comments still.
+> > 
+> > > +
+> > > +#include <linux/i2c.h>
+> > > +#include <linux/irq.h>
+> > > +#include <linux/slab.h>
+> > > +#include <linux/input.h>
+> > > +#include <linux/module.h>
+> > > +#include <linux/workqueue.h>
+> > 
+> > As Shubhrajyoti mentioned workqueue.h is probably not needed.
+> > 
+> > > +#include <linux/interrupt.h>
+> > > +#include <linux/gpio.h>
+> > > +#include <linux/delay.h>
+> > > +#include <linux/input/gp2ap002a00f.h>
+> > > +
+> > > +struct gp2a_data {
+> > > +	struct input_dev *device;
+> > > +	const struct gp2a_platform_data *pdata;
+> > > +	struct i2c_client *i2c_client;
+> > > +};
+> > > +
+> > > +enum gp2a_addr {
+> > > +	GP2A_ADDR_PROX	= 0x0,
+> > > +	GP2A_ADDR_GAIN	= 0x1,
+> > > +	GP2A_ADDR_HYS	= 0x2,
+> > > +	GP2A_ADDR_CYCLE	= 0x3,
+> > > +	GP2A_ADDR_OPMOD	= 0x4,
+> > > +	GP2A_ADDR_CON	= 0x6
+> > > +};
+> > > +
+> > > +enum gp2a_controls {
+> > > +	GP2A_CTRL_SSD	= 0x01
+> > > +};
+> > > +
+> > > +static int gp2a_enable(struct gp2a_data *dt)
+> > > +{
+> > > +	return i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_OPMOD,
+> > > +					 GP2A_CTRL_SSD);
+> > > +}
+> > > +
+> > > +static int gp2a_disable(struct gp2a_data *dt)
+> > > +{
+> > > +	return i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_OPMOD,
+> > > +					 0x00);
+> > > +}
+> > > +
+> > > +static int __devinit gp2a_initialize(struct gp2a_data *dt)
+> > > +{
+> > > +	int error;
+> > > +
+> > > +	error = i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_GAIN,
+> > > +					  0x08);
+> > > +	if (error < 0)
+> > > +		return error;
+> > > +
+> > > +	error = i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_HYS,
+> > > +					  0xc2);
+> > > +	if (error < 0)
+> > > +		return error;
+> > > +
+> > > +	error = i2c_smbus_write_byte_data(dt->i2c_client, GP2A_ADDR_CYCLE,
+> > > +					  0x04);
+> > > +	if (error < 0)
+> > > +		return error;
+> > > +
+> > > +	error = gp2a_disable(dt);
+> > > +
+> > > +	return error;
+> > > +}
+> > > +
+> > > +static int gp2a_report(struct gp2a_data *dt)
+> > > +{
+> > > +	int vo = gpio_get_value(dt->pdata->vout_gpio);
+> > > +
+> > > +	input_report_key(dt->device, SW_FRONT_PROXIMITY, !vo);
+> > 
+> > Switch is not a key, so please use input_report_switch().
+> > 
+> > > +	input_sync(dt->device);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static irqreturn_t gp2a_irq(int irq, void *handle)
+> > > +{
+> > > +	struct gp2a_data *dt = handle;
+> > > +
+> > > +	gp2a_report(dt);
+> > > +
+> > > +	return IRQ_HANDLED;
+> > > +}
+> > > +
+> > > +static int gp2a_device_open(struct input_dev *dev)
+> > > +{
+> > > +	struct gp2a_data *dt = input_get_drvdata(dev);
+> > > +	int error;
+> > > +
+> > > +	error = gp2a_enable(dt);
+> > > +	if (error < 0) {
+> > > +		dev_err(&dev->dev, "unable to activate, err %d\n", error);
+> > > +		return error;
+> > > +	}
+> > > +
+> > > +	gp2a_report(dt);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static void gp2a_device_close(struct input_dev *dev)
+> > > +{
+> > > +	struct gp2a_data *dt = input_get_drvdata(dev);
+> > > +	int error;
+> > > +
+> > > +	error = gp2a_disable(dt);
+> > > +	if (error < 0)
+> > > +		dev_err(&dev->dev, "unable to deactivate, err %d\n", error);
+> > > +}
+> > > +
+> > > +static int __devinit gp2a_probe(struct i2c_client *client,
+> > > +				const struct i2c_device_id *id)
+> > > +{
+> > > +	const struct gp2a_platform_data *pdata;
+> > > +	struct gp2a_data *dt;
+> > > +	int error;
+> > > +
+> > > +	pdata = client->dev.platform_data;
+> > > +	if (!pdata)
+> > > +		return -EINVAL;
+> > > +
+> > > +	if (pdata->hw_setup) {
+> > > +		error = pdata->hw_setup(client);
+> > > +		if (error < 0)
+> > > +			return error;
+> > > +	}
+> > > +
+> > > +	error = gpio_direction_input(pdata->vout_gpio);
+> > > +	if (error < 0)
+> > > +		goto err_hw_shutdown;
+> > > +
+> > > +	dt = kzalloc(sizeof(struct gp2a_data), GFP_KERNEL);
+> > > +	if (!dt) {
+> > > +		error = -ENOMEM;
+> > > +		goto err_hw_shutdown;
+> > > +	}
+> > > +
+> > > +	dt->pdata = pdata;
+> > > +	dt->i2c_client = client;
+> > > +	i2c_set_clientdata(client, dt);
+> > > +
+> > > +	error = gp2a_initialize(dt);
+> > > +	if (error < 0)
+> > > +		goto err_free_dt;
+> > > +
+> > > +	dt->device = input_allocate_device();
+> > > +	if (!dt->device) {
+> > > +		error = -ENOMEM;
+> > > +		goto err_free_dt;
+> > > +	}
+> > > +	input_set_drvdata(dt->device, dt);
+> > > +
+> > > +	error = request_threaded_irq(client->irq, NULL,
+> > > +			gp2a_irq, IRQF_TRIGGER_RISING |
+> > > +			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> > > +			GP2A_I2C_NAME, dt);
+> > > +	if (error) {
+> > > +		dev_err(&dt->device->dev, "irq request failed\n");
+> > 
+> > You are leaking dt->device here. Please add a separate label for
+> > input_free_device(dt->device).
+> > 
+> > > +		goto err_free_dt;
+> > > +	}
+> > > +
+> > > +	dt->device->open = gp2a_device_open;
+> > > +	dt->device->close = gp2a_device_close;
+> > > +	dt->device->name = GP2A_I2C_NAME;
+> > > +	dt->device->id.bustype = BUS_I2C;
+> > > +
+> > > +	input_set_capability(dt->device, EV_KEY, SW_FRONT_PROXIMITY);
+> > 
+> > Should be EV_SW instead of EV_KEY.
+> > 
+> > > +
+> > > +	error = input_register_device(dt->device);
+> > > +	if (error) {
+> > > +		dev_err(&dt->device->dev, "device registration failed\n");
+> > > +		input_free_device(dt->device);
+> > 
+> > If you swap request_threaded_irq() and input_register_device() so that
+> > registration is the last action error handling will be much simpler.
+> >
+> 
+> I am getting a bit confused here, since you asked me to swap the order
+> of request_threaded_irq() and input_register_device() in my previous
+> version as well. Swapping again will take us back to square one or maybe
+> I am misinterpreting your comment?
 
-> 
-> Wang,
-> 
-> Thanks for taking the time to look at this.
-> 
-> 
-> Here is the result from a 2.6.38 kernel used as base kernel and
-> crashkernel:
-> 
-> [    1.314762] WARNING:
-> at /build/buildd/linux-2.6.38/arch/x86/mm/ioremap.c:83 __ioremap_caller
-> +0x350/0x3d0()
-> [    1.324394] Hardware name: PowerEdge R710
-> [    1.328390] Modules linked in:
-> [    1.331443] Pid: 1, comm: swapper Not tainted 2.6.38-8-server
-> #42-Ubuntu
-> [    1.338128] Call Trace:
-> [    1.340572]  [<ffffffff81065d1f>] ? warn_slowpath_common+0x7f/0xc0
-> [    1.346741]  [<ffffffff81065d7a>] ? warn_slowpath_null+0x1a/0x20
-> [    1.352729]  [<ffffffff81040eb0>] ? __ioremap_caller+0x350/0x3d0
-> [    1.358726]  [<ffffffff810d8575>] ? call_rcu_sched+0x15/0x20
-> [    1.364375]  [<ffffffff8103452e>] ? copy_oldmem_page+0x4e/0xc0
-> [    1.370194]  [<ffffffff8113c39e>] ? __purge_vmap_area_lazy+0xfe/0x1f0
-> [    1.376622]  [<ffffffff81040f64>] ? ioremap_cache+0x14/0x20
-> [    1.382176]  [<ffffffff8103452e>] ? copy_oldmem_page+0x4e/0xc0
-> [    1.388002]  [<ffffffff811cad0a>] ? read_from_oldmem+0x7a/0xb0
-> [    1.393827]  [<ffffffff81b099a0>] ? merge_note_headers_elf64.clone.3
-> +0x6c/0x214
-> [    1.401115]  [<ffffffff8103456a>] ? copy_oldmem_page+0x8a/0xc0
-> [    1.406936]  [<ffffffff811cad0a>] ? read_from_oldmem+0x7a/0xb0
-> [    1.412752]  [<ffffffff81b09e79>] ? vmcore_init+0x0/0x73
-> [    1.418051]  [<ffffffff81b09c52>] ? parse_crash_elf64_headers
-> +0x10a/0x211
-> [    1.424825]  [<ffffffff8103456a>] ? copy_oldmem_page+0x8a/0xc0
-> [    1.430640]  [<ffffffff81b09e79>] ? vmcore_init+0x0/0x73
-> [    1.435940]  [<ffffffff81b09dd4>] ? parse_crash_elf_headers
-> +0x7b/0x120
-> [    1.442450]  [<ffffffff81b09e9c>] ? vmcore_init+0x23/0x73
-> [    1.447839]  [<ffffffff81002175>] ? do_one_initcall+0x45/0x190
-> [    1.453661]  [<ffffffff81ae1dff>] ? kernel_init+0x169/0x1f3
-> [    1.459218]  [<ffffffff8100cde4>] ? kernel_thread_helper+0x4/0x10
-> [    1.465298]  [<ffffffff81ae1c96>] ? kernel_init+0x0/0x1f3
-> [    1.470680]  [<ffffffff8100cde0>] ? kernel_thread_helper+0x0/0x10
-> 
-> The command line for the crashkernel:
-> 
-> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.38-8-server
-> root=UUID=ea7a5a27-d58f-469f-a19c-3e65b69587f6 ro console=ttyS0,115200n8
-> irqpoll maxcpus=1 nousb memmap=exactmap memmap=640K@0K
-> memmap=261484K@623232K elfcorehdr=884716K memmap=252K#2087484K
-> 
-> The contents of /proc/iomem while running the base kernel:
-> 
-> 00000000-0000ffff : reserved
-> 00010000-0009ffff : System RAM
-> 000a0000-000bffff : PCI Bus 0000:00
-> 00100000-7f678fff : System RAM
->   01000000-015e1d6c : Kernel code
->   015e1d6d-01aca17f : Kernel data
->   01bae000-01d03fff : Kernel bss
->   26000000-35ffffff : Crash kernel
-> 7f679000-7f68efff : reserved
->   7f679000-7f679003 : APEI ERST
->   7f67900c-7f679016 : APEI ERST
->   7f679060-7f67906b : APEI ERST
->   7f68d000-7f68efff : APEI ERST
-> 7f68f000-7f6cdfff : ACPI Tables
-> 7f6ce000-7fffffff : reserved
-> 80000000-fdffffff : PCI Bus 0000:00
->   d5800000-d5ffffff : PCI Bus 0000:08
->     d5800000-d5ffffff : 0000:08:03.0
->   d6000000-d9ffffff : PCI Bus 0000:01
->     d6000000-d7ffffff : 0000:01:00.0
->       d6000000-d7ffffff : bnx2
->     d8000000-d9ffffff : 0000:01:00.1
->       d8000000-d9ffffff : bnx2
->   da000000-ddffffff : PCI Bus 0000:02
->     da000000-dbffffff : 0000:02:00.0
->       da000000-dbffffff : bnx2
->     dc000000-ddffffff : 0000:02:00.1
->       dc000000-ddffffff : bnx2
->   de000000-deffffff : PCI Bus 0000:08
->     de000000-de00ffff : 0000:08:03.0
->     de7fc000-de7fffff : 0000:08:03.0
->     de800000-deffffff : 0000:08:03.0
->   df0ff800-df0ffbff : 0000:00:1a.7
->     df0ff800-df0ffbff : ehci_hcd
->   df0ffc00-df0fffff : 0000:00:1d.7
->     df0ffc00-df0fffff : ehci_hcd
->   df100000-df2fffff : PCI Bus 0000:03
->     df100000-df1fffff : 0000:03:00.0
->     df2ec000-df2effff : 0000:03:00.0
->       df2ec000-df2effff : mpt
->     df2f0000-df2fffff : 0000:03:00.0
->       df2f0000-df2fffff : mpt
->   e0000000-efffffff : PCI MMCONFIG 0000 [bus 00-ff]
->     e0000000-efffffff : reserved
->       e0000000-efffffff : pnp 00:09
-> fe000000-ffffffff : reserved
->   fec00000-fec003ff : IOAPIC 0
->   fec80000-fec803ff : IOAPIC 1
->   fed00000-fed003ff : HPET 0
->   fed40000-fed44fff : PCI Bus 0000:00
->   fed90000-fed91fff : pnp 00:0b
->   fee00000-fee00fff : Local APIC
-> 100000000-c7fffffff : System RAM
-> 
-> 
-> tim
-> 
-> 
-> 
-> On Mon, 2011-11-14 at 13:39 +0000, WANG Cong wrote:
->> On Tue, 11 Oct 2011 16:39:05 -0700, Tim Hartrick wrote:
->>
->>> Kexec,
->>>
->>> I have been experiencing the crash below on Ubuntu 10.04 running
->>> 2.6.32-34-server and 2.6.38-8-server as the crashkernel on X86_64. The
->>> tools are:
->>>
->>> kexec-tools	1:2.0.2-1ubuntu3
->>> makedumpfile	1.3.7-2
->>> kdump-tools	1.3.7-2
->>>
->>> I would be interested to know if this is a known problem and if so
->>> whether or not there is a patch in the pipeline to correct the problem.
->>>
->>> I will be happy to provide any other details that are required including
->>> debug builds if necessary.
->> ....
->>>
->>> [    1.322100] ioremap: invalid physical address db74000000000000 [  
+Gah, sorry, a bit of boilerplate slipped in. You already have the calls
+in right order, you just need proper labels.
 
 
-Searching db74000000000000 got several similar cases of this, all are
-about per cpu invalid crash_notes address, is this one more?
+	input_dev = input_allocate_device();
+	if (!input_dev) {
+		dev_err(...);
+		error = -ENOMEM;
+		goto err_free_mem;
+	}
 
-OTOH, Can you test latest mainline kernel?
+	... set up input device fully ...
 
-ccing lkml and Tejun Heo
+	error = request_threaded_irq(...);
+	if (error) {
+		dev_err(...);
+		goto err_free_input_dev;
+	}
 
- 
->>> 1.327919] ------------[ cut here ]------------ [    1.332530] WARNING:
->>> at /build/buildd/linux-2.6.32/arch/x86/mm/ioremap.c:120 __ioremap_caller
->>> +0x360/0x3d0()
->>
->> This probably means that kexec-tools passed some incorrect
->> kernel parameter to the second kernel.
->>
->> So, what is the cmdline of your second kernel? And what is your
->> /proc/iomem of your first kernel?
->>
->> Cheers.
->>
->>
->> _______________________________________________
->> kexec mailing list
->> kexec@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/kexec
-> 
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+	error = input_register_device(input_dev);
+	if (error) {
+		dev_err(...);
+		goto err_free_irq;
+	}
 
+	i2c_set_clientdata(client, dt);
 
+	return 0;
+
+err_free_irq:
+	free_irq(client->irq, dt);
+err_free_input_dev:
+	input_free_device(input_dev);
+err_free_mem:
+	kfree(dt);
+err_hw_shutdown:
+	...
+	return error;
+}
 
 -- 
-Thanks
-Dave
+Dmitry
