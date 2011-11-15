@@ -1,105 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab1KOIeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:34:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329Ab1KOIen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:34:43 -0500
-Date: Tue, 15 Nov 2011 16:36:46 +0800
-From: Dave Young <dyoung@redhat.com>
-To: gregkh@suse.de, tj@kernel.org, cl@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCCH percpu: add cpunum param in per_cpu_ptr_to_phys
-Message-ID: <20111115083646.GA21468@darkstar.nay.redhat.com>
+	id S1753794Ab1KOIfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:35:02 -0500
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:58440 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753624Ab1KOIfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:35:00 -0500
+Date: Tue, 15 Nov 2011 10:34:55 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: oskar.andero@sonyericsson.com,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
+        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
+Subject: Re: [PATCH v2] input: add driver support for Sharp gp2ap002a00f
+ proximity sensor
+Message-ID: <20111115083454.GE6492@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1321285158-7123-1-git-send-email-oskar.andero@sonyericsson.com>
+ <20111114170352.GA12659@core.coreip.homeip.net>
+ <20111115075629.GE9307@caracas.corpusers.net>
+ <20111115082926.GA13157@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/2994txjAzEdQwm5"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111115082926.GA13157@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-per_cpu_ptr_to_phys iterate all cpu to get the phy addr
-let's leave the caller to pass the cpu number to it.
 
-Actually in the only one user show_crash_notes,
-cpunum is provided already before calling this. 
+--/2994txjAzEdQwm5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- drivers/base/cpu.c     |    2 +-
- include/linux/percpu.h |    2 +-
- mm/percpu.c            |   29 ++++-------------------------
- 3 files changed, 6 insertions(+), 27 deletions(-)
+Hi,
 
---- linux-2.6.orig/drivers/base/cpu.c	2011-09-20 12:39:36.000000000 +0800
-+++ linux-2.6/drivers/base/cpu.c	2011-11-15 14:52:42.742852411 +0800
-@@ -125,7 +125,7 @@ static ssize_t show_crash_notes(struct s
- 	 * boot up and this data does not change there after. Hence this
- 	 * operation should be safe. No locking required.
- 	 */
--	addr = per_cpu_ptr_to_phys(per_cpu_ptr(crash_notes, cpunum));
-+	addr = per_cpu_ptr_to_phys(per_cpu_ptr(crash_notes, cpunum), cpunum);
- 	rc = sprintf(buf, "%Lx\n", addr);
- 	return rc;
- }
---- linux-2.6.orig/include/linux/percpu.h	2011-11-15 11:06:18.000000000 +0800
-+++ linux-2.6/include/linux/percpu.h	2011-11-15 14:53:28.352605321 +0800
-@@ -160,7 +160,7 @@ extern void __init percpu_init_late(void
- 
- extern void __percpu *__alloc_percpu(size_t size, size_t align);
- extern void free_percpu(void __percpu *__pdata);
--extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
-+extern phys_addr_t per_cpu_ptr_to_phys(void *addr, int cpunum);
- 
- #define alloc_percpu(type)	\
- 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type), __alignof__(type))
---- linux-2.6.orig/mm/percpu.c	2011-11-15 11:06:19.000000000 +0800
-+++ linux-2.6/mm/percpu.c	2011-11-15 14:59:56.927166899 +0800
-@@ -971,6 +971,7 @@ bool is_kernel_percpu_address(unsigned l
- /**
-  * per_cpu_ptr_to_phys - convert translated percpu address to physical address
-  * @addr: the address to be converted to physical address
-+ * @cpunum: the cpu number of percpu address
-  *
-  * Given @addr which is dereferenceable address obtained via one of
-  * percpu access macros, this function translates it into its physical
-@@ -980,34 +981,12 @@ bool is_kernel_percpu_address(unsigned l
-  * RETURNS:
-  * The physical address for @addr.
-  */
--phys_addr_t per_cpu_ptr_to_phys(void *addr)
-+phys_addr_t per_cpu_ptr_to_phys(void *addr, int cpunum)
- {
- 	void __percpu *base = __addr_to_pcpu_ptr(pcpu_base_addr);
--	bool in_first_chunk = false;
--	unsigned long first_start, first_end;
--	unsigned int cpu;
-+	void *start = per_cpu_ptr(base, cpunum);
- 
--	/*
--	 * The following test on first_start/end isn't strictly
--	 * necessary but will speed up lookups of addresses which
--	 * aren't in the first chunk.
--	 */
--	first_start = pcpu_chunk_addr(pcpu_first_chunk, pcpu_first_unit_cpu, 0);
--	first_end = pcpu_chunk_addr(pcpu_first_chunk, pcpu_last_unit_cpu,
--				    pcpu_unit_pages);
--	if ((unsigned long)addr >= first_start &&
--	    (unsigned long)addr < first_end) {
--		for_each_possible_cpu(cpu) {
--			void *start = per_cpu_ptr(base, cpu);
--
--			if (addr >= start && addr < start + pcpu_unit_size) {
--				in_first_chunk = true;
--				break;
--			}
--		}
--	}
--
--	if (in_first_chunk) {
-+	if (addr >= start && addr < start + pcpu_unit_size) {
- 		if (!is_vmalloc_addr(addr))
- 			return __pa(addr);
- 		else
+On Tue, Nov 15, 2011 at 12:29:26AM -0800, Dmitry Torokhov wrote:
+> > > > +	error =3D input_register_device(dt->device);
+> > > > +	if (error) {
+> > > > +		dev_err(&dt->device->dev, "device registration failed\n");
+> > > > +		input_free_device(dt->device);
+> > >=20
+> > > If you swap request_threaded_irq() and input_register_device() so that
+> > > registration is the last action error handling will be much simpler.
+> > >
+> >=20
+> > I am getting a bit confused here, since you asked me to swap the order
+> > of request_threaded_irq() and input_register_device() in my previous
+> > version as well. Swapping again will take us back to square one or maybe
+> > I am misinterpreting your comment?
+>=20
+> Gah, sorry, a bit of boilerplate slipped in. You already have the calls
+> in right order, you just need proper labels.
+>=20
+>=20
+> 	input_dev =3D input_allocate_device();
+> 	if (!input_dev) {
+> 		dev_err(...);
+> 		error =3D -ENOMEM;
+> 		goto err_free_mem;
+> 	}
+>=20
+> 	... set up input device fully ...
+>=20
+> 	error =3D request_threaded_irq(...);
+> 	if (error) {
+> 		dev_err(...);
+> 		goto err_free_input_dev;
+> 	}
+>=20
+> 	error =3D input_register_device(input_dev);
+> 	if (error) {
+> 		dev_err(...);
+> 		goto err_free_irq;
+> 	}
+
+are you sure this is right order ? Won't this create a very small
+timeframe where we could try to call input_report_switch() and
+input_sync() on an unregistered input device ??
+
+--=20
+balbi
+
+--/2994txjAzEdQwm5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOwiQuAAoJEIaOsuA1yqREsLMP/igXEPsej8Ml237iHfTk2TWW
+4rkllWXAfP5ynwyX2+LvVDed+YeyV2pg5cqyMxjNS0SbMLIsKNC7u9FZdmJUoS97
+hRxml4qZBLoz3myKOeidijtxRvDeGPqURZJJ5SK1XY7fhGjzpj/yWl0x+oQpbfTx
+rBXGSan2W0OuithIQtrJ7uJN1RM+o7ro4JijUclmguoqu1cLJK/ur4xS5Lt4P6RU
+PcOUJ1JGniiqpIe1TlC27R5clV174ztZF26QRqmOQMQahUWrWPvAEtb6MZs00ndR
+HKfqPdnGIPWTl/tt4U6jJv1X6BmdYPqYREDQhPzaYKWeAfdyWkIIcnUFBgfcdw8/
+vdhrXe8NeMLVLWKAT2vj7cYztjTAEk5fNx6qLYZ9/claziNnGtCpmJaS2/hdR+T+
+4UJrH+AMP1Tq54El+CcMs9njUev6PnV06xutdA6IwfUMmMDJJjgA+OvQ1uRjTYZz
+aL2YRekoeK7fpVXLkdw0yw2s+EqC44V7/9i8izcQXZnWZAvrhlEujnshDP39gUah
+/D4qfDFydI7Y/NfZEHSG411iuJSPCPDNrS5pH/Ulp/TxelW+arek8Az6AoL6Aj4K
+AE8ldBgszdRyaY/0kHvhhk13IjKD2YsuHnWNPKp8aGvBJx6NzV6i+ZvFC6VOfHMn
+0hCDg72bvnBVgcdt6X66
+=IZkW
+-----END PGP SIGNATURE-----
+
+--/2994txjAzEdQwm5--
