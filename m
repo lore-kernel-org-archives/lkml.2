@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1KOCxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 21:53:54 -0500
-Received: from stl-smtpout-01.boeing.com ([130.76.96.56]:58469 "EHLO
-	stl-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755206Ab1KOCxw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 21:53:52 -0500
-X-Greylist: delayed 1006 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Nov 2011 21:53:52 EST
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Timur Tabi <B04825@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 14 Nov 2011 20:36:48 -0600
-Subject: Re: [RFC PATCH 00/17] powerpc/e500: separate e500 from e500mc
-Thread-Topic: [RFC PATCH 00/17] powerpc/e500: separate e500 from e500mc
-Thread-Index: AcyjP20fOl97gDZQQYmLzzSoKWIRPA==
-Message-ID: <4A0007C2-1C2C-4162-98E8-ACCA4E673AFE@boeing.com>
-References: <4E42AB6F.1050900@freescale.com>
- <1320883399-15911-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <FF2BF3F3-1158-4747-AEEC-03D6A7C462D9@kernel.crashing.org>
- <C0DED343-76A8-457E-BF54-E52DFCAC83A8@boeing.com>
- <58FDDDA5-26C4-493B-A00D-81DD94A5C26A@kernel.crashing.org>
- <20111110165455.GE11983@schlenkerla.am.freescale.net>
- <15AB1C61-181F-4454-AF99-772B73DE0AA5@boeing.com>
- <1320986410.21206.48.camel@pasglop>
-In-Reply-To: <1320986410.21206.48.camel@pasglop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755665Ab1KOC7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 21:59:23 -0500
+Received: from mga02.intel.com ([134.134.136.20]:11005 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755378Ab1KOC7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 21:59:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="75399237"
+Message-ID: <1321325960.13860.75.camel@yhuang-dev>
+Subject: Re: Printk mulitple line message support
+From: Huang Ying <ying.huang@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: William Douglas <william.r.douglas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 15 Nov 2011 10:59:20 +0800
+In-Reply-To: <1321324217.8944.25.camel@Joe-Laptop>
+References: <1321253936.13860.35.camel@yhuang-dev>
+	 <1321281640.2004.6.camel@Joe-Laptop> <1321318201.13860.51.camel@yhuang-dev>
+	 <1321319883.8944.7.camel@Joe-Laptop> <1321321957.13860.64.camel@yhuang-dev>
+	 <1321324217.8944.25.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 10, 2011, at 23:40, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-11-10 at 18:38 -0600, Moffett, Kyle D wrote:
->>  (2) Make the ppc64_caches struct apply to ppc32 as well, and
->>      preinitialize it with a minimum value used by any platform being
->>      compiled in (for "dcbXX"/"icbXX" purposes).  This is safe because
->>      the pagesize is always a multiple of the cache block size and the
->>      kernel only uses dcbXX/icbXX on whole pages.  The only impact is a
->>      temporary small performance hit from flushing or zeroing the same
->>      block 8 times if too small.
+On Tue, 2011-11-15 at 10:30 +0800, Joe Perches wrote:
+> On Tue, 2011-11-15 at 09:52 +0800, Huang Ying wrote:
+> > On Tue, 2011-11-15 at 09:18 +0800, Joe Perches wrote:
+> > > I believe you are not solving any real problem
+> > > with pr_<level>_ml.
+> > > Most all interleaved complete line uses have some
+> > > pr_fmt prefix that distinguishes between the sources.
+> > Except dev_<level> and netdev_<level>, it appears that many general
+> > pr_<level> do not have the prefix.
 > 
-> Are you sure about dcbz ? Getting that wrong can be deadly ... I'd
-> rather get rid of some fancy optims and use a soft value in some cases.
-> That or we can compile multiple variants for the common case of some of
-> the copy routines and use patching (alternate sections) to branch to the
-> right one at runtime, at least for the common cases (32 and 128 for
-> example for 440 and 476).
+> I'm working on that.
+> There are a lot of them and it's a slog.
 
-Well, all of the kernel loops that use dcbz are operating on whole pages,
-and the PPC Book-E spec documents that the pagesize is an even multiple
-of the cacheline size and the cachelines are always page-aligned.
+Em...  so you think we do not need a general solution?  Just use various
+prefix for these pr_<level>?
 
-So when you are clearing a whole page, there are only 2 things you can do
-wrong with "dcbz":
+The down side of this solution is that it is hard to use a simple script
+to distinguish interleaved message easily.
 
-  (1) Call "dcbz" with an address outside of the page you want to zero.
+> > > A perhaps larger problem is interleaved partial
+> > > lines with pr_cont.
+> > In an interleaved situation, how to determine <level> for pr_cont?
+> 
+> pr_cont has its own KERN_CONT level, it's "<c>", which
+> is stripped from output by printk.  It's used to continue
+> the previous printks output on a single line.
 
-  (2) Omit calls "dcbz" to dcbz for some physical cachelines in the page.
+Sorry.  Had some misunderstanding about pr_cont.
+ 
+> > > I believe that an initiator/terminator is necessary
+> > > for reassembly.  Something that could be used
+> > > with pr_<level>, dev_<level>, netdev_<level>, et al.
+> > > 
+> > > mp_start(&cookie)
+> > > pr_<level>(fmt, ...);
+> > 
+> > Do not need cookie here?
+> 
+> Ideally not.
+> 
+> > > pr_mp_cont(&cookie, fmt, ...);
+> > > pr_mp_cont(&cookie, fmt "\n", ...);
+> > > mp_end(&cookie);
+> > 
+> > With initiator/terminator the kernel log will be more structural, but
+> > that will make kernel log a little harder to read too.
+> 
+> Initiator/terminator would not be part of printk output
+> but could exist simply to set/track the atomic/cookie #
+> and have printk output the appropriate cookie id when
+> more than 1 cookie is active.
 
-Now, that's a totally different story from the userspace memset() calls
-that caused the problem originally, because they were frequently given
-memory much smaller than a page to clear, and if you didn't know exactly
-how many bytes a "dcbz" was going to clear you couldn't use it at all.
+Oh.  I see.
 
-But the kernel doesn't do that anywhere, it just uses it for page clears.
+For multiple part in one line.  I think the better solution may be to
+assemble them in a line buffer before real output to console to avoid
+interleaving.  Do you think so?
 
-Cheers,
-Kyle Moffett
+Best Regards,
+Huang Ying
 
---
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
 
