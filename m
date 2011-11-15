@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab1KOVMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 16:12:54 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:60861 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932307Ab1KOVMx (ORCPT
+	id S932421Ab1KOVNQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:13:16 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37182 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab1KOVNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 16:12:53 -0500
-Message-ID: <4EC2D568.4040001@xenotime.net>
-Date: Tue, 15 Nov 2011 13:11:04 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 15 Nov 2011 16:13:15 -0500
+X-Originating-IP: 217.70.178.131
+X-Originating-IP: 50.43.15.19
+Date: Tue, 15 Nov 2011 13:13:02 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 4/9] sched: add is_idle_task() to handle
+ invalidated uses of idle_cpu()
+Message-ID: <20111115211302.GA31473@leaf>
+References: <20111115202736.GA11030@linux.vnet.ibm.com>
+ <1321388885-11211-4-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <greg@kroah.com>, Theodore Tso <tytso@MIT.EDU>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC 3/3] procfs: add documentation for procfs mount options
-References: <20111115112208.GC3002@albatros>
-In-Reply-To: <20111115112208.GC3002@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321388885-11211-4-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2011 03:22 AM, Vasiliy Kulikov wrote:
-> Signed-off-by: Vasiliy Kulikov <seooon@openwall.com>
-> --
->  Documentation/filesystems/proc.txt |   39 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 39 insertions(+), 0 deletions(-)
+On Tue, Nov 15, 2011 at 12:28:00PM -0800, Paul E. McKenney wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
 > 
-> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-> index 0ec91f0..518987e 100644
-> --- a/Documentation/filesystems/proc.txt
-> +++ b/Documentation/filesystems/proc.txt
-> @@ -1542,3 +1544,40 @@ a task to set its own or one of its thread siblings comm value. The comm value
->  is limited in size compared to the cmdline value, so writing anything longer
->  then the kernel's TASK_COMM_LEN (currently 16 chars) will result in a truncated
->  comm value.
-> +
-> +
-> +------------------------------------------------------------------------------
-> +Configuring procfs
-> +------------------------------------------------------------------------------
-> +
-> +4.1	Mount options
-> +---------------------
-> +
-> +The following mount options are supported:
-> +
-> +	hidepid=	Set /proc/<pid>/ access mode.
-> +	gid=		Set the group authorized to learn processes information.
-> +
-> +hidepid=0 means classic mode - everybody may access all /proc/<pid>/ directories
-> +(default).
-> +
-> +hidepid=1 means users may not access any /proc/<pid>/ directories, but their
+> Commit 908a3283 (Fix idle_cpu()) invalidated some uses of idle_cpu(),
+> which used to say whether or not the CPU was running the idle task,
+> but now instead says whether or not the CPU is running the idle task
+> in the absence of pending wakeups.  Although this new implementation
+> gives a better answer to the question "is this CPU idle?", it also
+> invalidates other uses that were made of idle_cpu().
+> 
+> This commit therefore introduces a new is_idle_task() API member
+> that determines whether or not the specified task is one of the
+> idle tasks, allowing open-coded "->pid == 0" sequences to be replaced
+> by something more meaningful.
+> 
+> Suggested-by: Josh Triplett <josh@joshtriplett.org>
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  include/linux/sched.h |    1 +
+>  kernel/sched.c        |    9 +++++++++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 68daf4f..4b1077b 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2071,6 +2071,7 @@ extern int sched_setscheduler(struct task_struct *, int,
+>  extern int sched_setscheduler_nocheck(struct task_struct *, int,
+>  				      const struct sched_param *);
+>  extern struct task_struct *idle_task(int cpu);
+> +extern int is_idle_task(struct task_struct *p);
 
-                                                         directories but their
-(drop comma)
+The kernel has a bool type; please use it here rather than int, to make
+the return value more obvious.
 
-> +own.  Sensitive files like cmdline, sched*, status are now protected against
-> +other users.  This makes impossible to learn whether any user runs
+Also, any particular reason not to make this a static inline?
 
-                 This makes it impossible
-
-> +specific program (given the program doesn't reveal itself by its behaviour).
-> +As an additional bonus, as /proc/<pid>/cmdline is unaccessible for other users,
-> +poorly written programs passing sensitive information via program arguments are
-> +now protected against local eavesdroppers.
-> +
-> +hidepid=2 means hidepid=1 plus all /proc/<pid>/ will be fully invisible to other
-> +users.  It doesn't mean that it hides a fact whether a process with a specific
-> +pid value exists (it can be learned by other means, e.g. by "kill -0 $PID"),
-> +but it hides process' uid and gid, which may be learned by stat()'ing
-> +/proc/<pid>/ otherwise.  It greatly complicates intruder's task of gathering info
-
-                                       complicates an intruder's task of gathering information
-(or data) [+ fix line length]
-
-
-> +about running processes, whether some daemon runs with elevated privileges,
-> +whether other user runs some sensitive program, whether other users run any
-> +program at all, etc.
-> +
-> +gid= defines a group authorized to learn processes information otherwise
-> +prohibited by hidepid=.  If you use some daemon like identd which have to learn
-
-                                                               which has to learn
-or                                                             which must learn
-or                                                             which needs to learn
-
-> +information about processes information, just add identd to this group.
-> --
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+- Josh Triplett
