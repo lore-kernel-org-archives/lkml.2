@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab1KOXaE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 18:30:04 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:59467 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756644Ab1KOXaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 18:30:03 -0500
-Date: Wed, 16 Nov 2011 10:29:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the nfsd tree
-Message-Id: <20111116102952.d653d19f69ca5a7fad8a0291@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Nov_2011_10_29_52_+1100_fyY+beiC9jrYsFHf"
+	id S1757568Ab1KOXcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 18:32:31 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:38837 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757309Ab1KOXca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 18:32:30 -0500
+From: Joe Perches <joe@perches.com>
+To: linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-arm-msm@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] mmc: logging neatening and mmc_host_<level>
+Date: Tue, 15 Nov 2011 15:32:04 -0800
+Message-Id: <cover.1321398814.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.405.gc1be0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Nov_2011_10_29_52_+1100_fyY+beiC9jrYsFHf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Joe Perches (4):
+  mmc: Update logging style
+  wbsd: Use current logging
+  mmc: Logging neatening
+  mmc: Add mmc_host_<level> logging
 
-Hi Bruce,
+ drivers/mmc/card/block.c        |    4 +-
+ drivers/mmc/card/mmc_test.c     |   77 ++++++---------
+ drivers/mmc/card/queue.c        |    6 +-
+ drivers/mmc/card/sdio_uart.c    |   10 +-
+ drivers/mmc/core/bus.c          |   27 ++---
+ drivers/mmc/core/core.c         |  116 ++++++++++-----------
+ drivers/mmc/core/host.c         |   14 +--
+ drivers/mmc/core/mmc.c          |   75 +++++---------
+ drivers/mmc/core/mmc_ops.c      |   12 +--
+ drivers/mmc/core/sd.c           |   73 +++++---------
+ drivers/mmc/core/sdio.c         |   11 +--
+ drivers/mmc/core/sdio_bus.c     |    6 +-
+ drivers/mmc/core/sdio_cis.c     |   10 +-
+ drivers/mmc/core/sdio_io.c      |   14 ++-
+ drivers/mmc/core/sdio_irq.c     |   24 ++--
+ drivers/mmc/host/at91_mci.c     |   12 +-
+ drivers/mmc/host/au1xmmc.c      |   35 +++---
+ drivers/mmc/host/bfin_sdh.c     |    3 +-
+ drivers/mmc/host/dw_mmc.c       |   18 ++--
+ drivers/mmc/host/mmc_spi.c      |    9 +-
+ drivers/mmc/host/mmci.c         |    8 +-
+ drivers/mmc/host/msm_sdcc.c     |  101 ++++++++----------
+ drivers/mmc/host/mvsdio.c       |   42 +++-----
+ drivers/mmc/host/omap_hsmmc.c   |   19 +---
+ drivers/mmc/host/pxamci.c       |    4 +-
+ drivers/mmc/host/s3cmci.c       |    3 +-
+ drivers/mmc/host/sdhci-pci.c    |   17 ++--
+ drivers/mmc/host/sdhci-pxav3.c  |    7 +-
+ drivers/mmc/host/sdhci.c        |  218 +++++++++++++++++----------------------
+ drivers/mmc/host/sdricoh_cs.c   |   12 +-
+ drivers/mmc/host/tifm_sd.c      |   12 +--
+ drivers/mmc/host/tmio_mmc.c     |    4 +-
+ drivers/mmc/host/tmio_mmc_pio.c |    4 +-
+ drivers/mmc/host/via-sdmmc.c    |   33 +++----
+ drivers/mmc/host/vub300.c       |   54 +++++-----
+ drivers/mmc/host/wbsd.c         |   72 ++++++--------
+ include/linux/mmc/host.h        |   11 ++
+ 37 files changed, 510 insertions(+), 667 deletions(-)
 
-After merging the nfsd tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+-- 
+1.7.6.405.gc1be0
 
-fs/nfsd/nfs4state.c:4446:5: error: expected ';', ',' or ')' before 'void'
-fs/nfsd/nfs4state.c: In function 'nfsd_forget_locks':
-fs/nfsd/nfs4state.c:4468:2: error: implicit declaration of function 'nfsd_r=
-elease_n_owners' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit 16bfdaafa2c6 ("nfsd4: share open and lock owner hash
-tables").  Please build test *before* releasing code ...  :-(
-
-I have used the nfsd tree from next-20111115 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__16_Nov_2011_10_29_52_+1100_fyY+beiC9jrYsFHf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOwvXwAAoJEECxmPOUX5FE8bUQAKbQcZLBFQ9N6Gv5L4oIrgCf
-CJ4Y3LIRKw+X+oihx8k3rVUjKcStBkoGOX1jg9vn2FAal1AtF9lGiv5zQCacOBfz
-C+UAk3O5ZzKXjzd2wtEzYMDxYyjGN0ukhyOvROzdlYjZsHQ3KAgxWq0MMWLzryUF
-gVwJcrO7PUS920T0AiJEDJFjZumw1o3DgV7Z+Cpadr8ivfmTFr3d3oc4O+qbGPnk
-GeKgntQzuAELh5Cx8RYGaGwgOfr0HSOywCMZVEYmZmYu3RGmDYOM3HW81KcYWTlE
-DO/YaF9Dj189PhoXSkckCv03GfCNEouy0a64m9pKIICmQn5XOQom4976xTCVYyCS
-OohcP8xK+JqWcIZSZvE5TAxv0a7+3eITRSRSgIhxwXpvu8wDM/pRWSWMdv8ktmAt
-apQcnorQVeTSYOHESCE6yJ3M14JJr2Ylz8N6hJwv8FuQxHvIkd4ao2h35Bhjf2/r
-DtjoxoDAL1dLQ5ZozZnmrT/p25FcKXjvekbzz2ugaGgvB03uJ8BS0BKYpHwsK4xW
-WwcX3rh9T7KfZ6Kcrizvz9m6GczNb1HLtf1oF1y7CtTE3O79En/q+hMCv6ICMkKT
-L3/PH29la1TbvPUcugj0k/M2sejj33AK6eBYXv7xAYgNizkUrdQAyWyWli+Y7ipY
-2BlrLi0HIGEQELdG3HO4
-=xx2M
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Nov_2011_10_29_52_+1100_fyY+beiC9jrYsFHf--
