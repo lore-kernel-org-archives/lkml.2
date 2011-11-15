@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab1KOBSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 20:18:07 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:45527 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751891Ab1KOBSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 20:18:05 -0500
-Message-ID: <1321319883.8944.7.camel@Joe-Laptop>
-Subject: Re: Printk mulitple line message support
-From: Joe Perches <joe@perches.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: William Douglas <william.r.douglas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Nov 2011 17:18:03 -0800
-In-Reply-To: <1321318201.13860.51.camel@yhuang-dev>
-References: <1321253936.13860.35.camel@yhuang-dev>
-	 <1321281640.2004.6.camel@Joe-Laptop> <1321318201.13860.51.camel@yhuang-dev>
+	id S1754662Ab1KOBb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 20:31:26 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45377 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682Ab1KOBbZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 20:31:25 -0500
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Jr9ma08oM-4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=Hac048-KxPdvXAl8jKEA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: Oops while doing "echo function_graph > current_tracer"
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20111114140745.GC3225@redhat.com>
+References: <20111114140745.GC3225@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+Date: Mon, 14 Nov 2011 20:31:22 -0500
+Message-ID: <1321320682.5011.23.camel@frodo>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 08:50 +0800, Huang Ying wrote:
-> On Mon, 2011-11-14 at 22:40 +0800, Joe Perches wrote:
-> > On Mon, 2011-11-14 at 14:58 +0800, Huang Ying wrote:
-> > > Hi,
-> > > 
-> > > In most cases, printk only guarantees messages from different printk
-> > > calling will not be interleaved between each other.  But many printk
-> > > users uses multiple line to form a complete message and call printk
-> > > for each line.  So the following situation is possible for two printk
-> > > users running on two CPUs.
-> > > 
-> > > line 1 of message from printk user1
-> > > line 1 of message from printk user2
-> > > line 2 of message from printk user1
-> > > line 2 of message from printk user2
-> > > 
-> > > This makes kernel log hard to read.  One possible solution to this
-> > > issue is to give a sequence number (or ID) to each complete message.
-> > > So the above lines will be:
-> > > 
-> > > {1}line 1 of message from printk user1
-> > > {2}line 1 of message from printk user2
-> > > {1}line 2 of message from printk user1
-> > > {2}line 2 of message from printk user2
-> > > 
-> > > Then some simple script can be used to group lines together according
-> > > to sequence number in lines.
-> > > 
-> > > What do you think about that?
-> > 
-> > This makes the typical multi-part but non-interleaved
-> > output difficult to read.
+On Mon, 2011-11-14 at 16:07 +0200, Gleb Natapov wrote:
+> Hi Steven,
 > 
-> With a simple script, we can strip out the sequence # easily.
+> I get an oops with current linux.git when I am doing
+> "echo function_graph > current_tracer" inside a kvm guest.
+> Oopses do not contain much useful information and they are always
+> different. Looks like stack corruption (at least this is what Oopses
+> say when not triple faulting).
 > 
-> > How about determining if there is interleaving and
-> > emitting sequence # only in those cases?
-> > 
-> > Perhaps test the atomic for the last sequence #.
-> 
-> So we will have no sequence # prefix for printk user1's lines if printk
-> user 2 comes in the middle?  Something as follow?
-> 
-> line 1 of message from printk user1
-> {2}line 1 of message from printk user2
-> line 2 of message from printk user1
-> {2}line 2 of message from printk user2
-> 
-> This will make it hard for a script to sort the lines.  Where should it
-> insert lines from printk user2 in the sort result?
+> Attached is my guest kernel .config. I do not have the same problem on
+> the host, but kernel config is different there.
 
-90+% it's the previous line.
 
-I believe you are not solving any real problem
-with pr_<level>_ml.
+Looking into this I see that this is an old bug. I guess this shows how
+many people run function graph tracing from the guest. Or at least how
+many with DEBUG_PREEMPT enabled too.
 
-Most all interleaved complete line uses have some
-pr_fmt prefix that distinguishes between the sources.
+The problem is that kvm_clock_read() does a get_cpu_var(), which calls
+preempt_disable() which calls add_preempt_count() which is then traced.
+But this is outside the recursive protection in function_graph tracing,
+and when add_preempt_count() is traced, kvm_clock_read() calls
+add_preempt_count() and it gets traced again, and so on and causes a
+recursive crash.
 
-A perhaps larger problem is interleaved partial
-lines with pr_cont.
+There's a few fixes we can do. For now, because this is an old bug, I
+would just tell you to do this first:
 
-I believe that an initiator/terminator is necessary
-for reassembly.  Something that could be used
-with pr_<level>, dev_<level>, netdev_<level>, et al.
+echo add_preempt_count sub_preempt_count > /sys/kernel/debug/tracing/set_ftrace_notrace
 
-mp_start(&cookie)
-pr_<level>(fmt, ...);
-pr_mp_cont(&cookie, fmt, ...);
-pr_mp_cont(&cookie, fmt "\n", ...);
-mp_end(&cookie);
+But that is just a work around for you and not a complete fix.
+
+I could just make add_preempt_count() notrace and be done with it, but
+I've been reluctant to do this because there's been several times I've
+actually wanted to see the add_preempt_count()s being traced.
+
+I could also make a get_cpu_var_notrace() version that kvm_clock_read()
+could use. This is the solution that I would most likely want to do as a
+permanent one.
+
+Then finally I could force the function_graph tracer to have recursion
+protection and when it recurses, it just exits out nicely. I think I'll
+add that with a WARN_ON_ONCE(). Without the warning, if a recursion
+slips in, we'll have overhead of the recursion on top of the overhead of
+the tracing making it worse than what it already is. Function graph
+tracing is the most invasive tracer, and I want to speed it up if
+possible (I already have ideas on doing so) and I do not want to make it
+slower.
+
+Thanks!
+
+-- Steve
 
 
