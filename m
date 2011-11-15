@@ -1,121 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab1KOFri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 00:47:38 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45148 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab1KOFrg (ORCPT
+	id S1751574Ab1KOFtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 00:49:09 -0500
+Received: from outmail148095.authsmtp.com ([62.13.148.95]:54346 "EHLO
+	outmail148095.authsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751124Ab1KOFtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 00:47:36 -0500
-X-AuditID: b753bd60-981cbba000006f66-db-4ec1fcf5d9b1
-X-AuditID: b753bd60-981cbba000006f66-db-4ec1fcf5d9b1
-Message-ID: <4EC1FCED.5040908@hitachi.com>
-Date: Tue, 15 Nov 2011 14:47:25 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Tue, 15 Nov 2011 00:49:07 -0500
+X-Greylist: delayed 1915 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 00:49:07 EST
+From: Ben Pfaff <blp@cs.stanford.edu>
+To: jidanni@jidanni.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Documentation/input/input.txt.gz has a bug
+References: <8762im2n5f.fsf@jidanni.org>
+Reply-To: Ben Pfaff <blp@cs.stanford.edu>
+Date: Mon, 14 Nov 2011 21:13:08 -0800
+In-Reply-To: <8762im2n5f.fsf@jidanni.org> (jidanni@jidanni.org's message of
+	"Tue, 15 Nov 2011 09:24:28 +0800")
+Message-ID: <87y5vihst7.fsf@blp.benpfaff.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 1/5] x86: add user_mode_vm check in stack_overflow_check
-References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp> <20111107055235.7928.85338.stgit@ltc219.sdl.hitachi.co.jp> <20111110195203.GA22646@phenom.dumpdata.com>
-In-Reply-To: <20111110195203.GA22646@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+X-Server-Quench: 04c5286f-0f49-11e1-97bb-002264978518
+X-AuthReport-Spam: If SPAM / abuse - report it at: http://www.authsmtp.com/abuse
+X-AuthRoute: OCdwYQ8QAVZfSBwy AThCFzNJTwsiPBEK DBMeOw5HJEYITQBc chwbOAMOd3sbWxYD A2cKS1RRWlx3U2d9 JQ1XcwRZfE5GQQdq UldLR1BXCwQmQW13 A2lFLWBycwBGenw+ ZkJkVj5bWBd/d057 FFNUQ2kPeGZhPWEC WUcKJR5UcAFIeBtM bVh6VXtDAzANdg4/ FBI2MjYtNCleLyIS QwcVME5VQEATAyJ6 WwAeWzo9VU0MXG06 ZxY7JTYA
+X-Authentic-SMTP: 61633331373532.1014:706
+X-AuthFastPath: 0 (Was 255)
+X-AuthVirus-Status: No virus detected - but ensure you scan with your own anti-virus system.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/11/11 4:52), Konrad Rzeszutek Wilk wrote:
-> On Mon, Nov 07, 2011 at 02:52:35PM +0900, Mitsuo Hayasaka wrote:
->> The kernel stack overflow is checked in stack_overflow_check(),
->> which may wrongly detect the overflow if the stack pointer
->> pointed to the kernel stack accidentally.
-> 
-> I think you mean to say 'points'.
+jidanni@jidanni.org writes:
 
-Yes. Thank you for your correction.
+> /usr/share/doc/linux-doc-3.0.0/Documentation/input/input.txt.gz
+> Has an error at "(c, 13, 32)" or needs an explanation added:
+>
+>   Doing a cat /dev/input/mouse0 (c, 13, 32) will verify that a mouse
+> is also emulated, characters should appear if you move it.
 
-> 
-> How do we accidently point the stack pointer to the kernel stack?
+I think that it's correct:
 
-I guess it may happen due to a kind of stack overflow, although
-I've not succeeded to `accidentally' point the stack pointer to
-the kernel stack yet...
-
-At least, we can intentionally cause the overflow message, using the
-following program in user space although the overflow does not occur.
-
-=============================================
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-int main(int argc, char *argv[]) {
-	unsigned long long dummyRSP;
-
-	printf("PID:%d\n", getpid());
-	printf("Input dummyRSP address: ");
-	scanf("%Lx", &dummyRSP);
-	printf("DummyRSP address is %Lx\n", dummyRSP);
-	puts("Replace RSP with dummyRSP...");
-	__asm__ ("movq %0,%%rsp": : "r" (dummyRSP));
-	while(1) ;
-}
-=============================================
-
-We need to give this program a dummy RSP address that must point to
-an overflow address in kernel stack and can be gotten using tools such
-as crash. These steps are summarized as follows.
-
-(1) Execute this program and get the pid.
-(2) Execute crash and put "task <pid>"
-(3) Get the address indicated by stack field of task_struct
-(4) Input the address to this program
-
-The big problem is that user space program can directly control the
-stack overflow checking in kernel space, regardless of intentional or
-accidental operation. In other words, the kernel stack overflow is
-never detected after execution of this program.
-
-So, I would like to fix this problem.
-
-> 
->>
->> This patch adds user-mode-vm checking before it to avoid this
->> misdetection and bails out early if the user stack is used.
->>
->> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
->> ---
->>
->>  arch/x86/kernel/irq_64.c |    3 +++
->>  1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
->> index acf8fbf..69bca46 100644
->> --- a/arch/x86/kernel/irq_64.c
->> +++ b/arch/x86/kernel/irq_64.c
->> @@ -38,6 +38,9 @@ static inline void stack_overflow_check(struct pt_regs *regs)
->>  #ifdef CONFIG_DEBUG_STACKOVERFLOW
->>  	u64 curbase = (u64)task_stack_page(current);
->>  
->> +	if (user_mode_vm(regs))
->> +		return;
->> +
->>  	WARN_ONCE(regs->sp >= curbase &&
->>  		  regs->sp <= curbase + THREAD_SIZE &&
->>  		  regs->sp <  curbase + sizeof(struct thread_info) +
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+    $ ls -l /dev/input/mouse0
+    crw------- 1 root root 13, 32 Nov 12 09:14 /dev/input/mouse0
+-- 
+Ben Pfaff 
+http://benpfaff.org
