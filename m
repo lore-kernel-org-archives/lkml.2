@@ -1,452 +1,457 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1KOEGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 23:06:33 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:46441 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab1KOEEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 23:04:23 -0500
+	id S1756053Ab1KOEGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 23:06:31 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33521 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755455Ab1KOEEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 23:04:24 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 06/16] time: Add timekeeper lock
-Date: Mon, 14 Nov 2011 20:03:56 -0800
-Message-Id: <1321329846-14755-7-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 13/16] time: Condense timekeeper.xtime into xtime_sec
+Date: Mon, 14 Nov 2011 20:04:03 -0800
+Message-Id: <1321329846-14755-14-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1321329846-14755-1-git-send-email-john.stultz@linaro.org>
 References: <1321329846-14755-1-git-send-email-john.stultz@linaro.org>
-x-cbid: 11111504-3352-0000-0000-000000C2BE54
+x-cbid: 11111504-8974-0000-0000-000002145760
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all the timekeeping variables are stored in
-the timekeeper structure, add a new lock to protect the
-structure.
+The timekeeper struct has a xtime_nsec, which keeps the
+sub-nanosecond remainder.  This ends up being somewhat
+duplicative of the timekeeper.xtime.tv_nsec value, and we
+have to do extra work to keep them apart, copying the full
+nsec portion out and back in over and over.
 
-For now, this lock nests under the xtime_lock for writes.
+This patch simplifies some of the logic by taking the timekeeper
+xtime value and splitting it into timekeeper.xtime_sec and
+reuses the timekeeper.xtime_nsec for the sub-second portion
+(stored in higher res shifted nanoseconds).
 
-For readers, we don't need to take xtime_lock anymore.
+This simplifies some of the accumulation logic. And will
+allow for more accurate timekeeping once the vsyscall code
+is updated to use the shifted nanosecond remainder.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Eric Dumazet <eric.dumazet@gmail.com>
 CC: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c |  126 +++++++++++++++++++++++++++++----------------
- 1 files changed, 82 insertions(+), 44 deletions(-)
+ kernel/time/timekeeping.c |  161 +++++++++++++++++++++++++++-----------------
+ 1 files changed, 99 insertions(+), 62 deletions(-)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 78872ba..8f54200 100644
+index 9416be0..6ca50b5 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -69,6 +69,9 @@ struct timekeeper {
- 	struct timespec total_sleep_time;
- 	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
- 	struct timespec raw_time;
-+
-+	/* Seqlock for all timekeeper values */
-+	seqlock_t lock;
- };
+@@ -39,8 +39,11 @@ struct timekeeper {
+ 	/* Raw nano seconds accumulated per NTP interval. */
+ 	u32	raw_interval;
  
- static struct timekeeper timekeeper;
-@@ -172,10 +175,17 @@ static inline s64 timekeeping_get_ns_raw(void)
- /* must hold xtime_lock */
- void timekeeping_leap_insert(int leapsecond)
- {
-+	unsigned long flags;
+-	/* Clock shifted nano seconds remainder not stored in xtime.tv_nsec. */
++	/* Current CLOCK_REALTIME time in seconds */
++	u64	xtime_sec;
++	/* Clock shifted nano seconds */
+ 	u64	xtime_nsec;
 +
-+	write_seqlock_irqsave(&timekeeper.lock, flags);
+ 	/* Difference between accumulated time and NTP time in ntp
+ 	 * shifted nano seconds. */
+ 	s64	ntp_error;
+@@ -48,8 +51,6 @@ struct timekeeper {
+ 	 * ntp shifted nano seconds. */
+ 	int	ntp_error_shift;
+ 
+-	/* The current time */
+-	struct timespec xtime;
+ 	/*
+ 	 * wall_to_monotonic is what we need to add to xtime (or xtime corrected
+ 	 * for sub jiffie times) to get to monotonic time.  Monotonic is pegged
+@@ -87,6 +88,38 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
+ int __read_mostly timekeeping_suspended;
+ 
+ 
++static inline void timekeeper_normalize_xtime(struct timekeeper *tk)
++{
++	while (tk->xtime_nsec >= (NSEC_PER_SEC << tk->shift)) {
++		tk->xtime_nsec -= NSEC_PER_SEC << tk->shift;
++		tk->xtime_sec++;
++	}
++}
 +
- 	timekeeper.xtime.tv_sec += leapsecond;
- 	timekeeper.wall_to_monotonic.tv_sec -= leapsecond;
- 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
- 			 timekeeper.clock, timekeeper.mult);
++static struct timespec timekeeper_xtime(struct timekeeper *tk)
++{
++	struct timespec ts;
 +
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags);
++	ts.tv_sec = tk->xtime_sec;
++	ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
++	return ts;
++}
 +
- }
++static void timekeeper_set_xtime(struct timekeeper *tk,
++					const struct timespec *ts)
++{
++	tk->xtime_sec = ts->tv_sec;
++	tk->xtime_nsec = ts->tv_nsec << tk->shift;
++}
++
++
++static void timekeeper_xtime_add(struct timekeeper *tk,
++					const struct timespec *ts)
++{
++	tk->xtime_sec += ts->tv_sec;
++	tk->xtime_nsec += ts->tv_nsec << tk->shift;
++}
++
  
  /**
-@@ -222,7 +232,7 @@ void getnstimeofday(struct timespec *ts)
+  * timekeeper_setup_internals - Set up internals to use clocksource clock.
+@@ -143,6 +176,7 @@ static inline s64 timekeeping_get_ns(void)
+ {
+ 	cycle_t cycle_now, cycle_delta;
+ 	struct clocksource *clock;
++	s64 nsec;
+ 
+ 	/* read clocksource: */
+ 	clock = timekeeper.clock;
+@@ -151,9 +185,8 @@ static inline s64 timekeeping_get_ns(void)
+ 	/* calculate the delta since the last update_wall_time: */
+ 	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+ 
+-	/* return delta convert to nanoseconds using ntp adjusted mult. */
+-	return clocksource_cyc2ns(cycle_delta, timekeeper.mult,
+-				  timekeeper.shift);
++	nsec = cycle_delta * timekeeper.mult + timekeeper.xtime_nsec;
++	return nsec >> timekeeper.shift;
+ }
+ 
+ static inline s64 timekeeping_get_ns_raw(void)
+@@ -175,11 +208,13 @@ static inline s64 timekeeping_get_ns_raw(void)
+ /* must hold write on timekeeper.lock */
+ static void timekeeping_update(bool clearntp)
+ {
++	struct timespec xt;
+ 	if (clearntp) {
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
+-	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
++	xt = timekeeper_xtime(&timekeeper);
++	update_vsyscall(&xt, &timekeeper.wall_to_monotonic,
+ 			 timekeeper.clock, timekeeper.mult);
+ }
+ 
+@@ -189,7 +224,7 @@ void timekeeping_leap_insert(int leapsecond)
+ 	unsigned long flags;
+ 
+ 	write_seqlock_irqsave(&timekeeper.lock, flags);
+-	timekeeper.xtime.tv_sec += leapsecond;
++	timekeeper.xtime_sec += leapsecond;
+ 	timekeeper.wall_to_monotonic.tv_sec -= leapsecond;
+ 	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+@@ -214,13 +249,12 @@ static void timekeeping_forward_now(void)
+ 	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+ 	clock->cycle_last = cycle_now;
+ 
+-	nsec = clocksource_cyc2ns(cycle_delta, timekeeper.mult,
+-				  timekeeper.shift);
++	timekeeper.xtime_nsec += cycle_delta * timekeeper.mult;
+ 
+ 	/* If arch requires, add in gettimeoffset() */
+-	nsec += arch_gettimeoffset();
++	timekeeper.xtime_nsec += arch_gettimeoffset() << timekeeper.shift;
+ 
+-	timespec_add_ns(&timekeeper.xtime, nsec);
++	timekeeper_normalize_xtime(&timekeeper);
+ 
+ 	nsec = clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
+ 	timespec_add_ns(&timekeeper.raw_time, nsec);
+@@ -235,15 +269,15 @@ static void timekeeping_forward_now(void)
+ void getnstimeofday(struct timespec *ts)
+ {
+ 	unsigned long seq;
+-	s64 nsecs;
++	s64 nsecs = 0;
+ 
  	WARN_ON(timekeeping_suspended);
  
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
+ 		seq = read_seqbegin(&timekeeper.lock);
  
- 		*ts = timekeeper.xtime;
- 		nsecs = timekeeping_get_ns();
-@@ -230,7 +240,7 @@ void getnstimeofday(struct timespec *ts)
+-		*ts = timekeeper.xtime;
+-		nsecs = timekeeping_get_ns();
++		ts->tv_sec = timekeeper.xtime_sec;
++		ts->tv_nsec = timekeeping_get_ns();
+ 
  		/* If arch requires, add in gettimeoffset() */
  		nsecs += arch_gettimeoffset();
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
- 
- 	timespec_add_ns(ts, nsecs);
- }
-@@ -245,14 +255,14 @@ ktime_t ktime_get(void)
- 	WARN_ON(timekeeping_suspended);
+@@ -264,12 +298,10 @@ ktime_t ktime_get(void)
  
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 		secs = timekeeper.xtime.tv_sec +
+ 		seq = read_seqbegin(&timekeeper.lock);
+-		secs = timekeeper.xtime.tv_sec +
++		secs = timekeeper.xtime_sec +
  				timekeeper.wall_to_monotonic.tv_sec;
- 		nsecs = timekeeper.xtime.tv_nsec +
+-		nsecs = timekeeper.xtime.tv_nsec +
++		nsecs = timekeeping_get_ns() +
  				timekeeper.wall_to_monotonic.tv_nsec;
- 		nsecs += timekeeping_get_ns();
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
+-		nsecs += timekeeping_get_ns();
+-
+ 	} while (read_seqretry(&timekeeper.lock, seq));
  	/*
  	 * Use ktime_set/ktime_add_ns to create a proper ktime on
- 	 * 32-bit architectures without CONFIG_KTIME_SCALAR.
-@@ -278,12 +288,12 @@ void ktime_get_ts(struct timespec *ts)
+@@ -291,20 +323,19 @@ void ktime_get_ts(struct timespec *ts)
+ {
+ 	struct timespec tomono;
+ 	unsigned int seq;
+-	s64 nsecs;
+ 
  	WARN_ON(timekeeping_suspended);
  
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 		*ts = timekeeper.xtime;
+ 		seq = read_seqbegin(&timekeeper.lock);
+-		*ts = timekeeper.xtime;
++		ts->tv_sec = timekeeper.xtime_sec;
++		ts->tv_nsec = timekeeping_get_ns();
  		tomono = timekeeper.wall_to_monotonic;
- 		nsecs = timekeeping_get_ns();
+-		nsecs = timekeeping_get_ns();
  
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
+ 	} while (read_seqretry(&timekeeper.lock, seq));
  
  	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec,
- 				ts->tv_nsec + tomono.tv_nsec + nsecs);
-@@ -311,7 +321,7 @@ void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
- 	do {
- 		u32 arch_offset;
+-				ts->tv_nsec + tomono.tv_nsec + nsecs);
++				ts->tv_nsec + tomono.tv_nsec);
+ }
+ EXPORT_SYMBOL_GPL(ktime_get_ts);
  
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
+@@ -332,7 +363,8 @@ void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
+ 		seq = read_seqbegin(&timekeeper.lock);
  
  		*ts_raw = timekeeper.raw_time;
- 		*ts_real = timekeeper.xtime;
-@@ -324,7 +334,7 @@ void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
- 		nsecs_raw += arch_offset;
- 		nsecs_real += arch_offset;
+-		*ts_real = timekeeper.xtime;
++		ts_real->tv_sec = timekeeper.xtime_sec;
++		ts_real->tv_nsec = 0;
  
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
- 
- 	timespec_add_ns(ts_raw, nsecs_raw);
- 	timespec_add_ns(ts_real, nsecs_real);
-@@ -358,12 +368,13 @@ EXPORT_SYMBOL(do_gettimeofday);
+ 		nsecs_raw = timekeeping_get_ns_raw();
+ 		nsecs_real = timekeeping_get_ns();
+@@ -375,7 +407,7 @@ EXPORT_SYMBOL(do_gettimeofday);
+  */
  int do_settimeofday(const struct timespec *tv)
  {
- 	struct timespec ts_delta;
--	unsigned long flags;
-+	unsigned long flags1,flags2;
+-	struct timespec ts_delta;
++	struct timespec ts_delta, xt;
+ 	unsigned long flags;
  
  	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags1);
-+	write_seqlock_irqsave(&timekeeper.lock, flags2);
+@@ -385,12 +417,15 @@ int do_settimeofday(const struct timespec *tv)
  
  	timekeeping_forward_now();
  
-@@ -380,7 +391,8 @@ int do_settimeofday(const struct timespec *tv)
- 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
- 			timekeeper.clock, timekeeper.mult);
+-	ts_delta.tv_sec = tv->tv_sec - timekeeper.xtime.tv_sec;
+-	ts_delta.tv_nsec = tv->tv_nsec - timekeeper.xtime.tv_nsec;
++	xt = timekeeper_xtime(&timekeeper);
++	ts_delta.tv_sec = tv->tv_sec - xt.tv_sec;
++	ts_delta.tv_nsec = tv->tv_nsec - xt.tv_nsec;
++
+ 	timekeeper.wall_to_monotonic =
+ 			timespec_sub(timekeeper.wall_to_monotonic, ts_delta);
  
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags2);
-+	write_sequnlock_irqrestore(&xtime_lock, flags1);
+-	timekeeper.xtime = *tv;
++	timekeeper_set_xtime(&timekeeper, tv);
++
+ 	timekeeping_update(true);
  
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -399,12 +411,13 @@ EXPORT_SYMBOL(do_settimeofday);
-  */
- int timekeeping_inject_offset(struct timespec *ts)
- {
--	unsigned long flags;
-+	unsigned long flags1,flags2;
- 
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags1);
-+	write_seqlock_irqsave(&timekeeper.lock, flags2);
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+@@ -421,7 +456,8 @@ int timekeeping_inject_offset(struct timespec *ts)
  
  	timekeeping_forward_now();
  
-@@ -418,7 +431,8 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
- 			timekeeper.clock, timekeeper.mult);
- 
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags2);
-+	write_sequnlock_irqrestore(&xtime_lock, flags1);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -490,11 +504,11 @@ void getrawmonotonic(struct timespec *ts)
- 	s64 nsecs;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 		nsecs = timekeeping_get_ns_raw();
- 		*ts = timekeeper.raw_time;
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
- 
- 	timespec_add_ns(ts, nsecs);
- }
-@@ -510,24 +524,30 @@ int timekeeping_valid_for_hres(void)
- 	int ret;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 
- 		ret = timekeeper.clock->flags & CLOCK_SOURCE_VALID_FOR_HRES;
- 
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
- 
- 	return ret;
- }
- 
- /**
-  * timekeeping_max_deferment - Returns max time the clocksource can be deferred
-- *
-- * Caller must observe xtime_lock via read_seqbegin/read_seqretry to
-- * ensure that the clocksource does not change!
-  */
- u64 timekeeping_max_deferment(void)
- {
--	return timekeeper.clock->max_idle_ns;
-+	unsigned long seq;
-+	u64 ret;
-+	do {
-+		seq = read_seqbegin(&timekeeper.lock);
+-	timekeeper.xtime = timespec_add(timekeeper.xtime, *ts);
 +
-+		ret = timekeeper.clock->max_idle_ns;
-+
-+	} while (read_seqretry(&timekeeper.lock, seq));
-+
-+	return ret;
- }
++	timekeeper_xtime_add(&timekeeper, ts);
+ 	timekeeper.wall_to_monotonic =
+ 				timespec_sub(timekeeper.wall_to_monotonic, *ts);
  
- /**
-@@ -572,10 +592,13 @@ void __init timekeeping_init(void)
- 	read_persistent_clock(&now);
- 	read_boot_clock(&boot);
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	seqlock_init(&timekeeper.lock);
- 
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 	ntp_init();
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-+	write_seqlock_irqsave(&timekeeper.lock, flags);
- 	clock = clocksource_default_clock();
- 	if (clock->enable)
+@@ -597,14 +633,12 @@ void __init timekeeping_init(void)
  		clock->enable(clock);
-@@ -593,7 +616,7 @@ void __init timekeeping_init(void)
+ 	timekeeper_setup_internals(clock);
+ 
+-	timekeeper.xtime.tv_sec = now.tv_sec;
+-	timekeeper.xtime.tv_nsec = now.tv_nsec;
++	timekeeper_set_xtime(&timekeeper, &now);
+ 	timekeeper.raw_time.tv_sec = 0;
+ 	timekeeper.raw_time.tv_nsec = 0;
+-	if (boot.tv_sec == 0 && boot.tv_nsec == 0) {
+-		boot.tv_sec = timekeeper.xtime.tv_sec;
+-		boot.tv_nsec = timekeeper.xtime.tv_nsec;
+-	}
++	if (boot.tv_sec == 0 && boot.tv_nsec == 0)
++		boot = timekeeper_xtime(&timekeeper);
++
+ 	set_normalized_timespec(&timekeeper.wall_to_monotonic,
  				-boot.tv_sec, -boot.tv_nsec);
  	timekeeper.total_sleep_time.tv_sec = 0;
- 	timekeeper.total_sleep_time.tv_nsec = 0;
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags);
- }
- 
- /* time in seconds when suspend began */
-@@ -634,7 +657,7 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
-  */
- void timekeeping_inject_sleeptime(struct timespec *delta)
- {
--	unsigned long flags;
-+	unsigned long flags1,flags2;
- 	struct timespec ts;
- 
- 	/* Make sure we don't set the clock twice */
-@@ -642,7 +665,9 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 	if (!(ts.tv_sec == 0 && ts.tv_nsec == 0))
+@@ -630,7 +664,7 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
  		return;
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags1);
-+	write_seqlock_irqsave(&timekeeper.lock, flags2);
-+
- 	timekeeping_forward_now();
- 
- 	__timekeeping_inject_sleeptime(delta);
-@@ -652,7 +677,8 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
- 			timekeeper.clock, timekeeper.mult);
- 
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags2);
-+	write_sequnlock_irqrestore(&xtime_lock, flags1);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -668,14 +694,15 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
-  */
- static void timekeeping_resume(void)
- {
--	unsigned long flags;
-+	unsigned long flags1,flags2;
- 	struct timespec ts;
- 
- 	read_persistent_clock(&ts);
- 
- 	clocksource_resume();
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags1);
-+	write_seqlock_irqsave(&timekeeper.lock, flags2);
- 
- 	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
- 		ts = timespec_sub(ts, timekeeping_suspend_time);
-@@ -685,7 +712,8 @@ static void timekeeping_resume(void)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags2);
-+	write_sequnlock_irqrestore(&xtime_lock, flags1);
- 
- 	touch_softlockup_watchdog();
- 
-@@ -697,13 +725,14 @@ static void timekeeping_resume(void)
- 
- static int timekeeping_suspend(void)
- {
--	unsigned long flags;
-+	unsigned long flags1,flags2;
- 	struct timespec		delta, delta_delta;
- 	static struct timespec	old_delta;
- 
- 	read_persistent_clock(&timekeeping_suspend_time);
- 
--	write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags1);
-+	write_seqlock_irqsave(&timekeeper.lock, flags2);
- 	timekeeping_forward_now();
- 	timekeeping_suspended = 1;
- 
-@@ -726,7 +755,8 @@ static int timekeeping_suspend(void)
- 		timekeeping_suspend_time =
- 			timespec_add(timekeeping_suspend_time, delta_delta);
  	}
--	write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags2);
-+	write_sequnlock_irqrestore(&xtime_lock, flags1);
  
- 	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
- 	clocksource_suspend();
-@@ -893,10 +923,13 @@ static void update_wall_time(void)
- 	struct clocksource *clock;
+-	timekeeper.xtime = timespec_add(timekeeper.xtime, *delta);
++	timekeeper_xtime_add(&timekeeper, delta);
+ 	timekeeper.wall_to_monotonic =
+ 			timespec_sub(timekeeper.wall_to_monotonic, *delta);
+ 	timekeeper.total_sleep_time = timespec_add(
+@@ -727,7 +761,8 @@ static int timekeeping_suspend(void)
+ 	 * try to compensate so the difference in system time
+ 	 * and persistent_clock time stays close to constant.
+ 	 */
+-	delta = timespec_sub(timekeeper.xtime, timekeeping_suspend_time);
++	delta = timespec_sub(timekeeper_xtime(&timekeeper),
++				timekeeping_suspend_time);
+ 	delta_delta = timespec_sub(delta, old_delta);
+ 	if (abs(delta_delta.tv_sec)  >= 2) {
+ 		/*
+@@ -873,7 +908,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 	timekeeper.xtime_nsec += timekeeper.xtime_interval << shift;
+ 	while (timekeeper.xtime_nsec >= nsecps) {
+ 		timekeeper.xtime_nsec -= nsecps;
+-		timekeeper.xtime.tv_sec++;
++		timekeeper.xtime_sec++;
+ 		second_overflow();
+ 	}
+ 
+@@ -907,6 +942,7 @@ static void update_wall_time(void)
  	cycle_t offset;
  	int shift = 0, maxshift;
-+	unsigned long flags;
-+
-+	write_seqlock_irqsave(&timekeeper.lock, flags);
+ 	unsigned long flags;
++	s64 remainder;
  
- 	/* Make sure we're fully resumed: */
- 	if (unlikely(timekeeping_suspended))
--		return;
-+		goto out;
+ 	write_seqlock_irqsave(&timekeeper.lock, flags);
  
- 	clock = timekeeper.clock;
+@@ -921,8 +957,6 @@ static void update_wall_time(void)
+ #else
+ 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
+ #endif
+-	timekeeper.xtime_nsec = (s64)timekeeper.xtime.tv_nsec <<
+-						timekeeper.shift;
  
-@@ -977,6 +1010,10 @@ static void update_wall_time(void)
- 	/* check to see if there is a new clocksource to use */
- 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
- 			timekeeper.clock, timekeeper.mult);
-+
-+out:
-+	write_sequnlock_irqrestore(&timekeeper.lock, flags);
-+
- }
+ 	/*
+ 	 * With NO_HZ we may have to accumulate many cycle_intervals
+@@ -968,25 +1002,29 @@ static void update_wall_time(void)
+ 		timekeeper.ntp_error += neg << timekeeper.ntp_error_shift;
+ 	}
  
- /**
-@@ -1022,13 +1059,13 @@ void get_monotonic_boottime(struct timespec *ts)
+-
+ 	/*
+-	 * Store full nanoseconds into xtime after rounding it up and
+-	 * add the remainder to the error difference.
+-	 */
+-	timekeeper.xtime.tv_nsec = ((s64)timekeeper.xtime_nsec >>
+-						timekeeper.shift) + 1;
+-	timekeeper.xtime_nsec -= (s64)timekeeper.xtime.tv_nsec <<
+-						timekeeper.shift;
+-	timekeeper.ntp_error +=	timekeeper.xtime_nsec <<
+-				timekeeper.ntp_error_shift;
++	* Store only full nanoseconds into xtime_nsec after rounding
++	* it up and add the remainder to the error difference.
++	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
++	* by truncating the remainder in vsyscalls. However, it causes
++	* additional work to be done in timekeeping_adjust(). Once
++	* the vsyscall implementations are converted to use xtime_nsec
++	* (shifted nanoseconds), this can be killed.
++	*/
++	remainder = timekeeper.xtime_nsec & ((1<<timekeeper.shift)-1);
++	timekeeper.xtime_nsec -= remainder;
++	timekeeper.xtime_nsec += 1<<timekeeper.shift;
++	timekeeper.ntp_error += remainder <<
++					timekeeper.ntp_error_shift;
+ 
+ 	/*
+ 	 * Finally, make sure that after the rounding
+ 	 * xtime.tv_nsec isn't larger then NSEC_PER_SEC
+ 	 */
+-	if (unlikely(timekeeper.xtime.tv_nsec >= NSEC_PER_SEC)) {
+-		timekeeper.xtime.tv_nsec -= NSEC_PER_SEC;
+-		timekeeper.xtime.tv_sec++;
++	if (unlikely(timekeeper.xtime_nsec >=
++			(NSEC_PER_SEC << timekeeper.shift))) {
++		timekeeper.xtime_nsec -= NSEC_PER_SEC << timekeeper.shift;
++		timekeeper.xtime_sec++;
+ 		second_overflow();
+ 	}
+ 
+@@ -1035,21 +1073,20 @@ void get_monotonic_boottime(struct timespec *ts)
+ {
+ 	struct timespec tomono, sleep;
+ 	unsigned int seq;
+-	s64 nsecs;
+ 
  	WARN_ON(timekeeping_suspended);
  
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 		*ts = timekeeper.xtime;
+ 		seq = read_seqbegin(&timekeeper.lock);
+-		*ts = timekeeper.xtime;
++		ts->tv_sec = timekeeper.xtime_sec;
++		ts->tv_nsec = timekeeping_get_ns();
  		tomono = timekeeper.wall_to_monotonic;
  		sleep = timekeeper.total_sleep_time;
- 		nsecs = timekeeping_get_ns();
+-		nsecs = timekeeping_get_ns();
  
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
+ 	} while (read_seqretry(&timekeeper.lock, seq));
  
  	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
- 			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
-@@ -1079,10 +1116,10 @@ struct timespec current_kernel_time(void)
- 	unsigned long seq;
+-			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
++			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec);
+ }
+ EXPORT_SYMBOL_GPL(get_monotonic_boottime);
  
+@@ -1082,13 +1119,13 @@ EXPORT_SYMBOL_GPL(monotonic_to_bootbased);
+ 
+ unsigned long get_seconds(void)
+ {
+-	return timekeeper.xtime.tv_sec;
++	return timekeeper.xtime_sec;
+ }
+ EXPORT_SYMBOL(get_seconds);
+ 
+ struct timespec __current_kernel_time(void)
+ {
+-	return timekeeper.xtime;
++	return timekeeper_xtime(&timekeeper);
+ }
+ 
+ struct timespec current_kernel_time(void)
+@@ -1099,7 +1136,7 @@ struct timespec current_kernel_time(void)
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
+ 		seq = read_seqbegin(&timekeeper.lock);
  
- 		now = timekeeper.xtime;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
+-		now = timekeeper.xtime;
++		now = timekeeper_xtime(&timekeeper);
+ 	} while (read_seqretry(&timekeeper.lock, seq));
  
  	return now;
- }
-@@ -1094,11 +1131,11 @@ struct timespec get_monotonic_coarse(void)
- 	unsigned long seq;
- 
+@@ -1114,7 +1151,7 @@ struct timespec get_monotonic_coarse(void)
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
+ 		seq = read_seqbegin(&timekeeper.lock);
  
- 		now = timekeeper.xtime;
+-		now = timekeeper.xtime;
++		now = timekeeper_xtime(&timekeeper);
  		mono = timekeeper.wall_to_monotonic;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
+ 	} while (read_seqretry(&timekeeper.lock, seq));
  
- 	set_normalized_timespec(&now, now.tv_sec + mono.tv_sec,
- 				now.tv_nsec + mono.tv_nsec);
-@@ -1130,11 +1167,11 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
- 	unsigned long seq;
+@@ -1149,7 +1186,7 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
  
  	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 		*xtim = timekeeper.xtime;
+ 		seq = read_seqbegin(&timekeeper.lock);
+-		*xtim = timekeeper.xtime;
++		*xtim = timekeeper_xtime(&timekeeper);
  		*wtom = timekeeper.wall_to_monotonic;
  		*sleep = timekeeper.total_sleep_time;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
- }
- 
- /**
-@@ -1146,9 +1183,10 @@ ktime_t ktime_get_monotonic_offset(void)
- 	struct timespec wtom;
- 
- 	do {
--		seq = read_seqbegin(&xtime_lock);
-+		seq = read_seqbegin(&timekeeper.lock);
- 		wtom = timekeeper.wall_to_monotonic;
--	} while (read_seqretry(&xtime_lock, seq));
-+	} while (read_seqretry(&timekeeper.lock, seq));
-+
- 	return timespec_to_ktime(wtom);
- }
- 
+ 	} while (read_seqretry(&timekeeper.lock, seq));
 -- 
 1.7.3.2.146.gca209
 
