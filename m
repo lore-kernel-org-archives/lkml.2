@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab1KOLSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 06:18:34 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45278 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab1KOLSc (ORCPT
+	id S1755189Ab1KOLXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 06:23:33 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42395 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab1KOLXc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 06:18:32 -0500
+	Tue, 15 Nov 2011 06:23:32 -0500
 MIME-Version: 1.0
-X-Originating-IP: [109.186.61.145]
-In-Reply-To: <20111115111001.GB5627@amd.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
- <20111115103926.GA5627@amd.com> <CAK=WgbZ=0HctjLREv1oXEa=5ryY7C_6srO1Nt5uMowH+FyaHJQ@mail.gmail.com>
- <20111115111001.GB5627@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 15 Nov 2011 13:18:11 +0200
-Message-ID: <CAK=WgbY4v325R=e4dVqBcx0TWh920jrZFfgfUseDTDu4O1z3dA@mail.gmail.com>
-Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
+In-Reply-To: <1321346525-10187-1-git-send-email-amwang@redhat.com>
+References: <1321346525-10187-1-git-send-email-amwang@redhat.com>
+Date: Tue, 15 Nov 2011 13:23:31 +0200
+X-Google-Sender-Auth: 2g0xmmZkobmCTXMzYdcf0rKpmiM
+Message-ID: <CAOJsxLEXbWbEhqX2YfzcQhyLJrY0H2ifCJCvGkoFHZsYAZEMPA@mail.gmail.com>
+Subject: Re: [Patch] tmpfs: add fallocate support
+From: Pekka Enberg <penberg@kernel.org>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 1:10 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> It is almost merged :) I just had to struggle with some compile errors
-> from upstream in my tests. But I think I will finish testing today and
-> push everything out.
->
+Hello,
 
-ok great thanks :)
+On Tue, Nov 15, 2011 at 10:42 AM, Amerigo Wang <amwang@redhat.com> wrote:
+> This patch adds fallocate support to tmpfs. I tested this patch
+> with the following test case,
+>
+>        % sudo mount -t tmpfs -o size=100 tmpfs /mnt
+>        % touch /mnt/foobar
+>        % echo hi > /mnt/foobar
+>        % fallocate -o 3 -l 5000 /mnt/foobar
+>        fallocate: /mnt/foobar: fallocate failed: No space left on device
+>        % fallocate -o 3 -l 3000 /mnt/foobar
+>        % ls -l /mnt/foobar
+>        -rw-rw-r-- 1 wangcong wangcong 3003 Nov 15 16:10 /mnt/foobar
+>        % dd if=/dev/zero of=/mnt/foobar seek=3 bs=1 count=3000
+>        3000+0 records in
+>        3000+0 records out
+>        3000 bytes (3.0 kB) copied, 0.0153224 s, 196 kB/s
+>        % hexdump -C /mnt/foobar
+>        00000000  68 69 0a 00 00 00 00 00  00 00 00 00 00 00 00 00  |hi..............|
+>        00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+>        *
+>        00000bb0  00 00 00 00 00 00 00 00  00 00 00                 |...........|
+>        00000bbb
+>        % cat /mnt/foobar
+>        hi
+>
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+
+What's the use case for this?
+
+                        Pekka
