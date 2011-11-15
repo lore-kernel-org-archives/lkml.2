@@ -1,57 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1KOH0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 02:26:25 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:16643 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab1KOH0X (ORCPT
+	id S1753405Ab1KOH0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 02:26:46 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39479 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab1KOH0o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 02:26:23 -0500
-X-AuditID: cbfee61b-b7b7fae000005864-48-4ec2141de1d4
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-References: <20111111131159.848e724c5a9257d0b9f0f0f9@canb.auug.org.au>
- <201111101941.59570.dmitry.torokhov@gmail.com>
- <20111111165741.5a6d5f14ad70f98776d3b39a@canb.auug.org.au>
-In-reply-to: <20111111165741.5a6d5f14ad70f98776d3b39a@canb.auug.org.au>
-Subject: RE: linux-next: manual merge of the input tree with the s5p tree
-Date: Tue, 15 Nov 2011 16:26:21 +0900
-Message-id: <004501cca367$dfbbd650$9f3382f0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcygNt8vKdLlDRewR+iOTflh0T4P8gDMLLLw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 15 Nov 2011 02:26:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAH9JG2U1L1st_D+jp0Qm42HR8Ur7JpdYz6gFJSv+z_ZkGAQv8A@mail.gmail.com>
+References: <1321333132-17662-1-git-send-email-pullip.cho@samsung.com>
+	<1321333132-17662-3-git-send-email-pullip.cho@samsung.com>
+	<CAH9JG2U1L1st_D+jp0Qm42HR8Ur7JpdYz6gFJSv+z_ZkGAQv8A@mail.gmail.com>
+Date: Tue, 15 Nov 2011 16:26:43 +0900
+X-Google-Sender-Auth: I49F7yklGTBWxScYdrImr6mgFms
+Message-ID: <CAHQjnOPMxtQFn1LMsXg7JKeW-iGe87jTN_kA+6BK9MGeF=0qDw@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        YoungLak Kim <younglak1004.kim@samsung.com>,
+        iommu@lists.linux-foundation.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> 
-> Hi Dmitry,
-> 
-> On Thu, 10 Nov 2011 19:41:59 -0800 Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> > Please drop the whole HAVE_SAMSUNG_KEYPAD thing; HAVE_CLK is all
-> > this driver needs. Expanding beyond Samsung will allow greater
-> > compile coverage.
-> 
-> OK, I have modified the conflict resolution for tomorrow.
-> 
-OK, I will git-revert it in my tree.
+On Tue, Nov 15, 2011 at 3:05 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+>> +static bool set_sysmmu_active(struct sysmmu_drvdata *data)
+>> +{
+>> +     /* return true if the System MMU was not active previously
+>> +        and it needs to be initialized */
+>> +     data->activations++;
+>> +     return data->activations == 1;
+>> +}
+> If it calls the twice, then caller get the active failed return value.
+> Are there no case to call the multiple activation?
 
-Sorry for late response.
-Thanks.
+Return value of set_sysmmu_active() does not mean that activation is successful
+but that System MMU H/W is needed to be initialized.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+System MMU driver only initializes System MMU H/W when data->activation
+becomes 1 from 0 and deinitializes when it becomes 0 from 1.
 
+>> +void exynos_sysmmu_set_tablebase_pgd(struct device *owner, unsigned long
+>> pgd)
+>> +{
+>> +     struct sysmmu_drvdata *data = NULL;
+>> +
+>> +     while ((data = get_sysmmu_data(owner, data))) {
+>> +             unsigned long flags;
+>> +
+>> +             read_lock_irqsave(&data->lock, flags);
+> It should be 'write_lock_irqsave'
+
+data->lock just protects contents of 'data' from race condition.
+It does not care about control registers of System MMU.
+Since no contents in 'data' is modified in this function,
+I think read_lock is more proper.
+
+However, suddenly, I think exynos_sysmmu_set_tablebase_pgd()
+must be removed because it modifies page table base
+that is already set with exynos_sysmmu_enable().
+
+>> +
+>> +             if (is_sysmmu_active(data)) {
+>> +                     sysmmu_block(data->sfrbase);
+>> +                     __sysmmu_set_ptbase(data->sfrbase, pgd);
+>> +                     sysmmu_unblock(data->sfrbase);
+>> +                     dev_dbg(data->dev, "New page table base is %p\n",
+>> +                                                             (void *)pgd);
+>> +             } else {
+>> +                     dev_dbg(data->dev,
+>> +                     "Disabled: Skipping setting page table base.\n");
+>> +             }
+>> +
+>> +             read_unlock_irqrestore(&data->lock, flags);
+> It should be 'write_unlock_irqrestore'
+
+Ditto.
+
+>> +void exynos_sysmmu_tlb_invalidate(struct device *owner)
+>> +{
+>> +     struct sysmmu_drvdata *data = NULL;
+>> +
+>> +     while ((data = get_sysmmu_data(owner, data))) {
+>> +             unsigned long flags;
+>> +
+>> +             read_lock_irqsave(&data->lock, flags);
+> doesn't use the write_lock_irqsave here?
+
+Ditto.
+
+>> +static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
+>> +{
+>> +     struct exynos_iommu_domain *priv = domain->priv;
+>> +     struct list_head *pos, *n;
+>> +
+>> +     WARN_ON(!list_empty(&priv->clients));
+>> +
+>> +     spin_lock(&priv->lock);
+>> +
+>> +     list_for_each_safe(pos, n, &priv->clients) {
+>> +             struct iommu_client *client;
+>> +
+>> +             client = list_entry(pos, struct iommu_client, node);
+>> +             exynos_sysmmu_disable(client->dev);
+> I think It occurs sleeping lock error message since it calls the
+> write_lock within spin_lock.
+
+Sorry, I don't understand why it makes problem.
+
+I also tested it with various devices.
+It is also not a condition of neither deadlock nor livelock.
+
+Thank you.
+
+KyongHo.
