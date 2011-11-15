@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab1KOOk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 09:40:56 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38459 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab1KOOkz (ORCPT
+	id S1756021Ab1KOOmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 09:42:33 -0500
+Received: from usa7109mr001.acs-inc.com ([63.101.151.9]:36369 "EHLO
+	USA7109MR001.ACS-INC.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab1KOOmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 09:40:55 -0500
-Date: Tue, 15 Nov 2011 09:40:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: len.brown@intel.com, jeremy@goop.org, xen-devel@lists.xensource.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org,
-        mingo@redhat.com, bp@alien8.de, hpa@zytor.com, tj@kernel.org,
-        tglx@linutronix.de, trenn@suse.de
-Subject: Re: [Xen-devel] Re: [PATCH 1/3] cpuidle: If disable_cpuidle() is
- called, set pm_idle to default_idle.
-Message-ID: <20111115144004.GE22675@phenom.dumpdata.com>
-References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
- <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
- <4EBA53C5.9040603@linux.vnet.ibm.com>
- <20111109144440.GB8410@phenom.dumpdata.com>
- <4EBD09FF.4030002@linux.vnet.ibm.com>
+	Tue, 15 Nov 2011 09:42:31 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At4AAFp5wk4Nl9IPmWdsb2JhbABEhQGjZ4EGIgEBAQEBCAsLBxQlgXIBAQEDAQ8BEw0EKxoQAgEIDgwCBgYMDAICAgEBVQEBBBuHeqYJAWmSJ4Ewh0szYwSMeox8gzqIfA
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EBD09FF.4030002@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4EC279D4.00F3,ss=1,re=0.000,fgs=0
+Content-Type: text/plain;
+	charset="UTF-8"
+Subject: RE: [PATCH 1/3] mtd/nand: fix coding style issue in drivers/mtd/nand/fsl_elbc.c
+Date: Tue, 15 Nov 2011 14:42:25 -0000
+Message-ID: <929D3CED81F34E43887A393170D66FB9053A8F81@GBRSUN01MS002.eu.xerox.net>
+In-Reply-To: <1321362603.1932.67.camel@shinybook.infradead.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/3] mtd/nand: fix coding style issue in drivers/mtd/nand/fsl_elbc.c
+Thread-Index: Acyjl++dR+93/UlZS42aWYH3s5AL3gACx5tw
+References: <1321349355-1639-1-git-send-email-b35362@freescale.com> <929D3CED81F34E43887A393170D66FB9053A8C82@GBRSUN01MS002.eu.xerox.net> <1321362603.1932.67.camel@shinybook.infradead.org>
+From: "Jenkins, Clive" <Clive.Jenkins@xerox.com>
+To: "David Woodhouse" <dwmw2@infradead.org>
+Cc: <b35362@freescale.com>, <Artem.Bityutskiy@nokia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <scottwood@freescale.com>, <akpm@linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+X-OriginalArrivalTime: 15 Nov 2011 14:42:29.0645 (UTC) FILETIME=[CD03E3D0:01CCA3A4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAFEgetV024034
 
-> Well I was with a view that if cpuidle is disabled, mwait and arm_e400
-> would take precedence over default_idle. But if is ok to have default_idle instead,
-> then go ahead. 
-> 
-> > Perhaps there is another way do this is:
+> > > fix whitespaces,tabs coding style issue and ...
 > > 
-> > diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> > index becd6d9..04b10a4 100644
-> > --- a/drivers/cpuidle/cpuidle.c
-> > +++ b/drivers/cpuidle/cpuidle.c
-> > @@ -38,6 +38,7 @@ int cpuidle_disabled(void)
-> >  void disable_cpuidle(void)
-> >  {
-> >  	off = 1;
-> > +	pm_idle = default_idle;
-> >  }
-> > 
-> Brining pm_idle pointer back to cpuidle code is going a step back coz
-> we wanted to complete remove using pm_idle going forward. As having 
-> a pointer exported into various files is not a good thing. That's the 
-> reason we started the clean up in the first place :) 
+> > In my opinion this code was already correct, and would display correctly
+> > at any TAB setting. This patch changes it so that it displays
+> > incorrectly at all TAB settings other than 8.
+>
+> Any tab setting other than 8 is incorrect and should not be used for
+> Linux code.
 
-Perhaps then something along these lines, where we still set default_idle
-but don't fiddle with the pm_idle (and can still rip out the
-EXPORT_SYMBOL_GPL(default_idle) in 2012):
+This may be your (not so humble :-) opinion, and I happen to agree that
+a tab setting of 8 is best, usually. However, as Linus says in his
+coding style document "Coding style is very personal, and I won't _force_
+my views on anybody".
 
-(Hadn't tested this yet).
+> ... Fix your editor, if that's an issue for you.
 
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index c2ff2a1..2d2f01c 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -401,6 +401,7 @@ extern unsigned long arch_align_stack(unsigned long sp);
- extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
- 
- void default_idle(void);
-+bool set_pm_idle_to_default(void);
- 
- void stop_this_cpu(void *dummy);
- 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e7e3b01..bfb113f 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -403,6 +403,14 @@ void default_idle(void)
- EXPORT_SYMBOL(default_idle);
- #endif
- 
-+bool set_pm_idle_to_default()
-+{
-+	if (!pm_idle) {
-+		pm_idle = default_idle;
-+		return true;
-+	}
-+	return false;
-+}
- void stop_this_cpu(void *dummy)
- {
- 	local_irq_disable();
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 46d6d21..7506181 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -448,6 +448,6 @@ void __init xen_arch_setup(void)
- #endif
- 	disable_cpuidle();
- 	boot_option_idle_override = IDLE_HALT;
--
-+	WARN_ON(!set_pm_idle_to_default());
- 	fiddle_vdso();
- }
+My editor has a tab setting of 8, but readers of this list have diverse
+email clients, some of which do not display 8 spaces per tab.
+
+Clive
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
