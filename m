@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1KOAyi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:54:38 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48799 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab1KOAyg convert rfc822-to-8bit (ORCPT
+	id S1754243Ab1KOAyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:54:51 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61558 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab1KOAyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:54:36 -0500
+	Mon, 14 Nov 2011 19:54:50 -0500
+Date: Tue, 15 Nov 2011 01:54:45 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
+        akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com
+Subject: Re: [PATCH 10/10] cgroup: kill subsys->can_attach_task(),
+ pre_attach() and attach_task()
+Message-ID: <20111115005442.GL9446@somewhere>
+References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+ <1320191193-8110-11-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20111114.184240.1832866874941847383.davem@davemloft.net>
-References: <1321312921-7748-1-git-send-email-grundler@chromium.org>
-	<1321312921-7748-5-git-send-email-grundler@chromium.org>
-	<20111114.184240.1832866874941847383.davem@davemloft.net>
-Date: Mon, 14 Nov 2011 16:54:35 -0800
-X-Google-Sender-Auth: M4vT2gA8SIU8bjcK7er_8bTtKFE
-Message-ID: <CANEJEGuzdxDuVysuAJPcdC7-mywa8B8JggVHe_VMTK_1j4QguQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] net-next:asix: update VERSION and white space changes
-From: Grant Grundler <grundler@chromium.org>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, allan@asix.com.tw,
-        freddy@asix.com.tw
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320191193-8110-11-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 3:42 PM, David Miller <davem@davemloft.net> wrote:
-...
-> Please, just submit this without the whitespace and other cleanup
-> stuff.  Restrict it to real bug fixes, and I'll push it around.
+On Tue, Nov 01, 2011 at 04:46:33PM -0700, Tejun Heo wrote:
+> These three methods are no longer used.  Kill them.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Paul Menage <paul@paulmenage.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
 
-I just sent a "v2" of 5/5 patch which only has the VERSION change. Is
-that sufficient or should I resend all 5?
+Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-thanks!
-grant
+Thanks!
