@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab1KOMuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:50:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13574 "EHLO mx1.redhat.com"
+	id S1754194Ab1KOMut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:50:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32507 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab1KOMuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:50:13 -0500
-Date: Tue, 15 Nov 2011 14:51:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH v2 09/11] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20111115125127.GA31208@redhat.com>
-References: <cover.1317311033.git.amit.shah@redhat.com>
- <5b7834c9a30254220f9c079ba54d29abaf63db8f.1317311033.git.amit.shah@redhat.com>
- <20111002093324.GD29706@redhat.com>
- <20111115122902.GA26378@amit-x200.redhat.com>
+	id S1751880Ab1KOMus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:50:48 -0500
+Date: Tue, 15 Nov 2011 14:50:43 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: Oops while doing "echo function_graph > current_tracer"
+Message-ID: <20111115125043.GF3225@redhat.com>
+References: <20111114140745.GC3225@redhat.com>
+ <1321320682.5011.23.camel@frodo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111115122902.GA26378@amit-x200.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1321320682.5011.23.camel@frodo>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 05:59:36PM +0530, Amit Shah wrote:
-> On (Sun) 02 Oct 2011 [11:33:26], Michael S. Tsirkin wrote:
-> > On Thu, Sep 29, 2011 at 09:19:40PM +0530, Amit Shah wrote:
-> > > Remove all the vqs on hibernation and re-create them after restoring
-> > > from a hibernated image.  This keeps networking working across
-> > > hibernation.
-> > > 
-> > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > ---
-> > >  drivers/net/virtio_net.c |   28 ++++++++++++++++++++++++++++
-> > >  1 files changed, 28 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > > index dcd4b01..8b9ed43 100644
-> > > --- a/drivers/net/virtio_net.c
-> > > +++ b/drivers/net/virtio_net.c
-> > > @@ -1131,6 +1131,30 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
-> > >  	free_netdev(vi->dev);
-> > >  }
-> > >  
-> > > +#ifdef CONFIG_PM
-> > > +static int virtnet_freeze(struct virtio_device *vdev)
-> > > +{
-> > > +	struct virtnet_info *vi = vdev->priv;
+On Mon, Nov 14, 2011 at 08:31:22PM -0500, Steven Rostedt wrote:
+> On Mon, 2011-11-14 at 16:07 +0200, Gleb Natapov wrote:
+> > Hi Steven,
 > > 
-> > I'm guessing we need to do something like netif_device_detach here,
-> > otherwise guest might be in the process of using the vq for transmit at
-> > this point.
+> > I get an oops with current linux.git when I am doing
+> > "echo function_graph > current_tracer" inside a kvm guest.
+> > Oopses do not contain much useful information and they are always
+> > different. Looks like stack corruption (at least this is what Oopses
+> > say when not triple faulting).
+> > 
+> > Attached is my guest kernel .config. I do not have the same problem on
+> > the host, but kernel config is different there.
 > 
-> Done.
 > 
-> > I think we also must make sure NAPI RX handler is not in progress.
+> Looking into this I see that this is an old bug. I guess this shows how
+> many people run function graph tracing from the guest. Or at least how
+> many with DEBUG_PREEMPT enabled too.
 > 
-> How to do that?  napi_disable() / napi_enable() doesn't seem right
-> (and it doesn't work, too).  pci_disable_device() in the suspend
-> routine may work?
-> 
-> > We also might need to mask interrupts from the device
-> > to prevent TX or RX from getting rescheduled?
-> 
-> pci_disable_device() will help this too, right?
-> 
-> 		Amit
+Indeed. Without DEBUG_PREEMPT oops no longer happens.
 
-No, why would it help?
+> The problem is that kvm_clock_read() does a get_cpu_var(), which calls
+> preempt_disable() which calls add_preempt_count() which is then traced.
+> But this is outside the recursive protection in function_graph tracing,
+> and when add_preempt_count() is traced, kvm_clock_read() calls
+> add_preempt_count() and it gets traced again, and so on and causes a
+> recursive crash.
+> 
+> There's a few fixes we can do. For now, because this is an old bug, I
+> would just tell you to do this first:
+> 
+> echo add_preempt_count sub_preempt_count > /sys/kernel/debug/tracing/set_ftrace_notrace
+This didn't help for some reason. May be I did something wrong, but I do
+see add_preempt_count and sub_preempt_count in set_ftrace_notrace.
 
--- 
-MST
+> 
+> But that is just a work around for you and not a complete fix.
+> 
+> I could just make add_preempt_count() notrace and be done with it, but
+> I've been reluctant to do this because there's been several times I've
+> actually wanted to see the add_preempt_count()s being traced.
+Yes, tracing (add|sub)_preempt_count() is very useful.
+
+> 
+> I could also make a get_cpu_var_notrace() version that kvm_clock_read()
+> could use. This is the solution that I would most likely want to do as a
+> permanent one.
+> 
+> Then finally I could force the function_graph tracer to have recursion
+> protection and when it recurses, it just exits out nicely. I think I'll
+> add that with a WARN_ON_ONCE(). Without the warning, if a recursion
+> slips in, we'll have overhead of the recursion on top of the overhead of
+> the tracing making it worse than what it already is. Function graph
+> tracing is the most invasive tracer, and I want to speed it up if
+> possible (I already have ideas on doing so) and I do not want to make it
+> slower.
+> 
+I hope adding recursion protection is on top of fixing current recursion
+with kvmclock. Catching recursion before it oops is nice, but having
+functional tracer is even nicer :)
+
+--
+			Gleb.
