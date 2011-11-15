@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab1KOOfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 09:35:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15818 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755716Ab1KOOfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 09:35:02 -0500
-Date: Tue, 15 Nov 2011 16:36:20 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH v2 09/11] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20111115143620.GA16609@redhat.com>
-References: <cover.1317311033.git.amit.shah@redhat.com>
- <5b7834c9a30254220f9c079ba54d29abaf63db8f.1317311033.git.amit.shah@redhat.com>
- <20111002093324.GD29706@redhat.com>
- <20111115122902.GA26378@amit-x200.redhat.com>
- <20111115125127.GA31208@redhat.com>
- <20111115140346.GC26378@amit-x200.redhat.com>
- <20111115142259.GA16395@redhat.com>
- <20111115143149.GE26378@amit-x200.redhat.com>
+	id S1755996Ab1KOOk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 09:40:56 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38459 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab1KOOkz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 09:40:55 -0500
+Date: Tue, 15 Nov 2011 09:40:04 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: len.brown@intel.com, jeremy@goop.org, xen-devel@lists.xensource.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org,
+        mingo@redhat.com, bp@alien8.de, hpa@zytor.com, tj@kernel.org,
+        tglx@linutronix.de, trenn@suse.de
+Subject: Re: [Xen-devel] Re: [PATCH 1/3] cpuidle: If disable_cpuidle() is
+ called, set pm_idle to default_idle.
+Message-ID: <20111115144004.GE22675@phenom.dumpdata.com>
+References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
+ <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
+ <4EBA53C5.9040603@linux.vnet.ibm.com>
+ <20111109144440.GB8410@phenom.dumpdata.com>
+ <4EBD09FF.4030002@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111115143149.GE26378@amit-x200.redhat.com>
+In-Reply-To: <4EBD09FF.4030002@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4EC279D4.00F3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 08:01:49PM +0530, Amit Shah wrote:
-> On (Tue) 15 Nov 2011 [16:23:00], Michael S. Tsirkin wrote:
-> > On Tue, Nov 15, 2011 at 07:33:46PM +0530, Amit Shah wrote:
-> > > On (Tue) 15 Nov 2011 [14:51:27], Michael S. Tsirkin wrote:
-> > > > On Tue, Nov 15, 2011 at 05:59:36PM +0530, Amit Shah wrote:
-> > > > > On (Sun) 02 Oct 2011 [11:33:26], Michael S. Tsirkin wrote:
-> > > > > > On Thu, Sep 29, 2011 at 09:19:40PM +0530, Amit Shah wrote:
-> > > > > > > Remove all the vqs on hibernation and re-create them after restoring
-> > > > > > > from a hibernated image.  This keeps networking working across
-> > > > > > > hibernation.
-> > > > > > > 
-> > > > > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > > > > > ---
-> > > > > > >  drivers/net/virtio_net.c |   28 ++++++++++++++++++++++++++++
-> > > > > > >  1 files changed, 28 insertions(+), 0 deletions(-)
-> > > > > > > 
-> > > > > > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > > > > > > index dcd4b01..8b9ed43 100644
-> > > > > > > --- a/drivers/net/virtio_net.c
-> > > > > > > +++ b/drivers/net/virtio_net.c
-> > > > > > > @@ -1131,6 +1131,30 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
-> > > > > > >  	free_netdev(vi->dev);
-> > > > > > >  }
-> > > > > > >  
-> > > > > > > +#ifdef CONFIG_PM
-> > > > > > > +static int virtnet_freeze(struct virtio_device *vdev)
-> > > > > > > +{
-> > > > > > > +	struct virtnet_info *vi = vdev->priv;
-> > > > > > 
-> > > > > > I'm guessing we need to do something like netif_device_detach here,
-> > > > > > otherwise guest might be in the process of using the vq for transmit at
-> > > > > > this point.
-> > > > > 
-> > > > > Done.
-> > > > > 
-> > > > > > I think we also must make sure NAPI RX handler is not in progress.
-> > > > > 
-> > > > > How to do that?  napi_disable() / napi_enable() doesn't seem right
-> > > > > (and it doesn't work, too).  pci_disable_device() in the suspend
-> > > > > routine may work?
-> > > > > 
-> > > > > > We also might need to mask interrupts from the device
-> > > > > > to prevent TX or RX from getting rescheduled?
-> > > > > 
-> > > > > pci_disable_device() will help this too, right?
-> > > > > 
-> > > > 
-> > > > No, why would it help?
-> > > 
-> > > IRQs will be disabled after the call to pci_disable_device(),
-> > > isn't that sufficient?
-> > > 
+> Well I was with a view that if cpuidle is disabled, mwait and arm_e400
+> would take precedence over default_idle. But if is ok to have default_idle instead,
+> then go ahead. 
+> 
+> > Perhaps there is another way do this is:
 > > 
-> > They will?
-> >  * pci_disable_device - Disable PCI device after use
-> >  * @dev: PCI device to be disabled
-> >  *
-> >  * Signal to the system that the PCI device is not in use by the system
-> >  * anymore.  This only involves disabling PCI bus-mastering, if active.
-> >  *
-> >  * Note we don't actually disable the device until all callers of
-> >  * pci_enable_device() have called pci_disable_device().
-> 
-> You mean multiple devices could have called pci_enable_device()?  Not
-> likely to happen, at least in case of our virtio devices... only we
-> claim ownership over them.  I don't think that'll change.
-> 
-> 		Amit
+> > diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> > index becd6d9..04b10a4 100644
+> > --- a/drivers/cpuidle/cpuidle.c
+> > +++ b/drivers/cpuidle/cpuidle.c
+> > @@ -38,6 +38,7 @@ int cpuidle_disabled(void)
+> >  void disable_cpuidle(void)
+> >  {
+> >  	off = 1;
+> > +	pm_idle = default_idle;
+> >  }
+> > 
+> Brining pm_idle pointer back to cpuidle code is going a step back coz
+> we wanted to complete remove using pm_idle going forward. As having 
+> a pointer exported into various files is not a good thing. That's the 
+> reason we started the clean up in the first place :) 
 
-I simply mean that pci_disable_device does not seem to disable
-interrupts.
+Perhaps then something along these lines, where we still set default_idle
+but don't fiddle with the pm_idle (and can still rip out the
+EXPORT_SYMBOL_GPL(default_idle) in 2012):
 
--- 
-MST
+(Hadn't tested this yet).
+
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+index c2ff2a1..2d2f01c 100644
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -401,6 +401,7 @@ extern unsigned long arch_align_stack(unsigned long sp);
+ extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+ 
+ void default_idle(void);
++bool set_pm_idle_to_default(void);
+ 
+ void stop_this_cpu(void *dummy);
+ 
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index e7e3b01..bfb113f 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -403,6 +403,14 @@ void default_idle(void)
+ EXPORT_SYMBOL(default_idle);
+ #endif
+ 
++bool set_pm_idle_to_default()
++{
++	if (!pm_idle) {
++		pm_idle = default_idle;
++		return true;
++	}
++	return false;
++}
+ void stop_this_cpu(void *dummy)
+ {
+ 	local_irq_disable();
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 46d6d21..7506181 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -448,6 +448,6 @@ void __init xen_arch_setup(void)
+ #endif
+ 	disable_cpuidle();
+ 	boot_option_idle_override = IDLE_HALT;
+-
++	WARN_ON(!set_pm_idle_to_default());
+ 	fiddle_vdso();
+ }
