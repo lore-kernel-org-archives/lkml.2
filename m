@@ -1,157 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1KOGty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 01:49:54 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14848 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752711Ab1KOGtw (ORCPT
+	id S1752882Ab1KOHJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 02:09:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62957 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab1KOHJw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 01:49:52 -0500
-From: <oskar.andero@sonyericsson.com>
-Date: Tue, 15 Nov 2011 07:50:43 +0100
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
-Subject: Re: [PATCH v2] input: add driver support for Sharp gp2ap002a00f
- proximity sensor
-Message-ID: <20111115065043.GC9307@caracas.corpusers.net>
-References: <1321285158-7123-1-git-send-email-oskar.andero@sonyericsson.com>
- <CAM=Q2cvH4gb5+=+ijE_d_ejoMCPikqd4g4uSw9T-z2yqDZCN+Q@mail.gmail.com>
+	Tue, 15 Nov 2011 02:09:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAM=Q2cvH4gb5+=+ijE_d_ejoMCPikqd4g4uSw9T-z2yqDZCN+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [165.228.146.52]
+In-Reply-To: <201111142118.47256.maciej.rutecki@gmail.com>
+References: <4EBAC3B5.5060405@gmail.com> <201111142031.06663.maciej.rutecki@gmail.com>
+ <4EC16F8E.7060601@gmail.com> <201111142118.47256.maciej.rutecki@gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Tue, 15 Nov 2011 18:09:28 +1100
+Message-ID: <CAG-2HqVnsmSyHVCvEVf+sZw5NxhR8qSDDB0AtR+igwCCFiwfgQ@mail.gmail.com>
+Subject: Re: Regression in thinkpad-acpi events
+To: maciej.rutecki@gmail.com
+Cc: Natanji <natanji@gmail.com>, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        ibm-acpi@hmh.eng.br, ibm-acpi-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shubhrajyoti,
+On Tue, Nov 15, 2011 at 7:18 AM, Maciej Rutecki
+<maciej.rutecki@gmail.com> wrote:
+> (add more CCs)
+>
+> On poniedziałek, 14 listopada 2011 o 20:44:14 Natanji wrote:
+>> With 3.0 it was still fine, that much is for sure. The problem came
+>> with the upgrade to 3.1. I've never even compiled my own kernel so I
+>> cannot bisect. Sorry...
+>>
+>> Regards,
+>> Natanji
+>>
+>> On Mon 14 Nov 2011 08:31:06 PM CET, Maciej Rutecki wrote:
+>> > On środa, 9 listopada 2011 o 19:17:25 Natanji wrote:
+>> >> Hello everyone,
+>> >> first time posting on this last, and I'm not subscribed, so please CC
+>> >> any replies to me. ;)
+>> >>
+>> >> I'm running Kernel version 3.1-4 using Arch Linux (32 Bit) on a Thinkpad
+>> >> X60 Tablet. Since upgrading from a pre-3.1 kernel to a post-3.1 kernel,
+>> >> the Thinkpad-specific ACPI events (from thinkpad-acpi) are completely
+>> >> gone.
+>> >>
+>> >> This can be observed by using the acpi_listen command. For instance, no
+>> >> ACPI events happen when swiveling the display, and the sleep button
+>> >> returns
+>> >>
+>> >>    button/sleep SBTN 00000080 00000000
+>> >>
+>> >> instead of the previous
+>> >>
+>> >>    ibm/hotkey HKEY 00000080 00001004
+>> >>
+>> >> The bug was reported in the Arch Linux bugtracker [1] and it was
+>> >> suggested to report this upstream, so this is what I did now. Sadly I
+>> >> have no idea how I could find out if this is indeed a kernel bug or not;
+>> >> I have never compiled my own kernel so what I can give you is probably
+>> >> limited. But I suppose quite a few members of this list use a Thinkpad.
+>> >> If there is anything else I can help out with, just tell me.
+>> >>
+>> >> [1] https://bugs.archlinux.org/index.php?do=details&task_id=26658
+>> >
+>> > Can you check that 3.1 works or not? Or try bisection that it is
+>> > regression after 3.0 or 3.1 kernel.
 
-Thanks for reviewing!
+I'm observing the same, also with Arch Linux, and a ThinkPad x60:
+# uname -a
+Linux x60 3.1.1-1-ARCH #1 SMP PREEMPT Fri Nov 11 22:28:29 CET 2011
+x86_64 Intel(R) Core(TM)2 CPU T7200 @ 2.00GHz GenuineIntel GNU/Linux
 
-On 17:52 Mon 14 Nov     , Shubhrajyoti Datta wrote:
->    Hi Courtney,
->    Some minor comments
-> 
->    On Mon, Nov 14, 2011 at 9:09 PM, <[1]oskar.andero@sonyericsson.com>
->    wrote:
-> 
->      From: Courtney Cavin <[2]courtney.cavin@sonyericsson.com>
->      Signed-off-by: Courtney Cavin <[3]courtney.cavin@sonyericsson.com>
->      Signed-off-by: Oskar Andero <[4]oskar.andero@sonyericsson.com>
->      ---
->       drivers/input/misc/Kconfig         |   11 ++
->       drivers/input/misc/Makefile        |    1 +
->       drivers/input/misc/gp2ap002a00f.c  |  286
->      ++++++++++++++++++++++++++++++++++++
->       include/linux/input/gp2ap002a00f.h |   22 +++
->       4 files changed, 320 insertions(+), 0 deletions(-)
->       create mode 100644 drivers/input/misc/gp2ap002a00f.c
->       create mode 100644 include/linux/input/gp2ap002a00f.h
->      diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
->      index 22d875f..dee96a0 100644
->      --- a/drivers/input/misc/Kconfig
->      +++ b/drivers/input/misc/Kconfig
->      @@ -544,4 +544,15 @@ config INPUT_XEN_KBDDEV_FRONTEND
->               To compile this driver as a module, choose M here: the
->               module will be called xen-kbdfront.
->      +config INPUT_GP2A
->      +       tristate "Sharp GP2AP002A00F I2C Proximity/Opto sensor
->      driver"
->      +       depends on I2C
->      +       default n
-> 
->    you may want to drop it as default is anyways n.
-> 
->      +       help
->      +         Say Y here if you have a Sharp GP2AP002A00F proximity/als
->      combo-chip
->      +         hooked to an I2C bus.
->      +
->      +         To compile this driver as a module, choose M here: the
->      +         module will be called gp2ap002a00f.
->      +
->       endif
->      diff --git a/drivers/input/misc/Makefile
->      b/drivers/input/misc/Makefile
->      index a244fc6..1681993 100644
->      --- a/drivers/input/misc/Makefile
->      +++ b/drivers/input/misc/Makefile
->      @@ -22,6 +22,7 @@ obj-$(CONFIG_INPUT_CMA3000)           +=
->      cma3000_d0x.o
->       obj-$(CONFIG_INPUT_CMA3000_I2C)                += cma3000_d0x_i2c.o
->       obj-$(CONFIG_INPUT_COBALT_BTNS)                += cobalt_btns.o
->       obj-$(CONFIG_INPUT_DM355EVM)           += dm355evm_keys.o
->      +obj-$(CONFIG_INPUT_GP2A)               += gp2ap002a00f.o
->       obj-$(CONFIG_HP_SDC_RTC)               += hp_sdc_rtc.o
->       obj-$(CONFIG_INPUT_IXP4XX_BEEPER)      += ixp4xx-beeper.o
->       obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)     += keyspan_remote.o
->      diff --git a/drivers/input/misc/gp2ap002a00f.c
->      b/drivers/input/misc/gp2ap002a00f.c
->      new file mode 100644
->      index 0000000..1c5ddf8
->      --- /dev/null
->      +++ b/drivers/input/misc/gp2ap002a00f.c
->      @@ -0,0 +1,286 @@
->      +/*
->      + * Copyright (C) 2009,2010 Sony Ericsson Mobile Communications Inc.
-> 
->    May want to check the year.
-> 
->      + *
->      + * Author: Courtney Cavin <[5]courtney.cavin@sonyericsson.com>
->      + * Prepared for up-stream by: Oskar Andero
->      <[6]oskar.andero@sonyericsson.com>
-> 
->      + *
->      + * This program is free software; you can redistribute it and/or
->      modify
->      + * it under the terms of the GNU General Public License version 2,
->      as
->      + * published by the Free Software Foundation.
->      + */
->      +
->      +#include <linux/i2c.h>
->      +#include <linux/irq.h>
->      +#include <linux/slab.h>
->      +#include <linux/input.h>
->      +#include <linux/module.h>
->      +#include <linux/workqueue.h>
-> 
->    Are all these header files needed?
-> 
->      +#include <linux/interrupt.h>
->      +#include <linux/gpio.h>
->      +#include <linux/delay.h>
->      +#include <linux/input/gp2ap002a00f.h>
->      +
->      +struct gp2a_data {
->      +       struct input_dev *device;
->      +       const struct gp2a_platform_data *pdata;
->      +       struct i2c_client *i2c_client;
->      +};
->      +
->      +enum gp2a_addr {
->      +       GP2A_ADDR_PROX  = 0x0,
->      +       GP2A_ADDR_GAIN  = 0x1,
->      +       GP2A_ADDR_HYS   = 0x2,
->      +       GP2A_ADDR_CYCLE = 0x3,
->      +       GP2A_ADDR_OPMOD = 0x4,
->      +       GP2A_ADDR_CON   = 0x6
->      +};
->      +
->      +enum gp2a_controls {
->      +       GP2A_CTRL_SSD   = 0x01
-> 
->    Not a comment really
->    Could you explain SSD?
+The kernel config can be found here:
+<http://projects.archlinux.org/svntogit/packages.git/tree/trunk?h=packages/linux>.
 
-SSD means Software shutdown according to the datasheet where 0 puts the
-chip in shutdown and 1 in normal operation. I'll add a comment in the code.
-
--Oskar
+As requested:
+# grep . /sys/bus/platform/devices/thinkpad*/*
+/sys/bus/platform/devices/thinkpad_acpi/bluetooth_enable:1
+grep: /sys/bus/platform/devices/thinkpad_acpi/cmos_command: Permission denied
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_all_mask:0x00ffffff
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_bios_enabled:0
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_bios_mask:0x0000080c
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_enable:1
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_mask:0x008dffff
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_poll_freq:10
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_radio_sw:1
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_recommended_mask:0x008dffff
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_report_mode:1
+/sys/bus/platform/devices/thinkpad_acpi/hotkey_source_mask:0x00000000
+/sys/bus/platform/devices/thinkpad_acpi/modalias:platform:thinkpad_acpi
+/sys/bus/platform/devices/thinkpad_acpi/uevent:DRIVER=thinkpad_acpi
+/sys/bus/platform/devices/thinkpad_acpi/uevent:MODALIAS=platform:thinkpad_acpi
+/sys/bus/platform/devices/thinkpad_acpi/wakeup_hotunplug_complete:0
+/sys/bus/platform/devices/thinkpad_acpi/wakeup_reason:0
+/sys/bus/platform/devices/thinkpad_hwmon/fan1_input:2780
+/sys/bus/platform/devices/thinkpad_hwmon/modalias:platform:thinkpad_hwmon
+/sys/bus/platform/devices/thinkpad_hwmon/name:thinkpad
+/sys/bus/platform/devices/thinkpad_hwmon/pwm1:255
+/sys/bus/platform/devices/thinkpad_hwmon/pwm1_enable:2
+/sys/bus/platform/devices/thinkpad_hwmon/temp10_input:49000
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp11_input: No such
+device or address
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp12_input: No such
+device or address
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp13_input: No such
+device or address
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp14_input: No such
+device or address
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp15_input: No such
+device or address
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp16_input: No such
+device or address
+/sys/bus/platform/devices/thinkpad_hwmon/temp1_input:62000
+/sys/bus/platform/devices/thinkpad_hwmon/temp2_input:56000
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp3_input: No such
+device or address
+/sys/bus/platform/devices/thinkpad_hwmon/temp4_input:58000
+/sys/bus/platform/devices/thinkpad_hwmon/temp5_input:37000
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp6_input: No such
+device or address
+/sys/bus/platform/devices/thinkpad_hwmon/temp7_input:37000
+grep: /sys/bus/platform/devices/thinkpad_hwmon/temp8_input: No such
+device or address
+/sys/bus/platform/devices/thinkpad_hwmon/temp9_input:46000
+/sys/bus/platform/devices/thinkpad_hwmon/uevent:DRIVER=thinkpad_hwmon
+/sys/bus/platform/devices/thinkpad_hwmon/uevent:MODALIAS=platform:thinkpad_hwmon
