@@ -1,109 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab1KOIve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:51:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12066 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753997Ab1KOIvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:51:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="75509503"
-Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-In-Reply-To: <Pine.LNX.4.44L0.1111141028140.2035-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1111141028140.2035-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Nov 2011 16:51:29 +0800
-Message-ID: <1321347089.26084.2.camel@minggr>
+	id S1754192Ab1KOIzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:55:04 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:6168 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab1KOIzD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:55:03 -0500
+Date: Tue, 15 Nov 2011 09:54:45 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Grant Likely <grant.likely@secretlab.ca>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Tang Yuantian <B29983@freescale.com>
+Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+Message-ID: <20111115095445.3d34e99e@endymion.delvare>
+In-Reply-To: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-14 at 23:31 +0800, Alan Stern wrote:
-> On Mon, 14 Nov 2011, Lin Ming wrote:
+Hi Guenter,
+
+On Mon, 14 Nov 2011 22:27:42 -0800, Guenter Roeck wrote:
+> Add support for SMBUS_READ_BLOCK_DATA to the i2c-mpc bus driver.
+> Required to support the PMBus zl6100 driver with i2c-mpc.
 > 
-> > Current patches has a bug that system suspend fails if ata port was
-> > runtime suspended.
-> > 
-> > disk suspend issues sync cache and stop device commands that obviously
-> > need ata port to be active. So we need to runtime resume ata port first.
+> Reported-by: Tang Yuantian <B29983@freescale.com>
+> Cc: Tang Yuantian <B29983@freescale.com>
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+>  drivers/i2c/busses/i2c-mpc.c |   33 +++++++++++++++++++++++++--------
+>  1 files changed, 25 insertions(+), 8 deletions(-)
 > 
-> This is wrong.  If the port is already suspended then so are all the 
-> drives below the port.  Hence there is no need to sync the cache or 
-> stop the device.
+> diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+> index 107397a..77aade7 100644
+> --- a/drivers/i2c/busses/i2c-mpc.c
+> +++ b/drivers/i2c/busses/i2c-mpc.c
+> @@ -454,7 +454,7 @@ static int mpc_write(struct mpc_i2c *i2c, int target,
+>  }
+>  
+>  static int mpc_read(struct mpc_i2c *i2c, int target,
+> -		    u8 *data, int length, int restart)
+> +		    u8 *data, int length, int restart, bool block)
 
-Ah, got it now!
+bool block would be better named bool recv_len IMHO. It will be set to
+0 for I2C block reads, which is confusing.
 
-> 
-> > Alan, Tejun
-> > 
-> > How about below fix?
-> > 
-> > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> > index fa3a591..ebb87fbf 100644
-> > --- a/drivers/scsi/sd.c
-> > +++ b/drivers/scsi/sd.c
-> > @@ -50,6 +50,7 @@
-> >  #include <linux/string_helpers.h>
-> >  #include <linux/async.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/pm_runtime.h>
-> >  #include <asm/uaccess.h>
-> >  #include <asm/unaligned.h>
-> >  
-> > @@ -2762,6 +2763,14 @@ static int sd_suspend(struct device *dev, pm_message_t mesg)
-> >  	if (!sdkp)
-> >  		return 0;	/* this can happen */
-> >  
-> > +	/*
-> > +	 * Resume parent device to handle sync cache and
-> > +	 * stop device commands
-> > +	 */
-> > +	ret = pm_runtime_get_sync(dev->parent);
-> > +	if (ret)
-> > +		goto exit;
-> > +
-> >  	if (sdkp->WCE) {
-> >  		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
-> >  		ret = sd_sync_cache(sdkp);
-> 
-> This is not the right approach.  You should look instead at 
-> scsi_dev_type_suspend() in scsi_pm.c.  If the device is already runtime 
-> suspended then the routine should return immediately.
+>  {
+>  	unsigned timeout = i2c->adap.timeout;
+>  	int i, result;
+> @@ -470,7 +470,7 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
+>  		return result;
+>  
+>  	if (length) {
+> -		if (length == 1)
+> +		if (length == 1 && !block)
+>  			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
+>  		else
+>  			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA);
+> @@ -479,17 +479,28 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
+>  	}
+>  
+>  	for (i = 0; i < length; i++) {
+> +		u8 byte;
+> +
+>  		result = i2c_wait(i2c, timeout, 0);
+>  		if (result < 0)
+>  			return result;
+>  
+> +		byte = readb(i2c->base + MPC_I2C_DR);
+> +		/*
+> +		 * Adjust length if first received byte is length
+> +		 */
+> +		if (i == 0 && block) {
+> +			if (byte == 0 || byte > I2C_SMBUS_BLOCK_MAX)
+> +				return -EPROTO;
+> +			length += byte;
+> +		}
+> +		data[i] = byte;
+>  		/* Generate txack on next to last byte */
+>  		if (i == length - 2)
+>  			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
+>  		/* Do not generate stop on last byte */
+>  		if (i == length - 1)
+>  			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_MTX);
+> -		data[i] = readb(i2c->base + MPC_I2C_DR);
+>  	}
 
-How about below?
+This needs careful testing (which I can't do.) There may have been a
+reason why the read was done after the writes. Swapping the commands
+may be the wrong thing to do. The dummy read earlier in this function
+suggests that maybe changes to CCR do not take effect until you read
+from (or write to) the DR register.
 
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index d329f8b..94b60bd 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -20,6 +20,9 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
- 	struct device_driver *drv;
- 	int err;
- 
-+	if (pm_runtime_suspended(dev))
-+		return 0;
-+
- 	err = scsi_device_quiesce(to_scsi_device(dev));
- 	if (err == 0) {
- 		drv = dev->driver;
+Can't the above be rewritten to keep the order of the commands as it
+was before? AFAICS it would only take one or two extra tests.
+
+Note that the hardware implementation may make it difficult or even
+impossible to properly support SMBus block reads of 1 byte. Not sure
+what should be done when this can be supported and still happens...
+Returning -EOPNOTSUPP I guess, and then probably the I2C engine needs
+some form of reset.
+
+>  
+>  	return length;
+> @@ -532,12 +543,17 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+>  			"Doing %s %d bytes to 0x%02x - %d of %d messages\n",
+>  			pmsg->flags & I2C_M_RD ? "read" : "write",
+>  			pmsg->len, pmsg->addr, i + 1, num);
+> -		if (pmsg->flags & I2C_M_RD)
+> -			ret =
+> -			    mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
+> -		else
+> +		if (pmsg->flags & I2C_M_RD) {
+> +			bool block = pmsg->flags & I2C_M_RECV_LEN;
+
+Here again I'd rather name it bool recv_len for clarity.
+
+> +
+> +			ret = mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i,
+> +				       block);
+
+That's a lot of parameters, most coming from pmsg. It would be more
+efficient to pass pmsg itself. Not directly related to your patch,
+admittedly, but it makes the problem more obvious. Maybe a cleanup for
+later.
+
+> +			if (block && ret > 0)
+> +				pmsg->len = ret;
+> +		} else {
+>  			ret =
+>  			    mpc_write(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
+> +		}
+>  	}
+>  	mpc_i2c_stop(i2c);
+>  	return (ret < 0) ? ret : num;
+> @@ -545,7 +561,8 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+>  
+>  static u32 mpc_functionality(struct i2c_adapter *adap)
+>  {
+> -	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
+> +	  | I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+
+You could add I2C_FUNC_SMBUS_BLOCK_PROC_CALL too, even though I
+don't know of any slave driver using it.
+
+>  }
+>  
+>  static const struct i2c_algorithm mpc_algo = {
 
 
-> 
-> Alan Stern
-> 
-
-
+-- 
+Jean Delvare
