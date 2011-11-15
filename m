@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab1KOIfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:35:07 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57543 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab1KOIfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:35:05 -0500
+	id S1753781Ab1KOIgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:36:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753484Ab1KOIgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:36:01 -0500
+From: Weiping Pan <wpan@redhat.com>
+Cc: Weiping Pan <wpan@redhat.com>,
+        Patrick McHardy <kaber@trash.net> (maintainer:VLAN (802.1Q)),
+        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
+	[GENERAL]),
+        netdev@vger.kernel.org (open list:VLAN (802.1Q)),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] vlan:return error when real dev is enslaved
+Date: Tue, 15 Nov 2011 16:36:52 +0800
+Message-Id: <c897fa89d5ea94c6624e8cdab9787aa83526f994.1321343212.git.wpan@redhat.com>
 MIME-Version: 1.0
-Date: Tue, 15 Nov 2011 09:35:04 +0100
-Message-ID: <CACRpkdYc4f+VkkgrBvC7p9DgkbM3WHNkPYeUnPw=F3AkPo1Ztg@mail.gmail.com>
-Subject: [GIT PULL] pinctrl fixes
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Qinhuibin reported a kernel panic when he do some operation about vlan.
+https://lkml.org/lkml/2011/11/6/218
 
-Hi Linus,
+The operation is as below:
+ifconfig eth2 up
+modprobe bonding
+modprobe 8021q
+ifconfig bond0 up
+ifenslave bond0 eth2
+vconfig add eth2 3300
+vconfig add bond0 33
+vconfig rem eth2.3300
 
-could you please pull these two patches for the pinctrl
-subsystem into the 3.2-rc series, the one from me contains
-the Kconfig fixup you requested after the initial merge.
+the panic stack is as below:
+[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
+[<ffffffff80378917>] notifier_call_chain+0x37/0x70
+[<ffffffff80372122>] panic+0xa2/0x195
+[<ffffffff80376ed8>] oops_end+0xd8/0x140
+[<ffffffff8001bea7>] no_context+0xf7/0x280
+[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
+[<ffffffff80376318>] page_fault+0x28/0x30
+[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
+[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
+[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
+[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
+[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
+[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
+[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
+[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
+[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
+[<00007f108a2b8bd7>] 0x7f108a2b8bd7
+And the nic is as below:
+[root@localhost ~]# ethtool -i eth2
+driver: igb
+version: 3.0.6-k2
+firmware-version: 1.2-1
+bus-info: 0000:04:00.0
+kernel version：
+2.6.32.12-0.7 also happen in 2.6.32-131
 
-Thanks,
-Linus Walleij
+For kernel 2.6.32, the reason of this bug is that when we do "vconfig add bond0 33",
+adapter->vlgrp is overwritten in igb_vlan_rx_register. So when we do "vconfig rem
+eth2.3300", it can't find the correct vlgrp.
 
-The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
+And this bug is avoided by vlan cleanup patchset from Jiri Pirko
+<jpirko@redhat.com>, especially commit b2cb09b1a772(igb: do vlan cleanup).
 
-  Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
+But it is not a correct operation to creat a vlan interface on eth2
+when it have been enslaved by bond0, so this patch is to return error
+when the real dev is already enslaved.
 
-are available in the git repository at:
-  git://git.linaro.org/people/triad/linux-pinctrl.git fixes
+Signed-off-by: Weiping Pan <wpan@redhat.com>
+---
+ net/8021q/vlan.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Barry Song (1):
-      pinctrl: fix "warning: 'struct pinctrl_dev' declared inside
-parameter list"
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 5471628..8ba9226 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -148,6 +148,11 @@ int vlan_check_real_dev(struct net_device *real_dev, u16 vlan_id)
+ 	const char *name = real_dev->name;
+ 	const struct net_device_ops *ops = real_dev->netdev_ops;
+ 
++	if (real_dev->flags & IFF_SLAVE) {
++		pr_info("Error, %s was already enslaved\n", name);
++		return -EOPNOTSUPP;
++	}
++
+ 	if (real_dev->features & NETIF_F_VLAN_CHALLENGED) {
+ 		pr_info("VLANs not supported on %s\n", name);
+ 		return -EOPNOTSUPP;
+-- 
+1.7.4
 
-Linus Walleij (1):
-      pinctrl: hide subsystem from the populace
-
- drivers/pinctrl/Kconfig         |   22 +++++++---------------
- include/linux/pinctrl/pinctrl.h |    1 +
- 2 files changed, 8 insertions(+), 15 deletions(-)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOwiPIAAoJEEEQszewGV1z9qQP/RmA0KIolR9ubl/aOU60GpXE
-XGqYZ6aGEdCewJ15d9ofRQHo5zVAgKI9lbTVA5V1kkfVjs2+hEN41P1bX7JEgLbB
-jS33jVvjFi8apEoZCeGaUzXE+I73FKCfi/KEOPhOYvvqQi4CS0RkYPz1Wexs49YG
-pCJ6m17MAj1dLVPkbJllbtAuuxaIYBgWuz2njS7vimvg2AdLMlouaPPjF5WFTPj+
-+ScSdZbtXgv3s0UBPthTzjxBeuuGujhmYsR29VQ1mStT4Z0ybzj3yk2LEkkv7Bry
-ehdrPkuTD3D3W3O2LhZ1K9z7v8g9w23+XErEK6W4sONpde5d9fCP2KKkuvZrsOSV
-knNF3uL7FZKiQRr2G/kL6MREdRVNuVNCbs047zJj6mHjcrSfdUOhYi7RDNk+Retq
-U5wqE0/t8mjgJekcMAlq5S104QOZpdwtUu2r1Vw4smBQUCkpQFKlmlV/1FhpVqzg
-oYG1uk7ogLDeX06RUVc7Hhz2lh649YVARCy3ZMRY6aGRbfid4rKMUDqwChquetT9
-LttltuYE1oSjFbUPhRlZwP62QgvB9kNUFXZKV3zOsaZ6wXskZ2lwFpsWfvieQfCS
-60DuSORWVLeGgiJSbmSgw3NY5yPrjyQcAWce8k6avq/5eTaUvStVCqOCKaNYQA/c
-i2CjP7VgKVTmUqUgRono
-=yLjg
------END PGP SIGNATURE-----
