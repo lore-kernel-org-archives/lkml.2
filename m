@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab1KOTVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:21:11 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59801 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab1KOTVJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:21:09 -0500
+	id S1757295Ab1KOTV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:21:26 -0500
+Received: from mail.cis.rv.ua ([193.108.129.50]:59949 "EHLO mail.cis.rv.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755561Ab1KOTVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 14:21:12 -0500
+X-Greylist: delayed 22435 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 14:21:12 EST
+Message-ID: <29481.41.203.64.129.1321362398.squirrel@mail.cis.rv.ua>
+Date: Tue, 15 Nov 2011 15:06:38 +0200 (EET)
+Subject: System Administrator.
+From: "Webmail Technical Upgrade Team" <info@cis.rv.ua>
+Reply-To: account@mail.com
+User-Agent: SquirrelMail/1.4.13
 MIME-Version: 1.0
-Date: Tue, 15 Nov 2011 14:21:08 -0500
-Message-ID: <CALmbKGV0g2nfNAghF5dGrt=TCyrms6RznOL8jSkg+gkgyfekLg@mail.gmail.com>
-Subject: Finding a hidden bound TCP socket
-From: "G. D. Fuego" <gdfuego@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: info@cis.rv.ua
+X-SA-Exim-Scanned: No (on mail.cis.rv.ua); SAEximRunCond expanded to false
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+mailbox has exceeded the storage limit which is 20GB as set by your
+administrator,you are currently running on 20.9GB,you may not be able to
+send or receive new mail until you re-validate your mailbox.Tore-validate
+your mailbox please click this:
+https://docs.google.com/spreadsheet/viewform?formkey=dFA0TTdCOWJQUnRRUFRCWmFoMVFoMFE6MQ
 
-I have a question about an odd linux networking behavior, that could
-potentially be a local networking DoS.  I'm curious if anyone is
-familiar with this behavior.
+Warning!!! All Webmail. Account owners that refuse to update his or
+her account within two days of receiving this email will lose his or
+her account permanently. AGB © upc cablecom GmbH 2011. We apologize
+for any inconvenience this may have cause you. Thank you for using
+Webmail
 
-Essentially I was assisting someone with tracking down a hidden tcp
-connection.  Attempts to bind to a particular port were failing,
-saying the socket was in use, even though netstat was not reporting
-any sort of connection.  They were initially suspecting a root kit,
-but after a bit of digging, I came across this page:
 
-http://dcid.me/2007/06/hidden-ports-on-linux/
+System Administrator.
+Customer Care Unit.
 
->From the page:
-
-"Here is the idea. If you get this simple C program, it will attempt
-to bind every TCP port from 1025 to 1050, but it will not listen on
-them. After it is done, if you do a netstat (or fuser or lsof) nothing
-will be shown. However, if you try to use the port, you will get an
-error saying that it is already in use."
-
-I tested it out and confirmed that connections opened by their test
-program do in fact cause the port to be unavailable for use, and they
-are not reported in netstat, lsof, ss, or any other networking tools
-that I tried.  I'm unable to to find any references to the ports being
-in use anywhere I've looked within /proc.  Are you aware of another
-way to figure out which process may be bound to the port?  In our
-case, we figured out via trial and error which software was likely
-triggering this behavior.
-
-It seems to me that this could be a potentially interesting local
-networking DoS.  By binding to all ephemeral ports in this way, you'd
-prevent the local system from being able to establish any tcp
-connections, and it would be a pain to figure out which process was
-causing the problem.
-
-My lame attempts to exploit this failed due to a max file descriptor
-limit, but I'm told this could be doable by forking more processes for
-doing the binding.
-
-Is this behavior known/expected?
