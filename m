@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1KOGZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 01:25:55 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59947 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab1KOGZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 01:25:53 -0500
-Message-ID: <4EC200D4.9040505@linux.vnet.ibm.com>
-Date: Tue, 15 Nov 2011 11:34:04 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752660Ab1KOG2o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 01:28:44 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:53484 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab1KOG2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 01:28:42 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Tang Yuantian <B29983@freescale.com>
+Subject: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+Date: Mon, 14 Nov 2011 22:27:42 -0800
+Message-ID: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/cpu.c: Add right qualifiers for alloc_frozen_cpus()
- and cpu_hotplug_pm_sync_init()
-References: <1321315040-4644-1-git-send-email-fenghua.yu@intel.com>
-In-Reply-To: <1321315040-4644-1-git-send-email-fenghua.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111506-3864-0000-0000-00000015FDCF
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2011 05:27 AM, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
-> 
-> Add __init for functions alloc_frozen_cpus() and cpu_hotplug_pm_sync_init()
-> because they are only called during boot time.
-> 
-> Add static for function cpu_hotplug_pm_sync_init() because its scope is limited
-> in this file only.
-> 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Add support for SMBUS_READ_BLOCK_DATA to the i2c-mpc bus driver.
+Required to support the PMBus zl6100 driver with i2c-mpc.
 
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Reported-by: Tang Yuantian <B29983@freescale.com>
+Cc: Tang Yuantian <B29983@freescale.com>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ drivers/i2c/busses/i2c-mpc.c |   33 +++++++++++++++++++++++++--------
+ 1 files changed, 25 insertions(+), 8 deletions(-)
 
-Thanks,
-Srivatsa S. Bhat
-
-> ---
-> v2: Change a function name typo in the title.
-> 
->  kernel/cpu.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 563f136..cf915b8 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -470,7 +470,7 @@ out:
->  	cpu_maps_update_done();
->  }
-> 
-> -static int alloc_frozen_cpus(void)
-> +static int __init alloc_frozen_cpus(void)
->  {
->  	if (!alloc_cpumask_var(&frozen_cpus, GFP_KERNEL|__GFP_ZERO))
->  		return -ENOMEM;
-> @@ -543,7 +543,7 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
->  }
-> 
-> 
-> -int cpu_hotplug_pm_sync_init(void)
-> +static int __init cpu_hotplug_pm_sync_init(void)
->  {
->  	pm_notifier(cpu_hotplug_pm_callback, 0);
->  	return 0;
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index 107397a..77aade7 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -454,7 +454,7 @@ static int mpc_write(struct mpc_i2c *i2c, int target,
+ }
+ 
+ static int mpc_read(struct mpc_i2c *i2c, int target,
+-		    u8 *data, int length, int restart)
++		    u8 *data, int length, int restart, bool block)
+ {
+ 	unsigned timeout = i2c->adap.timeout;
+ 	int i, result;
+@@ -470,7 +470,7 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
+ 		return result;
+ 
+ 	if (length) {
+-		if (length == 1)
++		if (length == 1 && !block)
+ 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
+ 		else
+ 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA);
+@@ -479,17 +479,28 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
+ 	}
+ 
+ 	for (i = 0; i < length; i++) {
++		u8 byte;
++
+ 		result = i2c_wait(i2c, timeout, 0);
+ 		if (result < 0)
+ 			return result;
+ 
++		byte = readb(i2c->base + MPC_I2C_DR);
++		/*
++		 * Adjust length if first received byte is length
++		 */
++		if (i == 0 && block) {
++			if (byte == 0 || byte > I2C_SMBUS_BLOCK_MAX)
++				return -EPROTO;
++			length += byte;
++		}
++		data[i] = byte;
+ 		/* Generate txack on next to last byte */
+ 		if (i == length - 2)
+ 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
+ 		/* Do not generate stop on last byte */
+ 		if (i == length - 1)
+ 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_MTX);
+-		data[i] = readb(i2c->base + MPC_I2C_DR);
+ 	}
+ 
+ 	return length;
+@@ -532,12 +543,17 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+ 			"Doing %s %d bytes to 0x%02x - %d of %d messages\n",
+ 			pmsg->flags & I2C_M_RD ? "read" : "write",
+ 			pmsg->len, pmsg->addr, i + 1, num);
+-		if (pmsg->flags & I2C_M_RD)
+-			ret =
+-			    mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
+-		else
++		if (pmsg->flags & I2C_M_RD) {
++			bool block = pmsg->flags & I2C_M_RECV_LEN;
++
++			ret = mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i,
++				       block);
++			if (block && ret > 0)
++				pmsg->len = ret;
++		} else {
+ 			ret =
+ 			    mpc_write(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
++		}
+ 	}
+ 	mpc_i2c_stop(i2c);
+ 	return (ret < 0) ? ret : num;
+@@ -545,7 +561,8 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+ 
+ static u32 mpc_functionality(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
++	  | I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+ }
+ 
+ static const struct i2c_algorithm mpc_algo = {
+-- 
+1.7.3.1
 
