@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab1KOUMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 15:12:35 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50217 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab1KOUMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 15:12:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: carla.sella@gmail.com
-Subject: Re: BUG: suspend/resume does not work on G62 notebook PC
-Date: Tue, 15 Nov 2011 20:12:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <4EB53C46.1060301@gmail.com> <20111108010406.GC16800@kroah.com> <4EC2C53E.7020503@gmail.com>
-In-Reply-To: <4EC2C53E.7020503@gmail.com>
+	id S1757401Ab1KOUOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 15:14:34 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40863 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756396Ab1KOUOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 15:14:32 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] kernel/cpu.c: Add right qualifiers for alloc_frozen_cpus() and cpu_hotplug_pm_sync_init()
+Date: Tue, 15 Nov 2011 21:17:14 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Fenghua Yu <fenghua.yu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>,
+        "linux-next" <linux-next@vger.kernel.org>
+References: <1321315040-4644-1-git-send-email-fenghua.yu@intel.com> <4EC200D4.9040505@linux.vnet.ibm.com>
+In-Reply-To: <4EC200D4.9040505@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111152012.29965.arnd@arndb.de>
-X-Provags-ID: V02:K0:40LkRD7VnP52/7nj7Qkc2Jr8RCBZ8O56C6AT4qulBEU
- +bxDcF9CdsLvyBGbIrwirzCz6tKKhkM3yhh69kUHgcmuieQ8OV
- JDmwD5AnKcVqguv6z//QeOrAJJzLQA/JYfYOkJt1ItFgd97qJD
- 1ZT99PFefM3pi8XwZiEvyhYPjNCSNuYcC7s49AFkQTlFzgUmkc
- VM+hU5/Lu0dr6XOusGEje1JtL0Uh+yJUbcv0X6/in0zmLmaTrW
- 5iBhtByOjKcDiEk5bly9OnPim4b5OEwprjvEG+6mrktjK5cEyC
- txGAe0omMhUOUprkvTxIsnQ+lwCOJI0DFXgmiH+HnxYpk5070N
- roIY50ehiDMZ4iCOcjPI=
+Message-Id: <201111152117.15026.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 November 2011, Carla Sella wrote:
-> >
-> > Can you try the 3.2-rc1 release?
-> >
+On Tuesday, November 15, 2011, Srivatsa S. Bhat wrote:
+> On 11/15/2011 05:27 AM, Fenghua Yu wrote:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> > 
+> > Add __init for functions alloc_frozen_cpus() and cpu_hotplug_pm_sync_init()
+> > because they are only called during boot time.
+> > 
+> > Add static for function cpu_hotplug_pm_sync_init() because its scope is limited
+> > in this file only.
+> > 
+> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> Hello,
-> I installed kernel 3.2.0-rc1 but I'm having the same problems, this is
-> the output of "sudo /usr/share/checkbox/scripts/suspend_test --full":
+> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Well, I guess I can take this one, right?  Any objections from anyone?
+
+Rafael
+
+
+> > ---
+> > v2: Change a function name typo in the title.
+> > 
+> >  kernel/cpu.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/cpu.c b/kernel/cpu.c
+> > index 563f136..cf915b8 100644
+> > --- a/kernel/cpu.c
+> > +++ b/kernel/cpu.c
+> > @@ -470,7 +470,7 @@ out:
+> >  	cpu_maps_update_done();
+> >  }
+> > 
+> > -static int alloc_frozen_cpus(void)
+> > +static int __init alloc_frozen_cpus(void)
+> >  {
+> >  	if (!alloc_cpumask_var(&frozen_cpus, GFP_KERNEL|__GFP_ZERO))
+> >  		return -ENOMEM;
+> > @@ -543,7 +543,7 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
+> >  }
+> > 
+> > 
+> > -int cpu_hotplug_pm_sync_init(void)
+> > +static int __init cpu_hotplug_pm_sync_init(void)
+> >  {
+> >  	pm_notifier(cpu_hotplug_pm_callback, 0);
+> >  	return 0;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 > 
 
-This is most likely the same problem that many people have encountered
-using the acpi cpuidle driver. It should be fixed on 3.2-rc2.
-
-	Arnd
