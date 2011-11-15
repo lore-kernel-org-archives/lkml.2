@@ -1,143 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1KOCAn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 21:00:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30319 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819Ab1KOCAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 21:00:42 -0500
-Date: Tue, 15 Nov 2011 03:00:09 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111115020009.GE4414@redhat.com>
-References: <20111110100616.GD3083@suse.de>
- <20111110142202.GE3083@suse.de>
- <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
- <20111110161331.GG3083@suse.de>
- <20111110151211.523fa185.akpm@linux-foundation.org>
- <20111111100156.GI3083@suse.de>
- <20111114160345.01e94987.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111114160345.01e94987.akpm@linux-foundation.org>
+	id S1755166Ab1KOCCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 21:02:23 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42898 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877Ab1KOCCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 21:02:22 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 15 Nov 2011 11:01:14 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>, Paul Menage <paul@paulmenage.org>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Turner <pjt@google.com>
+Subject: Re: [PATCH] Replace Paul Menage with Tejun Heo as cgroups
+ maintainer
+Message-Id: <20111115110114.584bd71a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4EC1C41C.2020603@cn.fujitsu.com>
+References: <1321320612-57855-1-git-send-email-paul@paulmenage.org>
+	<20111115013655.GH30922@google.com>
+	<4EC1C41C.2020603@cn.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 04:03:45PM -0800, Andrew Morton wrote:
-> On Fri, 11 Nov 2011 10:01:56 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> > A 1000-hour compute job will have its pages collapsed into hugepages by
-> > khugepaged so they might not have the huge pages at the very beginning
-> > but they get them. With khugepaged in place, there should be no need for
-> > an additional tuneable.
+On Tue, 15 Nov 2011 09:45:00 +0800
+Li Zefan <lizf@cn.fujitsu.com> wrote:
+
+> (also cc Paul Turner)
 > 
-> OK...
-
-It's good idea to keep it monitored. But I guess the reduced rate will
-only materialize at temporary VM stress times.
-
-> Fair enough.  One slight problem though:
+> 09:36, Tejun Heo wrote:
+> > (cc'ing akpm, Ingo and Frederic)
+> > 
+> > On Mon, Nov 14, 2011 at 05:30:12PM -0800, Paul Menage wrote:
+> >> As is probably painfully obvious, I don't have time to be a cgroups
+> >> maintainer.  Rather than have me continue to hope that I'll magically
+> >> find more spare time, instead Tejun has kindly agreed to take over the
+> >> role, along with Li Zefan.
+> >>
+> >> Signed-off-by: Paul Menage <paul@paulmenage.org>
+> >> ---
+> >>
+> >> Tejun, Li - can I get your acks before I send this on to mainline?
+> > 
+> > Sure,
+> > 
+> >  Acked-by: Tejun Heo <tj@kernel.org>
+> > 
 > 
-> akpm:/usr/src/25> grep -r thp_collapse_alloc_failed Documentation 
-> akpm:/usr/src/25> 
+> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+> 
 
-I didn't fill that gap but I was reading the code again and I don't
-see why we keep retrying for -EAGAIN in the !sync case. Maybe the
-below is good (untested). I doubt it's good to spend cpu to retry the
-trylock or to retry the migrate on a pinned page by O_DIRECT. In fact
-as far as THP success rate is concerned maybe we should "goto out"
-instead of "goto fail" but I didn't change to that as compaction even
-if it fails a subpage may still be successful at creating order
-1/2/3/4...8 pages. I only avoid 9 loops to retry a trylock or a page
-under O_DIRECT. Maybe that will save a bit of CPU, I doubt it can
-decrease the success rate in any significant way. I'll test it at the
-next build...
+Ok, thank you Paul for your maintainer jobs for years.
+And thank you Tejun, Li.
 
-====
-From: Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH] migrate: !sync don't retry
+Regards,
+-Kame
 
-For !sync it's not worth retrying because we won't lock_page even
-after the second pass. So make -EAGAIN behave like -EBUSY in the !sync
-should be faster. The difference between -EAGAIN and -EBUSY remains as
-usual for the sync case, where -EAGAIN will retry, while -EBUSY will
-not.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/migrate.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 578e291..7d97a14 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -680,11 +680,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		 * For !sync, there is no point retrying as the retry loop
- 		 * is expected to be too short for PageWriteback to be cleared
- 		 */
--		if (!sync) {
--			rc = -EBUSY;
--			goto uncharge;
--		}
--		if (!force)
-+		if (!force || !sync)
- 			goto uncharge;
- 		wait_on_page_writeback(page);
- 	}
-@@ -794,7 +790,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 
- 	rc = __unmap_and_move(page, newpage, force, offlining, sync);
- out:
--	if (rc != -EAGAIN) {
-+	if (rc != -EAGAIN || !sync) {
- 		/*
- 		 * A page that has been migrated has all references
- 		 * removed and will be freed. A page that has not been
-@@ -874,7 +870,7 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- out:
- 	unlock_page(hpage);
- 
--	if (rc != -EAGAIN) {
-+	if (rc != -EAGAIN || !sync) {
- 		list_del(&hpage->lru);
- 		put_page(hpage);
- 	}
-@@ -934,11 +930,14 @@ int migrate_pages(struct list_head *from,
- 			case -ENOMEM:
- 				goto out;
- 			case -EAGAIN:
-+				if (!sync)
-+					goto fail;
- 				retry++;
- 				break;
- 			case 0:
- 				break;
- 			default:
-+			fail:
- 				/* Permanent failure */
- 				nr_failed++;
- 				break;
-@@ -981,11 +980,14 @@ int migrate_huge_pages(struct list_head *from,
- 			case -ENOMEM:
- 				goto out;
- 			case -EAGAIN:
-+				if (!sync)
-+					goto fail;
- 				retry++;
- 				break;
- 			case 0:
- 				break;
- 			default:
-+			fail:
- 				/* Permanent failure */
- 				nr_failed++;
- 				break;
