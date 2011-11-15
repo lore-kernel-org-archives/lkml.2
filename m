@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab1KOU4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 15:56:20 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:53815 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230Ab1KOU4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 15:56:18 -0500
-Message-ID: <4EC2D1EC.4010605@linux.vnet.ibm.com>
-Date: Wed, 16 Nov 2011 02:26:12 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S932341Ab1KOVAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:00:44 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40958 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755562Ab1KOVAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 16:00:43 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: Tree for Nov 15
+Date: Tue, 15 Nov 2011 22:03:26 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+References: <20111115131742.f9ebaf818fd152ef779f4d19@canb.auug.org.au>
+In-Reply-To: <20111115131742.f9ebaf818fd152ef779f4d19@canb.auug.org.au>
 MIME-Version: 1.0
-To: carla.sella@gmail.com
-CC: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: BUG: suspend/resume does not work on G62 notebook PC
-References: <4EB53C46.1060301@gmail.com>
-In-Reply-To: <4EB53C46.1060301@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11111520-2000-0000-0000-00000136467C
+Message-Id: <201111152203.26186.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding linux-pm mailing list to CC.]
+On Tuesday, November 15, 2011, Stephen Rothwell wrote:
+> Hi all,
+> 
+> The patch is still absent from kernel.org.
+> 
+> Changes since 20111114:
+> 
+> The m86knommu tree lost 2 conflicts.
+> 
+> The pm tree still had its build failures for which I reverted a commit
+> and applied a patch.
 
-On 11/05/2011 07:08 PM, Carla Sella wrote:
-> Hello,
-> I need to report a bug on  suspend/resume that's not working on my HP
-> G62 notebook PC.
-> I've been having this problem since testing Ubuntu Natty Beta 1 iso and
-> I'm still having it with Ubuntu Oneiric.
-> My laptop is a HP  model G62.
-> 
-> During the "Extended Suspend/Resume test"
-> (http://testcases.qa.ubuntu.com/System/SuspendResume), all tests run
-> with "sudo /usr/share/checkbox/scripts/suspend_test --full" fail with 
-> message: "SUSPEND FAILED, did not go to sleep".
-> Also Hibernate/Resume smoke test does not work, the screen goes black
-> for a few seconds, more or less 15 and then password is required and you
-> go back to the users session.
-> This is the bug opened on launchpad with all the details:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/752881
-> 
+Hmm.  If that was the patch you sent yestarday, it definitely is there in my
+tree.
+
+The "kill unused set_freezable_with_signal()" commit still has to be reverted,
+unfortunately, but Tejun is working on a fix (AFAICS).
+
+I'm going to drop pm-freezer from my linux-next branch for now.
 
 Thanks,
-Srivatsa S. Bhat
-
+Rafael
