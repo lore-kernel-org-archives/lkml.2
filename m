@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab1KOMXf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 07:23:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36688 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1KOMX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 07:23:27 -0500
-X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=T0wpcEwfL4QA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=Y6Ls0il8xYNRf_uL0AsA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH 2/2] Compile error with allmodconfig and
- CONFIG_PREEMPT_RT_FULL=y
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: John Kacur <jkacur@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <1321334539.6347.43.camel@marge.simson.net>
-References: <1321235083-21756-1-git-send-email-jkacur@redhat.com>
-	 <1321235083-21756-2-git-send-email-jkacur@redhat.com>
-	 <20111114165148.GB2372@linux.vnet.ibm.com>
-	 <alpine.LFD.2.00.1111141837100.6707@localhost6.localdomain6>
-	 <1321303871.5011.6.camel@frodo> <1321334539.6347.43.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Nov 2011 07:23:22 -0500
-Message-ID: <1321359802.4181.1.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1751985Ab1KOMaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 07:30:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab1KOMaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 07:30:21 -0500
+Date: Tue, 15 Nov 2011 17:59:36 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH v2 09/11] virtio: net: Add freeze, restore handlers to
+ support S4
+Message-ID: <20111115122902.GA26378@amit-x200.redhat.com>
+References: <cover.1317311033.git.amit.shah@redhat.com>
+ <5b7834c9a30254220f9c079ba54d29abaf63db8f.1317311033.git.amit.shah@redhat.com>
+ <20111002093324.GD29706@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111002093324.GD29706@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 06:22 +0100, Mike Galbraith wrote:
-
-> > If we go that route, we might as well make everything
-> > EXPORT_SYMBOL_GPL(), and be damn to those that use nVidia.
+On (Sun) 02 Oct 2011 [11:33:26], Michael S. Tsirkin wrote:
+> On Thu, Sep 29, 2011 at 09:19:40PM +0530, Amit Shah wrote:
+> > Remove all the vqs on hibernation and re-create them after restoring
+> > from a hibernated image.  This keeps networking working across
+> > hibernation.
+> > 
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > ---
+> >  drivers/net/virtio_net.c |   28 ++++++++++++++++++++++++++++
+> >  1 files changed, 28 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index dcd4b01..8b9ed43 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -1131,6 +1131,30 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
+> >  	free_netdev(vi->dev);
+> >  }
+> >  
+> > +#ifdef CONFIG_PM
+> > +static int virtnet_freeze(struct virtio_device *vdev)
+> > +{
+> > +	struct virtnet_info *vi = vdev->priv;
 > 
-> EXPORT_SYMBOL_GPL(migrate_disable) alone screws nVidia users, no?
-> 
-> I have an RT user who has no other viable choice than nVidia.  If the
-> above is true, that user will end up stuck at 2.6.33-rt until we get a
-> driver that actually works... or they deem linux to be a non-solution.
+> I'm guessing we need to do something like netif_device_detach here,
+> otherwise guest might be in the process of using the vq for transmit at
+> this point.
 
-Right, migrate_disable() should not have been an EXPORT_SYMBOL_GPL(), as
-it is a helper functions that is also exported as EXPORT_SYMBOL(). It
-shouldn't be called directly anyway, even by code in the kernel proper.
+Done.
 
--- Steve
+> I think we also must make sure NAPI RX handler is not in progress.
 
+How to do that?  napi_disable() / napi_enable() doesn't seem right
+(and it doesn't work, too).  pci_disable_device() in the suspend
+routine may work?
 
+> We also might need to mask interrupts from the device
+> to prevent TX or RX from getting rescheduled?
+
+pci_disable_device() will help this too, right?
+
+		Amit
