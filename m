@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab1KOPiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 10:38:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33643 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756346Ab1KOPix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 10:38:53 -0500
-Date: Tue, 15 Nov 2011 16:38:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] hugetlb: release pages in the error path of hugetlb_cow()
-Message-ID: <20111115153851.GB7551@tiehlicka.suse.cz>
-References: <CAJd=RBC5Q48r0sYeqF9bucaBJPv3LR4UTAannUZ8KXxoXY_Qcw@mail.gmail.com>
+	id S1756477Ab1KOPjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 10:39:03 -0500
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:47946 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756238Ab1KOPi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 10:38:59 -0500
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=2.0 cv=I/zntacg c=1 sm=0 a=Rwm7E/dujRe+vU6pjRxIFA==:17 a=nEMYVOmGscEA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=FNyBlpCuAAAA:8 a=5Q6jihO_KOUxb_5B3-sA:9 a=GVJODe18wmT1qMwpgBUA:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=Rwm7E/dujRe+vU6pjRxIFA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 64.3.25.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: <djwong@us.ibm.com>, "'Herbert Xu'" <herbert@gondor.hengli.com.au>
+Cc: "'Andreas Dilger'" <adilger.kernel@dilger.ca>,
+        "'Theodore Tso'" <tytso@mit.edu>,
+        "'David Miller'" <davem@davemloft.net>,
+        "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Mingming Cao'" <cmm@us.ibm.com>,
+        "'linux-crypto'" <linux-crypto@vger.kernel.org>,
+        "'linux-fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>
+References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au> <20111021165703.GS12447@tux1.beaverton.ibm.com> <20111021191514.GA3997@gondor.apana.org.au> <20111115084805.GY12447@tux1.beaverton.ibm.com>
+In-Reply-To: <20111115084805.GY12447@tux1.beaverton.ibm.com>
+Subject: RE: [PATCH 1/4] crc32: Bolt on crc32c
+Date: Tue, 15 Nov 2011 09:38:54 -0600
+Message-ID: <00b001cca3ac$b08c0310$11a40930$@systemfabricworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBC5Q48r0sYeqF9bucaBJPv3LR4UTAannUZ8KXxoXY_Qcw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQKNc3m8gMNc3af06mR/narCbNegXwKpSPZYAiEce8UCNZRtEALPMhMfAjwm2huTzBcJEA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 11-11-11 21:01:20, Hillf Danton wrote:
-> If fail to prepare anon_vma, {new, old}_page should be released, or they will
-> escape the track and/or control of memory management.
+I'd have sent new bits by now. Although the changes are minor and cosmetic.
+The problem is that due to getting things ready for SC11 (where I am now) I
+have been unable to test anything for the past two weeks.
+I can retest everything next week or you can go with the bits that are out
+there.
 
-Looks good (intrduced by in .36 by 0fe6e20b: hugetlb, rmap: add reverse
-mapping for hugepage). The failure case is really not probable but I
-guess this is still a candidate for stable kernel.
-
+> -----Original Message-----
+> From: Darrick J. Wong [mailto:djwong@us.ibm.com]
+> Sent: Tuesday, November 15, 2011 2:48 AM
+> To: Herbert Xu
+> Cc: Andreas Dilger; Theodore Tso; David Miller; Joakim Tjernlund; Bob
+> Pearson; linux-kernel; Mingming Cao; linux-crypto; linux-fsdevel; linux-
+> ext4@vger.kernel.org
+> Subject: Re: [PATCH 1/4] crc32: Bolt on crc32c
 > 
-> Thanks
+> On Fri, Oct 21, 2011 at 09:15:14PM +0200, Herbert Xu wrote:
+> > On Fri, Oct 21, 2011 at 09:57:03AM -0700, Darrick J. Wong wrote:
+> > >
+> > > My patchset builds upon Bob Pearson's crc32 patchset from early
+> September.  Do
+> > > my patches fail to apply after applying his patchset?
+> > >
+> > > Or, to speed things along, should I simply repost both Bob's and my
+> patches as
+> > > one big series?
+> > >
+> > > Bob, have you sent out a new iteration of your patches since September
+> 6th?
+> >
+> > I'm fine with you pushing this through whichever tree that Bob's
+> > patches are going through.
 > 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
+> Well... it's been 2.5 weeks since I last asked about this.  No reply,
+afaict.
+> I haven't seen any complaints about Bob's latest patchset, nor any
+complaints
+> about my set that sits atop his.  On the other hand, I'm pretty sure I
+haven't
+> seen Bob's patches appear in any trees, and Google shows no recent
+> progress.
 > 
-> --- a/mm/hugetlb.c	Fri Nov 11 20:36:32 2011
-> +++ b/mm/hugetlb.c	Fri Nov 11 20:43:06 2011
-> @@ -2422,6 +2422,8 @@ retry_avoidcopy:
->  	 * anon_vma prepared.
->  	 */
->  	if (unlikely(anon_vma_prepare(vma))) {
-> +		page_cache_release(new_page);
-> +		page_cache_release(old_page);
->  		/* Caller expects lock to be held */
->  		spin_lock(&mm->page_table_lock);
->  		return VM_FAULT_OOM;
+> Herbert, would you object to pushing the whole patchset through the crypto
+> tree?
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> --D
+> >
+> > Cheers,
+> > --
+> > Email: Herbert Xu <herbert@gondor.apana.org.au>
+> > Home Page: http://gondor.apana.org.au/~herbert/
+> > PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
