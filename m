@@ -1,156 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab1KOWEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 17:04:45 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:51086 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932190Ab1KOWEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 17:04:44 -0500
-Date: Wed, 16 Nov 2011 00:04:39 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com
-Subject: Re: [RFC PATCH] debugfs: add tools to printk 32-bit registers
-Message-ID: <20111115220437.GA26711@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20111115212012.GA5467@suse.de>
- <20111115130230.GA23584@mail.gnudd.com>
- <20111115213734.GA5094@mail.gnudd.com>
+	id S932610Ab1KOWKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 17:10:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932386Ab1KOWKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 17:10:01 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] KEYS: Fix a NULL pointer deref in the user-defined key type
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        Steve Dickson <steved@redhat.com>, James Morris <jmorris@namei.org>
+Date: Tue, 15 Nov 2011 22:09:45 +0000
+Message-ID: <20111115220945.18768.20275.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-In-Reply-To: <20111115213734.GA5094@mail.gnudd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix a NULL pointer deref in the user-defined key type whereby updating a
+negative key into a fully instantiated key will cause an oops to occur when the
+code attempts to free the non-existent old payload.
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This results in an oops that looks something like the following:
 
-Hi,
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+PGD 3391d067 PUD 3894a067 PMD 0
+Oops: 0002 [#1] SMP
+CPU 1
+Modules linked in:
 
-On Tue, Nov 15, 2011 at 10:37:34PM +0100, Alessandro Rubini wrote:
-> Hi Greg. Thanks for looking.
->=20
-> >> +/*
-> >> + * The regset32 stuff is used to print 32-bit registers using the
-> >> + * seq_file utilities. We offer printing a register set in an already=
--opened
-> >> + * sequential file or create a debugfs file that only prints a regset=
-32.
-> >> + */
-> >=20
-> > Can this be part of the kerneldoc below somehow so that people are more
-> > aware of it?
->=20
-> Ok. There's also a file by Jon in Documentation that needs updating, as it
-> has all the other debugfs file types.
-> =20
-> > +int debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *reg=
-s,
-> >> +			   int nregs, void __iomem *base, char *prefix)
->=20
-> > This function also needs to be part of debugfs.h in the "debugfs is not
-> > enabled" section of the file, right?
->=20
-> Not really. The other one makes a regiters-only file, and it's good
-> to register it withouth ifdef.
->=20
-> This one is used to embed a register block in a file with more
-> stuff, so it shouldn't be used if debugfs is not selected (btw,
-> I compiled my internal stuff with and without CONFIG_DEBUG_FS
-> before rebasing to next).
->=20
-> Example:
->=20
->    static int pl08x_debugfs_show(struct seq_file *s, void *data)
->    { =20
-> 	[...]
->         list_for_each_entry(chan, &pl08x->slave.channels, chan.device_nod=
-e) {
->                 seq_printf(s, "%s\t\t%s\n", chan->name,
->                            pl08x_state_str(chan->state));
->         }
->=20
->         /* dump registers */
->         seq_printf(s, "\nPL08x registers\n");
->         debugfs_print_regs32(s, pl08x_regs, ARRAY_SIZE(pl08x_regs),
->                                pl08x->base, "");
->=20
->         seq_printf(s, "\nPL08x registers channel\n");
->         for (i =3D 0; i < pl08x->vd->channels; i++) {
-> 	[...]
->    }
->=20
-> So, I'll post a V2 shortly, unless you refuse it in reply to this.
+Pid: 4354, comm: keyctl Not tainted 3.1.0-fsdevel+ #1140                  /DG965RY
+RIP: 0010:[<ffffffff81085fa1>]  [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+RSP: 0018:ffff88003d591df8  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000006e
+RDX: ffffffff8161d0c0 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: ffff88003d591e18 R08: 0000000000000000 R09: ffffffff8152fa6c
+R10: 0000000000000000 R11: 0000000000000300 R12: ffff88003b8f9538
+R13: ffffffff8161d0c0 R14: ffff88003b8f9d50 R15: ffff88003c69f908
+FS:  00007f97eb18c720(0000) GS:ffff88003bd00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000008 CR3: 000000003d47a000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process keyctl (pid: 4354, threadinfo ffff88003d590000, task ffff88003c78a040)
+Stack:
+ ffff88003e0ffde0 ffff88003b8f9538 0000000000000001 ffff88003b8f9d50
+ ffff88003d591e28 ffffffff810860f0 ffff88003d591e68 ffffffff8117bfea
+ ffff88003d591e68 ffffffff00000000 ffff88003e0ffde1 ffff88003e0ffde0
+Call Trace:
+ [<ffffffff810860f0>] call_rcu_sched+0x10/0x12
+ [<ffffffff8117bfea>] user_update+0x8d/0xa2
+ [<ffffffff8117723a>] key_create_or_update+0x236/0x270
+ [<ffffffff811789b1>] sys_add_key+0x123/0x17e
+ [<ffffffff8105d0de>] ? trace_hardirqs_on_caller+0x11e/0x155
+ [<ffffffff811d92ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff813b84bb>] system_call_fastpath+0x16/0x1b
 
-this will be useful to dwc3 too, we currently have:
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: Neil Horman <nhorman@redhat.com>
+Acked-by: Steve Dickson <steved@redhat.com>
+Acked-by: James Morris <jmorris@namei.org>
+---
 
-struct dwc3_register {
-	const char	*name;
-	u32		offset;
-};
+ security/keys/user_defined.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-#define dump_register(nm)				\
-{							\
-	.name	=3D __stringify(nm),			\
-	.offset	=3D DWC3_ ##nm,				\
-}
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index 5b366d7..69ff52c 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -102,7 +102,8 @@ int user_update(struct key *key, const void *data, size_t datalen)
+ 		key->expiry = 0;
+ 	}
+ 
+-	kfree_rcu(zap, rcu);
++	if (zap)
++		kfree_rcu(zap, rcu);
+ 
+ error:
+ 	return ret;
 
-static const struct dwc3_register dwc3_regs[] =3D {
-	dump_register(GSBUSCFG0),
-	dump_register(GSBUSCFG1),
-	dump_register(GTXTHRCFG),
-
-	...
-};
-
-static int dwc3_regdump_show(struct seq_file *s, void *unused)
-{
-	struct dwc3		*dwc =3D s->private;
-	int			i;
-
-	seq_printf(s, "DesignWare USB3 Core Register Dump\n");
-
-	for (i =3D 0; i < ARRAY_SIZE(dwc3_regs); i++) {
-		seq_printf(s, "%-20s :    %08x\n", dwc3_regs[i].name,
-				dwc3_readl(dwc->regs, dwc3_regs[i].offset));
-	}
-
-	return 0;
-}
-
-=2E..
-
---=20
-balbi
-
---AhhlLboLdkugWU4S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOwuH1AAoJEIaOsuA1yqRE6MsP/1g9kajYe1WO1NAjSF/tGre8
-svVOYmUMTSRI6aPj1F0o8hHTr7ZV/LQhmcgcGdl/CMVUlY/l08uBD13sKzTJxVgM
-966tG7rjiANjjkSzxku+PQcAQk9XAgSomvJADC3OT6xojGJvqYHKve0NdEpHvRI7
-nvWVhtZs0YQ7Bsqp4BQK21cL9jfYr0M2fyKXQlrwTpJCS8MsgJckgTufgHq+Zn/C
-6KxkxrRY9VDIRxWi8iePzy8HJaw7vpx1Zc4uaMZ1G3Vzx4ty8TpsVtLC+lhfPJTd
-rETDlQ1YHmn+BhJlph4fSOlmjADLF3hybUsXrylANfCVMYWA/+dSccbC2j7ZXR/a
-jKXRTR0fHz8SpiMLEMkAsi1XbExyFqIVD652rGvPWhbYa1HWrW/xvil7BxokcJQN
-cQtHKR8U93/X5/nZq+wadZS/pwZQJJOCv93GSYL5zDmd9L9Fh2UHkJMoRpOrVP9N
-5+JTUyb/CeUdTl87vDBGzlNs4d9MaTCJ0DQ+V4ApVyd98Z84Gid+imIHPrQSnIpO
-SsucpduiL073/ecolnBOESA6ztAFxtjlepA7pPXw/a1JZ3dWJNvw3rvFi2NTLaum
-2HDbsy8iKPqepPkQL2WSNDPT7VqBW1cW3zv9YAsDZug2U6K7Nq8EBTBb/Fw+t2Ra
-LgBNZTWoYmzpYTQVDRl6
-=o5mK
------END PGP SIGNATURE-----
-
---AhhlLboLdkugWU4S--
