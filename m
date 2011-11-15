@@ -1,99 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1KOIK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 03:10:58 -0500
-Received: from mailgw9.se.ericsson.net ([193.180.251.57]:48688 "EHLO
-	mailgw9.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab1KOIK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 03:10:56 -0500
-X-AuditID: c1b4fb39-b7b3eae00000252a-61-4ec21e8eda37
-Message-ID: <4EC21E8E.5050003@ericsson.com>
-Date: Tue, 15 Nov 2011 09:10:54 +0100
-From: =?UTF-8?B?TmlrbGFzIFPDtmRlcmx1bmQ=?= 
-	<niklas.soderlund@ericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	id S1753531Ab1KOIMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 03:12:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab1KOIMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 03:12:32 -0500
+Message-ID: <4EC21F67.10905@redhat.com>
+Date: Tue, 15 Nov 2011 16:14:31 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tony Luck <tony.luck@gmail.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Fix K8 revD and later chip select sizes
-References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com> <20111109144258.GD30472@aftab> <4EBA98A1.90902@ericsson.com> <20111109203546.GI14181@aftab> <CA+8MBbLuhhTZW9vB7GvLCd8Uu7bgfUqkO7wu4=Pt7EWyQx0LrQ@mail.gmail.com> <20111109210052.GJ14181@aftab> <20111114165459.GA29762@aftab>
-In-Reply-To: <20111114165459.GA29762@aftab>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+To: tim@edgecast.com
+CC: WANG Cong <xiyou.wangcong@gmail.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: Crash during vmcore_init
+References: <1318376345.2050.20.camel@boudreau> <j9r5m5$b18$1@dough.gmane.org> <1321296650.2066.17.camel@boudreau>
+In-Reply-To: <1321296650.2066.17.camel@boudreau>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14 Nov 2011 05:54:59 PM CET, Borislav Petkov wrote:
->
-> Fix DRAM chip select sizes calculation for K8, revisions D and E.
->
-> Reported-by: Niklas Söderlund<niklas.soderlund@ericsson.com
-> Link: http://lkml.kernel.org/r/1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com
-> Signed-off-by: Borislav Petkov<borislav.petkov@amd.com>
-> ---
->
-> @Niklas: would you please verify this patch fixes your issue?
->
-> Thanks.
->
->   drivers/edac/amd64_edac.c |   32 ++++++++++++++++++++++++++++----
->   1 files changed, 28 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index c9eee6d..6a83d49 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -1132,12 +1132,36 @@ static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
->   		return ddr2_cs_size(cs_mode, dclr&  WIDTH_128);
->   	}
->   	else if (pvt->ext_model>= K8_REV_D) {
-> +		unsigned diff;
->   		WARN_ON(cs_mode>  10);
->
-> -		if (cs_mode == 3 || cs_mode == 8)
-> -			return 32<<  (cs_mode - 1);
-> -		else
-> -			return 32<<  cs_mode;
-> +		/*
-> +		 * the below calculation, besides trying to win an obfuscated C
-> +		 * contest, maps cs_mode values to DIMM chip select sizes. The
-> +		 * mappings are:
-> +		 *
-> +		 * cs_mode	CS size (mb)
-> +		 * =======	============
-> +		 * 0		32
-> +		 * 1		64
-> +		 * 2		128
-> +		 * 3		128
-> +		 * 4		256
-> +		 * 5		512
-> +		 * 6		256
-> +		 * 7		512
-> +		 * 8		1024
-> +		 * 9		1024
-> +		 * 10		2048
-> +		 *
-> +		 * Basically, it calculates a value with which to shift the
-> +		 * smallest CS size of 32MB.
-> +		 *
-> +		 * ddr[23]_cs_size have a similar purpose.
-> +		 */
-> +		diff = cs_mode/3 + (unsigned)(cs_mode>  5);
-> +
-> +		return 32<<  (cs_mode - diff);
->   	}
->   	else {
->   		WARN_ON(cs_mode>  6);
+On 11/15/2011 02:50 AM, Tim Hartrick wrote:
 
-Hi Borislav,
+> 
+> Wang,
+> 
+> Thanks for taking the time to look at this.
+> 
+> 
+> Here is the result from a 2.6.38 kernel used as base kernel and
+> crashkernel:
+> 
+> [    1.314762] WARNING:
+> at /build/buildd/linux-2.6.38/arch/x86/mm/ioremap.c:83 __ioremap_caller
+> +0x350/0x3d0()
+> [    1.324394] Hardware name: PowerEdge R710
+> [    1.328390] Modules linked in:
+> [    1.331443] Pid: 1, comm: swapper Not tainted 2.6.38-8-server
+> #42-Ubuntu
+> [    1.338128] Call Trace:
+> [    1.340572]  [<ffffffff81065d1f>] ? warn_slowpath_common+0x7f/0xc0
+> [    1.346741]  [<ffffffff81065d7a>] ? warn_slowpath_null+0x1a/0x20
+> [    1.352729]  [<ffffffff81040eb0>] ? __ioremap_caller+0x350/0x3d0
+> [    1.358726]  [<ffffffff810d8575>] ? call_rcu_sched+0x15/0x20
+> [    1.364375]  [<ffffffff8103452e>] ? copy_oldmem_page+0x4e/0xc0
+> [    1.370194]  [<ffffffff8113c39e>] ? __purge_vmap_area_lazy+0xfe/0x1f0
+> [    1.376622]  [<ffffffff81040f64>] ? ioremap_cache+0x14/0x20
+> [    1.382176]  [<ffffffff8103452e>] ? copy_oldmem_page+0x4e/0xc0
+> [    1.388002]  [<ffffffff811cad0a>] ? read_from_oldmem+0x7a/0xb0
+> [    1.393827]  [<ffffffff81b099a0>] ? merge_note_headers_elf64.clone.3
+> +0x6c/0x214
+> [    1.401115]  [<ffffffff8103456a>] ? copy_oldmem_page+0x8a/0xc0
+> [    1.406936]  [<ffffffff811cad0a>] ? read_from_oldmem+0x7a/0xb0
+> [    1.412752]  [<ffffffff81b09e79>] ? vmcore_init+0x0/0x73
+> [    1.418051]  [<ffffffff81b09c52>] ? parse_crash_elf64_headers
+> +0x10a/0x211
+> [    1.424825]  [<ffffffff8103456a>] ? copy_oldmem_page+0x8a/0xc0
+> [    1.430640]  [<ffffffff81b09e79>] ? vmcore_init+0x0/0x73
+> [    1.435940]  [<ffffffff81b09dd4>] ? parse_crash_elf_headers
+> +0x7b/0x120
+> [    1.442450]  [<ffffffff81b09e9c>] ? vmcore_init+0x23/0x73
+> [    1.447839]  [<ffffffff81002175>] ? do_one_initcall+0x45/0x190
+> [    1.453661]  [<ffffffff81ae1dff>] ? kernel_init+0x169/0x1f3
+> [    1.459218]  [<ffffffff8100cde4>] ? kernel_thread_helper+0x4/0x10
+> [    1.465298]  [<ffffffff81ae1c96>] ? kernel_init+0x0/0x1f3
+> [    1.470680]  [<ffffffff8100cde0>] ? kernel_thread_helper+0x0/0x10
+> 
+> The command line for the crashkernel:
+> 
+> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.38-8-server
+> root=UUID=ea7a5a27-d58f-469f-a19c-3e65b69587f6 ro console=ttyS0,115200n8
+> irqpoll maxcpus=1 nousb memmap=exactmap memmap=640K@0K
+> memmap=261484K@623232K elfcorehdr=884716K memmap=252K#2087484K
+> 
+> The contents of /proc/iomem while running the base kernel:
+> 
+> 00000000-0000ffff : reserved
+> 00010000-0009ffff : System RAM
+> 000a0000-000bffff : PCI Bus 0000:00
+> 00100000-7f678fff : System RAM
+>   01000000-015e1d6c : Kernel code
+>   015e1d6d-01aca17f : Kernel data
+>   01bae000-01d03fff : Kernel bss
+>   26000000-35ffffff : Crash kernel
+> 7f679000-7f68efff : reserved
+>   7f679000-7f679003 : APEI ERST
+>   7f67900c-7f679016 : APEI ERST
+>   7f679060-7f67906b : APEI ERST
+>   7f68d000-7f68efff : APEI ERST
+> 7f68f000-7f6cdfff : ACPI Tables
+> 7f6ce000-7fffffff : reserved
+> 80000000-fdffffff : PCI Bus 0000:00
+>   d5800000-d5ffffff : PCI Bus 0000:08
+>     d5800000-d5ffffff : 0000:08:03.0
+>   d6000000-d9ffffff : PCI Bus 0000:01
+>     d6000000-d7ffffff : 0000:01:00.0
+>       d6000000-d7ffffff : bnx2
+>     d8000000-d9ffffff : 0000:01:00.1
+>       d8000000-d9ffffff : bnx2
+>   da000000-ddffffff : PCI Bus 0000:02
+>     da000000-dbffffff : 0000:02:00.0
+>       da000000-dbffffff : bnx2
+>     dc000000-ddffffff : 0000:02:00.1
+>       dc000000-ddffffff : bnx2
+>   de000000-deffffff : PCI Bus 0000:08
+>     de000000-de00ffff : 0000:08:03.0
+>     de7fc000-de7fffff : 0000:08:03.0
+>     de800000-deffffff : 0000:08:03.0
+>   df0ff800-df0ffbff : 0000:00:1a.7
+>     df0ff800-df0ffbff : ehci_hcd
+>   df0ffc00-df0fffff : 0000:00:1d.7
+>     df0ffc00-df0fffff : ehci_hcd
+>   df100000-df2fffff : PCI Bus 0000:03
+>     df100000-df1fffff : 0000:03:00.0
+>     df2ec000-df2effff : 0000:03:00.0
+>       df2ec000-df2effff : mpt
+>     df2f0000-df2fffff : 0000:03:00.0
+>       df2f0000-df2fffff : mpt
+>   e0000000-efffffff : PCI MMCONFIG 0000 [bus 00-ff]
+>     e0000000-efffffff : reserved
+>       e0000000-efffffff : pnp 00:09
+> fe000000-ffffffff : reserved
+>   fec00000-fec003ff : IOAPIC 0
+>   fec80000-fec803ff : IOAPIC 1
+>   fed00000-fed003ff : HPET 0
+>   fed40000-fed44fff : PCI Bus 0000:00
+>   fed90000-fed91fff : pnp 00:0b
+>   fee00000-fee00fff : Local APIC
+> 100000000-c7fffffff : System RAM
+> 
+> 
+> tim
+> 
+> 
+> 
+> On Mon, 2011-11-14 at 13:39 +0000, WANG Cong wrote:
+>> On Tue, 11 Oct 2011 16:39:05 -0700, Tim Hartrick wrote:
+>>
+>>> Kexec,
+>>>
+>>> I have been experiencing the crash below on Ubuntu 10.04 running
+>>> 2.6.32-34-server and 2.6.38-8-server as the crashkernel on X86_64. The
+>>> tools are:
+>>>
+>>> kexec-tools	1:2.0.2-1ubuntu3
+>>> makedumpfile	1.3.7-2
+>>> kdump-tools	1.3.7-2
+>>>
+>>> I would be interested to know if this is a known problem and if so
+>>> whether or not there is a patch in the pipeline to correct the problem.
+>>>
+>>> I will be happy to provide any other details that are required including
+>>> debug builds if necessary.
+>> ....
+>>>
+>>> [    1.322100] ioremap: invalid physical address db74000000000000 [  
 
-Yes the patch fixes my problem, but it truly is obfuscated C.
 
+Searching db74000000000000 got several similar cases of this, all are
+about per cpu invalid crash_notes address, is this one more?
+
+OTOH, Can you test latest mainline kernel?
+
+ccing lkml and Tejun Heo
+
+ 
+>>> 1.327919] ------------[ cut here ]------------ [    1.332530] WARNING:
+>>> at /build/buildd/linux-2.6.32/arch/x86/mm/ioremap.c:120 __ioremap_caller
+>>> +0x360/0x3d0()
+>>
+>> This probably means that kexec-tools passed some incorrect
+>> kernel parameter to the second kernel.
+>>
+>> So, what is the cmdline of your second kernel? And what is your
+>> /proc/iomem of your first kernel?
+>>
+>> Cheers.
+>>
+>>
+>> _______________________________________________
+>> kexec mailing list
+>> kexec@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/kexec
+> 
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+
+
+
+-- 
 Thanks
-// Niklas
+Dave
