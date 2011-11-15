@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab1KOG2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 01:28:44 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:53484 "EHLO imr4.ericy.com"
+	id S1752664Ab1KOG3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 01:29:34 -0500
+Received: from mail2.unitix.de ([176.9.2.175]:60337 "EHLO mail2.unitix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab1KOG2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 01:28:42 -0500
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Tang Yuantian <B29983@freescale.com>
-Subject: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Date: Mon, 14 Nov 2011 22:27:42 -0800
-Message-ID: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1751993Ab1KOG3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 01:29:33 -0500
+Message-ID: <4EC206C9.10909@arndnet.de>
+Date: Tue, 15 Nov 2011 07:29:29 +0100
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org
+Subject: Re: 3.2rc1: bootup fails: DRHD: handling fault status reg 2
+References: <4EC19738.8050007@arndnet.de> <4EC1B80D.5000102@arndnet.de> <4EC1EB39.1080705@gmail.com>
+In-Reply-To: <4EC1EB39.1080705@gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for SMBUS_READ_BLOCK_DATA to the i2c-mpc bus driver.
-Required to support the PMBus zl6100 driver with i2c-mpc.
+Am 15.11.2011 05:31, schrieb Robert Hancock:
+> On 11/14/2011 06:53 PM, Arnd Hannemann wrote:
+>> Hi,
+>>
+>> Am 14.11.2011 23:33, schrieb Arnd Hannemann:
+>>
+>>> when trying to boot kernel 3.2rc1 on my thinkpad t510 I get an endless loop of errors:
+>>>
+>>>   DRHD: handling fault status reg 2
+>>>   DMAR: [DMA Read] Request device [0d:00.0] fault addr fffff000
+>>>   DMAR: [fault reason 02] Present bit in context entry is clear
+>>>
+>>> screenshot can be found here:
+>>> http://arndnet.de/lkml/screenshot3.2rc1.jpg
+>>>
+>>> kernel 3.1.1 is booting up flawlessly.
+>>
+>> I must have inadvertently enabled CONFIG_INTEL_IOMMU_DEFAULT_ON in my config
+>> for 3.2-rc1.
+>>
+>> With disabled CONFIG_INTEL_IOMMU_DEFAULT_ON my thinkpad boots up again.
+>> Not sure if this is expected?
+> 
+> No, that's not supposed to happen. Can you post the output of "lspci -vv"? Apparently that device 0d:00.0 is generating unexpected DMA accesses for some reason.
 
-Reported-by: Tang Yuantian <B29983@freescale.com>
-Cc: Tang Yuantian <B29983@freescale.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
- drivers/i2c/busses/i2c-mpc.c |   33 +++++++++++++++++++++++++--------
- 1 files changed, 25 insertions(+), 8 deletions(-)
+Looks lite a "Ricoh Co Ltd MMC/SD Host Controller" is the culprit:
 
-diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-index 107397a..77aade7 100644
---- a/drivers/i2c/busses/i2c-mpc.c
-+++ b/drivers/i2c/busses/i2c-mpc.c
-@@ -454,7 +454,7 @@ static int mpc_write(struct mpc_i2c *i2c, int target,
- }
- 
- static int mpc_read(struct mpc_i2c *i2c, int target,
--		    u8 *data, int length, int restart)
-+		    u8 *data, int length, int restart, bool block)
- {
- 	unsigned timeout = i2c->adap.timeout;
- 	int i, result;
-@@ -470,7 +470,7 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
- 		return result;
- 
- 	if (length) {
--		if (length == 1)
-+		if (length == 1 && !block)
- 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
- 		else
- 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA);
-@@ -479,17 +479,28 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
- 	}
- 
- 	for (i = 0; i < length; i++) {
-+		u8 byte;
-+
- 		result = i2c_wait(i2c, timeout, 0);
- 		if (result < 0)
- 			return result;
- 
-+		byte = readb(i2c->base + MPC_I2C_DR);
-+		/*
-+		 * Adjust length if first received byte is length
-+		 */
-+		if (i == 0 && block) {
-+			if (byte == 0 || byte > I2C_SMBUS_BLOCK_MAX)
-+				return -EPROTO;
-+			length += byte;
-+		}
-+		data[i] = byte;
- 		/* Generate txack on next to last byte */
- 		if (i == length - 2)
- 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
- 		/* Do not generate stop on last byte */
- 		if (i == length - 1)
- 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_MTX);
--		data[i] = readb(i2c->base + MPC_I2C_DR);
- 	}
- 
- 	return length;
-@@ -532,12 +543,17 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
- 			"Doing %s %d bytes to 0x%02x - %d of %d messages\n",
- 			pmsg->flags & I2C_M_RD ? "read" : "write",
- 			pmsg->len, pmsg->addr, i + 1, num);
--		if (pmsg->flags & I2C_M_RD)
--			ret =
--			    mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
--		else
-+		if (pmsg->flags & I2C_M_RD) {
-+			bool block = pmsg->flags & I2C_M_RECV_LEN;
-+
-+			ret = mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i,
-+				       block);
-+			if (block && ret > 0)
-+				pmsg->len = ret;
-+		} else {
- 			ret =
- 			    mpc_write(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
-+		}
- 	}
- 	mpc_i2c_stop(i2c);
- 	return (ret < 0) ? ret : num;
-@@ -545,7 +561,8 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
- 
- static u32 mpc_functionality(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
-+	  | I2C_FUNC_SMBUS_READ_BLOCK_DATA;
- }
- 
- static const struct i2c_algorithm mpc_algo = {
--- 
-1.7.3.1
+0d:00.0 SD Host controller: Ricoh Co Ltd MMC/SD Host Controller (rev 01)
+	Subsystem: Lenovo Device 2133
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Interrupt: pin A routed to IRQ 16
+	Region 0: Memory at f2500000 (32-bit, non-prefetchable) [size=256]
+	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Capabilities: [78] Power Management version 3
+		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME-
+	Capabilities: [80] Express (v1) Endpoint, MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s unlimited, L1 unlimited
+			ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+			MaxPayload 128 bytes, MaxReadReq 512 bytes
+		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
+		LnkCap:	Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <4us, L1 <64us
+			ClockPM+ Surprise- LLActRep- BwNot-
+		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+	Capabilities: [100 v1] Virtual Channel
+		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
+		Arb:	Fixed- WRR32- WRR64- WRR128-
+		Ctrl:	ArbSelect=Fixed
+		Status:	InProgress-
+		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+			Status:	NegoPending- InProgress-
+	Capabilities: [800 v1] Advanced Error Reporting
+		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+	Kernel driver in use: sdhci-pci
+	Kernel modules: sdhci-pci
 
+Best regards,
+Arnd
