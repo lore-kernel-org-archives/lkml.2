@@ -1,187 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab1KOT2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:28:43 -0500
-Received: from mail-ww0-f74.google.com ([74.125.82.74]:51118 "EHLO
-	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757310Ab1KOT0G (ORCPT
+	id S932163Ab1KOTbL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:31:11 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38881 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab1KOTbJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:26:06 -0500
+	Tue, 15 Nov 2011 14:31:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111114171039.34a04369@nehalam.linuxnetplumber.net>
+References: <cover.1321313729.git.david.decotigny@google.com>
+ <e2dd16618bc1bd5108e6dea3c7531ee229e4c699.1321313729.git.david.decotigny@google.com>
+ <20111114171039.34a04369@nehalam.linuxnetplumber.net>
 From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
+Date: Tue, 15 Nov 2011 11:30:33 -0800
+Message-ID: <CAG88wWa2S3iQbk0t8rat39aPX0XXVfMG5ub2496gchoqgFBPhA@mail.gmail.com>
+Subject: Re: [PATCH net-next v3 5/9] forcedeth: implement ndo_get_stats64() API
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
         Ian Campbell <ian.campbell@citrix.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Ben Hutchings <bhutchings@solarflare.com>,
         Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
         Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>, Sameer Nanda <snanda@google.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v4 3/8] forcedeth: allow to silence "TX timeout" debug messages
-Date: Tue, 15 Nov 2011 11:25:36 -0800
-Message-Id: <47650719c85908eb4dff05f5d243cc0e9e181748.1321384662.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321384662.git.david.decotigny@google.com>
-References: <cover.1321384662.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321384662.git.david.decotigny@google.com>
-References: <cover.1321384662.git.david.decotigny@google.com>
-Organization: Google, Inc.
+        Ayaz Abdulla <AAbdulla@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sameer Nanda <snanda@google.com>
+Hi Stephen,
 
-This adds a new module parameter "debug_tx_timeout" to silence most
-debug messages in case of TX timeout. These messages don't provide a
-signal/noise ratio high enough for production systems and, with ~30kB
-logged each time, they tend to add to a cascade effect if the system
-is already under stress (memory pressure, disk, etc.).
+On Mon, Nov 14, 2011 at 5:10 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> Please existing u64_stats_sync rather than inventing your own
+> method. The u64_stats_sync is faster and does require locking.
 
-By default, the parameter is clear, meaning that only a single warning
-will be reported.
+Thanks for your review.
+This should be fixed in the v4 series I just sent:
+http://patchwork.ozlabs.org/patch/125861/
+
+Regards,
+
+--
+David Decotigny
 
 
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |   98 ++++++++++++++++++-------------
- 1 files changed, 57 insertions(+), 41 deletions(-)
-
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index fe17e42..9b917ff 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -892,6 +892,11 @@ enum {
- static int dma_64bit = NV_DMA_64BIT_ENABLED;
- 
- /*
-+ * Debug output control for tx_timeout
-+ */
-+static bool debug_tx_timeout = false;
-+
-+/*
-  * Crossover Detection
-  * Realtek 8201 phy + some OEM boards do not work properly.
-  */
-@@ -2477,56 +2482,64 @@ static void nv_tx_timeout(struct net_device *dev)
- 	u32 status;
- 	union ring_type put_tx;
- 	int saved_tx_limit;
--	int i;
- 
- 	if (np->msi_flags & NV_MSI_X_ENABLED)
- 		status = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQSTAT_MASK;
- 	else
- 		status = readl(base + NvRegIrqStatus) & NVREG_IRQSTAT_MASK;
- 
--	netdev_info(dev, "Got tx_timeout. irq: %08x\n", status);
-+	netdev_warn(dev, "Got tx_timeout. irq status: %08x\n", status);
- 
--	netdev_info(dev, "Ring at %lx\n", (unsigned long)np->ring_addr);
--	netdev_info(dev, "Dumping tx registers\n");
--	for (i = 0; i <= np->register_size; i += 32) {
--		netdev_info(dev,
--			    "%3x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
--			    i,
--			    readl(base + i + 0), readl(base + i + 4),
--			    readl(base + i + 8), readl(base + i + 12),
--			    readl(base + i + 16), readl(base + i + 20),
--			    readl(base + i + 24), readl(base + i + 28));
--	}
--	netdev_info(dev, "Dumping tx ring\n");
--	for (i = 0; i < np->tx_ring_size; i += 4) {
--		if (!nv_optimized(np)) {
--			netdev_info(dev,
--				    "%03x: %08x %08x // %08x %08x // %08x %08x // %08x %08x\n",
--				    i,
--				    le32_to_cpu(np->tx_ring.orig[i].buf),
--				    le32_to_cpu(np->tx_ring.orig[i].flaglen),
--				    le32_to_cpu(np->tx_ring.orig[i+1].buf),
--				    le32_to_cpu(np->tx_ring.orig[i+1].flaglen),
--				    le32_to_cpu(np->tx_ring.orig[i+2].buf),
--				    le32_to_cpu(np->tx_ring.orig[i+2].flaglen),
--				    le32_to_cpu(np->tx_ring.orig[i+3].buf),
--				    le32_to_cpu(np->tx_ring.orig[i+3].flaglen));
--		} else {
-+	if (unlikely(debug_tx_timeout)) {
-+		int i;
-+
-+		netdev_info(dev, "Ring at %lx\n", (unsigned long)np->ring_addr);
-+		netdev_info(dev, "Dumping tx registers\n");
-+		for (i = 0; i <= np->register_size; i += 32) {
- 			netdev_info(dev,
--				    "%03x: %08x %08x %08x // %08x %08x %08x // %08x %08x %08x // %08x %08x %08x\n",
-+				    "%3x: %08x %08x %08x %08x "
-+				    "%08x %08x %08x %08x\n",
- 				    i,
--				    le32_to_cpu(np->tx_ring.ex[i].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i].flaglen),
--				    le32_to_cpu(np->tx_ring.ex[i+1].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i+1].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i+1].flaglen),
--				    le32_to_cpu(np->tx_ring.ex[i+2].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i+2].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i+2].flaglen),
--				    le32_to_cpu(np->tx_ring.ex[i+3].bufhigh),
--				    le32_to_cpu(np->tx_ring.ex[i+3].buflow),
--				    le32_to_cpu(np->tx_ring.ex[i+3].flaglen));
-+				    readl(base + i + 0), readl(base + i + 4),
-+				    readl(base + i + 8), readl(base + i + 12),
-+				    readl(base + i + 16), readl(base + i + 20),
-+				    readl(base + i + 24), readl(base + i + 28));
-+		}
-+		netdev_info(dev, "Dumping tx ring\n");
-+		for (i = 0; i < np->tx_ring_size; i += 4) {
-+			if (!nv_optimized(np)) {
-+				netdev_info(dev,
-+					    "%03x: %08x %08x // %08x %08x "
-+					    "// %08x %08x // %08x %08x\n",
-+					    i,
-+					    le32_to_cpu(np->tx_ring.orig[i].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i].flaglen),
-+					    le32_to_cpu(np->tx_ring.orig[i+1].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i+1].flaglen),
-+					    le32_to_cpu(np->tx_ring.orig[i+2].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i+2].flaglen),
-+					    le32_to_cpu(np->tx_ring.orig[i+3].buf),
-+					    le32_to_cpu(np->tx_ring.orig[i+3].flaglen));
-+			} else {
-+				netdev_info(dev,
-+					    "%03x: %08x %08x %08x "
-+					    "// %08x %08x %08x "
-+					    "// %08x %08x %08x "
-+					    "// %08x %08x %08x\n",
-+					    i,
-+					    le32_to_cpu(np->tx_ring.ex[i].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i].flaglen),
-+					    le32_to_cpu(np->tx_ring.ex[i+1].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i+1].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i+1].flaglen),
-+					    le32_to_cpu(np->tx_ring.ex[i+2].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i+2].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i+2].flaglen),
-+					    le32_to_cpu(np->tx_ring.ex[i+3].bufhigh),
-+					    le32_to_cpu(np->tx_ring.ex[i+3].buflow),
-+					    le32_to_cpu(np->tx_ring.ex[i+3].flaglen));
-+			}
- 		}
- 	}
- 
-@@ -6156,6 +6169,9 @@ module_param(phy_cross, int, 0);
- MODULE_PARM_DESC(phy_cross, "Phy crossover detection for Realtek 8201 phy is enabled by setting to 1 and disabled by setting to 0.");
- module_param(phy_power_down, int, 0);
- MODULE_PARM_DESC(phy_power_down, "Power down phy and disable link when interface is down (1), or leave phy powered up (0).");
-+module_param(debug_tx_timeout, bool, 0);
-+MODULE_PARM_DESC(debug_tx_timeout,
-+		 "Dump tx related registers and ring when tx_timeout happens");
- 
- MODULE_AUTHOR("Manfred Spraul <manfred@colorfullife.com>");
- MODULE_DESCRIPTION("Reverse Engineered nForce ethernet driver");
--- 
-1.7.3.1
-
+On Mon, Nov 14, 2011 at 5:10 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> On Mon, 14 Nov 2011 16:11:15 -0800
+> David Decotigny <david.decotigny@google.com> wrote:
+>
+>> This commit implements the ndo_get_stats64() API for forcedeth. Since
+>> these stats are being updated from different contexts (process and
+>> timer), this commit adds protection (locking + atomic variables).
+>>
+>> Tested:
+>>   - 16-way SMP x86_64 ->
+>>     RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
+>>   - pktgen + loopback: identical rx_bytes/tx_bytes and rx_packets/tx_packets
+>>
+>>
+>>
+>> Signed-off-by: David Decotigny <david.decotigny@google.com>
+>> ---
+>>  drivers/net/ethernet/nvidia/forcedeth.c |  182 ++++++++++++++++++++++++-------
+>>  1 files changed, 141 insertions(+), 41 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+>> index ee8cce5..a67c1f4 100644
+>> --- a/drivers/net/ethernet/nvidia/forcedeth.c
+>> +++ b/drivers/net/ethernet/nvidia/forcedeth.c
+>> @@ -692,6 +692,21 @@ struct nv_ethtool_stats {
+>>  #define NV_DEV_STATISTICS_V2_COUNT (NV_DEV_STATISTICS_V3_COUNT - 3)
+>>  #define NV_DEV_STATISTICS_V1_COUNT (NV_DEV_STATISTICS_V2_COUNT - 6)
+>>
+>> +/* driver statistics */
+>> +struct nv_driver_stat {
+>> +     atomic_t delta;  /* increase since last nv_update_stats() */
+>> +     u64 total;  /* cumulative, requires netdev_priv(dev)->stats_lock */
+>> +};
+>
+> Please existing u64_stats_sync rather than inventing your own
+> method. The u64_stats_sync is faster and does require locking.
+>
