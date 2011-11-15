@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab1KOXRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 18:17:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41172 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab1KOXRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 18:17:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] x86 / reboot: Blacklist Dell OptiPlex 990 known to require PCI reboot
-Date: Wed, 16 Nov 2011 00:19:51 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111160019.51303.rjw@sisk.pl>
+	id S1757511Ab1KOXVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 18:21:39 -0500
+Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:33916 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756664Ab1KOXVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 18:21:38 -0500
+X-Greylist: delayed 13393 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Nov 2011 18:21:38 EST
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PATCH 1/1] net/cadence: enable by default NET_ATMEL
+Date: Tue, 15 Nov 2011 20:36:30 +0100
+Message-Id: <1321385790-15056-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Ovh-Tracer-Id: 13811977108801039128
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -89
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrtdegucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnehjucdnkihjvgculddqhedmneduuchrrghnughomhcushhtrhhinhhgldhsmdculdduiedm
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -105
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnehjucdnkihjvgculddqhedm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+so the defconfig of the atmel continue to have the support of the network
+as before
 
-Dell OptiPlex 990 is known to require PCI reboot, so add it to the reboot
-blacklist in pci_reboot_dmi_table[].
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/x86/kernel/reboot.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Hi David,
 
-Index: linux/arch/x86/kernel/reboot.c
-===================================================================
---- linux.orig/arch/x86/kernel/reboot.c
-+++ linux/arch/x86/kernel/reboot.c
-@@ -443,6 +443,14 @@ static struct dmi_system_id __initdata p
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the OptiPlex 990. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell OptiPlex 990",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 990"),
-+		},
-+	},
- 	{ }
- };
+	can we have this for the 3.2 so the atmel continue to work as before
+
+Best Regards,
+J.
+ drivers/net/ethernet/cadence/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ethernet/cadence/Kconfig b/drivers/net/ethernet/cadence/Kconfig
+index 98849a1..b48378a 100644
+--- a/drivers/net/ethernet/cadence/Kconfig
++++ b/drivers/net/ethernet/cadence/Kconfig
+@@ -7,6 +7,7 @@ config HAVE_NET_MACB
  
+ config NET_ATMEL
+ 	bool "Atmel devices"
++	default y
+ 	depends on HAVE_NET_MACB || (ARM && ARCH_AT91RM9200)
+ 	---help---
+ 	  If you have a network (Ethernet) card belonging to this class, say Y.
+-- 
+1.7.7
+
