@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab1KOUXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 15:23:05 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:37612 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754176Ab1KOUXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 15:23:03 -0500
-Date: Tue, 15 Nov 2011 14:23:14 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, xfs-masters@oss.sgi.com
-Subject: Re: [PATCH] [BUGFIX] xfs: use doalloc flag in xfs_qm_dqattach_one()
-Message-ID: <20111115202314.GE29840@sgi.com>
-References: <20111110013310.3408.41745.stgit@ltc219.sdl.hitachi.co.jp>
+	id S1757444Ab1KOUX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 15:23:59 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40858 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757064Ab1KOUX6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 15:23:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110013310.3408.41745.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CALmbKGV0g2nfNAghF5dGrt=TCyrms6RznOL8jSkg+gkgyfekLg@mail.gmail.com>
+References: <CALmbKGV0g2nfNAghF5dGrt=TCyrms6RznOL8jSkg+gkgyfekLg@mail.gmail.com>
+Date: Tue, 15 Nov 2011 21:23:57 +0100
+Message-ID: <CAFLxGvynabpEcX2RwiLxatjOEzizj95jAVY6E4D9ymDpn8s9UA@mail.gmail.com>
+Subject: Re: Finding a hidden bound TCP socket
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "G. D. Fuego" <gdfuego@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:33:10AM +0900, Mitsuo Hayasaka wrote:
-> The doalloc arg in xfs_qm_dqattach_one() is a flag that indicates
-> whether a new area to handle quota information will be allocated
-> if needed. Originally, it was passed to xfs_qm_dqget(), but has
-> been removed by the following commit (probably by mistake):
-> 
-> 	commit 8e9b6e7fa4544ea8a0e030c8987b918509c8ff47
-> 	Author: Christoph Hellwig <hch@lst.de>
-> 	Date:   Sun Feb 8 21:51:42 2009 +0100
-> 
-> 	xfs: remove the unused XFS_QMOPT_DQLOCK flag
-> 
-> As the result, xfs_qm_dqget() called from xfs_qm_dqattach_one()
-> never allocates the new area even if it is needed.
-> 
-> This patch gives the doalloc arg to xfs_qm_dqget() in
-> xfs_qm_dqattach_one() to fix this problem.
-> 
-> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-> Cc: Alex Elder <aelder@sgi.com>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> ---
-> 
->  fs/xfs/xfs_qm.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
-> index 9a0aa76..95ba6dc 100644
-> --- a/fs/xfs/xfs_qm.c
-> +++ b/fs/xfs/xfs_qm.c
-> @@ -674,7 +674,8 @@ xfs_qm_dqattach_one(
->  	 * disk and we didn't ask it to allocate;
->  	 * ESRCH if quotas got turned off suddenly.
->  	 */
-> -	error = xfs_qm_dqget(ip->i_mount, ip, id, type, XFS_QMOPT_DOWARN, &dqp);
-> +	error = xfs_qm_dqget(ip->i_mount, ip, id, type,
-> +			     doalloc | XFS_QMOPT_DOWARN, &dqp);
->  	if (error)
->  		return error;
->  
+On Tue, Nov 15, 2011 at 8:21 PM, G. D. Fuego <gdfuego@gmail.com> wrote:
+> Hello,
+>
+> I have a question about an odd linux networking behavior, that could
+> potentially be a local networking DoS.  I'm curious if anyone is
+> familiar with this behavior.
+>
+> Essentially I was assisting someone with tracking down a hidden tcp
+> connection.  Attempts to bind to a particular port were failing,
+> saying the socket was in use, even though netstat was not reporting
+> any sort of connection.  They were initially suspecting a root kit,
+> but after a bit of digging, I came across this page:
+>
+> http://dcid.me/2007/06/hidden-ports-on-linux/
+>
+> From the page:
+>
+> "Here is the idea. If you get this simple C program, it will attempt
+> to bind every TCP port from 1025 to 1050, but it will not listen on
+> them. After it is done, if you do a netstat (or fuser or lsof) nothing
+> will be shown. However, if you try to use the port, you will get an
+> error saying that it is already in use."
+>
+> I tested it out and confirmed that connections opened by their test
+> program do in fact cause the port to be unavailable for use, and they
+> are not reported in netstat, lsof, ss, or any other networking tools
+> that I tried.  I'm unable to to find any references to the ports being
+> in use anywhere I've looked within /proc.  Are you aware of another
+> way to figure out which process may be bound to the port?  In our
+> case, we figured out via trial and error which software was likely
+> triggering this behavior.
+>
+> It seems to me that this could be a potentially interesting local
+> networking DoS.  By binding to all ephemeral ports in this way, you'd
+> prevent the local system from being able to establish any tcp
+> connections, and it would be a pain to figure out which process was
+> causing the problem.
+>
+> My lame attempts to exploit this failed due to a max file descriptor
+> limit, but I'm told this could be doable by forking more processes for
+> doing the binding.
+>
+> Is this behavior known/expected?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Looks like the only caller of xfs_qm_dqattach_one with XFS_QMOPT_DOALLOC
-possibly set is xfs_qm_dqattach_locked, which does so based upon its
-argument 'flags'.  AFAICS the only caller of xfs_qm_dqattach_locked that
-sets this flag is xfs_qm_vop_dqalloc, which is called by
-xfs_ioctl_setattr, xfs_setattr_nonsize, xfs_create, and xfs_symlink.
+CC'ing netdev
 
-xfs_ioctl_setattr|xfs_setattr_nonsize|xfs_create|xfs_symlink
-  xfs_qm_vop_dqalloc
-    xfs_qm_dqattach_locked(ip, XFS_QMOPT_DQALLOC
-      xfs_qm_dqattach_one
-
-I tried a few things to see if I could hit a problem without the patch
-but no luck.
-
-Anyway... Looks good.
-
-Reviewed-by: Ben Myers <bpm@sgi.com>
+-- 
+Thanks,
+//richard
