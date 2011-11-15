@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1KOJmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 04:42:09 -0500
-Received: from mail-am1.bigfish.com ([213.199.180.138]:1309 "EHLO
-	AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754403Ab1KOJmH (ORCPT
+	id S1754607Ab1KOJnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 04:43:32 -0500
+Received: from mail-am1.bigfish.com ([213.199.180.138]:55939 "EHLO
+	AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754093Ab1KOJnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 04:42:07 -0500
+	Tue, 15 Nov 2011 04:43:31 -0500
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h)
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh87h2a8h668h839h)
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
 X-FB-DOMAIN-IP-MATCH: fail
 From: Dong Aisheng <dong.aisheng@linaro.org>
 To: <linux-kernel@vger.kernel.org>
-CC: <grant.likely@secretlab.ca>, <arnd@arndb.de>
-Subject: [PATCH 1/1] gpio: introduce gpio_export_array to ease export for gpio arrays
-Date: Tue, 15 Nov 2011 17:54:01 +0800
-Message-ID: <1321350841-8549-1-git-send-email-dong.aisheng@linaro.org>
+CC: <grant.likely@secretlab.ca>, <arnd@arndb.de>, <s.hauer@pengutronix.de>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>
+Subject: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro define
+Date: Tue, 15 Nov 2011 17:55:10 +0800
+Message-ID: <1321350910-8685-1-git-send-email-dong.aisheng@linaro.org>
 X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -25,153 +27,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce gpio_export_array function to ease the export operation
-for gpio arrays.
-This can cooperate with the exist gpio_request_array function.
-
 Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 Cc: Grant Likely <grant.likely@secretlab.ca>
 Cc: Arnd Bergmann <arnd@arndb.de>
-
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>
 ---
-We already have gpio_request_array, i'm wondering if we can have
-a gpio_export_array to cooperate to ease the export operation
-for gpio arrays.
----
- drivers/gpio/gpiolib.c     |   35 +++++++++++++++++++++++++++++++++++
- include/asm-generic/gpio.h |   14 ++++++++++++++
- include/linux/gpio.h       |   15 +++++++++++++++
- 3 files changed, 64 insertions(+), 0 deletions(-)
+ drivers/gpio/gpio-mxs.c |   17 +++++++----------
+ 1 files changed, 7 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index a971e3d..e9f2374 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -816,6 +816,29 @@ done:
+diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
+index 385c58e..b9f7567 100644
+--- a/drivers/gpio/gpio-mxs.c
++++ b/drivers/gpio/gpio-mxs.c
+@@ -31,9 +31,6 @@
+ #include <linux/module.h>
+ #include <mach/mxs.h>
+ 
+-#define MXS_SET		0x4
+-#define MXS_CLR		0x8
+-
+ #define PINCTRL_DOUT(n)		((cpu_is_mx23() ? 0x0500 : 0x0700) + (n) * 0x10)
+ #define PINCTRL_DIN(n)		((cpu_is_mx23() ? 0x0600 : 0x0900) + (n) * 0x10)
+ #define PINCTRL_DOE(n)		((cpu_is_mx23() ? 0x0700 : 0x0b00) + (n) * 0x10)
+@@ -91,19 +88,19 @@ static int mxs_gpio_set_irq_type(struct irq_data *d, unsigned int type)
+ 	/* set level or edge */
+ 	pin_addr = port->base + PINCTRL_IRQLEV(port->id);
+ 	if (edge & GPIO_INT_LEV_MASK)
+-		writel(pin_mask, pin_addr + MXS_SET);
++		writel(pin_mask, pin_addr + MXS_SET_ADDR);
+ 	else
+-		writel(pin_mask, pin_addr + MXS_CLR);
++		writel(pin_mask, pin_addr + MXS_CLR_ADDR);
+ 
+ 	/* set polarity */
+ 	pin_addr = port->base + PINCTRL_IRQPOL(port->id);
+ 	if (edge & GPIO_INT_POL_MASK)
+-		writel(pin_mask, pin_addr + MXS_SET);
++		writel(pin_mask, pin_addr + MXS_SET_ADDR);
+ 	else
+-		writel(pin_mask, pin_addr + MXS_CLR);
++		writel(pin_mask, pin_addr + MXS_CLR_ADDR);
+ 
+ 	writel(1 << (gpio & 0x1f),
+-	       port->base + PINCTRL_IRQSTAT(port->id) + MXS_CLR);
++	       port->base + PINCTRL_IRQSTAT(port->id) + MXS_CLR_ADDR);
+ 
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(gpio_export_link);
+@@ -164,7 +161,7 @@ static void __init mxs_gpio_init_gc(struct mxs_gpio_port *port)
+ 	ct->chip.irq_unmask = irq_gc_mask_set_bit;
+ 	ct->chip.irq_set_type = mxs_gpio_set_irq_type;
+ 	ct->chip.irq_set_wake = mxs_gpio_set_wake_irq;
+-	ct->regs.ack = PINCTRL_IRQSTAT(port->id) + MXS_CLR;
++	ct->regs.ack = PINCTRL_IRQSTAT(port->id) + MXS_CLR_ADDR;
+ 	ct->regs.mask = PINCTRL_IRQEN(port->id);
  
-+/**
-+ * gpio_export_array - export multiple GPIOs in a single call
-+ * @array:	array of the 'struct gpio'
-+ * @num:	how many GPIOs in the array
-+ */
-+int gpio_export_array(const struct gpio *array, size_t num,
-+			bool direction_may_change)
-+{
-+	int i, err;
-+
-+	for (i = 0; i < num; i++, array++) {
-+		err = gpio_export(array->gpio, direction_may_change);
-+		if (err)
-+			goto err_export;
-+	}
-+	return 0;
-+
-+err_export:
-+	while (i--)
-+		gpio_unexport((--array)->gpio);
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(gpio_export_array);
+ 	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
+@@ -232,7 +229,7 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
+ 	writel(0, port->base + PINCTRL_IRQEN(port->id));
  
- /**
-  * gpio_sysfs_set_active_low - set the polarity of gpio sysfs value
-@@ -903,6 +926,18 @@ done:
- }
- EXPORT_SYMBOL_GPL(gpio_unexport);
+ 	/* clear address has to be used to clear IRQSTAT bits */
+-	writel(~0U, port->base + PINCTRL_IRQSTAT(port->id) + MXS_CLR);
++	writel(~0U, port->base + PINCTRL_IRQSTAT(port->id) + MXS_CLR_ADDR);
  
-+/**
-+ * gpio_unexport_array - unexport multiple GPIOs in a single call
-+ * @array:	array of the 'struct gpio'
-+ * @num:	how many GPIOs in the array
-+ */
-+void gpio_unexport_array(const struct gpio *array, size_t num)
-+{
-+	while (num--)
-+		gpio_unexport((array++)->gpio);
-+}
-+EXPORT_SYMBOL_GPL(gpio_unexport_array);
-+
- static int gpiochip_export(struct gpio_chip *chip)
- {
- 	int		status;
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 8c86210..ed0ce4d 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -182,10 +182,13 @@ extern void gpio_free_array(const struct gpio *array, size_t num);
-  * but more typically is configured entirely from userspace.
-  */
- extern int gpio_export(unsigned gpio, bool direction_may_change);
-+extern int gpio_export_array(const struct gpio *array, size_t num,
-+			bool direction_may_change);
- extern int gpio_export_link(struct device *dev, const char *name,
- 			unsigned gpio);
- extern int gpio_sysfs_set_active_low(unsigned gpio, int value);
- extern void gpio_unexport(unsigned gpio);
-+extern void gpio_unexport_array(const struct gpio *array, size_t num);
- 
- #endif	/* CONFIG_GPIO_SYSFS */
- 
-@@ -237,6 +240,12 @@ static inline int gpio_export_link(struct device *dev, const char *name,
- 	return -ENOSYS;
- }
- 
-+static inline int gpio_export_array(const struct gpio *array, size_t num,
-+			bool direction_may_change)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int gpio_sysfs_set_active_low(unsigned gpio, int value)
- {
- 	return -ENOSYS;
-@@ -245,6 +254,11 @@ static inline int gpio_sysfs_set_active_low(unsigned gpio, int value)
- static inline void gpio_unexport(unsigned gpio)
- {
- }
-+
-+static inline void gpio_unexport_array(const struct gpio *array,
-+			size_t num)
-+{
-+}
- #endif	/* CONFIG_GPIO_SYSFS */
- 
- #endif /* _ASM_GENERIC_GPIO_H */
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 38ac48b..9b5aae5 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -138,6 +138,14 @@ static inline int gpio_export_link(struct device *dev, const char *name,
- 	return -EINVAL;
- }
- 
-+static inline int gpio_export_array(const struct gpio *array, size_t num,
-+			bool direction_may_change)
-+{
-+	/* GPIO can never have been requested or set as {in,out}put */
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
-+
- static inline int gpio_sysfs_set_active_low(unsigned gpio, int value)
- {
- 	/* GPIO can never have been requested */
-@@ -151,6 +159,13 @@ static inline void gpio_unexport(unsigned gpio)
- 	WARN_ON(1);
- }
- 
-+static inline void gpio_unexport_array(const struct gpio *array,
-+			size_t num)
-+{
-+	/* GPIO array can never have been exported */
-+	WARN_ON(1);
-+}
-+
- static inline int gpio_to_irq(unsigned gpio)
- {
- 	/* GPIO can never have been requested or set as input */
+ 	/* gpio-mxs can be a generic irq chip */
+ 	mxs_gpio_init_gc(port);
 -- 
 1.7.0.4
 
