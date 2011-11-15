@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab1KORTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 12:19:09 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50392 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab1KORTH (ORCPT
+	id S1756915Ab1KORVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 12:21:09 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49096 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab1KORVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 12:19:07 -0500
-From: Grant Grundler <grundler@chromium.org>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Allan Chou <allan@asix.com.tw>, Freddy Xin <freddy@asix.com.tw>,
-        Grant Grundler <grundler@google.com>,
-        Grant Grundler <grundler@chromium.org>
-Subject: [PATCH 2/5] net-next:asix:poll in asix_get_phyid in case phy not ready
-Date: Tue, 15 Nov 2011 09:12:40 -0800
-Message-Id: <1321377163-26308-2-git-send-email-grundler@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1321377163-26308-1-git-send-email-grundler@chromium.org>
-References: <1321377163-26308-1-git-send-email-grundler@chromium.org>
+	Tue, 15 Nov 2011 12:21:08 -0500
+Date: Tue, 15 Nov 2011 17:20:53 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Patrick Combes <p-combes@ti.com>, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hugo Dupras <h-dupras@ti.com>
+Subject: Re: [RFC][PATCH] gpiolib: add irq_wake (power-management) sysfs
+	file
+Message-ID: <20111115172053.GB9581@n2100.arm.linux.org.uk>
+References: <1321004406-15663-1-git-send-email-p-combes@ti.com> <20111115131636.GA31028@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111115131636.GA31028@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Grundler <grundler@google.com>
+On Tue, Nov 15, 2011 at 01:16:37PM +0000, Mark Brown wrote:
+> On Fri, Nov 11, 2011 at 10:40:06AM +0100, Patrick Combes wrote:
+> > +	else if (sysfs_streq(buf, "enable") || sysfs_streq(buf, "1"))
+> > +		status = enable_irq_wake(gpio_to_irq(gpio));
+> > +	else if (sysfs_streq(buf, "disable") || sysfs_streq(buf, "0"))
+> > +		status = disable_irq_wake(gpio_to_irq(gpio));
+> > +	else
+> > +		status = -EINVAL;
+> 
+> ...this doesn't do anything to stop userspace doing multiple enables and
+> disables.
 
-Sometimes the phy isn't ready after reset...poll and pray it will be soon.
+It doesn't check whether gpio_to_irq(gpio) returns something sane either.
+It should be doing something like this before taking the mutex:
 
-Signed-off-by: Freddy Xin <freddy@asix.com.tw>
-Signed-off-by: Grant Grundler <grundler@chromium.org>
----
- drivers/net/usb/asix.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+	irq = gpio_to_irq(gpio);
+	if (irq <= 0)
+		return irq < 0 ? irq : -EINVAL;
 
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index 873860d..b4675e8 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -652,9 +652,17 @@ static u32 asix_get_phyid(struct usbnet *dev)
- {
- 	int phy_reg;
- 	u32 phy_id;
-+	int i;
- 
--	phy_reg = asix_mdio_read(dev->net, dev->mii.phy_id, MII_PHYSID1);
--	if (phy_reg < 0)
-+	/* Poll for the rare case the FW or phy isn't ready yet.  */
-+	for (i = 0; i < 100; i++) {
-+		phy_reg = asix_mdio_read(dev->net, dev->mii.phy_id, MII_PHYSID1);
-+		if (phy_reg != 0 && phy_reg != 0xFFFF)
-+			break;
-+		mdelay(1);
-+	}
-+
-+	if (phy_reg <= 0 || phy_reg == 0xFFFF)
- 		return 0;
- 
- 	phy_id = (phy_reg & 0xffff) << 16;
--- 
-1.7.3.1
-
+and then doing (enable|disable)_irq_wake() on irq.
