@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab1KOVux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 16:50:53 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49033 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab1KOVuw (ORCPT
+	id S1757419Ab1KOVzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:55:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41145 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab1KOVy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 16:50:52 -0500
-X-Originating-IP: 217.70.178.135
-X-Originating-IP: 50.43.15.19
-Date: Tue, 15 Nov 2011 13:50:41 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/9] Preview of additional RCU changes for
- 3.3
-Message-ID: <20111115215041.GF31473@leaf>
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115202736.GA11030@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Nov 2011 16:54:59 -0500
+Message-ID: <1321394084.32358.17.camel@fourier>
+Subject: Re: [Intel-gfx] [PATCH] i915: Fix bug where screen brightness is
+	not restored
+From: Kamal Mostafa <kamal@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Alex Davis <alex14641@yahoo.com>, Keith Packard <keithp@keithp.com>,
+        "mjg@redhat.com" <mjg@redhat.com>, intel-gfx@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 15 Nov 2011 13:54:44 -0800
+In-Reply-To: <s5hehx96sgk.wl%tiwai@suse.de>
+References: <1321324952.13838.YahooMailNeo@web130105.mail.mud.yahoo.com>
+	 <1321387118.27038.17.camel@fourier> <s5hehx96sgk.wl%tiwai@suse.de>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-qBZ6aoWWnJbWxwbKazns"
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 12:27:36PM -0800, Paul E. McKenney wrote:
-> This patchset is in addition to the set previously posted (see
-> https://lkml.org/lkml/2011/11/2/363).  This new set permits the
-> reworked RCU_FAST_NO_HZ code to be used from TREE_PREEMPT_RCU,
-> allows rcutorture to shut down the system after a fixed time
-> period (useful for KVM-based testing), adds an API to
-> replace the "->pid == 0" discussed in response to the earlier
-> patch set, and applies this API where applicable.  The patches are
-> as follows:
-> 
-> 1.	Update the RCU_FAST_NO_HZ config definition to allow it to
-> 	be used in TREE_PREEMPT_RCU builds, since that is now legal.
-> 2.	Add a module parameter that permit rcutorture to shut down the
-> 	system cleanly after the test has run for the specified time.
-> 3.	Add a module parameter to allow rcutorture start running
-> 	as soon as it is initialized.
-> 4.	Add is_idle_task() API to replace open-coded tests of ->pid
-> 	against zero.
-> 5-9.	Apply the new is_idle_task() API where it makes sense.
 
-I replied to patches 2-4 with review comments.  For the rest:
+--=-qBZ6aoWWnJbWxwbKazns
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Tue, 2011-11-15 at 21:28 +0100, Takashi Iwai wrote:
+> My rough guess is the inconsistency of property taken during the
+> backlight disabled.  How about the patch below (untested!) in addition
+> to the fix in 3.2?
+>=20
+>=20
+> Takashi
+
+Yes Takashi, your patch below (plus the already committed fix[0]) does
+indeed fix the problem[1] for me.  Thanks!
+
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+
+ -Kamal
+
+[0] f52c619a590fa75276c07dfcaf380dee53e4ea4c
+    drm/i915/panel: Always record the backlight level again (but cleverly)
+
+[1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/872652
+
+
+
+> ---
+> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/in=
+tel_panel.c
+> index 499d4c0..21f60b7 100644
+> --- a/drivers/gpu/drm/i915/intel_panel.c
+> +++ b/drivers/gpu/drm/i915/intel_panel.c
+> @@ -326,7 +326,8 @@ static int intel_panel_update_status(struct backlight=
+_device *bd)
+>  static int intel_panel_get_brightness(struct backlight_device *bd)
+>  {
+>  	struct drm_device *dev =3D bl_get_data(bd);
+> -	return intel_panel_get_backlight(dev);
+> +	struct drm_i915_private *dev_priv =3D dev->dev_private;
+> +	return dev_priv->backlight_level;
+>  }
+> =20
+>  static const struct backlight_ops intel_panel_bl_ops =3D {
+>=20
+
+
+--=-qBZ6aoWWnJbWxwbKazns
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABCAAGBQJOwt+kAAoJEOf3EFVUCeQiMagP/A11JqmDfz+KoKT0Bv0SooxM
+kYOpAx7gC/QOvGQriXHaECiS+bG2vG6uRTzhCtc7taTiogEFYV5p6fVur+ZcdOYH
+4mUwsvjKUD/3K5gvyXVf/+rNCTDHmWVv4PstHuCQHhzCb2IPbVX8o6eX4SEJxbUn
+3wcNvMRxEb1gMpID+fE9sMMpNkAc889m0f8MHVfRri6pJEqRk0b5TNa2U+IowY1v
+/6Pnz81rSsvOTow/3YLxmFIxTIHnS77ozVLrEmKd3FVfvLa7dAnXt1UeZbmyEsdL
+Jf9CoJKb2WqRiyanOxjbJMfOslxBndfietUBiB4IoSpedoF7/w50FuvnLrdpEzho
+ez7Dq5L85iFnjTjzL+1+lEehTH3hwd4PIUHfk1W5aSlCMHKWdu1cNKhb3gUt/Nkg
+oEhcKipT5nCuwrNdJySw9r3VpjLGCcgMVBCymZpC9Fsxbp1YO6ikoET6eAjVQ1QG
+vFnpYuNCpqXEfW/GkVXDxdVwuaOUCG7B594Yxc6d7EXm/pRxj5QKtViPviupeDeo
+lc+J6hM1w5/2OYmmnx6ycGni6s85BzW9Dy6cp3soZxM78a5UF2LGGhwpNvlslzMG
+QJgHXGHpGmvY9EPXy3H98iTJ9E76eTTIwXQvkenOlFQuUzQd0TsOLBuQiSWqZ4Ul
+vLjee0aM08kkT5iUQXmU
+=G5i3
+-----END PGP SIGNATURE-----
+
+--=-qBZ6aoWWnJbWxwbKazns--
+
