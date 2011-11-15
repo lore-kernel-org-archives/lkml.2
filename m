@@ -1,117 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750909Ab1KOFFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 00:05:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60985 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab1KOFFp (ORCPT
+	id S1751213Ab1KOFRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 00:17:44 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:41278 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab1KOFRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 00:05:45 -0500
-Date: Tue, 15 Nov 2011 13:04:26 +0800
-From: wangyanqing <udknight@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]usb: serial: pl2303: rm id
-Message-ID: <20111115050426.GA3738@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
-	Greg KH <gregkh@suse.de>, wd@denx.de, stable@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20111110060408.GA25028@udknight.homenetwork>
- <20111114011130.GA4433@udknight.homenetwork>
- <20111114035815.GA17996@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111114035815.GA17996@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Nov 2011 00:17:42 -0500
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Joerg Roedel <joro@8bytes.org>, Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        YoungLak Kim <younglak1004.kim@samsung.com>
+Subject: [PATCH v6 0/2] iommu/exynos: Add IOMMU and Enhance System MMU driver for Samsung Exynos
+Date: Tue, 15 Nov 2011 13:58:50 +0900
+Message-Id: <1321333132-17662-1-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 07:58:15PM -0800, Greg KH wrote:
-> On Mon, Nov 14, 2011 at 09:11:30AM +0800, wangyanqing wrote:
-> > On Thu, Nov 10, 2011 at 02:04:08PM +0800, wangyanqing wrote:
-> > > I get report from customer that his usb-serial
-> > > converter doesn't work well,it sometimes work,
-> > > but sometimes it doesn't.
-> > > 
-> > > The usb-serial converter's id:
-> > > vendor_id product_id
-> > > 0x4348    0x5523
-> > > 
-> > > Then I search the usb-serial codes, and there are
-> > > two drivers announce support this device, pl2303
-> > > and ch341, commit 026dfaf1 cause it. Through many
-> > > times to test, ch341 works well with this device,
-> > > and pl2303 doesn't work quite often(it just work quite little).
-> > > 
-> > > ch341 works well with this device, so we doesn't
-> > > need pl2303 to support.I try to revert 026dfaf1 first,
-> > > but it failed. So I prepare this patch by hand to revert it.
-> > > 
-> > > Signed-off-by: Wang YanQing <Udknight@gmail.com>
-> > > ---
-> > >  drivers/usb/serial/pl2303.c |    1 -
-> > >  drivers/usb/serial/pl2303.h |    4 ----
-> > >  2 files changed, 0 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-> > > index 9083d1e..fc2d66f 100644
-> > > --- a/drivers/usb/serial/pl2303.c
-> > > +++ b/drivers/usb/serial/pl2303.c
-> > > @@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
-> > >  	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
-> > >  	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
-> > >  	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
-> > > -	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
-> > >  	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
-> > >  	{ }					/* Terminating entry */
-> > >  };
-> > > diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
-> > > index 3d10d7f..c38b8c0 100644
-> > > --- a/drivers/usb/serial/pl2303.h
-> > > +++ b/drivers/usb/serial/pl2303.h
-> > > @@ -145,10 +145,6 @@
-> > >  #define ADLINK_VENDOR_ID		0x0b63
-> > >  #define ADLINK_ND6530_PRODUCT_ID	0x6530
-> > >  
-> > > -/* WinChipHead USB->RS 232 adapter */
-> > > -#define WINCHIPHEAD_VENDOR_ID		0x4348
-> > > -#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
-> > > -
-> > >  /* SMART USB Serial Adapter */
-> > >  #define SMART_VENDOR_ID	0x0b8c
-> > >  #define SMART_PRODUCT_ID	0x2303
-> > > -- 
-> > > 1.7.3.4
-> > > 
-> > Hi all.
-> > Maybe it should be noticed that not only one usb-serial converter base 
-> > this chip have this issue, but there are about 50(even more) usb-serial 
-> > coverter lines have the same issue, so we can't ignore it.
-> > Of course we can make all the drivers work well, but we should make it
-> > useful at the first.
-> 
-> Why not add the device id to the other driver at the same time, that
-> would ensure that the device continues to work, right?
-> 
-> thanks,
-> 
-> greg k-h
+Hi.
 
-Ok greg, thanks for your reply!
-But I means maybe I make a very very "bad" subject in the email at all!
-There are ch341 and pl2303 , two drivers announce to support this device,
-ch341 works well and pl2303 does't work always.
+Patch Summary:
+[PATCH v6 1/2] ARM: EXYNOS: Change System MMU platform device definitions
+[PATCH v6 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
 
-Maybe I should make the email "shorter" next time.
-This is the origin email.
-https://lkml.org/lkml/2011/11/10/66
+The first patche enhances System MMU platform device definition:
+ - Removed System MMU for MDMA0 in TOP block because it is not
+   used. Use MDMA2 in LCD block.
+ - Removed System MMU ID. Instead, a System MMU is bound to a device
+   that the System MMU is dedicated during machin initialization.
+   If a device driver wants to handle System MMU, it must bind its
+   device with System MMU with sysmmu_set_owner().
+ - clkdev
 
-We don't need to add the device id to the other driver, ch341 have done it!!
-Please looks at ch341.c:76 line
-"
-       { USB_DEVICE(0x4348, 0x5523) }, "
+The last patch implements IOMMU API:
+ - System MMU device driver is removed from arch/arm/plat-s5p
+   to move it to driver/iommu directory.
+ - Implements IOMMU API and System MMU driver that is moved from
+   arch/arm/plat-s5p.
+ - Implements fault handling that is suggested by Ohad.
+ - Used bus_set_iommu instead of register_iommu that is suggested
+   by Joerg.
+ - Implements iommu_commit().
 
-Thanks again.
- 
+Changes since v5:
+- Relation between device and a domain become n:1 (Joerg's comment)
+- Implements iommu_commit().
+
+Changes since v4:
+- exynos_iommu_unmap()returns unmapped size in page order
+  (Ohad Ben-Cohen's comment)
+- Fixed typo error of resource names
+- Fixed missing #include<mach/sysmmu.h>
+  in arch/arm/mach-exynos4/mach-armlex4210.c
+
+Changes since v3:
+- Used DEFINE_RES_MEM and DEFINE_RES_IRQ macros
+  to define resources of System MMU (Russell King's comment)
+- Fixed removal of CONFIG_S5P_SLEEP definition
+  (Sylwester Nawrocki's comment)
+
+Changes since v2:
+- Add lock for System MMU private data.
+  And fixes the following problems pointed by Joerg Rodel:
+- Fix wrong argument to kmalloc() and get_free_pages()
+- Merged patches into 2 due to bisectability
+
+Changes since v1:
+Fixes of the following problems pointed by Russell King.:
+ - Missing unlocking a spinlock in exynos_iommu_attach_dev().
+ - atomic_t -> int in sysmmu_drvdata.activations
+ - sysmmu_platdata -> sysmmu_drvdata
+ - Change in error messages in irq handler
+ - Removed casting in format of error message
+ - omap_iommu_ops -> exynos_iommu_ops in the last patch
+
+Diffstat:
+ arch/arm/mach-exynos/Kconfig                      |    2 +
+ arch/arm/mach-exynos/clock-exynos4210.c           |   16 +
+ arch/arm/mach-exynos/clock.c                      |   55 +-
+ arch/arm/mach-exynos/dev-sysmmu.c                 |  272 ++-----
+ arch/arm/mach-exynos/include/mach/dev-sysmmu.h    |   61 ++
+ arch/arm/mach-exynos/include/mach/exynos4-clock.h |    1 +
+ arch/arm/mach-exynos/include/mach/map.h           |    3 +-
+ arch/arm/mach-exynos/include/mach/regs-sysmmu.h   |   26 +-
+ arch/arm/mach-exynos/include/mach/sysmmu.h        |   46 -
+ arch/arm/mach-exynos/mach-armlex4210.c            |    1 -
+ arch/arm/mach-exynos/mach-nuri.c                  |   40 +
+ arch/arm/mach-exynos/mach-origen.c                |   42 +
+ arch/arm/mach-exynos/mach-smdk4x12.c              |    9 +
+ arch/arm/mach-exynos/mach-smdkv310.c              |   43 +-
+ arch/arm/mach-exynos/mach-universal_c210.c        |   42 +
+ arch/arm/plat-s5p/Kconfig                         |    8 -
+ arch/arm/plat-s5p/Makefile                        |    1 -
+ arch/arm/plat-s5p/sysmmu.c                        |  312 -------
+ arch/arm/plat-samsung/include/plat/devs.h         |    1 -
+ arch/arm/plat-samsung/include/plat/sysmmu.h       |   95 --
+ drivers/iommu/Kconfig                             |   12 +
+ drivers/iommu/Makefile                            |    1 +
+ drivers/iommu/exynos-iommu.c                      | 1035 +++++++++++++++++++++
+ drivers/iommu/iommu.c                             |    4 +-
+ 24 files changed, 1406 insertions(+), 722 deletions(-)
