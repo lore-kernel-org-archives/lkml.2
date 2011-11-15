@@ -1,112 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab1KOHUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 02:20:39 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:48393 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab1KOHUi convert rfc822-to-8bit (ORCPT
+	id S1753151Ab1KOHXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 02:23:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36444 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab1KOHXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 02:20:38 -0500
-X-AuditID: cbfee61a-b7cf1ae00000208e-dc-4ec212c5bbfc
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-References: <1320897382.13190.1.camel@phoenix>
-In-reply-to: <1320897382.13190.1.camel@phoenix>
-Subject: RE: [PATCH] ARM: SAMSUNG: gpio-cfg.h: include linux/types.h
-Date: Tue, 15 Nov 2011 16:20:37 +0900
-Message-id: <003601cca367$1266fcc0$3734f640$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyfXL8ratvJ/4ItQkeUK5c1/jU2TAECkE5A
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 15 Nov 2011 02:23:06 -0500
+Date: Tue, 15 Nov 2011 15:22:52 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Julie Sullivan <kernelmail.jms@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: INFO: possible recursive locking detected: get_partial_node() on
+ 3.2-rc1
+Message-ID: <20111115072251.GA10389@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20111109090556.GA5949@zhy>
+ <201111102335.06046.kernelmail.jms@gmail.com>
+ <1320980671.22361.252.camel@sli10-conroe>
+ <alpine.DEB.2.00.1111110857330.3557@router.home>
+ <1321248853.22361.280.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1321248853.22361.280.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin wrote:
+On Mon, Nov 14, 2011 at 01:34:13PM +0800, Shaohua Li wrote:
+> On Fri, 2011-11-11 at 23:02 +0800, Christoph Lameter wrote:
+> > On Fri, 11 Nov 2011, Shaohua Li wrote:
+> > 
+> > > Looks this could be a real dead lock. we hold a lock to free a object,
+> > > but the free need allocate a new object. if the new object and the freed
+> > > object are from the same slab, there is a deadlock.
+> > 
+> > unfreeze partials is never called when going through get_partial_node()
+> > so there is no deadlock AFAICT.
+> the unfreeze_partial isn't called from get_partial_node(). I thought the
+> code path is something like this: kmem_cache_free()->put_cpu_partial()
+> (hold lock) ->unfreeze_partials() ->discard_slab ->debug_object_init()
+> ->kmem_cache_alloc->get_partial_node()(hold lock). Not sure if this will
+> really happen, but looks like a deadlock.
+> But anyway, discard_slab() can be move out of unfreeze_partials()
 > 
-> Include linux/types.h to fix below build error:
+> > > discard_slab() doesn't need hold the lock if the slab is already removed
+> > > from partial list. how about below patch, only compile tested.
+> > 
+> > In general I think it is good to move the call to discard_slab() out from
+> > under the list_lock in unfreeze_partials(). Could you fold
+> > discard_page_list into unfreeze_partials()? __flush_cpu_slab still calls
+> > discard_page_list with disabled interrupts even after your patch.
+> I'm afraid there is alloc-in-atomic() error, but Yong & Julie's test
+> shows this is over thinking. Here is the updated patch. Yong & Julie, I
+> added your report/test by, because the new patch should be just like the
+> old one, but since I changed it a little bit, can you please have a
+> quick check? Thanks!
 > 
->   CC      drivers/power/max8903_charger.o
-> In file included from arch/arm/plat-samsung/include/plat/gpio-fns.h:27,
->                  from arch/arm/mach-s3c2410/include/mach/gpio-fns.h:1,
->                  from arch/arm/mach-s3c2410/include/mach/gpio.h:27,
->                  from /home/axel/repos/git/linux-
-> 2.6/arch/arm/include/asm/gpio.h:5,
->                  from include/linux/gpio.h:30,
->                  from drivers/power/max8903_charger.c:23:
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:27: error: expected '=', ',', ';', 'asm'
-> or '__attribute__' before 'samsung_gpio_pull_t'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:28: error: expected '=', ',', ';', 'asm'
-> or '__attribute__' before 's5p_gpio_drvstr_t'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:55: error: expected specifier-
-> qualifier-list before 'samsung_gpio_pull_t'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:146: error: expected declaration
-> specifiers or '...' before 'samsung_gpio_pull_t'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:154: error: expected '=', ',', ';', 'asm'
-> or '__attribute__' before 's3c_gpio_getpull'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:173: error: expected declaration
-> specifiers or '...' before 'samsung_gpio_pull_t'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h: In function
-> 's3c_gpio_cfgrange_nopull':
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:178: error: '__force' undeclared (first
-> use in this function)
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:178: error: (Each undeclared
-> identifier is reported only once
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:178: error: for each function it
-> appears in.)
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:178: error: expected ')' before
-> 'samsung_gpio_pull_t'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:178: error: expected ')' before
-> numeric constant
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:178: error: too many arguments to
-> function 's3c_gpio_cfgall_range'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h: At top level:
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:197: error: expected '=', ',', ';', 'asm'
-> or '__attribute__' before 's5p_gpio_get_drvstr'
-> arch/arm/plat-samsung/include/plat/gpio-cfg.h:208: error: expected declaration
-> specifiers or '...' before 's5p_gpio_drvstr_t'
-> make[2]: *** [drivers/power/max8903_charger.o] Error 1
-> make[1]: *** [drivers/power] Error 2
-> make: *** [drivers] Error 2
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> 
+> Subject: slub: move discard_slab out of node lock
+> 
+> Lockdep reports there is potential deadlock for slub node list_lock.
+> discard_slab() is called with the lock hold in unfreeze_partials(),
+> which could trigger a slab allocation, which could hold the lock again.
+> 
+> discard_slab() doesn't need hold the lock actually, if the slab is
+> already removed from partial list.
+> 
+> Reported-and-tested-by: Yong Zhang <yong.zhang0@gmail.com>
+> Reported-and-tested-by: Julie Sullivan <kernelmail.jms@gmail.com>
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
+Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+
+Thanks,
+Yong
+
 > ---
->  arch/arm/plat-samsung/include/plat/gpio-cfg.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  mm/slub.c |   16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/arm/plat-samsung/include/plat/gpio-cfg.h b/arch/arm/plat-
-> samsung/include/plat/gpio-cfg.h
-> index d48245b..df8155b 100644
-> --- a/arch/arm/plat-samsung/include/plat/gpio-cfg.h
-> +++ b/arch/arm/plat-samsung/include/plat/gpio-cfg.h
-> @@ -24,6 +24,8 @@
->  #ifndef __PLAT_GPIO_CFG_H
->  #define __PLAT_GPIO_CFG_H __FILE__
-> 
-> +#include<linux/types.h>
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c	2011-11-11 16:17:39.000000000 +0800
+> +++ linux/mm/slub.c	2011-11-14 13:11:11.000000000 +0800
+> @@ -1862,7 +1862,7 @@ static void unfreeze_partials(struct kme
+>  {
+>  	struct kmem_cache_node *n = NULL;
+>  	struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
+> -	struct page *page;
+> +	struct page *page, *discard_page = NULL;
+>  
+>  	while ((page = c->partial)) {
+>  		enum slab_modes { M_PARTIAL, M_FREE };
+> @@ -1916,14 +1916,22 @@ static void unfreeze_partials(struct kme
+>  				"unfreezing slab"));
+>  
+>  		if (m == M_FREE) {
+> -			stat(s, DEACTIVATE_EMPTY);
+> -			discard_slab(s, page);
+> -			stat(s, FREE_SLAB);
+> +			page->next = discard_page;
+> +			discard_page = page;
+>  		}
+>  	}
+>  
+>  	if (n)
+>  		spin_unlock(&n->list_lock);
 > +
->  typedef unsigned int __bitwise__ samsung_gpio_pull_t;
->  typedef unsigned int __bitwise__ s5p_gpio_drvstr_t;
+> +	while (discard_page) {
+> +		page = discard_page;
+> +		discard_page = discard_page->next;
+> +
+> +		stat(s, DEACTIVATE_EMPTY);
+> +		discard_slab(s, page);
+> +		stat(s, FREE_SLAB);
+> +	}
+>  }
+>  
+>  /*
+> 
 > 
 > --
-> 1.7.5.4
-> 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-OK, will apply.
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+-- 
+Only stand for myself
