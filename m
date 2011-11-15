@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab1KOGlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 01:41:45 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46992 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab1KOGlo (ORCPT
+	id S1752388Ab1KOGoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 01:44:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61252 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab1KOGoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 01:41:44 -0500
-From: Rajendra Nayak <rnayak@ti.com>
-To: <linus.walleij@linaro.org>, <linus.walleij@stericsson.com>
-CC: <linux-kernel@vger.kernel.org>, <linaro-dev@lists.linaro.org>,
-        Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH] pinctrl: Iterate over u300_pmx_mask's in u300_pmx_endisable
-Date: Tue, 15 Nov 2011 12:10:26 +0530
-Message-ID: <1321339226-29968-1-git-send-email-rnayak@ti.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 15 Nov 2011 01:44:04 -0500
+Date: Tue, 15 Nov 2011 14:42:38 +0800
+From: wangyanqing <udknight@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: castet.matthieu@free.fr, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, gregkh@suse.de
+Subject: [PATCH -V1] x86: make executable for video bios area
+Message-ID: <20111115064237.GA3990@udknight.homenetwork>
+Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
+	linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
+	torvalds@linux-foundation.org, akpm@linux-foundation.org,
+	gregkh@suse.de
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix u300_pmx_endisable() to iterate over the list of 'bits' and
-'mask' populated as part of u300_pmx_functions.mask[]
+5bd5a452662bc37c54fb6828db1a3faf87e6511c make area
+between BIOS_BEGIN and BIOS_END have NX protection
+when boot machine with acpi enable(acpi will disable pcibios).
 
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+This commit make my machine can't boot, system hang with black screen
+very early when I enable CONFIG_FB_UVESA, CONFIG_X86_PAE, CONFIG_ACPI.
+
+below is the maps when boot normal without acpi:
+00000000-00001000 rw-s 00000000 00:01 822        /dev/mem
+00009000-0000a000 r-xp 00001000 00:01 912        /sbin/v86d
+00010000-00050000 rwxp 00000000 00:01 818        /dev/zero
+000a0000-000c0000 rw-s 000a0000 00:01 822        /dev/mem
+000c0000-00100000 r-xs 000c0000 00:01 822        /dev/mem <== must executable
+08048000-0804c000 r-xp 00001000 00:01 912        /sbin/v86d
+0804c000-0804d000 rw-p 00004000 00:01 912        /sbin/v86d
+b7875000-b7876000 r-xp 00000000 00:00 0          [vdso]
+bfe9d000-bfebe000 rw-p 00000000 00:00 0          [stack]
+
+So I prepare this patch.It works with me.
+Any comment is welcome.
+
+Thanks.
+
+Signed-off-by: Wang YanQing <Udknight@gmail.com>
 ---
-Linus W,
-I am not sure if this is a right fix. I just stumbled
-upon this while looking at the u300 pinmux driver
-while I was writing one for OMAP. Maybe I am reading
-the code completely wrong, and I don't even have a
-way to test this, so its just compile tested with
-u300_defconfig.
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/mm/pageattr.c      |    3 ++-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
- drivers/pinctrl/pinmux-u300.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
-index 4858a64..145a84d 100644
---- a/drivers/pinctrl/pinmux-u300.c
-+++ b/drivers/pinctrl/pinmux-u300.c
-@@ -940,20 +940,23 @@ static void u300_pmx_endisable(struct u300_pmx *upmx, unsigned selector,
- {
- 	u16 regval, val, mask;
- 	int i;
-+	const struct u300_pmx_mask *upmx_mask;
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 908b969..a6fa897 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -72,6 +72,8 @@ struct e820map {
+ #define BIOS_BEGIN		0x000a0000
+ #define BIOS_END		0x00100000
  
-+	upmx_mask = u300_pmx_functions[selector].mask;
- 	for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
- 		if (enable)
--			val = u300_pmx_functions[selector].mask->bits;
-+			val = upmx_mask->bits;
- 		else
- 			val = 0;
++#define BIOS_VIDEO		0x000c0000
++
+ #define BIOS_ROM_BASE		0xffe00000
+ #define BIOS_ROM_END		0xffffffff
  
--		mask = u300_pmx_functions[selector].mask->mask;
-+		mask = upmx_mask->mask;
- 		if (mask != 0) {
- 			regval = readw(upmx->virtbase + u300_pmx_registers[i]);
- 			regval &= ~mask;
- 			regval |= val;
- 			writew(regval, upmx->virtbase + u300_pmx_registers[i]);
- 		}
-+		upmx_mask++;
- 	}
- }
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..12acac0 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -260,7 +260,8 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 */
+ #ifdef CONFIG_PCI_BIOS
+-	if (pcibios_enabled && within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
++	if ((pcibios_enabled || within(pfn, BIOS_VIDEO >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT)) &&
++	     within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_NX;
+ #endif
  
 -- 
-1.7.1
+1.7.3.4
 
