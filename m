@@ -1,97 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab1KOPjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 10:39:03 -0500
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:47946 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756238Ab1KOPi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 10:38:59 -0500
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=2.0 cv=I/zntacg c=1 sm=0 a=Rwm7E/dujRe+vU6pjRxIFA==:17 a=nEMYVOmGscEA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=FNyBlpCuAAAA:8 a=5Q6jihO_KOUxb_5B3-sA:9 a=GVJODe18wmT1qMwpgBUA:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=Rwm7E/dujRe+vU6pjRxIFA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 64.3.25.91
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: <djwong@us.ibm.com>, "'Herbert Xu'" <herbert@gondor.hengli.com.au>
-Cc: "'Andreas Dilger'" <adilger.kernel@dilger.ca>,
-        "'Theodore Tso'" <tytso@mit.edu>,
-        "'David Miller'" <davem@davemloft.net>,
-        "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Mingming Cao'" <cmm@us.ibm.com>,
-        "'linux-crypto'" <linux-crypto@vger.kernel.org>,
-        "'linux-fsdevel'" <linux-fsdevel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>
-References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au> <20111021165703.GS12447@tux1.beaverton.ibm.com> <20111021191514.GA3997@gondor.apana.org.au> <20111115084805.GY12447@tux1.beaverton.ibm.com>
-In-Reply-To: <20111115084805.GY12447@tux1.beaverton.ibm.com>
-Subject: RE: [PATCH 1/4] crc32: Bolt on crc32c
-Date: Tue, 15 Nov 2011 09:38:54 -0600
-Message-ID: <00b001cca3ac$b08c0310$11a40930$@systemfabricworks.com>
+	id S1756398Ab1KOPoC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 10:44:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33874 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756102Ab1KOPoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 10:44:01 -0500
+Date: Tue, 15 Nov 2011 15:43:57 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Colin Cross <ccross@android.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Message-ID: <20111115154357.GI27150@suse.de>
+References: <20111114140421.GA27150@suse.de>
+ <20111114150326.0ee60107.akpm@linux-foundation.org>
+ <20111115104223.GC27150@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQKNc3m8gMNc3af06mR/narCbNegXwKpSPZYAiEce8UCNZRtEALPMhMfAjwm2huTzBcJEA==
-Content-Language: en-us
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20111115104223.GC27150@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd have sent new bits by now. Although the changes are minor and cosmetic.
-The problem is that due to getting things ready for SC11 (where I am now) I
-have been unable to test anything for the past two weeks.
-I can retest everything next week or you can go with the bits that are out
-there.
+> <SNIP>
+> It feels overkill to allocate more global storage for it when
+> gfp_allowed_mask is already there but I could rename pm_suspending() to
+> pm_disabled_storage(), make try_to_free_swap() use the same helper but
+> leave the implementation the same. This would clarify the situation.
+> 
 
-> -----Original Message-----
-> From: Darrick J. Wong [mailto:djwong@us.ibm.com]
-> Sent: Tuesday, November 15, 2011 2:48 AM
-> To: Herbert Xu
-> Cc: Andreas Dilger; Theodore Tso; David Miller; Joakim Tjernlund; Bob
-> Pearson; linux-kernel; Mingming Cao; linux-crypto; linux-fsdevel; linux-
-> ext4@vger.kernel.org
-> Subject: Re: [PATCH 1/4] crc32: Bolt on crc32c
-> 
-> On Fri, Oct 21, 2011 at 09:15:14PM +0200, Herbert Xu wrote:
-> > On Fri, Oct 21, 2011 at 09:57:03AM -0700, Darrick J. Wong wrote:
-> > >
-> > > My patchset builds upon Bob Pearson's crc32 patchset from early
-> September.  Do
-> > > my patches fail to apply after applying his patchset?
-> > >
-> > > Or, to speed things along, should I simply repost both Bob's and my
-> patches as
-> > > one big series?
-> > >
-> > > Bob, have you sent out a new iteration of your patches since September
-> 6th?
-> >
-> > I'm fine with you pushing this through whichever tree that Bob's
-> > patches are going through.
-> 
-> Well... it's been 2.5 weeks since I last asked about this.  No reply,
-afaict.
-> I haven't seen any complaints about Bob's latest patchset, nor any
-complaints
-> about my set that sits atop his.  On the other hand, I'm pretty sure I
-haven't
-> seen Bob's patches appear in any trees, and Google shows no recent
-> progress.
-> 
-> Herbert, would you object to pushing the whole patchset through the crypto
-> tree?
-> 
-> --D
-> >
-> > Cheers,
-> > --
-> > Email: Herbert Xu <herbert@gondor.apana.org.au>
-> > Home Page: http://gondor.apana.org.au/~herbert/
-> > PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+Something like this? It's on top of your comment update
 
+==== CUT HERE ====
+mm: Clarify usage of gfp_allowed_mask
+
+This patch clarifies how gfp_allowed_mask is used and that during
+run-time it is PM-specific.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/gfp.h |   16 ++++++++++++++++
+ mm/page_alloc.c     |   11 ++---------
+ mm/swapfile.c       |    6 +++---
+ 3 files changed, 21 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 3a76faf..033f55f 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -367,9 +367,25 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp);
+ void drain_all_pages(void);
+ void drain_local_pages(void *dummy);
+ 
++/*
++ * gfp_allowed_mask is set to GFP_BOOT_MASK during early boot to restrict what
++ * GFP flags are used before interrupts are enabled. Once interrupts are
++ * enabled, it is set to __GFP_BITS_MASK while the system is running. During
++ * hibernation, it is used by PM to avoid I/O during memory allocation while
++ * devices are suspended.
++ */
+ extern gfp_t gfp_allowed_mask;
+ 
+ extern void pm_restrict_gfp_mask(void);
+ extern void pm_restore_gfp_mask(void);
+ 
++#ifdef CONFIG_PM_SLEEP
++extern bool pm_suspended_storage(void);
++#else
++static inline bool pm_suspended_storage(void)
++{
++	return false;
++}
++#endif /* CONFIG_PM_SLEEP */
++
+ #endif /* __LINUX_GFP_H */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 2ee4040..4ace1e0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -128,19 +128,12 @@ void pm_restrict_gfp_mask(void)
+ 	gfp_allowed_mask &= ~GFP_IOFS;
+ }
+ 
+-static bool pm_suspending(void)
++bool pm_suspended_storage(void)
+ {
+ 	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
+ 		return false;
+ 	return true;
+ }
+-
+-#else
+-
+-static bool pm_suspending(void)
+-{
+-	return false;
+-}
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+@@ -2235,7 +2228,7 @@ rebalance:
+ 		 * Suspend also disables storage devices so kswapd cannot save
+ 		 * us.  Bail if we are suspending.
+ 		 */
+-		if (pm_suspending())
++		if (pm_suspended_storage())
+ 			goto nopage;
+ 	}
+ 
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index b1cd120..9520592 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -667,10 +667,10 @@ int try_to_free_swap(struct page *page)
+ 	 * original page might be freed under memory pressure, then
+ 	 * later read back in from swap, now with the wrong data.
+ 	 *
+-	 * Hibernation clears bits from gfp_allowed_mask to prevent
+-	 * memory reclaim from writing to disk, so check that here.
++	 * Hibration suspends storage while it is writing the image
++	 * to disk so check that here.
+ 	 */
+-	if (!(gfp_allowed_mask & __GFP_IO))
++	if (pm_suspended_storage())
+ 		return 0;
+ 
+ 	delete_from_swap_cache(page);
