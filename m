@@ -1,122 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab1KOEEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 23:04:23 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33517 "EHLO e3.ny.us.ibm.com"
+	id S1756070Ab1KOEIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 23:08:06 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46496 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755455Ab1KOEEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 23:04:22 -0500
+	id S1755766Ab1KOEEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Nov 2011 23:04:23 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 01/16] time: Move total_sleep_time into the timekeeper structure
-Date: Mon, 14 Nov 2011 20:03:51 -0800
-Message-Id: <1321329846-14755-2-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 04/16] time: Move raw_time into timekeeper structure
+Date: Mon, 14 Nov 2011 20:03:54 -0800
+Message-Id: <1321329846-14755-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1321329846-14755-1-git-send-email-john.stultz@linaro.org>
 References: <1321329846-14755-1-git-send-email-john.stultz@linaro.org>
-x-cbid: 11111504-8974-0000-0000-000002145753
+x-cbid: 11111504-7182-0000-0000-00000030B807
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move total_sleep_time into the timekeeper structure in preparation
-for locking cleanups
+In preparation for locking cleanups, move raw_time into
+timekeeper structure.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Eric Dumazet <eric.dumazet@gmail.com>
 CC: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+ kernel/time/timekeeping.c |   23 ++++++++++-------------
+ 1 files changed, 10 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 2b021b0e..bd8e7fd 100644
+index 6c64931..19d160a 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -47,6 +47,10 @@ struct timekeeper {
- 	int	ntp_error_shift;
- 	/* NTP adjusted clock multiplier */
- 	u32	mult;
-+
-+	/* time spent in suspend */
-+	struct timespec total_sleep_time;
-+
+@@ -67,7 +67,8 @@ struct timekeeper {
+ 	struct timespec wall_to_monotonic;
+ 	/* time spent in suspend */
+ 	struct timespec total_sleep_time;
+-
++	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
++	struct timespec raw_time;
  };
  
  static struct timekeeper timekeeper;
-@@ -159,7 +163,6 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
-  */
- static struct timespec xtime __attribute__ ((aligned (16)));
- static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
--static struct timespec total_sleep_time;
+@@ -164,10 +165,6 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
  
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
-@@ -587,8 +590,8 @@ void __init timekeeping_init(void)
+ 
+ 
+-/*
+- * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+- */
+-static struct timespec raw_time;
+ 
+ /* flag for if timekeeping is suspended */
+ int __read_mostly timekeeping_suspended;
+@@ -208,7 +205,7 @@ static void timekeeping_forward_now(void)
+ 	timespec_add_ns(&timekeeper.xtime, nsec);
+ 
+ 	nsec = clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
+-	timespec_add_ns(&raw_time, nsec);
++	timespec_add_ns(&timekeeper.raw_time, nsec);
+ }
+ 
+ /**
+@@ -316,7 +313,7 @@ void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
+ 
+ 		seq = read_seqbegin(&xtime_lock);
+ 
+-		*ts_raw = raw_time;
++		*ts_raw = timekeeper.raw_time;
+ 		*ts_real = timekeeper.xtime;
+ 
+ 		nsecs_raw = timekeeping_get_ns_raw();
+@@ -495,7 +492,7 @@ void getrawmonotonic(struct timespec *ts)
+ 	do {
+ 		seq = read_seqbegin(&xtime_lock);
+ 		nsecs = timekeeping_get_ns_raw();
+-		*ts = raw_time;
++		*ts = timekeeper.raw_time;
+ 
+ 	} while (read_seqretry(&xtime_lock, seq));
+ 
+@@ -586,8 +583,8 @@ void __init timekeeping_init(void)
+ 
+ 	timekeeper.xtime.tv_sec = now.tv_sec;
+ 	timekeeper.xtime.tv_nsec = now.tv_nsec;
+-	raw_time.tv_sec = 0;
+-	raw_time.tv_nsec = 0;
++	timekeeper.raw_time.tv_sec = 0;
++	timekeeper.raw_time.tv_nsec = 0;
+ 	if (boot.tv_sec == 0 && boot.tv_nsec == 0) {
+ 		boot.tv_sec = timekeeper.xtime.tv_sec;
+ 		boot.tv_nsec = timekeeper.xtime.tv_nsec;
+@@ -868,13 +865,13 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 
+ 	/* Accumulate raw time */
+ 	raw_nsecs = timekeeper.raw_interval << shift;
+-	raw_nsecs += raw_time.tv_nsec;
++	raw_nsecs += timekeeper.raw_time.tv_nsec;
+ 	if (raw_nsecs >= NSEC_PER_SEC) {
+ 		u64 raw_secs = raw_nsecs;
+ 		raw_nsecs = do_div(raw_secs, NSEC_PER_SEC);
+-		raw_time.tv_sec += raw_secs;
++		timekeeper.raw_time.tv_sec += raw_secs;
  	}
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
--	total_sleep_time.tv_sec = 0;
--	total_sleep_time.tv_nsec = 0;
-+	timekeeper.total_sleep_time.tv_sec = 0;
-+	timekeeper.total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- }
+-	raw_time.tv_nsec = raw_nsecs;
++	timekeeper.raw_time.tv_nsec = raw_nsecs;
  
-@@ -612,7 +615,8 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
- 
- 	xtime = timespec_add(xtime, *delta);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
--	total_sleep_time = timespec_add(total_sleep_time, *delta);
-+	timekeeper.total_sleep_time = timespec_add(
-+					timekeeper.total_sleep_time, *delta);
- }
- 
- 
-@@ -984,8 +988,10 @@ static void update_wall_time(void)
- void getboottime(struct timespec *ts)
- {
- 	struct timespec boottime = {
--		.tv_sec = wall_to_monotonic.tv_sec + total_sleep_time.tv_sec,
--		.tv_nsec = wall_to_monotonic.tv_nsec + total_sleep_time.tv_nsec
-+		.tv_sec = wall_to_monotonic.tv_sec +
-+				timekeeper.total_sleep_time.tv_sec,
-+		.tv_nsec = wall_to_monotonic.tv_nsec +
-+				timekeeper.total_sleep_time.tv_nsec
- 	};
- 
- 	set_normalized_timespec(ts, -boottime.tv_sec, -boottime.tv_nsec);
-@@ -1014,7 +1020,7 @@ void get_monotonic_boottime(struct timespec *ts)
- 		seq = read_seqbegin(&xtime_lock);
- 		*ts = xtime;
- 		tomono = wall_to_monotonic;
--		sleep = total_sleep_time;
-+		sleep = timekeeper.total_sleep_time;
- 		nsecs = timekeeping_get_ns();
- 
- 	} while (read_seqretry(&xtime_lock, seq));
-@@ -1047,7 +1053,7 @@ EXPORT_SYMBOL_GPL(ktime_get_boottime);
-  */
- void monotonic_to_bootbased(struct timespec *ts)
- {
--	*ts = timespec_add(*ts, total_sleep_time);
-+	*ts = timespec_add(*ts, timekeeper.total_sleep_time);
- }
- EXPORT_SYMBOL_GPL(monotonic_to_bootbased);
- 
-@@ -1122,7 +1128,7 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
- 		seq = read_seqbegin(&xtime_lock);
- 		*xtim = xtime;
- 		*wtom = wall_to_monotonic;
--		*sleep = total_sleep_time;
-+		*sleep = timekeeper.total_sleep_time;
- 	} while (read_seqretry(&xtime_lock, seq));
- }
- 
+ 	/* Accumulate error between NTP and clock interval */
+ 	timekeeper.ntp_error += tick_length << shift;
 -- 
 1.7.3.2.146.gca209
 
