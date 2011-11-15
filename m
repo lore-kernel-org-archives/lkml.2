@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab1KOTvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:51:22 -0500
-Received: from mail-vx0-f202.google.com ([209.85.220.202]:45188 "EHLO
-	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757386Ab1KOTvU (ORCPT
+	id S932170Ab1KOT4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:56:11 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41854 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab1KOT4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:51:20 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: Joe Perches <joe@perches.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Mike Ditto <mditto@google.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v4 2/8] forcedeth: Add messages to indicate using MSI or MSI-X
-Date: Tue, 15 Nov 2011 11:51:12 -0800
-Message-Id: <945345f2f0c401c2d17d2b28bff279e7b3d859db.1321386214.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <97a5a50baaca7b272dfb7a1a06e88df4888f12b9.1321384662.git.david.decotigny@google.com>
-References: <97a5a50baaca7b272dfb7a1a06e88df4888f12b9.1321384662.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321386214.git.david.decotigny@google.com>
-References: <cover.1321386214.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Tue, 15 Nov 2011 14:56:10 -0500
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 15 Nov 2011 11:55:48 -0800
+Message-ID: <CALCETrXXT09XPHkX8iRwDLgG2pOkmmqG4H6k7RBW3RMWvfeKJQ@mail.gmail.com>
+Subject: sysrq-w and sysrq-t useless with cgroups and systemd enabled?
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Ditto <mditto@google.com>
+For several kernel and Fedora versions now, I've gotten only garbage
+out of sysrq-w and sysrq-t.  The output looks like this:
 
-This adds a few kernel messages to indicate whether PCIe interrupts
-are signaled with MSI or MSI-X.
+[432904.642680] rt_rq[0]:/system/home.mount
+[432904.642681]   .rt_nr_running                 : 0
+[432904.642682]   .rt_throttled                  : 0
+[432904.642682]   .rt_time                       : 0.000000
+[432904.642683]   .rt_runtime                    : 0.000000
+[432904.642685]
+[432904.642685] rt_rq[0]:/system/boot-efi.mount
+[432904.642686]   .rt_nr_running                 : 0
+[432904.642687]   .rt_throttled                  : 0
+[432904.642688]   .rt_time                       : 0.000000
+[432904.642689]   .rt_runtime                    : 0.000000
+[432904.642690]
+[432904.642690] rt_rq[0]:/system/boot.mount
+[432904.642691]   .rt_nr_running                 : 0
+[432904.642692]   .rt_throttled                  : 0
+[432904.642693]   .rt_time                       : 0.000000
+[432904.642694]   .rt_runtime                    : 0.000000
+[432904.642695]
+[432904.642695] rt_rq[0]:/system/fsck@.service
+[432904.642696]   .rt_nr_running                 : 0
+[432904.642697]   .rt_throttled                  : 0
+[432904.642698]   .rt_time                       : 0.000000
+[432904.642699]   .rt_runtime                    : 0.000000
+[432904.642700]
+[432904.642700] rt_rq[0]:/system/cryptsetup@.service
+[432904.642701]   .rt_nr_running                 : 0
+[432904.642702]   .rt_throttled                  : 0
+[432904.642703]   .rt_time                       : 0.000000
+[432904.642704]   .rt_runtime                    : 0.000000
+[432904.642705]
+[432904.642706] rt_rq[0]:/system/dev-mapper-vg_midnight_ssd\x2dswap.swap
+[432904.642707]   .rt_nr_running                 : 0
+[432904.642708]   .rt_throttled                  : 0
+[432904.642708]   .rt_time                       : 0.000000
+[432904.642709]   .rt_runtime                    : 0.000000
 
+except that it goes on for pages and pages.  I can't find any
+information about actual hung tasks in the mess (even by searching the
+log -- I think the interesting information is either not there or is
+so swamped by log spew that it's actually getting lost by my syslog
+daemon).
 
+Is this some kind of bad interaction between scheduling groups and the
+task dumper that's getting exacerbated by the huge number of cgroups
+that systemd creates?
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 374625b..fe17e42 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -3810,6 +3810,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 				writel(0, base + NvRegMSIXMap0);
- 				writel(0, base + NvRegMSIXMap1);
- 			}
-+			netdev_info(dev, "MSI-X enabled\n");
- 		}
- 	}
- 	if (ret != 0 && np->msi_flags & NV_MSI_CAPABLE) {
-@@ -3831,6 +3832,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 			writel(0, base + NvRegMSIMap1);
- 			/* enable msi vector 0 */
- 			writel(NVREG_MSI_VECTOR_0_ENABLED, base + NvRegMSIIrqMask);
-+			netdev_info(dev, "MSI enabled\n");
- 		}
- 	}
- 	if (ret != 0) {
--- 
-1.7.3.1
-
+--Andy
