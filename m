@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1KOTQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:16:32 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:48413 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620Ab1KOTQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:16:31 -0500
-Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Tabi Timur-B04825 <B04825@freescale.com>
-CC: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tang Yuantian-B29983 <B29983@freescale.com>
-In-Reply-To: <CAOZdJXVq=0pbrPM_-+Kjf3NhON8oN3Me64R6c9qBiAEFuRsDOw@mail.gmail.com>
-References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-	 <20111115095445.3d34e99e@endymion.delvare>
-	 <CAOZdJXVq=0pbrPM_-+Kjf3NhON8oN3Me64R6c9qBiAEFuRsDOw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Tue, 15 Nov 2011 11:14:47 -0800
-Message-ID: <1321384487.2309.363.camel@groeck-laptop>
+	id S1757228Ab1KOTTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:19:40 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45418 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab1KOTTi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 14:19:38 -0500
+Message-ID: <4EC2BB48.2070802@gmail.com>
+Date: Tue, 15 Nov 2011 20:19:36 +0100
+From: =?UTF-8?B?Tmljb2xhcyBkZSBQZXNsb8O8YW4=?= 
+	<nicolas.2p.debian@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Icedove/3.1.15
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+To: Weiping Pan <wpan@redhat.com>
+CC: "Patrick McHardy (maintainer:VLAN (802.1Q))" <kaber@trash.net>,
+        "\"David S. Miller\" (maintainer:NETWORKING [GENERAL])" 
+	<davem@davemloft.net>,
+        "open list:VLAN (802.1Q)" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] vlan:return error when real dev is enslaved
+References: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com> <d7ea491a500c99c0b4839ddcedab027a3c865c59.1321360959.git.wpan@redhat.com>
+In-Reply-To: <d7ea491a500c99c0b4839ddcedab027a3c865c59.1321360959.git.wpan@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 14:02 -0500, Tabi Timur-B04825 wrote:
-> On Tue, Nov 15, 2011 at 2:54 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> 
-> > This needs careful testing (which I can't do.)
-> 
-> I can test these patches, so please CC me on them.
-> 
-Ok, I'll copy you on the next version of the patch. Turns out I have a
-board as well, so I can at least do some basic testing.
+Le 15/11/2011 13:44, Weiping Pan a écrit :
+> Qinhuibin reported a kernel panic when he do some operation about vlan.
+> https://lkml.org/lkml/2011/11/6/218
+>
+> The operation is as below:
+> ifconfig eth2 up
+> modprobe bonding
+> modprobe 8021q
+> ifconfig bond0 up
+> ifenslave bond0 eth2
+> vconfig add eth2 3300
+> vconfig add bond0 33
+> vconfig rem eth2.3300
+>
+> the panic stack is as below:
+> [<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
+> [<ffffffff80378917>] notifier_call_chain+0x37/0x70
+> [<ffffffff80372122>] panic+0xa2/0x195
+> [<ffffffff80376ed8>] oops_end+0xd8/0x140
+> [<ffffffff8001bea7>] no_context+0xf7/0x280
+> [<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
+> [<ffffffff80376318>] page_fault+0x28/0x30
+> [<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
+> [<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
+> [<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
+> [<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
+> [<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
+> [<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
+> [<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
+> [<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
+> [<ffffffff80007388>] system_call_fastpath+0x16/0x1b
+> [<00007f108a2b8bd7>] 0x7f108a2b8bd7
+> And the nic is as below:
+> [root@localhost ~]# ethtool -i eth2
+> driver: igb
+> version: 3.0.6-k2
+> firmware-version: 1.2-1
+> bus-info: 0000:04:00.0
+> kernel version：
+> 2.6.32.12-0.7 also happen in 2.6.32-131
+>
+> For kernel 2.6.32, the reason of this bug is that when we do "vconfig add bond0 33",
+> adapter->vlgrp is overwritten in igb_vlan_rx_register. So when we do "vconfig rem
+> eth2.3300", it can't find the correct vlgrp.
+>
+> And this bug is avoided by vlan cleanup patchset from Jiri Pirko
+> <jpirko@redhat.com>, especially commit b2cb09b1a772(igb: do vlan cleanup).
+>
+> But it is not a correct operation to creat a vlan interface on eth2
+> when it have been enslaved by bond0, so this patch is to return error
+> when the real dev is already enslaved.
 
-> > There may have been a
-> > reason why the read was done after the writes. Swapping the commands
-> > may be the wrong thing to do. The dummy read earlier in this function
-> > suggests that maybe changes to CCR do not take effect until you read
-> > from (or write to) the DR register.
-> 
-> Unfortunately, I don't know enough about the I2C protocol to answer
-> this, but I can provide this description on the DR register from the
-> reference manual:
-> 
->          Transmission starts when an address and the R/W bit are
-> written to the data register and the I2C interface
->          performs as the master. A data transfer is initiated when
-> data is written to the I2CDR. The most significant bit
->          is sent first in both cases. In master receive mode, reading
-> the data register allows the read to occur, but also
->          allows the I2C module to receive the next byte of data on the
-> I2C interface. In slave mode, the same function
->          is available after it is addressed. Note that in both master
-> receive and slave receive modes, the very first read
->          is always a dummy read.
-> 
-> > Can't the above be rewritten to keep the order of the commands as it
-> > was before? AFAICS it would only take one or two extra tests.
-> 
-> I think it's very important to keep the order as-is, if at all
-> possible.  This driver is very old and the hardware is used on all of
-> our SOCs, dating back several years.  It would be a nightmare to test
-> it all over again.
-> 
-I'll see if I can work around that. 1-byte block reads may be tricky,
-though, but maybe I can get that working as well.
+Why isn't this setup correct?
 
-Thanks,
-Guenter
+Compare to bridge, where ebtables allow for some sort of sharing of the physical interface between 
+bridge and vlan.
 
+I think bonding should behave the same way instead of denying this setup.
+
+	Nicolas.
 
