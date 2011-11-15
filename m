@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab1KOACS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 19:02:18 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24891 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab1KOACR (ORCPT
+	id S1756778Ab1KOACm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 19:02:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44295 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756676Ab1KOACk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 19:02:17 -0500
-Date: Tue, 15 Nov 2011 01:08:05 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: David Miller <davem@davemloft.net>
-cc: rmallon@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, xiaosuo@gmail.com, greearb@candelatech.com,
-        loke.chetan@gmail.com, waltje@uWalt.NL.Mugnet.ORG,
-        gw4pts@gw4pts.ampr.org, waltje@linux.com, ross.biro@gmail.com,
-        alan@linux.intel.com
-Subject: Re: [PATCH] net/packet: remove dead code and unneeded variable from
- prb_setup_retire_blk_timer()
-In-Reply-To: <20111114.184736.1515821968538974735.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.00.1111150105500.10159@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1111150034120.9919@swampdragon.chaosbits.net> <20111114.184325.1962580278359413683.davem@davemloft.net> <alpine.LNX.2.00.1111150049500.9919@swampdragon.chaosbits.net> <20111114.184736.1515821968538974735.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 14 Nov 2011 19:02:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="75495121"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Date: Mon, 14 Nov 2011 16:02:28 -0800
+Subject: RE: [PATCH] kernel/cpu.c: Add right qualifiers for
+ intel_thermal_interrupt() and cpu_hotplug_pm_sync_init()
+Thread-Topic: [PATCH] kernel/cpu.c: Add right qualifiers for
+ intel_thermal_interrupt() and cpu_hotplug_pm_sync_init()
+Thread-Index: AcygQ8PkmGsESIxcSXG/ocKdEvXzowC2gd7Q
+Message-ID: <493994B35A117E4F832F97C4719C4C0401EE048E46@orsmsx505.amr.corp.intel.com>
+References: <1320956564-21334-1-git-send-email-fenghua.yu@intel.com>
+ <4EBCCE33.2090708@linux.vnet.ibm.com>
+In-Reply-To: <4EBCCE33.2090708@linux.vnet.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Nov 2011, David Miller wrote:
-
-> From: Jesper Juhl <jj@chaosbits.net>
-> Date: Tue, 15 Nov 2011 00:51:57 +0100 (CET)
+> > -int cpu_hotplug_pm_sync_init(void)
+> > +static int __init cpu_hotplug_pm_sync_init(void)
+> >  {
+> >  	pm_notifier(cpu_hotplug_pm_callback, 0);
 > 
-> > On Mon, 14 Nov 2011, David Miller wrote:
-> > 
-> >> From: Jesper Juhl <jj@chaosbits.net>
-> >> Date: Tue, 15 Nov 2011 00:37:33 +0100 (CET)
-> >> 
-> >> > David: You may want to pass on this one. I obviously didn't think it 
-> >> > through properly - sorry :-(
-> >> 
-> >> It's already in my tree and pushed out to kernel.org, what in the
-> >> world do you think "applied" means?
-> >> 
-> > I'm sorry about that. I try to be careful with my patches, but sometimes 
-> > mistakes slip through - I'm only human... I do my best, but I mess up 
-> > sometimes and Ryan raised a good point that I had not considered when I 
-> > prepared the patch - what would you have me do except reply to his mail as 
-> > I did?
+> pm_notifier() macro will declare a static variable. I agree this won't
+> be any problem functionality-wise. But it doesn't seem elegant to say
+> "throw away the function but keep the static variable".
+> So, if you want to add __init qualifier to this function, I suggest
+> that
+> you declare the static variable outside the function, and call
+> register_pm_notifier() in the function, just to ensure it doesn't
+> obscure
+> things.
 > 
-> Send a patch to fix things back up.
+Rmoving __init cpu_hotplug_pm_sync_init() function after boot time and keep the static data defined in pm_notifier() is a normal behavior and normal usage in kernel. Same notifier registration usage function examples are ia64_mca_init() and msic_init() in mrst.c. There are quite a few other similar static data in __init functions usage examples in kernel source code.
 
-Sure, I can do that. Please see below.
+So I would keep the same code in the patch.
 
-I'm sorry about thiss mess and the extra work it caused you - I'll be more 
-careful in the future.
+I'll send an updated patch just to change the title typo.
 
+Thanks.
 
-From: Jesper Juhl <jj@chaosbits.net>
-Subject: [PATCH] Revert incorrect dead-code changes to prb_setup_retire_blk_timer
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- net/packet/af_packet.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index ab10e84..82a6f34 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -516,11 +516,13 @@ static void prb_init_blk_timer(struct packet_sock *po,
- 
- static void prb_setup_retire_blk_timer(struct packet_sock *po, int tx_ring)
- {
-+	struct tpacket_kbdq_core *pkc;
-+
- 	if (tx_ring)
- 		BUG();
- 
--	prb_init_blk_timer(po, &po->rx_ring.prb_bdqc,
--			   prb_retire_rx_blk_timer_expired);
-+	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
-+	prb_init_blk_timer(po, pkc, prb_retire_rx_blk_timer_expired);
- }
- 
- static int prb_calc_retire_blk_tmo(struct packet_sock *po,
--- 
-1.7.7.3
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+-Fenghua
 
