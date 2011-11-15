@@ -1,163 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab1KOSAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 13:00:09 -0500
-Received: from mail160.messagelabs.com ([216.82.253.99]:29356 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab1KOSAH (ORCPT
+	id S1757040Ab1KOSHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 13:07:13 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45651 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756827Ab1KOSHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 13:00:07 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-160.messagelabs.com!1321379987!38876912!13
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Rafal Prylowski <prylowski@metasoft.pl>,
-        Mika Westerberg <mika.westerberg@iki.fi>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rmallon@gmail.com" <rmallon@gmail.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "lrg@ti.com" <lrg@ti.com>
-Date: Tue, 15 Nov 2011 11:59:50 -0600
-Subject: RE: [PATCH v2 1/5] dmaengine: add ep93xx DMA support
-Thread-Topic: [PATCH v2 1/5] dmaengine: add ep93xx DMA support
-Thread-Index: Acyjp6PTiuJM+kAtS7mAQgbs+WpL/QAFuKYg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3E93FDC22@AUSP01VMBX24.collaborationhost.net>
-References: <cover.1306662317.git.mika.westerberg@iki.fi>
- <3ea8d56034f25cbe3fd8a4c31d7d0d1540b6ac7e.1306662317.git.mika.westerberg@iki.fi>
- <4EC27EED.4030108@metasoft.pl>
-In-Reply-To: <4EC27EED.4030108@metasoft.pl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 15 Nov 2011 13:07:11 -0500
+X-Sasl-enc: vda+NZVmUw201xsPYTGygfXrGJdRJm8mpPq12zyhmdWw 1321380430
+Date: Tue, 15 Nov 2011 09:54:29 -0800
+From: Greg KH <greg@kroah.com>
+To: wangyanqing <Udknight@gmail.com>, Greg KH <gregkh@suse.de>, wd@denx.de,
+        stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]usb: serial: pl2303: rm id
+Message-ID: <20111115175429.GA28924@kroah.com>
+References: <20111110060408.GA25028@udknight.homenetwork>
+ <20111114011130.GA4433@udknight.homenetwork>
+ <20111114035815.GA17996@suse.de>
+ <20111115050426.GA3738@udknight.homenetwork>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111115050426.GA3738@udknight.homenetwork>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAFI0PLS025033
 
-On Tuesday, November 15, 2011 8:02 AM, Rafal Prylowski wrote:
->
-> Hello.
->
-> During adaptation of my experimental ep93xx ide driver to the new dmaengine api,
-> I discovered two issues with ep93xx dma implementation:
-
-Nice to see someone is trying to get IDE support for the ep93xx into mainline!
-Unfortunately none of my ep93xx hardware supports IDE... :-(
-
-> 1) Control register is incorrectly programmed for IDE (m2m_hw_setup),
-> probably copy-paste bug ;)
-> 2) Kernel oops when trying to stop running transfers by calling
-> dmaengine_terminate_all(...) - caused by dereferencing empty list
-> in ep93xx_dma_get_active
->
-> Following is a patch, which solves these problems for me.
->
-> Regards,
-> Rafal Prylowski
->
-> Index: linux-2.6/drivers/dma/ep93xx_dma.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/dma/ep93xx_dma.c
-> +++ linux-2.6/drivers/dma/ep93xx_dma.c
-> @@ -246,6 +246,7 @@ static void ep93xx_dma_set_active(struct
->  static struct ep93xx_dma_desc *
->  ep93xx_dma_get_active(struct ep93xx_dma_chan *edmac)
->  {
-> +	BUG_ON(list_empty(&edmac->active));
-
-BUG_ON is evil...
-
-I'm not sure this is the right way to handle this.
-
-If your doing dma the list should never be empty.  If it is I think it should
-have been caught way before this.  Mika, do you have any comments?
-
-> 	return list_first_entry(&edmac->active, struct ep93xx_dma_desc, node);
-> }
+On Tue, Nov 15, 2011 at 01:04:26PM +0800, wangyanqing wrote:
+> On Sun, Nov 13, 2011 at 07:58:15PM -0800, Greg KH wrote:
+> > On Mon, Nov 14, 2011 at 09:11:30AM +0800, wangyanqing wrote:
+> > > On Thu, Nov 10, 2011 at 02:04:08PM +0800, wangyanqing wrote:
+> > > > I get report from customer that his usb-serial
+> > > > converter doesn't work well,it sometimes work,
+> > > > but sometimes it doesn't.
+> > > > 
+> > > > The usb-serial converter's id:
+> > > > vendor_id product_id
+> > > > 0x4348    0x5523
+> > > > 
+> > > > Then I search the usb-serial codes, and there are
+> > > > two drivers announce support this device, pl2303
+> > > > and ch341, commit 026dfaf1 cause it. Through many
+> > > > times to test, ch341 works well with this device,
+> > > > and pl2303 doesn't work quite often(it just work quite little).
+> > > > 
+> > > > ch341 works well with this device, so we doesn't
+> > > > need pl2303 to support.I try to revert 026dfaf1 first,
+> > > > but it failed. So I prepare this patch by hand to revert it.
+> > > > 
+> > > > Signed-off-by: Wang YanQing <Udknight@gmail.com>
+> > > > ---
+> > > >  drivers/usb/serial/pl2303.c |    1 -
+> > > >  drivers/usb/serial/pl2303.h |    4 ----
+> > > >  2 files changed, 0 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+> > > > index 9083d1e..fc2d66f 100644
+> > > > --- a/drivers/usb/serial/pl2303.c
+> > > > +++ b/drivers/usb/serial/pl2303.c
+> > > > @@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
+> > > >  	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+> > > >  	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+> > > >  	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
+> > > > -	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
+> > > >  	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
+> > > >  	{ }					/* Terminating entry */
+> > > >  };
+> > > > diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+> > > > index 3d10d7f..c38b8c0 100644
+> > > > --- a/drivers/usb/serial/pl2303.h
+> > > > +++ b/drivers/usb/serial/pl2303.h
+> > > > @@ -145,10 +145,6 @@
+> > > >  #define ADLINK_VENDOR_ID		0x0b63
+> > > >  #define ADLINK_ND6530_PRODUCT_ID	0x6530
+> > > >  
+> > > > -/* WinChipHead USB->RS 232 adapter */
+> > > > -#define WINCHIPHEAD_VENDOR_ID		0x4348
+> > > > -#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
+> > > > -
+> > > >  /* SMART USB Serial Adapter */
+> > > >  #define SMART_VENDOR_ID	0x0b8c
+> > > >  #define SMART_PRODUCT_ID	0x2303
+> > > > -- 
+> > > > 1.7.3.4
+> > > > 
+> > > Hi all.
+> > > Maybe it should be noticed that not only one usb-serial converter base 
+> > > this chip have this issue, but there are about 50(even more) usb-serial 
+> > > coverter lines have the same issue, so we can't ignore it.
+> > > Of course we can make all the drivers work well, but we should make it
+> > > useful at the first.
+> > 
+> > Why not add the device id to the other driver at the same time, that
+> > would ensure that the device continues to work, right?
+> > 
+> > thanks,
+> > 
+> > greg k-h
 > 
-> @@ -459,9 +460,6 @@ static int m2m_hw_setup(struct ep93xx_dm
->  		 * This IDE part is totally untested. Values below are taken
->  		 * from the EP93xx Users's Guide and might not be correct.
->  		 */
-> -		control |= M2M_CONTROL_NO_HDSK;
-> -		control |= M2M_CONTROL_RSS_IDE;
-> -		control |= M2M_CONTROL_PW_16;
->  
->  		if (data->direction == DMA_TO_DEVICE) {
->  			/* Worst case from the UG */
-> @@ -473,6 +471,9 @@ static int m2m_hw_setup(struct ep93xx_dm
->  			control |= M2M_CONTROL_SAH;
->  			control |= M2M_CONTROL_TM_RX;
->  		}
-> +		control |= M2M_CONTROL_NO_HDSK;
-> +		control |= M2M_CONTROL_RSS_IDE;
-> +		control |= M2M_CONTROL_PW_16;
->  		break;
+> Ok greg, thanks for your reply!
+> But I means maybe I make a very very "bad" subject in the email at all!
+> There are ch341 and pl2303 , two drivers announce to support this device,
+> ch341 works well and pl2303 does't work always.
+> 
+> Maybe I should make the email "shorter" next time.
+> This is the origin email.
+> https://lkml.org/lkml/2011/11/10/66
+> 
+> We don't need to add the device id to the other driver, ch341 have done it!!
+> Please looks at ch341.c:76 line
+> "
+>        { USB_DEVICE(0x4348, 0x5523) }, "
 
-This looks right.  The common OR'ed in bits should be added after setting the
-direction bits.
+Ah, sorry, I missed that, I'll go queue this patch up right now, sorry
+for the confusion.
 
->  	default:
-> @@ -668,24 +669,28 @@ static void ep93xx_dma_unmap_buffers(str
->  static void ep93xx_dma_tasklet(unsigned long data)
->  {
->  	struct ep93xx_dma_chan *edmac = (struct ep93xx_dma_chan *)data;
-> -	struct ep93xx_dma_desc *desc, *d;
-> -	dma_async_tx_callback callback;
-> -	void *callback_param;
-> +	struct ep93xx_dma_desc *desc = NULL, *d;
-> +	dma_async_tx_callback callback = NULL;
-> +	void *callback_param = NULL;
->  	LIST_HEAD(list);
->  
->  	spin_lock_irq(&edmac->lock);
-> -	desc = ep93xx_dma_get_active(edmac);
-> -	if (desc->complete) {
-> -		edmac->last_completed = desc->txd.cookie;
-> -		list_splice_init(&edmac->active, &list);
-> +	if (!list_empty(&edmac->active)) {
-> +		desc = ep93xx_dma_get_active(edmac);
-> +		if (desc->complete) {
-> +			edmac->last_completed = desc->txd.cookie;
-> +			list_splice_init(&edmac->active, &list);
-> +		}
+greg k-h
 
-It looks like this might actually catch your BUG_ON issue above.
-
->  	}
->  	spin_unlock_irq(&edmac->lock);
->  
->  	/* Pick up the next descriptor from the queue */
->  	ep93xx_dma_advance_work(edmac);
->  
-> -	callback = desc->txd.callback;
-> -	callback_param = desc->txd.callback_param;
-> +	if (desc) {
-> +		callback = desc->txd.callback;
-> +		callback_param = desc->txd.callback_param;
-> +	}
-
-These could be moved up to where 'desc' is getting set.  You have already
-verified that the list is not empty and have a valid 'desc' pointer.  Set
-the callback pointers there to remove this extra if (desc) test.
 
 > 
->  	/* Now we can release all the chained descriptors */
->  	list_for_each_entry_safe(desc, d, &list, node) {
-
-Thanks,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Thanks again.
+>  
