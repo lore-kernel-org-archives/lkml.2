@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab1KOTTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 14:19:40 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45418 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab1KOTTi (ORCPT
+	id S1757262Ab1KOTUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 14:20:20 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36987 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751620Ab1KOTUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 14:19:38 -0500
-Message-ID: <4EC2BB48.2070802@gmail.com>
-Date: Tue, 15 Nov 2011 20:19:36 +0100
-From: =?UTF-8?B?Tmljb2xhcyBkZSBQZXNsb8O8YW4=?= 
-	<nicolas.2p.debian@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Icedove/3.1.15
+	Tue, 15 Nov 2011 14:20:17 -0500
+X-Sasl-enc: f3lyKLF4U2UijkPwZy1eatYFiauBuU9ToHEEaa7Np2ED 1321384816
+Date: Tue, 15 Nov 2011 11:18:37 -0800
+From: Greg KH <greg@kroah.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: gregkh@suse.de, Nhan H Mai <nhan.h.mai@intel.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@linux.intel.com
+Subject: Re: [PATCH] serial/8250_pci: add a quirk for the kt serial controller
+Message-ID: <20111115191837.GA27512@kroah.com>
+References: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
+ <20111025022852.GB32457@kroah.com>
+ <1319573794.9320.15.camel@dwillia2-mobl>
 MIME-Version: 1.0
-To: Weiping Pan <wpan@redhat.com>
-CC: "Patrick McHardy (maintainer:VLAN (802.1Q))" <kaber@trash.net>,
-        "\"David S. Miller\" (maintainer:NETWORKING [GENERAL])" 
-	<davem@davemloft.net>,
-        "open list:VLAN (802.1Q)" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] vlan:return error when real dev is enslaved
-References: <CAM_iQpXCtH1cSJFsWVGrdreyhBgAjujLygktQGrK7iP-zyhN5g@mail.gmail.com> <d7ea491a500c99c0b4839ddcedab027a3c865c59.1321360959.git.wpan@redhat.com>
-In-Reply-To: <d7ea491a500c99c0b4839ddcedab027a3c865c59.1321360959.git.wpan@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319573794.9320.15.camel@dwillia2-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/11/2011 13:44, Weiping Pan a écrit :
-> Qinhuibin reported a kernel panic when he do some operation about vlan.
-> https://lkml.org/lkml/2011/11/6/218
->
-> The operation is as below:
-> ifconfig eth2 up
-> modprobe bonding
-> modprobe 8021q
-> ifconfig bond0 up
-> ifenslave bond0 eth2
-> vconfig add eth2 3300
-> vconfig add bond0 33
-> vconfig rem eth2.3300
->
-> the panic stack is as below:
-> [<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
-> [<ffffffff80378917>] notifier_call_chain+0x37/0x70
-> [<ffffffff80372122>] panic+0xa2/0x195
-> [<ffffffff80376ed8>] oops_end+0xd8/0x140
-> [<ffffffff8001bea7>] no_context+0xf7/0x280
-> [<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
-> [<ffffffff80376318>] page_fault+0x28/0x30
-> [<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
-> [<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
-> [<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
-> [<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
-> [<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
-> [<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
-> [<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
-> [<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
-> [<ffffffff80007388>] system_call_fastpath+0x16/0x1b
-> [<00007f108a2b8bd7>] 0x7f108a2b8bd7
-> And the nic is as below:
-> [root@localhost ~]# ethtool -i eth2
-> driver: igb
-> version: 3.0.6-k2
-> firmware-version: 1.2-1
-> bus-info: 0000:04:00.0
-> kernel version：
-> 2.6.32.12-0.7 also happen in 2.6.32-131
->
-> For kernel 2.6.32, the reason of this bug is that when we do "vconfig add bond0 33",
-> adapter->vlgrp is overwritten in igb_vlan_rx_register. So when we do "vconfig rem
-> eth2.3300", it can't find the correct vlgrp.
->
-> And this bug is avoided by vlan cleanup patchset from Jiri Pirko
-> <jpirko@redhat.com>, especially commit b2cb09b1a772(igb: do vlan cleanup).
->
-> But it is not a correct operation to creat a vlan interface on eth2
-> when it have been enslaved by bond0, so this patch is to return error
-> when the real dev is already enslaved.
+On Tue, Oct 25, 2011 at 01:16:34PM -0700, Dan Williams wrote:
+> From: Dan Williams <dan.j.williams@intel.com>
+> Date: Sun, 23 Oct 2011 15:06:24 -0700
+> Subject: [PATCH v2] serial/8250_pci: add a quirk for the kt serial controller
+> 
+> Workaround dropped notifications in the iir register.  Prevent reads
+> coincident with new interrupt notifications by reading the iir at most
+> once per interrupt.
+> 
+> Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> Cc: stable <stable@vger.kernel.org>
+> ---
+> On Tue, 2011-10-25 at 04:28 +0200, Greg KH wrote:
+> On Sun, Oct 23, 2011 at 03:27:16PM -0700, Dan Williams wrote:
+> > > --- a/include/linux/pci_ids.h
+> > > +++ b/include/linux/pci_ids.h
+> [..]
+> > Based on the comment at the top of this file, you shouldn't add this
+> > entry to it.
+> > 
+> > Care to redo the patch without that change?
+> 
+> Ok, moved it to drivers/tty/serial/8250_pci.c and cleaned up the
+> conflicting "/* This should be in linux/pci_ids.h */" comment.
 
-Why isn't this setup correct?
+This doesn't apply to the 3.2-rc1 kernel at all:
 
-Compare to bridge, where ebtables allow for some sort of sharing of the physical interface between 
-bridge and vlan.
+patching file drivers/tty/serial/8250.c
+Hunk #1 FAILED at 1652.
+1 out of 1 hunk FAILED -- saving rejects to file drivers/tty/serial/8250.c.rej
+patching file drivers/tty/serial/8250_pci.c
+Hunk #2 succeeded at 1118 with fuzz 1 (offset 9 lines).
+Hunk #3 succeeded at 1143 (offset 9 lines).
+Hunk #4 succeeded at 1228 (offset 9 lines).
+patching file include/linux/serial_core.h
+Hunk #1 FAILED at 350.
+1 out of 1 hunk FAILED -- saving rejects to file include/linux/serial_core.h.rej
+patching file drivers/tty/serial/8250.c
+Hunk #1 FAILED at 1652.
+1 out of 1 hunk FAILED -- saving rejects to file drivers/tty/serial/8250.c.rej
+patching file drivers/tty/serial/8250_pci.c
+Hunk #2 succeeded at 1118 with fuzz 1 (offset 9 lines).
+Hunk #3 succeeded at 1143 (offset 9 lines).
+Hunk #4 succeeded at 1228 (offset 9 lines).
+patching file include/linux/serial_core.h
+Hunk #1 FAILED at 350.
+1 out of 1 hunk FAILED -- saving rejects to file include/linux/serial_core.h.rej
 
-I think bonding should behave the same way instead of denying this setup.
 
-	Nicolas.
+Care to fix it up and resend it?
 
+thanks,
+
+greg k-h
