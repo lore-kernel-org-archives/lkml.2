@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab1KOVKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 16:10:52 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47898 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932318Ab1KOVKv (ORCPT
+	id S932411Ab1KOVMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:12:54 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:60861 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932307Ab1KOVMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 16:10:51 -0500
-Date: Wed, 16 Nov 2011 08:10:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: <linux-kernel@vger.kernel.org>, <iommu@lists.linux-foundation.org>
-Subject: Re: IOMMU tree location
-Message-Id: <20111116081037.ad41c0ed8a7f2d2bb710db1d@canb.auug.org.au>
-In-Reply-To: <20111115155537.GF5627@amd.com>
-References: <20111115155537.GF5627@amd.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Nov_2011_08_10_37_+1100_bJLa7zxPjERKx8fj"
+	Tue, 15 Nov 2011 16:12:53 -0500
+Message-ID: <4EC2D568.4040001@xenotime.net>
+Date: Tue, 15 Nov 2011 13:11:04 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg KH <greg@kroah.com>, Theodore Tso <tytso@MIT.EDU>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC 3/3] procfs: add documentation for procfs mount options
+References: <20111115112208.GC3002@albatros>
+In-Reply-To: <20111115112208.GC3002@albatros>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Nov_2011_08_10_37_+1100_bJLa7zxPjERKx8fj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/15/2011 03:22 AM, Vasiliy Kulikov wrote:
+> Signed-off-by: Vasiliy Kulikov <seooon@openwall.com>
+> --
+>  Documentation/filesystems/proc.txt |   39 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+> index 0ec91f0..518987e 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -1542,3 +1544,40 @@ a task to set its own or one of its thread siblings comm value. The comm value
+>  is limited in size compared to the cmdline value, so writing anything longer
+>  then the kernel's TASK_COMM_LEN (currently 16 chars) will result in a truncated
+>  comm value.
+> +
+> +
+> +------------------------------------------------------------------------------
+> +Configuring procfs
+> +------------------------------------------------------------------------------
+> +
+> +4.1	Mount options
+> +---------------------
+> +
+> +The following mount options are supported:
+> +
+> +	hidepid=	Set /proc/<pid>/ access mode.
+> +	gid=		Set the group authorized to learn processes information.
+> +
+> +hidepid=0 means classic mode - everybody may access all /proc/<pid>/ directories
+> +(default).
+> +
+> +hidepid=1 means users may not access any /proc/<pid>/ directories, but their
 
-Hi Joerg,
+                                                         directories but their
+(drop comma)
 
-On Tue, 15 Nov 2011 16:55:38 +0100 Joerg Roedel <joerg.roedel@amd.com> wrot=
-e:
->
-> the IOMMU tree is now back at kernel.org. Please use
->=20
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git next
->=20
-> for the linux-next tree from now on (I still update the tree on
-> 8bytes.org for all people using this location, though).
+> +own.  Sensitive files like cmdline, sched*, status are now protected against
+> +other users.  This makes impossible to learn whether any user runs
 
-OK, I have switched to that now.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+                 This makes it impossible
 
---Signature=_Wed__16_Nov_2011_08_10_37_+1100_bJLa7zxPjERKx8fj
-Content-Type: application/pgp-signature
+> +specific program (given the program doesn't reveal itself by its behaviour).
+> +As an additional bonus, as /proc/<pid>/cmdline is unaccessible for other users,
+> +poorly written programs passing sensitive information via program arguments are
+> +now protected against local eavesdroppers.
+> +
+> +hidepid=2 means hidepid=1 plus all /proc/<pid>/ will be fully invisible to other
+> +users.  It doesn't mean that it hides a fact whether a process with a specific
+> +pid value exists (it can be learned by other means, e.g. by "kill -0 $PID"),
+> +but it hides process' uid and gid, which may be learned by stat()'ing
+> +/proc/<pid>/ otherwise.  It greatly complicates intruder's task of gathering info
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+                                       complicates an intruder's task of gathering information
+(or data) [+ fix line length]
 
-iQIcBAEBCAAGBQJOwtVNAAoJEECxmPOUX5FEiFEP/AnPAd4mpypjGctexu48YqUi
-kKWEjddCMqtANN0o32FLaB9ZJ8JJL5HeFTUTuEHzS43qdxL5/KlRNUA0FnXfNx9N
-TJ3pjRC3oCCH7BCPXH8EKnMgrBQZMxushCEhLCXnXhghvSUDOZN3wt21XOGI9iL/
-h8JktIzg7njf4lpp9Ow30J0dhMEZNz22LE5gNF+pW34kSLWpdWGN9ApnzmV6CHjl
-aEXwHq9Q6sAYF9CjubGqtVnIbd4JZjj1x8qkZpO+oaCDWF9O6dJ2tTW3T79cn2dw
-1KIhEPNKMQsXinsK3YTYfkQNQN0NmYKaZDINePP5nH2xFNSZHdTVHx5mmmd7ieWl
-xPCQVZ8tOLgdFIRZ2TsNeS9F9CIu9AfRrGiQNsIEP+MpVamALJcQ9gblN/PQUnJk
-fO26D92JJ8DBuvYIuB3D2yy/vUIaktqrYxt/VPv7vlfj876wyuAusEeNbnB+IKaZ
-CgNfYttx3umybsRTdenF3h5a5OpWovy522mfvKbk4iNtUmusoVvd7gLD1kOt26Ya
-jrzJ9vojIPEyBXcOhHfYUZsL/b8FJmf2Mp/MrOP40Cb3fuVRtLTHeX87EulMgOJU
-x7xxUdmZJpyudNmnKRWNIE2pFap61yuW8fdVxImPgOgGc/ei1rEkAShO+ADJeHPS
-XTYNHtADTa6qutpR8rxe
-=Gg4p
------END PGP SIGNATURE-----
 
---Signature=_Wed__16_Nov_2011_08_10_37_+1100_bJLa7zxPjERKx8fj--
+> +about running processes, whether some daemon runs with elevated privileges,
+> +whether other user runs some sensitive program, whether other users run any
+> +program at all, etc.
+> +
+> +gid= defines a group authorized to learn processes information otherwise
+> +prohibited by hidepid=.  If you use some daemon like identd which have to learn
+
+                                                               which has to learn
+or                                                             which must learn
+or                                                             which needs to learn
+
+> +information about processes information, just add identd to this group.
+> --
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
