@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab1KOVcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 16:32:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:37777 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932515Ab1KOVcb (ORCPT
+	id S932528Ab1KOVcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 16:32:32 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39128 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932501Ab1KOVca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 16:32:31 -0500
+	Tue, 15 Nov 2011 16:32:30 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, rjw@sisk.pl, tglx@linutronix.de,
         x86@kernel.org, hpa@zytor.com, len.brown@intel.com,
@@ -15,140 +15,64 @@ To: linux-kernel@vger.kernel.org, rjw@sisk.pl, tglx@linutronix.de,
         liang.tang@oracle.com
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 4/7] x86: Expand the x86_msi_ops to have a restore MSIs.
-Date: Tue, 15 Nov 2011 16:31:08 -0500
-Message-Id: <1321392671-9128-5-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 7/7] xen/acpi/sleep: Register to the acpi_suspend_lowlevel a callback.
+Date: Tue, 15 Nov 2011 16:31:11 -0500
+Message-Id: <1321392671-9128-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.1
 In-Reply-To: <1321392671-9128-1-git-send-email-konrad.wilk@oracle.com>
 References: <1321392671-9128-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4EC2DA45.006B,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4EC2DA45.003D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSI restore function will become a function pointer in an
-x86_msi_ops struct. It defaults to the implementation in the
-io_apic.c and msi.c. We piggyback on the indirection mechanism
-introduced by "x86: Introduce x86_msi_ops".
+We piggyback on "x86/acpi: Provide registration for acpi_suspend_lowlevel."
+to register a Xen version of the callback. The callback does not
+do anything special - except it omits the x86_acpi_suspend_lowlevel.
+It does that b/c during suspend it tries to save cr8 values (which
+the hypervisor does not support), and then on resume path the
+cr3, cr8, idt, and gdt are all resumed which clashes with what
+the hypervisor has set up for the guest.
 
+Signed-off-by: Liang Tang <liang.tang@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/pci.h      |    9 +++++++++
- arch/x86/include/asm/x86_init.h |    1 +
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/pci/msi.c               |   29 +++++++++++++++++++++++++++--
- 4 files changed, 38 insertions(+), 2 deletions(-)
+ include/xen/acpi.h |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index d498943..df75d07 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -112,19 +112,28 @@ static inline void x86_teardown_msi_irq(unsigned int irq)
- {
- 	x86_msi.teardown_msi_irq(irq);
- }
-+static inline void x86_restore_msi_irqs(struct pci_dev *dev, int irq)
+diff --git a/include/xen/acpi.h b/include/xen/acpi.h
+index 69a6890..832b5e5 100644
+--- a/include/xen/acpi.h
++++ b/include/xen/acpi.h
+@@ -44,11 +44,26 @@
+ acpi_status xen_acpi_notify_hypervisor_state(u8 sleep_state,
+ 				     u32 pm1a_cnt, u32 pm1b_cnd);
+ 
++static inline int xen_acpi_suspend_lowlevel(void)
 +{
-+	x86_msi.restore_msi_irqs(dev, irq);
++	/*
++	* Xen will save and restore CPU context, so
++	* we can skip that and just go straight to
++	* the suspend.
++	*/
++	acpi_enter_sleep_state(ACPI_STATE_S3);
++	return 0;
 +}
- #define arch_setup_msi_irqs x86_setup_msi_irqs
- #define arch_teardown_msi_irqs x86_teardown_msi_irqs
- #define arch_teardown_msi_irq x86_teardown_msi_irq
-+#define arch_restore_msi_irqs x86_restore_msi_irqs
- /* implemented in arch/x86/kernel/apic/io_apic. */
- int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void native_teardown_msi_irq(unsigned int irq);
-+void native_restore_msi_irqs(struct pci_dev *dev, int irq);
- /* default to the implementation in drivers/lib/msi.c */
- #define HAVE_DEFAULT_MSI_TEARDOWN_IRQS
-+#define HAVE_DEFAULT_MSI_RESTORE_IRQS
- void default_teardown_msi_irqs(struct pci_dev *dev);
-+void default_restore_msi_irqs(struct pci_dev *dev, int irq);
- #else
- #define native_setup_msi_irqs		NULL
- #define native_teardown_msi_irq		NULL
- #define default_teardown_msi_irqs	NULL
-+#define default_restore_msi_irqs	NULL
- #endif
- 
- #define PCI_DMA_BUS_IS_PHYS (dma_ops->is_phys)
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index d3d8590..7af18be 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -174,6 +174,7 @@ struct x86_msi_ops {
- 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
-+	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
- };
- 
- extern struct x86_init_ops x86_init;
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 6f164bd..bd1fe10 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -110,4 +110,5 @@ struct x86_msi_ops x86_msi = {
- 	.setup_msi_irqs = native_setup_msi_irqs,
- 	.teardown_msi_irq = native_teardown_msi_irq,
- 	.teardown_msi_irqs = default_teardown_msi_irqs,
-+	.restore_msi_irqs = default_restore_msi_irqs,
- };
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 0e6d04d..ba2ea4e 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -86,6 +86,31 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
- }
- #endif
- 
-+#ifndef arch_restore_msi_irqs
-+# define arch_restore_msi_irqs default_restore_msi_irqs
-+# define HAVE_DEFAULT_MSI_RESTORE_IRQS
-+#endif
 +
-+#ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
-+void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-+{
-+	struct msi_desc *entry;
 +
-+	entry = NULL;
-+	if (dev->msix_enabled) {
-+		list_for_each_entry(entry, &dev->msi_list, list) {
-+			if (irq == entry->irq)
-+				break;
-+		}
-+	} else if (dev->msi_enabled)  {
-+		entry = irq_get_msi_desc(irq);
+ static inline void xen_acpi_sleep_register(void)
+ {
+-	if (xen_initial_domain())
++	if (xen_initial_domain()){
+ 		acpi_os_prepare_sleep_register(
+ 			&xen_acpi_notify_hypervisor_state);
++
++		acpi_suspend_lowlevel = xen_acpi_suspend_lowlevel;
 +	}
-+
-+	if (entry)
-+		write_msi_msg(irq, &entry->msg);
-+}
-+#endif
-+
- static void msi_set_enable(struct pci_dev *dev, int pos, int enable)
- {
- 	u16 control;
-@@ -360,7 +385,7 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
- 
- 	pci_intx_for_msi(dev, 0);
- 	msi_set_enable(dev, pos, 0);
--	write_msi_msg(dev->irq, &entry->msg);
-+	arch_restore_msi_irqs(dev, dev->irq);
- 
- 	pci_read_config_word(dev, pos + PCI_MSI_FLAGS, &control);
- 	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-@@ -388,7 +413,7 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
- 	pci_write_config_word(dev, pos + PCI_MSIX_FLAGS, control);
- 
- 	list_for_each_entry(entry, &dev->msi_list, list) {
--		write_msi_msg(entry->irq, &entry->msg);
-+		arch_restore_msi_irqs(dev, entry->irq);
- 		msix_mask_irq(entry, entry->masked);
- 	}
- 
+ }
+ #else
+ static inline void xen_acpi_sleep_register(void)
 -- 
 1.7.7.1
 
