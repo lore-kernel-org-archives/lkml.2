@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab1KONp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 08:45:28 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:60102 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755595Ab1KONpY (ORCPT
+	id S1755694Ab1KONrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 08:47:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64862 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab1KONrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 08:45:24 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+mIGEy+eamUAqnCMj6k1JcPCvZEUmOSEIvuGPF/N
-	BuTcJx7tvkry6k
-Subject: Re: [PATCH 2/2] Compile error with allmodconfig and
- CONFIG_PREEMPT_RT_FULL=y
-From: Mike Galbraith <efault@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: John Kacur <jkacur@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <1321363643.9105.13.camel@marge.simson.net>
-References: <1321235083-21756-1-git-send-email-jkacur@redhat.com>
-	 <1321235083-21756-2-git-send-email-jkacur@redhat.com>
-	 <20111114165148.GB2372@linux.vnet.ibm.com>
-	 <alpine.LFD.2.00.1111141837100.6707@localhost6.localdomain6>
-	 <1321303871.5011.6.camel@frodo> <1321334539.6347.43.camel@marge.simson.net>
-	 <1321359802.4181.1.camel@frodo> <1321363643.9105.13.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Nov 2011 14:45:20 +0100
-Message-ID: <1321364720.9105.17.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Tue, 15 Nov 2011 08:47:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EC21F67.10905@redhat.com>
+References: <1318376345.2050.20.camel@boudreau>
+	<j9r5m5$b18$1@dough.gmane.org>
+	<1321296650.2066.17.camel@boudreau>
+	<4EC21F67.10905@redhat.com>
+Date: Tue, 15 Nov 2011 21:47:02 +0800
+Message-ID: <CAM_iQpUCE5fB0KGcmmXkpqVnasqpx0cSt01qhXO1CNVRJcSWeA@mail.gmail.com>
+Subject: Re: Crash during vmcore_init
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: tim@edgecast.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tj@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 14:27 +0100, Mike Galbraith wrote:
+On Tue, Nov 15, 2011 at 4:14 PM, Dave Young <dyoung@redhat.com> wrote:
+>> On Mon, 2011-11-14 at 13:39 +0000, WANG Cong wrote:
+>>> On Tue, 11 Oct 2011 16:39:05 -0700, Tim Hartrick wrote:
+>>>
+>>>> Kexec,
+>>>>
+>>>> I have been experiencing the crash below on Ubuntu 10.04 running
+>>>> 2.6.32-34-server and 2.6.38-8-server as the crashkernel on X86_64. The
+>>>> tools are:
+>>>>
+>>>> kexec-tools 1:2.0.2-1ubuntu3
+>>>> makedumpfile        1.3.7-2
+>>>> kdump-tools 1.3.7-2
+>>>>
+>>>> I would be interested to know if this is a known problem and if so
+>>>> whether or not there is a patch in the pipeline to correct the problem.
+>>>>
+>>>> I will be happy to provide any other details that are required including
+>>>> debug builds if necessary.
+>>> ....
+>>>>
+>>>> [    1.322100] ioremap: invalid physical address db74000000000000 [
+>
+>
+> Searching db74000000000000 got several similar cases of this, all are
+> about per cpu invalid crash_notes address, is this one more?
+>
 
-> With that exported, the thing builds and runs, but rt_mutex_foo exports
-> appear to be intentionally GPL only, so it's "go fish" for nVidia.
+Why it is per cpu crash_note?
 
-BTW, if you poke that nVidia beast right, it'll keep you locked in
-kernel IPI-ing every CPU as fast as we can do that for up to a full
-second :>  The only thing I ever found that can match that is ext4.
+I bet Tim is using i386 machine, and on i386 we have,
 
-	-Mike
+kexec/arch/i386/crashdump-x86.c
 
+static int get_crash_notes(int cpu, uint64_t *addr, uint64_t *len)
+{
+        char crash_notes[PATH_MAX];
+        char line[MAX_LINE];
+        FILE *fp;
+        unsigned long vaddr;
+        int count;
+
+        sprintf(crash_notes, "/sys/kernel/crash_notes");
+        fp = fopen(crash_notes, "r");
+        if (fp) {
+               <...>
+        } else
+                return get_crash_notes_per_cpu(cpu, addr, len);
+}
+
+As long as we have .notes section, /sys/kernel/crash_notes exists.
+So I see no reason that is per cpu notes stuff.
