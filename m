@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1KNPEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Nov 2011 10:04:20 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58311 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751717Ab1KNPET (ORCPT
+	id S1754830Ab1KNPMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Nov 2011 10:12:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34479 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab1KNPL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Nov 2011 10:04:19 -0500
-Date: Mon, 14 Nov 2011 15:05:23 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Ilya Zykov <ilya@ilyx.ru>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH v3 2/2] TTY: tty flip buffer optimisation.
-Message-ID: <20111114150523.2abdf7a1@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EC124EB.4050203@suse.cz>
-References: <4EC10DC6.8070807@ilyx.ru>
-	<4EC124EB.4050203@suse.cz>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Nov 2011 10:11:58 -0500
+Message-ID: <4EC210CB.1010409@gmail.com>
+Date: Mon, 14 Nov 2011 23:12:11 -0800
+From: cody <mail.kai.huang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Chris Wright <chrisw@sous-sol.org>, Roland Dreier <roland@purestorage.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ddutile@redhat.com
+Subject: Re: [PATCH] intel-iommu: Default to non-coherent for domains unattached
+ to iommus
+References: <20111111224849.9756.13368.stgit@bling.home>	 <1321058267.2006.21.camel@shinybook.infradead.org>	 <CAL1RGDXZjKhA++3eFVPbazixaM7Q_JfBJyLKE0xjBs+sK55idg@mail.gmail.com>	 <20111112005100.GR14486@sequoia.sous-sol.org>	 <1321059340.2006.27.camel@shinybook.infradead.org>	 <20111112010850.GT14486@sequoia.sous-sol.org> <1321060841.2006.35.camel@shinybook.infradead.org>
+In-Reply-To: <1321060841.2006.35.camel@shinybook.infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi, the results are indeed nice. However is there any *real* load other
-> than this tailor-made microbenchmark where the added code complexity is
-> worth it?
+On 11/11/2011 05:20 PM, David Woodhouse wrote:
+> On Fri, 2011-11-11 at 17:08 -0800, Chris Wright wrote:
+>    
+>> All the stale PTE issues I've encountered in the past have turned into
+>> fixed sw bugs (perhaps it's since been fixed?).  Also, I thought with
+>> Coherency On/Off it's only effecting the use of clflush, not IOTLB or
+>> Context Entry cache flushing (invalidations).
+>>      
+> Yeah, it's supposed to be *just* clflush. Nevertheless, I can imagine it
+> being screwed up and there actually being a buffer in the chipset too.
+> We certainly made that mistake with the graphics engine in some cases...
+>
+>    
+>> On a slightly separate, but performance related note...have you ever
+>> tried using the hw queue?  Currently we only have a sw queue, but the
+>> submission path for invalidations doesn't really queue (unless I missed
+>> it).  It seems to pull from the software queue and submit/wait,
+>> submit/wait...Seems simple enough to submit the whole queue and then
+>> issue the wait.
+>>      
+> I have a feeling we trigger errata if we do that — although if we're
+> only doing it for an emulated IOMMU that shouldn't be an issue.
+>
+>    
+What does the emulated IOMMU here? Does it mean the emulated IOMMU 
+exposed to guest VM?
 
-I'm wondering if we need the complexity in the first place. Certainly 256
-does seem a bit small for pty/tty traffic. A 'real world' benchmark would
-be an ls -lR / on a machine with a fast graphics card or in console mode
-
-ie
-
-ls -lR /		# prime cache
-time ls -lR /
-
-and there are cases where people do a lot of traffic over a pty like this
-so I don't think it's entirely fake.
-
-I don't like the complexity but we could certainly go from using 256 byte
-buffers to "tty->buf.bufsize" and make it configurable without
-that complexity.
-
-Alan
