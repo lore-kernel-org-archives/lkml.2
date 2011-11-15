@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab1KOURu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 15:17:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38095 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143Ab1KOURt (ORCPT
+	id S1757422Ab1KOUWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 15:22:14 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33660 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754176Ab1KOUWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 15:17:49 -0500
-From: "Sergey V." <sftp.mtuci@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: radeon/kms: black screen when loading radeon with modeset=1
-Date: Wed, 16 Nov 2011 00:17:42 +0400
-User-Agent: KMail/1.13.6 (Linux/3.0.6-sftp+; KDE/4.5.5; x86_64; ; )
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <201111152305.09451.sftp.mtuci@gmail.com> <CADnq5_Mu4pLxTpdOYDBaqf2d3XsZC1bH-pBVZ_dA0WGj6EtwAg@mail.gmail.com>
-In-Reply-To: <CADnq5_Mu4pLxTpdOYDBaqf2d3XsZC1bH-pBVZ_dA0WGj6EtwAg@mail.gmail.com>
+	Tue, 15 Nov 2011 15:22:12 -0500
+X-Sasl-enc: HnrctH81EBEdmOnQ47uLIJ/8raA8QWI03w9CzIpVDGUQ 1321388531
+Date: Tue, 15 Nov 2011 12:18:00 -0800
+From: Greg KH <greg@kroah.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tty: make several fops functions non-static so that
+ the pty code can use them
+Message-ID: <20111115201800.GA10551@kroah.com>
+References: <20111030094038.7046d529@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111160017.43361.sftp.mtuci@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111030094038.7046d529@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 of November 2011 23:21:10 Alex Deucher wrote:
-> On Tue, Nov 15, 2011 at 2:05 PM, Sergey V. <sftp.mtuci@gmail.com> wrote:
-> > Kernel from Linus tree, HEAD at 7f80850d3f9fd8fda23a317044aef3a6bafab06b
-> >
-> > Loading radeon module with modeset=1 causes black screen.
-> >
-> > Usually it happens at boot time, but if run kernel with radeon.modeset=0 
-then
-> > `rmmod radeon; modprobe radeon modeset=1` I can get dmesg over ssh (thanks 
-to
-> > glisse from #radeon for help).
+On Sun, Oct 30, 2011 at 09:40:38AM -0700, Arjan van de Ven wrote:
 > 
-> Fixed with this patch:
-> http://lists.freedesktop.org/archives/dri-devel/2011-November/016498.html
+> From 7e5c44c1d42a1e66ea5df069f3f8ee50a5c46168 Mon Sep 17 00:00:00 2001
+> From: Arjan van de Ven <arjan@linux.intel.com>
+> Date: Sat, 29 Oct 2011 10:41:19 -0700
+> Subject: [PATCH 1/3] tty: make several fops functions non-static so that the pty code can use them
 > 
-> Alex
+> The pty code currently does a partial function-pointer copy to fill its
+> struct file_operations; this patch makes the functions it copies non-static
+> in preparation of switching the pty code over to using proper prototypes.
 > 
+> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 
-Thank you! I tested the patch and it helped.
+Next time, please use 'git send-email' to send your patches out so that
+I don't have to manually edit them by hand to get them to apply properly
+
+:(
+
+greg k-h
