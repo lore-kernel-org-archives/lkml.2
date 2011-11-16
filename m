@@ -1,127 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1KPVVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:21:50 -0500
-Received: from smtp207.alice.it ([82.57.200.103]:49090 "EHLO smtp207.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab1KPVVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:21:49 -0500
-Date: Wed, 16 Nov 2011 22:21:00 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Richard Purdie <rpurdie@rpsys.net>, stable@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert
- "leds: save the delay values after a successful call to blink_set()"
-Message-Id: <20111116222100.323aa751b8a19c0fc2e08a97@studenti.unina.it>
-In-Reply-To: <1320662197-21471-1-git-send-email-jhovold@gmail.com>
-References: <1317973118.3988.2.camel@jlt3.sipsolutions.net>
-	<1320662197-21471-1-git-send-email-jhovold@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU"
+	id S1753694Ab1KPVYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:24:25 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:41564 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992Ab1KPVYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 16:24:24 -0500
+Message-ID: <4EC429DC.9020607@oracle.com>
+Date: Wed, 16 Nov 2011 13:23:40 -0800
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] PCI: Make sriov work with hotplug remove
+References: <4E9A3092.4080309@oracle.com> <4E9A3408.9080905@oracle.com> <CAErSpo5XdM+1OFmoU+rN_QNWCJ0Wzv1VwKxsTo9hTq=2=7KEHA@mail.gmail.com> <4E9C6F0E.40501@oracle.com> <CAErSpo7ofdVixyGR74_mc6ND5C3LROiR9PVzwNZaDe23ptJ2=Q@mail.gmail.com> <4E9CAB21.2020302@oracle.com> <CAErSpo4PLDfapndXJp-sXS-SJtv0a7PaD=UKX0HV0OV34an3kQ@mail.gmail.com> <4E9DB11A.7030505@oracle.com> <4EBD8D09.9060903@oracle.com> <4EC35024.8090004@jp.fujitsu.com>
+In-Reply-To: <4EC35024.8090004@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4EC42A05.000E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/15/2011 09:54 PM, Kenji Kaneshige wrote:
 
-On Mon,  7 Nov 2011 11:36:37 +0100
-Johan Hovold <jhovold@gmail.com> wrote:
+> Sorry for the delayed comment.
+> 
+> I don't think allocating new memory for device removal is good idea. And
+> your code doesn't seem to work if memory allocation failed. What about
+> something like below? Note that it is not tested at all, sorry.
+> 
 
-> This reverts commit 6123b0e274503a0d3588e84fbe07c9aa01bfaf5d.
->=20
-> The problem this patch intends to solve has already been fixed by commit
-> 7a5caabd090b8f7 (drivers/leds/ledtrig-timer.c: fix broken sysfs delay
-> handling).
->=20
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Yes, it should work.
 
-Sorry for not replying earlier, I was on vacation.
+I updated the patch, use list_entry_for_each directly. also remove VF checking.
 
-Thanks Johan, I've just verified the timer trigger works fine on 3.1
-indeed even without my changes. But keep reading, please.
+Please check it.
 
-> ---
->=20
-> Hi,=20
->=20
-> A fix for the problem with the delay parameters not being stored is alrea=
-dy in
-> 3.1 (and stable). Rather than storing both values at every call to
-> led_blink_set only the updated value is stored in led_delay_{on,off}_stor=
-e in
-> ledtrig-timer.c.
->
+Thanks
 
-I thought that this was better fixed in the led_blink_set() directly,
-as delay_on and delay_off are led_cdev fields after all, not
-necessarily specific to ledtrig-timer, what about other users of them?
-For example I can see led_blink_set() used in: net/mac80211/led.c
-and led_trigger_blink(), which uses led_blink_set() in:
-drivers/power/power_supply_leds.c
+Yinghai
 
-Maybe I am missing something.
+Subject: [PATCH -v3] PCI: Make sriov work with hotplug remove
 
-Regards,
-   Antonio
+When hot remove pci express module that have pcie switch and support SRIOV, got
 
-> Thanks,
-> Johan
->=20
->  drivers/leds/led-class.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-> index 661b692..6d5628b 100644
-> --- a/drivers/leds/led-class.c
-> +++ b/drivers/leds/led-class.c
-> @@ -270,11 +270,8 @@ void led_blink_set(struct led_classdev *led_cdev,
->  	del_timer_sync(&led_cdev->blink_timer);
-> =20
->  	if (led_cdev->blink_set &&
-> -	    !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
-> -		led_cdev->blink_delay_on =3D *delay_on;
-> -		led_cdev->blink_delay_off =3D *delay_off;
-> +	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
->  		return;
-> -	}
-> =20
->  	/* blink with 1 Hz as default if nothing specified */
->  	if (!*delay_on && !*delay_off)
-> --=20
-> 1.7.6
->=20
->=20
+[ 5918.610127] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 1
+[ 5918.615779] pciehp 0000:80:02.2:pcie04: Attention button interrupt received
+[ 5918.622730] pciehp 0000:80:02.2:pcie04: Button pressed on Slot(3)
+[ 5918.629002] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 1f9
+[ 5918.637416] pciehp 0000:80:02.2:pcie04: PCI slot #3 - powering off due to button press.
+[ 5918.647125] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 10
+[ 5918.653039] pciehp 0000:80:02.2:pcie04: pciehp_green_led_blink: SLOTCTRL a8 write cmd 200
+[ 5918.661229] pciehp 0000:80:02.2:pcie04: pciehp_set_attention_status: SLOTCTRL a8 write cmd c0
+[ 5924.667627] pciehp 0000:80:02.2:pcie04: Disabling domain:bus:device=0000:b0:00
+[ 5924.674909] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 2f9
+[ 5924.683262] pciehp 0000:80:02.2:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:b0:00
+[ 5924.693976] libfcoe_device_notification: NETDEV_UNREGISTER eth6
+[ 5924.764979] libfcoe_device_notification: NETDEV_UNREGISTER eth14
+[ 5924.873539] libfcoe_device_notification: NETDEV_UNREGISTER eth15
+[ 5924.995209] libfcoe_device_notification: NETDEV_UNREGISTER eth16
+[ 5926.114407] sxge 0000:b2:00.0: PCI INT A disabled
+[ 5926.119342] BUG: unable to handle kernel NULL pointer dereference at (null)
+[ 5926.127189] IP: [<ffffffff81353a3b>] pci_stop_bus_device+0x33/0x83
+[ 5926.133377] PGD 0
+[ 5926.135402] Oops: 0000 [#1] SMP
+[ 5926.138659] CPU 2
+[ 5926.140499] Modules linked in:
+...
+[ 5926.143754]
+[ 5926.275823] Call Trace:
+[ 5926.278267]  [<ffffffff81353a38>] pci_stop_bus_device+0x30/0x83
+[ 5926.284180]  [<ffffffff81353af4>] pci_remove_bus_device+0x1a/0xba
+[ 5926.290264]  [<ffffffff81366311>] pciehp_unconfigure_device+0x110/0x17b
+[ 5926.296866]  [<ffffffff81365dd9>] ? pciehp_disable_slot+0x188/0x188
+[ 5926.303123]  [<ffffffff81365d6f>] pciehp_disable_slot+0x11e/0x188
+[ 5926.309206]  [<ffffffff81365e68>] pciehp_power_thread+0x8f/0xe0
+...
 
---=20
-Antonio Ospite
-http://ao2.it
+ +-[0000:80]-+-00.0-[81-8f]--
+ |           +-01.0-[90-9f]--
+ |           +-02.0-[a0-af]--
+ |           +-02.2-[b0-bf]----00.0-[b1-b3]--+-02.0-[b2]--+-00.0 Device
+ |           |                               |            +-00.1 Device
+ |           |                               |            +-00.2 Device
+ |           |                               |            \-00.3 Device
+ |           |                               \-03.0-[b3]--+-00.0 Device
+ |           |                                            +-00.1 Device
+ |           |                                            +-00.2 Device
+ |           |                                            \-00.3 Device
 
-PGP public key ID: 0x4553B001
+root complex: 80:02.2
+pci express modules: have pcie switch and are listed as b0:00.0, b1:02.0 and b1:03.0.
+                end devices  are b2:00.0 and b3.00.0.
+                VFs are: b2:00.1,... b2:00.3, and b3:00.1,...,b3:00.3
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+Root cause: when doing pci_stop_bus_device() with phys fn, it will stop virt fn and
+remove the fn, so
+	list_for_each_safe(l, n, &bus->devices)
+will have problem to refer freed n that is pointed to vf entry.
 
---Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU
-Content-Type: application/pgp-signature
+Solution is just replacing list_for_each_safe() with list_for_each().
+	pci_stop_bus_device(dev) will not remove dev from bus->devices list,
+	so We only need use for_each here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+During reviewing the patch, Bjorn said:
+|   The PCI hot-remove path calls pci_stop_bus_devices() via
+|   pci_remove_bus_device().
+|
+|   pci_stop_bus_devices() traverses the bus->devices list (point A below),
+|   stopping each device in turn, which calls the driver remove() method.  When
+|   the device is an SR-IOV PF, the driver calls pci_disable_sriov(), which
+|   also uses pci_remove_bus_device() to remove the VF devices from the
+|   bus->devices list (point B).
+|
+|       pci_remove_bus_device
+|         pci_stop_bus_device
+|           pci_stop_bus_devices(subordinate)
+|             list_for_each(bus->devices)             <-- A
+|               pci_stop_bus_device(PF)
+|                 ...
+|                   driver->remove
+|                     pci_disable_sriov
+|                       ...
+|                         pci_remove_bus_device(VF)
+|                             <remove from bus_list>  <-- B
+|
+|   At B, we're changing the same list we're iterating through at A, so when
+|   the driver remove() method returns, the pci_stop_bus_devices() iterator has
+|   a pointer to a list entry that has already been freed.
 
-iEYEARECAAYFAk7EKTwACgkQ5xr2akVTsAF+kgCfcH+5CBBaTSx0MYASnHDxDUEF
-tcwAn086J90I2Ru3eLHjfCd9tkNfjH7+
-=indn
------END PGP SIGNATURE-----
+Discussion thread can be found : https://lkml.org/lkml/2011/10/15/141
 
---Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU--
+-v2: updated changelog.
+-v3: According to Kenji, do not allocate another list for PF.
+     Also We don't need to check dev->is_virtfn anymore, because PF should come first
+	in the list, and even VF come first, it is still ok.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/remove.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/drivers/pci/remove.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/remove.c
++++ linux-2.6/drivers/pci/remove.c
+@@ -122,11 +122,24 @@ void pci_remove_behind_bridge(struct pci
+ 
+ static void pci_stop_bus_devices(struct pci_bus *bus)
+ {
+-	struct list_head *l, *n;
++	struct list_head *l;
+ 
+-	list_for_each_safe(l, n, &bus->devices) {
++	/*
++	 * pci_stop_bus_device(dev) will not remove dev from bus->devices list,
++	 *  so We don't need use _safe version for_each here.
++	 * Also _safe version has problem when pci_stop_bus_device() for PF try
++	 *  to remove VFs.
++	 */
++	list_for_each(l, &bus->devices) {
+ 		struct pci_dev *dev = pci_dev_b(l);
+ 		pci_stop_bus_device(dev);
++		/*
++		 * VFs are removed by pci_remove_bus_device() in the
++		 *  pci_stop_bus_devices() code path for PF.
++		 *  aka, bus->devices get updated in the process.
++		 * barrier() will make sure we get right next from that list.
++		 */
++		barrier();
+ 	}
+ }
+ 
