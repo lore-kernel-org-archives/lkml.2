@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab1KPF6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 00:58:54 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35578 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab1KPF6w (ORCPT
+	id S1753748Ab1KPGMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 01:12:51 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37500 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab1KPGMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 00:58:52 -0500
-Message-ID: <4EC35115.9040209@google.com>
-Date: Tue, 15 Nov 2011 21:58:45 -0800
+	Wed, 16 Nov 2011 01:12:50 -0500
+Message-ID: <4EC3545C.60602@google.com>
+Date: Tue, 15 Nov 2011 22:12:44 -0800
 From: Paul Turner <pjt@google.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
@@ -17,9 +17,9 @@ To: Glauber Costa <glommer@parallels.com>
 CC: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
         daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
         jbottomley@parallels.com, cgroups@vger.kernel.org
-Subject: Re: [PATCH 1/4] Change cpustat fields to an array.
-References: <1321372757-1581-1-git-send-email-glommer@parallels.com> <1321372757-1581-2-git-send-email-glommer@parallels.com>
-In-Reply-To: <1321372757-1581-2-git-send-email-glommer@parallels.com>
+Subject: Re: [PATCH 2/4] split kernel stat in two
+References: <1321372757-1581-1-git-send-email-glommer@parallels.com> <1321372757-1581-3-git-send-email-glommer@parallels.com>
+In-Reply-To: <1321372757-1581-3-git-send-email-glommer@parallels.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,101 +27,105 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 11/15/2011 07:59 AM, Glauber Costa wrote:
-> This will give us a bit more flexibility to deal with the
-> fields in this structure. This is a preparation patch for
-> later patches in this series.
+> In a later patch, we will use cpustat information per-task group.
+> However, some of its fields are naturally global, such as the irq
+> counters. There is no need to impose the task group overhead to them
+> in this case. So better separate them.
 >
 > Signed-off-by: Glauber Costa<glommer@parallels.com>
 > CC: Paul Tuner<pjt@google.com>
 > ---
->   arch/s390/appldata/appldata_os.c       |   16 ++++----
+>   arch/s390/appldata/appldata_os.c       |   16 +++++++-------
 >   arch/x86/include/asm/i387.h            |    2 +-
->   drivers/cpufreq/cpufreq_conservative.c |   23 +++++-----
->   drivers/cpufreq/cpufreq_ondemand.c     |   23 +++++-----
->   drivers/macintosh/rack-meter.c         |    6 +-
->   fs/proc/stat.c                         |   63 +++++++++++++---------------
->   fs/proc/uptime.c                       |    4 +-
->   include/linux/kernel_stat.h            |   30 +++++++------
->   kernel/sched.c                         |   71 ++++++++++++++++----------------
->   9 files changed, 117 insertions(+), 121 deletions(-)
+>   drivers/cpufreq/cpufreq_conservative.c |   20 ++++++++--------
+>   drivers/cpufreq/cpufreq_ondemand.c     |   20 ++++++++--------
+>   drivers/macintosh/rack-meter.c         |    6 ++--
+>   fs/proc/stat.c                         |   36 ++++++++++++++++----------------
+>   include/linux/kernel_stat.h            |    8 ++++++-
+>   kernel/sched.c                         |   18 ++++++++-------
+>   8 files changed, 67 insertions(+), 59 deletions(-)
 >
 > diff --git a/arch/s390/appldata/appldata_os.c b/arch/s390/appldata/appldata_os.c
-> index 92f1cb7..3d6b672 100644
+> index 3d6b672..695388a 100644
 > --- a/arch/s390/appldata/appldata_os.c
 > +++ b/arch/s390/appldata/appldata_os.c
 > @@ -115,21 +115,21 @@ static void appldata_get_os_data(void *data)
 >   	j = 0;
 >   	for_each_online_cpu(i) {
 >   		os_data->os_cpu[j].per_cpu_user =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.user);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[USER]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[USER]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[USER]);
 >   		os_data->os_cpu[j].per_cpu_nice =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.nice);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[NICE]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[NICE]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[NICE]);
 >   		os_data->os_cpu[j].per_cpu_system =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.system);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[SYSTEM]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[SYSTEM]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[SYSTEM]);
 >   		os_data->os_cpu[j].per_cpu_idle =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.idle);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[IDLE]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[IDLE]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[IDLE]);
 >   		os_data->os_cpu[j].per_cpu_irq =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.irq);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[IRQ]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[IRQ]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[IRQ]);
 >   		os_data->os_cpu[j].per_cpu_softirq =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.softirq);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[SOFTIRQ]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[SOFTIRQ]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[SOFTIRQ]);
 >   		os_data->os_cpu[j].per_cpu_iowait =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.iowait);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[IOWAIT]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[IOWAIT]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[IOWAIT]);
 >   		os_data->os_cpu[j].per_cpu_steal =
-> -			cputime_to_jiffies(kstat_cpu(i).cpustat.steal);
-> +			cputime_to_jiffies(kstat_cpu(i).cpustat[STEAL]);
+> -			cputime_to_jiffies(kstat_cpu(i).cpustat[STEAL]);
+> +			cputime_to_jiffies(kcpustat_cpu(i).cpustat[STEAL]);
 >   		os_data->os_cpu[j].cpu_id = i;
 >   		j++;
 >   	}
 > diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-> index c9e09ea..56fa4d7 100644
+> index 56fa4d7..1f1b536 100644
 > --- a/arch/x86/include/asm/i387.h
 > +++ b/arch/x86/include/asm/i387.h
 > @@ -218,7 +218,7 @@ static inline void fpu_fxsave(struct fpu *fpu)
 >   #ifdef CONFIG_SMP
 >   #define safe_address (__per_cpu_offset[0])
 >   #else
-> -#define safe_address (kstat_cpu(0).cpustat.user)
-> +#define safe_address (kstat_cpu(0).cpustat[USER])
+> -#define safe_address (kstat_cpu(0).cpustat[USER])
+> +#define safe_address (__get_cpu_var(kernel_cpustat).cpustat[USER])
 >   #endif
 >
 >   /*
 > diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-> index c97b468..2ab538f 100644
+> index 2ab538f..a3a739f 100644
 > --- a/drivers/cpufreq/cpufreq_conservative.c
 > +++ b/drivers/cpufreq/cpufreq_conservative.c
 > @@ -103,13 +103,13 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 >   	cputime64_t busy_time;
 >
 >   	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
-> -	busy_time = cputime64_add(kstat_cpu(cpu).cpustat.user,
-> -			kstat_cpu(cpu).cpustat.system);
-> +	busy_time = cputime64_add(kstat_cpu(cpu).cpustat[USER],
-> +			kstat_cpu(cpu).cpustat[SYSTEM]);
+> -	busy_time = cputime64_add(kstat_cpu(cpu).cpustat[USER],
+> -			kstat_cpu(cpu).cpustat[SYSTEM]);
+> +	busy_time = cputime64_add(kcpustat_cpu(cpu).cpustat[USER],
+> +			kcpustat_cpu(cpu).cpustat[SYSTEM]);
 >
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.irq);
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.softirq);
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.steal);
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.nice);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[IRQ]);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[SOFTIRQ]);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[STEAL]);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[NICE]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[IRQ]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[SOFTIRQ]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[STEAL]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[NICE]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[IRQ]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[SOFTIRQ]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[STEAL]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[NICE]);
 >
+
+This clobbers almost *all* the same lines as the last patch.  There has to be a 
+more readable way of structuring these 2 patches.
+
 >   	idle_time = cputime64_sub(cur_wall_time, busy_time);
 >   	if (wall)
 > @@ -272,7 +272,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 >   		dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
 >   						&dbs_info->prev_cpu_wall);
 >   		if (dbs_tuners_ins.ignore_nice)
-> -			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
-> +			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> -			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> +			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
 >   	}
 >   	return count;
 >   }
@@ -129,8 +133,8 @@ On 11/15/2011 07:59 AM, Glauber Costa wrote:
 >   			cputime64_t cur_nice;
 >   			unsigned long cur_nice_jiffies;
 >
-> -			cur_nice = cputime64_sub(kstat_cpu(j).cpustat.nice,
-> +			cur_nice = cputime64_sub(kstat_cpu(j).cpustat[NICE],
+> -			cur_nice = cputime64_sub(kstat_cpu(j).cpustat[NICE],
+> +			cur_nice = cputime64_sub(kcpustat_cpu(j).cpustat[NICE],
 >   					 j_dbs_info->prev_cpu_nice);
 >   			/*
 >   			 * Assumption: nice time between sampling periods will
@@ -138,45 +142,41 @@ On 11/15/2011 07:59 AM, Glauber Costa wrote:
 >   			cur_nice_jiffies = (unsigned long)
 >   					cputime64_to_jiffies64(cur_nice);
 >
-> -			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
-> +			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> -			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> +			j_dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
 >   			idle_time += jiffies_to_usecs(cur_nice_jiffies);
 >   		}
 >
-> @@ -501,10 +501,9 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->
->   			j_dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
+> @@ -503,7 +503,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 >   						&j_dbs_info->prev_cpu_wall);
-> -			if (dbs_tuners_ins.ignore_nice) {
-> +			if (dbs_tuners_ins.ignore_nice)
+>   			if (dbs_tuners_ins.ignore_nice)
 >   				j_dbs_info->prev_cpu_nice =
-> -						kstat_cpu(j).cpustat.nice;
-> -			}
-> +						kstat_cpu(j).cpustat[NICE];
+> -						kstat_cpu(j).cpustat[NICE];
+> +						kcpustat_cpu(j).cpustat[NICE];
 >   		}
 >   		this_dbs_info->down_skip = 0;
 >   		this_dbs_info->requested_freq = policy->cur;
 > diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index fa8af4e..45d8e17 100644
+> index 45d8e17..46e89663 100644
 > --- a/drivers/cpufreq/cpufreq_ondemand.c
 > +++ b/drivers/cpufreq/cpufreq_ondemand.c
 > @@ -127,13 +127,13 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 >   	cputime64_t busy_time;
 >
 >   	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
-> -	busy_time = cputime64_add(kstat_cpu(cpu).cpustat.user,
-> -			kstat_cpu(cpu).cpustat.system);
-> +	busy_time = cputime64_add(kstat_cpu(cpu).cpustat[USER],
-> +			kstat_cpu(cpu).cpustat[SYSTEM]);
+> -	busy_time = cputime64_add(kstat_cpu(cpu).cpustat[USER],
+> -			kstat_cpu(cpu).cpustat[SYSTEM]);
+> +	busy_time = cputime64_add(kcpustat_cpu(cpu).cpustat[USER],
+> +			kcpustat_cpu(cpu).cpustat[SYSTEM]);
 >
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.irq);
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.softirq);
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.steal);
-> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.nice);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[IRQ]);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[SOFTIRQ]);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[STEAL]);
-> +	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[NICE]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[IRQ]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[SOFTIRQ]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[STEAL]);
+> -	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[NICE]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[IRQ]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[SOFTIRQ]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[STEAL]);
+> +	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[NICE]);
 >
 >   	idle_time = cputime64_sub(cur_wall_time, busy_time);
 >   	if (wall)
@@ -184,8 +184,8 @@ On 11/15/2011 07:59 AM, Glauber Costa wrote:
 >   		dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
 >   						&dbs_info->prev_cpu_wall);
 >   		if (dbs_tuners_ins.ignore_nice)
-> -			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
-> +			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> -			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> +			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
 >
 >   	}
 >   	return count;
@@ -193,8 +193,8 @@ On 11/15/2011 07:59 AM, Glauber Costa wrote:
 >   			cputime64_t cur_nice;
 >   			unsigned long cur_nice_jiffies;
 >
-> -			cur_nice = cputime64_sub(kstat_cpu(j).cpustat.nice,
-> +			cur_nice = cputime64_sub(kstat_cpu(j).cpustat[NICE],
+> -			cur_nice = cputime64_sub(kstat_cpu(j).cpustat[NICE],
+> +			cur_nice = cputime64_sub(kcpustat_cpu(j).cpustat[NICE],
 >   					 j_dbs_info->prev_cpu_nice);
 >   			/*
 >   			 * Assumption: nice time between sampling periods will
@@ -202,455 +202,232 @@ On 11/15/2011 07:59 AM, Glauber Costa wrote:
 >   			cur_nice_jiffies = (unsigned long)
 >   					cputime64_to_jiffies64(cur_nice);
 >
-> -			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
-> +			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> -			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
+> +			j_dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
 >   			idle_time += jiffies_to_usecs(cur_nice_jiffies);
 >   		}
 >
-> @@ -646,10 +646,9 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->
->   			j_dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
+> @@ -648,7 +648,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 >   						&j_dbs_info->prev_cpu_wall);
-> -			if (dbs_tuners_ins.ignore_nice) {
-> +			if (dbs_tuners_ins.ignore_nice)
+>   			if (dbs_tuners_ins.ignore_nice)
 >   				j_dbs_info->prev_cpu_nice =
-> -						kstat_cpu(j).cpustat.nice;
-> -			}
-> +						kstat_cpu(j).cpustat[NICE];
+> -						kstat_cpu(j).cpustat[NICE];
+> +						kcpustat_cpu(j).cpustat[NICE];
 >   		}
 >   		this_dbs_info->cpu = cpu;
 >   		this_dbs_info->rate_mult = 1;
 > diff --git a/drivers/macintosh/rack-meter.c b/drivers/macintosh/rack-meter.c
-> index 2637c13..c80e49a 100644
+> index c80e49a..c8e67b0 100644
 > --- a/drivers/macintosh/rack-meter.c
 > +++ b/drivers/macintosh/rack-meter.c
 > @@ -83,11 +83,11 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu)
 >   {
 >   	cputime64_t retval;
 >
-> -	retval = cputime64_add(kstat_cpu(cpu).cpustat.idle,
-> -			kstat_cpu(cpu).cpustat.iowait);
-> +	retval = cputime64_add(kstat_cpu(cpu).cpustat[IDLE],
-> +			kstat_cpu(cpu).cpustat[IOWAIT]);
+> -	retval = cputime64_add(kstat_cpu(cpu).cpustat[IDLE],
+> -			kstat_cpu(cpu).cpustat[IOWAIT]);
+> +	retval = cputime64_add(kcpustat_cpu(cpu).cpustat[IDLE],
+> +			kcpustat_cpu(cpu).cpustat[IOWAIT]);
 >
 >   	if (rackmeter_ignore_nice)
-> -		retval = cputime64_add(retval, kstat_cpu(cpu).cpustat.nice);
-> +		retval = cputime64_add(retval, kstat_cpu(cpu).cpustat[NICE]);
+> -		retval = cputime64_add(retval, kstat_cpu(cpu).cpustat[NICE]);
+> +		retval = cputime64_add(retval, kcpustat_cpu(cpu).cpustat[NICE]);
 >
 >   	return retval;
 >   }
 > diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> index 42b274d..b7b74ad 100644
+> index b7b74ad..6ab20db 100644
 > --- a/fs/proc/stat.c
 > +++ b/fs/proc/stat.c
-> @@ -22,29 +22,27 @@
->   #define arch_idle_time(cpu) 0
->   #endif
->
-> -static cputime64_t get_idle_time(int cpu)
-> +static u64 get_idle_time(int cpu)
->   {
-> -	u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-> -	cputime64_t idle;
-> +	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
+> @@ -28,7 +28,7 @@ static u64 get_idle_time(int cpu)
 >
 >   	if (idle_time == -1ULL) {
 >   		/* !NO_HZ so we can rely on cpustat.idle */
-> -		idle = kstat_cpu(cpu).cpustat.idle;
-> -		idle = cputime64_add(idle, arch_idle_time(cpu));
-> +		idle = kstat_cpu(cpu).cpustat[IDLE];
-> +		idle += arch_idle_time(cpu);
+> -		idle = kstat_cpu(cpu).cpustat[IDLE];
+> +		idle = kcpustat_cpu(cpu).cpustat[IDLE];
+>   		idle += arch_idle_time(cpu);
 >   	} else
 >   		idle = usecs_to_cputime(idle_time);
->
->   	return idle;
->   }
->
-> -static cputime64_t get_iowait_time(int cpu)
-> +static u64 get_iowait_time(int cpu)
->   {
-> -	u64 iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-> -	cputime64_t iowait;
-> +	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+> @@ -42,7 +42,7 @@ static u64 get_iowait_time(int cpu)
 >
 >   	if (iowait_time == -1ULL)
 >   		/* !NO_HZ so we can rely on cpustat.iowait */
-> -		iowait = kstat_cpu(cpu).cpustat.iowait;
-> +		iowait = kstat_cpu(cpu).cpustat[IOWAIT];
+> -		iowait = kstat_cpu(cpu).cpustat[IOWAIT];
+> +		iowait = kcpustat_cpu(cpu).cpustat[IOWAIT];
 >   	else
 >   		iowait = usecs_to_cputime(iowait_time);
 >
-> @@ -55,33 +53,30 @@ static int show_stat(struct seq_file *p, void *v)
->   {
->   	int i, j;
->   	unsigned long jif;
-> -	cputime64_t user, nice, system, idle, iowait, irq, softirq, steal;
-> -	cputime64_t guest, guest_nice;
-> +	u64 user, nice, system, idle, iowait, irq, softirq, steal;
-> +	u64 guest, guest_nice;
->   	u64 sum = 0;
->   	u64 sum_softirq = 0;
->   	unsigned int per_softirq_sums[NR_SOFTIRQS] = {0};
->   	struct timespec boottime;
->
->   	user = nice = system = idle = iowait =
-> -		irq = softirq = steal = cputime64_zero;
-> -	guest = guest_nice = cputime64_zero;
-> +		irq = softirq = steal = 0;
-> +	guest = guest_nice = 0;
->   	getboottime(&boottime);
+> @@ -67,16 +67,16 @@ static int show_stat(struct seq_file *p, void *v)
 >   	jif = boottime.tv_sec;
 >
 >   	for_each_possible_cpu(i) {
-> -		user = cputime64_add(user, kstat_cpu(i).cpustat.user);
-> -		nice = cputime64_add(nice, kstat_cpu(i).cpustat.nice);
-> -		system = cputime64_add(system, kstat_cpu(i).cpustat.system);
-> -		idle = cputime64_add(idle, get_idle_time(i));
-> -		iowait = cputime64_add(iowait, get_iowait_time(i));
-> -		irq = cputime64_add(irq, kstat_cpu(i).cpustat.irq);
-> -		softirq = cputime64_add(softirq, kstat_cpu(i).cpustat.softirq);
-> -		steal = cputime64_add(steal, kstat_cpu(i).cpustat.steal);
-> -		guest = cputime64_add(guest, kstat_cpu(i).cpustat.guest);
-> -		guest_nice = cputime64_add(guest_nice,
-> -			kstat_cpu(i).cpustat.guest_nice);
-> -		sum += kstat_cpu_irqs_sum(i);
-> -		sum += arch_irq_stat_cpu(i);
-> +		user += kstat_cpu(i).cpustat[USER];
-
-Half the time cputime64_add is preserved, half the time this patch converts it 
-to a naked '+='.  Admittedly no one seems to usefully define cputime64_add but 
-why the conversion / inconsistency?
-
-> +		nice += kstat_cpu(i).cpustat[NICE];
-> +		system += kstat_cpu(i).cpustat[SYSTEM];
-> +		idle += get_idle_time(i);
-> +		iowait += get_iowait_time(i);
-> +		irq += kstat_cpu(i).cpustat[IRQ];
-> +		softirq += kstat_cpu(i).cpustat[SOFTIRQ];
-> +		steal += kstat_cpu(i).cpustat[STEAL];
-> +		guest += kstat_cpu(i).cpustat[GUEST];
-> +		guest_nice += kstat_cpu(i).cpustat[GUEST_NICE];
+> -		user += kstat_cpu(i).cpustat[USER];
+> -		nice += kstat_cpu(i).cpustat[NICE];
+> -		system += kstat_cpu(i).cpustat[SYSTEM];
+> +		user += kcpustat_cpu(i).cpustat[USER];
+> +		nice += kcpustat_cpu(i).cpustat[NICE];
+> +		system += kcpustat_cpu(i).cpustat[SYSTEM];
+>   		idle += get_idle_time(i);
+>   		iowait += get_iowait_time(i);
+> -		irq += kstat_cpu(i).cpustat[IRQ];
+> -		softirq += kstat_cpu(i).cpustat[SOFTIRQ];
+> -		steal += kstat_cpu(i).cpustat[STEAL];
+> -		guest += kstat_cpu(i).cpustat[GUEST];
+> -		guest_nice += kstat_cpu(i).cpustat[GUEST_NICE];
+> +		irq += kcpustat_cpu(i).cpustat[IRQ];
+> +		softirq += kcpustat_cpu(i).cpustat[SOFTIRQ];
+> +		steal += kcpustat_cpu(i).cpustat[STEAL];
+> +		guest += kcpustat_cpu(i).cpustat[GUEST];
+> +		guest_nice += kcpustat_cpu(i).cpustat[GUEST_NICE];
 >
 >   		for (j = 0; j<  NR_SOFTIRQS; j++) {
 >   			unsigned int softirq_stat = kstat_softirqs_cpu(j, i);
-> @@ -106,16 +101,16 @@ static int show_stat(struct seq_file *p, void *v)
+> @@ -101,16 +101,16 @@ static int show_stat(struct seq_file *p, void *v)
 >   		(unsigned long long)cputime64_to_clock_t(guest_nice));
 >   	for_each_online_cpu(i) {
 >   		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
-> -		user = kstat_cpu(i).cpustat.user;
-> -		nice = kstat_cpu(i).cpustat.nice;
-> -		system = kstat_cpu(i).cpustat.system;
-> +		user = kstat_cpu(i).cpustat[USER];
-> +		nice = kstat_cpu(i).cpustat[NICE];
-> +		system = kstat_cpu(i).cpustat[SYSTEM];
+> -		user = kstat_cpu(i).cpustat[USER];
+> -		nice = kstat_cpu(i).cpustat[NICE];
+> -		system = kstat_cpu(i).cpustat[SYSTEM];
+> +		user = kcpustat_cpu(i).cpustat[USER];
+> +		nice = kcpustat_cpu(i).cpustat[NICE];
+> +		system = kcpustat_cpu(i).cpustat[SYSTEM];
 >   		idle = get_idle_time(i);
 >   		iowait = get_iowait_time(i);
-> -		irq = kstat_cpu(i).cpustat.irq;
-> -		softirq = kstat_cpu(i).cpustat.softirq;
-> -		steal = kstat_cpu(i).cpustat.steal;
-> -		guest = kstat_cpu(i).cpustat.guest;
-> -		guest_nice = kstat_cpu(i).cpustat.guest_nice;
-> +		irq = kstat_cpu(i).cpustat[IRQ];
-> +		softirq = kstat_cpu(i).cpustat[SOFTIRQ];
-> +		steal = kstat_cpu(i).cpustat[STEAL];
-> +		guest = kstat_cpu(i).cpustat[GUEST];
-> +		guest_nice = kstat_cpu(i).cpustat[GUEST_NICE];
+> -		irq = kstat_cpu(i).cpustat[IRQ];
+> -		softirq = kstat_cpu(i).cpustat[SOFTIRQ];
+> -		steal = kstat_cpu(i).cpustat[STEAL];
+> -		guest = kstat_cpu(i).cpustat[GUEST];
+> -		guest_nice = kstat_cpu(i).cpustat[GUEST_NICE];
+> +		irq = kcpustat_cpu(i).cpustat[IRQ];
+> +		softirq = kcpustat_cpu(i).cpustat[SOFTIRQ];
+> +		steal = kcpustat_cpu(i).cpustat[STEAL];
+> +		guest = kcpustat_cpu(i).cpustat[GUEST];
+> +		guest_nice = kcpustat_cpu(i).cpustat[GUEST_NICE];
 >   		seq_printf(p,
 >   			"cpu%d %llu %llu %llu %llu %llu %llu %llu %llu %llu "
 >   			"%llu\n",
-> diff --git a/fs/proc/uptime.c b/fs/proc/uptime.c
-> index 766b1d4..76737bc 100644
-> --- a/fs/proc/uptime.c
-> +++ b/fs/proc/uptime.c
-> @@ -12,10 +12,10 @@ static int uptime_proc_show(struct seq_file *m, void *v)
->   	struct timespec uptime;
->   	struct timespec idle;
->   	int i;
-> -	cputime_t idletime = cputime_zero;
-> +	u64 idletime = 0;
->
->   	for_each_possible_cpu(i)
-> -		idletime = cputime64_add(idletime, kstat_cpu(i).cpustat.idle);
-> +		idletime += kstat_cpu(i).cpustat[IDLE];
->
->   	do_posix_clock_monotonic_gettime(&uptime);
->   	monotonic_to_bootbased(&uptime);
 > diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-> index 0cce2db..7bfd0fe 100644
+> index 7bfd0fe..f0e31a9 100644
 > --- a/include/linux/kernel_stat.h
 > +++ b/include/linux/kernel_stat.h
-> @@ -6,6 +6,7 @@
->   #include<linux/percpu.h>
->   #include<linux/cpumask.h>
->   #include<linux/interrupt.h>
-> +#include<linux/sched.h>
->   #include<asm/irq.h>
->   #include<asm/cputime.h>
->
-> @@ -15,21 +16,22 @@
->    * used by rstatd/perfmeter
->    */
->
-> -struct cpu_usage_stat {
-> -	cputime64_t user;
-> -	cputime64_t nice;
-> -	cputime64_t system;
-> -	cputime64_t softirq;
-> -	cputime64_t irq;
-> -	cputime64_t idle;
-> -	cputime64_t iowait;
-> -	cputime64_t steal;
-> -	cputime64_t guest;
-> -	cputime64_t guest_nice;
-> +enum cpu_usage_stat {
-> +	USER,
-> +	NICE,
-> +	SYSTEM,
-> +	SOFTIRQ,
-> +	IRQ,
-> +	IDLE,
-> +	IOWAIT,
-> +	STEAL,
-> +	GUEST,
-> +	GUEST_NICE,
-> +	NR_STATS,
+> @@ -30,8 +30,11 @@ enum cpu_usage_stat {
+>   	NR_STATS,
 >   };
-
-I suspect we want a more descriptive prefix here, e.g. CPUTIME_USER
-
 >
->   struct kernel_stat {
-> -	struct cpu_usage_stat	cpustat;
-> +	u64 cpustat[NR_STATS];
+> -struct kernel_stat {
+> +struct kernel_cpustat {
+>   	u64 cpustat[NR_STATS];
+> +};
+> +
+> +struct kernel_stat {
 >   #ifndef CONFIG_GENERIC_HARDIRQS
 >          unsigned int irqs[NR_IRQS];
 >   #endif
-> @@ -39,9 +41,9 @@ struct kernel_stat {
+> @@ -40,10 +43,13 @@ struct kernel_stat {
+>   };
 >
 >   DECLARE_PER_CPU(struct kernel_stat, kstat);
+> +DECLARE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
 >
-> -#define kstat_cpu(cpu)	per_cpu(kstat, cpu)
 >   /* Must have preemption disabled for this to be meaningful. */
-> -#define kstat_this_cpu	__get_cpu_var(kstat)
-> +#define kstat_this_cpu (&__get_cpu_var(kstat))
-> +#define kstat_cpu(cpu) per_cpu(kstat, cpu)
+>   #define kstat_this_cpu (&__get_cpu_var(kstat))
+> +#define kcpustat_this_cpu (&__get_cpu_var(kernel_cpustat))
+>   #define kstat_cpu(cpu) per_cpu(kstat, cpu)
+> +#define kcpustat_cpu(cpu) per_cpu(kernel_cpustat, cpu)
 >
 >   extern unsigned long long nr_context_switches(void);
 >
 > diff --git a/kernel/sched.c b/kernel/sched.c
-> index 594ea22..7ac5aa6 100644
+> index 7ac5aa6..efdd4d8 100644
 > --- a/kernel/sched.c
 > +++ b/kernel/sched.c
-> @@ -2158,14 +2158,14 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
+> @@ -2158,7 +2158,7 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
 >   #ifdef CONFIG_IRQ_TIME_ACCOUNTING
 >   static int irqtime_account_hi_update(void)
 >   {
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
 >   	unsigned long flags;
 >   	u64 latest_ns;
 >   	int ret = 0;
->
->   	local_irq_save(flags);
->   	latest_ns = this_cpu_read(cpu_hardirq_time);
-> -	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
-> +	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat[IRQ]))
->   		ret = 1;
->   	local_irq_restore(flags);
->   	return ret;
-> @@ -2173,14 +2173,14 @@ static int irqtime_account_hi_update(void)
+> @@ -2173,7 +2173,7 @@ static int irqtime_account_hi_update(void)
 >
 >   static int irqtime_account_si_update(void)
 >   {
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
 >   	unsigned long flags;
 >   	u64 latest_ns;
 >   	int ret = 0;
+> @@ -3803,8 +3803,10 @@ unlock:
+>   #endif
 >
->   	local_irq_save(flags);
->   	latest_ns = this_cpu_read(cpu_softirq_time);
-> -	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->softirq))
-> +	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat[SOFTIRQ]))
->   		ret = 1;
->   	local_irq_restore(flags);
->   	return ret;
-> @@ -3866,8 +3866,8 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+>   DEFINE_PER_CPU(struct kernel_stat, kstat);
+> +DEFINE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
+>
+>   EXPORT_PER_CPU_SYMBOL(kstat);
+> +EXPORT_PER_CPU_SYMBOL(kernel_cpustat);
+
+This would want a big fat comment explaining the difference.
+
+>
+>   /*
+>    * Return any ns on the sched_clock that have not yet been accounted in
+> @@ -3866,7 +3868,7 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 >   void account_user_time(struct task_struct *p, cputime_t cputime,
 >   		       cputime_t cputime_scaled)
 >   {
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> -	cputime64_t tmp;
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
-> +	u64 tmp;
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
+>   	u64 tmp;
 >
 >   	/* Add user time to process. */
->   	p->utime = cputime_add(p->utime, cputime);
-> @@ -3876,10 +3876,11 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
->
->   	/* Add user time to cpustat. */
->   	tmp = cputime_to_cputime64(cputime);
-> +
->   	if (TASK_NICE(p)>  0)
-
-We now that these are actually fields this could be:
-   field = TASK_NICE(p) > 0 ? CPUTIME_NICE : CPUTIME_USER;
-
-> -		cpustat->nice = cputime64_add(cpustat->nice, tmp);
-> +		cpustat[NICE] += tmp;
->   	else
-> -		cpustat->user = cputime64_add(cpustat->user, tmp);
-> +		cpustat[USER] += tmp;
->
->   	cpuacct_update_stats(p, CPUACCT_STAT_USER, cputime);
->   	/* Account for user time used */
-> @@ -3895,8 +3896,8 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
->   static void account_guest_time(struct task_struct *p, cputime_t cputime,
+> @@ -3897,7 +3899,7 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
 >   			       cputime_t cputime_scaled)
 >   {
-> -	cputime64_t tmp;
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> +	u64 tmp;
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
+>   	u64 tmp;
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
 >
+
+
 >   	tmp = cputime_to_cputime64(cputime);
 >
-> @@ -3908,11 +3909,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
->
->   	/* Add guest time to cpustat. */
->   	if (TASK_NICE(p)>  0) {
-> -		cpustat->nice = cputime64_add(cpustat->nice, tmp);
-> -		cpustat->guest_nice = cputime64_add(cpustat->guest_nice, tmp);
-> +		cpustat[NICE] += tmp;
-> +		cpustat[GUEST_NICE] += tmp;
->   	} else {
-> -		cpustat->user = cputime64_add(cpustat->user, tmp);
-> -		cpustat->guest = cputime64_add(cpustat->guest, tmp);
-> +		cpustat[USER] += tmp;
-> +		cpustat[GUEST] += tmp;
->   	}
->   }
->
-> @@ -3925,9 +3926,9 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
->    */
->   static inline
->   void __account_system_time(struct task_struct *p, cputime_t cputime,
-> -			cputime_t cputime_scaled, cputime64_t *target_cputime64)
-> +			cputime_t cputime_scaled, u64 *target_cputime64)
-
-Having cpustat be an array means we can drop the pointer here and pass the id.
-
->   {
-> -	cputime64_t tmp = cputime_to_cputime64(cputime);
-> +	u64 tmp = cputime_to_cputime64(cputime);
->
->   	/* Add system time to process. */
->   	p->stime = cputime_add(p->stime, cputime);
-> @@ -3935,7 +3936,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
->   	account_group_system_time(p, cputime);
->
->   	/* Add system time to cpustat. */
-> -	*target_cputime64 = cputime64_add(*target_cputime64, tmp);
-> +	*target_cputime64 += tmp;
->   	cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
->
->   	/* Account for system time used */
-> @@ -3952,8 +3953,8 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
+> @@ -3953,7 +3955,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
 >   void account_system_time(struct task_struct *p, int hardirq_offset,
 >   			 cputime_t cputime, cputime_t cputime_scaled)
 >   {
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> -	cputime64_t *target_cputime64;
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
-> +	u64 *target_cputime64;
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
+>   	u64 *target_cputime64;
 >
 >   	if ((p->flags&  PF_VCPU)&&  (irq_count() - hardirq_offset == 0)) {
->   		account_guest_time(p, cputime, cputime_scaled);
-> @@ -3961,11 +3962,11 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
->   	}
->
->   	if (hardirq_count() - hardirq_offset)
-> -		target_cputime64 =&cpustat->irq;
-> +		target_cputime64 =&cpustat[IRQ];
->   	else if (in_serving_softirq())
-> -		target_cputime64 =&cpustat->softirq;
-> +		target_cputime64 =&cpustat[SOFTIRQ];
->   	else
-> -		target_cputime64 =&cpustat->system;
-> +		target_cputime64 =&cpustat[SYSTEM];
->
->   	__account_system_time(p, cputime, cputime_scaled, target_cputime64);
->   }
-> @@ -3976,10 +3977,10 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+> @@ -3977,7 +3979,7 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
 >    */
 >   void account_steal_time(cputime_t cputime)
 >   {
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> -	cputime64_t cputime64 = cputime_to_cputime64(cputime);
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
-> +	u64 cputime64 = cputime_to_cputime64(cputime);
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
+>   	u64 cputime64 = cputime_to_cputime64(cputime);
 >
-> -	cpustat->steal = cputime64_add(cpustat->steal, cputime64);
-> +	cpustat[STEAL] += cputime64;
->   }
->
->   /*
-> @@ -3988,14 +3989,14 @@ void account_steal_time(cputime_t cputime)
+>   	cpustat[STEAL] += cputime64;
+> @@ -3989,7 +3991,7 @@ void account_steal_time(cputime_t cputime)
 >    */
 >   void account_idle_time(cputime_t cputime)
 >   {
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> -	cputime64_t cputime64 = cputime_to_cputime64(cputime);
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
-> +	u64 cputime64 = cputime_to_cputime64(cputime);
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
+>   	u64 cputime64 = cputime_to_cputime64(cputime);
 >   	struct rq *rq = this_rq();
 >
->   	if (atomic_read(&rq->nr_iowait)>  0)
-> -		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
-> +		cpustat[IOWAIT] += cputime64;
->   	else
-> -		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
-> +		cpustat[IDLE] += cputime64;
->   }
->
->   static __always_inline bool steal_account_process_tick(void)
-> @@ -4045,16 +4046,16 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
->   						struct rq *rq)
+> @@ -4047,7 +4049,7 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
 >   {
 >   	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-> -	cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
-> -	struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
-> +	u64 tmp = cputime_to_cputime64(cputime_one_jiffy);
-> +	u64 *cpustat = kstat_this_cpu->cpustat;
+>   	u64 tmp = cputime_to_cputime64(cputime_one_jiffy);
+> -	u64 *cpustat = kstat_this_cpu->cpustat;
+> +	u64 *cpustat = kcpustat_this_cpu->cpustat;
 >
 >   	if (steal_account_process_tick())
 >   		return;
->
->   	if (irqtime_account_hi_update()) {
-> -		cpustat->irq = cputime64_add(cpustat->irq, tmp);
-> +		cpustat[IRQ] += tmp;
->   	} else if (irqtime_account_si_update()) {
-> -		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-> +		cpustat[SOFTIRQ] += tmp;
->   	} else if (this_cpu_ksoftirqd() == p) {
->   		/*
->   		 * ksoftirqd time do not get accounted in cpu_softirq_time.
-> @@ -4062,7 +4063,7 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
->   		 * Also, p->stime needs to be updated for ksoftirqd.
->   		 */
->   		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
-> -					&cpustat->softirq);
-> +					&cpustat[SOFTIRQ]);
->   	} else if (user_tick) {
->   		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
->   	} else if (p == rq->idle) {
-> @@ -4071,7 +4072,7 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
->   		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
->   	} else {
->   		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
-> -					&cpustat->system);
-> +					&cpustat[SYSTEM]);
->   	}
->   }
->
 
