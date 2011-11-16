@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1KPHDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 02:03:49 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:40042 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753978Ab1KPHDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 02:03:47 -0500
-Subject: Re: unicore32 tree created on github
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Reply-To: gxt@mprc.pku.edu.cn
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <20111116144959.9db10ac8bbebbfa2796b4f50@canb.auug.org.au>
-References: <1321409752.1867.30.camel@epip-laptop>
-	 <20111116144959.9db10ac8bbebbfa2796b4f50@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Organization: MPRC, PKU
-Date: Wed, 16 Nov 2011 15:03:24 +0800
-Message-ID: <1321427004.1867.37.camel@epip-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754126Ab1KPHEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 02:04:41 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45568 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab1KPHEk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 02:04:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1321410200.19828.4.camel@rui>
+References: <1321410200.19828.4.camel@rui>
+Date: Tue, 15 Nov 2011 23:04:39 -0800
+X-Google-Sender-Auth: yTZBuAk952XDfObw8mvQsUJXs54
+Message-ID: <CAE9FiQURKqgDawReoUaOw4vgSxT_01D1wThTP+xRhz1VesyDiw@mail.gmail.com>
+Subject: Re: [PATCH] x86: fix an erroneous debug message
+From: Yinghai Lu <yinghai@kernel.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Renninger <trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 14:49 +1100, Stephen Rothwell wrote:
-> Hi,
-> 
-> On Wed, 16 Nov 2011 10:15:52 +0800 Guan Xuetao <gxt@mprc.pku.edu.cn> wrote:
-> >
-> > I created unicore32 branch on github. Could you please update my git
-> > trees in linux-next to:
-> > 
-> >    git://github.com/gxt/linux.git unicore32
-> 
-> OK, I have switched to that.  I assume that at some point it will move
-> back to kernel.org.  Please let me know when it does.
-I know. Thanks for your reminding.
+On Tue, Nov 15, 2011 at 6:23 PM, Zhang Rui <rui.zhang@intel.com> wrote:
+> Fix an erroneous debug message.
+>
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 3c31fa9..1a691f5 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3641,8 +3641,8 @@ int io_apic_set_pci_routing(struct device *dev, int irq,
+>        int node;
+>
+>        if (!IO_APIC_IRQ(irq)) {
+> -               apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ 0\n",
+> -                           irq_attr->ioapic);
+> +               apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ %d\n",
+> +                           irq_attr->ioapic, irq);
+>                return -EINVAL;
+>        }
 
-Thanks,
-Guan Xuetao
 
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
