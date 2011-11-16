@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab1KPDuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 22:50:09 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:51131 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab1KPDuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 22:50:07 -0500
-Date: Wed, 16 Nov 2011 14:49:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: gxt@mprc.pku.edu.cn
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: unicore32 tree created on github
-Message-Id: <20111116144959.9db10ac8bbebbfa2796b4f50@canb.auug.org.au>
-In-Reply-To: <1321409752.1867.30.camel@epip-laptop>
-References: <1321409752.1867.30.camel@epip-laptop>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Nov_2011_14_49_59_+1100_usBkiD/SHi7tmaYa"
+	id S1751729Ab1KPEAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 23:00:00 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:39333 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab1KPD77 (ORCPT
+	<rfc822;groupwise-SJayaraman@suse.com:0:0>);
+	Tue, 15 Nov 2011 22:59:59 -0500
+Message-ID: <4EC334D6.9020208@suse.com>
+Date: Wed, 16 Nov 2011 09:28:14 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-kernel@vger.kernel.org, ap@solarrain.com,
+        "'linux-cifs'" <linux-cifs@vger.kernel.org>
+Subject: Re: kernel 3.1.1 - cifs issue - ls: cannot access /cifs_mnt: Cannot
+ allocate memory
+References: <00c001cca300$4b512b80$e1f38280$@lucidpixels.com> <4EC269FC.1060104@suse.com> <004b01cca3cc$932e4240$b98ac6c0$@lucidpixels.com>
+In-Reply-To: <004b01cca3cc$932e4240$b98ac6c0$@lucidpixels.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Nov_2011_14_49_59_+1100_usBkiD/SHi7tmaYa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/16/2011 12:57 AM, Justin Piszcz wrote:
+> 
+> 
+> -----Original Message-----
+> From: Suresh Jayaraman [mailto:sjayaraman@suse.com] 
+> Sent: Tuesday, November 15, 2011 8:33 AM
+> To: Justin Piszcz
+> Cc: linux-kernel@vger.kernel.org; ap@solarrain.com; linux-cifs
+> Subject: Re: kernel 3.1.1 - cifs issue - ls: cannot access /cifs_mnt: Cannot
+> allocate memory
+> 
+> [Cc linux-cifs@vger.kernel.org]
+> 
+> On 11/15/2011 12:34 AM, Justin Piszcz wrote:
+>> Hi,
+>>
+>> CIFS "works" when I mount a Windows 7 host from my Linux host
+> (3.1.1-x86_64)
+>> but if I turn my machine off (Windows) and turn it back on, I get the
+>> following error, is this normal? With NFS as a hardmount it just recovers,
+>> with CIFS do I need to setup some sort of canary to unmount/remount?
+>>
+>>  $ ls /cifs_mnt
+>> ls: cannot access /cifs_mnt: Cannot allocate memory
+>>
+> 
+> This looks like a problem specific to Windows 7 or above. Quick tests on
+> my test machines shows that cifs attempts to connect, times out,
+> attempts to reconnect and gets -EHOSTUNREACH in case of both Windows
+> Servers and Samba Servers. This is the expected behavior.
+> 
+> OTOH, this sounds like a problem related to an error due to the Windows
+> server being unable to allocate from the system nonpaged pool (seen in
+> the past). Do you see anything that is related to the error in Windows
+> Event viewer?
+> 
+> Hi,
+> 
+> Yes, you are correct--
+> 
+> The server was unable to allocate from the system nonpaged pool because the
+> server reached the configured limit for nonpaged pool allocations.
+> 
 
-Hi,
+Ah, ok. In case if you have not figured out how to overcome this
+problem, take a look at
 
-On Wed, 16 Nov 2011 10:15:52 +0800 Guan Xuetao <gxt@mprc.pku.edu.cn> wrote:
->
-> I created unicore32 branch on github. Could you please update my git
-> trees in linux-next to:
->=20
->    git://github.com/gxt/linux.git unicore32
 
-OK, I have switched to that.  I assume that at some point it will move
-back to kernel.org.  Please let me know when it does.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+http://alan.lamielle.net/2009/09/03/windows-7-nonpaged-pool-srv-error-2017
 
---Signature=_Wed__16_Nov_2011_14_49_59_+1100_usBkiD/SHi7tmaYa
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOwzLnAAoJEECxmPOUX5FEv8YP/iUorFRQBJeON8KPsCY6rNPK
-lkXvUPHsrm4IiGJd4jAg289ShqPU1hm0ggTr7nBn1nKXFuUAjeq9zBZ623sXmzyX
-OYUH6UCXgvGI+jmxaMgASSrYcaSmbFHYeFO5caepnx+5DAzzITrohpKIYZi9GsCI
-OeJ3g24VCDpLaK1KZ42CbYYaLtkClasDLISybTptA3SDbFDUS+Vwhts1gOibdRWO
-WkfQrAzMfGjAv7Z4sz1B6/Slf8Lzwfx6wtenQGILcaREFn59uG6h3KR0cFPPmNSV
-UaNktoTMIW/kGY7fOLXOLb+RClfxF3AjFZnmz3fXNm911Zniwcl76YkgwuB/dpvW
-IpTyP+OQsmV6yoOxgVlLbpVdE0oMifaQcjjtuCO9qK7DCEqOCoEIRtmN7joqVzJr
-5aa7ChH/taCYwbBb+OmLDlEhsvF/KgN/SoSfYRJi1dpE+isFCMc8EHjkYF8YVllJ
-tH46D7Kb2Q+n9Ds4fJi/P1tk/hYeZ7sVTbjku0Q1EX23pxO5IUgS+v43UsdDCvae
-CUiQwJmMUEXPGk9Bmwn4GmI1v2iX/cIUUZqzMZ/daztY4nrmvzJr8mYEqi56xXiy
-g7zrOaDRm+p0z/0J/aeVL6CcD+lO3i/fYKj8GrLewhZRR1LQAZ0RUnllfpI4/xcE
-8tIAMD3sWYjztRG5rH4/
-=OXGc
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Nov_2011_14_49_59_+1100_usBkiD/SHi7tmaYa--
+- Suresh
