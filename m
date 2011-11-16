@@ -1,85 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab1KPWSB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:18:01 -0500
-Received: from mail-ww0-f74.google.com ([74.125.82.74]:65428 "EHLO
-	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab1KPWPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:15:36 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v6 2/9] net-sysfs: fixed minor sparse warning
-Date: Wed, 16 Nov 2011 14:15:08 -0800
-Message-Id: <6b08273a37db12be9e09ba197f4506b0f1ed26ba.1321481064.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
-References: <cover.1321481064.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
-References: <cover.1321481064.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	id S1754058Ab1KPWTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:19:17 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:42988 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752393Ab1KPWTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 17:19:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] PM Sleep: Don't extend wakeup paths to devices with ignore_children set
+Date: Wed, 16 Nov 2011 23:21:58 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: "Linux-sh list" <linux-sh@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111162321.58572.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes following warning:
-net/core/net-sysfs.c:921:6: warning: symbol 'numa_node' shadows an earlier one
-include/linux/topology.h:222:1: originally declared here
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
+Commit 4ca46ff3e0d8c234cb40ebb6457653b59584426c (PM / Sleep: Mark
+devices involved in wakeup signaling during suspend) introduced
+the power.wakeup_path field in struct dev_pm_info to mark devices
+whose children are enabled to wake up the system from sleep states,
+so that power domains containing the parents that provide their
+children with wakeup power and/or relay their wakeup signals are not
+turned off.  Unfortunately, that introduced a PM regression on SH7372
+whose power consumption in the system "memory sleep" state increased
+as a result of it, because it prevented the power domain containing
+the I2C controller from being turned off when some children of that
+controller were enabled to wake up the system, although the
+controller was not necessary for them to signal wakeup.
 
+To fix this issue use the observation that devices whose
+power.ignore_children flag is set for runtime PM should be treated
+analogously during system suspend.  Namely, they shouldn't be
+included in wakeup paths going through their children.  Since the
+SH7372 I2C controller's power.ignore_children flag is set, doing so
+will restore the previous behavior of that SOC.
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- net/core/net-sysfs.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/base/power/main.c  |    3 ++-
+ include/linux/device.h     |    5 +++++
+ include/linux/pm.h         |    2 +-
+ include/linux/pm_runtime.h |    6 ------
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index c71c434..a64382f 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -901,7 +901,7 @@ static ssize_t store_xps_map(struct netdev_queue *queue,
- 	struct xps_map *map, *new_map;
- 	struct xps_dev_maps *dev_maps, *new_dev_maps;
- 	int nonempty = 0;
--	int numa_node = -2;
-+	int numa_node_id = -2;
+Index: linux/include/linux/pm.h
+===================================================================
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -447,6 +447,7 @@ struct dev_pm_info {
+ 	unsigned int		async_suspend:1;
+ 	bool			is_prepared:1;	/* Owned by the PM core */
+ 	bool			is_suspended:1;	/* Ditto */
++	bool			ignore_children:1;
+ 	spinlock_t		lock;
+ #ifdef CONFIG_PM_SLEEP
+ 	struct list_head	entry;
+@@ -464,7 +465,6 @@ struct dev_pm_info {
+ 	atomic_t		usage_count;
+ 	atomic_t		child_count;
+ 	unsigned int		disable_depth:3;
+-	unsigned int		ignore_children:1;
+ 	unsigned int		idle_notification:1;
+ 	unsigned int		request_pending:1;
+ 	unsigned int		deferred_resume:1;
+Index: linux/drivers/base/power/main.c
+===================================================================
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -920,7 +920,8 @@ static int __device_suspend(struct devic
+  End:
+ 	if (!error) {
+ 		dev->power.is_suspended = true;
+-		if (dev->power.wakeup_path && dev->parent)
++		if (dev->power.wakeup_path
++		    && dev->parent && !dev->parent->power.ignore_children)
+ 			dev->parent->power.wakeup_path = true;
+ 	}
  
- 	if (!capable(CAP_NET_ADMIN))
- 		return -EPERM;
-@@ -944,10 +944,10 @@ static ssize_t store_xps_map(struct netdev_queue *queue,
- 		need_set = cpumask_test_cpu(cpu, mask) && cpu_online(cpu);
- #ifdef CONFIG_NUMA
- 		if (need_set) {
--			if (numa_node == -2)
--				numa_node = cpu_to_node(cpu);
--			else if (numa_node != cpu_to_node(cpu))
--				numa_node = -1;
-+			if (numa_node_id == -2)
-+				numa_node_id = cpu_to_node(cpu);
-+			else if (numa_node_id != cpu_to_node(cpu))
-+				numa_node_id = -1;
- 		}
- #endif
- 		if (need_set && pos >= map_len) {
-@@ -997,7 +997,7 @@ static ssize_t store_xps_map(struct netdev_queue *queue,
- 	if (dev_maps)
- 		kfree_rcu(dev_maps, rcu);
+Index: linux/include/linux/pm_runtime.h
+===================================================================
+--- linux.orig/include/linux/pm_runtime.h
++++ linux/include/linux/pm_runtime.h
+@@ -54,11 +54,6 @@ static inline bool pm_children_suspended
+ 		|| !atomic_read(&dev->power.child_count);
+ }
  
--	netdev_queue_numa_node_write(queue, (numa_node >= 0) ? numa_node :
-+	netdev_queue_numa_node_write(queue, (numa_node_id >= 0) ? numa_node_id :
- 					    NUMA_NO_NODE);
+-static inline void pm_suspend_ignore_children(struct device *dev, bool enable)
+-{
+-	dev->power.ignore_children = enable;
+-}
+-
+ static inline void pm_runtime_get_noresume(struct device *dev)
+ {
+ 	atomic_inc(&dev->power.usage_count);
+@@ -132,7 +127,6 @@ static inline void pm_runtime_allow(stru
+ static inline void pm_runtime_forbid(struct device *dev) {}
  
- 	mutex_unlock(&xps_map_mutex);
--- 
-1.7.3.1
-
+ static inline bool pm_children_suspended(struct device *dev) { return false; }
+-static inline void pm_suspend_ignore_children(struct device *dev, bool en) {}
+ static inline void pm_runtime_get_noresume(struct device *dev) {}
+ static inline void pm_runtime_put_noidle(struct device *dev) {}
+ static inline bool device_run_wake(struct device *dev) { return false; }
+Index: linux/include/linux/device.h
+===================================================================
+--- linux.orig/include/linux/device.h
++++ linux/include/linux/device.h
+@@ -682,6 +682,11 @@ static inline bool device_async_suspend_
+ 	return !!dev->power.async_suspend;
+ }
+ 
++static inline void pm_suspend_ignore_children(struct device *dev, bool enable)
++{
++	dev->power.ignore_children = enable;
++}
++
+ static inline void device_lock(struct device *dev)
+ {
+ 	mutex_lock(&dev->mutex);
