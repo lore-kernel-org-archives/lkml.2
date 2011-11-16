@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1KPKd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 05:33:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59965 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab1KPKdz convert rfc822-to-8bit (ORCPT
+	id S1755871Ab1KPKgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 05:36:16 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:7185 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755394Ab1KPKgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 05:33:55 -0500
+	Wed, 16 Nov 2011 05:36:14 -0500
+From: <oskar.andero@sonyericsson.com>
+Date: Wed, 16 Nov 2011 11:37:06 +0100
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
+        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
+Subject: Re: [PATCH v3] input: add driver support for Sharp gp2ap002a00f
+ proximity sensor
+Message-ID: <20111116103705.GA14696@caracas.corpusers.net>
+References: <1321349160-2931-1-git-send-email-oskar.andero@sonyericsson.com>
+ <20111115094342.GD13157@core.coreip.homeip.net>
+ <20111115125352.GA23767@caracas.corpusers.net>
+ <20111115182909.GB6410@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <1321433173-17757-1-git-send-email-mad_soft@inbox.ru>
-References: <1321433173-17757-1-git-send-email-mad_soft@inbox.ru>
-Date: Wed, 16 Nov 2011 16:03:54 +0530
-Message-ID: <CAJuYYwTv3d9Wg8TDBEkc0r3BweUiLdqVwGdMU4iKpK0B+EM=GA@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: fix initialisation printout in s3c2410_wdt
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, Ben Dooks <ben-linux@fluff.org>,
-        linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111115182909.GB6410@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 November 2011 14:16, Dmitry Artamonow <mad_soft@inbox.ru> wrote:
-> Looks like a typo creeped in, and driver prints
-> s3c2410-wdt s3c2410-wdt: watchdog active, reset abled, irq abled
->
-> instead of
-> s3c2410-wdt s3c2410-wdt: watchdog active, reset enabled, irq enabled
->
-> Also it may completely disinform about irq status, as it prints
-> "irq enabled" when S3C2410_WTCON_INTEN is in fact 0.
->
-> Fix it.
->
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> ---
->
-> It seems to be here for a long time, but I don't think it's
-> important enough for cc-ing stable.
->
-> Also I haven't tested it, as I don't have a hardware, but it's
-> rather trivial (and yes, I checked with datasheet that 1 in
-> S3C2410_WTCON_*EN bits really means 'enabled')
->
+On 19:29 Tue 15 Nov     , Dmitry Torokhov wrote:
+> On Tue, Nov 15, 2011 at 01:53:52PM +0100, oskar.andero@sonyericsson.com wrote:
+> > On 10:43 Tue 15 Nov     , Dmitry Torokhov wrote:
+> > > On Tue, Nov 15, 2011 at 10:26:00AM +0100, oskar.andero@sonyericsson.com wrote:
+> > > > From: Courtney Cavin <courtney.cavin@sonyericsson.com>
+> > > > +
+> > > > +#ifdef CONFIG_PM_SLEEP
+> > > > +static int gp2a_suspend(struct device *dev)
+> > > > +{
+> > > > +	struct i2c_client *client = to_i2c_client(dev);
+> > > > +	struct gp2a_data *dt = i2c_get_clientdata(client);
+> > > > +	int error;
+> > > > +
+> > > > +	mutex_lock(&dt->device->mutex);
+> > > > +
+> > > > +	if (dt->device->users) {
+> > > > +		if (device_may_wakeup(&client->dev)) {
+> > > > +			enable_irq_wake(client->irq);
+> > > 
+> > > I think this part should happen regardless of whether device has users,
+> > > only non wakeup source case needs it.
+> > 
+> > Hmm.. why would one want to enable irq_wake when there are no users?
+> > Wouldn't this cause the device to wakeup at every irq and report an
+> > switch event that no one listens to?
+> 
+> You are suspending the system and want to have this device as a wakeup
+> source. Note: not wake up _device_ at every IRQ but wake up the whole
+> _system_ when device generates an IRQ while system is asleep.
+> It does not matter whether there are users for the events; you
+> want the system to wake up.
+> 
+> At least this is the usual semantics.
 
-Tested on Exynos4210 based Origen board. This patch fixed in incorrect
-"irq enabled" message at bootup. Thanks for this fix.
+I see you point. However, the way we use the proximity sensor we can only wake up
+the system when we have an application that is actually interested in the change.
+This is for power save reasons.
+If we use the "usual semantic", we would wake up the system at every proximity
+detection regardlessly. For instance, I wouldn't want to wake up a cell phone laying
+on the desk when I put my hand over it. That would hurt the battery time.
 
-Tested-by: Thomas Abraham <thomas.abraham@linaro.org>
-
->  drivers/watchdog/s3c2410_wdt.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-> index 5de7e4f..a79e384 100644
-> --- a/drivers/watchdog/s3c2410_wdt.c
-> +++ b/drivers/watchdog/s3c2410_wdt.c
-> @@ -401,8 +401,8 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
->
->        dev_info(dev, "watchdog %sactive, reset %sabled, irq %sabled\n",
->                 (wtcon & S3C2410_WTCON_ENABLE) ?  "" : "in",
-> -                (wtcon & S3C2410_WTCON_RSTEN) ? "" : "dis",
-> -                (wtcon & S3C2410_WTCON_INTEN) ? "" : "en");
-> +                (wtcon & S3C2410_WTCON_RSTEN) ? "en" : "dis",
-> +                (wtcon & S3C2410_WTCON_INTEN) ? "en" : "dis");
->
->        return 0;
->
-> --
-> 1.7.5.1.300.gc565c
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+-Oskar
