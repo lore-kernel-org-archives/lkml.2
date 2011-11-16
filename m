@@ -1,96 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1KPSNy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 13:13:54 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:38149 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab1KPSNv (ORCPT
+	id S1751856Ab1KPSNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 13:13:52 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53791 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab1KPSNv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Nov 2011 13:13:51 -0500
-Message-ID: <4EC3FD8B.6000705@calvaedi.com>
-Date: Wed, 16 Nov 2011 19:14:35 +0100
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
-MIME-Version: 1.0
-To: Trond Myklebust <trond.myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Don't hang user processes if Kerberos ticket for nfs4 mount
- expires
-Content-Type: multipart/mixed;
- boundary="------------080701090702090605060104"
+Subject: Re: [PATCH] virtio-mmio: Devices parameter parsing
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Peter Maydell <peter.maydell@linaro.org>
+In-Reply-To: <87sjlooq3m.fsf@rustcorp.com.au>
+References: <1321365185-2928-1-git-send-email-pawel.moll@arm.com>
+	 <87sjlooq3m.fsf@rustcorp.com.au>
+Date: Wed, 16 Nov 2011 18:13:42 +0000
+Message-ID: <1321467222.3137.417.camel@hornet.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 16 Nov 2011 18:13:43.0681 (UTC) FILETIME=[79BE0F10:01CCA48B]
+X-MC-Unique: 111111618134702501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080701090702090605060104
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, 2011-11-16 at 00:42 +0000, Rusty Russell wrote:
+> On Tue, 15 Nov 2011 13:53:05 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
+> > +static char *virtio_mmio_cmdline_devices;
+> > +module_param_named(devices, virtio_mmio_cmdline_devices, charp, 0);
+> 
+> This is the wrong way to do this.
+> 
+> Don't put things in a charp and process it later.  It's lazy.  
 
-With recent kernels if the Kerberos ticket for a nfs4 mount expires any 
-user process trying to access the mount hangs until a new ticket is 
-obtained.  Simultaneously a (luckily rate-limited, but still seemingly 
-endless) stream of "Error: state manager encountered RPCSEC_GSS session 
-expired against NFSv4 server" messages is written to the kernel log.
+Definitely not lazy - string parsing is very absorbing, really! ;-)
 
-In a common setup with user home directories nfs4 mounted on 
-workstations one of the processes that is likely to hang is the 
-screen-unlock function which would normally (via pam_krb5 or similar) 
-get the new ticket.
+> You
+> should write parsers for it and call it straight from module_param.
+> 
+> And if you do it that way, multiple devices are simply multiple
+> arguments.
+>
+> module_param_cb(device, &param_ops_virtio_mmio, NULL, 0400);
 
-In older kernels the EKEYEXPIRED error would be passed to userland, 
-which would usualy just give up.
+Hm. Honestly, first time I hear someone suggesting using the param_cb
+variant... It doesn't seem to be too popular ;-)
 
-This patch restores the old behavior, which makes nfs4 mounted home 
-directories usable for me.
+$ git grep ^module_param\(.\*charp.\*\)\; | wc -l
+159
+$ git grep ^module_param_cb\(.\*\)\; | wc -l
+7
+
+But anyway, I tried to do use your suggestion (see below), even if I'm
+not convinced it's winning anything. But, in order to use the strsep()
+and kstrtoull() I need a non-const version of the string. And as the
+slab is not available at the time, I can't simply do kstrdup(), I'd have
+to abuse the "const char *val" params_ops.set's argument...
+Interestingly charp operations have the same problem:
+
+int param_set_charp(const char *val, const struct kernel_param *kp)
+<...>
+        /* This is a hack.  We can't kmalloc in early boot, and we
+         * don't need to; this mangled commandline is preserved. */
+        if (slab_is_available()) {
+
+Also, regarding the fact that one parameter define more than one
+"entity" - this is how mtd partitions are defined (all similarities
+intended ;-), see "drivers/mtd/cmdlinepart.c". And I quite like this
+syntax...
+
+There's one more thing I realize I missed. The platform devices are
+registered starting from id 0 (so as "virtio-mmio.0"). Now, if you
+happened to have a statically defined virtio-mmio with the same id,
+there would be a clash. So I wanted to add a "first_id" parameter, but
+with the _cb parameter I can't guarantee ordering (I mean, to have the
+"first_id" available _before_ first device is being instantiated). So
+I'd have to cache the devices and then create them in one go. Sounds
+like the charp parameter for me :-)
+
+So, unless you have really strong feelings about it, I'd stick to the
+single-string version, I'll just add the "first_id" parameter tomorrow.
+
+Cheers!
+
+Paweł
+
+8<---------------------------------------
+
+/* Devices list parameter */
+
+#if defined(CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES)
+
+static struct device virtio_mmio_cmdline_parent = {
+	.init_name = "virtio-mmio-cmdline",
+};
+
+static int virtio_mmio_cmdline_parent_registered;
+static int virtio_mmio_cmdline_id;
+
+static int virtio_mmio_register_cmdline_device(const char *device,
+		const struct kernel_param *kp)
+{
+	int err;
+	struct resource resources[] = {
+		{
+			.flags = IORESOURCE_IRQ,
+		}, {
+			.flags = IORESOURCE_MEM,
+		}
+	};
+	char *__token, *token, *size, *base;
+	unsigned long long val;
+
+	token = __token = kstrdup(device, GFP_KERNEL);
+	printk("token=%s\n", token);
+
+	/* Split memory and IRQ resources */
+	pr_info("base=%s, token=%s\n", base, token);
+	if (base == token || !token || !*token)
+		goto error;
+
+	/* Get IRQ */
+	if (kstrtoull(token, 0, &val) != 0)
+		goto error;
+	resources[0].start = val;
+	resources[0].end = val;
+
+	/* Split base address and size */
+	size = strsep(&base, "@");
+	if (size == base || !base || !*base)
+		pr_err("No base in '%s'!\n", device);
+
+	/* Get base address */
+	if (kstrtoull(base, 0, &val) != 0)
+		pr_err("Wrong base in '%s'!\n", device);
+	resources[1].start = val;
+	resources[1].end = val;
+
+	/* Get size */
+	resources[1].end += memparse(size, &token) - 1;
+	if (size == token || *token)
+		goto error;
+
+	kfree(__token);
+
+	pr_info("Registering device virtio-mmio.%d at 0x%x-0x%x, IRQ %u.\n",
+			virtio_mmio_cmdline_id, resources[1].start,
+			resources[1].end, resources[0].start);
+
+	if (!virtio_mmio_cmdline_parent_registered) {
+		err = device_register(&virtio_mmio_cmdline_parent);
+		if (err) {
+			pr_err("Failed to register parent device!\n");
+			return err;
+		}
+		virtio_mmio_cmdline_parent_registered = 1;
+	}
+
+	return platform_device_register_resndata(&virtio_mmio_cmdline_parent,
+			"virtio-mmio", virtio_mmio_cmdline_id++,
+			resources, ARRAY_SIZE(resources), NULL, 0) != NULL;
+
+error:
+	kfree(__token);
+	return -EINVAL;
+}
+
+static struct kernel_param_ops virtio_mmio_cmdline_param_ops = {
+	.set = virtio_mmio_register_cmdline_device,
+};
+
+module_param_cb(device, &virtio_mmio_cmdline_param_ops, NULL, 0);
 
 
 
-
---------------080701090702090605060104
-Content-Type: text/x-patch;
- name="nfs4-ekeyexpired.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="nfs4-ekeyexpired.patch"
-
-Signed-off-by: John Hughes <john@calva.com>
-
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 4700fae..dc28a78 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -302,7 +302,6 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
- 			}
- 		case -NFS4ERR_GRACE:
- 		case -NFS4ERR_DELAY:
--		case -EKEYEXPIRED:
- 			ret = nfs4_delay(server->client, &exception->timeout);
- 			if (ret != 0)
- 				break;
-@@ -3732,7 +3731,6 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
- 		case -NFS4ERR_DELAY:
- 			nfs_inc_server_stats(server, NFSIOS_DELAY);
- 		case -NFS4ERR_GRACE:
--		case -EKEYEXPIRED:
- 			rpc_delay(task, NFS4_POLL_RETRY_MAX);
- 			task->tk_status = 0;
- 			return -EAGAIN;
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index 39914be..2bee41e 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1377,8 +1377,9 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
- 			/* Zero session reset errors */
- 			return 0;
- 		case -EKEYEXPIRED:
--			/* Nothing we can do */
--			nfs4_warn_keyexpired(clp->cl_hostname);
-+			/* Nothing we can do, so do nothing.  Don't even
-+			   print a warning message, this is not a kernel
-+			   problem */
- 			return 0;
- 	}
- 	return error;
-
---------------080701090702090605060104--
