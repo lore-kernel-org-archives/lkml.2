@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1KPUko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 15:40:44 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42156 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab1KPUkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 15:40:43 -0500
-Date: Wed, 16 Nov 2011 12:39:47 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/9] Preview of additional RCU changes for
- 3.3
-Message-ID: <20111116203947.GN2355@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
- <20111115215041.GF31473@leaf>
+	id S1753715Ab1KPUqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 15:46:36 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47831 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1KPUqf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 15:46:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115215041.GF31473@leaf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11111620-5806-0000-0000-000007871838
+In-Reply-To: <1321475553.3274.3.camel@edumazet-laptop>
+References: <cover.1321420513.git.david.decotigny@google.com>
+ <dcc1ec263220b7bb1f7271933c30a8f89c19d991.1321420513.git.david.decotigny@google.com>
+ <20111116085533.0982001e@s6510.linuxnetplumber.net> <1321463694.2709.1.camel@bwh-desktop>
+ <CAG88wWa7UsPSfX_NdNDkQeuWN0LYYDVckShgDj9GvMq2mtrpbQ@mail.gmail.com>
+ <1321471967.2709.14.camel@bwh-desktop> <1321475553.3274.3.camel@edumazet-laptop>
+From: David Decotigny <david.decotigny@google.com>
+Date: Wed, 16 Nov 2011 12:46:13 -0800
+Message-ID: <CAG88wWYSriipeb41nKnoPTLLhLm9=GDf1EqS6gWxXchkqSPbwA@mail.gmail.com>
+Subject: Re: [PATCH net-next v5 07/10] forcedeth: implement ndo_get_stats64() API
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 01:50:41PM -0800, Josh Triplett wrote:
-> On Tue, Nov 15, 2011 at 12:27:36PM -0800, Paul E. McKenney wrote:
-> > This patchset is in addition to the set previously posted (see
-> > https://lkml.org/lkml/2011/11/2/363).  This new set permits the
-> > reworked RCU_FAST_NO_HZ code to be used from TREE_PREEMPT_RCU,
-> > allows rcutorture to shut down the system after a fixed time
-> > period (useful for KVM-based testing), adds an API to
-> > replace the "->pid == 0" discussed in response to the earlier
-> > patch set, and applies this API where applicable.  The patches are
-> > as follows:
-> > 
-> > 1.	Update the RCU_FAST_NO_HZ config definition to allow it to
-> > 	be used in TREE_PREEMPT_RCU builds, since that is now legal.
-> > 2.	Add a module parameter that permit rcutorture to shut down the
-> > 	system cleanly after the test has run for the specified time.
-> > 3.	Add a module parameter to allow rcutorture start running
-> > 	as soon as it is initialized.
-> > 4.	Add is_idle_task() API to replace open-coded tests of ->pid
-> > 	against zero.
-> > 5-9.	Apply the new is_idle_task() API where it makes sense.
-> 
-> I replied to patches 2-4 with review comments.  For the rest:
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Thanks to you all!
 
-Thank you for your careful review and thoughtful comments!
+I have an implementation that's similar to sky2's. I will run the
+usual set of tests and send the updated patch series here.
 
-							Thanx, Paul
+Regards,
 
+--
+David Decotigny
+
+
+
+On Wed, Nov 16, 2011 at 12:32 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mercredi 16 novembre 2011 à 19:32 +0000, Ben Hutchings a écrit :
+>> On Wed, 2011-11-16 at 11:25 -0800, David Decotigny wrote:
+>> > Thanks for your feedback on these concerns.
+>> >
+>> > On Wed, Nov 16, 2011 at 9:14 AM, Ben Hutchings
+>> > <bhutchings@solarflare.com> wrote:
+>> > > On Wed, 2011-11-16 at 08:55 -0800, Stephen Hemminger wrote:
+>> > >> Or realize that the Tx side is single threaded by dev->xmit_lock already
+>> > >> and the Rx side is single threaded by NAPI.
+>> > >
+>> > > Right.
+>> >
+>> > Yes, that's what I meant by "Each software stat field is updated by
+>> > one single writer." in a previous email. However, I think that TX and
+>> > RX paths are not always synchronized. So I'm afraid that if I'm using
+>> > a single seqcount, I might run into trouble in the absence of a lock
+>> > around each update.... and I'd really prefer to avoid such a lock. Are
+>> > you suggesting I should use 2 independent seqcounts? One for RX path,
+>> > the other for TX path, all this without a lock around writers?
+>>
+>> Yes, there should be 1 for each path.
+>
+> David, drivers/net/ethernet/marvell/sky2.c contains code like that
+> (different syncpfor rx/tx)
+>
+> TX path:
+>                        u64_stats_update_begin(&sky2->tx_stats.syncp);
+>                        ++sky2->tx_stats.packets;
+>                        sky2->tx_stats.bytes += skb->len;
+>                        u64_stats_update_end(&sky2->tx_stats.syncp);
+>
+>
+> RX path:
+>
+>        u64_stats_update_begin(&sky2->rx_stats.syncp);
+>        sky2->rx_stats.packets += packets;
+>        sky2->rx_stats.bytes += bytes;
+>        u64_stats_update_end(&sky2->rx_stats.syncp);
+>
+>
+>
