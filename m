@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab1KQMxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 07:53:32 -0500
-Received: from fed1rmfepi102.cox.net ([68.230.241.133]:45756 "EHLO
-	fed1rmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380Ab1KQMxa convert rfc822-to-8bit (ORCPT
+	id S1757412Ab1KQM7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 07:59:23 -0500
+Received: from server.fomav.gob.ni ([165.98.54.226]:45217 "EHLO
+	server.fomav.gob.ni" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab1KQM7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 07:53:30 -0500
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020206.4EC5032F.003C,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=8REYuqoajsmvOCQrDW+1/TDKVSLpI8De9SQQk3E9NNY=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=8RQQZYVJNaAA:10 a=IkcTkHD0fZMA:10
- a=1lwC+ZLIsNXUi60vNH3fjg==:17 a=3IDadBYR3a3PsEg0jPwA:9 a=QEXdDO2ut3YA:10
- a=AplDSR6wRvzuExh7:21 a=hu4mFxc7zoz2-DOt:21 a=1lwC+ZLIsNXUi60vNH3fjg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20111117075055.6R393.28804.imail@fed1rmwml208>
-Date: Thu, 17 Nov 2011 4:50:55 -0800
-From: WINS <bridget-03@cox.net>
-Reply-To: mr.collins_moore2011@teman.zikri.com
-Subject: GOOD DAY!!
+	Thu, 17 Nov 2011 07:59:21 -0500
+X-Greylist: delayed 4163 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Nov 2011 07:59:21 EST
+Message-ID: <612d670d06158fec7eeaf5c95724bb22.squirrel@www.fomav.gob.ni>
+Date: Thu, 17 Nov 2011 02:16:57 +0600
+Subject: =?iso-8859-2?Q?B=B3=B1d_Zauwa=BFy=B3em_Code_573FKx9&#8207;__?=
+From: "Systemu Administrator" <info@systemuadministrator.pl>
+Reply-To: customercarewebdept40@w.cn
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
 X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Drodzy u¿ytkownika konto e-mail
 
-I wish to inform you that we have sent you $5000.00 
+Ze wzgledu na niedawne sladu przez naszych pracowników administratora,
+zauwazylismy, ze rózne komputerów zalogowaniu sie do poczty ektronicznej i
+wielu hasel awariibyly obecne przed zalogowac. Dlatego twoje konto zostalo
+ograniczone.
 
-USD already that was given
-to you by the United Nations and (ECOWAS). We are 
+Dostep do portalu zarzadzania dla przywrócenia kontroli oraz kadry
+zarzadzajacej. Wystarczy kliknac odpowiedziec na te wiadomosc natychmiast i
+wprowadz szczególy konta ponizej.
 
-mandated here at Western Union
-to send you the total sum of $5,000,000.00USD. 
+E-mail w celu potwierdzenia tozsamosci ponizej:
+Uzytkownik:
+E-mail Uzytkownik:
+Haslo:
+Potwierdz haslo:
+Data urodzenia :
+Przyszlosci Haslo:
 
-Sender's First Name: Augustine,
-Surname: Okolo MTCN: 050 093 9676  Amount Sent: 
+Uwaga: Tylko przywrócony konto nie zostanie zablokowane.
 
-5,000.00USD. Please send your
-Name, Address, Telephone Number and Country.
+ Dziekuje za wspólprace.
 
-Account Officer: Mr. Samson Hillary
-Telephone Number:+2348063279713
-Western UnionÂ® Customer Service.
+Webmail Help Desk.
+Systemu Administrator
+
+
+
+
+
