@@ -1,157 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1KPW7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:59:12 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53478 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab1KPW7L (ORCPT
+	id S1754207Ab1KPXMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 18:12:10 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:36547 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab1KPXMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:59:11 -0500
-X-Originating-IP: 217.70.178.141
-X-Originating-IP: 131.252.244.140
-Date: Wed, 16 Nov 2011 14:58:56 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 2/9] rcu: Add rcutorture system-shutdown
- capability
-Message-ID: <20111116225856.GD2325@leaf>
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
- <1321388885-11211-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111115214615.GD31473@leaf>
- <20111116203226.GK2355@linux.vnet.ibm.com>
- <20111116221545.GA2325@leaf>
- <20111116224447.GO2355@linux.vnet.ibm.com>
+	Wed, 16 Nov 2011 18:12:09 -0500
+Subject: Re: [PATCH net-next v6 3/9] kbuild: document RPS/XPS network
+ Kconfig options
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Decotigny <david.decotigny@google.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>, Tom Herbert <therbert@google.com>
+In-Reply-To: <c7e7b57596f9a06b1c40c8b6e671cc6ac69dd304.1321481064.git.david.decotigny@google.com>
+References: <cover.1321481064.git.david.decotigny@google.com>
+	 <c7e7b57596f9a06b1c40c8b6e671cc6ac69dd304.1321481064.git.david.decotigny@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Wed, 16 Nov 2011 23:12:02 +0000
+Message-ID: <1321485122.2709.55.camel@bwh-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116224447.GO2355@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18522.005
+X-TM-AS-Result: No--10.284400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-OriginalArrivalTime: 16 Nov 2011 23:12:08.0468 (UTC) FILETIME=[29D3BD40:01CCA4B5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 02:44:47PM -0800, Paul E. McKenney wrote:
-> On Wed, Nov 16, 2011 at 02:15:45PM -0800, Josh Triplett wrote:
-> > On Wed, Nov 16, 2011 at 12:32:26PM -0800, Paul E. McKenney wrote:
-> > > On Tue, Nov 15, 2011 at 01:46:15PM -0800, Josh Triplett wrote:
-> > > > On Tue, Nov 15, 2011 at 12:27:58PM -0800, Paul E. McKenney wrote:
-> > > > > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > > > 
-> > > > > Although it is easy to run rcutorture tests under KVM, there is currently
-> > > > > no nice way to run such a test for a fixed time period, collect all of
-> > > > > the rcutorture data, and then shut the system down cleanly.  This commit
-> > > > > therefore adds an rcutorture module parameter named "shutdown_secs" that
-> > > > > specified the run duration in seconds, after which rcutorture terminates
-> > > > > the test and powers the system down.  The default value for "shutdown_secs"
-> > > > > is zero, which disables shutdown.
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > >From your recent post on this, I thought you found a solution through
-> > > > the init= parameter, which seems preferable.
-> > > 
-> > > For some things, the init= parameter does work great.  I do intend to
-> > > use it when collecting event-tracing and debugfs data, for example.
-> > > 
-> > > However, there is still a need for RCU torture testing that will operate
-> > > correctly regardless of how userspace is set up.  That, and there are
-> > > quite a few different kernel test setup, each with their own peculiar
-> > > capabilities and limitations.  So what happened was that before people
-> > > suggested the init= approach, I implemented enough of the in-kernel
-> > > approach to appreciate how much it simplifies life for the common case of
-> > > "just torture-test RCU".  As in I should have done this long ago.
-> > 
-> > Seems like it would work just as easily to point init at a statically
-> > linked C program which just sleeps for a fixed time and then shuts down.
-> > However, given the special-purpose nature of rcutorture, I won't
-> > complain that strongly.
-> 
-> I did consider a statically linked C program, but that can introduce the
-> need for cross-compilation into situations that do not otherwise need it.
+On Wed, 2011-11-16 at 14:15 -0800, David Decotigny wrote:
+> This adds a description of RPS/XPS options and allow them to be
+> changed at make menuconfig time.
 
-Wouldn't you need to cross-compile the kernel anyway in such situations?
+I'm not sure why you think this is necessary.
 
-> > > > > +static int
-> > > > > +rcu_torture_shutdown(void *arg)
-> > > > > +{
-> > > > > +	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
-> > > > > +	while (ULONG_CMP_LT(jiffies, shutdown_time) &&
-> > > > > +	       !kthread_should_stop()) {
-> > > > > +		if (verbose)
-> > > > > +			printk(KERN_ALERT "%s" TORTURE_FLAG
-> > > > > +			       "rcu_torture_shutdown task: %lu "
-> > > > > +			       "jiffies remaining\n",
-> > > > > +			       torture_type, shutdown_time - jiffies);
-> > > > > +		schedule_timeout_interruptible(HZ);
-> > > > > +	}
-> > > > 
-> > > > Any particular reason to wake up once a second here?  If !verbose, this could just
-> > > > sleep until shutdown time.  (And does the verbose output really help
-> > > > here, given printk timestamps?)
-> > > 
-> > > It actually did help me find a bug where it was failing to shut down.
-> > > I could use different code paths, but that would defeat the debugging.
-> > > 
-> > > So I increased the sleep time to 30 seconds.  Fair enough?
-> > 
-> > Well, now that you've debugged rcutorture's shutdown routine, would it
-> > suffice to have a printk when you actually go to shut down, without
-> > waking up for previous printks when not shutting down yet?
-> > 
-> > (The poll time doesn't really matter, and sleeping for 30 seconds before
-> > checking the time means you might overshoot by up to 30 seconds.  I'd
-> > like to avoid polling to begin with when you know exactly how long you
-> > need to sleep.)
-> 
-> Indeed, good points!  But please see below for what this function turns
-> into when taking that approach.
+[...]
+>  config RPS
+> -	boolean
+> +	boolean "Enable Receive Packet Steering"
+>  	depends on SMP && SYSFS && USE_GENERIC_SMP_HELPERS
+>  	default y
+> +	help
+> +	  RPS distributes the load of received packet processing
+> +	  across multiple CPUs. If unsure, say Y.
+>  
+>  config RFS_ACCEL
+> -	boolean
+> +	boolean "Enable Hardware Acceleration of RFS"
+>  	depends on RPS && GENERIC_HARDIRQS
+>  	select CPU_RMAP
+>  	default y
+> +	help
+> +	  This is the hardware version of RPS. On multi-queue network
+> +	  devices, this configures the hardware to distribute the
+> +	  received packets across multiple CPUs. If unsure, say Y.
+[...]
 
-See below for responses; that version seems like an improvement, though
-it could still improve further.
+There is some confusion/conflation between RPS and RFS in both code and
+documentation.
 
-> rcu_torture_shutdown(void *arg)
-> {
-> 	long delta;
-> 	unsigned long jiffies_snap;
-> 
-> 	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
-> 	jiffies_snap = ACCESS_ONCE(jiffies);
+RPS originaly referred to spreading out RX packet processing based on a
+flow hash.  Most multiqueue devices do this in hardware, which is
+commonly referred to as RSS.  RSS can be enabled independently of any
+networking core features.
 
-Why do you need to snapshot jiffies in this version but not in the
-version you originally posted?
+RFS refers to directing RX packet processsing of specific flows based on
+where the corresponding sockets have been used.  RFS acceleration means
+that the driver and hardware help with this by changing hardware queue
+selection for specific flows.
 
-> 	while (ULONG_CMP_LT(jiffies_snap, shutdown_time) &&
-> 	       !kthread_should_stop()) {
-> 		delta = shutdown_time - jiffies_snap;
-> 		if (verbose)
-> 			printk(KERN_ALERT "%s" TORTURE_FLAG
-> 			       "rcu_torture_shutdown task: %lu "
-> 			       "jiffies remaining\n",
-> 			       torture_type, delta);
+The RPS Kconfig option controls both RPS and RFS, and various references
+to 'RPS' in the code really cover RFS as well.
 
-I suggested dropping this print entirely; under normal circumstances it
-should never print.  It will only print if
-schedule_timeout_interruptible wakes up spuriously.
+The RFS_ACCEL Kconfig option enables RFS to support acceleration, and
+like most offload features it has no effect without a driver that
+specifically supports that.  The option only exists to abstract the
+slightly odd dependency on GENERIC_HARDIRQS, and I don't think it should
+be manually controllable.
 
-> 		schedule_timeout_interruptible(delta);
-> 		jiffies_snap = ACCESS_ONCE(jiffies);
-> 	}
+Ben.
 
-Any reason this entire loop body couldn't just become
-msleep_interruptible()?
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-> 	if (ULONG_CMP_LT(jiffies_snap, shutdown_time)) {
-> 		VERBOSE_PRINTK_STRING("rcu_torture_shutdown task stopping");
-> 		return 0;
-> 	}
-
-Writing this as "if (kthread_should_stop())" seems clearer.
-
-- Josh Triplett
