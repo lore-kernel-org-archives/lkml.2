@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab1KPGlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 01:41:52 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:50902 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752073Ab1KPGlv (ORCPT
+	id S1754001Ab1KPGsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 01:48:37 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57295 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797Ab1KPGsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 01:41:51 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+TstJv++2TUrWWk+RD4iktwdoPwp4XHTbvlepFeU
-	qX3Oz9bqRUExVe
-Subject: Re: [PATCH] sched: avoid unnecessary overflow in sched_clock
-From: Mike Galbraith <efault@gmx.de>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <1321398123.2352.29.camel@work-vm>
-References: <20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com>
-	 <1321398123.2352.29.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Nov 2011 07:41:45 +0100
-Message-ID: <1321425705.12017.1.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 16 Nov 2011 01:48:36 -0500
+Date: Wed, 16 Nov 2011 08:48:22 +0200
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Rafal Prylowski <prylowski@metasoft.pl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rmallon@gmail.com" <rmallon@gmail.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "lrg@ti.com" <lrg@ti.com>
+Subject: Re: [PATCH v2 1/5] dmaengine: add ep93xx DMA support
+Message-ID: <20111116064822.GA2703@mwesterb-mobl.ger.corp.intel.com>
+References: <cover.1306662317.git.mika.westerberg@iki.fi>
+ <3ea8d56034f25cbe3fd8a4c31d7d0d1540b6ac7e.1306662317.git.mika.westerberg@iki.fi>
+ <4EC27EED.4030108@metasoft.pl>
+ <ADE657CA350FB648AAC2C43247A983F001F3E93FDC22@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F3E93FDC22@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 15:02 -0800, john stultz wrote:
-> On Tue, 2011-11-15 at 14:12 -0800, Salman Qazi wrote:
-> > (Added the missing signed-off-by line)
-> > 
-> > In hundreds of days, the __cycles_2_ns calculation in sched_clock
-> > has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
-> > the final value to become zero.  We can solve this without losing
-> > any precision.
-> > 
-> > We can decompose TSC into quotient and remainder of division by the
-> > scale factor, and then use this to convert TSC into nanoseconds.
-> > 
-> > Signed-off-by: Salman Qazi <sqazi@google.com>
-> 
-> Acked-by: John Stultz <johnstul@us.ibm.com>
-
-This wants a stable tag, no?
-
-	-Mike
-
-> > ---
-> >  arch/x86/include/asm/timer.h |   23 ++++++++++++++++++++++-
-> >  1 files changed, 22 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-> > index fa7b917..431793e 100644
-> > --- a/arch/x86/include/asm/timer.h
-> > +++ b/arch/x86/include/asm/timer.h
-> > @@ -32,6 +32,22 @@ extern int no_timer_check;
-> >   *  (mathieu.desnoyers@polymtl.ca)
-> >   *
-> >   *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
-> > + *
-> > + * In:
-> > + *
-> > + * ns = cycles * cyc2ns_scale / SC
-> > + *
-> > + * Although we may still have enough bits to store the value of ns,
-> > + * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
-> > + * leading to an incorrect result.
-> > + *
-> > + * To avoid this, we can decompose 'cycles' into quotient and remainder
-> > + * of division by SC.  Then,
-> > + *
-> > + * ns = (quot * SC + rem) * cyc2ns_scale / SC
-> > + *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
-> > + *
-> > + *			- sqazi@google.com
-> >   */
-> > 
-> >  DECLARE_PER_CPU(unsigned long, cyc2ns);
-> > @@ -41,9 +57,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
-> > 
-> >  static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+On Tue, Nov 15, 2011 at 11:59:50AM -0600, H Hartley Sweeten wrote:
+> >
+> > Index: linux-2.6/drivers/dma/ep93xx_dma.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/dma/ep93xx_dma.c
+> > +++ linux-2.6/drivers/dma/ep93xx_dma.c
+> > @@ -246,6 +246,7 @@ static void ep93xx_dma_set_active(struct
+> >  static struct ep93xx_dma_desc *
+> >  ep93xx_dma_get_active(struct ep93xx_dma_chan *edmac)
 > >  {
-> > +	unsigned long long quot;
-> > +	unsigned long long rem;
-> >  	int cpu = smp_processor_id();
-> >  	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
-> > -	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
-> > +	quot = (cyc >> CYC2NS_SCALE_FACTOR);
-> > +	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
-> > +	ns += quot * per_cpu(cyc2ns, cpu) +
-> > +		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
-> >  	return ns;
-> >  }
-> > 
-> > 
+> > +	BUG_ON(list_empty(&edmac->active));
 > 
+> BUG_ON is evil...
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I'm not sure this is the right way to handle this.
+> 
+> If your doing dma the list should never be empty.  If it is I think it should
+> have been caught way before this.  Mika, do you have any comments?
 
-
+I agree - the list should never be empty when this is called. The actual bug
+is somewhere else.
