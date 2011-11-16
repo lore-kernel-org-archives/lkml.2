@@ -1,49 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab1KPPmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:42:22 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55764 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab1KPPmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:42:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <004126aa92b5c1e0d1b464409510fd5dd9771523.1321442150.git.viresh.kumar@st.com>
-References: <cover.1321442150.git.viresh.kumar@st.com> <004126aa92b5c1e0d1b464409510fd5dd9771523.1321442150.git.viresh.kumar@st.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Wed, 16 Nov 2011 21:05:02 +0530
-X-Google-Sender-Auth: awz1HpeJzcaf4C1uei7Gz0BfeZI
-Message-ID: <CAH+eYFA=S6Jk-dar4bsiogA2sJii0Q5Akuf3eoa9TRpLPe3G9Q@mail.gmail.com>
-Subject: Re: [PATCH 1/5] mfd/stmpe: Pass partnum as param to stmpe_probe()
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
-        mirko.gardi@st.com, grant.likely@secretlab.ca
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755199Ab1KPPma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:42:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755022Ab1KPPm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 10:42:28 -0500
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: linux-mm@kvack.org, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [PATCH] mm,x86: remove debug_pagealloc_enabled
+Date: Wed, 16 Nov 2011 16:43:52 +0100
+Message-Id: <1321458232-6823-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 16:56, Viresh Kumar <viresh.kumar@st.com> wrote:
-> partnum is required during probe to get variant's info. Currently partnum was
-> getting set in i2c interface after it is used and is not at all getting set in
-> spi interface.
+When (no)bootmem finish operation, it pass pages to buddy allocator.
+Since debug_pagealloc_enabled is not set, we will do not protect pages,
+what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
 
-So your previous patch is broken?  Please fix it and resend it instead
-since it's not merged yet.
+To fix remove debug_pagealloc_enabled. That variable was introduced by
+commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
+more CPA (change page attribude) code testing. But currently we have
+CONFIG_CPA_DEBUG, which test CPA.
 
->
-> This can be passed as param to stmpe_probe, so that it is available early. With
-> this, there is no need of i2c interface's init() routine, as it does nothing
-> else than calling dev_set_drvdata(). So better remove this routine for i2c.
->
-> partnum defined in struct stmpe is of no use now, as it is only used once during
-> probe of stmpe, so we can remove it from struct stmpe too.
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ arch/x86/mm/pageattr.c |    6 ------
+ include/linux/mm.h     |   10 ----------
+ init/main.c            |    5 -----
+ mm/debug-pagealloc.c   |    3 ---
+ 4 files changed, 0 insertions(+), 24 deletions(-)
 
-Not quite; it's used from drivers/input/keyboard/stmpe-keypad.c.  Please
-preserve this stmpe->partnum, drop your 2/5 patch which exposes variant
-externally, and instead use stmpe->partnum in 5/5.
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..5031eef 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	}
+ 
+ 	/*
+-	 * If page allocator is not up yet then do not call c_p_a():
+-	 */
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+-	/*
+ 	 * The return value is ignored as the calls cannot fail.
+ 	 * Large pages for identity mappings are not used at boot time
+ 	 * and hence no memory allocations during large page split.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..0a22db1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
+ #endif /* CONFIG_PROC_FS */
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-extern int debug_pagealloc_enabled;
+-
+ extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-
+-static inline void enable_debug_pagealloc(void)
+-{
+-	debug_pagealloc_enabled = 1;
+-}
+ #ifdef CONFIG_HIBERNATION
+ extern bool kernel_page_present(struct page *page);
+ #endif /* CONFIG_HIBERNATION */
+ #else
+ static inline void
+ kernel_map_pages(struct page *page, int numpages, int enable) {}
+-static inline void enable_debug_pagealloc(void)
+-{
+-}
+ #ifdef CONFIG_HIBERNATION
+ static inline bool kernel_page_present(struct page *page) { return true; }
+ #endif /* CONFIG_HIBERNATION */
+diff --git a/init/main.c b/init/main.c
+index 217ed23..99c4ba3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-int __read_mostly debug_pagealloc_enabled = 0;
+-#endif
+-
+ static int __init init_setup(char *str)
+ {
+ 	unsigned int i;
+@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
+ 	}
+ #endif
+ 	page_cgroup_init();
+-	enable_debug_pagealloc();
+ 	debug_objects_mem_init();
+ 	kmemleak_init();
+ 	setup_per_cpu_pageset();
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index 7cea557..789ff70 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
+ 
+ void kernel_map_pages(struct page *page, int numpages, int enable)
+ {
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+ 	if (enable)
+ 		unpoison_pages(page, numpages);
+ 	else
+-- 
+1.7.1
+
