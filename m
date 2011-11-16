@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1KPTS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 14:18:56 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:10123 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab1KPTSz (ORCPT
+	id S1752765Ab1KPTXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 14:23:46 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:6014 "EHLO
+	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1KPTXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 14:18:55 -0500
-Date: Wed, 16 Nov 2011 20:18:47 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: York Sun <yorksun@freescale.com>
-Cc: <guenter.roeck@ericsson.com>, Tabi Timur-B04825 <B04825@freescale.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <B29983@freescale.com>
-Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Message-ID: <20111116201847.6b11dc7f@endymion.delvare>
-In-Reply-To: <1321470915.7847.122.camel@oslab-l1>
-References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-	<CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
-	<E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
-	<ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
-	<1321464509.7847.41.camel@oslab-l1>
-	<1321464968.2309.384.camel@groeck-laptop>
-	<1321466135.7847.55.camel@oslab-l1>
-	<20111116190954.67c846fc@endymion.delvare>
-	<1321467638.7847.73.camel@oslab-l1>
-	<20111116201048.4b7877dd@endymion.delvare>
-	<1321470915.7847.122.camel@oslab-l1>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Nov 2011 14:23:45 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LURPVE-02-42M-02
+X-M-MSG: 
+Date: Wed, 16 Nov 2011 20:23:31 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] perf, x86: Implement event scheduler helper
+ functions
+Message-ID: <20111116192331.GR15738@erda.amd.com>
+References: <20111111142935.GI15738@erda.amd.com>
+ <1321293071-8636-1-git-send-email-robert.richter@amd.com>
+ <1321293071-8636-2-git-send-email-robert.richter@amd.com>
+ <1321459336.27735.8.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1321459336.27735.8.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 11:15:15 -0800, York Sun wrote:
-> On Wed, 2011-11-16 at 20:10 +0100, Jean Delvare wrote:
-> > On Wed, 16 Nov 2011 10:20:38 -0800, York Sun wrote:
-> > > On Wed, 2011-11-16 at 19:09 +0100, Jean Delvare wrote:
-> > > > Your thinking is too focused on I2C block reads (or even block read of
-> > > > data over the network or on disk). SMBus block read is something
-> > > > completely different. It's not about reading 200 bytes of data and
-> > > > receiving it in 16-byte chunks (I2C block read works that way, on
-> > > > EEPROMs in particular.) There is no "data length" and "block size" to
-> > > > compare to each other. It's about reading the value of _one_ register
-> > > > and this value happens to be multi-byte. There is typically _no_
-> > > > register pointer increment (automatic or not) involved as can happen
-> > > > with EEPROMs. If an SMBus block read from register N returns 10 bytes,
-> > > > you're not going to read the next 10 bytes from register N+10. There
-> > > > are no "next 10 bytes" to read, and register N+10 is something
-> > > > completely unrelated.
-> > > > 
-> > > > And for this reason, it is not possible to mix SMBus block reads with
-> > > > byte reads, as can be done with I2C block reads.
-> > > > 
-> > > > Also note that there is a limit of 32 bytes for SMBus block transfers,
-> > > > per SMBus specification. All slaves and masters must comply with it.
-> > > > 
-> > > > I hope I managed to clarify the case this time...
-> > > 
-> > > You have made it much clear. If block size is fixed and block read
-> > > cannot mix with byte read, shall we do this
-> > > 
-> > > if length < block_size
-> > >    read block_size
-> > > else {
-> > >    while (length) {
-> > >        read block_size
-> > >        length -= block_size
-> > >    }
-> > 
-> > Which part of
-> > 
-> >   There is no "data length" and "block size" to compare to each other.
-> > 
-> > did you not understand?
+On 16.11.11 17:02:16, Peter Zijlstra wrote:
+> On Mon, 2011-11-14 at 18:51 +0100, Robert Richter wrote:
+> > @@ -22,8 +22,14 @@ extern unsigned long __sw_hweight64(__u64 w);
+> >  #include <asm/bitops.h>
+> >  
+> >  #define for_each_set_bit(bit, addr, size) \
+> > -       for ((bit) = find_first_bit((addr), (size)); \
+> > -            (bit) < (size); \
+> > +       for ((bit) = find_first_bit((addr), (size));            \
+> > +            (bit) < (size);                                    \
+> > +            (bit) = find_next_bit((addr), (size), (bit) + 1))
+> > +
+> > +/* same as for_each_set_bit() but use bit as value to start with */
+> > +#define for_each_set_bit_cont(bit, addr, size) \
+> > +       for ((bit) = find_next_bit((addr), (size), (bit));      \
+> > +            (bit) < (size);                                    \
+> >              (bit) = find_next_bit((addr), (size), (bit) + 1)) 
 > 
-> For example, if the length is 40 and the block size is 32, are you going
-> to read 32, 72 byte or 64 byte?
+> So my version has the +1 for the first as well, this is from the
+> assumption that the bit passed in has been dealt with and should not be
+> the first. ie. cont _after_ @bit instead of cont _at_ @bit.
+> 
+> This seems consistent with the list_*_continue primitives as well, which
+> will start with the element after (or before for _reverse) the given
+> position.
+> 
+> Thoughts?
 
-The length is not 40. Which part of
+The problem is that you then can't start with bit 0 unless you pass a
+-1 which seems unsane.
 
-  Also note that there is a limit of 32 bytes for SMBus block transfers,
-  per SMBus specification. All slaves and masters must comply with it.
+You hit this actually too in your code with
 
-did you now understand?
+	for_each_set_bit_cont(j, c->idxmsk, X86_PMC_IDX_MAX)
+		...
 
-Really, please. I understand you're only trying to help and understand
-the patch, but at some point, if you have zero knowledge about the
-topic, you're not the right person to review the patch, period. You are
-still welcome to test the patch if you can and want, that's a
-completely different task.
+Your intention was to start with X86_PMC_IDX_MAX, the first fixed
+counter. But you always started with X86_PMC_IDX_MAX+1 never getting
+the first fixed counter.
+
+With list_*_continue it is slightly different because there is the
+list header that *points* to the first element. Thus it can start with
+the fist element of the list too by passing the list header.
+
+In the end, passing the first bit to start with seems more logically.
+
+-Robert
 
 -- 
-Jean Delvare
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
