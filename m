@@ -1,33 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab1KPBXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 20:23:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53116 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab1KPBXH (ORCPT
+	id S932893Ab1KPBZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 20:25:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41093 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab1KPBZx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 20:23:07 -0500
+	Tue, 15 Nov 2011 20:25:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <6f82953de3539a33c4c5499cd7310ed54528f118.1321398814.git.joe@perches.com>
-References: <cover.1321398814.git.joe@perches.com>
-	<6f82953de3539a33c4c5499cd7310ed54528f118.1321398814.git.joe@perches.com>
-Date: Wed, 16 Nov 2011 10:23:05 +0900
-Message-ID: <CAKYAXd_RZHH+zcvUBLyeFnXJstx7+AWF0GmZetX1cjw1qFi1Zw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] wbsd: Use current logging
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Pierre Ossman <pierre@ossman.eu>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CABqxG0dNoXjpOtug62TLX+as0CAt_niQc=msZTh+heLv8zLQyg@mail.gmail.com>
+References: <20111115083646.GA21468@darkstar.nay.redhat.com>
+	<20111115144943.GJ30922@google.com>
+	<CABqxG0dNoXjpOtug62TLX+as0CAt_niQc=msZTh+heLv8zLQyg@mail.gmail.com>
+Date: Tue, 15 Nov 2011 17:25:51 -0800
+X-Google-Sender-Auth: jwWurYR0RCAOqKqqhuQLnY672jw
+Message-ID: <CAOS58YNk8fymqknAz2autsZF=AFsG0KOef3kAC=avUJiKVPuag@mail.gmail.com>
+Subject: Re: [PATCCH percpu: add cpunum param in per_cpu_ptr_to_phys
+From: Tejun Heo <tj@kernel.org>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Dave Young <dyoung@redhat.com>, gregkh@suse.de, cl@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/16 Joe Perches <joe@perches.com>:
-> Add pr_fmt.
-> Remove DRIVER_NAME from logging calls.
-> Remove DBG, use pr_debug.
+Hello,
+
+On Tue, Nov 15, 2011 at 5:15 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>> Does this matter?  If it's not a performance critical path, I'd rather
+>> keep the generic funtionality.
 >
-> Signed-off-by: Joe Perches <joe@perches.com>
-Reviewed-by: NamJae Jeon <linkinjeon@gmail.com>
-> ---
+> Hi, why not? the code is redundant, it's an improvement of the code, isn't it?
+> Also, kernel code size will be smaller.
+
+(scratching head...) Ummm... I'm not sure whether it's an improvement
+or not. The contest is between loss of currently unused functionality
+and meaningless optimization. I vote for status quo.
+
+Thanks.
+
+-- 
+tejun
