@@ -1,38 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab1KPM7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 07:59:19 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9351 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab1KPM7S convert rfc822-to-8bit (ORCPT
+	id S1756804Ab1KPNH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 08:07:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38126 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab1KPNHZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 07:59:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 16 Nov 2011 04:59:17 -0800
-From: Sachin Nikam <Snikam@nvidia.com>
-To: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Nov 2011 18:29:14 +0530
-Subject: Plans to add SD4.0 (UHS-II) support
-Thread-Topic: Plans to add SD4.0 (UHS-II) support
-Thread-Index: AcykX4D5e2ePHHfaRVa4UZUGdvABow==
-Message-ID: <723849F6A4B5A3408299DF1FFE37CA776C2D057AD4@BGMAIL02.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 16 Nov 2011 08:07:25 -0500
+Subject: Re: [PATCH] sched: add the inline keyword to the prototype.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Il Han <corone.il.han@gmail.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1321447504-4477-1-git-send-email-corone.il.han@gmail.com>
+References: <1321447504-4477-1-git-send-email-corone.il.han@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Wed, 16 Nov 2011 14:06:50 +0100
+Message-ID: <1321448810.1421.78.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 3.0.3- 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Folks,
-What are the plans to add SD4.0 (UHS-II) support in mmc driver?
+On Wed, 2011-11-16 at 21:45 +0900, Il Han wrote:
+> The prototype has to agree with the definition.
+> Add the inline keyword to the prototype also.
 
-Best Regards,
-Sachin Nikam.
-Sr. Software Engineer.
-NVIDIA, Pune.
+Is this something gcc-4.6 wants or so? I guess I should go build new
+compilers, again.
