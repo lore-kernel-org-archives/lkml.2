@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab1KPHmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 02:42:31 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38445 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754200Ab1KPHma (ORCPT
+	id S1754839Ab1KPHu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 02:50:56 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47746 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab1KPHuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 02:42:30 -0500
-X-Sasl-enc: uQ1SwdhvkGCYCW7WUgn9ZA/gCnilSZz97GSTowWpXhNu 1321429348
-Message-ID: <4EC36963.9000300@ladisch.de>
-Date: Wed, 16 Nov 2011 08:42:27 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] media: fix truncated entity specification
-References: <4EB5ADA9.6010104@ladisch.de> <201111150148.07957.laurent.pinchart@ideasonboard.com> <4EC262DD.1070502@ladisch.de> <201111160133.04816.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201111160133.04816.laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Nov 2011 02:50:55 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] lockdep: Don't disable lockdep for out of tree modules
+Date: Wed, 16 Nov 2011 13:20:35 +0530
+Message-Id: <1321429835-1466-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 11111521-5490-0000-0000-0000001F276F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laurent Pinchart wrote:
-> > > On Saturday 05 November 2011 22:42:01 Clemens Ladisch wrote:
-> > > > When enumerating an entity, assign the entire entity specification
-> > > > instead of only the first two words.  (This requires giving the
-> > > > specification union a name.)
-> 
-> Your patch looks good then, except that I would memcpy to u_ent.raw instead of
-> u_ent.v4l. Would you also be ok with shortening specification to spec (or
-> info) ?
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Yes, go ahead.
+I guess it would be nice to get lockdep enabled for out of tree GPL modules
 
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ kernel/panic.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Regards,
-Clemens
+diff --git a/kernel/panic.c b/kernel/panic.c
+index b2659360..3bd7088 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -240,7 +240,8 @@ void add_taint(unsigned flag)
+ 	 * Also we want to keep up lockdep for staging development and
+ 	 * post-warning case.
+ 	 */
+-	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
++	if (flag != TAINT_CRAP && flag != TAINT_WARN &&
++	    flag != TAINT_OOT_MODULE && __debug_locks_off())
+ 		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+ 
+ 	set_bit(flag, &tainted_mask);
+-- 
+1.7.5.4
+
