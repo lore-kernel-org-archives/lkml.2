@@ -1,258 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab1KPVNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:13:53 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:45451 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab1KPVNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:13:52 -0500
-Date: Wed, 16 Nov 2011 13:13:29 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Huang Ying <ying.huang@intel.com>, Mike Waychison <mikew@google.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH v2] pstore: pass allocated memory region back to caller
-Message-ID: <20111116211329.GA8328@www.outflux.net>
+	id S1753756Ab1KPVOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:14:17 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:49567 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752930Ab1KPVOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 16:14:16 -0500
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1/g2NRfPRjgwLE+najKxrpHAa6O85tm5q+NeCzX51
+	hthGD9cBpgwt4t
+From: Sven Joachim <svenjoac@gmx.de>
+To: Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: sky2 driver breaks reboot/shutdown
+Date: Wed, 16 Nov 2011 22:14:13 +0100
+Message-ID: <878vnfpy6y.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.91 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The buf_lock cannot be held while populating the inodes, so make the backend
-pass forward an allocated and filled buffer instead. This solves the following
-backtrace. The effect is that "buf" is only ever used to notify the backends
-that something was written to it, and shouldn't be used in the read path.
+[ Resending since my first attempt apparently did not make it to the
+  mailing lists.  Apologies to anyone who receives duplicates. ]
 
-To replace the buf_lock during the read path, isolate the open/read/close
-loop with a separate mutex to maintain serialized access to the backend.
+Hi,
 
-[   59.691019] BUG: sleeping function called from invalid context at .../mm/slub.c:847
-[   59.691019] in_atomic(): 0, irqs_disabled(): 1, pid: 1819, name: mount
-[   59.691019] Pid: 1819, comm: mount Not tainted 3.0.8 #1
-[   59.691019] Call Trace:
-[   59.691019]  [<810252d5>] __might_sleep+0xc3/0xca
-[   59.691019]  [<810a26e6>] kmem_cache_alloc+0x32/0xf3
-[   59.691019]  [<810b53ac>] ? __d_lookup_rcu+0x6f/0xf4
-[   59.691019]  [<810b68b1>] alloc_inode+0x2a/0x64
-[   59.691019]  [<810b6903>] new_inode+0x18/0x43
-[   59.691019]  [<81142447>] pstore_get_inode.isra.1+0x11/0x98
-[   59.691019]  [<81142623>] pstore_mkfile+0xae/0x26f
-[   59.691019]  [<810a2a66>] ? kmem_cache_free+0x19/0xb1
-[   59.691019]  [<8116c821>] ? ida_get_new_above+0x140/0x158
-[   59.691019]  [<811708ea>] ? __init_rwsem+0x1e/0x2c
-[   59.691019]  [<810b67e8>] ? inode_init_always+0x111/0x1b0
-[   59.691019]  [<8102127e>] ? should_resched+0xd/0x27
-[   59.691019]  [<8137977f>] ? _cond_resched+0xd/0x21
-[   59.691019]  [<81142abf>] pstore_get_records+0x52/0xa7
-[   59.691019]  [<8114254b>] pstore_fill_super+0x7d/0x91
-[   59.691019]  [<810a7ff5>] mount_single+0x46/0x82
-[   59.691019]  [<8114231a>] pstore_mount+0x15/0x17
-[   59.691019]  [<811424ce>] ? pstore_get_inode.isra.1+0x98/0x98
-[   59.691019]  [<810a8199>] mount_fs+0x5a/0x12d
-[   59.691019]  [<810b9174>] ? alloc_vfsmnt+0xa4/0x14a
-[   59.691019]  [<810b9474>] vfs_kern_mount+0x4f/0x7d
-[   59.691019]  [<810b9d7e>] do_kern_mount+0x34/0xb2
-[   59.691019]  [<810bb15f>] do_mount+0x5fc/0x64a
-[   59.691019]  [<810912fb>] ? strndup_user+0x2e/0x3f
-[   59.691019]  [<810bb3cb>] sys_mount+0x66/0x99
-[   59.691019]  [<8137b537>] sysenter_do_call+0x12/0x26
+after upgrading from Linux 3.1 to 3.2-rc2 I noticed that the kernel
+would no longer reboot or shutdown properly, hanging instead.  Removing
+the sky2 driver works around this.  According to "lspci -v", I have the
+following network card:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v2:
- - diffed on top of https://lkml.org/lkml/2011/11/16/342
- - merged the backend changes for bisect sanity
+,----
+| 03:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8056 PCI-E Gigabit Ethernet Controller (rev 13)
+| 	Subsystem: ABIT Computer Corp. Device 108f
+| 	Flags: bus master, fast devsel, latency 0, IRQ 17
+| 	Memory at fdefc000 (64-bit, non-prefetchable) [size=16K]
+| 	I/O ports at ce00 [size=256]
+| 	[virtual] Expansion ROM at fdd00000 [disabled] [size=128K]
+| 	Capabilities: <access denied>
+| 	Kernel driver in use: sky2
+`----
 
- drivers/acpi/apei/erst.c   |   31 ++++++++++++++++++++++---------
- drivers/firmware/efivars.c |    9 +++++++--
- fs/pstore/platform.c       |   13 ++++++++-----
- include/linux/pstore.h     |    4 +++-
- 4 files changed, 40 insertions(+), 17 deletions(-)
+Bisecting shows 0bdb0bd01 as the first bad commit:
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 3616c67..6a9e3ba 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -932,7 +932,8 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
- static int erst_open_pstore(struct pstore_info *psi);
- static int erst_close_pstore(struct pstore_info *psi);
- static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
--			   struct timespec *time, struct pstore_info *psi);
-+			   struct timespec *time, char **buf,
-+			   struct pstore_info *psi);
- static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
- 		       u64 *id, unsigned int part,
- 		       size_t size, struct pstore_info *psi);
-@@ -987,17 +988,23 @@ static int erst_close_pstore(struct pstore_info *psi)
+
+commit 0bdb0bd0139f3b6afa252de1487e3ce82a494db9
+Author: stephen hemminger <shemminger@vyatta.com>
+Date:   Fri Sep 23 11:13:40 2011 +0000
+
+    sky2: manage irq better on single port card
+    
+    Most sky2 hardware only has a single port, although some variations of the
+    chip support two interfaces.  For the single port case, use the standard
+    Ethernet driver convention of allocating IRQ when device is brought up
+    rather than at probe time.
+    
+    Also, change the error handling of dual port cards so that if second
+    port can not be brought up, then just fail. No point in continuing, since
+    the failure is most certainly because of out of memory.
+    
+    The dual port sky2 device has a single irq and a single status ring,
+    therefore it has a single NAPI object shared by both ports.
+    
+    Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index ef2dc02..338b10c 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -148,6 +148,7 @@ static const unsigned rxqaddr[] = { Q_R1, Q_R2 };
+ static const u32 portirq_msk[] = { Y2_IS_PORT_1, Y2_IS_PORT_2 };
+ 
+ static void sky2_set_multicast(struct net_device *dev);
++static irqreturn_t sky2_intr(int irq, void *dev_id);
+ 
+ /* Access to PHY via serial interconnect */
+ static int gm_phy_write(struct sky2_hw *hw, unsigned port, u16 reg, u16 val)
+@@ -1715,6 +1716,27 @@ static void sky2_hw_up(struct sky2_port *sky2)
+ 	sky2_rx_start(sky2);
  }
  
- static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
--			   struct timespec *time, struct pstore_info *psi)
-+			   struct timespec *time, char **buf,
-+			   struct pstore_info *psi)
- {
- 	int rc;
- 	ssize_t len = 0;
- 	u64 record_id;
--	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
--					(erst_info.buf - sizeof(*rcd));
-+	struct cper_pstore_record *rcd;
-+	size_t rcd_len = sizeof(*rcd) + erst_info.bufsize;
- 
- 	if (erst_disable)
- 		return -ENODEV;
- 
-+	rcd = kmalloc(rcd_len, GFP_KERNEL);
-+	if (!rcd) {
-+		rc = -ENOMEM;
-+		goto out;
++/* Setup device IRQ and enable napi to process */
++static int sky2_setup_irq(struct sky2_hw *hw, const char *name)
++{
++	struct pci_dev *pdev = hw->pdev;
++	int err;
++
++	err = request_irq(pdev->irq, sky2_intr,
++			  (hw->flags & SKY2_HW_USE_MSI) ? 0 : IRQF_SHARED,
++			  name, hw);
++	if (err)
++		dev_err(&pdev->dev, "cannot assign irq %d\n", pdev->irq);
++	else {
++		napi_enable(&hw->napi);
++		sky2_write32(hw, B0_IMSK, Y2_IS_BASE);
++		sky2_read32(hw, B0_IMSK);
 +	}
- skip:
- 	rc = erst_get_record_id_next(&reader_pos, &record_id);
- 	if (rc)
-@@ -1005,22 +1012,27 @@ skip:
++
++	return err;
++}
++
++
+ /* Bring up network interface. */
+ static int sky2_up(struct net_device *dev)
+ {
+@@ -1730,6 +1752,10 @@ static int sky2_up(struct net_device *dev)
+ 	if (err)
+ 		goto err_out;
  
- 	/* no more record */
- 	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
--		rc = -1;
-+		rc = -EINVAL;
- 		goto out;
- 	}
++	/* With single port, IRQ is setup when device is brought up */
++	if (hw->ports == 1 && (err = sky2_setup_irq(hw, dev->name)))
++		goto err_out;
++
+ 	sky2_hw_up(sky2);
  
--	len = erst_read(record_id, &rcd->hdr, sizeof(*rcd) +
--			erst_info.bufsize);
-+	len = erst_read(record_id, &rcd->hdr, rcd_len);
- 	/* The record may be cleared by others, try read next record */
- 	if (len == -ENOENT)
- 		goto skip;
--	else if (len < 0) {
--		rc = -1;
-+	else if (len < sizeof(*rcd)) {
-+		rc = -EIO;
- 		goto out;
- 	}
- 	if (uuid_le_cmp(rcd->hdr.creator_id, CPER_CREATOR_PSTORE) != 0)
- 		goto skip;
+ 	/* Enable interrupts from phy/mac for port */
+@@ -2091,8 +2117,13 @@ static int sky2_down(struct net_device *dev)
+ 		     sky2_read32(hw, B0_IMSK) & ~portirq_msk[sky2->port]);
+ 	sky2_read32(hw, B0_IMSK);
  
-+	*buf = kmalloc(len, GFP_KERNEL);
-+	if (*buf == NULL) {
-+		rc = -ENOMEM;
-+		goto out;
+-	synchronize_irq(hw->pdev->irq);
+-	napi_synchronize(&hw->napi);
++	if (hw->ports == 1) {
++		napi_disable(&hw->napi);
++		free_irq(hw->pdev->irq, hw);
++	} else {
++		synchronize_irq(hw->pdev->irq);
++		napi_synchronize(&hw->napi);
 +	}
-+	memcpy(*buf, rcd->data, len - sizeof(*rcd));
- 	*id = record_id;
- 	if (uuid_le_cmp(rcd->sec_hdr.section_type,
- 			CPER_SECTION_TYPE_DMESG) == 0)
-@@ -1038,6 +1050,7 @@ skip:
- 	time->tv_nsec = 0;
  
- out:
-+	kfree(rcd);
- 	return (rc < 0) ? rc : (len - sizeof(*rcd));
- }
+ 	sky2_hw_down(sky2);
  
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index f67ddfb..0a53a05 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -457,7 +457,8 @@ static int efi_pstore_close(struct pstore_info *psi)
- }
- 
- static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
--			       struct timespec *timespec, struct pstore_info *psi)
-+			       struct timespec *timespec,
-+			       char **buf, struct pstore_info *psi)
+@@ -4798,7 +4829,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
+ static int __devinit sky2_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *ent)
  {
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
- 	struct efivars *efivars = psi->data;
-@@ -478,7 +479,11 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 				timespec->tv_nsec = 0;
- 				get_var_data_locked(efivars, &efivars->walk_entry->var);
- 				size = efivars->walk_entry->var.DataSize;
--				memcpy(psi->buf, efivars->walk_entry->var.Data, size);
-+				*buf = kmalloc(size, GFP_KERNEL);
-+				if (*buf == NULL)
-+					return -ENOMEM;
-+				memcpy(*buf, efivars->walk_entry->var.Data,
-+				       size);
- 				efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
- 					           struct efivar_entry, list);
- 				return size;
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index b22322f..f146d89 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -167,6 +167,7 @@ int pstore_register(struct pstore_info *psi)
+-	struct net_device *dev;
++	struct net_device *dev, *dev1;
+ 	struct sky2_hw *hw;
+ 	int err, using_dac = 0, wol_default;
+ 	u32 reg;
+@@ -4924,33 +4955,26 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
+ 
+ 	netif_napi_add(dev, &hw->napi, sky2_poll, NAPI_WEIGHT);
+ 
+-	err = request_irq(pdev->irq, sky2_intr,
+-			  (hw->flags & SKY2_HW_USE_MSI) ? 0 : IRQF_SHARED,
+-			  hw->irq_name, hw);
+-	if (err) {
+-		dev_err(&pdev->dev, "cannot assign irq %d\n", pdev->irq);
+-		goto err_out_unregister;
+-	}
+-	sky2_write32(hw, B0_IMSK, Y2_IS_BASE);
+-	napi_enable(&hw->napi);
+-
+ 	sky2_show_addr(dev);
+ 
+ 	if (hw->ports > 1) {
+-		struct net_device *dev1;
+-
+-		err = -ENOMEM;
+ 		dev1 = sky2_init_netdev(hw, 1, using_dac, wol_default);
+-		if (dev1 && (err = register_netdev(dev1)) == 0)
+-			sky2_show_addr(dev1);
+-		else {
+-			dev_warn(&pdev->dev,
+-				 "register of second port failed (%d)\n", err);
+-			hw->dev[1] = NULL;
+-			hw->ports = 1;
+-			if (dev1)
+-				free_netdev(dev1);
++		if (!dev1) {
++			err = -ENOMEM;
++			goto err_out_unregister;
+ 		}
++
++		err = register_netdev(dev1);
++		if (err) {
++			dev_err(&pdev->dev, "cannot register second net device\n");
++			goto err_out_free_dev1;
++		}
++
++		err = sky2_setup_irq(hw, hw->irq_name);
++		if (err)
++			goto err_out_unregister_dev1;
++
++		sky2_show_addr(dev1);
  	}
  
- 	psinfo = psi;
-+	mutex_init(&psinfo->read_mutex);
- 	spin_unlock(&pstore_lock);
+ 	setup_timer(&hw->watchdog_timer, sky2_watchdog, (unsigned long) hw);
+@@ -4961,6 +4985,10 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
  
- 	if (owner && !try_module_get(owner)) {
-@@ -195,30 +196,32 @@ EXPORT_SYMBOL_GPL(pstore_register);
- void pstore_get_records(int quiet)
- {
- 	struct pstore_info *psi = psinfo;
-+	char			*buf = NULL;
- 	ssize_t			size;
- 	u64			id;
- 	enum pstore_type_id	type;
- 	struct timespec		time;
- 	int			failed = 0, rc;
--	unsigned long		flags;
+ 	return 0;
  
- 	if (!psi)
- 		return;
++err_out_unregister_dev1:
++	unregister_netdev(dev1);
++err_out_free_dev1:
++	free_netdev(dev1);
+ err_out_unregister:
+ 	if (hw->flags & SKY2_HW_USE_MSI)
+ 		pci_disable_msi(pdev);
+@@ -5000,13 +5028,18 @@ static void __devexit sky2_remove(struct pci_dev *pdev)
+ 		unregister_netdev(hw->dev[i]);
  
--	spin_lock_irqsave(&psinfo->buf_lock, flags);
-+	mutex_lock(&psi->read_mutex);
- 	rc = psi->open(psi);
- 	if (rc)
- 		goto out;
+ 	sky2_write32(hw, B0_IMSK, 0);
++	sky2_read32(hw, B0_IMSK);
  
--	while ((size = psi->read(&id, &type, &time, psi)) > 0) {
--		rc = pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
-+	while ((size = psi->read(&id, &type, &time, &buf, psi)) > 0) {
-+		rc = pstore_mkfile(type, psi->name, id, buf, (size_t)size,
- 				  time, psi);
-+		kfree(buf);
-+		buf = NULL;
- 		if (rc && (rc != -EEXIST || !quiet))
- 			failed++;
- 	}
- 	psi->close(psi);
- out:
--	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
-+	mutex_unlock(&psi->read_mutex);
+ 	sky2_power_aux(hw);
  
- 	if (failed)
- 		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index b38ddf9..e1461e1 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -38,10 +38,12 @@ struct pstore_info {
- 	spinlock_t	buf_lock;	/* serialize access to 'buf' */
- 	char		*buf;
- 	size_t		bufsize;
-+	struct mutex	read_mutex;	/* serialize open/read/close */
- 	int		(*open)(struct pstore_info *psi);
- 	int		(*close)(struct pstore_info *psi);
- 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
--			struct timespec *time, struct pstore_info *psi);
-+			struct timespec *time, char **buf,
-+			struct pstore_info *psi);
- 	int		(*write)(enum pstore_type_id type,
- 			enum kmsg_dump_reason reason, u64 *id,
- 			unsigned int part, size_t size, struct pstore_info *psi);
--- 
-1.7.0.4
+ 	sky2_write8(hw, B0_CTST, CS_RST_SET);
+ 	sky2_read8(hw, B0_CTST);
+ 
+-	free_irq(pdev->irq, hw);
++	if (hw->ports > 1) {
++		napi_disable(&hw->napi);
++		free_irq(pdev->irq, hw);
++	}
++
+ 	if (hw->flags & SKY2_HW_USE_MSI)
+ 		pci_disable_msi(pdev);
+ 	pci_free_consistent(pdev, hw->st_size * sizeof(struct sky2_status_le),
 
+
+Kind Regards,
+Sven
