@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab1KPOwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 09:52:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39887 "EHLO
+	id S1756272Ab1KPOwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 09:52:13 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39889 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab1KPOwJ (ORCPT
+	with ESMTP id S1755187Ab1KPOwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Nov 2011 09:52:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/2] perf python: Fix undefined symbol problem
-Date: Wed, 16 Nov 2011 12:51:38 -0200
-Message-Id: <1321455099-7110-2-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/2] perf session: Fix crash with invalid CPU list
+Date: Wed, 16 Nov 2011 12:51:39 -0200
+Message-Id: <1321455099-7110-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1321455099-7110-1-git-send-email-acme@infradead.org>
 References: <1321455099-7110-1-git-send-email-acme@infradead.org>
@@ -27,88 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-Recently we made perf_evsel__init call hists__init, which broke the perf
-python binding:
+commit 5d67be9 added the option to specify a range of CPUs of interest,
+but does not catch an invalid CPU list:
 
-[root@emilia linux]# ./tools/perf/python/twatch.py
-Traceback (most recent call last):
-  File "./tools/perf/python/twatch.py", line 16, in <module>
-    import perf
-ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: hists__init
+$ perf script -c foo
+Segmentation fault (core dumped)
 
-Fix it by moving the hists__init function to its only caller, evsel.c.
-
-This way we avoid dragging in other parts of tools/perf/util/ to the
-perf python binding.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-5nffmdt5mu6ozxgj54oi4qon@git.kernel.org
+Cc: Anton Blanchard <anton@samba.org>
+Link: http://lkml.kernel.org/r/1321206327-5881-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c |   10 ++++++++++
- tools/perf/util/hist.c  |   10 ----------
- tools/perf/util/hist.h  |    2 --
- 3 files changed, 10 insertions(+), 12 deletions(-)
+ tools/perf/util/session.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e426264..d7915d4 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -34,6 +34,16 @@ int __perf_evsel__sample_size(u64 sample_type)
- 	return size;
- }
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 85c1e6b7..0f4555c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1333,6 +1333,10 @@ int perf_session__cpu_bitmap(struct perf_session *session,
+ 	}
  
-+static void hists__init(struct hists *hists)
-+{
-+	memset(hists, 0, sizeof(*hists));
-+	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
-+	hists->entries_in = &hists->entries_in_array[0];
-+	hists->entries_collapsed = RB_ROOT;
-+	hists->entries = RB_ROOT;
-+	pthread_mutex_init(&hists->lock, NULL);
-+}
-+
- void perf_evsel__init(struct perf_evsel *evsel,
- 		      struct perf_event_attr *attr, int idx)
- {
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a36a3fa..abef270 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1211,13 +1211,3 @@ size_t hists__fprintf_nr_events(struct hists *hists, FILE *fp)
+ 	map = cpu_map__new(cpu_list);
++	if (map == NULL) {
++		pr_err("Invalid cpu_list\n");
++		return -1;
++	}
  
- 	return ret;
- }
--
--void hists__init(struct hists *hists)
--{
--	memset(hists, 0, sizeof(*hists));
--	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
--	hists->entries_in = &hists->entries_in_array[0];
--	hists->entries_collapsed = RB_ROOT;
--	hists->entries = RB_ROOT;
--	pthread_mutex_init(&hists->lock, NULL);
--}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index c86c1d2..89289c8 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -63,8 +63,6 @@ struct hists {
- 	struct callchain_cursor	callchain_cursor;
- };
- 
--void hists__init(struct hists *hists);
--
- struct hist_entry *__hists__add_entry(struct hists *self,
- 				      struct addr_location *al,
- 				      struct symbol *parent, u64 period);
+ 	for (i = 0; i < map->nr; i++) {
+ 		int cpu = map->map[i];
 -- 
 1.7.8.rc0.35.gee6df
 
