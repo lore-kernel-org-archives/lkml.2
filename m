@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab1KPVo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:44:57 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42878 "EHLO ogre.sisk.pl"
+	id S1753655Ab1KPVsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:48:01 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:42891 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab1KPVo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:44:56 -0500
+	id S1751744Ab1KPVr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 16:47:59 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] PM/Memory-hotplug: Avoid task freezing failures
-Date: Wed, 16 Nov 2011 22:47:38 +0100
+To: Ferenc Wagner <wferi@niif.hu>
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
+Date: Wed, 16 Nov 2011 22:50:41 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, pavel@ucw.cz,
-        lenb@kernel.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org
-References: <20111116115515.25945.35368.stgit@srivatsabhat.in.ibm.com> <4EC3FFC4.2010904@linux.vnet.ibm.com> <20111116184157.GA25497@google.com>
-In-Reply-To: <20111116184157.GA25497@google.com>
+Cc: Christoph <cr2005@u-club.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <4E1C70AD.1010101@u-club.de> <201110222335.29573.rjw@sisk.pl> <874ny4jhy4.fsf@tac.ki.iif.hu>
+In-Reply-To: <874ny4jhy4.fsf@tac.ki.iif.hu>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111162247.39217.rjw@sisk.pl>
+Message-Id: <201111162250.42080.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 16, 2011, Tejun Heo wrote:
-> Hello,
+On Wednesday, November 16, 2011, Ferenc Wagner wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> On Wed, Nov 16, 2011 at 11:54:04PM +0530, Srivatsa S. Bhat wrote:
-> > Ok, so by "proper solution", are you referring to a totally different
-> > method (than grabbing pm_mutex) to implement mutual exclusion between
-> > subsystems and suspend/hibernation, something like the suspend blockers
-> > stuff and friends?
-> > Or are you hinting at just the existing code itself being fixed more
-> > properly than what this patch does, to avoid having side effects like
-> > you pointed out?
+> > On Saturday, October 22, 2011, Christoph wrote:
+> >
+> >>> PM / Freezer: Freeze filesystems while freezing processes (v2)
+> >>> 
+> >>> On Sunday, August 07, 2011, Dave Chinner wrote:
+> >>>
+> >>>> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+> >>>>
+> >>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>>> 
+> >>>>> Freeze all filesystems during the freezing of tasks by calling 
+> >>>>> freeze_bdev() for each of them and thaw them during the thawing of
+> >>>>> tasks with the help of thaw_bdev().
+> >>>>> 
+> >>>>> This is needed by hibernation, because some filesystems (e.g. XFS) 
+> >>>>> deadlock with the preallocation of memory used by it if the memory 
+> >>>>> pressure caused by it is too heavy.
+> >>>
+> >>> Below is an alternative fix, the changelog pretty much explains the
+> >>> idea.
+> >>> 
+> >>> I've tested it on Toshiba Portege R500, but I don't have an XFS
+> >>> partition to verify that it really helps, so I'd appreciate it if
+> >>> someone able to reproduce the original issue could test it and report
+> >>> back.
+> >> 
+> >> Well, the kernel bugtracker is still down and I just like to post my
+> >> experience with kernel (x64) v3.1-rc8/9 + patches. My machine is a
+> >> MacBookPro, doomed with 4GB RAM running debian.
+> >> 
+> >> Bug #1
+> >> 
+> >> on the way to hibernate, machine hangs on
+> >> 
+> >> "PM: Preallocating image memory..."
+> >> 
+> >> this patch worked for me now for weeks:
+> >> "[PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)"
+> >> https://lkml.org/lkml/2011/9/24/77
+> >
+> > This patch is going to be merged into 3.2.
 > 
-> Oh, nothing fancy.  Just something w/o busy looping would be fine.
-> The stinking thing is we don't have mutex_lock_freezable().  Lack of
-> proper freezable interface seems to be a continuing problem and I'm
-> not sure what the proper solution should be at this point.  Maybe we
-> should promote freezable to a proper task state.  Maybe freezable
-> kthread is a bad idea to begin with.
-
-It generally is, but some of them really want to be freezable.
-
-> Maybe instead of removing
-> freezable_with_signal() we should make that default, that way,
-> freezable can hitch on the pending signal handling (this creates
-> another set of problems tho - ie. who's responsible for clearing
-> TIF_SIGPENDING?).  I don't know.
+> Hi,
 > 
-> Maybe just throw in msleep(10) there with fat ugly comment explaining
-> why the hack is necessary?
+> I was the original reporter of the Bugzilla issue, just didn't know
+> about this thread until recently.  Anyway, I'm running 3.2-rc1 now,
+> which contains the alternative fix, and I can confirm that it indeed
+> works: hibernation does not deadlock on my XFS rooted system anymore
+> during memory preallocation.  Thanks everybody for his or her work on
+> the issue!
+> 
+> To add something still, preallocation now ends with a couple of seconds
+> of heavy disk activity, but with several seconds of total inactivity
+> beforehand.  Is this warranted by some CPU intensive task at that stage?
 
-Perhaps.
+Quilte frankly, I have no idea.
 
 Thanks,
 Rafael
