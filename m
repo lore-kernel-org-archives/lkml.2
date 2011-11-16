@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893Ab1KPBZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 20:25:54 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41093 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab1KPBZx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 20:25:53 -0500
+	id S1757707Ab1KPB0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 20:26:50 -0500
+Received: from fieldses.org ([174.143.236.118]:59432 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757688Ab1KPB0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 20:26:49 -0500
+Date: Tue, 15 Nov 2011 20:26:48 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+Message-ID: <20111116012648.GE12453@fieldses.org>
+References: <20111116102952.d653d19f69ca5a7fad8a0291@canb.auug.org.au>
+ <20111116001404.GD12453@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <CABqxG0dNoXjpOtug62TLX+as0CAt_niQc=msZTh+heLv8zLQyg@mail.gmail.com>
-References: <20111115083646.GA21468@darkstar.nay.redhat.com>
-	<20111115144943.GJ30922@google.com>
-	<CABqxG0dNoXjpOtug62TLX+as0CAt_niQc=msZTh+heLv8zLQyg@mail.gmail.com>
-Date: Tue, 15 Nov 2011 17:25:51 -0800
-X-Google-Sender-Auth: jwWurYR0RCAOqKqqhuQLnY672jw
-Message-ID: <CAOS58YNk8fymqknAz2autsZF=AFsG0KOef3kAC=avUJiKVPuag@mail.gmail.com>
-Subject: Re: [PATCCH percpu: add cpunum param in per_cpu_ptr_to_phys
-From: Tejun Heo <tj@kernel.org>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Dave Young <dyoung@redhat.com>, gregkh@suse.de, cl@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116001404.GD12453@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 15, 2011 at 07:14:04PM -0500, J. Bruce Fields wrote:
+> On Wed, Nov 16, 2011 at 10:29:52AM +1100, Stephen Rothwell wrote:
+> > Hi Bruce,
+> > 
+> > After merging the nfsd tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > fs/nfsd/nfs4state.c:4446:5: error: expected ';', ',' or ')' before 'void'
+> > fs/nfsd/nfs4state.c: In function 'nfsd_forget_locks':
+> > fs/nfsd/nfs4state.c:4468:2: error: implicit declaration of function 'nfsd_release_n_owners' [-Werror=implicit-function-declaration]
+> > 
+> > Caused by commit 16bfdaafa2c6 ("nfsd4: share open and lock owner hash
+> > tables").  Please build test *before* releasing code ...  :-(
+> 
+> I do--so what happened?
+> 
+> Aie, sorry, I see: we added a CONFIG_NFSD_FAULT_INJECTION recently, but
+> I didn't add that to my configs....
+> 
+> OK, I've fixed up my test scripts, and I'll push out a fix soon.
 
-On Tue, Nov 15, 2011 at 5:15 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->> Does this matter?  If it's not a performance critical path, I'd rather
->> keep the generic funtionality.
->
-> Hi, why not? the code is redundant, it's an improvement of the code, isn't it?
-> Also, kernel code size will be smaller.
+Done, thanks for the report.
 
-(scratching head...) Ummm... I'm not sure whether it's an improvement
-or not. The contest is between loss of currently unused functionality
-and meaningless optimization. I vote for status quo.
-
-Thanks.
-
--- 
-tejun
+--b.
