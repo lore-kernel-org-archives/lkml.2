@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab1KPPAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:00:14 -0500
-Received: from damascus.uab.es ([158.109.168.135]:34629 "EHLO damascus.uab.es"
+	id S1756692Ab1KPPAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:00:48 -0500
+Received: from smtp205.alice.it ([82.57.200.101]:46600 "EHLO smtp205.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754408Ab1KPPAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:00:13 -0500
-Date: Wed, 16 Nov 2011 18:02:22 +0100
-From: Davidlohr Bueso <dave@gnu.org>
-Subject: [PATCH] reiserfs: delete comments refering to the BKL
-To: akpm@linux-foundation.org
-Cc: reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <1321462942.11902.2.camel@offworld>
-Organization: GNU
-MIME-version: 1.0
-X-Mailer: Evolution 3.0.3-2
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-X-Spam-Tests: ALL_TRUSTED=-1
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:N SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18522.007)
-X-imss-scores: Clean:79.25439 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:3 C:3 M:3 S:3 R:3 (0.5000 0.5000)
+	id S1754954Ab1KPPAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 10:00:47 -0500
+Date: Wed, 16 Nov 2011 16:00:07 +0100
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: Antonio Ospite <ospite@studenti.unina.it>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] leds: leds-lp3944, fix "sparse" warning
+ "mixing different enum types"
+Message-Id: <20111116160007.5a834380ca396153931cc238@studenti.unina.it>
+In-Reply-To: <1317936884-2320-1-git-send-email-ospite@studenti.unina.it>
+References: <20111005222143.665f7a7e922dbb2b2541007a@studenti.unina.it>
+	<1317936884-2320-1-git-send-email-ospite@studenti.unina.it>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__16_Nov_2011_16_00_07_+0100_Mm+_SY5KLZsr9B+3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+--Signature=_Wed__16_Nov_2011_16_00_07_+0100_Mm+_SY5KLZsr9B+3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- fs/reiserfs/journal.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+On Thu,  6 Oct 2011 23:34:44 +0200
+Antonio Ospite <ospite@studenti.unina.it> wrote:
 
-diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
-index eb71106..cce8e87 100644
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -2896,14 +2896,13 @@ int journal_transaction_should_end(struct reiserfs_transaction_handle *th,
- 	    journal->j_cnode_free < (journal->j_trans_max * 3)) {
- 		return 1;
- 	}
--	/* protected by the BKL here */
-+
- 	journal->j_len_alloc += new_alloc;
- 	th->t_blocks_allocated += new_alloc ;
- 	return 0;
- }
- 
--/* this must be called inside a transaction, and requires the
--** kernel_lock to be held
-+/* this must be called inside a transaction
- */
- void reiserfs_block_writes(struct reiserfs_transaction_handle *th)
- {
-@@ -2914,8 +2913,7 @@ void reiserfs_block_writes(struct reiserfs_transaction_handle *th)
- 	return;
- }
- 
--/* this must be called without a transaction started, and does not
--** require BKL
-+/* this must be called without a transaction started
- */
- void reiserfs_allow_writes(struct super_block *s)
- {
-@@ -2924,8 +2922,7 @@ void reiserfs_allow_writes(struct super_block *s)
- 	wake_up(&journal->j_join_wait);
- }
- 
--/* this must be called without a transaction started, and does not
--** require BKL
-+/* this must be called without a transaction started
- */
- void reiserfs_wait_on_write_block(struct super_block *s)
- {
--- 
-1.7.7.2
+> Fix a warning from "sparse":
+>=20
+> drivers/leds/leds-lp3944.c:292:23: warning: mixing different enum types
+> drivers/leds/leds-lp3944.c:292:23:     int enum led_brightness  versus
+> drivers/leds/leds-lp3944.c:292:23:     int enum lp3944_status
+>=20
+> Keeping track of LP3944_LED_STATUS_OFF and LP3944_LED_STATUS_ON only in
+> lp3944_led_set_brightness() is OK, as the handling of DIM (blinking)
+> mode[s] is in lp3944_led_set_blink().
+>=20
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 
+Ping.
+Dan, did you receive this one? I can't see it in 3.2-rc2.
+
+Regards,
+   Antonio.
+
+> ---
+>  drivers/leds/leds-lp3944.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/leds/leds-lp3944.c b/drivers/leds/leds-lp3944.c
+> index 9010c05..3cc01fb 100644
+> --- a/drivers/leds/leds-lp3944.c
+> +++ b/drivers/leds/leds-lp3944.c
+> @@ -289,7 +289,7 @@ static void lp3944_led_set_brightness(struct led_clas=
+sdev *led_cdev,
+>  	dev_dbg(&led->client->dev, "%s: %s, %d\n",
+>  		__func__, led_cdev->name, brightness);
+> =20
+> -	led->status =3D brightness;
+> +	led->status =3D !!brightness;
+>  	schedule_work(&led->work);
+>  }
+> =20
+> --=20
+> 1.7.6.3
+>=20
+>=20
 
 
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Wed__16_Nov_2011_16_00_07_+0100_Mm+_SY5KLZsr9B+3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7Dz/cACgkQ5xr2akVTsAFEgQCfc227ezyYgmNPPrWjrPsZakU5
++t4AoIf2jsDxFevsL4KRfCZIVqn+oYD1
+=agzn
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Nov_2011_16_00_07_+0100_Mm+_SY5KLZsr9B+3--
