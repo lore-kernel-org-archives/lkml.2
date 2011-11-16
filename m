@@ -1,231 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab1KPVOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:14:17 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:49567 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752930Ab1KPVOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:14:16 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/g2NRfPRjgwLE+najKxrpHAa6O85tm5q+NeCzX51
-	hthGD9cBpgwt4t
-From: Sven Joachim <svenjoac@gmx.de>
-To: Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: sky2 driver breaks reboot/shutdown
-Date: Wed, 16 Nov 2011 22:14:13 +0100
-Message-ID: <878vnfpy6y.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.91 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+	id S1753561Ab1KPVVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:21:50 -0500
+Received: from smtp207.alice.it ([82.57.200.103]:49090 "EHLO smtp207.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049Ab1KPVVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 16:21:49 -0500
+Date: Wed, 16 Nov 2011 22:21:00 +0100
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Richard Purdie <rpurdie@rpsys.net>, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert
+ "leds: save the delay values after a successful call to blink_set()"
+Message-Id: <20111116222100.323aa751b8a19c0fc2e08a97@studenti.unina.it>
+In-Reply-To: <1320662197-21471-1-git-send-email-jhovold@gmail.com>
+References: <1317973118.3988.2.camel@jlt3.sipsolutions.net>
+	<1320662197-21471-1-git-send-email-jhovold@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending since my first attempt apparently did not make it to the
-  mailing lists.  Apologies to anyone who receives duplicates. ]
+--Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Mon,  7 Nov 2011 11:36:37 +0100
+Johan Hovold <jhovold@gmail.com> wrote:
 
-after upgrading from Linux 3.1 to 3.2-rc2 I noticed that the kernel
-would no longer reboot or shutdown properly, hanging instead.  Removing
-the sky2 driver works around this.  According to "lspci -v", I have the
-following network card:
+> This reverts commit 6123b0e274503a0d3588e84fbe07c9aa01bfaf5d.
+>=20
+> The problem this patch intends to solve has already been fixed by commit
+> 7a5caabd090b8f7 (drivers/leds/ledtrig-timer.c: fix broken sysfs delay
+> handling).
+>=20
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-,----
-| 03:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8056 PCI-E Gigabit Ethernet Controller (rev 13)
-| 	Subsystem: ABIT Computer Corp. Device 108f
-| 	Flags: bus master, fast devsel, latency 0, IRQ 17
-| 	Memory at fdefc000 (64-bit, non-prefetchable) [size=16K]
-| 	I/O ports at ce00 [size=256]
-| 	[virtual] Expansion ROM at fdd00000 [disabled] [size=128K]
-| 	Capabilities: <access denied>
-| 	Kernel driver in use: sky2
-`----
+Sorry for not replying earlier, I was on vacation.
 
-Bisecting shows 0bdb0bd01 as the first bad commit:
+Thanks Johan, I've just verified the timer trigger works fine on 3.1
+indeed even without my changes. But keep reading, please.
 
+> ---
+>=20
+> Hi,=20
+>=20
+> A fix for the problem with the delay parameters not being stored is alrea=
+dy in
+> 3.1 (and stable). Rather than storing both values at every call to
+> led_blink_set only the updated value is stored in led_delay_{on,off}_stor=
+e in
+> ledtrig-timer.c.
+>
 
-commit 0bdb0bd0139f3b6afa252de1487e3ce82a494db9
-Author: stephen hemminger <shemminger@vyatta.com>
-Date:   Fri Sep 23 11:13:40 2011 +0000
+I thought that this was better fixed in the led_blink_set() directly,
+as delay_on and delay_off are led_cdev fields after all, not
+necessarily specific to ledtrig-timer, what about other users of them?
+For example I can see led_blink_set() used in: net/mac80211/led.c
+and led_trigger_blink(), which uses led_blink_set() in:
+drivers/power/power_supply_leds.c
 
-    sky2: manage irq better on single port card
-    
-    Most sky2 hardware only has a single port, although some variations of the
-    chip support two interfaces.  For the single port case, use the standard
-    Ethernet driver convention of allocating IRQ when device is brought up
-    rather than at probe time.
-    
-    Also, change the error handling of dual port cards so that if second
-    port can not be brought up, then just fail. No point in continuing, since
-    the failure is most certainly because of out of memory.
-    
-    The dual port sky2 device has a single irq and a single status ring,
-    therefore it has a single NAPI object shared by both ports.
-    
-    Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+Maybe I am missing something.
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index ef2dc02..338b10c 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -148,6 +148,7 @@ static const unsigned rxqaddr[] = { Q_R1, Q_R2 };
- static const u32 portirq_msk[] = { Y2_IS_PORT_1, Y2_IS_PORT_2 };
- 
- static void sky2_set_multicast(struct net_device *dev);
-+static irqreturn_t sky2_intr(int irq, void *dev_id);
- 
- /* Access to PHY via serial interconnect */
- static int gm_phy_write(struct sky2_hw *hw, unsigned port, u16 reg, u16 val)
-@@ -1715,6 +1716,27 @@ static void sky2_hw_up(struct sky2_port *sky2)
- 	sky2_rx_start(sky2);
- }
- 
-+/* Setup device IRQ and enable napi to process */
-+static int sky2_setup_irq(struct sky2_hw *hw, const char *name)
-+{
-+	struct pci_dev *pdev = hw->pdev;
-+	int err;
-+
-+	err = request_irq(pdev->irq, sky2_intr,
-+			  (hw->flags & SKY2_HW_USE_MSI) ? 0 : IRQF_SHARED,
-+			  name, hw);
-+	if (err)
-+		dev_err(&pdev->dev, "cannot assign irq %d\n", pdev->irq);
-+	else {
-+		napi_enable(&hw->napi);
-+		sky2_write32(hw, B0_IMSK, Y2_IS_BASE);
-+		sky2_read32(hw, B0_IMSK);
-+	}
-+
-+	return err;
-+}
-+
-+
- /* Bring up network interface. */
- static int sky2_up(struct net_device *dev)
- {
-@@ -1730,6 +1752,10 @@ static int sky2_up(struct net_device *dev)
- 	if (err)
- 		goto err_out;
- 
-+	/* With single port, IRQ is setup when device is brought up */
-+	if (hw->ports == 1 && (err = sky2_setup_irq(hw, dev->name)))
-+		goto err_out;
-+
- 	sky2_hw_up(sky2);
- 
- 	/* Enable interrupts from phy/mac for port */
-@@ -2091,8 +2117,13 @@ static int sky2_down(struct net_device *dev)
- 		     sky2_read32(hw, B0_IMSK) & ~portirq_msk[sky2->port]);
- 	sky2_read32(hw, B0_IMSK);
- 
--	synchronize_irq(hw->pdev->irq);
--	napi_synchronize(&hw->napi);
-+	if (hw->ports == 1) {
-+		napi_disable(&hw->napi);
-+		free_irq(hw->pdev->irq, hw);
-+	} else {
-+		synchronize_irq(hw->pdev->irq);
-+		napi_synchronize(&hw->napi);
-+	}
- 
- 	sky2_hw_down(sky2);
- 
-@@ -4798,7 +4829,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
- static int __devinit sky2_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	struct net_device *dev;
-+	struct net_device *dev, *dev1;
- 	struct sky2_hw *hw;
- 	int err, using_dac = 0, wol_default;
- 	u32 reg;
-@@ -4924,33 +4955,26 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
- 
- 	netif_napi_add(dev, &hw->napi, sky2_poll, NAPI_WEIGHT);
- 
--	err = request_irq(pdev->irq, sky2_intr,
--			  (hw->flags & SKY2_HW_USE_MSI) ? 0 : IRQF_SHARED,
--			  hw->irq_name, hw);
--	if (err) {
--		dev_err(&pdev->dev, "cannot assign irq %d\n", pdev->irq);
--		goto err_out_unregister;
--	}
--	sky2_write32(hw, B0_IMSK, Y2_IS_BASE);
--	napi_enable(&hw->napi);
--
- 	sky2_show_addr(dev);
- 
- 	if (hw->ports > 1) {
--		struct net_device *dev1;
--
--		err = -ENOMEM;
- 		dev1 = sky2_init_netdev(hw, 1, using_dac, wol_default);
--		if (dev1 && (err = register_netdev(dev1)) == 0)
--			sky2_show_addr(dev1);
--		else {
--			dev_warn(&pdev->dev,
--				 "register of second port failed (%d)\n", err);
--			hw->dev[1] = NULL;
--			hw->ports = 1;
--			if (dev1)
--				free_netdev(dev1);
-+		if (!dev1) {
-+			err = -ENOMEM;
-+			goto err_out_unregister;
- 		}
-+
-+		err = register_netdev(dev1);
-+		if (err) {
-+			dev_err(&pdev->dev, "cannot register second net device\n");
-+			goto err_out_free_dev1;
-+		}
-+
-+		err = sky2_setup_irq(hw, hw->irq_name);
-+		if (err)
-+			goto err_out_unregister_dev1;
-+
-+		sky2_show_addr(dev1);
- 	}
- 
- 	setup_timer(&hw->watchdog_timer, sky2_watchdog, (unsigned long) hw);
-@@ -4961,6 +4985,10 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
- 
- 	return 0;
- 
-+err_out_unregister_dev1:
-+	unregister_netdev(dev1);
-+err_out_free_dev1:
-+	free_netdev(dev1);
- err_out_unregister:
- 	if (hw->flags & SKY2_HW_USE_MSI)
- 		pci_disable_msi(pdev);
-@@ -5000,13 +5028,18 @@ static void __devexit sky2_remove(struct pci_dev *pdev)
- 		unregister_netdev(hw->dev[i]);
- 
- 	sky2_write32(hw, B0_IMSK, 0);
-+	sky2_read32(hw, B0_IMSK);
- 
- 	sky2_power_aux(hw);
- 
- 	sky2_write8(hw, B0_CTST, CS_RST_SET);
- 	sky2_read8(hw, B0_CTST);
- 
--	free_irq(pdev->irq, hw);
-+	if (hw->ports > 1) {
-+		napi_disable(&hw->napi);
-+		free_irq(pdev->irq, hw);
-+	}
-+
- 	if (hw->flags & SKY2_HW_USE_MSI)
- 		pci_disable_msi(pdev);
- 	pci_free_consistent(pdev, hw->st_size * sizeof(struct sky2_status_le),
+Regards,
+   Antonio
 
+> Thanks,
+> Johan
+>=20
+>  drivers/leds/led-class.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index 661b692..6d5628b 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -270,11 +270,8 @@ void led_blink_set(struct led_classdev *led_cdev,
+>  	del_timer_sync(&led_cdev->blink_timer);
+> =20
+>  	if (led_cdev->blink_set &&
+> -	    !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
+> -		led_cdev->blink_delay_on =3D *delay_on;
+> -		led_cdev->blink_delay_off =3D *delay_off;
+> +	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+>  		return;
+> -	}
+> =20
+>  	/* blink with 1 Hz as default if nothing specified */
+>  	if (!*delay_on && !*delay_off)
+> --=20
+> 1.7.6
+>=20
+>=20
 
-Kind Regards,
-Sven
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7EKTwACgkQ5xr2akVTsAF+kgCfcH+5CBBaTSx0MYASnHDxDUEF
+tcwAn086J90I2Ru3eLHjfCd9tkNfjH7+
+=indn
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Nov_2011_22_21_00_+0100_g1Zqb_MuqmoQfoGU--
