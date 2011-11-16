@@ -1,56 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab1KPWsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:48:12 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:42851 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752988Ab1KPWsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:48:11 -0500
-Date: Wed, 16 Nov 2011 14:48:06 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: sky2 driver breaks reboot/shutdown
-Message-ID: <20111116144806.0b6e327f@nehalam.linuxnetplumber.net>
-In-Reply-To: <878vnfpy6y.fsf@turtle.gmx.de>
-References: <878vnfpy6y.fsf@turtle.gmx.de>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754348Ab1KPWsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:48:22 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38373 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab1KPWsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 17:48:18 -0500
+Date: Wed, 16 Nov 2011 14:48:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <barrioskmc@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
+        Colin Cross <ccross@android.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+In-Reply-To: <CABin3AGpQbt6i56a5+rh=qJC+vC-x4VkhJwsfJczMyGsSH31TA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1111161438160.16596@chino.kir.corp.google.com>
+References: <20111114140421.GA27150@suse.de> <CAEwNFnALUoeh5cEW=XZqy7Aab4hxtE11-mAjWB1c5eddzGuQFA@mail.gmail.com> <20111115173656.GJ27150@suse.de> <20111116002235.GA10958@barrios-laptop.redhat.com> <CAMbhsRSePzsN-4JXEEwFoaa9EhBfHQ11gsjqJCDzV2nonJ0DqQ@mail.gmail.com>
+ <20111116004516.GA13028@barrios-laptop.redhat.com> <alpine.LFD.2.02.1111160908310.2446@tux.localdomain> <alpine.DEB.2.00.1111161340010.16596@chino.kir.corp.google.com> <CABin3AGpQbt6i56a5+rh=qJC+vC-x4VkhJwsfJczMyGsSH31TA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-90931042-1321483390=:16596"
+Content-ID: <alpine.DEB.2.00.1111161443210.16596@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 22:14:13 +0100
-Sven Joachim <svenjoac@gmx.de> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> [ Resending since my first attempt apparently did not make it to the
->   mailing lists.  Apologies to anyone who receives duplicates. ]
+--397155492-90931042-1321483390=:16596
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1111161443211.16596@chino.kir.corp.google.com>
+
+On Thu, 17 Nov 2011, Minchan Kim wrote:
+
+> >> > diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> >> > index fdd4263..01aa9b5 100644
+> >> > --- a/kernel/power/suspend.c
+> >> > +++ b/kernel/power/suspend.c
+> >> > @@ -297,9 +297,11 @@ int enter_state(suspend_state_t state)
+> >> >                goto Finish;
+> >> >
+> >> >        pr_debug("PM: Entering %s sleep\n", pm_states[state]);
+> >> > +       oom_killer_disable();
+> >> >        pm_restrict_gfp_mask();
+> >> >        error = suspend_devices_and_enter(state);
+> >> >        pm_restore_gfp_mask();
+> >> > +       oom_killer_enable();
+> >> >
+> >> >  Finish:
+> >> >        pr_debug("PM: Finishing wakeup.\n");
+> >> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >> > index 6e8ecb6..d8c31b7 100644
+> >> > --- a/mm/page_alloc.c
+> >> > +++ b/mm/page_alloc.c
+> >> > @@ -2177,9 +2177,9 @@ rebalance:
+> >> >         * running out of options and have to consider going OOM
+> >> >         */
+> >> >        if (!did_some_progress) {
+> >> > -               if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+> >> > -                       if (oom_killer_disabled)
+> >> > +               if (oom_killer_disabled)
+> >> >                                goto nopage;
+> >
+> > You're allowing __GFP_NOFAIL allocations to fail.
+> >
+> >> > +               if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+> >> >                        page = __alloc_pages_may_oom(gfp_mask, order,
+> >> >                                        zonelist, high_zoneidx,
+> >> >                                        nodemask, preferred_zone,
+> >> >
+> >>
+> >> I'd prefer something like this. The whole 'gfp_allowed_flags' thing was
+> >> designed to make GFP_KERNEL work during boot time where it's obviously safe to
+> >> do that. I really don't think that's going to work suspend cleanly.
+> >>
+> >
+> > Adding Rafael to the cc.
+> >
+> > This has been done since 2.6.34 and presumably has been working quite
+> > well.  I don't have a specific objection to gfp_allowed_flags to be used
+> > outside of boot since it seems plausible that there are system-level
+> > contexts that would need different behavior in the page allocator and this
+> > does it effectively without major surgery or a slower fastpath.  Suspend
+> > is using it just like boot does before irqs are enabled, so I don't have
+> > an objection to it.
+> >
 > 
-> Hi,
-> 
-> after upgrading from Linux 3.1 to 3.2-rc2 I noticed that the kernel
-> would no longer reboot or shutdown properly, hanging instead.  Removing
-> the sky2 driver works around this.  According to "lspci -v", I have the
-> following network card:
-> 
-> ,----
-> | 03:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8056 PCI-E Gigabit Ethernet Controller (rev 13)
-> | 	Subsystem: ABIT Computer Corp. Device 108f
-> | 	Flags: bus master, fast devsel, latency 0, IRQ 17
-> | 	Memory at fdefc000 (64-bit, non-prefetchable) [size=16K]
-> | 	I/O ports at ce00 [size=256]
-> | 	[virtual] Expansion ROM at fdd00000 [disabled] [size=128K]
-> | 	Capabilities: <access denied>
-> | 	Kernel driver in use: sky2
-> `----
-> 
-> Bisecting shows 0bdb0bd01 as the first bad commit:
+> My point isn't using gfp_allowed_flags(maybe it's Pekka's concern) but
+> why adding new special case handling code like pm_suspended_storage.
+> I think we can handle the issue with oom_killer_disabled(but the naming is bad)
 > 
 
-Already reported. I am testing a fix. The hang is happening in synchronize_irq
-in sky2_hw_all_down; but there are several other bugs that were introduced at the
-same time.
+Ignore the name of the function that Mel is introducing, it's only related 
+to suspend because that's the only thing that (currently) alters 
+gfp_allowed_mask after boot.  If something else were to clear __GFP_FS and 
+__GFP_IO in the future, we'd simply need to rename the function.  I was 
+going to ask for a comment specifically about that, but I think it's 
+proximity to the function that allows gfp_allowed_mask to be altered is 
+sufficient.
+
+We'd really like to avoid the loop if __GFP_FS and __GFP_IO are not set.  
+If oom_killer_disabled is set anytime that gfp_allowed_mask does not allow 
+them for _all_ page allocations, then we could certainly replace the new 
+pm_suspended_storage() check in should_alloc_retry() with a check on 
+oom_killer_disabled.
+
+I'll let you and Rafael work out whether that can be done or not, I just 
+see pm_restrict_gfp_mask() being called in kernel/power/hibernate.c and 
+kernel/power/suspend.c whereas oom_killer_disable() is only called in 
+kernel/power/process.c.  oom_killer_disable() would be unnecessary if 
+__GFP_FS were already cleared, so it would require some changes in the 
+suspend code.
+
+I like Mel's patch because it's easily maintainable and only depends on 
+the state of reclaim and the gfp flags being passed in, which is the 
+direct cause of the infinite loop.
+--397155492-90931042-1321483390=:16596--
