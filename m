@@ -1,159 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab1KPQmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:42:07 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:54656 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756754Ab1KPQmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:42:03 -0500
-Date: Wed, 16 Nov 2011 08:42:49 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Clark <rob.clark@linaro.org>
-Subject: Re: linux-next: build failure after merge of the drm tree
-Message-ID: <20111116084249.24749230@jbarnes-desktop>
-In-Reply-To: <20111116101623.7a59b686@lxorguk.ukuu.org.uk>
-References: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
-	<20111116101623.7a59b686@lxorguk.ukuu.org.uk>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1756961Ab1KPQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:42:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37514 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756198Ab1KPQmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 11:42:25 -0500
+Date: Wed, 16 Nov 2011 08:37:28 -0800
+From: Greg KH <gregkh@suse.de>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 0/5] Generalize module_platform_driver
+Message-ID: <20111116163728.GA7196@suse.de>
+References: <1321434819-23678-1-git-send-email-lars@metafoo.de>
+ <20111116160206.GA27049@suse.de>
+ <20111116173618.0a847852@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116173618.0a847852@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 10:16:23 +0000
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> > drivers/staging/gma500/framebuffer.c: In function 'psb_framebuffer_init':
-> > drivers/staging/gma500/framebuffer.c:297:2: warning: passing argument 2 of 'drm_helper_mode_fill_fb_struct' from incompatible pointer type [enabled by default]
-> > include/drm/drm_crtc_helper.h:121:12: note: expected 'struct drm_mode_fb_cmd2 *' but argument is of type 'struct drm_mode_fb_cmd *'
-> > drivers/staging/gma500/framebuffer.c:564:2: warning: passing argument 2 of 'psb_framebuffer_create' from incompatible pointer type [enabled by default]
-> > drivers/staging/gma500/framebuffer.c:314:32: note: expected 'struct drm_mode_fb_cmd *' but argument is of type 'struct drm_mode_fb_cmd2 *'
+On Wed, Nov 16, 2011 at 05:36:18PM +0100, Jean Delvare wrote:
+> On Wed, 16 Nov 2011 08:02:06 -0800, Greg KH wrote:
+> > On Wed, Nov 16, 2011 at 10:13:34AM +0100, Lars-Peter Clausen wrote:
+> > > Grant Likely recently introduced the module_platform_driver macro which can be
+> > > used to eliminate a few lines on boilerplate code in platform driver modules.
+> > > The same approach can be used to do the same for other bus type drivers.
+> > > 
+> > > The first patch of this series generalizes the module_platform_driver macro and
+> > > introduces the module_driver macro. It is similar to module_platform_driver
+> > > macro but has two additional parameters to pass in the driver register and
+> > > unregister function. The intend is that this macro is used to construct bus
+> > > specific macros for generating the driver register/unregister boilerplate code.
+> > > 
+> > > The next two patches in this series add the module_i2c_driver and
+> > > module_spi_driver macro which use the module_driver macro to generate the I2C
+> > > and SPI driver boilerplate code.
+> > > 
+> > > The last two patches convert the driver found in the IIO framework to use the
+> > > new module_i2c_driver and module_spi_driver macros to demonstrate their
+> > > potential and remove over 700 lines of code.
+> > > 
+> > > While this series only introduces these kind of helper macros for I2C and SPI
+> > > bus drivers the same scheme should be applicable to most other bus driver types.
+> > > For example PCI and USB seem to be good candidates.
+> > > 
+> > > It probably makes sense to merge the first three patches together. The last two
+> > > can probably, since this is not urgent, wait until the first three have reached
+> > > mainline.
+> > 
+> > Nice, I like this, unless people object, I'll merge the first patch to
+> > the driver-core tree.
+> > 
+> > I'll gladly take the i2c and spi patches as well if the subsystem
+> > maintainers there don't object, and I'll work on the USB patch as well.
 > 
-> gma500 is frozen pending Dave Airlie's applying the patches moving it out
-> of staging.
-> 
-> <Prod, prod>
+> No objection from me (for i2c).
 
-Here's a patch to move things over to the new addfb2 interfaces at
-least.
+Wonderful, thanks for letting me know.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
-
-diff --git a/drivers/staging/gma500/framebuffer.c b/drivers/staging/gma500/framebuffer.c
-index 1e77229..29f25b5 100644
---- a/drivers/staging/gma500/framebuffer.c
-+++ b/drivers/staging/gma500/framebuffer.c
-@@ -32,6 +32,7 @@
- #include <drm/drmP.h>
- #include <drm/drm.h>
- #include <drm/drm_crtc.h>
-+#include <drm/drm_fb_helper.h>
- 
- #include "psb_drv.h"
- #include "psb_intel_reg.h"
-@@ -273,14 +274,17 @@ static struct fb_ops psbfb_unaccel_ops = {
-  */
- static int psb_framebuffer_init(struct drm_device *dev,
- 					struct psb_framebuffer *fb,
--					struct drm_mode_fb_cmd *mode_cmd,
-+					struct drm_mode_fb_cmd2 *mode_cmd,
- 					struct gtt_range *gt)
- {
-+	u32 bpp, depth;
- 	int ret;
- 
--	if (mode_cmd->pitch & 63)
-+	drm_helper_get_fb_bpp_depth(mode_cmd->pixel_format, &depth, &bpp);
-+
-+	if (mode_cmd->pitches[0] & 63)
- 		return -EINVAL;
--	switch (mode_cmd->bpp) {
-+	switch (bpp) {
- 	case 8:
- 	case 16:
- 	case 24:
-@@ -313,7 +317,7 @@ static int psb_framebuffer_init(struct drm_device *dev,
- 
- static struct drm_framebuffer *psb_framebuffer_create
- 			(struct drm_device *dev,
--			 struct drm_mode_fb_cmd *mode_cmd,
-+			 struct drm_mode_fb_cmd2 *mode_cmd,
- 			 struct gtt_range *gt)
- {
- 	struct psb_framebuffer *fb;
-@@ -387,27 +391,28 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 	struct fb_info *info;
- 	struct drm_framebuffer *fb;
- 	struct psb_framebuffer *psbfb = &fbdev->pfb;
--	struct drm_mode_fb_cmd mode_cmd;
-+	struct drm_mode_fb_cmd2 mode_cmd;
- 	struct device *device = &dev->pdev->dev;
- 	int size;
- 	int ret;
- 	struct gtt_range *backing;
- 	int gtt_roll = 1;
-+	u32 bpp, depth;
- 
- 	mode_cmd.width = sizes->surface_width;
- 	mode_cmd.height = sizes->surface_height;
--	mode_cmd.bpp = sizes->surface_bpp;
-+	bpp = sizes->surface_bpp;
- 
- 	/* No 24bit packed */
--	if (mode_cmd.bpp == 24)
--		mode_cmd.bpp = 32;
-+	if (bpp == 24)
-+		bpp = 32;
- 
- 	/* Acceleration via the GTT requires pitch to be 4096 byte aligned 
- 	   (ie 1024 or 2048 pixels in normal use) */
--	mode_cmd.pitch =  ALIGN(mode_cmd.width * ((mode_cmd.bpp + 7) / 8), 4096);
--	mode_cmd.depth = sizes->surface_depth;
-+	mode_cmd.pitches[0] =  ALIGN(mode_cmd.width * ((bpp + 7) / 8), 4096);
-+	depth = sizes->surface_depth;
- 
--	size = mode_cmd.pitch * mode_cmd.height;
-+	size = mode_cmd.pitches[0] * mode_cmd.height;
- 	size = ALIGN(size, PAGE_SIZE);
- 
- 	/* Allocate the framebuffer in the GTT with stolen page backing */
-@@ -421,10 +426,10 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 
- 		gtt_roll = 0;	/* Don't use GTT accelerated scrolling */
- 
--		mode_cmd.pitch =  ALIGN(mode_cmd.width * ((mode_cmd.bpp + 7) / 8), 64);
--		mode_cmd.depth = sizes->surface_depth;
-+		mode_cmd.pitches[0] =  ALIGN(mode_cmd.width * ((bpp + 7) / 8), 64);
-+		depth = sizes->surface_depth;
- 
--		size = mode_cmd.pitch * mode_cmd.height;
-+		size = mode_cmd.pitches[0] * mode_cmd.height;
- 		size = ALIGN(size, PAGE_SIZE);
- 
- 		/* Allocate the framebuffer in the GTT with stolen page
-@@ -443,6 +448,8 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 	}
- 	info->par = fbdev;
- 
-+	mode_cmd.pixel_format = drm_mode_legacy_fb_format(bpp, depth);
-+
- 	ret = psb_framebuffer_init(dev, psbfb, &mode_cmd, backing);
- 	if (ret)
- 		goto out_unref;
-@@ -555,7 +562,7 @@ static struct drm_framebuffer *psb_user_framebuffer_create
- 	 *	Find the GEM object and thus the gtt range object that is
- 	 *	to back this space
- 	 */
--	obj = drm_gem_object_lookup(dev, filp, cmd->handle);
-+	obj = drm_gem_object_lookup(dev, filp, cmd->handles[0]);
- 	if (obj == NULL)
- 		return ERR_PTR(-ENOENT);
- 
+greg k-h
