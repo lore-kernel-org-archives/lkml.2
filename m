@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab1KPP5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:57:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:54650 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab1KPP5U (ORCPT
+	id S1755452Ab1KPP5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:57:44 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17027 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135Ab1KPP5m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:57:20 -0500
-From: Thomas Weber <weber@corscience.de>
-To: tony@atomide.com
-Cc: Thomas Weber <weber@corscience.de>,
-        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
-        linux-omap@vger.kernel.org (open list:OMAP SUPPORT),
-        linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH Resend] ARM: OMAP2+: Remove empty io.h
-Date: Wed, 16 Nov 2011 16:56:52 +0100
-Message-Id: <1321459012-15418-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.8.rc1
-X-Provags-ID: V02:K0:nLguPj5h9O7hZWn9SosKLVhdbT3uTaMg7diAsGyiYOA
- S1kprI++TERn5cpdpDGGxOhlJGCsuwjHUHIcqwx1Ccs9O0KbNJ
- kaq/DoiadY2hAnEHFNDfW96x3QTHeBXA/+vWjZii02bHmqj6S2
- HSg9DKuu0uOoeq9ApUulAzeQQN3MnX8Aadp+7OUYWAEN/Ebzvf
- iRph4OfBYeMKwSXIV2ASNOxU8u6MI0tKPNKXCnnSHPN5Nv3Tzo
- ZDgOrYo7K+lGdp4g4puQ/13DlwHHh3FoS1sXb240A9WqKmcvnO
- vjQUwb9Yf1eutRfW4oMyxgkotU52KZwjPijX9Zo3HEQjzd58Df
- 2GLEkmBBecROU8KfvOh/xdlP0HmaESo5agmoOrN6SXm+pnhg35
- tBLeqLVKfuxvg==
+	Wed, 16 Nov 2011 10:57:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 16 Nov 2011 07:57:29 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Wolfram Sang <w.sang@pengutronix.de>,
+        Denis Kuzmenko <linux@solonet.org.ua>
+CC: Dong Aisheng <dong.aisheng@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 16 Nov 2011 07:57:28 -0800
+Subject: RE: [PATCH] gpio: add flags to export GPIOs when requesting
+Thread-Topic: [PATCH] gpio: add flags to export GPIOs when requesting
+Thread-Index: AcykP5lFdd0H+f4QRseRs/96/DMubwAOKHzQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74880@HQMAIL01.nvidia.com>
+References: <1321397074-6526-1-git-send-email-w.sang@pengutronix.de>
+ <4EC2F035.3060705@solonet.org.ua>
+ <74CDBE0F657A3D45AFBB94109FB122FF1740805F1A@HQMAIL01.nvidia.com>
+ <4EC371FE.5010402@solonet.org.ua> <20111116091027.GB2596@pengutronix.de>
+In-Reply-To: <20111116091027.GB2596@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The file arch/arm/mach-omap2/io.h is empty, so we can remove it.
+Wolfram Sang wrote at Wednesday, November 16, 2011 2:10 AM:
+...
+> BTW I didn't CC Grant, because he is on sabbatical right now, so Stephen
+> you are taking care of GPIO?
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- 0 files changed, 0 insertions(+), 0 deletions(-)
- delete mode 100644 arch/arm/mach-omap2/io.h
+No, I believe Linus Walleij is handling GPIO right now. Grant had just
+asked for some help with reviews in a few places, so I picked a few things
+to look at.
 
-diff --git a/arch/arm/mach-omap2/io.h b/arch/arm/mach-omap2/io.h
-deleted file mode 100644
-index e69de29..0000000
 -- 
-1.7.8.rc1
+nvpublic
 
