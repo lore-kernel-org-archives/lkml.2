@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751Ab1KPAaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 19:30:03 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33464 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730Ab1KPAaB (ORCPT
+	id S932760Ab1KPAaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 19:30:22 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60309 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696Ab1KPAaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 19:30:01 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Joe Perches <joe@perches.com>
-Cc: Huang Ying <ying.huang@intel.com>,
-        William Douglas <william.r.douglas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Printk mulitple line message support
-In-Reply-To: Your message of "Mon, 14 Nov 2011 17:18:03 PST."
-             <1321319883.8944.7.camel@Joe-Laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <1321253936.13860.35.camel@yhuang-dev> <1321281640.2004.6.camel@Joe-Laptop> <1321318201.13860.51.camel@yhuang-dev>
-            <1321319883.8944.7.camel@Joe-Laptop>
+	Tue, 15 Nov 2011 19:30:20 -0500
+Date: Wed, 16 Nov 2011 11:30:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Rob Clark <rob.clark@linaro.org>
+Subject: linux-next: build failure after merge of the drm tree
+Message-Id: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1321403394_2702P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 15 Nov 2011 19:29:54 -0500
-Message-ID: <21274.1321403394@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4EC30403.014B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_Nov_2011_11_30_07_+1100_ot3Ry=Letkw9J.Q+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1321403394_2702P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Wed__16_Nov_2011_11_30_07_+1100_ot3Ry=Letkw9J.Q+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 14 Nov 2011 17:18:03 PST, Joe Perches said:
+Hi Dave,
 
-> mp_start(&cookie)
-> pr_<level>(fmt, ...);
-> pr_mp_cont(&cookie, fmt, ...);
-> pr_mp_cont(&cookie, fmt "\n", ...);
-> mp_end(&cookie);
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-What should happen if buggy code returns before calling mp_end()?
+drivers/staging/gma500/framebuffer.c: In function 'psb_user_framebuffer_cre=
+ate':
+drivers/staging/gma500/framebuffer.c:558:44: error: 'struct drm_mode_fb_cmd=
+2' has no member named 'handle'
 
---==_Exmh_1321403394_2702P
+Caused by commit 308e5bcbdb10 ("drm: add an fb creation ioctl that takes
+a pixel format v5").  Please build test *before* publishing code.  :-(
+
+I have used the drm tree from next-20111115 for today.
+
+I also get the following warnings in that file:
+
+drivers/staging/gma500/framebuffer.c: In function 'psb_framebuffer_init':
+drivers/staging/gma500/framebuffer.c:297:2: warning: passing argument 2 of =
+'drm_helper_mode_fill_fb_struct' from incompatible pointer type [enabled by=
+ default]
+include/drm/drm_crtc_helper.h:121:12: note: expected 'struct drm_mode_fb_cm=
+d2 *' but argument is of type 'struct drm_mode_fb_cmd *'
+drivers/staging/gma500/framebuffer.c:564:2: warning: passing argument 2 of =
+'psb_framebuffer_create' from incompatible pointer type [enabled by default]
+drivers/staging/gma500/framebuffer.c:314:32: note: expected 'struct drm_mod=
+e_fb_cmd *' but argument is of type 'struct drm_mode_fb_cmd2 *'
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__16_Nov_2011_11_30_07_+1100_ot3Ry=Letkw9J.Q+
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFOwwQCcC3lWbTT17ARAvr3AJ0cSIsAX2cVtRxrhiFyZ1OYQ9OM9QCeIRdx
-icvHl/E+aPqp4ao9VGHg65E=
-=hwpw
+iQIcBAEBCAAGBQJOwwQPAAoJEECxmPOUX5FEKXcP/RQ5heVejXzDR8ko5jQRrsl1
++m9JIJBbK/n2C3AATE1WQa/3TvMAcfVFMNH/ePlajK0l+tQoacewSrkoC5dqP9BE
+80fCERaHPlPZnS8EQsWRbLfkHngKoKM6Pq6ndZO4zUIkIXL+p8CpLabRJkgbXFVS
+HqMpZR/5IV3VPj+XLHR2Jhh8Gwx0g9UeVFesL9Ym04hBYCB2HsS42d4JVKaaqBC3
+dQjgblVYe2gE4hArqWQTDDb3/UOGKlFawbU5BjAqh4mrEVP0SNo6N9kM2VoL4W0z
+ZS30YjYGk+F0oEuh+HyQjb9MGK3J2To3jQOOshikzhhO0o2OV0HzUbwlBGDjSMLL
+3FDG3qcJG3KGLAuxRf9Yql4Va4l7nF69x+xPE1OfDUM1TXCCrJ+/HtuKrymoaHJQ
+YTvoEbsdGn2g5viEAEaaQSBn0gSDNrO+AMYMiL5dvzw39+UypZyGh4i2zUXhHS2R
+6kxDhdVFAA8fWQ5yXxxnK2936Am7+B/SYyblUgc8frizaaAjFudOVDxGadZnjC7+
+7lXSI2mNYupK5KI6KvEO0x7qiTwwT0c/4t1gB3UfayhJOuC92mg/P/FQo6bO7C2R
+GaBgNdv0/sMApziy87u0pBhXM3iyxkwTG2CdvQmlgu8yYfk2NsSvcM8kWV19cN6l
+juNYVXPVVptcpnzm4jMN
+=Y9/9
 -----END PGP SIGNATURE-----
 
---==_Exmh_1321403394_2702P--
-
+--Signature=_Wed__16_Nov_2011_11_30_07_+1100_ot3Ry=Letkw9J.Q+--
