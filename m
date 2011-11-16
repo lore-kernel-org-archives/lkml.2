@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab1KPSiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 13:38:54 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:52949 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab1KPSiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 13:38:52 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 3/4] mmc: Logging neatening
-Date: Wed, 16 Nov 2011 13:38:46 -0500
-User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; x86_64; ; )
-Cc: NamJae Jeon <linkinjeon@gmail.com>, Joe Perches <joe@perches.com>,
-        Cliff Cai <cliff.cai@analog.com>, linux-omap@vger.kernel.org,
-        Alex Dubov <oakad@yahoo.com>, Nicolas Pitre <nico@fluxnic.net>,
-        linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Harald Welte <HaraldWelte@viatech.com>,
-        Bruce Chang <brucechang@via.com.tw>,
-        Sascha Sommer <saschasommer@freenet.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Tony Olech <tony.olech@elandigitalsystems.com>,
-        Manuel Lauss <manuel.lauss@gmail.com>,
-        Pierre Ossman <pierre@ossman.eu>, Chris Ball <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-References: <cover.1321398814.git.joe@perches.com> <d2c1a76fea1844ae7ac3e7e17183fb39df19178e.1321398814.git.joe@perches.com> <CAKYAXd8_mDF68PnEnpuZZQ+O8-QmrfRpP4jv+SpHDx1juTxFGQ@mail.gmail.com>
-In-Reply-To: <CAKYAXd8_mDF68PnEnpuZZQ+O8-QmrfRpP4jv+SpHDx1juTxFGQ@mail.gmail.com>
+	id S1753008Ab1KPSkZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 13:40:25 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39206 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab1KPSkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 13:40:24 -0500
+Message-ID: <4EC40391.7080508@google.com>
+Date: Wed, 16 Nov 2011 10:40:17 -0800
+From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2319489.Vp8sye1eQN";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+Newsgroups: gmane.linux.kernel
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Il Han <corone.il.han@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: add the inline keyword to the prototype.
+References: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>  <4EC36631.8030805@google.com> <1321434038.1421.73.camel@twins>
+In-Reply-To: <1321434038.1421.73.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111161338.53049.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2319489.Vp8sye1eQN
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 11/16/2011 01:00 AM, Peter Zijlstra wrote:
+> On Tue, 2011-11-15 at 23:28 -0800, Paul Turner wrote:
+>> On 11/15/2011 10:16 AM, Il Han wrote:
+>>> The prototype has to agree with the definition.
+>>> Add the inline keyword to the prototype also
+>>>
+>>
+>> Hmm... this would then cause the prototypes to disagree in the
+>> !CONFIG_CFS_BANDWIDTH case.
+>
+> I'm very sure I've compiled a lot of kernels yesterday with various
+> permutations including FAIR_GROUP&&  !CFS_BANDWIDTH and I'm also very
+> sure I haven't actually seen any complaints like this.
+>
+> It this some new fangled GCC 'feature'? I'm currently still on 4.5 which
+> admittedly is somewhat stale.
 
-On Tuesday 15 November 2011 20:48:05 NamJae Jeon wrote:
-> 2011/11/16 Joe Perches <joe@perches.com>:
-> >        mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE); /* Enable mci
-> > interrupt */
-> >=20
-> > -       dev_info(&pdev->dev, "DW MMC controller at irq %d, "
-> > -                "%d bit host data width, "
-> > -                "%u deep fifo\n",
-> > +       dev_info(&pdev->dev,
-> > +       "DW MMC controller at irq %d, %d bit host data width, %u deep
-> > fifo\n", irq, width, fifo_size);
->=20
-> I think that tab is needed this "DW MMC controller at irq ...." ?
+gcc (even 4.6) won't give warnings either way about the inline attribute on a 
+forward declaration not matching in either direction.  I would imagine this was 
+found by code-inspection.
 
-looks to me like this was the only part you replied to.  could you please s=
-nip=20
-the unrelated context in the future ?  no reason to include ~1700 lines of=
-=20
-context when you only replying to like ~10 lines.
-=2Dmike
+I was only pointing out with this we have:
 
---nextPart2319489.Vp8sye1eQN
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+#if CONFIG_CFS_BANDWIDTH
+static __always_inline xxx() { stuff; } [1]
+#else
+static xxx() {} [2]
+#endif
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+And that by only changing the pre-declaration to match [1] it now similarly 
+(silently) would not match [2] in the !CONFIG case.
 
-iQIcBAABAgAGBQJOxAM8AAoJEEFjO5/oN/WB7usP/0XsO3sDmFr2DWVBW/lHyG50
-lrCFD215bQKBCxKw3SW8cDOGHPGQWKgwgpELLajPOEs7xsYeZTbSh1f79t07uaGL
-8Fzh+aKoM2dk4RXzJmBO1D2AavmMRZldMWGVeN8M/LIkPVmLeJ/0jgFmsMS/fa2c
-Ki+6dM7YApc3L0Keug7ehZ1SDhZjxT47uj7jCYa1wA6eJPyxxd1wPJ1V27MokdEt
-rJ/sMM61f2zKZ4T39idRsTiMToE9J57UnPocAdnw3IO2Nhq6gEmLfg6KE1DIz8w9
-Jfr1Scivr8BQdINhSXCng51LQvyNyp/3vGqHufD2zksyaGekWG46I34sIVp+hZzl
-/J1LcYxlebpl+6qblS4nzV/2ouIMmipF58grE+s71lsy9ptdQnSLZZEjSa+IXz22
-MfkXajA3XhNf0NdGw2TB0rq+gS/hgrSmwjofEt+TH0erm+CQxc/N5VqHA7okHJR5
-eLRokLZ8BmMBTkBEoac+u7858JoxUxpUoNkAFbTfT4PpXexAz4yd91WI6II+tG6b
-kW1Htbh+hm36unT7VluB1em3WGYcBhsACeHh620/Vp80L20E1Z9NK1OaiLF6uyfd
-8BIhqpY7RoXXto3Ce4tN3x0xhBD9XTlOh82geVHZ7JIJ60armEvtW+sJMF6uuPSF
-wNVbieuwRBXj1ji2jTsn
-=XUXI
------END PGP SIGNATURE-----
-
---nextPart2319489.Vp8sye1eQN--
+- Paul
