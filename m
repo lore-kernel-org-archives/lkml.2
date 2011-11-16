@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab1KPP5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:57:44 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17027 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab1KPP5m convert rfc822-to-8bit (ORCPT
+	id S1755393Ab1KPQCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:02:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40899 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab1KPQCl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:57:42 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 16 Nov 2011 07:57:29 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Wolfram Sang <w.sang@pengutronix.de>,
-        Denis Kuzmenko <linux@solonet.org.ua>
-CC: Dong Aisheng <dong.aisheng@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 16 Nov 2011 07:57:28 -0800
-Subject: RE: [PATCH] gpio: add flags to export GPIOs when requesting
-Thread-Topic: [PATCH] gpio: add flags to export GPIOs when requesting
-Thread-Index: AcykP5lFdd0H+f4QRseRs/96/DMubwAOKHzQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74880@HQMAIL01.nvidia.com>
-References: <1321397074-6526-1-git-send-email-w.sang@pengutronix.de>
- <4EC2F035.3060705@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740805F1A@HQMAIL01.nvidia.com>
- <4EC371FE.5010402@solonet.org.ua> <20111116091027.GB2596@pengutronix.de>
-In-Reply-To: <20111116091027.GB2596@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 16 Nov 2011 11:02:41 -0500
+Subject: Re: [PATCH v3 1/2] perf, x86: Implement event scheduler helper
+ functions
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 16 Nov 2011 17:02:16 +0100
+In-Reply-To: <1321293071-8636-2-git-send-email-robert.richter@amd.com>
+References: <20111111142935.GI15738@erda.amd.com>
+	 <1321293071-8636-1-git-send-email-robert.richter@amd.com>
+	 <1321293071-8636-2-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321459336.27735.8.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram Sang wrote at Wednesday, November 16, 2011 2:10 AM:
-...
-> BTW I didn't CC Grant, because he is on sabbatical right now, so Stephen
-> you are taking care of GPIO?
+On Mon, 2011-11-14 at 18:51 +0100, Robert Richter wrote:
+> @@ -22,8 +22,14 @@ extern unsigned long __sw_hweight64(__u64 w);
+>  #include <asm/bitops.h>
+>  
+>  #define for_each_set_bit(bit, addr, size) \
+> -       for ((bit) = find_first_bit((addr), (size)); \
+> -            (bit) < (size); \
+> +       for ((bit) = find_first_bit((addr), (size));            \
+> +            (bit) < (size);                                    \
+> +            (bit) = find_next_bit((addr), (size), (bit) + 1))
+> +
+> +/* same as for_each_set_bit() but use bit as value to start with */
+> +#define for_each_set_bit_cont(bit, addr, size) \
+> +       for ((bit) = find_next_bit((addr), (size), (bit));      \
+> +            (bit) < (size);                                    \
+>              (bit) = find_next_bit((addr), (size), (bit) + 1)) 
 
-No, I believe Linus Walleij is handling GPIO right now. Grant had just
-asked for some help with reviews in a few places, so I picked a few things
-to look at.
+So my version has the +1 for the first as well, this is from the
+assumption that the bit passed in has been dealt with and should not be
+the first. ie. cont _after_ @bit instead of cont _at_ @bit.
 
--- 
-nvpublic
+This seems consistent with the list_*_continue primitives as well, which
+will start with the element after (or before for _reverse) the given
+position.
 
+Thoughts?
