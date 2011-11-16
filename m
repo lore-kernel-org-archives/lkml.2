@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755Ab1KPRiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 12:38:17 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34026 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757241Ab1KPRiP (ORCPT
+	id S1757674Ab1KPRje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:39:34 -0500
+Received: from mtv-iport-4.cisco.com ([173.36.130.15]:31639 "EHLO
+	mtv-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253Ab1KPRjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 12:38:15 -0500
-Date: Wed, 16 Nov 2011 18:38:06 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: York Sun <yorksun@freescale.com>
-Cc: <guenter.roeck@ericsson.com>, Tabi Timur-B04825 <B04825@freescale.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <B29983@freescale.com>
-Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Message-ID: <20111116183806.6130f0fb@endymion.delvare>
-In-Reply-To: <1321464509.7847.41.camel@oslab-l1>
-References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-	<CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
-	<E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
-	<ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
-	<1321464509.7847.41.camel@oslab-l1>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Nov 2011 12:39:33 -0500
+X-IronPort-AV: E=Sophos;i="4.69,522,1315180800"; 
+   d="scan'208";a="14664981"
+Date: Wed, 16 Nov 2011 09:39:32 -0800 (PST)
+From: Victor Kamensky <kamensky@cisco.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: David Daney <david.daney@cavium.com>,
+        "manesoni@cisco.com" <manesoni@cisco.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 2/4] MIPS Kprobes: Deny probes on ll/sc instructions
+In-Reply-To: <20111116121207.GA5079@linux-mips.org>
+Message-ID: <Pine.GSO.4.58.1111160847340.381@infra-view9.cisco.com>
+References: <20111108170336.GA16526@cisco.com> <20111108170535.GC16526@cisco.com>
+ <4EB98A8E.4060900@cavium.com> <Pine.GSO.4.58.1111081504560.10959@infra-view9.cisco.com>
+ <20111116121207.GA5079@linux-mips.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 09:28:29 -0800, York Sun wrote:
-> I am not sure if this mail will reach the list as I am not subscribed.
-> 
-> In the v2 patch (actually both version), you wrote
-> 
-> > +		byte = readb(i2c->base + MPC_I2C_DR);
-> > +
-> > +		/* Adjust length if first received byte is length */
-> > +		if (i == 0 && recv_len) {
-> > +			if (byte == 0 || byte > I2C_SMBUS_BLOCK_MAX)
-> > +				return -EPROTO;
-> > +			length += byte;
-> > +			/*
-> > +			 * For block reads, generate txack here if data length
-> > +			 * is 1 byte (total length is 2 bytes).
-> > +			 */
-> > +			if (length == 2)
-> > +				writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA
-> > +					 | CCR_TXAK);
-> > +		}
-> > +		data[i] = byte;
-> 
-> I am wondering if the first byte should be left out for data[] if the
-> recv_len is non-zero. If I understand correctly, this patch is to
-> support of SMBus with multiple byte read. The SMBus is different from
-> I2C bus on multiple byte. The first data is byte count vs slave data for
-> I2C. So you will receive all data preceded by the byte count, which is
-> one more than your loop.
+Hi Ralf,
 
-That's why he wrote
+Please see inline
 
-	length += byte;
+On Wed, 16 Nov 2011, Ralf Baechle wrote:
 
-and not
+> On Tue, Nov 08, 2011 at 03:26:42PM -0800, Victor Kamensky wrote:
+>
+> > > s/insturctions/instructions/
+> > >
+> > > Not only is it a bad idea, it will probably make them fail 100% of the time.
+> > >
+> > > It is also an equally bad idea to place a probe between any LL and SC
+> > > instructions.  How do you prevent that?
+> >
+> > As per below code comment we don't prevent that. There is no way to do
+> > that.
+>
+> Similar to the way that the addresses of loads and stores from userspace
+> are recorded in a special section we could build a list of forbidden
+> address range.
+>
+> Is it worth it?
 
-	length = byte;
+Yes, probably it could be done this way. It would require to change all
+places where ll/sc used. Infrastructure to look at those tables in kernel
+and in all loaded modules will be required. Cost of check in kprobes layer
+will go up as well, but probably on acceptable level.
 
-length is initialized to 1 for SMBus block reads.
+In my personal opinion benefits it would bring will not worth the effort.
 
--- 
-Jean Delvare
+Couple more, hopefully relevant, notes:
+
+- on kprobes CPU independent layer there is already __kprobes marker
+  (attribute section) that could be used to mark function where kprobes
+  insertion is not allowed. So one may use it, albeit on function level
+  granularity, not code range.
+
+- in my personal opinion all these checks have just practical meaning and
+  practical limitations. For example current mips kprobes check whether
+  instruction is in delay slot looks at previous 4 bytes to match jump or
+  branch instruction pattern. It works and really helps in 99.99% of the
+  cases but it will break in some exotic case where the instruction
+  follows data (jump table for example) or padding that happens to match
+  jump or branch instruction pattern. Or even if instruction follows jump
+  and branch instruction, it could be jumped directly on it (i.e serve as
+  branch delay slot in one case and regular instruction in another case).
+  In all such obscure cases current delay slot instruction check would
+  produce false positive. And it is perfectly fine, given practical
+  consideration. I just bring this to illustrate my point that in this
+  sort of situations, where we are trying to prevent API caller to shot
+  himself/herself in the foot, we don't need to push to absolute
+  solutions, just practical one.
+
+Thanks,
+Victor
+
+>   Ralf
+>
