@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab1KPRnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 12:43:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63358 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab1KPRnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 12:43:08 -0500
-Date: Wed, 16 Nov 2011 09:43:02 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] PM/Memory-hotplug: Avoid task freezing failures
-Message-ID: <20111116174302.GD18919@google.com>
-References: <20111116115515.25945.35368.stgit@srivatsabhat.in.ibm.com>
- <20111116162601.GB18919@google.com>
- <4EC3F146.7050801@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC3F146.7050801@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757918Ab1KPRnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:43:33 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:41820 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757802Ab1KPRnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 12:43:32 -0500
+Message-ID: <1321465409.16820.12.camel@Joe-Laptop>
+Subject: Re: [PATCH] MAINTAINERS: update maintainers for blackfin arch and
+ drivers.
+From: Joe Perches <joe@perches.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, Sonic Zhang <sonic.adi@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 16 Nov 2011 09:43:29 -0800
+In-Reply-To: <201111161211.03784.vapier@gentoo.org>
+References: <1321429708-13862-1-git-send-email-sonic.adi@gmail.com>
+	 <201111161020.53989.vapier@gentoo.org>
+	 <1321461375.16820.7.camel@Joe-Laptop>
+	 <201111161211.03784.vapier@gentoo.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2011-11-16 at 12:11 -0500, Mike Frysinger wrote:
+> On Wednesday 16 November 2011 11:36:15 Joe Perches wrote:
+> > On Wed, 2011-11-16 at 10:20 -0500, Mike Frysinger wrote:
+> > > On Wednesday 16 November 2011 08:12:06 Joe Perches wrote:
+> > > > Drivers or arches without specific people to maintain
+> > > > them really should not have "S: Supported".
+> > > > These should really be "S: Orphan".
+> > > all the drivers are still maintained.  use the L: option to find the
+> > > maintainer.
+> > I believe I know how the MAINTAINERS
+> > entries work.
+> > From MAINTAINERS:
+> > 	M: Mail patches to: FullName <address@domain>
+> > 	L: Mailing list that is relevant to this area
+> > Mailing lists aren't maintainers.
+> they contain all the maintainers
 
-On Wed, Nov 16, 2011 at 10:52:14PM +0530, Srivatsa S. Bhat wrote:
-> So, honestly I didn't understand what is wrong with the approach of this
-> patch. And as a consequence, I don't see why we should wait to fix this
-> issue. 
+That's akin to lkml as the kernel maintainer.
+
+> > Maybe Analog Devices should create
+> > an email address alias like
+> > linux-devel@analog.com
 > 
-> [And by the way recently I happened to see yet another proposed patch
-> trying to make use of this API. So wouldn't it be better to fix this
-> ASAP, especially when we have a fix readily available?]
+> so we should duplicate the ml into an alias to keep MAINTAINERS happy ?
 
-It just doesn't look like a proper solution.  Nothing guarantees
-freezing will happen soonish.  Not all pm operations involve freezer.
-The exclusion is against mem hotplug at this point, right?  I don't
-think it's a good idea to add such hack to fix a mostly theoretical
-problem and it's actually quite likely someone would be scratching
-head trying to figure out why the hell the CPU was hot spinning while
-the system is trying to enter one of powersaving mode (we had similar
-behavior in freezer code a while back and it was ugly).
+When there is a company but not individuals responsible for
+an arch or drivers, then yes.
 
-So, let's either fix it properly or leave it alone.
+> makes no sense.  use the ml.
 
-Thank you.
+You mean the list that bounces my email?
 
--- 
-tejun
+>-----Original Message-----
+>From: uclinux-dist-devel-bounces@blackfin.uclinux.org
+>[mailto:uclinux-dist-devel-bounces@blackfin.uclinux.org]
+
+That's suboptimal.
+
