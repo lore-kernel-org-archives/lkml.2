@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab1KPBPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 20:15:16 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49206 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab1KPBPO convert rfc822-to-8bit (ORCPT
+	id S1757696Ab1KPBPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 20:15:22 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47175 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757668Ab1KPBPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 20:15:14 -0500
+	Tue, 15 Nov 2011 20:15:17 -0500
+Message-ID: <4EC2FDA9.6050401@jp.fujitsu.com>
+Date: Tue, 15 Nov 2011 19:02:49 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20111115144943.GJ30922@google.com>
-References: <20111115083646.GA21468@darkstar.nay.redhat.com>
-	<20111115144943.GJ30922@google.com>
-Date: Wed, 16 Nov 2011 09:15:12 +0800
-Message-ID: <CABqxG0dNoXjpOtug62TLX+as0CAt_niQc=msZTh+heLv8zLQyg@mail.gmail.com>
-Subject: Re: [PATCCH percpu: add cpunum param in per_cpu_ptr_to_phys
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dave Young <dyoung@redhat.com>, gregkh@suse.de, cl@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: jmarchan@redhat.com
+CC: bsingharora@gmail.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH V2] Enforce RSS+Swap rlimit
+References: <4EB3FA89.6090601@redhat.com> <4EC264AA.30306@redhat.com>
+In-Reply-To: <4EC264AA.30306@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 10:49 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Nov 15, 2011 at 04:36:46PM +0800, Dave Young wrote:
->> per_cpu_ptr_to_phys iterate all cpu to get the phy addr
->> let's leave the caller to pass the cpu number to it.
->>
->> Actually in the only one user show_crash_notes,
->> cpunum is provided already before calling this.
->>
->> Signed-off-by: Dave Young <dyoung@redhat.com>
->
-> Does this matter?  If it's not a performance critical path, I'd rather
-> keep the generic funtionality.
+On 11/15/2011 8:10 AM, Jerome Marchand wrote:
+> 
+> Change since V1: rebase on 3.2-rc1
+> 
+> Currently RSS rlimit is not enforced. We can not forbid a process to exceeds
+> its RSS limit and allow it swap out. That would hurts the performance of all
+> system, even when memory resources are plentiful.
+> 
+> Therefore, instead of enforcing a limit on rss usage alone, this patch enforces
+> a limit on rss+swap value. This is similar to memsw limits of cgroup.
+> If a process rss+swap usage exceeds RLIMIT_RSS max limit, he received a SIGBUS
+> signal. 
 
-Hi, why not? the code is redundant, it's an improvement of the code, isn't it?
-Also, kernel code size will be smaller.
-
->
-> Thanks.
->
-> --
-> tejun
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+No good idea.
+ - RLIMIT_RSS has clear definition and this patch break it. you should makes
+   another rlimit at least.
+ - SIGBUS can be ignored. rlimit shouldn't ignorable.
 
 
-
--- 
-Regards
-Dave
