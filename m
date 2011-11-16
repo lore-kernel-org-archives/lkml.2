@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1KPL0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 06:26:49 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:49216 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756283Ab1KPL0o (ORCPT
+	id S1756212Ab1KPL0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 06:26:38 -0500
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:58580 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756087Ab1KPL0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 06:26:44 -0500
+	Wed, 16 Nov 2011 06:26:35 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <rabin.vincent@stericsson.com>, <linus.walleij@stericsson.com>,
         <srinidhi.kasagar@stericsson.com>
@@ -18,9 +18,9 @@ Cc: <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
         <grant.likely@secretlab.ca>
-Subject: [PATCH 4/5] mfd/stmpe: ADD support for stmpe variant 801
-Date: Wed, 16 Nov 2011 16:56:09 +0530
-Message-ID: <308920b7c57926be2c75620d7c2f7496d35a0c5f.1321442150.git.viresh.kumar@st.com>
+Subject: [PATCH 1/5] mfd/stmpe: Pass partnum as param to stmpe_probe()
+Date: Wed, 16 Nov 2011 16:56:06 +0530
+Message-ID: <004126aa92b5c1e0d1b464409510fd5dd9771523.1321442150.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1321442150.git.viresh.kumar@st.com>
 References: <cover.1321442150.git.viresh.kumar@st.com>
@@ -30,248 +30,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-STMPE801 is a GPIO expander. Registers for 801 are much different from other
-variants. This patch adds support for STMPE801 in stmpe mfd driver.
+partnum is required during probe to get variant's info. Currently partnum was
+getting set in i2c interface after it is used and is not at all getting set in
+spi interface.
 
-Signed-off-by: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+This can be passed as param to stmpe_probe, so that it is available early. With
+this, there is no need of i2c interface's init() routine, as it does nothing
+else than calling dev_set_drvdata(). So better remove this routine for i2c.
+
+partnum defined in struct stmpe is of no use now, as it is only used once during
+probe of stmpe, so we can remove it from struct stmpe too.
+
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/mfd/stmpe-i2c.c   |    1 +
- drivers/mfd/stmpe-spi.c   |    1 +
- drivers/mfd/stmpe.c       |   97 +++++++++++++++++++++++++++++++++++++++------
- drivers/mfd/stmpe.h       |   19 +++++++++
- include/linux/mfd/stmpe.h |    1 +
- 5 files changed, 106 insertions(+), 13 deletions(-)
+ drivers/mfd/stmpe-i2c.c   |   11 +----------
+ drivers/mfd/stmpe-spi.c   |    5 +++--
+ drivers/mfd/stmpe.c       |    8 +++++---
+ drivers/mfd/stmpe.h       |    2 +-
+ include/linux/mfd/stmpe.h |    2 --
+ 5 files changed, 10 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-index c004319..278da8a 100644
+index 72fa08b..671fd5c 100644
 --- a/drivers/mfd/stmpe-i2c.c
 +++ b/drivers/mfd/stmpe-i2c.c
-@@ -72,6 +72,7 @@ static int __devexit stmpe_i2c_remove(struct i2c_client *i2c)
+@@ -45,20 +45,11 @@ static int i2c_block_write(struct stmpe *stmpe, u8 reg, u8 length,
+ 	return i2c_smbus_write_i2c_block_data(i2c, reg, length, values);
+ }
  
- static const struct i2c_device_id stmpe_i2c_id[] = {
- 	{ "stmpe610", STMPE610 },
-+	{ "stmpe801", STMPE801 },
- 	{ "stmpe811", STMPE811 },
- 	{ "stmpe1601", STMPE1601 },
- 	{ "stmpe2401", STMPE2401 },
-diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
-index 25928f6..ac7ac99 100644
---- a/drivers/mfd/stmpe-spi.c
-+++ b/drivers/mfd/stmpe-spi.c
-@@ -110,6 +110,7 @@ static int __devexit stmpe_spi_remove(struct spi_device *spi)
- 
- static const struct spi_device_id stmpe_spi_id[] = {
- 	{ "stmpe610", STMPE610 },
-+	{ "stmpe801", STMPE801 },
- 	{ "stmpe811", STMPE811 },
- 	{ "stmpe1601", STMPE1601 },
- 	{ "stmpe2401", STMPE2401 },
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 34046b5..ad241fc 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -241,12 +241,14 @@ int stmpe_set_altfunc(struct stmpe *stmpe, u32 pins, enum stmpe_block block)
- 	u8 regaddr = stmpe->regs[STMPE_IDX_GPAFR_U_MSB];
- 	int af_bits = variant->af_bits;
- 	int numregs = DIV_ROUND_UP(stmpe->num_gpios * af_bits, 8);
--	int afperreg = 8 / af_bits;
- 	int mask = (1 << af_bits) - 1;
- 	u8 regs[numregs];
--	int af;
--	int ret;
-+	int af, afperreg, ret;
-+
-+	if (!variant->get_altfunc)
-+		return 0;
- 
-+	afperreg = 8 / af_bits;
- 	mutex_lock(&stmpe->lock);
- 
- 	ret = __stmpe_enable(stmpe, STMPE_BLOCK_GPIO);
-@@ -321,6 +323,50 @@ static struct mfd_cell stmpe_keypad_cell = {
+-static void i2c_init(struct stmpe *stmpe)
+-{
+-	struct i2c_device_id *id = stmpe->ci->data;
+-
+-	stmpe->partnum = id->driver_data;
+-	dev_set_drvdata(stmpe->dev, stmpe);
+-}
+-
+ static struct stmpe_client_info i2c_ci = {
+ 	.read_byte = i2c_reg_read,
+ 	.write_byte = i2c_reg_write,
+ 	.read_block = i2c_block_read,
+ 	.write_block = i2c_block_write,
+-	.init = i2c_init,
  };
  
- /*
-+ * STMPE801
-+ */
-+static const u8 stmpe801_regs[] = {
-+	[STMPE_IDX_CHIP_ID]	= STMPE801_REG_CHIP_ID,
-+	[STMPE_IDX_ICR_LSB]	= STMPE801_REG_SYS_CTRL,
-+	[STMPE_IDX_GPMR_LSB]	= STMPE801_REG_GPIO_MP_STA,
-+	[STMPE_IDX_GPSR_LSB]	= STMPE801_REG_GPIO_SET_PIN,
-+	[STMPE_IDX_GPCR_LSB]	= STMPE801_REG_GPIO_SET_PIN,
-+	[STMPE_IDX_GPDR_LSB]	= STMPE801_REG_GPIO_DIR,
-+	[STMPE_IDX_IEGPIOR_LSB] = STMPE801_REG_GPIO_INT_EN,
-+	[STMPE_IDX_ISGPIOR_MSB] = STMPE801_REG_GPIO_INT_STA,
-+
-+};
-+
-+static struct stmpe_variant_block stmpe801_blocks[] = {
-+	{
-+		.cell	= &stmpe_gpio_cell,
-+		.irq	= 0,
-+		.block	= STMPE_BLOCK_GPIO,
-+	},
-+};
-+
-+static int stmpe801_enable(struct stmpe *stmpe, unsigned int blocks,
-+			   bool enable)
-+{
-+	if (blocks & STMPE_BLOCK_GPIO)
-+		return 0;
-+	else
-+		return -EINVAL;
-+}
-+
-+static struct stmpe_variant_info stmpe801 = {
-+	.name		= "stmpe801",
-+	.id_val		= STMPE801_ID,
-+	.id_mask	= 0xffff,
-+	.num_gpios	= 8,
-+	.regs		= stmpe801_regs,
-+	.blocks		= stmpe801_blocks,
-+	.num_blocks	= ARRAY_SIZE(stmpe801_blocks),
-+	.num_irqs	= STMPE801_NR_INTERNAL_IRQS,
-+	.enable		= stmpe801_enable,
-+};
-+
-+/*
-  * Touchscreen (STMPE811 or STMPE610)
-  */
+ static int __devinit
+@@ -69,7 +60,7 @@ stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 	i2c_ci.client = i2c;
+ 	i2c_ci.dev = &i2c->dev;
  
-@@ -667,6 +713,7 @@ static struct stmpe_variant_info stmpe2403 = {
+-	return stmpe_probe(&i2c_ci);
++	return stmpe_probe(&i2c_ci, id->driver_data);
+ }
  
- static struct stmpe_variant_info *stmpe_variant_info[] = {
- 	[STMPE610]	= &stmpe610,
-+	[STMPE801]	= &stmpe801,
- 	[STMPE811]	= &stmpe811,
- 	[STMPE1601]	= &stmpe1601,
- 	[STMPE2401]	= &stmpe2401,
-@@ -683,6 +730,11 @@ static irqreturn_t stmpe_irq(int irq, void *data)
- 	int ret;
- 	int i;
- 
-+	if (variant->id_val == STMPE801_ID) {
-+		handle_nested_irq(stmpe->irq_base);
-+		return IRQ_HANDLED;
-+	}
-+
- 	ret = stmpe_block_read(stmpe, israddr, num, isr);
- 	if (ret < 0)
- 		return IRQ_NONE;
-@@ -769,14 +821,17 @@ static struct irq_chip stmpe_irq_chip = {
- 
- static int __devinit stmpe_irq_init(struct stmpe *stmpe)
+ static int __devexit stmpe_i2c_remove(struct i2c_client *i2c)
+diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
+index 6f1c0ad3..21861d8 100644
+--- a/drivers/mfd/stmpe-spi.c
++++ b/drivers/mfd/stmpe-spi.c
+@@ -64,7 +64,6 @@ static void spi_init(struct stmpe *stmpe)
  {
-+	struct irq_chip *chip = NULL;
- 	int num_irqs = stmpe->variant->num_irqs;
- 	int base = stmpe->irq_base;
- 	int irq;
+ 	struct spi_device *spi = stmpe->client;
  
-+	if (stmpe->variant->id_val != STMPE801_ID)
-+		chip = &stmpe_irq_chip;
+-	dev_set_drvdata(stmpe->dev, stmpe);
+ 	spi->bits_per_word = 8;
+ 
+ 	/* This register is only present for stmpe811 */
+@@ -86,6 +85,8 @@ static struct stmpe_client_info spi_ci = {
+ static int __devinit
+ stmpe_spi_probe(struct spi_device *spi)
+ {
++	const struct spi_device_id *id = spi_get_device_id(spi);
 +
- 	for (irq = base; irq < base + num_irqs; irq++) {
- 		irq_set_chip_data(irq, stmpe);
--		irq_set_chip_and_handler(irq, &stmpe_irq_chip,
--					 handle_edge_irq);
-+		irq_set_chip_and_handler(irq, chip, handle_edge_irq);
- 		irq_set_nested_thread(irq, 1);
- #ifdef CONFIG_ARM
- 		set_irq_flags(irq, IRQF_VALID);
-@@ -808,7 +863,7 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 	unsigned int irq_trigger = stmpe->pdata->irq_trigger;
- 	int autosleep_timeout = stmpe->pdata->autosleep_timeout;
- 	struct stmpe_variant_info *variant = stmpe->variant;
--	u8 icr = STMPE_ICR_LSB_GIM;
-+	u8 icr;
- 	unsigned int id;
- 	u8 data[2];
- 	int ret;
-@@ -831,16 +886,32 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 	if (ret)
- 		return ret;
+ 	/* don't exceed max specified rate - 1MHz - Limitation of STMPE */
+ 	if (spi->max_speed_hz > 1000000) {
+ 		dev_dbg(&spi->dev, "f(sample) %d KHz?\n",
+@@ -97,7 +98,7 @@ stmpe_spi_probe(struct spi_device *spi)
+ 	spi_ci.client = spi;
+ 	spi_ci.dev = &spi->dev;
  
--	if (irq_trigger == IRQF_TRIGGER_FALLING ||
--	    irq_trigger == IRQF_TRIGGER_RISING)
--		icr |= STMPE_ICR_LSB_EDGE;
-+	if (id == STMPE801_ID)
-+		icr = STMPE801_REG_SYS_CTRL_INT_EN;
-+	else
-+		icr = STMPE_ICR_LSB_GIM;
-+
-+	/* STMPE801 doesn't support Edge interrupts */
-+	if (id != STMPE801_ID) {
-+		if (irq_trigger == IRQF_TRIGGER_FALLING ||
-+				irq_trigger == IRQF_TRIGGER_RISING)
-+			icr |= STMPE_ICR_LSB_EDGE;
-+	}
+-	return stmpe_probe(&spi_ci);
++	return stmpe_probe(&spi_ci, id->driver_data);
+ }
  
- 	if (irq_trigger == IRQF_TRIGGER_RISING ||
--	    irq_trigger == IRQF_TRIGGER_HIGH)
--		icr |= STMPE_ICR_LSB_HIGH;
-+			irq_trigger == IRQF_TRIGGER_HIGH) {
-+		if (id == STMPE801_ID)
-+			icr |= STMPE801_REG_SYS_CTRL_INT_HI;
-+		else
-+			icr |= STMPE_ICR_LSB_HIGH;
-+	}
+ static int __devexit stmpe_spi_remove(struct spi_device *spi)
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 3ff2edb..a564f91 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -870,7 +870,7 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
+ }
  
--	if (stmpe->pdata->irq_invert_polarity)
--		icr ^= STMPE_ICR_LSB_HIGH;
-+	if (stmpe->pdata->irq_invert_polarity) {
-+		if (id == STMPE801_ID)
-+			icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
-+		else
-+			icr ^= STMPE_ICR_LSB_HIGH;
-+	}
+ /* Called from client specific probe routines */
+-int stmpe_probe(struct stmpe_client_info *ci)
++int stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ {
+ 	struct stmpe_platform_data *pdata = dev_get_platdata(ci->dev);
+ 	struct stmpe *stmpe;
+@@ -891,11 +891,13 @@ int stmpe_probe(struct stmpe_client_info *ci)
+ 	stmpe->pdata = pdata;
+ 	stmpe->irq_base = pdata->irq_base;
+ 	stmpe->ci = ci;
+-	stmpe->variant = stmpe_variant_info[stmpe->partnum];
++	stmpe->variant = stmpe_variant_info[partnum];
+ 	stmpe->regs = stmpe->variant->regs;
+ 	stmpe->num_gpios = stmpe->variant->num_gpios;
++	dev_set_drvdata(stmpe->dev, stmpe);
  
- 	if (stmpe->pdata->autosleep) {
- 		ret = stmpe_autosleep(stmpe, autosleep_timeout);
+-	ci->init(stmpe);
++	if (ci->init)
++		ci->init(stmpe);
+ 
+ 	if (pdata->irq_over_gpio) {
+ 		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
 diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
-index 7df0bda..476d1bb 100644
+index 908f482..a73f4c1 100644
 --- a/drivers/mfd/stmpe.h
 +++ b/drivers/mfd/stmpe.h
-@@ -73,6 +73,25 @@ int stmpe_remove(struct stmpe *stmpe);
- #define STMPE_ICR_LSB_GIM	(1 << 0)
+@@ -97,7 +97,7 @@ struct stmpe_client_info {
+ 	void (*init)(struct stmpe *stmpe);
+ };
  
- /*
-+ * STMPE801
-+ */
-+#define STMPE801_ID			0x0108
-+#define STMPE801_NR_INTERNAL_IRQS	1
-+
-+#define STMPE801_REG_CHIP_ID		0x00
-+#define STMPE801_REG_VERSION_ID		0x02
-+#define STMPE801_REG_SYS_CTRL		0x04
-+#define STMPE801_REG_GPIO_INT_EN	0x08
-+#define STMPE801_REG_GPIO_INT_STA	0x09
-+#define STMPE801_REG_GPIO_MP_STA	0x10
-+#define STMPE801_REG_GPIO_SET_PIN	0x11
-+#define STMPE801_REG_GPIO_DIR		0x12
-+
-+#define STMPE801_REG_SYS_CTRL_RESET	(1 << 7)
-+#define STMPE801_REG_SYS_CTRL_INT_EN	(1 << 2)
-+#define STMPE801_REG_SYS_CTRL_INT_HI	(1 << 0)
-+
-+/*
-  * STMPE811
-  */
+-int stmpe_probe(struct stmpe_client_info *ci);
++int stmpe_probe(struct stmpe_client_info *ci, int partnum);
+ int stmpe_remove(struct stmpe *stmpe);
  
+ #define STMPE_ICR_LSB_HIGH	(1 << 2)
 diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index 79e4fc4..17f3de8 100644
+index babc6b2..5afaf89 100644
 --- a/include/linux/mfd/stmpe.h
 +++ b/include/linux/mfd/stmpe.h
-@@ -21,6 +21,7 @@ enum stmpe_block {
+@@ -59,7 +59,6 @@ struct stmpe_client_info;
+  * @dev: device, mostly for dev_dbg()
+  * @client: client - i2c or spi
+  * @ci: client specific information
+- * @partnum: part number
+  * @variant: the detected STMPE model number
+  * @regs: list of addresses of registers which are at different addresses on
+  *	  different variants.  Indexed by one of STMPE_IDX_*.
+@@ -76,7 +75,6 @@ struct stmpe {
+ 	struct device *dev;
+ 	void *client;
+ 	struct stmpe_client_info *ci;
+-	enum stmpe_partnum partnum;
+ 	struct stmpe_variant_info *variant;
+ 	const u8 *regs;
  
- enum stmpe_partnum {
- 	STMPE610,
-+	STMPE801,
- 	STMPE811,
- 	STMPE1601,
- 	STMPE2401,
 -- 
 1.7.2.2
 
