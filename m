@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab1KPTj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 14:39:28 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:38460 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752199Ab1KPTj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 14:39:26 -0500
-From: Joe Perches <joe@perches.com>
-To: Li Yang <leoli@freescale.com>
-Cc: netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 5/5] ucc_geth: Convert ENET_NUM_OCTETS_PER_ADDRESS uses to ETH_ALEN
-Date: Wed, 16 Nov 2011 11:38:06 -0800
-Message-Id: <331ac47a2801525084ebc2b522640659dd4bbfcf.1321472143.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.405.gc1be0
-In-Reply-To: <cover.1321472142.git.joe@perches.com>
-References: <cover.1321472142.git.joe@perches.com>
+	id S1753518Ab1KPTkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 14:40:00 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:39835
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751765Ab1KPTj6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 14:39:58 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 14:39:57 EST
+X-SpamScore: -12
+X-BigFish: VS-12(zz936eK1432N98dKzz1202hzzz2dh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+From: York Sun <yorksun@freescale.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: <guenter.roeck@ericsson.com>, Tabi Timur-B04825 <B04825@freescale.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <B29983@freescale.com>
+In-Reply-To: <20111116201847.6b11dc7f@endymion.delvare>
+References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+	 <CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
+	 <E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
+	 <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
+	 <1321464509.7847.41.camel@oslab-l1>
+	 <1321464968.2309.384.camel@groeck-laptop>
+	 <1321466135.7847.55.camel@oslab-l1>
+	 <20111116190954.67c846fc@endymion.delvare>
+	 <1321467638.7847.73.camel@oslab-l1>
+	 <20111116201048.4b7877dd@endymion.delvare>
+	 <1321470915.7847.122.camel@oslab-l1>
+	 <20111116201847.6b11dc7f@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 11:24:33 -0800
+Message-ID: <1321471473.7847.126.camel@oslab-l1>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the number of #defines, use the normal #define from if_ether.h
+On Wed, 2011-11-16 at 20:18 +0100, Jean Delvare wrote:
+> On Wed, 16 Nov 2011 11:15:15 -0800, York Sun wrote:
+> > On Wed, 2011-11-16 at 20:10 +0100, Jean Delvare wrote:
+> > > On Wed, 16 Nov 2011 10:20:38 -0800, York Sun wrote:
+> > > > On Wed, 2011-11-16 at 19:09 +0100, Jean Delvare wrote:
+> > > > > Your thinking is too focused on I2C block reads (or even block read of
+> > > > > data over the network or on disk). SMBus block read is something
+> > > > > completely different. It's not about reading 200 bytes of data and
+> > > > > receiving it in 16-byte chunks (I2C block read works that way, on
+> > > > > EEPROMs in particular.) There is no "data length" and "block size" to
+> > > > > compare to each other. It's about reading the value of _one_ register
+> > > > > and this value happens to be multi-byte. There is typically _no_
+> > > > > register pointer increment (automatic or not) involved as can happen
+> > > > > with EEPROMs. If an SMBus block read from register N returns 10 bytes,
+> > > > > you're not going to read the next 10 bytes from register N+10. There
+> > > > > are no "next 10 bytes" to read, and register N+10 is something
+> > > > > completely unrelated.
+> > > > > 
+> > > > > And for this reason, it is not possible to mix SMBus block reads with
+> > > > > byte reads, as can be done with I2C block reads.
+> > > > > 
+> > > > > Also note that there is a limit of 32 bytes for SMBus block transfers,
+> > > > > per SMBus specification. All slaves and masters must comply with it.
+> > > > > 
+> > > > > I hope I managed to clarify the case this time...
+> > > > 
+> > > > You have made it much clear. If block size is fixed and block read
+> > > > cannot mix with byte read, shall we do this
+> > > > 
+> > > > if length < block_size
+> > > >    read block_size
+> > > > else {
+> > > >    while (length) {
+> > > >        read block_size
+> > > >        length -= block_size
+> > > >    }
+> > > 
+> > > Which part of
+> > > 
+> > >   There is no "data length" and "block size" to compare to each other.
+> > > 
+> > > did you not understand?
+> > 
+> > For example, if the length is 40 and the block size is 32, are you going
+> > to read 32, 72 byte or 64 byte?
+> 
+> The length is not 40. Which part of
+> 
+>   Also note that there is a limit of 32 bytes for SMBus block transfers,
+>   per SMBus specification. All slaves and masters must comply with it.
+> 
+> did you now understand?
+> 
+> Really, please. I understand you're only trying to help and understand
+> the patch, but at some point, if you have zero knowledge about the
+> topic, you're not the right person to review the patch, period. You are
+> still welcome to test the patch if you can and want, that's a
+> completely different task.
+> 
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/freescale/ucc_geth.c |    2 +-
- drivers/net/ethernet/freescale/ucc_geth.h |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+That's the point. Your patch doesn't check if the length is valid. You
+rely on the caller to know no more than 32 bytes can be transferred. It
+shouldn't limit the subfunction to transfer more than 32 bytes if
+hardware can support it by multiple transactions. If not, print out an
+error message.
 
-diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-index b5dc027..ba2dc08 100644
---- a/drivers/net/ethernet/freescale/ucc_geth.c
-+++ b/drivers/net/ethernet/freescale/ucc_geth.c
-@@ -443,7 +443,7 @@ static void hw_add_addr_in_hash(struct ucc_geth_private *ugeth,
- 
- static inline int compare_addr(u8 **addr1, u8 **addr2)
- {
--	return memcmp(addr1, addr2, ENET_NUM_OCTETS_PER_ADDRESS);
-+	return memcmp(addr1, addr2, ETH_ALEN);
- }
- 
- #ifdef DEBUG
-diff --git a/drivers/net/ethernet/freescale/ucc_geth.h b/drivers/net/ethernet/freescale/ucc_geth.h
-index d12fcad..2e395a2 100644
---- a/drivers/net/ethernet/freescale/ucc_geth.h
-+++ b/drivers/net/ethernet/freescale/ucc_geth.h
-@@ -20,6 +20,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/list.h>
-+#include <linux/if_ether.h>
- 
- #include <asm/immap_qe.h>
- #include <asm/qe.h>
-@@ -881,7 +882,6 @@ struct ucc_geth_hardware_statistics {
- #define TX_RING_MOD_MASK(size)                  (size-1)
- #define RX_RING_MOD_MASK(size)                  (size-1)
- 
--#define ENET_NUM_OCTETS_PER_ADDRESS             6
- #define ENET_GROUP_ADDR                         0x01	/* Group address mask
- 							   for ethernet
- 							   addresses */
-@@ -1051,7 +1051,7 @@ enum ucc_geth_num_of_station_addresses {
- 
- /* UCC GETH 82xx Ethernet Address Container */
- struct enet_addr_container {
--	u8 address[ENET_NUM_OCTETS_PER_ADDRESS];	/* ethernet address */
-+	u8 address[ETH_ALEN];	/* ethernet address */
- 	enum ucc_geth_enet_address_recognition_location location;	/* location in
- 								   82xx address
- 								   recognition
-@@ -1194,7 +1194,7 @@ struct ucc_geth_private {
- 	u16 cpucount[NUM_TX_QUEUES];
- 	u16 __iomem *p_cpucount[NUM_TX_QUEUES];
- 	int indAddrRegUsed[NUM_OF_PADDRS];
--	u8 paddr[NUM_OF_PADDRS][ENET_NUM_OCTETS_PER_ADDRESS];	/* ethernet address */
-+	u8 paddr[NUM_OF_PADDRS][ETH_ALEN];	/* ethernet address */
- 	u8 numGroupAddrInHash;
- 	u8 numIndAddrInHash;
- 	u8 numIndAddrInReg;
--- 
-1.7.6.405.gc1be0
+York
+
+
+
 
