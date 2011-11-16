@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781Ab1KPAes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 19:34:48 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:55928 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932742Ab1KPAeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 19:34:46 -0500
-Message-ID: <1321403685.21286.25.camel@Joe-Laptop>
-Subject: Re: Printk mulitple line message support
-From: Joe Perches <joe@perches.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Huang Ying <ying.huang@intel.com>,
-        William Douglas <william.r.douglas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Nov 2011 16:34:45 -0800
-In-Reply-To: <21274.1321403394@turing-police.cc.vt.edu>
-References: <1321253936.13860.35.camel@yhuang-dev>
-	 <1321281640.2004.6.camel@Joe-Laptop> <1321318201.13860.51.camel@yhuang-dev>
-	 <1321319883.8944.7.camel@Joe-Laptop>
-	 <21274.1321403394@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932765Ab1KPAkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 19:40:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60790 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932574Ab1KPAkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 19:40:07 -0500
+Date: Tue, 15 Nov 2011 16:39:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/sysfs/sysfs.h:195 (during boot)
+Message-ID: <20111116003949.GA15882@suse.de>
+References: <20111113192417.GA1659@x4.trippels.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111113192417.GA1659@x4.trippels.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 19:29 -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 14 Nov 2011 17:18:03 PST, Joe Perches said:
+On Sun, Nov 13, 2011 at 08:24:17PM +0100, Markus Trippelsdorf wrote:
+> I'm seeing this for the fist time:
 > 
-> > mp_start(&cookie)
-> > pr_<level>(fmt, ...);
-> > pr_mp_cont(&cookie, fmt, ...);
-> > pr_mp_cont(&cookie, fmt "\n", ...);
-> > mp_end(&cookie);
+> ...
+> XFS (sda): Mounting Filesystem
+> XFS (sda): Ending clean mount
+> ATL1E 0000:02:00.0: irq 40 for MSI/MSI-X
+> ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+> ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+> udevd[888]: starting version 171
+> ------------[ cut here ]------------
+> WARNING: at fs/sysfs/sysfs.h:195 sysfs_get_inode+0x136/0x140()
+> Hardware name: System Product Name
+> Pid: 945, comm: udevadm Not tainted 3.2.0-rc1-00252-g8f042aa #49
+> Call Trace:
+>  [<ffffffff81072795>] warn_slowpath_common+0x75/0xb0
+>  [<ffffffff81072895>] warn_slowpath_null+0x15/0x20
+>  [<ffffffff81167b26>] sysfs_get_inode+0x136/0x140
+>  [<ffffffff811695df>] sysfs_lookup+0x6f/0x110
+>  [<ffffffff8111b739>] d_alloc_and_lookup+0x39/0x80
+>  [<ffffffff8111ca93>] do_lookup+0x283/0x390
+>  [<ffffffff8111d954>] path_lookupat+0x114/0x6d0
+>  [<ffffffff8111b946>] ? getname_flags+0x36/0x230
+>  [<ffffffff8111df3b>] do_path_lookup+0x2b/0x70
+>  [<ffffffff8111e3a8>] user_path_at_empty+0x58/0xb0
+>  [<ffffffff81169d4c>] ? sysfs_put_link+0x1c/0x20
+>  [<ffffffff81120ac4>] ? generic_readlink+0x84/0xa0
+>  [<ffffffff8111e40c>] user_path_at+0xc/0x10
+>  [<ffffffff811161e0>] vfs_fstatat+0x30/0x70
+>  [<ffffffff8112d94b>] ? mntput_no_expire+0x2b/0xe0
+>  [<ffffffff81116236>] vfs_stat+0x16/0x20
+>  [<ffffffff81116305>] sys_newstat+0x15/0x30
+>  [<ffffffff8111642e>] ? sys_readlinkat+0x7e/0xb0
+>  [<ffffffff814d2c7b>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 2226f614d7765573 ]---
+> Adding 2097148k swap on /var/tmp/swap/swapfile.  Priority:-1 extents:2 across:2634672k
 > 
-> What should happen if buggy code returns before calling mp_end()?
+> fs/sysfs/sysfs.h:195: 
+>     WARN_ON(!atomic_read(&sd->s_count));
 
-Every pr_cont use gets emitted with a cookie id
-which is annoying enough to get the code fixed
-rather quickly no? 
+Odd, is it reproducable?
 
+Eric, any ideas?
+
+thanks,
+
+greg k-h
