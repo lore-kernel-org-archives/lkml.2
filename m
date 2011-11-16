@@ -1,114 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab1KPRLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 12:11:52 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50014 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab1KPRLu convert rfc822-to-8bit (ORCPT
+	id S1757294Ab1KPRMR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:12:17 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40684 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753217Ab1KPRMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 12:11:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321434819-23678-2-git-send-email-lars@metafoo.de>
-References: <1321434819-23678-1-git-send-email-lars@metafoo.de> <1321434819-23678-2-git-send-email-lars@metafoo.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 16 Nov 2011 10:11:27 -0700
-X-Google-Sender-Auth: o-0SV5EWQbV2hR82yJ6Uk2hglzI
-Message-ID: <CACxGe6twCU9Nb+b00ei83jxaz0YnVa6nT0ra6Kp0c4PO7hjT6Q@mail.gmail.com>
-Subject: Re: [PATCH 1/5] drivercore: Generalize module_platform_driver
+	Wed, 16 Nov 2011 12:12:15 -0500
+Date: Wed, 16 Nov 2011 17:12:13 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <Michael.Hennerich@analog.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
+Subject: Re: [PATCH 5/7] regmap: Check if a register is writable instead of
+ readable in regcache_read
+Message-ID: <20111116171213.GR29986@opensource.wolfsonmicro.com>
+References: <1321457302-8724-1-git-send-email-lars@metafoo.de>
+ <1321457302-8724-5-git-send-email-lars@metafoo.de>
+ <20111116161631.GK29986@opensource.wolfsonmicro.com>
+ <4EC3E619.70503@metafoo.de>
+ <20111116163812.GM29986@opensource.wolfsonmicro.com>
+ <4EC3EA61.2000705@metafoo.de>
+ <20111116165622.GP29986@opensource.wolfsonmicro.com>
+ <4EC3EE32.2090007@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC3EE32.2090007@metafoo.de>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 2:13 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> This patch generalizes the module_platform_driver macro and introduces a new
-> module_driver macro. The module_driver macro takes a driver name, a register
-> and a unregister function for this driver type. Using these it construct the
-> module init and exit sections which register and unregister the driver. Since
-> such init/exit sections are commonly found in drivers this macro can be used
-> to eliminate a lot of boilerplate code.
->
-> The macro is not intended to be used by driver modules directly, instead it
-> should be used to generate bus specific macros for registering drivers like
-> the module_platform_driver macro.
->
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+On Wed, Nov 16, 2011 at 06:09:06PM +0100, Lars-Peter Clausen wrote:
+> On 11/16/2011 05:56 PM, Mark Brown wrote:
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> > No, really - just do something legible and robust.  For example, teach
+> > regmap_readable() about the cache.
 
-> ---
->  include/linux/init.h            |   21 +++++++++++++++++++++
->  include/linux/platform_device.h |   12 ++----------
->  2 files changed, 23 insertions(+), 10 deletions(-)
->
-> diff --git a/include/linux/init.h b/include/linux/init.h
-> index 9146f39..3e2d238 100644
-> --- a/include/linux/init.h
-> +++ b/include/linux/init.h
-> @@ -346,4 +346,25 @@ void __init parse_early_options(char *cmdline);
->  #define __exit_p(x) NULL
->  #endif
->
-> +/**
-> + * module_driver() - Helper macro for drivers that don't do anything
-> + * special in module init/exit. This eliminates a lot of boilerplate.
-> + * Each module may only use this macro once, and calling it replaces
-> + * module_init() and module_exit().
-> + * Use this macro to construct bus specific macros for registering
-> + * drivers.
-> + */
-> +#define module_driver(__driver, __register, __unregister) \
-> +static int __init __driver##_init(void) \
-> +{ \
-> +       return __register(&(__driver)); \
-> +} \
-> +module_init(__driver##_init); \
-> +static void __exit __driver##_exit(void) \
-> +{ \
-> +       __unregister(&(__driver)); \
-> +} \
-> +module_exit(__driver##_exit);
-> +
->  #endif /* _LINUX_INIT_H */
-> +
-> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-> index 2a23f7d..165a8d1 100644
-> --- a/include/linux/platform_device.h
-> +++ b/include/linux/platform_device.h
-> @@ -196,16 +196,8 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
->  * calling it replaces module_init() and module_exit()
->  */
->  #define module_platform_driver(__platform_driver) \
-> -static int __init __platform_driver##_init(void) \
-> -{ \
-> -       return platform_driver_register(&(__platform_driver)); \
-> -} \
-> -module_init(__platform_driver##_init); \
-> -static void __exit __platform_driver##_exit(void) \
-> -{ \
-> -       platform_driver_unregister(&(__platform_driver)); \
-> -} \
-> -module_exit(__platform_driver##_exit);
-> +       module_driver(__platform_driver, platform_driver_register, \
-> +                       platform_driver_unregister)
->
->  extern struct platform_device *platform_create_bundle(struct platform_driver *driver,
->                                        int (*probe)(struct platform_device *),
-> --
-> 1.7.7.1
->
->
->
+> Doesn't make much sense. We call regmap_readable from regcache_read, which
+> is only called if we use a cache. So if we let regmap_readable return true
+> in case we use a cache it will always be true in regcache_read and we can
+> drop the check entirely.
 
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+We should at least check that we actually have a cached value there -
+the cache is sparse after all.
