@@ -1,270 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab1KPJHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:07:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60717 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab1KPJHc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:07:32 -0500
+	id S1754848Ab1KPJJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:09:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754328Ab1KPJI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 04:08:58 -0500
+Date: Wed, 16 Nov 2011 11:09:38 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com, penberg@kernel.org
+Subject: Re: [PATCHv2 RFC] virtio-spec: flexible configuration layout
+Message-ID: <20111116090938.GA17290@redhat.com>
+References: <20111108214021.GA4538@redhat.com>
+ <20111109195901.GA28155@redhat.com>
+ <1320870287.3730.6.camel@lappy>
+ <20111109205208.GA28599@redhat.com>
+ <1320872248.3730.11.camel@lappy>
+ <87aa83qoao.fsf@rustcorp.com.au>
+ <CA+1xoqeH3ErNCELD+NoJHz=eH6FtxersUffoJSj0yQx2o=4g0g@mail.gmail.com>
+ <87aa7xos3n.fsf@rustcorp.com.au>
+ <20111116072137.GF5433@redhat.com>
+ <1321431459.3221.4.camel@lappy>
 MIME-Version: 1.0
-In-Reply-To: <20111116082759.GD9581@n2100.arm.linux.org.uk>
-References: <CAJ8eaTzOtgMzcZeRr6f=+WhtsykK1NZraOGBPoqGncwcAGcTyQ@mail.gmail.com>
-	<20111116082759.GD9581@n2100.arm.linux.org.uk>
-Date: Wed, 16 Nov 2011 14:37:30 +0530
-Message-ID: <CAJ8eaTwCC2e3WKkQzWXhYZ6+SGBg+dabFA380OEoa0vOHM5Odw@mail.gmail.com>
-Subject: Re: Crash when memset of shared mapped memory in ARM
-From: naveen yadav <yad.naveen@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-mm <linux-mm@kvack.org>,
-        linux-arm-kernel-request@lists.arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-request@lists.arm.linux.org.uk, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321431459.3221.4.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok,
-On X86, MIPS
-#./tc1
-mmap: addr 0x20000000
-#
-#
+On Wed, Nov 16, 2011 at 10:17:39AM +0200, Sasha Levin wrote:
+> On Wed, 2011-11-16 at 09:21 +0200, Michael S. Tsirkin wrote:
+> > On Wed, Nov 16, 2011 at 10:28:52AM +1030, Rusty Russell wrote:
+> > > On Fri, 11 Nov 2011 09:39:13 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > > > On Fri, Nov 11, 2011 at 6:24 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > > > > (2) There's no huge win in keeping the same layout.  Let's make some
+> > > > >    cleanups.  There are more users ahead of us then behind us (I
+> > > > >    hope!).
+> > > > 
+> > > > Actually, if we already do cleanups, here are two more suggestions:
+> > > > 
+> > > > 1. Make 64bit features a one big 64bit block, instead of having 32bits
+> > > > in one place and 32 in another.
+> > > > 2. Remove the reserved fields out of the config (the ones that were
+> > > > caused by moving the ISR and the notifications out).
+> > > 
+> > > Yes, those were exactly what I was thinking.  I left it vague because
+> > > there might be others you can see if we're prepared to abandon the
+> > > current format.
+> > > 
+> > > Cheers,
+> > > Rusty.
+> > 
+> > Yes but driver code doesn't get any cleaner by moving the fields.
+> > And in fact, the legacy support makes the code messier.
+> > What are the advantages?
+> > 
 
-On ARM (2.6.35.11 ~ 3.0.2)
-#tc1
-map: addr 0x20000000
-tc1: unhandled page fault (7) at 0x20001000, code 0x817
-Bus error (core dumped)
-#
-#
-Debug Information
-Pid: 179, comm:                  tc1
-CPU: 0    Not tainted  (2.6.35.11 #1)
-PC is at 0x400da410
-LR is at 0x8858
-pc : [<400da410>]    lr : [<00008858>]    psr: 20000010
-sp : bed84814  ip : 20001080  fp : 00000000
-r10: 40025000  r9 : 00000000  r8 : 00000000
-r7 : 20000000  r6 : 20001000  r5 : 00000000  r4 : 0000ef80
-r3 : 00000000  r2 : 20010000  r1 : 00000000  r0 : 20000000
-Flags: nzCv  IRQs on  FIQs on  Mode USER_32  ISA ARM  Segment user
+The advantages question is what should really balance out the overhead.
 
-Process Memory map
-00008000-00009000 r-xp 00000000 08:01 153 /usb/sda1/tc1
-00010000-00011000 rw-p 00000000 08:01 153 /usb/sda1/tc1
-00011000-00032000 rw-p 00011000 08:01 153
-20000000-20010000 rw-s 00000000 00:0d 249 /dev/shm/shmem_1234
-40000000-4001d000 r-xp 00000000 8b:06 163 /lib/ld-2.11.1.so
-4001d000-40021000 rw-p 4001d000 8b:06 163
-40024000-40025000 r--p 0001c000 8b:06 163 /lib/ld-2.11.1.so
-40025000-40026000 rw-p 0001d000 8b:06 163 /lib/ld-2.11.1.so
-40026000-4003b000 r-xp 00000000 8b:06 171 /lib/libpthread-2.11.1.so
-4003b000-40042000 ---p 00015000 8b:06 171 /lib/libpthread-2.11.1.so
-40042000-40043000 r--p 00014000 8b:06 171 /lib/libpthread-2.11.1.so
-40043000-40044000 rw-p 00015000 8b:06 171 /lib/libpthread-2.11.1.so
-40044000-40046000 rw-p 40044000 8b:06 171
-40046000-4004c000 r-xp 00000000 8b:06 161 /lib/librt-2.11.1.so
-4004c000-40053000 ---p 00006000 8b:06 161 /lib/librt-2.11.1.so
-40053000-40054000 r--p 00005000 8b:06 161 /lib/librt-2.11.1.so
-40054000-40055000 rw-p 00006000 8b:06 161 /lib/librt-2.11.1.so
-40055000-4005f000 r-xp 00000000 8b:06 165 /lib/libgcc_s.so.1
-4005f000-40067000 ---p 0000a000 8b:06 165 /lib/libgcc_s.so.1
-40067000-40068000 rw-p 0000a000 8b:06 165 /lib/libgcc_s.so.1
-40068000-40185000 r-xp 00000000 8b:06 174 /lib/libc-2.11.1.so
-40185000-4018d000 ---p 0011d000 8b:06 174 /lib/libc-2.11.1.so
-4018d000-4018f000 r--p 0011d000 8b:06 174 /lib/libc-2.11.1.so
-4018f000-40190000 rw-p 0011f000 8b:06 174 /lib/libc-2.11.1.so
-40190000-40193000 rw-p 40190000 8b:06 174
-bed63000-bed85000 rw-p befde000 8b:06 174
+> What about splitting the parts which handle legacy code and new code?
 
-We wish to know why the same application crashes on ARM ?
-On Wed, Nov 16, 2011 at 1:57 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Nov 16, 2011 at 11:05:49AM +0530, naveen yadav wrote:
->> Hi All,
->>
->> I am running below Test program on ARM cortex a9/a8 on kernel version
->> 2.6.35.14 as well as on 3.0.
->>
->> Please find the test case where:
->>
->> 1. Create shared memory object using shm_open(If we use normal open
->> then no problem only problem with shm_open)
->>
->> 2. ftruncate to given size
->>
->> 3. memory map the shared object to given memory address ( I haved
->> tested without MAP_SHARED, MAP_FIXED as well, problem exist)
->>
->> 4. Memset the shared memory (got page fault when accessing the second page)
->>
->>
->>
->>
->> Observation: Only observed in ARM ( i.e not present in MIPS and X86)
->
-> Yes, so, what happens?
->
->>
->>
->> #undef NDEBUG
->> #define _GNU_SOURCE
->> #include <unistd.h>
->> #include <stdio.h>
->> #include <stdlib.h>
->> #include <sys/ipc.h>
->> #include <sys/shm.h>
->> #include <errno.h>
->> #include <pthread.h>
->> #include <string.h>
->> #include <signal.h>
->> #include <fcntl.h>
->> #include <sys/types.h>
->> #include <sys/mman.h>
->>
->> enum {
->>  SHM_INIT,
->>  SHM_GET
->>  };
->>
->> enum {
->>  PARENT,
->>  CHILD
->>  };
->>
->> #define FIXED_MMAP_ADDR 0x20000000
->> #define MMAP_SIZE     0x10000
->>
->> static int shmid;
->> static char shm_name[100];
->> static int sleep_period = 100000;
->> void * shmem_init(int flag)
->> {
->>       int start = FIXED_MMAP_ADDR;
->>       int memory_size = MMAP_SIZE;
->>       int mode = 0666;
->>       void *addr;
->>       int ret;
->>       sprintf(shm_name, "/shmem_1234");
->>       shmid = shm_open (shm_name, O_RDWR | O_EXCL | O_CREAT | O_TRUNC, mode);
->>       if (shmid < 0) {
->>               if (errno == EEXIST) {
->>                       printf ("shm_open: %s\n", strerror(errno));
->>                               shmid = shm_open (shm_name, O_RDWR, mode);
->>
->>               } else {
->>                       printf("failed to shm_open, err=%s\n", strerror(errno));
->>                       return NULL;
->>               }
->>       }
->>       ret = fcntl (shmid, F_SETFD, FD_CLOEXEC);
->>       if (ret < 0) {
->>               printf("fcntl: %s\n", strerror(errno));
->>               return NULL;
->>       }
->>       ret = ftruncate (shmid, memory_size);
->>       if (ret < 0) {
->>               printf("ftruncate: %s\n", strerror(errno));
->>               return NULL;
->>       }
->>       addr = mmap ((void *)start, memory_size, PROT_READ | PROT_WRITE,
->>                            MAP_SHARED | MAP_FIXED, shmid, 0);
->>       if (addr == MAP_FAILED) {
->>               printf ("mmap: %s\n", strerror(errno));
->>               close (shmid);
->>               shm_unlink (shm_name);
->>               return NULL;
->>       }
->>
->>       if (flag == SHM_INIT){
->>               printf ("mmap: addr %p\n", addr);
->>               /* memset on arm creates a unhandled page fault, works fine on mips */
->>               memset(addr, 0, memory_size);
->>       }
->>       return (void *)addr;
->> }
->>
->> pthread_mutex_t * shmem_mutex_init(int flag)
->> {
->>       pthread_mutex_t * pmutex = (pthread_mutex_t *)shmem_init(flag);
->> #if 0
->>       pthread_mutexattr_t attr;
->>       if (flag == SHM_INIT) {
->>               pthread_mutexattr_init (&attr);
->>               pthread_mutexattr_setpshared (&attr, PTHREAD_PROCESS_SHARED);
->>               pthread_mutexattr_setprotocol (&attr, PTHREAD_PRIO_INHERIT);
->>               pthread_mutexattr_setrobust_np (&attr,
->>                                               PTHREAD_MUTEX_STALLED_NP);
->>               pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_ERRORCHECK);
->>               if (pthread_mutex_init (pmutex, &attr) != 0) {
->>                       printf("Init mutex failed, err=%s\n", strerror(errno));
->>                       pthread_mutexattr_destroy (&attr);
->>                       return NULL;
->>               }
->>       }
->> #endif
->>       return pmutex;
->> }
->>
->> void long_running_task(int flag)
->> {
->>       static int counter = 0;
->>       if (flag == PARENT)
->>               usleep(5*sleep_period);
->>       else
->>               usleep(3*sleep_period);
->>       counter = (counter + 1) % 100;
->>       printf("%d: completed %d computing\n", getpid(), counter);
->> }
->>
->> void sig_handler(int signum)
->> {
->>       close(shmid);
->>       shm_unlink(shm_name);
->>       exit(0);
->> }
->>
->> int main(int argc, char *argv[])
->> {
->>       pthread_mutex_t *mutex_parent, *mutex_child;
->> //    signal(SIGUSR1, sig_handler);
->> //    if (fork()) {
->>               /* parent process */
->>               if ((mutex_parent = shmem_mutex_init(SHM_INIT)) == NULL) {
->>                       printf("failed to get the shmem_mutex\n");
->>                       exit(-1);
->>               }
->> #if 0
->>               while (1) {
->>                       printf("%d: try to hold the lock\n", getpid());
->>                       pthread_mutex_lock(mutex_parent);
->>                       printf("%d: got the lock\n", getpid());
->>                       long_running_task(PARENT);
->>                       pthread_mutex_unlock(mutex_parent);
->>                       printf("%d: released the lock\n", getpid());
->>               }
->> #endif
->> //    } else {
->> #if 0
->>               /* child process */
->>               usleep(sleep_period);
->>               if ((mutex_child = shmem_mutex_init(SHM_GET)) == NULL) {
->>                       printf("failed to get the shmem_mutex\n");
->>                       exit(-1);
->>               }
->>               while (1) {
->>                       printf("%d: try to hold the lock\n", getpid());
->>                       pthread_mutex_lock(mutex_child);
->>                       printf("%d: got the lock\n", getpid());
->>                       long_running_task(CHILD);
->>                       pthread_mutex_unlock(mutex_child);
->>                       printf("%d: released the lock\n", getpid());
->>               }
->> #endif
->> //    }
->>       return 0;
->> }
->
+Well, I considered that. Something along the lines of
+#define VIRTIO_NEW_MSI_CONFIG_VECTOR        18
+And so on for all registers.
+
+This seems to add a significant maintainance burden because of code
+duplication. Note that, for example, vector programming is affected.
+Multiply that by the number of guest OSes.
+
+
+> It'll make it easier playing with the new spec more freely
+
+I'm really worried about maintaing drivers long term.
+Ease of experimentation is secondary for me.
+
+> and will also
+> make it easier removing legacy code in the future since you'll need to
+> simply delete a chunk of code instead of removing legacy bits out of
+> working code with a surgical knife.
+
+It's unlikely to be a single chunk: we'd have structures and macros
+which are separate. So at least 3 chunks.
+
+Just for fun, here's what's involved in removing legacy map
+support on top of my patch. As you see there are 4 chunks:
+structure decl, map, unmap, and msix enable/disable.
+And finding them was as simple as looking for legacy_map.
+
+
+---
+
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index d242fcc..6c4d2faf 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -64,9 +64,6 @@ struct virtio_pci_device
+ 
+ 	/* Various IO mappings: used for resource tracking only. */
+ 
+-	/* Legacy BAR0: typically PIO. */
+-	void __iomem *legacy_map;
+-
+ 	/* Mappings specified by device capabilities: typically in MMIO */
+ 	void __iomem *isr_map;
+ 	void __iomem *notify_map;
+@@ -81,11 +78,7 @@ struct virtio_pci_device
+ static void virtio_pci_set_msix_enabled(struct virtio_pci_device *vp_dev, int enabled)
+ {
+ 	vp_dev->msix_enabled = enabled;
+-	if (vp_dev->device_map)
+-		vp_dev->ioaddr_device = vp_dev->device_map;
+-	else
+-		vp_dev->ioaddr_device = vp_dev->legacy_map +
+-			VIRTIO_PCI_CONFIG(vp_dev);
++	vp_dev->ioaddr_device = vp_dev->device_map;
+ }
+ 
+ static void __iomem *virtio_pci_map_cfg(struct virtio_pci_device *vp_dev, u8 cap_id,
+@@ -147,8 +140,6 @@ err:
+ 
+ static void virtio_pci_iounmap(struct virtio_pci_device *vp_dev)
+ {
+-	if (vp_dev->legacy_map)
+-		pci_iounmap(vp_dev->pci_dev, vp_dev->legacy_map);
+ 	if (vp_dev->isr_map)
+ 		pci_iounmap(vp_dev->pci_dev, vp_dev->isr_map);
+ 	if (vp_dev->notify_map)
+@@ -176,36 +167,15 @@ static int virtio_pci_iomap(struct virtio_pci_device *vp_dev)
+ 
+ 	if (!vp_dev->notify_map || !vp_dev->common_map ||
+ 	    !vp_dev->device_map) {
+-		/*
+-		 * If not all capabilities present, map legacy PIO.
+-		 * Legacy access is at BAR 0. We never need to map
+-		 * more than 256 bytes there, since legacy config space
+-		 * used PIO which has this size limit.
+-		 * */
+-		vp_dev->legacy_map = pci_iomap(vp_dev->pci_dev, 0, 256);
+-		if (!vp_dev->legacy_map) {
+-			dev_err(&vp_dev->vdev.dev, "Unable to map legacy PIO");
+-			goto err;
+-		}
++		dev_err(&vp_dev->vdev.dev, "Unable to map IO");
++		goto err;
+ 	}
+ 
+-	/* Prefer MMIO if available. If not, fallback to legacy PIO. */
+-	if (vp_dev->common_map)
+-		vp_dev->ioaddr = vp_dev->common_map;
+-	else
+-		vp_dev->ioaddr = vp_dev->legacy_map;
++	vp_dev->ioaddr = vp_dev->common_map;
+ 
+-	if (vp_dev->device_map)
+-		vp_dev->ioaddr_device = vp_dev->device_map;
+-	else
+-		vp_dev->ioaddr_device = vp_dev->legacy_map +
+-			VIRTIO_PCI_CONFIG(vp_dev);
++	vp_dev->ioaddr_device = vp_dev->device_map;
+ 
+-	if (vp_dev->notify_map)
+-		vp_dev->ioaddr_notify = vp_dev->notify_map;
+-	else
+-		vp_dev->ioaddr_notify = vp_dev->legacy_map +
+-			VIRTIO_PCI_QUEUE_NOTIFY;
++	vp_dev->ioaddr_notify = vp_dev->notify_map;
+ 
+ 	return 0;
+ err:
