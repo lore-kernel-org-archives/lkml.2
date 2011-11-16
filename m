@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab1KPJRU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:17:20 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39229 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab1KPJRQ (ORCPT
+	id S1755129Ab1KPJUW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:20:22 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:39312 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab1KPJUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:17:16 -0500
-Message-ID: <1321434843.16575.1.camel@phoenix>
-Subject: [PATCH] [media] media/radio/tef6862: fix checking return value of
- i2c_master_send
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard =?ISO-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@mocean-labs.com>,
-        Mauro Carvalho Chehab Mauro Carvalho Chehab 
-	<mchehab@redhat.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        linux-media@vger.kernel.org
-Date: Wed, 16 Nov 2011 17:14:03 +0800
+	Wed, 16 Nov 2011 04:20:20 -0500
+Subject: Re: [PATCH 1/2] add device entry for Broadcom Valentine combo card
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Al Cho <acho@suse.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acho@novell.com, jlee@novell.com, oneukum@suse.com
+Date: Wed, 16 Nov 2011 18:19:32 +0900
+In-Reply-To: <CAKzePaqwKbg8oZ6ULcdXdnYAkLU+k6o3bQWVaLUfCEDrH2994g@mail.gmail.com>
+References: <2eb6d1b761a3fddea28294959bde7e9c7ef88043.1319086508.git.acho@suse.com>
+	 <20111031191809.GB10164@joana>
+	 <CAKzePaqwKbg8oZ6ULcdXdnYAkLU+k6o3bQWVaLUfCEDrH2994g@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1321435176.15441.528.camel@aeonflux>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2c_master_send returns negative errno, or else the number of bytes written.
+Hi Al,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/media/radio/tef6862.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+> > * Cho, Yu-Chen <acho@suse.com> [2011-10-20 12:58:29 +0800]:
+> >
+> >> This device declares itself to be vendor specific
+> >> It therefore needs to be added to the device table
+> >> to make btusb bind.
+> >
+> > It would be good to have the output of usb-devices for this specific device in
+> > the commit message.
+> 
+> Would you please kindly explain what is "the output of usb-device" to me?
+> The patch is for Broadcom Valentine 802.11bgn 1x1 wireless and
+> bluetooth combo card.
 
-diff --git a/drivers/media/radio/tef6862.c b/drivers/media/radio/tef6862.c
-index 0991e19..3408685 100644
---- a/drivers/media/radio/tef6862.c
-+++ b/drivers/media/radio/tef6862.c
-@@ -118,9 +118,11 @@ static int tef6862_s_frequency(struct v4l2_subdev *sd, struct v4l2_frequency *f)
- 	i2cmsg[2] = pll & 0xff;
- 
- 	err = i2c_master_send(client, i2cmsg, sizeof(i2cmsg));
--	if (!err)
--		state->freq = f->frequency;
--	return err;
-+	if (err != sizeof(i2cmsg))
-+		return err < 0 ? err : -EIO;
-+
-+	state->freq = f->frequency;
-+	return 0;
- }
- 
- static int tef6862_g_frequency(struct v4l2_subdev *sd, struct v4l2_frequency *f)
--- 
-1.7.5.4
+open an xterm and type "usb-devices", then press return. And we want to
+see the part about this device.
 
+Regards
+
+Marcel
 
 
