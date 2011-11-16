@@ -1,110 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab1KPPHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:07:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab1KPPHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:07:54 -0500
-Date: Wed, 16 Nov 2011 15:07:50 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111116150750.GO27150@suse.de>
-References: <20111110151211.523fa185.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
- <20111111101414.GJ3083@suse.de>
- <20111114154408.10de1bc7.akpm@linux-foundation.org>
- <20111115132513.GF27150@suse.de>
- <alpine.DEB.2.00.1111151303230.23579@chino.kir.corp.google.com>
- <20111115234845.GK27150@suse.de>
- <alpine.DEB.2.00.1111151554190.3781@chino.kir.corp.google.com>
- <20111116041350.GA3306@redhat.com>
- <20111116133056.GC3306@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20111116133056.GC3306@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756891Ab1KPPIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:08:50 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:7921 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab1KPPIt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 10:08:49 -0500
+X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 10:08:49 EST
+Subject: Re: ip_local_deliver_finish: proto 108 (IPComp) isn't netns-ready
+From: Dilip Daya <dilip.daya@hp.com>
+Reply-To: dilip.daya@hp.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "adobrian@gmail.com" <adobrian@gmail.com>
+In-Reply-To: <m1d3d0oraf.fsf@fess.ebiederm.org>
+References: <1320858706.2531.45.camel@pro6455b.example.com>
+	 <m1d3d0oraf.fsf@fess.ebiederm.org>
+Content-Type: multipart/mixed; boundary="=-TUR0reZ3hQhz4MwWHrXp"
+Organization: Hewlett-Packard Company
+Date: Wed, 16 Nov 2011 10:01:55 -0500
+Message-ID: <1321455715.2530.27.camel@pro6455b.example.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 02:30:56PM +0100, Andrea Arcangeli wrote:
-> On Wed, Nov 16, 2011 at 05:13:50AM +0100, Andrea Arcangeli wrote:
-> > After checking my current thp vmstat I think Andrew was right and we
-> > backed out for a good reason before. I'm getting significantly worse
-> > success rate, not sure why it was a small reduction in success rate
-> > but hey I cannot exclude I may have broke something with some other
-> > patch. I've been running it together with a couple more changes. If
-> > it's this change that reduced the success rate, I'm afraid going
-> > always async is not ok.
+
+--=-TUR0reZ3hQhz4MwWHrXp
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Hi Eric,
+
+> If you have a clue what is going on with ip compression my
+> recommendation would be to add .netns_ok = 1.  Verify that the
+> everything works and send the patch.  You probably want to
+> verify and test ipv6 as well.  It really looks like the code
+> is fine and it just needs to be enabled.
+
+Thank you for the above feedback.
+
+FYI..my results
+
+Environment:
+- v3.0.9-stable kernel with  ".netns_ok	= 1" applied to ipcomp.c
+  (see attached patch)
+- Same setup as described earlier for two netns stacks on single system.
+- ltp-network test results:
+
+- /usr/lib/ltp/testcases/bin/tcp[4|6]-multi-diffip13
+  IPv4: no issues
+  IPv6: no issues
+
+- /usr/lib/ltp/testcases/bin/udp4-multi-diffip06
+  IPv4 -> no issues
+  IPv6 -> script issue (work-in-progress)
+
+- /usr/lib/ltp/testcases/bin/udp[4|6]-multi-diffnic06
+  IPv4: no issues
+  IPv6:	no issues
+
+- /usr/lib/ltp/testcases/bin/udp[4|6]-multi-diffport06
+  IPv4 -> multiple messages:
+    UDP: short packet: From 10.0.9.2:1025 1008/267 to 10.0.9.1:55575
+    UDP: short packet: From 10.0.0.1:54544 253/38 to 10.0.0.2:1050
+    UDP: short packet: From 10.0.0.1:21601 27128/1008 to 10.0.0.2:27137
+
+  IPv6 -> multiple messages:
+    UDPv6: short packet: From [fd00:1:1:1::2]:1028 242/122 to
+[fd00:1:1:1::1]:38438
+    UDPv6: short packet: From [fd00:1:1:1::2]:37972 21588/29 to
+[fd00:1:1:1::1]:21588
+    UDPv6: short packet: From [fd00:1:1:1::2]:1026 1008/898 to
+[fd00:1:1:1::1]:55703
+
+- /usr/lib/ltp/testcases/bin/icmp4-multi-diffip06
+  IPv4 -> no issues
+  IPv6 -> multiple messages:
+    ICMPv6 checksum failed [fd00:0001:0000:0003:0000:0000:0000:0001 >
+fd00:0001:0000:0003:0000:0000:0000:0002]
+				
+
+...continuing with debug.
+
+
+--DilipD.
+
+On Wed, 2011-11-09 at 22:38 +0000, Eric W. Biederman wrote:
+> Dilip Daya <dilip.daya@hp.com> writes:
 > 
-> I wonder if the high failure rate when shutting off "sync compaction"
-> and forcing only "async compaction" for THP (your patch queued in -mm)
-> is also because of ISOLATE_CLEAN being set in compaction from commit
-> 39deaf8. ISOLATE_CLEAN skipping PageDirty means all tmpfs/anon pages
-> added to swapcache (or removed from swapcache which sets the dirty bit
-> on the page because the pte may be mapped clean) are skipped entirely
-> by async compaction for no good reason.
-
-Good point! Even though these pages can be migrated without IO or
-incurring a sync, we are skipping over them. I'm still
-looking at passing sync down to ->migratepages and as part of that,
-ISOLATE_CLEAN will need new smarts.
-
-> That can't possibly be ok,
-> because those don't actually require any I/O or blocking to be
-> migrated. PageDirty is a "blocking/IO" operation only for filebacked
-> pages. So I think we must revert 39deaf8, instead of cleaning it up
-> with my cleanup posted in Message-Id 20111115020831.GF4414@redhat.com .
+> > Hi All,
+> >
+> > LTP-network tests produced:
+> >
+> > 	"ip_local_deliver_finish: proto 108 (IPComp) isn't netns-ready"
+> >
+> > Question:
+> > Is the above a bug or feature (IPComp, mode: transport) not netns
+> > enabled?
 > 
-
-It would be preferable if the pages that would block during migration
-could be identified in advance but that may be unrealistic. What may be
-a better compromise is to only isolate PageDirty pages with a
-->migratepage callback.
-
-> ISOLATED_CLEAN still looks right for may_writepage, for reclaim dirty
-> bit set on the page is a I/O event, for migrate it's not if it's
-> tmpfs/anon.
+> I would call it a missing feature.
 > 
-> Did you run your compaction tests with some swap activity?
+> > Environment:
+> >
+> > * v3.1-stable kernel.
+> >
+> > * Configured two network-namespaces via "ip netns add ...".
+> >   on a single system: netns0 (assigned as server) and
+> >   netns1 (assigned as client).
+> >   - assigned multiple physical NICs to netns0 and netns1.
+> >
+> > * Entered netns1 (ip netns exec netns1 bash) to execute
+> >   ltp-network suite of tests between netns1 and netns0.
+> >
+> > * The following LTP tests produced messages:
+> >
+> >   "kernel: ip_local_deliver_finish: proto 108 isn't netns-ready"
+> >
+> >    - /usr/lib/ltp/testcases/bin/icmp4-multi-diffip06
+> >    - /usr/lib/ltp/testcases/bin/tcp4-multi-diffip13
+> >    - /usr/lib/ltp/testcases/bin/udp4-multi-diffip06
+> >    - /usr/lib/ltp/testcases/bin/udp4-multi-diffnic06
+> >    - /usr/lib/ltp/testcases/bin/udp4-multi-diffport06
+> >
+> > * I also noticed missing ".netns_ok = 1" in:
+> >   - http://lxr.linux.no/linux+v3.1/net/ipv4/ipcomp.c#L150
 > 
-
-Some, but not intensive.
-
-> Reducing the async compaction effectiveness while there's some swap
-> activity then also leads in more frequently than needed running sync
-> compaction and page reclaim.
+> The .netns_ok flag indicates that someone has audited the code and made
+> certain it all works with network namespaces.
 > 
-> I'm hopeful however that by running just 2 passes of migrate_pages
-> main loop with the "avoid overwork in migrate sync mode" patch, we can
-> fix the excessive hanging. If that works number of passes could
-> actually be a tunable, and setting it to 1 (instead of 2) would then
-> provide 100% "async compaction" behavior again. And if somebody
-> prefers to stick to 10 he can... so then he can do trylock pass 0,
-> lock_page pass1, wait_writeback pass2, wait pin pass3, finally migrate
-> pass4. (something 2 passes alone won't allow). So making the migrate
-> passes/force-threshold tunable (maybe only for the new sync=2
-> migration mode) could be good idea. Or we could just return to sync
-> true/false and have the migration tunable affect everything but that
-> would alter the reliability of sys_move_pages and other numa things
-> too, where I guess 10 passes are ok. This is why I added a sync=2 mode
-> for migrate.
+> Skimming the code I don't see anything that jumps out as me as
+> wrong.  And it looks like Alexy did the work in Jan of 2010.
+> 
+>    commit a92df2545402c1a08e7a158f4477a52dea0eeeed
+>    Author: Alexey Dobriyan <adobriyan@gmail.com>
+>    Date:   Mon Jan 25 10:38:34 2010 +0000
+>    
+>        netns xfrm: ipcomp support
+>        
+>        Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+>        Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> However it is clear that no one has actually tested ipcomp with
+> network namespaces.
+> 
+> If you have a clue what is going on with ip compression my
+> recommendation would be to add .netns_ok = 1.  Verify that the
+> everything works and send the patch.  You probably want to
+> verify and test ipv6 as well.  It really looks like the code
+> is fine and it just needs to be enabled.
+> 
+> Eric
 
-I am vaguely concerned that this will just make the stalling harder to
-reproduce and diagnose. While you investigate this route, I'm going to
-keep investigating using only async migration for THP and having async
-compaction move pages it can migrate without blocking.
+--=-TUR0reZ3hQhz4MwWHrXp
+Content-Disposition: attachment; filename="ipcomp_netns.patch"
+Content-Type: text/x-patch; name="ipcomp_netns.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
--- 
-Mel Gorman
-SUSE Labs
+--- a/ipv4/ipcomp.c	2011-11-11 13:12:24.000000000 -0500
++++ b/net/ipv4/ipcomp.c	2011-11-08 09:12:37.000000000 -0500
+@@ -151,6 +151,7 @@ static const struct net_protocol ipcomp4
+ 	.handler	=	xfrm4_rcv,
+ 	.err_handler	=	ipcomp4_err,
+ 	.no_policy	=	1,
++	.netns_ok		= 1,
+ };
+
+ static int __init ipcomp4_init(void)
+
+--=-TUR0reZ3hQhz4MwWHrXp--
+
