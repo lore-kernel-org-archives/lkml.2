@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab1KPX2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 18:28:38 -0500
-Received: from tundra.namei.org ([65.99.196.166]:52077 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992Ab1KPX2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 18:28:37 -0500
-Date: Thu, 17 Nov 2011 10:26:31 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        roberto.sassu@polito.it, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>
-Subject: Re: [PULL] TPM: error handling and infrastructure improvements
-In-Reply-To: <4EC3AFAE.3010804@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1111171026250.20730@tundra.namei.org>
-References: <4EC3AFAE.3010804@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754295Ab1KPXch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 18:32:37 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50891 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753955Ab1KPXcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 18:32:36 -0500
+X-Sasl-enc: FQbyerLSn+gJrseSUEBBpazDjMHLYmUBZzkBiU62R7Xs 1321486355
+Date: Wed, 16 Nov 2011 15:21:36 -0800
+From: Greg KH <greg@kroah.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: linux-stable <stable@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] x86, amd: Avoid cache aliasing penalties on AMD
+ family 15h
+Message-ID: <20111116232136.GA3533@kroah.com>
+References: <20111104112209.GB8020@aftab>
+ <1320405995-10199-1-git-send-email-bp@amd64.org>
+ <20111104152532.GB29754@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111104152532.GB29754@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011, Rajiv Andrade wrote:
+On Fri, Nov 04, 2011 at 08:25:32AM -0700, Greg KH wrote:
+> On Fri, Nov 04, 2011 at 12:26:32PM +0100, Borislav Petkov wrote:
+> > From: Borislav Petkov <borislav.petkov@amd.com>
+> > 
+> > Upstream commit: dfb09f9b7ab03fd367740e541a5caf830ed56726
+> > 
+> > This patch provides performance tuning for the "Bulldozer" CPU. With its
+> > shared instruction cache there is a chance of generating an excessive
+> > number of cache cross-invalidates when running specific workloads on the
+> > cores of a compute module.
+> > 
+> > This excessive amount of cross-invalidations can be observed if cache
+> > lines backed by shared physical memory alias in bits [14:12] of their
+> > virtual addresses, as those bits are used for the index generation.
+> > 
+> > This patch addresses the issue by clearing all the bits in the [14:12]
+> > slice of the file mapping's virtual address at generation time, thus
+> > forcing those bits the same for all mappings of a single shared library
+> > across processes and, in doing so, avoids instruction cache aliases.
+> > 
+> > It also adds the command line option "align_va_addr=(32|64|on|off)" with
+> > which virtual address alignment can be enabled for 32-bit or 64-bit x86
+> > individually, or both, or be completely disabled.
+> > 
+> > This change leaves virtual region address allocation on other families
+> > and/or vendors unaffected.
+> > 
+> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> > Link: http://lkml.kernel.org/r/1312550110-24160-2-git-send-email-bp@amd64.org
+> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > ---
+> >  Documentation/kernel-parameters.txt |   13 ++++++
+> >  arch/x86/include/asm/elf.h          |   31 +++++++++++++
+> >  arch/x86/kernel/cpu/amd.c           |   13 ++++++
+> >  arch/x86/kernel/sys_x86_64.c        |   81 +++++++++++++++++++++++++++++++++-
+> >  arch/x86/mm/mmap.c                  |   15 ------
+> >  arch/x86/vdso/vma.c                 |    9 ++++
+> >  6 files changed, 144 insertions(+), 18 deletions(-)
+> 
+> I really feel nervous adding this patch to the -stable tree(s).  It's
+> bigger than "just a bugfix" and it adds new functionality.
+> 
+> I'm aware that it is needed for your new hardware, which is great, but
+> it doesn't really follow the Documentation/stable_kernel_rules.txt
+> requirements, does it?
+> 
+> I need an ACK from the x86 maintainers before I'm going to be
+> comfortable adding this, and then the other, patches in this series.
+> 
+> Peter, Ingo, Thomas, your opinions?
 
-> Hi James,
-> 
-> Please pull the following changes since commit
-> e163bc8e4a0cd1cdffadb58253f7651201722d56:
-> 
->   Documentation: clarify the purpose of LSMs (2011-11-16 12:37:27 +1100)
-> 
-> that are available in the git repository at:
->   git://github.com/srajiv/tpm.git for-james
+Ping?
 
-Applied.
+anyone?
 
-> 
-> Rajiv Andrade (4):
->       TPM: Use vendor specific function for status probe
->       TPM: Export wait_for_stat for other vendor specific drivers
->       TPM: NSC and TIS drivers X86 dependency fix
->       TPM: fix transmit_cmd error logic
-> 
-> Stefan Berger (5):
->       tpm: Have tpm_get_timeouts return an error code
->       tpm: Cleanup tpm_continue_selftest
->       tpm: Introduce function to poll for result of self test
->       tpm_tis: Check return code from getting timeouts/durations
->       tpm_tis: add delay after aborting command
-> 
->  drivers/char/tpm/Kconfig   |    2 +
->  drivers/char/tpm/tpm.c     |  137
-> +++++++++++++++++++++++++++++++++++++-------
->  drivers/char/tpm/tpm.h     |    9 ++-
->  drivers/char/tpm/tpm_tis.c |   84 +++++++++------------------
->  4 files changed, 152 insertions(+), 80 deletions(-)
-> 
-> 
-
--- 
-James Morris
-<jmorris@namei.org>
+greg k-h
