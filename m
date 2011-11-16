@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874Ab1KPBPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 20:15:25 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47176 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757326Ab1KPBPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 20:15:17 -0500
-Message-ID: <4EC2FF8A.2050804@jp.fujitsu.com>
-Date: Tue, 15 Nov 2011 19:10:50 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: dave@gnu.org
-CC: akpm@linux-foundation.org, jslaby@suse.cz, gaowanlong@cn.fujitsu.com,
-        npiggin@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipc/mqueue: simplify reading msgqueue limit
-References: <1320345109.3188.3.camel@offbook> <1320704156.3009.0.camel@offbook>
-In-Reply-To: <1320704156.3009.0.camel@offbook>
-Content-Type: text/plain; charset=UTF-8
+	id S932880Ab1KPBSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 20:18:18 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55145 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932813Ab1KPBSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 20:18:16 -0500
+Message-ID: <1321406294.9189.2.camel@Joe-Laptop>
+Subject: Re: [PATCH 4/4] mmc: Add mmc_host_<level> logging
+From: Joe Perches <joe@perches.com>
+To: NamJae Jeon <linkinjeon@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Chris Ball <cjb@laptop.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ian Molton <ian@mnementh.co.uk>, Bruce Chang <brucechang@via.com.tw>,
+        Harald Welte <HaraldWelte@viatech.com>,
+        Pierre Ossman <pierre@ossman.eu>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org
+Date: Tue, 15 Nov 2011 17:18:14 -0800
+In-Reply-To: <CAKYAXd9iQzvZBJL+0xPhKyC5hf-frPpMLhdWr3ygbztGiYtNJQ@mail.gmail.com>
+References: <cover.1321398814.git.joe@perches.com>
+	 <631c53d126feff0a99b61d9c9a00b308d2b638ee.1321398815.git.joe@perches.com>
+	 <CAKYAXd_wtGVQYgr_MUtVGGpkpqJgF56bfm0zO-nnAK0YpkT+bg@mail.gmail.com>
+	 <1321405049.21286.35.camel@Joe-Laptop>
+	 <CAKYAXd9iQzvZBJL+0xPhKyC5hf-frPpMLhdWr3ygbztGiYtNJQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/7/2011 5:15 PM, Davidlohr Bueso wrote:
-> ping?
-> 
-> On Thu, 2011-11-03 at 15:31 -0300, Davidlohr Bueso wrote:
->> From: Davidlohr Bueso <dave@gnu.org>
->>
->> Because the current task is being used to get the limit, we can simply use rlimit() instead of task_rlimit().
->>
->> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+On Wed, 2011-11-16 at 10:14 +0900, NamJae Jeon wrote:
+> 2011/11/16 Joe Perches <joe@perches.com>:
+> > On Wed, 2011-11-16 at 09:52 +0900, NamJae Jeon wrote:
+> >> 2011/11/16 Joe Perches <joe@perches.com>:
+> >> > Centralize the pr_<level> uses of mmc_hostname into specific
+> >> > mmc_host_<level> calls to allow a flexible presentation style
+> >> > and shorten the code a bit.
+> >> I don't know why pr_info should be surely replaced by mmc_host_info.
+> >> if it is needed for only host name, I think that existing
+> >> pr_info/err/debug is sufficient.
+> > Please trim your replies and read the patch description.
+> my concern is that they feel confuse when coder add print code because
+> they should use mmc_host<level> for hostname, and pr_<level> is used
+> in the other case.
 
-Sorry for the delay.
+That's one point of view.
 
-	Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
-
->> ---
->>  ipc/mqueue.c |    3 +--
->>  1 files changed, 1 insertions(+), 2 deletions(-)
->>
->> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
->> index 2e0ecfc..c0e4fbb 100644
->> --- a/ipc/mqueue.c
->> +++ b/ipc/mqueue.c
->> @@ -127,7 +127,6 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
->>  
->>  	if (S_ISREG(mode)) {
->>  		struct mqueue_inode_info *info;
->> -		struct task_struct *p = current;
->>  		unsigned long mq_bytes, mq_msg_tblsz;
->>  
->>  		inode->i_fop = &mqueue_file_operations;
->> @@ -158,7 +157,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
->>  
->>  		spin_lock(&mq_lock);
->>  		if (u->mq_bytes + mq_bytes < u->mq_bytes ||
->> -		    u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
->> +		    u->mq_bytes + mq_bytes > rlimit(RLIMIT_MSGQUEUE)) {
->>  			spin_unlock(&mq_lock);
->>  			/* mqueue_evict_inode() releases info->messages */
->>  			ret = -EMFILE;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+It is the same issue though as using dev_<level>
+when you have a struct device * and also using
+pr_<level> otherwise.
 
