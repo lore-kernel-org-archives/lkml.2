@@ -1,204 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab1KPFfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 00:35:52 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53471 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab1KPFfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 00:35:51 -0500
+	id S1753335Ab1KPFnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 00:43:52 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60183 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753120Ab1KPFnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 00:43:51 -0500
+Date: Wed, 16 Nov 2011 06:41:56 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: x86@kernel.org, Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
+Message-ID: <20111116054156.GA20847@elte.hu>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <20111012153415.GA26529@elte.hu>
+ <20111016014203.1dfb2cb8@lenov0n>
+ <20111015145646.GA9516@elte.hu>
 MIME-Version: 1.0
-Date: Wed, 16 Nov 2011 11:05:49 +0530
-Message-ID: <CAJ8eaTzOtgMzcZeRr6f=+WhtsykK1NZraOGBPoqGncwcAGcTyQ@mail.gmail.com>
-Subject: Crash when memset of shared mapped memory in ARM
-From: naveen yadav <yad.naveen@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-arm-kernel-request@lists.arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-request@lists.arm.linux.org.uk, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111015145646.GA9516@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-I am running below Test program on ARM cortex a9/a8 on kernel version
-2.6.35.14 as well as on 3.0.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-Please find the test case where:
+> * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+> 
+> > On Wed, 12 Oct 2011 17:34:15 +0200,
+> > Ingo Molnar <mingo@elte.hu> wrote:
+> > 
+> > > 
+> > > * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+> > > 
+> > > > From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> > > > 
+> > > > 
+> > > > Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> > > 
+> > > That's not a valid signoff sequence. Did you intend this to be:
+> > > 
+> > >   From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> > >  
+> > >   Signed-off-by: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> > >   Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> > > 
+> > > ?
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > 
+> > Yes, this should be signed off by Jonas Fonseca as well. This will 
+> > be updated in the next patches set.
+> 
+> I've already applied the current patches with the SOBs fixed (the 
+> merge window is getting close), to the tip:x86/platform branch.
+> 
+> Please send any fixes as add-on delta patches against tip:master:
+> 
+>    git://tesla.tglx.de/git/linux-2.6-tip.git
 
-1. Create shared memory object using shm_open(If we use normal open
-then no problem only problem with shm_open)
+(tap, tap, is this thing on?)
 
-2. ftruncate to given size
+Should i drop these commits:
 
-3. memory map the shared object to given memory address ( I haved
-tested without MAP_SHARED, MAP_FIXED as well, problem exist)
+ 32a85aa727ce: x86/platform: Add TS-5500 ADC support
+ 3a338d79aa95: x86/platform: Add TS-5500 LED support
+ 2437b498abac: x86/platform: Add TS-5500 GPIO support
+ 37f9a16c166c: x86/platform: Add TS-5500 base support
 
-4. Memset the shared memory (got page fault when accessing the second page)
+from tip:x86/platform?
 
+Had this (probably trivial) build failure been fixed when i reported 
+it over a month ago then these commits could have been included in 
+the v3.2 upstream kernel - now they will probably have to be delayed 
+to v3.3.
 
+Thanks,
 
-
-Observation: Only observed in ARM ( i.e not present in MIPS and X86)
-
-
-#undef NDEBUG
-#define _GNU_SOURCE
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <errno.h>
-#include <pthread.h>
-#include <string.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-
-enum {
- SHM_INIT,
- SHM_GET
- };
-
-enum {
- PARENT,
- CHILD
- };
-
-#define FIXED_MMAP_ADDR 0x20000000
-#define MMAP_SIZE	0x10000
-
-static int shmid;
-static char shm_name[100];
-static int sleep_period = 100000;
-void * shmem_init(int flag)
-{	
-	int start = FIXED_MMAP_ADDR;
-	int memory_size = MMAP_SIZE;
-	int mode = 0666;
-	void *addr;
-	int ret;
-	sprintf(shm_name, "/shmem_1234");
-	shmid = shm_open (shm_name, O_RDWR | O_EXCL | O_CREAT | O_TRUNC, mode);
-	if (shmid < 0) {
-    		if (errno == EEXIST) {
-			printf ("shm_open: %s\n", strerror(errno));
-       			shmid = shm_open (shm_name, O_RDWR, mode);
-
-		} else {
-    			printf("failed to shm_open, err=%s\n", strerror(errno));
-			return NULL;
-  		}
-	}
-  	ret = fcntl (shmid, F_SETFD, FD_CLOEXEC);
-  	if (ret < 0) {
-    		printf("fcntl: %s\n", strerror(errno));
-		return NULL;
-  	}
-	ret = ftruncate (shmid, memory_size);
-	if (ret < 0) {
-    		printf("ftruncate: %s\n", strerror(errno));
-		return NULL;
-  	}
-	addr = mmap ((void *)start, memory_size, PROT_READ | PROT_WRITE,
- 			     MAP_SHARED | MAP_FIXED, shmid, 0);
-  	if (addr == MAP_FAILED) {
-		printf ("mmap: %s\n", strerror(errno));
-     		close (shmid);
-    		shm_unlink (shm_name);
-		return NULL;
-	}
-	
-	if (flag == SHM_INIT){
-		printf ("mmap: addr %p\n", addr);
-		/* memset on arm creates a unhandled page fault, works fine on mips */
-		memset(addr, 0, memory_size);
-	}
-	return (void *)addr;
-}
-
-pthread_mutex_t * shmem_mutex_init(int flag)
-{
-	pthread_mutex_t * pmutex = (pthread_mutex_t *)shmem_init(flag);
-#if 0
-	pthread_mutexattr_t attr;
-	if (flag == SHM_INIT) {
-		pthread_mutexattr_init (&attr);
-		pthread_mutexattr_setpshared (&attr, PTHREAD_PROCESS_SHARED);
-		pthread_mutexattr_setprotocol (&attr, PTHREAD_PRIO_INHERIT);
-		pthread_mutexattr_setrobust_np (&attr,
- 						PTHREAD_MUTEX_STALLED_NP);
-		pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_ERRORCHECK);
-		if (pthread_mutex_init (pmutex, &attr) != 0) {
-    			printf("Init mutex failed, err=%s\n", strerror(errno));
-			pthread_mutexattr_destroy (&attr);
-			return NULL;
-		}
-	}
-#endif
-	return pmutex;
-}
-
-void long_running_task(int flag)
-{	
-	static int counter = 0;
-	if (flag == PARENT)
- 		usleep(5*sleep_period);
-	else
-		usleep(3*sleep_period);
-	counter = (counter + 1) % 100;
-	printf("%d: completed %d computing\n", getpid(), counter);
-}
-
-void sig_handler(int signum)
-{
-	close(shmid);
-	shm_unlink(shm_name);
-	exit(0);
-}
-
-int main(int argc, char *argv[])
-{
-	pthread_mutex_t *mutex_parent, *mutex_child;
-//	signal(SIGUSR1, sig_handler);
-//	if (fork()) {
-		/* parent process */
-		if ((mutex_parent = shmem_mutex_init(SHM_INIT)) == NULL) {
-			printf("failed to get the shmem_mutex\n");
-			exit(-1);
-		}
-#if 0
-		while (1) {
-			printf("%d: try to hold the lock\n", getpid());
- 			pthread_mutex_lock(mutex_parent);
-			printf("%d: got the lock\n", getpid());
- 			long_running_task(PARENT);
-			pthread_mutex_unlock(mutex_parent);
-			printf("%d: released the lock\n", getpid());
-		}
-#endif
-//	} else {
-#if 0
-		/* child process */
-		usleep(sleep_period);
-		if ((mutex_child = shmem_mutex_init(SHM_GET)) == NULL) {
-			printf("failed to get the shmem_mutex\n");
-			exit(-1);
-		}
-		while (1) {
-			printf("%d: try to hold the lock\n", getpid());
- 			pthread_mutex_lock(mutex_child);
-			printf("%d: got the lock\n", getpid());
- 			long_running_task(CHILD);
-			pthread_mutex_unlock(mutex_child);
-			printf("%d: released the lock\n", getpid());
-		}
-#endif
-//	}
-	return 0;
-}
+	Ingo
