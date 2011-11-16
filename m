@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1KPQZA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:25:00 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:32992 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204Ab1KPQY6 (ORCPT
+	id S1756877Ab1KPQ0c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:26:32 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44789 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756791Ab1KPQ0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:24:58 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Juergen Beisert <jbe@pengutronix.de>, Matthias Fuchs <mfuchs@ma-fu.de>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH 3/8] serial: 8250: save rs485_flags per instance
-Date: Wed, 16 Nov 2011 17:24:40 +0100
-Message-Id: <1321460685-15753-4-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1321460685-15753-1-git-send-email-w.sang@pengutronix.de>
-References: <1321460685-15753-1-git-send-email-w.sang@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 16 Nov 2011 11:26:30 -0500
+Date: Wed, 16 Nov 2011 08:26:24 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2] PM/Memory-hotplug: Avoid task freezing failures
+Message-ID: <20111116162601.GB18919@google.com>
+References: <20111116115515.25945.35368.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116115515.25945.35368.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids mangling with registers when reading the RS485 status via IOCTL.
-Also, features can check their configuration at runtime which will be needed
-for a later patch.
+Hello,
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
- drivers/tty/serial/8250.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+On Wed, Nov 16, 2011 at 05:25:23PM +0530, Srivatsa S. Bhat wrote:
+> v2: Tejun pointed problems with using mutex_lock_interruptible() in a
+>     while loop, when signals not related to freezing are involved.
+>     So, replaced it with mutex_trylock().
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+>  include/linux/suspend.h |   14 +++++++++++++-
+>  1 files changed, 13 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+> index 57a6924..c2b5aab 100644
+> --- a/include/linux/suspend.h
+> +++ b/include/linux/suspend.h
+> @@ -5,6 +5,7 @@
+>  #include <linux/notifier.h>
+>  #include <linux/init.h>
+>  #include <linux/pm.h>
+> +#include <linux/freezer.h>
+>  #include <linux/mm.h>
+>  #include <asm/errno.h>
+>  
+> @@ -380,7 +381,18 @@ static inline void unlock_system_sleep(void) {}
+>  
+>  static inline void lock_system_sleep(void)
+>  {
+> -	mutex_lock(&pm_mutex);
+> +	/*
+> +	 * We should not use mutex_lock() here because, in case we fail to
+> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
+> +	 * state, which would lead to task freezing failures. As a
+> +	 * consequence, hibernation would fail (even though it had acquired
+> +	 * the 'pm_mutex' lock).
+> +	 *
+> +	 * We should use try_to_freeze() in the while loop so that we don't
+> +	 * cause freezing failures due to busy looping.
+> +	 */
+> +	while (!mutex_trylock(&pm_mutex))
+> +		try_to_freeze();
 
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 920b4df..b5d3248 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -154,6 +154,7 @@ struct uart_8250_port {
- 	unsigned char		lsr_saved_flags;
- #define MSR_SAVE_FLAGS UART_MSR_ANY_DELTA
- 	unsigned char		msr_saved_flags;
-+	__u32			rs485_flags;	/* copied from IOCTL */
- };
- 
- struct irq_info {
-@@ -2729,28 +2730,21 @@ static int serial8250_ioctl_port(struct uart_port *port,
- 		serial_outp(up, UART_FCTR, fctr);
- 		serial_outp(up, UART_LCR, lcr);
- 		spin_unlock_irqrestore(&up->port.lock, flags);
-+
-+		up->rs485_flags = rs485ctrl.flags;
-+
- 		return 0;
- 	}
- 
- 	case TIOCGRS485:
- 	{
- 		struct serial_rs485 rs485ctrl;
--		unsigned char lcr;
- 
- 		if (port->type != PORT_16850)
- 			return -ENOTTY;
- 
- 		memset(&rs485ctrl, 0, sizeof(rs485ctrl));
--
--		spin_lock_irqsave(&up->port.lock, flags);
--		lcr = serial_inp(up, UART_LCR);
--		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
--		if (serial_inp(up, UART_FCTR) & UART_FCTR_RS485)
--			rs485ctrl.flags = SER_RS485_ENABLED;
--		else
--			rs485ctrl.flags = 0;
--		serial_outp(up, UART_LCR, lcr);
--		spin_unlock_irqrestore(&up->port.lock, flags);
-+		rs485ctrl.flags = up->rs485_flags;
- 
- 		if (copy_to_user((struct serial_rs485 *)arg, &rs485ctrl,
- 				 sizeof(rs485ctrl)))
+I'm kinda lost.  We now always busy-loop if the lock is held by
+someone else.  I can't see how that is an improvement.  If this isn't
+an immediate issue, wouldn't it be better to wait for proper solution?
+
+Thank you.
+
 -- 
-1.7.7.1
-
+tejun
