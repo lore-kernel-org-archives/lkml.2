@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab1KPO0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 09:26:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39291 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757827Ab1KPO0H convert rfc822-to-8bit (ORCPT
+	id S1757898Ab1KPO3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 09:29:23 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58489 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816Ab1KPO3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 09:26:07 -0500
-Subject: Re: [PATCH] tracing: add trace console
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 16 Nov 2011 15:25:37 +0100
-In-Reply-To: <1321452954.4181.20.camel@frodo>
-References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
-	 <1321452954.4181.20.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321453537.27735.0.camel@twins>
-Mime-Version: 1.0
+	Wed, 16 Nov 2011 09:29:22 -0500
+Date: Wed, 16 Nov 2011 15:29:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] irq fixes for 3.2
+Message-ID: <alpine.LFD.2.02.1111161526490.4902@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 09:15 -0500, Steven Rostedt wrote:
-> I'm good with this. Anyone have any issues with it?
-> 
-> -- Steve
-> 
-> > 
-> > Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> > ---
-> >  kernel/trace/Kconfig         |   13 ++++++++++
-> >  kernel/trace/Makefile        |    2 +
-> >  kernel/trace/trace-console.c |   55 +++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 70 insertions(+)
-> > 
-> > --- a/kernel/trace/Kconfig    2011-11-16 11:11:27.000000000 +0100
-> > +++ b/kernel/trace/Kconfig    2011-11-16 11:11:35.000000000 +0100
-> > @@ -368,6 +368,19 @@ config BLK_DEV_IO_TRACE
-> >  
-> >         If unsure, say N.
-> >  
-> > +config TRACE_CONSOLE
-> > +     tristate "Support for a tracing console"
-> > +     help
-> > +       Say M (or Y if you must, but this is not recommended) 
+Linus,
 
-Why not?
+Please pull the latest irq-urgent-for-linus git tree from:
 
-> to be able
-> > +       to get a tracing console that puts every kernel message into the
-> > +       tracing infrastructure using trace_printk(). This is useful to
-> > +       correlate (existing) printk debugging with tracing. When using it
-> > +       remember to set the console level, e.g. with "dmesg -n8". 
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+
+Thanks,
+
+	tglx
+
+------------------>
+Edward Donovan (1):
+      genirq: Fix irqfixup, irqpoll regression
+
+
+ kernel/irq/spurious.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index aa57d5d..b5f4742 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -115,7 +115,7 @@ static int misrouted_irq(int irq)
+ 	struct irq_desc *desc;
+ 	int i, ok = 0;
+ 
+-	if (atomic_inc_return(&irq_poll_active) == 1)
++	if (atomic_inc_return(&irq_poll_active) != 1)
+ 		goto out;
+ 
+ 	irq_poll_cpu = smp_processor_id();
