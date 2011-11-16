@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1KPP15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:27:57 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:52987 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1KPP1Q (ORCPT
+	id S1754439Ab1KPP3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:29:31 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:13568
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752258Ab1KPP30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:27:16 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Dave Young <hidave.darkstar@gmail.com>, Dave Jones <davej@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Dmitriy Matrosov <sgf.dma@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, stable <stable@kernel.org>
-Subject: [PATCH 3/5] TTY: ldisc, wait for ldisc infinitely in hangup
-Date: Wed, 16 Nov 2011 16:27:09 +0100
-Message-Id: <1321457231-9154-3-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1321457231-9154-1-git-send-email-jslaby@suse.cz>
-References: <1321457231-9154-1-git-send-email-jslaby@suse.cz>
+	Wed, 16 Nov 2011 10:29:26 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-FB-SS: 13,
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: Michael Hennerich <michael.hennerich@analog.com>,
+        <linux-kernel@vger.kernel.org>, <linux-iio@vger.kernel.org>,
+        <device-drivers-devel@blackfin.uclinux.org>, <drivers@analog.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 3/7] regmap: Properly round cache_word_size
+Date: Wed, 16 Nov 2011 16:28:18 +0100
+Message-ID: <1321457302-8724-3-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.1
+In-Reply-To: <1321457302-8724-1-git-send-email-lars@metafoo.de>
+References: <1321457302-8724-1-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For /dev/console case, we do not kill all ldisc users. It's due to
-redirected_tty_write test in __tty_hangup. In that case there still
-might be a process waiting e.g. in n_tty_read for input.
+regcache currently only properly works with val sizes of 8 or 16. For all other
+val sizes it will round them down to the next multiple of 8, which will cause
+the cache to be too small. This patch fixes it by rounding the cache_word_size
+up to the nearest storage size.
 
-We wait for such processes to disappear. The problem is that we use a
-timeout. After this timeout, we continue closing the ldisc and start
-freeing tty resources. It obviously leads to crashes when the other
-process is woken.
-
-So to fix this, we wait infinitely before reiniting the ldisc. (The
-tiocsetd remains untouched -- times out after 5s.)
-
-This is nicely reproducible with this run from shell:
-  exec 0<>/dev/console 1<>/dev/console 2<>/dev/console
-and stopping a getty like:
-  systemctl stop serial-getty@ttyS0.service
-
-The crash proper may be produced only under load or with constified
-timing the same as for 92f6fa09b.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Dave Young <hidave.darkstar@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Dmitriy Matrosov <sgf.dma@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: stable <stable@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/tty/tty_ldisc.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+ drivers/base/regmap/regcache.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index a69a755..8e0924f 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -36,6 +36,7 @@
- 
- #include <linux/kmod.h>
- #include <linux/nsproxy.h>
-+#include <linux/ratelimit.h>
- 
- /*
-  *	This guards the refcounted line discipline lists. The lock
-@@ -837,7 +838,7 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	tty_unlock();
- 	cancel_work_sync(&tty->buf.work);
- 	mutex_unlock(&tty->ldisc_mutex);
--
-+retry:
- 	tty_lock();
- 	mutex_lock(&tty->ldisc_mutex);
- 
-@@ -846,7 +847,21 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	   it means auditing a lot of other paths so this is
- 	   a FIXME */
- 	if (tty->ldisc) {	/* Not yet closed */
--		WARN_ON_ONCE(tty_ldisc_wait_idle(tty, 5 * HZ));
-+		if (atomic_read(&tty->ldisc->users) != 1) {
-+			char cur_n[TASK_COMM_LEN], tty_n[64];
-+			long timeout = 3 * HZ;
-+			tty_unlock();
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index d687df6..6f0dbc0 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -111,8 +111,15 @@ int regcache_init(struct regmap *map, const struct regmap_config *config)
+ 	map->num_reg_defaults = config->num_reg_defaults;
+ 	map->num_reg_defaults_raw = config->num_reg_defaults_raw;
+ 	map->reg_defaults_raw = config->reg_defaults_raw;
+-	map->cache_size_raw = (config->val_bits / 8) * config->num_reg_defaults_raw;
+-	map->cache_word_size = config->val_bits / 8;
 +
-+			while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
-+				timeout = MAX_SCHEDULE_TIMEOUT;
-+				printk_ratelimited(KERN_WARNING
-+					"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
-+					__func__, get_task_comm(cur_n, current),
-+					tty_name(tty, tty_n));
-+			}
-+			mutex_unlock(&tty->ldisc_mutex);
-+			goto retry;
-+		}
++	if (config->val_bits <= 8)
++		map->cache_word_size = 1;
++	else if (config->val_bits <= 16)
++		map->cache_word_size = 2;
++	else
++		return -EINVAL;
++
++	map->cache_size_raw = map->cache_word_size * config->num_reg_defaults_raw;
  
- 		if (reset == 0) {
- 
+ 	map->cache = NULL;
+ 	map->cache_ops = cache_types[i];
 -- 
-1.7.7.3
+1.7.7.1
 
 
