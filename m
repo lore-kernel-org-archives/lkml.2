@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1KPNP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 08:15:26 -0500
-Received: from mga14.intel.com ([143.182.124.37]:53322 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756708Ab1KPNPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 08:15:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,521,1315206000"; 
-   d="scan'208";a="75644409"
-Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-In-Reply-To: <Pine.LNX.4.44L0.1111151052160.2345-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1111151052160.2345-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 16 Nov 2011 21:14:12 +0800
-Message-ID: <1321449252.2565.2.camel@hp6530s>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756907Ab1KPNXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 08:23:49 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:59883 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab1KPNXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 08:23:48 -0500
+Message-ID: <4EC3B94C.1040103@oracle.com>
+Date: Wed, 16 Nov 2011 21:23:24 +0800
+From: annie li <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Thunderbird 1.5.0.9 (Windows/20061207)
+MIME-Version: 1.0
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org
+CC: Kurt.Hackel@oracle.com, paul.durrant@citrix.com, Ian.Campbell@citrix.com
+Subject: Re: [Xen-devel] Improved patches of upstreaming grant table version
+ 2
+References: <4EC3B62F.6080702@oracle.com>
+In-Reply-To: <4EC3B62F.6080702@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090206.4EC3B95E.005F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 00:08 +0800, Alan Stern wrote:
-> On Tue, 15 Nov 2011, Tejun Heo wrote:
-> 
-> > On Tue, Nov 15, 2011 at 04:51:29PM +0800, Lin Ming wrote:
-> > > > This is not the right approach.  You should look instead at 
-> > > > scsi_dev_type_suspend() in scsi_pm.c.  If the device is already runtime 
-> > > > suspended then the routine should return immediately.
-> > > 
-> > > How about below?
-> > > 
-> > > diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> > > index d329f8b..94b60bd 100644
-> > > --- a/drivers/scsi/scsi_pm.c
-> > > +++ b/drivers/scsi/scsi_pm.c
-> > > @@ -20,6 +20,9 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
-> > >  	struct device_driver *drv;
-> > >  	int err;
-> > >  
-> > > +	if (pm_runtime_suspended(dev))
-> > > +		return 0;
-> > > +
-> > 
-> > Something to be careful about is there are different types of suspend
-> > states (PMSG_*).  IIUC, runtime PM is using PMSG_SUSPEND.  Other
-> > states may or may not be compatible with PMSG_SUSPEND expectations, so
-> > you can skip suspend operation if the newly requested state is
-> > PMSG_SUSPEND but otherwise the controller needs to be woken up and
-> > told to comply to the new state.
-> 
-> That's right.  Surprisingly enough (and contrary to what I wrote
-> earlier), the sd_suspend() routine doesn't spin down a drive for
-> runtime suspend.  This probably should be considered a bug.
-> 
-> Anyway, it looks like the correct approach would be more like this:
+Diff:
 
-Thanks.
-
-I think ata_port_suspend also needs to call pm_runtime_resume, as below.
-
-static int ata_port_suspend(struct device *dev)
-{
-        struct ata_port *ap = to_ata_port(dev);
-        int rc;
-
-        pm_runtime_resume(dev);
-        rc = ata_port_request_pm(ap, PMSG_SUSPEND, 0, ATA_EHI_QUIET, 1);
-        return rc;
-}
-
-> 
->  static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
->  {
->  	int err = 0;
->  
-> -	if (scsi_is_sdev_device(dev))
-> +	if (scsi_is_sdev_device(dev)) {
->  		pm_runtime_resume(dev);
->  		err = scsi_dev_type_suspend(dev, msg);
-> +	}
->  	return err;
->  }
-> 
-> Alan Stern
-> 
+ arch/x86/xen/grant-table.c          |   42 ++++-
+ drivers/xen/grant-table.c           |  355 
+++++++++++++++++++++++++++++++----
+ include/xen/grant_table.h           |   10 +-
+ include/xen/interface/grant_table.h |  167 ++++++++++++++++-
+ include/xen/interface/xen.h         |    2 +
+ 5 files changed, 521 insertions(+), 55 deletions(-)
 
 
+Short log:
+
+Annie Li (3):
+      xen/granttable: Introducing grant table V2 stucture
+      xen/granttable: Grant tables V2 implementation
+      xen/granttable: Keep code format clean
+
+Thanks
+Annie
