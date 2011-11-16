@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab1KPVsB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:48:01 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42891 "EHLO ogre.sisk.pl"
+	id S1753653Ab1KPVu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:50:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53623 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab1KPVr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:47:59 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ferenc Wagner <wferi@niif.hu>
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
-Date: Wed, 16 Nov 2011 22:50:41 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Christoph <cr2005@u-club.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <4E1C70AD.1010101@u-club.de> <201110222335.29573.rjw@sisk.pl> <874ny4jhy4.fsf@tac.ki.iif.hu>
-In-Reply-To: <874ny4jhy4.fsf@tac.ki.iif.hu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111162250.42080.rjw@sisk.pl>
+	id S1751668Ab1KPVuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 16:50:55 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <htejun@gmail.com>
+Subject: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
+Date: Wed, 16 Nov 2011 22:50:34 +0100
+Message-Id: <1321480234-29241-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 16, 2011, Ferenc Wagner wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > On Saturday, October 22, 2011, Christoph wrote:
-> >
-> >>> PM / Freezer: Freeze filesystems while freezing processes (v2)
-> >>> 
-> >>> On Sunday, August 07, 2011, Dave Chinner wrote:
-> >>>
-> >>>> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
-> >>>>
-> >>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>>> 
-> >>>>> Freeze all filesystems during the freezing of tasks by calling 
-> >>>>> freeze_bdev() for each of them and thaw them during the thawing of
-> >>>>> tasks with the help of thaw_bdev().
-> >>>>> 
-> >>>>> This is needed by hibernation, because some filesystems (e.g. XFS) 
-> >>>>> deadlock with the preallocation of memory used by it if the memory 
-> >>>>> pressure caused by it is too heavy.
-> >>>
-> >>> Below is an alternative fix, the changelog pretty much explains the
-> >>> idea.
-> >>> 
-> >>> I've tested it on Toshiba Portege R500, but I don't have an XFS
-> >>> partition to verify that it really helps, so I'd appreciate it if
-> >>> someone able to reproduce the original issue could test it and report
-> >>> back.
-> >> 
-> >> Well, the kernel bugtracker is still down and I just like to post my
-> >> experience with kernel (x64) v3.1-rc8/9 + patches. My machine is a
-> >> MacBookPro, doomed with 4GB RAM running debian.
-> >> 
-> >> Bug #1
-> >> 
-> >> on the way to hibernate, machine hangs on
-> >> 
-> >> "PM: Preallocating image memory..."
-> >> 
-> >> this patch worked for me now for weeks:
-> >> "[PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)"
-> >> https://lkml.org/lkml/2011/9/24/77
-> >
-> > This patch is going to be merged into 3.2.
-> 
-> Hi,
-> 
-> I was the original reporter of the Bugzilla issue, just didn't know
-> about this thread until recently.  Anyway, I'm running 3.2-rc1 now,
-> which contains the alternative fix, and I can confirm that it indeed
-> works: hibernation does not deadlock on my XFS rooted system anymore
-> during memory preallocation.  Thanks everybody for his or her work on
-> the issue!
-> 
-> To add something still, preallocation now ends with a couple of seconds
-> of heavy disk activity, but with several seconds of total inactivity
-> beforehand.  Is this warranted by some CPU intensive task at that stage?
+2d3cbf8b (cgroup_freezer: update_freezer_state() does incorrect state
+transitions) removed is_task_frozen_enough and replaced it with a simple
+frozen call. This, however, breaks freezing for a group with stopped tasks
+because those cannot be frozen and so the group remains in CGROUP_FREEZING
+state (update_if_frozen doesn't count stopped tasks) and never reaches
+CGROUP_FROZEN.
 
-Quilte frankly, I have no idea.
+Let's add is_task_frozen_enough back and use it at the original locations
+(update_if_frozen and try_to_freeze_cgroup). Semantically we consider
+stopped tasks as frozen enough so we should consider both cases when
+testing frozen tasks.
 
-Thanks,
-Rafael
+Testcase:
+mkdir /dev/freezer
+mount -t cgroup -o freezer none /dev/freezer
+mkdir /dev/freezer/foo
+sleep 1h &
+pid=$!
+kill -STOP $pid
+echo $pid > /dev/freezer/foo/tasks
+echo FROZEN > /dev/freezer/foo/freezer.state
+while true
+do
+        cat /dev/freezer/foo/freezer.state
+        [ "`cat /dev/freezer/foo/freezer.state`" = "FROZEN" ] && break
+        sleep 1
+done
+echo OK
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <htejun@gmail.com>
+---
+ kernel/cgroup_freezer.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index 5e828a2..4d073dc 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -153,6 +153,13 @@ static void freezer_destroy(struct cgroup_subsys *ss,
+ 	kfree(cgroup_freezer(cgroup));
+ }
+ 
++/* Task is frozen or will freeze immediately when next it gets woken */
++static bool is_task_frozen_enough(struct task_struct *task)
++{
++	return frozen(task) ||
++		(task_is_stopped_or_traced(task) && freezing(task));
++}
++
+ /*
+  * The call to cgroup_lock() in the freezer.state write method prevents
+  * a write to that file racing against an attach, and hence the
+@@ -231,7 +238,7 @@ static void update_if_frozen(struct cgroup *cgroup,
+ 	cgroup_iter_start(cgroup, &it);
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		ntotal++;
+-		if (frozen(task))
++		if (is_task_frozen_enough(task))
+ 			nfrozen++;
+ 	}
+ 
+@@ -284,7 +291,7 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		if (!freeze_task(task, true))
+ 			continue;
+-		if (frozen(task))
++		if (is_task_frozen_enough(task))
+ 			continue;
+ 		if (!freezing(task) && !freezer_should_skip(task))
+ 			num_cant_freeze_now++;
+-- 
+1.7.7.1
+
