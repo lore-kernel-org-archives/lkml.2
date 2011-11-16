@@ -1,36 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab1KPHMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 02:12:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53831 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab1KPHMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 02:12:16 -0500
-Date: Wed, 16 Nov 2011 09:12:10 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Cong Wang <amwang@redhat.com>
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        kay.sievers@vrfy.org
-Subject: Re: [Patch] tmpfs: add fallocate support
-In-Reply-To: <4EC361C0.7040309@redhat.com>
-Message-ID: <alpine.LFD.2.02.1111160911320.2446@tux.localdomain>
-References: <1321346525-10187-1-git-send-email-amwang@redhat.com> <CAOJsxLEXbWbEhqX2YfzcQhyLJrY0H2ifCJCvGkoFHZsYAZEMPA@mail.gmail.com> <4EC361C0.7040309@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754520Ab1KPHMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 02:12:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23732 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754385Ab1KPHMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 02:12:30 -0500
+Message-ID: <4EC3624B.4080805@redhat.com>
+Date: Wed, 16 Nov 2011 15:12:11 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org
+Subject: Re: [Patch] tmpfs: add fallocate support
+References: <1321346525-10187-1-git-send-email-amwang@redhat.com> <20111116101846.5b017d1e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111116101846.5b017d1e.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011, Cong Wang wrote:
->> What's the use case for this?
+于 2011年11月16日 09:18, KAMEZAWA Hiroyuki 写道:
 >
-> Systemd needs it, see http://lkml.org/lkml/2011/10/20/275.
-> I am adding Kay into Cc.
+> Hmm.. Doesn't this duplicate shmem_getpage_gfp() ? Can't you split/share codes ?
+>
 
-The post doesn't mention why it needs it, though.
+Yeah, you are right... I will split the code.
 
- 			Pekka
+Thanks for review.
