@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab1KPQm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:42:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37514 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756198Ab1KPQmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:42:25 -0500
-Date: Wed, 16 Nov 2011 08:37:28 -0800
-From: Greg KH <gregkh@suse.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <Michael.Hennerich@analog.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH 0/5] Generalize module_platform_driver
-Message-ID: <20111116163728.GA7196@suse.de>
-References: <1321434819-23678-1-git-send-email-lars@metafoo.de>
- <20111116160206.GA27049@suse.de>
- <20111116173618.0a847852@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116173618.0a847852@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756905Ab1KPQpL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:45:11 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:35895 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab1KPQpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 11:45:09 -0500
+Subject: Re: [PATCH] tracing: add trace console
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <1321461693.4181.26.camel@frodo>
+References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
+	 <20111116151037.GA26166@infradead.org>
+	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
+	 <1321461693.4181.26.camel@frodo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 17:45:02 +0100
+Message-ID: <1321461902.4502.14.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 05:36:18PM +0100, Jean Delvare wrote:
-> On Wed, 16 Nov 2011 08:02:06 -0800, Greg KH wrote:
-> > On Wed, Nov 16, 2011 at 10:13:34AM +0100, Lars-Peter Clausen wrote:
-> > > Grant Likely recently introduced the module_platform_driver macro which can be
-> > > used to eliminate a few lines on boilerplate code in platform driver modules.
-> > > The same approach can be used to do the same for other bus type drivers.
-> > > 
-> > > The first patch of this series generalizes the module_platform_driver macro and
-> > > introduces the module_driver macro. It is similar to module_platform_driver
-> > > macro but has two additional parameters to pass in the driver register and
-> > > unregister function. The intend is that this macro is used to construct bus
-> > > specific macros for generating the driver register/unregister boilerplate code.
-> > > 
-> > > The next two patches in this series add the module_i2c_driver and
-> > > module_spi_driver macro which use the module_driver macro to generate the I2C
-> > > and SPI driver boilerplate code.
-> > > 
-> > > The last two patches convert the driver found in the IIO framework to use the
-> > > new module_i2c_driver and module_spi_driver macros to demonstrate their
-> > > potential and remove over 700 lines of code.
-> > > 
-> > > While this series only introduces these kind of helper macros for I2C and SPI
-> > > bus drivers the same scheme should be applicable to most other bus driver types.
-> > > For example PCI and USB seem to be good candidates.
-> > > 
-> > > It probably makes sense to merge the first three patches together. The last two
-> > > can probably, since this is not urgent, wait until the first three have reached
-> > > mainline.
+On Wed, 2011-11-16 at 11:41 -0500, Steven Rostedt wrote:
+
+> > That's possible, basically adding a tracepoints to printk -- that would
+> > even catch everything and not require setting the console level (which
+> > has its advantages too since other consoles might be slow).
 > > 
-> > Nice, I like this, unless people object, I'll merge the first patch to
-> > the driver-core tree.
-> > 
-> > I'll gladly take the i2c and spi patches as well if the subsystem
-> > maintainers there don't object, and I'll work on the USB patch as well.
+> > It's a completely different thing though. I did it this way because it
+> > was trivial to do out of tree for a quick test I was doing yesterday.
+> > Doing it the other way is obviously more intrusive in core code.
 > 
-> No objection from me (for i2c).
+> I'm not sure it would be too invasive. Think you could get something
+> working?
 
-Wonderful, thanks for letting me know.
+I briefly looked at it just after writing the email, but quickly got
+lost in printk.c because of the multi-line handling it has. We could
+instead trace each call to printk(), so the multi-line stuff would end
+up in multiple events, but all of that code is too much vodoo for me :)
 
-greg k-h
+johannes
+
