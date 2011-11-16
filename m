@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab1KPMBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 07:01:14 -0500
-Received: from fed1rmfepi205.cox.net ([68.230.241.150]:48795 "EHLO
-	fed1rmfepi205.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452Ab1KPMBN (ORCPT
+	id S1756663Ab1KPMJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 07:09:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54849 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452Ab1KPMJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 07:01:13 -0500
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 07:01:13 EST
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A02020A.4EC3A4C1.011D,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=8REYuqoajsmvOCQrDW+1/TDKVSLpI8De9SQQk3E9NNY=
- c=1 sm=1 a=cVGb8x5-oWMA:10 a=G8Uczd0VNMoA:10 a=jPJDawAOAc8A:10
- a=kkpj74WWH24A:10 a=WH6LZLV4MWoA:10 a=IkcTkHD0fZMA:10
- a=yGdrT914eDBjD+rs1tV3zg==:17 a=medThAse98tGFzx6RXsA:9 a=QEXdDO2ut3YA:10
- a=2ohzXisUy_73AMOA:21 a=-QKXy1ggMRitnytt:21 a=yGdrT914eDBjD+rs1tV3zg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20111116065545.SLUW2.12927.imail@fed1rmwml207>
-Date: Wed, 16 Nov 2011 3:55:45 -0800
-From: wins <festus-0112@cox.net>
-Reply-To: pastorgabriel_moore@bitscn.net
-Subject: =?utf-8?Q?XMAS_-PROMO_2011=E2=80=8F=E2=80=8F?=
+	Wed, 16 Nov 2011 07:09:31 -0500
+Message-ID: <4EC3A7C3.8010802@mvista.com>
+Date: Wed, 16 Nov 2011 16:08:35 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Tonylijo <mail@tonylijo.in>
+CC: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb : gadget : usbstring : fix style problems
+References: <1321418582.2443.4.camel@debian1.ic>
+In-Reply-To: <1321418582.2443.4.camel@debian1.ic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-be informed that you have $5,000,000,00 million united states dollars Lodged in our Western Union to transfer to you 
-as Compensation. Contact Mr.Collins Moore
+Hello.
+
+On 16-11-2011 8:43, Tonylijo wrote:
+
+> Minor fixes for problems found by checkpatch.pl in usbstring.c.
+
+> Signed-off-by: Tonylijo Jose<mail@tonylijo.in>
+> ---
+> diff --git a/drivers/usb/gadget/usbstring.c
+> b/drivers/usb/gadget/usbstring.c
+> index 58c4d37..2bdc56a 100644
+> --- a/drivers/usb/gadget/usbstring.c
+> +++ b/drivers/usb/gadget/usbstring.c
+[...]
+> @@ -102,17 +104,17 @@ fail:
+>    * characters (which are also widely used in C strings).
+>    */
+>   int
+> -usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8
+> *buf)
+> +usb_gadget_get_string(struct usb_gadget_strings *table, int id, u8
+> *buf)
+
+    The patch was line-wrapped by your mailer. Seems easy to fix though...
+
+> @@ -124,13 +126,13 @@ usb_gadget_get_string (struct usb_gadget_strings
+> *table, int id, u8 *buf)
+>   		return -EINVAL;
+>
+>   	/* string descriptors have length, tag, then UTF16-LE text */
+> -	len = min ((size_t) 126, strlen (s->s));
+> -	memset (buf + 2, 0, 2 * len);	/* zero all the bytes */
+> +	len = min((size_t) 126, strlen(s->s));
+
+    Worth converting to min_t() probably...
+
+WBR, Sergei
