@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab1KPJk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:40:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3287 "EHLO mx1.redhat.com"
+	id S1755456Ab1KPJkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:40:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53045 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab1KPJk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:40:27 -0500
-Message-ID: <4EC384FF.4050003@redhat.com>
-Date: Wed, 16 Nov 2011 11:40:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754776Ab1KPJki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 04:40:38 -0500
+Message-ID: <4EC38511.3020006@redhat.com>
+Date: Wed, 16 Nov 2011 10:40:33 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Ohad Ben-Cohen <ohad@wizery.com>,
-        David Brown <davidb@codeaurora.org>, kvm@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH 0/2] Introduce iommu_commit() function
-References: <1308843083-10442-1-git-send-email-joerg.roedel@amd.com> <1308843536.16742.48.camel@i7.infradead.org>
-In-Reply-To: <1308843536.16742.48.camel@i7.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: bsingharora@gmail.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH V2] Enforce RSS+Swap rlimit
+References: <4EB3FA89.6090601@redhat.com> <4EC264AA.30306@redhat.com> <4EC2FDA9.6050401@jp.fujitsu.com>
+In-Reply-To: <4EC2FDA9.6050401@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2011 06:38 PM, David Woodhouse wrote:
-> On Thu, 2011-06-23 at 17:31 +0200, Joerg Roedel wrote:
-> > David, I think especially VT-d can benefit from such a callback. I will
-> > implement support for it in the AMD IOMMU driver and post a patch-set
-> > soon.
-> > 
-> > Any comments, thoughts?
->
-> Ick. We *already* do the flushes as appropriate while we're filling the
-> page tables. So every time we move on from one page table page to the
-> next, we'll flush the old one. And when we've *done* filling the page
-> tables for the range we've been asked to map, we flush the last writes
-> too.
+On 11/16/2011 01:02 AM, KOSAKI Motohiro wrote:
+> On 11/15/2011 8:10 AM, Jerome Marchand wrote:
+>>
+>> Change since V1: rebase on 3.2-rc1
+>>
+>> Currently RSS rlimit is not enforced. We can not forbid a process to exceeds
+>> its RSS limit and allow it swap out. That would hurts the performance of all
+>> system, even when memory resources are plentiful.
+>>
+>> Therefore, instead of enforcing a limit on rss usage alone, this patch enforces
+>> a limit on rss+swap value. This is similar to memsw limits of cgroup.
+>> If a process rss+swap usage exceeds RLIMIT_RSS max limit, he received a SIGBUS
+>> signal. 
+> 
+> No good idea.
+>  - RLIMIT_RSS has clear definition and this patch break it. you should makes
+>    another rlimit at least.
 
-For the current kvm use case flushing just once on commit is most
-efficient.  If/when we get resumable io faults, per-page flushing
-becomes worthwhile.
+I couldn't decide if we needed a new rlimit or not. I shall admit that I chose
+the lazy option. If that's a problem, I can add a new rlimit, RLIMIT_MEMSW for
+instance.
 
-> The problem with KVM is that it calls us over and over again to map a
-> single 4KiB page.
->
-> It doesn't seem simple to make use of a 'commit' function, because we'd
-> have to keep track of *which* page tables are dirty.
+>  - SIGBUS can be ignored. rlimit shouldn't ignorable.
 
-You could easily do that by using a free bit in the pte as a dirty bit. 
-You can then choose whether to use per-page flush or a full flush.
+The SIGBUS can be ignored, not the rlimit: if RLIMIT_RSS is exceeded, the process
+does not the memory it requested. The SIGBUS is here to notify the process that
+something wrong has happened.
 
-> I'd much rather KVM just gave us a list of the pages to map, in a single
-> call. 
-
-The list can easily be several million pages long.
-
-> Or even a 'translation' callback we could call to get the physical
-> address for each page in the range.
-
-This is doable, and is probably most flexible.  If the translation also
-returns ranges, then you don't have to figure out large mappings yourself.
-
-Not that there's a huge difference between
-
-   iommu_begin(iommu_transaction, domain)
-   for (page in range)
-         iommu_map(iommu_transaction, page, translate(page))
-    iommu_commit(iommu_transaction)
-
-and
-
-   iommu_map(domain, range, translate)
-
-- one can be converted to the other.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Thanks,
+Jerome
