@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1KPQuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:50:15 -0500
-Received: from smtp-out-055.synserver.de ([212.40.185.55]:1090 "HELO
-	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752993Ab1KPQuN (ORCPT
+	id S1755342Ab1KPQub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:50:31 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35969 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab1KPQuO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:50:13 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 19322
-Message-ID: <4EC3E9E5.7030909@metafoo.de>
-Date: Wed, 16 Nov 2011 17:50:45 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Iceowl/1.0b2 Icedove/3.1.15
+	Wed, 16 Nov 2011 11:50:14 -0500
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
-Subject: Re: [PATCH 2/7] regmap: Make reg_config reg_defaults const
-References: <1321457302-8724-1-git-send-email-lars@metafoo.de> <1321457302-8724-2-git-send-email-lars@metafoo.de> <20111116161316.GI29986@opensource.wolfsonmicro.com> <4EC3E385.4060006@metafoo.de> <20111116162442.GL29986@opensource.wolfsonmicro.com> <4EC3E684.90109@metafoo.de> <20111116163908.GN29986@opensource.wolfsonmicro.com>
-In-Reply-To: <20111116163908.GN29986@opensource.wolfsonmicro.com>
+In-Reply-To: <op.v40bngvvwcw97g@localhost>
+References: <op.v4z4ihs2wcw97g@localhost>
+	<20111115195832.GA9384@srcf.ucam.org>
+	<op.v4z8zxnwwcw97g@localhost>
+	<20111115204201.GA10466@srcf.ucam.org>
+	<op.v40bngvvwcw97g@localhost>
+Date: Wed, 16 Nov 2011 08:50:12 -0800
+Message-ID: <CAK3HsqtQp=hSAX6nOU4wJTHNxyWNdgEF7uBiS=C=XrTCMiXX1w@mail.gmail.com>
+Subject: Re: Resuming from hibernation on T61 with nvidia
+From: Joshua Scoggins <theoretically.x64@gmail.com>
+To: dienet <dienet@poczta.fm>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2011 05:39 PM, Mark Brown wrote:
-> On Wed, Nov 16, 2011 at 05:36:20PM +0100, Lars-Peter Clausen wrote:
->> On 11/16/2011 05:24 PM, Mark Brown wrote:
-> 
->>> Did you actually check the sparse output?
-> 
->> No, because the only place we ever look at config->reg_defaults is in
->> regache_init. And now I just run sparse and as expected regmap doesn't
->> trigger any warnings or errors.
-> 
->   CHECK   drivers/base/regmap/regmap.c
-> drivers/base/regmap/regmap.c:162:27: warning: incorrect type in assignment (different modifiers)
-> drivers/base/regmap/regmap.c:162:27:    expected struct reg_default *reg_defaults
-> drivers/base/regmap/regmap.c:162:27:    got struct reg_default const *const reg_defaults
+Don't forget that you can use nvidia-reportbug.sh...can't remember
+exactly what its called but
+I know that nvidia does actually look at those generated bug reports.
 
-Hu? which patches did you apply? If I have regmap/for-next plus patch 1 and
-patch 2 of this series there isn't even a reference to reg_defaults in regmap.c
+-Josh
+
+On Tue, Nov 15, 2011 at 1:36 PM, dienet <dienet@poczta.fm> wrote:
+> On Tue, 15 Nov 2011 21:42:01 +0100, Matthew Garrett <mjg59@srcf.ucam.org>
+>  wrote:
+>
+>> In that case it's almost certainly something you need to bring up with
+>> nvidia.
+>
+> Yes, but that might be hard, or even impossible. Maybe there is something
+>  that I can change in kernel to fix it, without breaking too much or not
+>  breaking anything ;)
+>
+> --
+> pozdr0
+> dienet
+>
+> "Old C programmers never die. They're just cast into void."
+>
+> ----------------------------------------------------------------
+> Mamy mieszkanie wlasnie dla Ciebie! Sprawdz >>
+> http://linkint.pl/f2a80
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
