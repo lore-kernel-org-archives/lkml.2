@@ -1,108 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab1KPVFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:05:32 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58061 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab1KPVFa (ORCPT
+	id S1753596Ab1KPVIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:08:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49534 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141Ab1KPVIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:05:30 -0500
-Date: Wed, 16 Nov 2011 22:05:27 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Magnus Damm <magnus.damm@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ARM: mach-shmobile: sh7372 A4R support (v4)
-In-Reply-To: <201111030017.00780.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.64.1111162201330.7421@axis700.grange>
-References: <201110200012.43840.rjw@sisk.pl> <Pine.LNX.4.64.1111021132240.19054@axis700.grange>
- <CANqRtoS5KTws7rDoHkxrq8DP+js5xq=YF3zQG4MYmmjHEtv5NA@mail.gmail.com>
- <201111030017.00780.rjw@sisk.pl>
+	Wed, 16 Nov 2011 16:08:36 -0500
+Date: Wed, 16 Nov 2011 13:08:33 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: Miao Xie <miaox@cn.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed for
+ mempolicy or disjoint nodemask
+Message-ID: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:AxNSRgmXWJvxAXxzERoWrJQfSal1mkEqYCS5PVQHhii
- D4rdmZsGFPPwjCB8cKTYUW6woYRu6IMEDBXbTmudwR3Zj5G8u5
- VnUXWJnDn9uL8wckEOQ8JyMmhZx7KhG4ztEXii9wT59ETa+of9
- n4n0Zok3yNlBHKs/Rd9zoCHA5uZYyH7LHv2/uveix+aVaiACIC
- 3gJhvYHbd2ZN4wlFHEHK9yyGZnvK6UXMmvvbEa+eGbqLAcOiGL
- ivZvg0RqljPAIzGksliiCyycdOfQQ5m26P1plP2Shdt/3b13/a
- xkkaG+znbH4AeF0JW1MMC99sox1AUv0PQk2UjzuRMXTVt8XRSe
- qI2IjV8mf9zP62bojghdXTwLBVh8e4sr9kn73MnlHu2u2DoVb0
- ZjH0xb+KSU88w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
+cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
+nodes from changing for a thread.  This causes any update to a set of
+allowed nodes to stall until put_mems_allowed() is called.
 
-3.2-rc2 halts on ap4evb after
+This stall is unncessary, however, if at least one node remains unchanged
+in the update to the set of allowed nodes.  This was addressed by
+89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
+node remains set"), but it's still possible that an empty nodemask may be
+read from a mempolicy because the old nodemask may be remapped to the new
+nodemask during rebind.  To prevent this, only avoid the stall if there
+is no mempolicy for the thread being changed.
 
-[    0.085937] NetWinder Floating Point Emulator V0.97 (double precision)
-[    0.085937] msgmni has been set to 246
-[    0.085937] io scheduler noop registered (default)
+This is a temporary solution until all reads from mempolicy nodemasks can
+be guaranteed to not be empty without the get_mems_allowed()
+synchronization.
 
-(normally the following would be printed out afterwards:
+Also moves the check for nodemask intersection inside task_lock() so that
+tsk->mems_allowed cannot change.
 
-[    0.398437] sh-mobile-hdmi sh-mobile-hdmi: Detected HDMI controller 0x0:0x0
-[    0.406250] sh_mobile_meram sh_mobile_meram.0: sh_mobile_meram initialized.
-[    0.421875] Console: switching to colour frame buffer device 160x45
-[    0.429687] graphics fb0: registered sh_mobile_lcdc_fb/mainlcd as 1280x720 16bpp.
-[    0.437500] graphics fb1: registered sh_mobile_lcdc_fb/mainlcd as 544x961 16bpp.
-
-) and git bisect pointed out at this commit as a culprit. Indeed, 
-reverting it fixes the hanger. I'll send my .config off-list.
-
-Thanks
-Guennadi
-
-On Thu, 3 Nov 2011, Rafael J. Wysocki wrote:
-
-> On Wednesday, November 02, 2011, Magnus Damm wrote:
-> > On Wed, Nov 2, 2011 at 11:38 AM, Guennadi Liakhovetski
-> > <g.liakhovetski@gmx.de> wrote:
-> > > On Thu, 20 Oct 2011, Rafael J. Wysocki wrote:
-> > >
-> > >> From: Magnus Damm <damm@opensource.se>
-> > >>
-> > >> This change adds support for the sh7372 A4R power domain.
-> > >
-> > > This version still breaks I2C (#0) on mackerel. Tested with your
-> > > sh7372-test branch of Oct 18th plus these four patches:
-> > >
-> > > 6b29305a PM / Domains: Add default power off governor function (v2)
-> > > 3d578ae PM / Domains: Add device stop governor function (v2)
-> > > 6c2cd02 ARM: mach-shmobile: sh7372 A4R support (v4)
-> > > 9da11f4 ARM: mach-shmobile: sh7372 A3SP support (v4)
-> > 
-> > Exactly how does it break IIC0?
-> 
-> It causes some initialization issues to happen.  I get the following
-> messages on every boot:
-> 
-> i2c-sh_mobile i2c-sh_mobile.0: Transfer request timed out
-> i2c-sh_mobile i2c-sh_mobile.0: Polling timed out
-> 
-> three times in a row (there's a delay too).
-> 
-> The A4R patch is the source of that.
-> 
-> > Does the same happen with the code base for upcoming 3.2-rc1 from
-> > latest linux git?
-> 
-> Yes, it does, AFAICT.
-> 
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+Reported-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ kernel/cpuset.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -949,7 +949,7 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
+-	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
++	bool need_loop;
+ 
+ repeat:
+ 	/*
+@@ -962,6 +962,14 @@ repeat:
+ 		return;
+ 
+ 	task_lock(tsk);
++	/*
++	 * Determine if a loop is necessary if another thread is doing
++	 * get_mems_allowed().  If at least one node remains unchanged and
++	 * tsk does not have a mempolicy, then an empty nodemask will not be
++	 * possible when mems_allowed is larger than a word.
++	 */
++	need_loop = tsk->mempolicy ||
++			!nodes_intersects(*newmems, tsk->mems_allowed);
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+ 
+@@ -981,12 +989,9 @@ repeat:
+ 
+ 	/*
+ 	 * Allocation of memory is very fast, we needn't sleep when waiting
+-	 * for the read-side.  No wait is necessary, however, if at least one
+-	 * node remains unchanged and tsk has a mempolicy that could store an
+-	 * empty nodemask.
++	 * for the read-side.
+ 	 */
+-	while (masks_disjoint && tsk->mempolicy &&
+-			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
++	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+ 		task_unlock(tsk);
+ 		if (!task_curr(tsk))
+ 			yield();
