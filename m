@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1KPUNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 15:13:07 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:39926 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1KPUNG (ORCPT
+	id S1753255Ab1KPUOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 15:14:55 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54970 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab1KPUOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 15:13:06 -0500
-Subject: Re: [PATCH] tracing: add trace console
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <1321473443.4181.38.camel@frodo>
-References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
-	 <20111116151037.GA26166@infradead.org>
-	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
-	 <1321461693.4181.26.camel@frodo>
-	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
-	 <1321462856.4181.28.camel@frodo>
-	 <1321468380.4502.16.camel@jlt3.sipsolutions.net>
-	 <1321473443.4181.38.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Nov 2011 21:12:59 +0100
-Message-ID: <1321474379.4502.17.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Nov 2011 15:14:53 -0500
+Date: Wed, 16 Nov 2011 21:14:42 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 0/5] Generalize module_platform_driver
+Message-ID: <20111116201442.GC8843@pengutronix.de>
+References: <1321434819-23678-1-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yVhtmJPUSI46BTXb"
+Content-Disposition: inline
+In-Reply-To: <1321434819-23678-1-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 14:57 -0500, Steven Rostedt wrote:
-> On Wed, 2011-11-16 at 19:33 +0100, Johannes Berg wrote:
-> > On Wed, 2011-11-16 at 12:00 -0500, Steven Rostedt wrote:
-> > > On Wed, 2011-11-16 at 17:45 +0100, Johannes Berg wrote:
-> > > 
-> > > > I briefly looked at it just after writing the email, but quickly got
-> > > > lost in printk.c because of the multi-line handling it has. We could
-> > > > instead trace each call to printk(), so the multi-line stuff would end
-> > > > up in multiple events, but all of that code is too much vodoo for me :)
-> > > 
-> > > Here's what can go into printk.c:
-> > > 
-> > > diff --git a/kernel/printk.c b/kernel/printk.c
-> > > index 1455a0d..4b8445a 100644
-> > > --- a/kernel/printk.c
-> > > +++ b/kernel/printk.c
-> > > @@ -542,6 +542,7 @@ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
-> > >  static void _call_console_drivers(unsigned start,
-> > >  				unsigned end, int msg_log_level)
-> > >  {
-> > > +	trace_console(&LOG_BUF(start), end - start);
-> > >  	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
-> > >  			console_drivers && start != end) {
-> > >  		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
-> > > 
-> > > 
-> > > And then you can make a TRACE_EVENT(console) that takes a buffer and a
-> > > len, and write that to the ring buffer.
-> > 
-> > Yes, of course, but if we're going to modify the code then I thought we
-> > should probably trace everything independent of the console printk
-> > level.
-> > 
-> 
-> This will trace everything independent from the console level. Noticed
-> that I put the tracepoint before the msg_log_level is checked.
 
-D'oh, right. Yeah that seems good. Too bad I discarded my previous
-attempt already :)
+--yVhtmJPUSI46BTXb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-johannes
+On Wed, Nov 16, 2011 at 10:13:34AM +0100, Lars-Peter Clausen wrote:
+> Grant Likely recently introduced the module_platform_driver macro which c=
+an be
+> used to eliminate a few lines on boilerplate code in platform driver modu=
+les.
+> The same approach can be used to do the same for other bus type drivers.
 
+Cool, had the same thought when I saw Grant's series back then. Series looks
+good to me, so for all patches:
+
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--yVhtmJPUSI46BTXb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7EGbIACgkQD27XaX1/VRvblgCfREYCxlSSFIl+/BPnzHL8LlHp
+7w4An2jLa1lYnfpjuP7zrDKwWlmF3JFL
+=gR2n
+-----END PGP SIGNATURE-----
+
+--yVhtmJPUSI46BTXb--
