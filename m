@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab1KPSww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 13:52:52 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:37229 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab1KPSwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 13:52:50 -0500
-Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: York Sun <yorksun@freescale.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "B29983@freescale.com" <B29983@freescale.com>
-In-Reply-To: <1321467638.7847.73.camel@oslab-l1>
-References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-	 <CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
-	 <E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
-	 <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
-	 <1321464509.7847.41.camel@oslab-l1>
-	 <1321464968.2309.384.camel@groeck-laptop>
-	 <1321466135.7847.55.camel@oslab-l1>
-	 <20111116190954.67c846fc@endymion.delvare>
-	 <1321467638.7847.73.camel@oslab-l1>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Wed, 16 Nov 2011 10:51:31 -0800
-Message-ID: <1321469491.2309.409.camel@groeck-laptop>
+	id S1752449Ab1KPSxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 13:53:07 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:50345 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab1KPSxD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 13:53:03 -0500
+Message-ID: <4EC40682.2050602@linux.vnet.ibm.com>
+Date: Wed, 16 Nov 2011 16:52:50 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+To: Roberto Sassu <roberto.sassu@polito.it>
+CC: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jmorris@namei.org
+Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it> <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
+In-Reply-To: <4EC3CA9A.3070401@polito.it>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 11111618-9254-0000-0000-000007425B35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 13:20 -0500, York Sun wrote:
-> On Wed, 2011-11-16 at 19:09 +0100, Jean Delvare wrote:
-> > On Wed, 16 Nov 2011 09:55:35 -0800, York Sun wrote:
-> > > On Wed, 2011-11-16 at 09:36 -0800, Guenter Roeck wrote:
-> > > > York,
-> > > > 
-> > > > The calling code expects the data length in data[0], and the actual data
-> > > > in data[1] .. data[<byte_count>]. The initial value for length is 1; the
-> > > > byte count is added to it, so <byte count + 1> bytes are placed into the
-> > > > buffer.
-> > > > 
-> > > > Thanks,
-> > > > Guenter
-> > > 
-> > > Thanks for explanation. I am more confused by the length += byte now.
-> > > For I2C bus, if you need length of byte, just keep reading until you get
-> > > all of them. Of course you need to deal with the ACK. For SMBus, it is
-> > > similar but you shouldn't read more after the byte count which is in the
-> > > first data.
-> > 
-> > You shouldn't read less either. The slave tells how much bytes it wants
-> > to send, and the master must honor that.
-> > 
-> > > If you want to read length of data but the block size is
-> > > bigger than length, you should call block read at first place. If the
-> > > block size is smaller than length, why increase the length? Does your
-> > > SMBus controller only support fixed block size and not support single
-> > > byte read? If it does, I would do
-> > > 
-> > > Block, Block, Block, byte, byte... until length of data
-> > 
-> > Your thinking is too focused on I2C block reads (or even block read of
-> > data over the network or on disk). SMBus block read is something
-> > completely different. It's not about reading 200 bytes of data and
-> > receiving it in 16-byte chunks (I2C block read works that way, on
-> > EEPROMs in particular.) There is no "data length" and "block size" to
-> > compare to each other. It's about reading the value of _one_ register
-> > and this value happens to be multi-byte. There is typically _no_
-> > register pointer increment (automatic or not) involved as can happen
-> > with EEPROMs. If an SMBus block read from register N returns 10 bytes,
-> > you're not going to read the next 10 bytes from register N+10. There
-> > are no "next 10 bytes" to read, and register N+10 is something
-> > completely unrelated.
-> > 
-> > And for this reason, it is not possible to mix SMBus block reads with
-> > byte reads, as can be done with I2C block reads.
-> > 
-> > Also note that there is a limit of 32 bytes for SMBus block transfers,
-> > per SMBus specification. All slaves and masters must comply with it.
-> > 
-> > I hope I managed to clarify the case this time...
-> > 
-> 
-> You have made it much clear. If block size is fixed and block read
-> cannot mix with byte read, shall we do this
-> 
-> if length < block_size
->    read block_size
-> else {
->    while (length) {
->        read block_size
->        length -= block_size
->    }
-> 
 
-I am giving up. I don't need SMBus block reads to work on our board, I
-am having trouble installing my test image on it, I don't see
-constructive feedback but only a theoretic discussion about how SMBus
-block reads work or are perceived to work or should work, for which I
-don't have time, and we already know that the zl6100 driver (which
-originated this discussion and was the reason for the patch) is working
-fine with the patch applied.
+Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
 
-I simply don't have time for this, and spent way too much time on it
-already. Jean, please drop this patch. If someone else needs it, he or
-she can revive and re-submit it. If folks can complain about the patch
-w/o understanding how SMBus block reads work, but are not willing to
-test it, something is wrong anyway.
+On 16-11-2011 12:37, Roberto Sassu wrote:
+> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
+>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
+>>> The ima_add_digest_entry() function has been split in order to avoid
+>>> adding an entry in the measurements list for which the PCR extend
+>>> operation subsequently fails. Required memory is allocated earlier 
+>>> in the
+>>> new function ima_prepare_template_entry() and the template entry is 
+>>> added
+>>> after ima_pcr_extend().
+>>>
+>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+>>
+>
+> Hi Mimi
+>
+> i don't know if this condition can happen, but suppose that
+> for whatever reason the PCR extend fails. In this case, since
+> the PCR is not extended, the measurements list can be modified,
+> by removing the non-measured entry, without this fact being
+> detected by the verifier. So, probably we can avoid to display
+> the entry.
+>
+>
+Hi Roberto,
 
-Thanks,
-Guenter
+IMA's trustworthiness is built on the assumption that the TPM underneath can
+be trusted. If that can't be, the eventlog alone doesn't provide us any 
+security.
+It's the TPM device driver's job though to workaround any HW bug so that 
+in the
+end all its stakeholders have their commands processed successfully, as 
+we've
+pursued in some changes here:
 
+http://marc.info/?l=linux-kernel&m=132144742019589&w=2 
+<http://marc.info/?l=linux-kernel&m=132144742019589&w=2>
+
+What you're doing is to indeed move part of that trust to the software 
+stack,
+assuming that in case the TPM fails to process a command, you could fall 
+back to
+the event log anyways. It isn't a matter of it's a right or wrong 
+software engineering
+decision, but inside the trusted computing scope, it breaks the model.
+
+Rajiv
 
