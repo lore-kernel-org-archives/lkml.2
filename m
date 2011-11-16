@@ -1,138 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab1KPNhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 08:37:31 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45403 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756721Ab1KPNha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 08:37:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,521,1315206000"; 
-   d="scan'208";a="75651887"
-Date: Wed, 16 Nov 2011 21:37:24 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3 v2] drm/i915: hot removal notification to HDMI audio
- driver
-Message-ID: <20111116133724.GB23804@localhost>
-References: <20111116132004.299754849@intel.com>
- <20111116132221.374839261@intel.com>
+	id S1757477Ab1KPNkP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 08:40:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63910 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757388Ab1KPNkL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 08:40:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116132221.374839261@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111109051152.GA16006@gamma.logic.tuwien.ac.at>
+References: <20111026025014.GB24956@gamma.logic.tuwien.ac.at>
+	<1319601333.14693.19.camel@wwguy-ubuntu>
+	<20111026040332.GF24956@gamma.logic.tuwien.ac.at>
+	<20111102031345.GA10851@gamma.logic.tuwien.ac.at>
+	<1320204101.31823.140.camel@wwguy-huron>
+	<20111104045817.GA25778@gamma.logic.tuwien.ac.at>
+	<20111107123812.GB23508@gamma.logic.tuwien.ac.at>
+	<1320709047.31823.188.camel@wwguy-huron>
+	<20111108043233.GA21171@gamma.logic.tuwien.ac.at>
+	<CANUX_P0Q0wve4D6fZPsMv2Zw=02gb9u+3C2cjRv7UAmWqXnjzw@mail.gmail.com>
+	<CANUX_P06ww42p6N1k_P-Y1KMKOd1QgR_DxVWe19qtsEX2rfWpw@mail.gmail.com>
+	<20111109051152.GA16006@gamma.logic.tuwien.ac.at>
+Date: Wed, 16 Nov 2011 08:40:09 -0500
+X-Google-Sender-Auth: QQKm_fL5buyiB3aWMst2LDcK0ys
+Message-ID: <CABDyM6SGveC+65WRKDBEgTDLo8EzSb8RBUBHynssSW5-fWB0bA@mail.gmail.com>
+Subject: Re: iwlagn is getting very shaky
+From: Richard Yao <ryao@cs.stonybrook.edu>
+To: Norbert Preining <preining@logic.at>
+Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On monitor hot removal:
+Dear Norbert,
 
-1) clear SDVO_AUDIO_ENABLE or DP_AUDIO_OUTPUT_ENABLE
-2) clear ELD Valid bit
+Would your university by any chance be using wireless network hardware
+from Aruba Networks?
 
-So that the audio driver will receive hot plug events and take action to
-refresh its device state and ELD contents.
+A network engineer responsible for maintaining my university's network
+emailed me yesterday saying that Aruba Networks has had engineers on
+campus working on our wireless problems. They did a firmware update
+last Thursday to address some issues, which appears to have resulted
+in substantial improvements in the time it takes to connect to the
+network, network bandwidth and connection reliability.
 
-cc: Wang Zhenyu <zhenyu.z.wang@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- drivers/gpu/drm/drm_crtc_helper.c |    4 ++++
- drivers/gpu/drm/i915/intel_dp.c   |   17 +++++++++++++++++
- drivers/gpu/drm/i915/intel_hdmi.c |   17 +++++++++++++++++
- include/drm/drm_crtc.h            |    1 +
- 4 files changed, 39 insertions(+)
+It seems that Aruba Networks has its own proprietary firmware, so we
+have had to suffer for their duplication of effort. That is not to say
+that the iwlagn driver is perfect (e.g. it is missing auto settings
+for rts and frag), but this seems like this is a plausible explanation
+for why you have issues at your university's wireless equipment while
+you have no issues with your wireless router at home.
 
---- linux.orig/drivers/gpu/drm/i915/intel_dp.c	2011-11-16 21:36:58.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_dp.c	2011-11-16 21:37:00.000000000 +0800
-@@ -1984,6 +1984,22 @@ intel_dp_detect(struct drm_connector *co
- 	return connector_status_connected;
- }
- 
-+static void intel_dp_hot_remove(struct drm_connector *connector)
-+{
-+	struct intel_dp *intel_dp = intel_attached_dp(connector);
-+	struct drm_device *dev = intel_dp->base.base.dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct drm_crtc *crtc = intel_dp->base.base.crtc;
-+
-+	intel_dp->DP &= ~DP_AUDIO_OUTPUT_ENABLE;
-+	I915_WRITE(intel_dp->output_reg, intel_dp->DP);
-+	POSTING_READ(intel_dp->output_reg);
-+
-+	connector->eld[0] = 0;
-+	if (dev_priv->display.write_eld)
-+		dev_priv->display.write_eld(connector, crtc);
-+}
-+
- static int intel_dp_get_modes(struct drm_connector *connector)
- {
- 	struct intel_dp *intel_dp = intel_attached_dp(connector);
-@@ -2143,6 +2159,7 @@ static const struct drm_connector_funcs 
- 	.detect = intel_dp_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.set_property = intel_dp_set_property,
-+	.hot_remove = intel_dp_hot_remove,
- 	.destroy = intel_dp_destroy,
- };
- 
---- linux.orig/drivers/gpu/drm/i915/intel_hdmi.c	2011-11-16 21:36:58.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_hdmi.c	2011-11-16 21:37:00.000000000 +0800
-@@ -350,6 +350,22 @@ intel_hdmi_detect(struct drm_connector *
- 	return status;
- }
- 
-+static void intel_hdmi_hot_remove(struct drm_connector *connector)
-+{
-+	struct intel_hdmi *intel_hdmi = intel_attached_hdmi(connector);
-+	struct drm_i915_private *dev_priv = connector->dev->dev_private;
-+	u32 temp;
-+
-+	temp = I915_READ(intel_hdmi->sdvox_reg);
-+	I915_WRITE(intel_hdmi->sdvox_reg, temp & ~SDVO_AUDIO_ENABLE);
-+	POSTING_READ(intel_hdmi->sdvox_reg);
-+
-+	connector->eld[0] = 0;
-+	if (dev_priv->display.write_eld)
-+		dev_priv->display.write_eld(connector,
-+					    intel_hdmi->base.base.crtc);
-+}
-+
- static int intel_hdmi_get_modes(struct drm_connector *connector)
- {
- 	struct intel_hdmi *intel_hdmi = intel_attached_hdmi(connector);
-@@ -459,6 +475,7 @@ static const struct drm_connector_funcs 
- 	.detect = intel_hdmi_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.set_property = intel_hdmi_set_property,
-+	.hot_remove = intel_hdmi_hot_remove,
- 	.destroy = intel_hdmi_destroy,
- };
- 
---- linux.orig/drivers/gpu/drm/drm_crtc_helper.c	2011-11-16 21:36:58.000000000 +0800
-+++ linux/drivers/gpu/drm/drm_crtc_helper.c	2011-11-16 21:37:00.000000000 +0800
-@@ -905,6 +905,10 @@ static void output_poll_execute(struct w
- 			      old_status, connector->status);
- 		if (old_status != connector->status)
- 			changed = true;
-+		if (old_status == connector_status_connected &&
-+		    connector->status == connector_status_disconnected)
-+			connector->funcs->hot_remove(connector);
-+
- 	}
- 
- 	mutex_unlock(&dev->mode_config.mutex);
---- linux.orig/include/drm/drm_crtc.h	2011-11-16 21:36:58.000000000 +0800
-+++ linux/include/drm/drm_crtc.h	2011-11-16 21:37:00.000000000 +0800
-@@ -419,6 +419,7 @@ struct drm_connector_funcs {
- 	int (*fill_modes)(struct drm_connector *connector, uint32_t max_width, uint32_t max_height);
- 	int (*set_property)(struct drm_connector *connector, struct drm_property *property,
- 			     uint64_t val);
-+	void (*hot_remove)(struct drm_connector *connector);
- 	void (*destroy)(struct drm_connector *connector);
- 	void (*force)(struct drm_connector *connector);
- };
+It is also probably a reason for organizations to insist on having
+fully open source software in their hardware, which is something I
+explained in an email to the person who decided to purchase hardware
+from Aruba Networks last night. Speaking of which, it would be nice if
+Intel open sourced iwlwifi-6000-4.ucode. That way improvements in it
+would not be solely dependent on our friends at Intel, whose time to
+work on these things is likely tied to decisions by Intel's
+management.
+
+Yours truly,
+Richard Yao
+
+On Wed, Nov 9, 2011 at 12:11 AM, Norbert Preining <preining@logic.at> wrote:
+> Hi Emmanuel,
+>
+> On Di, 08 Nov 2011, Emmanuel Grumbach wrote:
+>> I would like to see what happens in terms or power.
+>> Please set the power debug flag: modprobe iwlwifi debug=0x100
+>
+>> It may be worth to disable Link Power save too. I would be glad if you
+>> could try this patch (attached and inlined), with the power debug flag
+>> set.
+>
+> With both done, I see things like that:
+> [  690.597221] iwlwifi 0000:06:00.0: L1 Enabled; Disabling L0S
+> [  690.601979] iwlwifi 0000:06:00.0: Radio type=0x1-0x2-0x0
+> [  690.644716] iwlwifi 0000:06:00.0: U iwl_power_sleep_cam_cmd Sleep command for CAM
+> [  690.644721] iwlwifi 0000:06:00.0: U iwl_set_power Sending power/sleep command
+> [  690.644724] iwlwifi 0000:06:00.0: U iwl_set_power Flags value = 0x00000000
+> [  690.644726] iwlwifi 0000:06:00.0: U iwl_set_power Tx timeout = 0
+> [  690.644728] iwlwifi 0000:06:00.0: U iwl_set_power Rx timeout = 0
+> [  690.644731] iwlwifi 0000:06:00.0: U iwl_set_power Sleep interval vector = { 0 , 0 , 0 , 0 , 0 }
+> [  690.645649] iwlwifi 0000:06:00.0: U iwl_power_sleep_cam_cmd Sleep command for CAM
+>
+> Does this help you, or do you need more?
+>
+> Best wishes
+>
+> Norbert
+> ------------------------------------------------------------------------
+> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+> JAIST, Japan                                 TeX Live & Debian Developer
+> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+> ------------------------------------------------------------------------
+> SNITTER (n.)
+> One of the rather unfunny newspaper clippings pinned to an office
+> wall, the humour of which is supposed to derive from the fact that the
+> headline contains a name similar to that of one of the occupants to
+> the office.
+>                        --- Douglas Adams, The Meaning of Liff
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
