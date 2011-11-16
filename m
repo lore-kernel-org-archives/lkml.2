@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1KPH2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 02:28:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34548 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab1KPH2w (ORCPT
+	id S1754760Ab1KPHmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 02:42:31 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38445 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754200Ab1KPHma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 02:28:52 -0500
-Message-ID: <4EC36631.8030805@google.com>
-Date: Tue, 15 Nov 2011 23:28:49 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 16 Nov 2011 02:42:30 -0500
+X-Sasl-enc: uQ1SwdhvkGCYCW7WUgn9ZA/gCnilSZz97GSTowWpXhNu 1321429348
+Message-ID: <4EC36963.9000300@ladisch.de>
+Date: Wed, 16 Nov 2011 08:42:27 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Il Han <corone.il.han@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: add the inline keyword to the prototype.
-References: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>
-In-Reply-To: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] media: fix truncated entity specification
+References: <4EB5ADA9.6010104@ladisch.de> <201111150148.07957.laurent.pinchart@ideasonboard.com> <4EC262DD.1070502@ladisch.de> <201111160133.04816.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201111160133.04816.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2011 10:16 AM, Il Han wrote:
-> The prototype has to agree with the definition.
-> Add the inline keyword to the prototype also
->
+Laurent Pinchart wrote:
+> > > On Saturday 05 November 2011 22:42:01 Clemens Ladisch wrote:
+> > > > When enumerating an entity, assign the entire entity specification
+> > > > instead of only the first two words.  (This requires giving the
+> > > > specification union a name.)
+> 
+> Your patch looks good then, except that I would memcpy to u_ent.raw instead of
+> u_ent.v4l. Would you also be ok with shortening specification to spec (or
+> info) ?
 
-Hmm... this would then cause the prototypes to disagree in the 
-!CONFIG_CFS_BANDWIDTH case.
+Yes, go ahead.
 
-Can you update?
 
-> Signed-off-by: Il Han<corone.il.han@gmail.com>
-> ---
->   kernel/sched_fair.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 5c9e679..c7c93d2 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -306,7 +306,7 @@ find_matching_se(struct sched_entity **se, struct sched_entity **pse)
->
->   #endif	/* CONFIG_FAIR_GROUP_SCHED */
->
-> -static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-> +static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
->   				   unsigned long delta_exec);
->
->   /**************************************************************
-> @@ -1052,7 +1052,7 @@ static void clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
->   		__clear_buddies_skip(se);
->   }
->
-> -static void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
-> +static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
->
->   static void
->   dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
-
+Regards,
+Clemens
