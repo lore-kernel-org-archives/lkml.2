@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1KPMmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 07:42:36 -0500
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:48383 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab1KPMmf (ORCPT
+	id S1754982Ab1KPMp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 07:45:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55692 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab1KPMp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 07:42:35 -0500
-Message-ID: <4EC3AFAE.3010804@linux.vnet.ibm.com>
-Date: Wed, 16 Nov 2011 10:42:22 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: roberto.sassu@polito.it, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>
-Subject: [PULL] TPM: error handling and infrastructure improvements
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111612-1524-0000-0000-0000001FCDF2
+	Wed, 16 Nov 2011 07:45:27 -0500
+From: Il Han <corone.il.han@gmail.com>
+To: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Il Han <corone.il.han@gmail.com>
+Subject: [PATCH] sched: add the inline keyword to the prototype.
+Date: Wed, 16 Nov 2011 21:45:04 +0900
+Message-Id: <1321447504-4477-1-git-send-email-corone.il.han@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+The prototype has to agree with the definition.
+Add the inline keyword to the prototype also.
 
-Please pull the following changes since commit e163bc8e4a0cd1cdffadb58253f7651201722d56:
+Signed-off-by: Il Han <corone.il.han@gmail.com>
+---
+ kernel/sched_fair.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-   Documentation: clarify the purpose of LSMs (2011-11-16 12:37:27 +1100)
-
-that are available in the git repository at:
-   git://github.com/srajiv/tpm.git for-james
-
-Rajiv Andrade (4):
-       TPM: Use vendor specific function for status probe
-       TPM: Export wait_for_stat for other vendor specific drivers
-       TPM: NSC and TIS drivers X86 dependency fix
-       TPM: fix transmit_cmd error logic
-
-Stefan Berger (5):
-       tpm: Have tpm_get_timeouts return an error code
-       tpm: Cleanup tpm_continue_selftest
-       tpm: Introduce function to poll for result of self test
-       tpm_tis: Check return code from getting timeouts/durations
-       tpm_tis: add delay after aborting command
-
-  drivers/char/tpm/Kconfig   |    2 +
-  drivers/char/tpm/tpm.c     |  137 +++++++++++++++++++++++++++++++++++++-------
-  drivers/char/tpm/tpm.h     |    9 ++-
-  drivers/char/tpm/tpm_tis.c |   84 +++++++++------------------
-  4 files changed, 152 insertions(+), 80 deletions(-)
-
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 7e51b5b..74eeffe 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -306,7 +306,7 @@ find_matching_se(struct sched_entity **se, struct sched_entity **pse)
+ 
+ #endif	/* CONFIG_FAIR_GROUP_SCHED */
+ 
+-static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
++static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+ 				   unsigned long delta_exec);
+ 
+ /**************************************************************
+@@ -1065,7 +1065,7 @@ static void clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 		__clear_buddies_skip(se);
+ }
+ 
+-static void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
++static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
+ 
+ static void
+ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+@@ -1831,11 +1831,11 @@ static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ 	throttle_cfs_rq(cfs_rq);
+ }
+ #else
+-static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
++static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+ 				     unsigned long delta_exec) {}
+ static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
+ static void check_enqueue_throttle(struct cfs_rq *cfs_rq) {}
+-static void return_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
++static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
+ 
+ static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
+ {
+-- 
+1.7.4.1
 
