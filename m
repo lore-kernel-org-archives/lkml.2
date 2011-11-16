@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1KPWZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:25:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28603 "EHLO mx1.redhat.com"
+	id S1754060Ab1KPW2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:28:20 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:33063 "EHLO mail.atlantis.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752930Ab1KPWZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:25:26 -0500
-Date: Wed, 16 Nov 2011 17:24:02 -0500
-From: Dave Jones <davej@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Nick Bowler <nbowler@elliptictech.com>, Greg KH <greg@kroah.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Subject: Re: [PATCH 1/2] lockdep,rtmutex,bug: Show taint flags on error
-Message-ID: <20111116222402.GB29305@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ben Hutchings <ben@decadent.org.uk>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Ingo Molnar <mingo@redhat.com>,
-	Nick Bowler <nbowler@elliptictech.com>, Greg KH <greg@kroah.com>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Debian kernel maintainers <debian-kernel@lists.debian.org>
-References: <1319773015.6759.30.camel@deadeye>
- <20111116215236.GD3366@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753136Ab1KPW2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 17:28:19 -0500
+To: Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH] [resend] rtc-cmos: fix broken NVRAM bank 2 writing
+Cc: rtc-linux@googlegroups.com,
+        Kernel development list <linux-kernel@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <20111116215236.GD3366@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Wed, 16 Nov 2011 23:27:45 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111162327.49465.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 09:52:36PM +0000, Ben Hutchings wrote:
- > Please could you ack or nak this?
- > 
- > Ben.
+Fix writing to NVRAM bank 2 in rtc-cmos driver. It never worked since its
+introduction in 2.6.28 because of a typo.
 
-sorry, thought I already had.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Reviewed-by: Dave Jones <davej@redhat.com>
+--- linux-3.1-orig/drivers/rtc/rtc-cmos.c	2011-10-24 09:10:05.000000000 +0200
++++ linux-3.1/drivers/rtc/rtc-cmos.c	2011-11-08 17:43:29.000000000 +0100
+@@ -164,7 +164,7 @@ static inline unsigned char cmos_read_ba
+ static inline void cmos_write_bank2(unsigned char val, unsigned char addr)
+ {
+ 	outb(addr, RTC_PORT(2));
+-	outb(val, RTC_PORT(2));
++	outb(val, RTC_PORT(3));
+ }
+ 
+ #else
 
+
+-- 
+Ondrej Zary
