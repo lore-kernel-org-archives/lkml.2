@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1KPXch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 18:32:37 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50891 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753955Ab1KPXcg (ORCPT
+	id S1754562Ab1KPXhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 18:37:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44989 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab1KPXhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 18:32:36 -0500
-X-Sasl-enc: FQbyerLSn+gJrseSUEBBpazDjMHLYmUBZzkBiU62R7Xs 1321486355
-Date: Wed, 16 Nov 2011 15:21:36 -0800
-From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: linux-stable <stable@vger.kernel.org>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] x86, amd: Avoid cache aliasing penalties on AMD
- family 15h
-Message-ID: <20111116232136.GA3533@kroah.com>
-References: <20111104112209.GB8020@aftab>
- <1320405995-10199-1-git-send-email-bp@amd64.org>
- <20111104152532.GB29754@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111104152532.GB29754@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Nov 2011 18:37:51 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] toshiba_acpi: Fix machines that don't support HCI_SYSTEM_EVENT
+Date: Wed, 16 Nov 2011 17:37:45 -0600
+Message-Id: <1321486665-12929-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 08:25:32AM -0700, Greg KH wrote:
-> On Fri, Nov 04, 2011 at 12:26:32PM +0100, Borislav Petkov wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > Upstream commit: dfb09f9b7ab03fd367740e541a5caf830ed56726
-> > 
-> > This patch provides performance tuning for the "Bulldozer" CPU. With its
-> > shared instruction cache there is a chance of generating an excessive
-> > number of cache cross-invalidates when running specific workloads on the
-> > cores of a compute module.
-> > 
-> > This excessive amount of cross-invalidations can be observed if cache
-> > lines backed by shared physical memory alias in bits [14:12] of their
-> > virtual addresses, as those bits are used for the index generation.
-> > 
-> > This patch addresses the issue by clearing all the bits in the [14:12]
-> > slice of the file mapping's virtual address at generation time, thus
-> > forcing those bits the same for all mappings of a single shared library
-> > across processes and, in doing so, avoids instruction cache aliases.
-> > 
-> > It also adds the command line option "align_va_addr=(32|64|on|off)" with
-> > which virtual address alignment can be enabled for 32-bit or 64-bit x86
-> > individually, or both, or be completely disabled.
-> > 
-> > This change leaves virtual region address allocation on other families
-> > and/or vendors unaffected.
-> > 
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > Link: http://lkml.kernel.org/r/1312550110-24160-2-git-send-email-bp@amd64.org
-> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > ---
-> >  Documentation/kernel-parameters.txt |   13 ++++++
-> >  arch/x86/include/asm/elf.h          |   31 +++++++++++++
-> >  arch/x86/kernel/cpu/amd.c           |   13 ++++++
-> >  arch/x86/kernel/sys_x86_64.c        |   81 +++++++++++++++++++++++++++++++++-
-> >  arch/x86/mm/mmap.c                  |   15 ------
-> >  arch/x86/vdso/vma.c                 |    9 ++++
-> >  6 files changed, 144 insertions(+), 18 deletions(-)
-> 
-> I really feel nervous adding this patch to the -stable tree(s).  It's
-> bigger than "just a bugfix" and it adds new functionality.
-> 
-> I'm aware that it is needed for your new hardware, which is great, but
-> it doesn't really follow the Documentation/stable_kernel_rules.txt
-> requirements, does it?
-> 
-> I need an ACK from the x86 maintainers before I'm going to be
-> comfortable adding this, and then the other, patches in this series.
-> 
-> Peter, Ingo, Thomas, your opinions?
+The Satellite C670-10V generates notifications for hotkeys but does
+not support HCI_SYSTEM_EVENT. As a result when a hotkey is pressed
+it gets stuck in an infinite loop in toshiba_acpi_notify. To fix
+this, detect whether or not HCI_SYSTEM_EVENT is supported up-front
+and don't try to read system events if it isn't supported. In
+addition, limit the number of retries when reading HCI_SYSTEM_EVENT
+fails so that this loop cannot run unbounded.
 
-Ping?
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/platform/x86/toshiba_acpi.c |   21 ++++++++++++++++-----
+ 1 files changed, 16 insertions(+), 5 deletions(-)
 
-anyone?
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index 13ef8c3..dcdc1f4 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -121,6 +121,7 @@ struct toshiba_acpi_dev {
+ 	int illumination_supported:1;
+ 	int video_supported:1;
+ 	int fan_supported:1;
++	int system_event_supported:1;
+ 
+ 	struct mutex mutex;
+ };
+@@ -724,7 +725,7 @@ static int keys_proc_show(struct seq_file *m, void *v)
+ 	u32 hci_result;
+ 	u32 value;
+ 
+-	if (!dev->key_event_valid) {
++	if (!dev->key_event_valid && dev->system_event_supported) {
+ 		hci_read1(dev, HCI_SYSTEM_EVENT, &value, &hci_result);
+ 		if (hci_result == HCI_SUCCESS) {
+ 			dev->key_event_valid = 1;
+@@ -964,6 +965,8 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
+ 
+ 	/* enable event fifo */
+ 	hci_write1(dev, HCI_SYSTEM_EVENT, 1, &hci_result);
++	if (hci_result == HCI_SUCCESS)
++		dev->system_event_supported = 1;
+ 
+ 	props.type = BACKLIGHT_PLATFORM;
+ 	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
+@@ -1032,12 +1035,15 @@ static void toshiba_acpi_notify(struct acpi_device *acpi_dev, u32 event)
+ {
+ 	struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
+ 	u32 hci_result, value;
++	int retries = 3;
+ 
+-	if (event != 0x80)
++	if (!dev->system_event_supported || event != 0x80)
+ 		return;
++
+ 	do {
+ 		hci_read1(dev, HCI_SYSTEM_EVENT, &value, &hci_result);
+-		if (hci_result == HCI_SUCCESS) {
++		switch (hci_result) {
++		case HCI_SUCCESS:
+ 			if (value == 0x100)
+ 				continue;
+ 			/* act on key press; ignore key release */
+@@ -1049,14 +1055,19 @@ static void toshiba_acpi_notify(struct acpi_device *acpi_dev, u32 event)
+ 				pr_info("Unknown key %x\n",
+ 				       value);
+ 			}
+-		} else if (hci_result == HCI_NOT_SUPPORTED) {
++			break;
++		case HCI_NOT_SUPPORTED:
+ 			/* This is a workaround for an unresolved issue on
+ 			 * some machines where system events sporadically
+ 			 * become disabled. */
+ 			hci_write1(dev, HCI_SYSTEM_EVENT, 1, &hci_result);
+ 			pr_notice("Re-enabled hotkeys\n");
++			/* fall through */
++		default:
++			retries--;
++			break;
+ 		}
+-	} while (hci_result != HCI_EMPTY);
++	} while (retries && hci_result != HCI_EMPTY);
+ }
+ 
+ 
+-- 
+1.7.5.4
 
-greg k-h
