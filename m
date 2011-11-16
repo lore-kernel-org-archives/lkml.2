@@ -1,89 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab1KPJmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:42:31 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42906 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab1KPJm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:42:29 -0500
-Date: Wed, 16 Nov 2011 17:42:19 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [PATCH -rt] printk: Don't emit console_cpu_notify() for CPU_DYING
-Message-ID: <20111116094219.GA9281@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+	id S1755440Ab1KPJwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:52:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53406 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754876Ab1KPJwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 04:52:49 -0500
+Date: Wed, 16 Nov 2011 09:52:44 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Colin Cross <ccross@android.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Message-ID: <20111116095244.GM27150@suse.de>
+References: <20111114140421.GA27150@suse.de>
+ <alpine.DEB.2.00.1111151332160.26232@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1111151332160.26232@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we will get below warning:
+On Tue, Nov 15, 2011 at 01:40:42PM -0800, David Rientjes wrote:
+> > <SNIP>
+> > @@ -2214,6 +2228,14 @@ rebalance:
+> >  
+> >  			goto restart;
+> >  		}
+> > +
+> > +		/*
+> > +		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
+> > +		 * prevent reclaim making forward progress without
+> > +		 * invoking OOM. Bail if we are suspending
+> > +		 */
+> > +		if (pm_suspending())
+> > +			goto nopage;
+> >  	}
+> >  
+> >  	/* Check if we should retry the allocation */
+> 
+> This allows all __GFP_NOFAIL allocations to fail while 
+> pm_restrict_gfp_mask() is in effect, so I disagree with this unless it is 
+> moved into the should_alloc_retry() logic.  If you pass did_some_progress 
+> into that function and then moved the check for __GFP_NOFAIL right under 
+> the check for __GFP_NORETRY and checked for pm_suspending() there (and 
+> before the check for PAGE_ALLOC_COSTLY_ORDER) then it would allow the 
+> infinite loop for __GFP_NOFAIL which is required if __GFP_WAIT.
 
-BUG: sleeping function called from invalid context at /build/linux/kernel/rtmutex.c:645
-in_atomic(): 1, irqs_disabled(): 1, pid: 1054, name: migration/9
-no locks held by migration/9/1054.
-irq event stamp: 36
-hardirqs last  enabled at (35): [<ffffffff815f5b50>] _raw_spin_unlock_irq+0x30/0x70
-hardirqs last disabled at (36): [<ffffffff810b7eaf>] stop_machine_cpu_stop+0x8f/0x110
-softirqs last  enabled at (0): [<ffffffff81051b53>] copy_process+0x6d3/0x1640
-softirqs last disabled at (0): [<          (null)>]           (null)
-Pid: 1054, comm: migration/9 Not tainted 3.2.0-rc1-rt2-11312-gbf51260-dirty #12
-Call Trace:
- [<ffffffff81040c4e>] __might_sleep+0x12e/0x1e0
- [<ffffffff815f4d24>] rt_spin_lock+0x24/0x60
- [<ffffffff810c4aa2>] ? touch_nmi_watchdog+0x42/0x80
- [<ffffffff813f58f3>] serial8250_console_write+0x143/0x150
- [<ffffffff81054323>] __call_console_drivers+0x93/0xb0
- [<ffffffff8105438c>] _call_console_drivers+0x4c/0x80
- [<ffffffff8105448d>] console_unlock+0xcd/0x240
- [<ffffffff815ef5ac>] console_cpu_notify+0x26/0x2d
- [<ffffffff81083744>] notifier_call_chain+0x84/0xf0
- [<ffffffff810837be>] __raw_notifier_call_chain+0xe/0x10
- [<ffffffff81055ac0>] __cpu_notify+0x20/0x40
- [<ffffffff815de3e2>] take_cpu_down+0x32/0x40
- [<ffffffff810b7eca>] stop_machine_cpu_stop+0xaa/0x110
- [<ffffffff810b7e20>] ? stop_one_cpu+0x80/0x80
- [<ffffffff810b7e20>] ? stop_one_cpu+0x80/0x80
- [<ffffffff810b79be>] cpu_stopper_thread+0xce/0x1b0
- [<ffffffff810b78f0>] ? wait_for_stop_done+0xa0/0xa0
- [<ffffffff810b78f0>] ? wait_for_stop_done+0xa0/0xa0
- [<ffffffff810430c9>] ? sub_preempt_count+0xa9/0xe0
- [<ffffffff810b78f0>] ? wait_for_stop_done+0xa0/0xa0
- [<ffffffff810b78f0>] ? wait_for_stop_done+0xa0/0xa0
- [<ffffffff8107c096>] kthread+0xa6/0xb0
- [<ffffffff810430c9>] ? sub_preempt_count+0xa9/0xe0
- [<ffffffff815f5b5b>] ? _raw_spin_unlock_irq+0x3b/0x70
- [<ffffffff815f8534>] kernel_thread_helper+0x4/0x10
- [<ffffffff810423bc>] ? finish_task_switch+0x8c/0x110
- [<ffffffff815f5b5b>] ? _raw_spin_unlock_irq+0x3b/0x70
- [<ffffffff815f5f21>] ? retint_restore_args+0xe/0xe
- [<ffffffff8107bff0>] ? kthreadd+0x160/0x160
- [<ffffffff815f8530>] ? gs_change+0xb/0xb
-CPU 9 is now offline
+Good point. I agree that it would be more consistent although
+there is still the risk of infinite looping with __GFP_NOFAIL if
+storage devices are disabled.
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Colin reported elsewhere in this thread that "the particular allocation
+that usually causes the problem is the pgd_alloc for page tables when
+re-enabling the 2nd cpu during resume". On X86, those allocations are using
+the flags
+
+GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
+
+so they should not be trapped in an infinite loop due to __GFP_NOFAIL.
+On ARM, they use GFP_KERNEL so should also be ok.
+
+That said, this patch is no longer functionally equivalent to what he
+tested so I had to remove the tested-by. Colin, can you retest with the
+following patch please? If it gets stuck, it's interesting in itself
+because it means we were previously failing __GFP_NOFAIL allocations
+during suspend on paths that probably don't handle allocation failure
+very well.
+
+David, is this what you meant? This patch includes all the
+documentation-related updates that were discussed in this thread as well
+as updated the check in mm/swapfile.c for hibernation.
+
+==== CUT HERE ====
+mm: avoid livelock on !__GFP_FS allocations v2
+
+Changelog since V1
+  o Move PM check to should_alloc_retry (David Rientjes)
+  o Add some additional documentation
+
+Colin Cross reported;
+
+  Under the following conditions, __alloc_pages_slowpath can loop forever:
+  gfp_mask & __GFP_WAIT is true
+  gfp_mask & __GFP_FS is false
+  reclaim and compaction make no progress
+  order <= PAGE_ALLOC_COSTLY_ORDER
+
+  These conditions happen very often during suspend and resume,
+  when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
+  allocations into __GFP_WAIT.
+
+  The oom killer is not run because gfp_mask & __GFP_FS is false,
+  but should_alloc_retry will always return true when order is less
+  than PAGE_ALLOC_COSTLY_ORDER.
+
+In his fix, he avoided retrying the allocation if reclaim made no
+progress and __GFP_FS was not set. The problem is that this would
+result in GFP_NOIO allocations failing that previously succeeded
+which would be very unfortunate.
+
+The big difference between GFP_NOIO and suspend converting GFP_KERNEL
+to behave like GFP_NOIO is that normally flushers will be cleaning
+pages and kswapd reclaims pages allowing GFP_NOIO to succeed after
+a short delay. The same does not necessarily apply during suspend as
+the storage device may be suspended.
+
+This patch special cases the suspend case to fail the page allocation
+if reclaim cannot make progress and adds some documentation on how
+gfp_allowed_mask is currently used. Failing allocations like this
+may cause suspend to abort but that is better than a livelock.
+
+[mgorman@suse.de: Rework fix to be suspend specific]
+[rientjes@google.com: Move suspended device check to should_alloc_retry]
+Reported-by: Colin Cross <ccross@android.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/printk.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ include/linux/gfp.h |   16 ++++++++++++++++
+ mm/page_alloc.c     |   30 ++++++++++++++++++++++--------
+ mm/swapfile.c       |    6 +++---
+ 3 files changed, 41 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 535bc3b..ba0393e 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1223,7 +1223,6 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
- 	switch (action) {
- 	case CPU_ONLINE:
- 	case CPU_DEAD:
--	case CPU_DYING:
- 	case CPU_DOWN_FAILED:
- 	case CPU_UP_CANCELED:
- 		console_lock();
--- 
-1.7.5.4
-
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 3a76faf..033f55f 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -367,9 +367,25 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp);
+ void drain_all_pages(void);
+ void drain_local_pages(void *dummy);
+ 
++/*
++ * gfp_allowed_mask is set to GFP_BOOT_MASK during early boot to restrict what
++ * GFP flags are used before interrupts are enabled. Once interrupts are
++ * enabled, it is set to __GFP_BITS_MASK while the system is running. During
++ * hibernation, it is used by PM to avoid I/O during memory allocation while
++ * devices are suspended.
++ */
+ extern gfp_t gfp_allowed_mask;
+ 
+ extern void pm_restrict_gfp_mask(void);
+ extern void pm_restore_gfp_mask(void);
+ 
++#ifdef CONFIG_PM_SLEEP
++extern bool pm_suspended_storage(void);
++#else
++static inline bool pm_suspended_storage(void)
++{
++	return false;
++}
++#endif /* CONFIG_PM_SLEEP */
++
+ #endif /* __LINUX_GFP_H */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9dd443d..a72cbf9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -127,6 +127,13 @@ void pm_restrict_gfp_mask(void)
+ 	saved_gfp_mask = gfp_allowed_mask;
+ 	gfp_allowed_mask &= ~GFP_IOFS;
+ }
++
++bool pm_suspended_storage(void)
++{
++	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
++		return false;
++	return true;
++}
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+@@ -1795,12 +1802,25 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+ 
+ static inline int
+ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
++				unsigned long did_some_progress,
+ 				unsigned long pages_reclaimed)
+ {
+ 	/* Do not loop if specifically requested */
+ 	if (gfp_mask & __GFP_NORETRY)
+ 		return 0;
+ 
++	/* Always retry if specifically requested */
++	if (gfp_mask & __GFP_NOFAIL)
++		return 1;
++
++	/*
++	 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent reclaim
++	 * making forward progress without invoking OOM. Suspend also disables
++	 * storage devices so kswapd will not help. Bail if we are suspending.
++	 */
++	if (!did_some_progress && pm_suspended_storage())
++		return 0;
++
+ 	/*
+ 	 * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
+ 	 * means __GFP_NOFAIL, but that may not be true in other
+@@ -1819,13 +1839,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+ 	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
+ 		return 1;
+ 
+-	/*
+-	 * Don't let big-order allocations loop unless the caller
+-	 * explicitly requests that.
+-	 */
+-	if (gfp_mask & __GFP_NOFAIL)
+-		return 1;
+-
+ 	return 0;
+ }
+ 
+@@ -2218,7 +2231,8 @@ rebalance:
+ 
+ 	/* Check if we should retry the allocation */
+ 	pages_reclaimed += did_some_progress;
+-	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
++	if (should_alloc_retry(gfp_mask, order, did_some_progress,
++						pages_reclaimed)) {
+ 		/* Wait for some write requests to complete then retry */
+ 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
+ 		goto rebalance;
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index b1cd120..9520592 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -667,10 +667,10 @@ int try_to_free_swap(struct page *page)
+ 	 * original page might be freed under memory pressure, then
+ 	 * later read back in from swap, now with the wrong data.
+ 	 *
+-	 * Hibernation clears bits from gfp_allowed_mask to prevent
+-	 * memory reclaim from writing to disk, so check that here.
++	 * Hibration suspends storage while it is writing the image
++	 * to disk so check that here.
+ 	 */
+-	if (!(gfp_allowed_mask & __GFP_IO))
++	if (pm_suspended_storage())
+ 		return 0;
+ 
+ 	delete_from_swap_cache(page);
