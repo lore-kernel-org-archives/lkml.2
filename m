@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab1KPQCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:02:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40899 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab1KPQCl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:02:41 -0500
-Subject: Re: [PATCH v3 1/2] perf, x86: Implement event scheduler helper
- functions
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Nov 2011 17:02:16 +0100
-In-Reply-To: <1321293071-8636-2-git-send-email-robert.richter@amd.com>
-References: <20111111142935.GI15738@erda.amd.com>
-	 <1321293071-8636-1-git-send-email-robert.richter@amd.com>
-	 <1321293071-8636-2-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321459336.27735.8.camel@twins>
-Mime-Version: 1.0
+	id S1755409Ab1KPQND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:13:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59634 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751670Ab1KPQNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 11:13:01 -0500
+Date: Wed, 16 Nov 2011 08:02:06 -0800
+From: Greg KH <gregkh@suse.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 0/5] Generalize module_platform_driver
+Message-ID: <20111116160206.GA27049@suse.de>
+References: <1321434819-23678-1-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321434819-23678-1-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-14 at 18:51 +0100, Robert Richter wrote:
-> @@ -22,8 +22,14 @@ extern unsigned long __sw_hweight64(__u64 w);
->  #include <asm/bitops.h>
->  
->  #define for_each_set_bit(bit, addr, size) \
-> -       for ((bit) = find_first_bit((addr), (size)); \
-> -            (bit) < (size); \
-> +       for ((bit) = find_first_bit((addr), (size));            \
-> +            (bit) < (size);                                    \
-> +            (bit) = find_next_bit((addr), (size), (bit) + 1))
-> +
-> +/* same as for_each_set_bit() but use bit as value to start with */
-> +#define for_each_set_bit_cont(bit, addr, size) \
-> +       for ((bit) = find_next_bit((addr), (size), (bit));      \
-> +            (bit) < (size);                                    \
->              (bit) = find_next_bit((addr), (size), (bit) + 1)) 
+On Wed, Nov 16, 2011 at 10:13:34AM +0100, Lars-Peter Clausen wrote:
+> Grant Likely recently introduced the module_platform_driver macro which can be
+> used to eliminate a few lines on boilerplate code in platform driver modules.
+> The same approach can be used to do the same for other bus type drivers.
+> 
+> The first patch of this series generalizes the module_platform_driver macro and
+> introduces the module_driver macro. It is similar to module_platform_driver
+> macro but has two additional parameters to pass in the driver register and
+> unregister function. The intend is that this macro is used to construct bus
+> specific macros for generating the driver register/unregister boilerplate code.
+> 
+> The next two patches in this series add the module_i2c_driver and
+> module_spi_driver macro which use the module_driver macro to generate the I2C
+> and SPI driver boilerplate code.
+> 
+> The last two patches convert the driver found in the IIO framework to use the
+> new module_i2c_driver and module_spi_driver macros to demonstrate their
+> potential and remove over 700 lines of code.
+> 
+> While this series only introduces these kind of helper macros for I2C and SPI
+> bus drivers the same scheme should be applicable to most other bus driver types.
+> For example PCI and USB seem to be good candidates.
+> 
+> It probably makes sense to merge the first three patches together. The last two
+> can probably, since this is not urgent, wait until the first three have reached
+> mainline.
 
-So my version has the +1 for the first as well, this is from the
-assumption that the bit passed in has been dealt with and should not be
-the first. ie. cont _after_ @bit instead of cont _at_ @bit.
+Nice, I like this, unless people object, I'll merge the first patch to
+the driver-core tree.
 
-This seems consistent with the list_*_continue primitives as well, which
-will start with the element after (or before for _reverse) the given
-position.
+I'll gladly take the i2c and spi patches as well if the subsystem
+maintainers there don't object, and I'll work on the USB patch as well.
 
-Thoughts?
+thanks,
+
+greg k-h
