@@ -1,148 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab1KPALa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 19:11:30 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:48274 "EHLO imr4.ericy.com"
+	id S932705Ab1KPAOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 19:14:08 -0500
+Received: from fieldses.org ([174.143.236.118]:57554 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757614Ab1KPAL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 19:11:29 -0500
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
-CC: Tabi Timur <B04825@freescale.com>, Tang Yuantian <B29983@freescale.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH v2] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Date: Tue, 15 Nov 2011 16:10:43 -0800
-Message-ID: <1321402243-7353-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1757629Ab1KPAOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 19:14:06 -0500
+Date: Tue, 15 Nov 2011 19:14:04 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+Message-ID: <20111116001404.GD12453@fieldses.org>
+References: <20111116102952.d653d19f69ca5a7fad8a0291@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116102952.d653d19f69ca5a7fad8a0291@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for SMBUS_READ_BLOCK_DATA to the i2c-mpc bus driver.
-Required to support the PMBus zl6100 driver with i2c-mpc.
+On Wed, Nov 16, 2011 at 10:29:52AM +1100, Stephen Rothwell wrote:
+> Hi Bruce,
+> 
+> After merging the nfsd tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> fs/nfsd/nfs4state.c:4446:5: error: expected ';', ',' or ')' before 'void'
+> fs/nfsd/nfs4state.c: In function 'nfsd_forget_locks':
+> fs/nfsd/nfs4state.c:4468:2: error: implicit declaration of function 'nfsd_release_n_owners' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 16bfdaafa2c6 ("nfsd4: share open and lock owner hash
+> tables").  Please build test *before* releasing code ...  :-(
 
-Reported-by: Tang Yuantian <B29983@freescale.com>
-Cc: Tang Yuantian <B29983@freescale.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-v2:
-  - renamed bool block --> bool recv_len
-  - Added I2C_FUNC_SMBUS_BLOCK_PROC_CALL to list of supported features
-  - Read data only after updating CCR register
+I do--so what happened?
 
-I have not been able to test this patch yet.
+Aie, sorry, I see: we added a CONFIG_NFSD_FAULT_INJECTION recently, but
+I didn't add that to my configs....
 
- drivers/i2c/busses/i2c-mpc.c |   60 ++++++++++++++++++++++++++++++++----------
- 1 files changed, 46 insertions(+), 14 deletions(-)
+OK, I've fixed up my test scripts, and I'll push out a fix soon.
 
-diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-index 107397a..74a2aa5 100644
---- a/drivers/i2c/busses/i2c-mpc.c
-+++ b/drivers/i2c/busses/i2c-mpc.c
-@@ -454,7 +454,7 @@ static int mpc_write(struct mpc_i2c *i2c, int target,
- }
- 
- static int mpc_read(struct mpc_i2c *i2c, int target,
--		    u8 *data, int length, int restart)
-+		    u8 *data, int length, int restart, bool recv_len)
- {
- 	unsigned timeout = i2c->adap.timeout;
- 	int i, result;
-@@ -470,7 +470,7 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
- 		return result;
- 
- 	if (length) {
--		if (length == 1)
-+		if (length == 1 && !recv_len)
- 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
- 		else
- 			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA);
-@@ -479,17 +479,43 @@ static int mpc_read(struct mpc_i2c *i2c, int target,
- 	}
- 
- 	for (i = 0; i < length; i++) {
-+		u8 byte;
-+
- 		result = i2c_wait(i2c, timeout, 0);
- 		if (result < 0)
- 			return result;
- 
--		/* Generate txack on next to last byte */
--		if (i == length - 2)
--			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_TXAK);
--		/* Do not generate stop on last byte */
--		if (i == length - 1)
--			writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA | CCR_MTX);
--		data[i] = readb(i2c->base + MPC_I2C_DR);
-+		/*
-+		 * For block reads, we have to know the total length (1st byte)
-+		 * before we can determine if we are done.
-+		 */
-+		if (i || !recv_len) {
-+			/* Generate txack on next to last byte */
-+			if (i == length - 2)
-+				writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA
-+					 | CCR_TXAK);
-+			/* Do not generate stop on last byte */
-+			if (i == length - 1)
-+				writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA
-+					 | CCR_MTX);
-+		}
-+
-+		byte = readb(i2c->base + MPC_I2C_DR);
-+
-+		/* Adjust length if first received byte is length */
-+		if (i == 0 && recv_len) {
-+			if (byte == 0 || byte > I2C_SMBUS_BLOCK_MAX)
-+				return -EPROTO;
-+			length += byte;
-+			/*
-+			 * For block reads, generate txack here if data length
-+			 * is 1 byte (total length is 2 bytes).
-+			 */
-+			if (length == 2)
-+				writeccr(i2c, CCR_MIEN | CCR_MEN | CCR_MSTA
-+					 | CCR_TXAK);
-+		}
-+		data[i] = byte;
- 	}
- 
- 	return length;
-@@ -532,12 +558,17 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
- 			"Doing %s %d bytes to 0x%02x - %d of %d messages\n",
- 			pmsg->flags & I2C_M_RD ? "read" : "write",
- 			pmsg->len, pmsg->addr, i + 1, num);
--		if (pmsg->flags & I2C_M_RD)
--			ret =
--			    mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
--		else
-+		if (pmsg->flags & I2C_M_RD) {
-+			bool recv_len = pmsg->flags & I2C_M_RECV_LEN;
-+
-+			ret = mpc_read(i2c, pmsg->addr, pmsg->buf, pmsg->len, i,
-+				       recv_len);
-+			if (recv_len && ret > 0)
-+				pmsg->len = ret;
-+		} else {
- 			ret =
- 			    mpc_write(i2c, pmsg->addr, pmsg->buf, pmsg->len, i);
-+		}
- 	}
- 	mpc_i2c_stop(i2c);
- 	return (ret < 0) ? ret : num;
-@@ -545,7 +576,8 @@ static int mpc_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
- 
- static u32 mpc_functionality(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
-+	  | I2C_FUNC_SMBUS_READ_BLOCK_DATA | I2C_FUNC_SMBUS_BLOCK_PROC_CALL;
- }
- 
- static const struct i2c_algorithm mpc_algo = {
--- 
-1.7.3.1
+--b.
+
+> 
+> I have used the nfsd tree from next-20111115 for today.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
 
