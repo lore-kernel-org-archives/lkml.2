@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab1KPAc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 19:32:56 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:40170 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696Ab1KPAcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 19:32:54 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: [PATCH] media: fix truncated entity specification
-Date: Wed, 16 Nov 2011 01:33:04 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.3; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-References: <4EB5ADA9.6010104@ladisch.de> <201111150148.07957.laurent.pinchart@ideasonboard.com> <4EC262DD.1070502@ladisch.de>
-In-Reply-To: <4EC262DD.1070502@ladisch.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932781Ab1KPAes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 19:34:48 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55928 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932742Ab1KPAeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 19:34:46 -0500
+Message-ID: <1321403685.21286.25.camel@Joe-Laptop>
+Subject: Re: Printk mulitple line message support
+From: Joe Perches <joe@perches.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Huang Ying <ying.huang@intel.com>,
+        William Douglas <william.r.douglas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 15 Nov 2011 16:34:45 -0800
+In-Reply-To: <21274.1321403394@turing-police.cc.vt.edu>
+References: <1321253936.13860.35.camel@yhuang-dev>
+	 <1321281640.2004.6.camel@Joe-Laptop> <1321318201.13860.51.camel@yhuang-dev>
+	 <1321319883.8944.7.camel@Joe-Laptop>
+	 <21274.1321403394@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111160133.04816.laurent.pinchart@ideasonboard.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Clemens,
-
-On Tuesday 15 November 2011 14:02:21 Clemens Ladisch wrote:
-> Laurent Pinchart wrote:
-> > On Saturday 05 November 2011 22:42:01 Clemens Ladisch wrote:
-> > > When enumerating an entity, assign the entire entity specification
-> > > instead of only the first two words.  (This requires giving the
-> > > specification union a name.)
-> > 
-> > What about this (untested) simpler patch ?
-> > 
-> > -	u_ent.v4l.major = ent->v4l.major;
-> > -	u_ent.v4l.minor = ent->v4l.minor;
-> > +	memcpy(&u_ent.raw, &ent->raw, sizeof(u_ent.raw));
+On Tue, 2011-11-15 at 19:29 -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 14 Nov 2011 17:18:03 PST, Joe Perches said:
 > 
-> I would have written it this way if ent->raw actually existed.
-> (And please don't tell me you want to increase the size of
-> struct media_entity by 172 bytes.  :)
+> > mp_start(&cookie)
+> > pr_<level>(fmt, ...);
+> > pr_mp_cont(&cookie, fmt, ...);
+> > pr_mp_cont(&cookie, fmt "\n", ...);
+> > mp_end(&cookie);
+> 
+> What should happen if buggy code returns before calling mp_end()?
 
-Oops, my bad :-)
+Every pr_cont use gets emitted with a cookie id
+which is annoying enough to get the code fixed
+rather quickly no? 
 
-Your patch looks good then, except that I would memcpy to u_ent.raw instead of 
-u_ent.v4l. Would you also be ok with shortening specification to spec (or 
-info) ?
-
--- 
-Regards,
-
-Laurent Pinchart
