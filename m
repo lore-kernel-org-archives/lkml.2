@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab1KPOTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 09:19:54 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40317 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab1KPOTx (ORCPT
+	id S1757894Ab1KPOVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 09:21:52 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:42969 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757759Ab1KPOVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 09:19:53 -0500
-X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=eC4cwosM5RIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=pCh46N-c8aBnP2KyDPMA:9 a=L8OyRJvy_n50WiAP8mYA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH -rt] printk: Don't emit console_cpu_notify() for
- CPU_DYING
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <20111116094219.GA9281@zhy>
-References: <20111116094219.GA9281@zhy>
+	Wed, 16 Nov 2011 09:21:50 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+cUk0uC+icRp29jyxIhawKNB5zCMroJTYBkI/jne
+	cbNal5JSzRtQDI
+Subject: Re: [PATCH 2/2] Compile error with allmodconfig and
+ CONFIG_PREEMPT_RT_FULL=y
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: John Kacur <jkacur@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1321363643.9105.13.camel@marge.simson.net>
+References: <1321235083-21756-1-git-send-email-jkacur@redhat.com>
+	 <1321235083-21756-2-git-send-email-jkacur@redhat.com>
+	 <20111114165148.GB2372@linux.vnet.ibm.com>
+	 <alpine.LFD.2.00.1111141837100.6707@localhost6.localdomain6>
+	 <1321303871.5011.6.camel@frodo> <1321334539.6347.43.camel@marge.simson.net>
+	 <1321359802.4181.1.camel@frodo> <1321363643.9105.13.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Nov 2011 09:19:50 -0500
-Message-ID: <1321453190.4181.21.camel@frodo>
+Date: Wed, 16 Nov 2011 15:21:45 +0100
+Message-ID: <1321453305.15820.25.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 17:42 +0800, Yong Zhang wrote:
-> Otherwise we will get below warning:
+On Tue, 2011-11-15 at 14:27 +0100, Mike Galbraith wrote:
+> On Tue, 2011-11-15 at 07:23 -0500, Steven Rostedt wrote:
 > 
-> BUG: sleeping function called from invalid context at /build/linux/kernel/rtmutex.c:645
-> in_atomic(): 1, irqs_disabled(): 1, pid: 1054, name: migration/9
-> no locks held by migration/9/1054.
-> irq event stamp: 36
-> hardirqs last  enabled at (35): [<ffffffff815f5b50>] _raw_spin_unlock_irq+0x30/0x70
-> hardirqs last disabled at (36): [<ffffffff810b7eaf>] stop_machine_cpu_stop+0x8f/0x110
-> softirqs last  enabled at (0): [<ffffffff81051b53>] copy_process+0x6d3/0x1640
-> softirqs last disabled at (0): [<          (null)>]           (null)
-> Pid: 1054, comm: migration/9 Not tainted 3.2.0-rc1-rt2-11312-gbf51260-dirty #12
-> Call Trace:
+> > Right, migrate_disable() should not have been an EXPORT_SYMBOL_GPL(), as
+> > it is a helper functions that is also exported as EXPORT_SYMBOL(). It
+> > shouldn't be called directly anyway, even by code in the kernel proper.
+> 
+> Ah.  Doesn't matter though.  I downloaded their latest, tried to build
+> it with EXPORT_SYMBOL(migrate_enable/disable) ..
+> 
+> FATAL: modpost: GPL-incompatible module nvidia.ko uses GPL-only symbol '__rt_mutex_init'
+> 
+> With that exported, the thing builds and runs, but rt_mutex_foo exports
+> appear to be intentionally GPL only, so it's "go fish" for nVidia.
 
-Thomas, doesn't printk not print to serial in atomic contexts? Or did
-that change?
+Bah.  I checked the crusty old hack for crusty old driver, and it still
+works just fine with a trivial define.  It'd probably work better if it
+didn't need cheezy raw_* hacks, but then it'd probably work better if it
+was GPL too ;-)
 
--- Steve
-
+	-Mike
 
