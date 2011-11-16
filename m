@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab1KPQz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:55:57 -0500
-Received: from mx3.utsp.utwente.nl ([130.89.2.14]:4802 "EHLO mx.utwente.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756830Ab1KPQzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:55:54 -0500
-X-Greylist: delayed 2443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 11:55:54 EST
-Subject: Routing problem on PTPP server since kernel 2.6.39
-From: Jeroen van Ingen <jeroen@zijndomein.nl>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Nov 2011 17:14:59 +0100
-Message-ID: <1321460099.3366.49.camel@icts-sp-039>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-UTwente-MailScanner-Information: Scanned by MailScanner. Contact icts.servicedesk@utwente.nl for more information.
-X-UTwente-MailScanner: Found to be clean
-X-UTwente-MailScanner-From: jeroen@zijndomein.nl
+	id S1757191Ab1KPQ40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:56:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34744 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757113Ab1KPQ4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 11:56:25 -0500
+Date: Wed, 16 Nov 2011 16:56:22 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
+Subject: Re: [PATCH 5/7] regmap: Check if a register is writable instead of
+ readable in regcache_read
+Message-ID: <20111116165622.GP29986@opensource.wolfsonmicro.com>
+References: <1321457302-8724-1-git-send-email-lars@metafoo.de>
+ <1321457302-8724-5-git-send-email-lars@metafoo.de>
+ <20111116161631.GK29986@opensource.wolfsonmicro.com>
+ <4EC3E619.70503@metafoo.de>
+ <20111116163812.GM29986@opensource.wolfsonmicro.com>
+ <4EC3EA61.2000705@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC3EA61.2000705@metafoo.de>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Nov 16, 2011 at 05:52:49PM +0100, Lars-Peter Clausen wrote:
+> On 11/16/2011 05:38 PM, Mark Brown wrote:
 
-We're in the process of upgrading our Linux-based (Ubuntu) VPN servers
-and running into a problem with PPTP connections.
+> >> Hm? The use case here is chips which do not support readback. So we never
+> >> want to fallback to a hardware read but still want to be able to do a cached
+> >> read.
 
-So far, we have been able to narrow it down to the following:
+> > This code will be run on every chip, including chips with read/write
+> > access.  Caches are useful for all chips.
 
+> Of course. And it still works for chips with read/write support with this
+> patch, but it doesn't work for chips without read support without this patch.
 
-Problem:
+No, it'll fail if we ever cache volatile registers at startup (which
+is a perfectly sensible thing to do for things like chip revisions -
+they're not something we can hard code the default for but they're not
+going to change at runtime).
 
-* First PPTP client connects successfully, consecutive PPTP clients
-can't connect. Cause seems to be: RADIUS authentication times out
-because DHCP address allocation fails, because somehow the DHCPDISCOVER
-to 255.255.255.255 is routed out ppp0 and not out of eth0.
+> > If you're looking at the read function and it's checking to see if the
+> > register is writeable the first thought would be that this is a
+> > cut'n'paste error.  The above code is at best *way* too cute.
 
-* Routing tables look fine, both before and after first PPTP client is
-connected.
+> We can of course add a comment explaining why it is regmap_writable instead
+> of regmap_readable.
 
-* Route cache however shows an entry for 255.255.255.255. pointing
-towards ppp0 and we can't explain how it got there. After flushing the
-route cache this entry quickly reappears.
-
-
-Last kernel working OK:
-* 2.6.38
-
-Kernels where we hit this issue:
-* First: 2.6.39
-* Most recent one tested: 3.1.1
-* All tested kernels are from Ubuntu repository.
-
-
-Questions:
-
-* Is this the correct list to assist in troubleshooting / narrowing down
-the cause? If not, which one is? Netdev or some other?
-
-* What specific info is needed? Already gathered is output from "ip rule
-list", "ip route show table" for the various tables and "ip route show
-cache", both with kernel 2.6.38 and kernel 2.6.39.
-
-
-Thanks in advance for any advice, insights or assistance.
-
-
-Regards,
-
-Jeroen van Ingen
-ICT Service Centre
-University of Twente, P.O.Box 217, 7500 AE Enschede, The Netherlands
-Telephone +31 53 489 2526, Fax +31 53 489 2383
-J.vanIngenSchenau@utwente.nl; http://www.utwente.nl/icts
-
+No, really - just do something legible and robust.  For example, teach
+regmap_readable() about the cache.
