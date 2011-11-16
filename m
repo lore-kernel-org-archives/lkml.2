@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab1KPRA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 12:00:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45997 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1KPRA6 (ORCPT
+	id S1756858Ab1KPRBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:01:33 -0500
+Received: from smtp-out-055.synserver.de ([212.40.185.55]:1303 "HELO
+	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1756122Ab1KPRBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 12:00:58 -0500
-X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=l4wf8OQxcBQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=WcGvJwXxC1aDNIH_oQkA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH] tracing: add trace console
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <1321461902.4502.14.camel@jlt3.sipsolutions.net>
-References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
-	 <20111116151037.GA26166@infradead.org>
-	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
-	 <1321461693.4181.26.camel@frodo>
-	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Nov 2011 12:00:56 -0500
-Message-ID: <1321462856.4181.28.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Wed, 16 Nov 2011 12:01:32 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9252
+Message-ID: <4EC3EC74.9040706@metafoo.de>
+Date: Wed, 16 Nov 2011 18:01:40 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Iceowl/1.0b2 Icedove/3.1.15
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
+Subject: Re: [PATCH 2/7] regmap: Make reg_config reg_defaults const
+References: <1321457302-8724-1-git-send-email-lars@metafoo.de> <1321457302-8724-2-git-send-email-lars@metafoo.de> <20111116161316.GI29986@opensource.wolfsonmicro.com> <4EC3E385.4060006@metafoo.de> <20111116162442.GL29986@opensource.wolfsonmicro.com> <4EC3E684.90109@metafoo.de> <20111116163908.GN29986@opensource.wolfsonmicro.com> <4EC3E9E5.7030909@metafoo.de> <20111116165151.GO29986@opensource.wolfsonmicro.com>
+In-Reply-To: <20111116165151.GO29986@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 17:45 +0100, Johannes Berg wrote:
+On 11/16/2011 05:51 PM, Mark Brown wrote:
+> On Wed, Nov 16, 2011 at 05:50:45PM +0100, Lars-Peter Clausen wrote:
+> 
+>> Hu? which patches did you apply? If I have regmap/for-next plus patch 1 and
+>> patch 2 of this series there isn't even a reference to reg_defaults in regmap.c
+> 
+> None of them, I just changed the code to make the defaults const - I'm
+> just reviewing by eyeball as I'm well aware of the fact that this isn't
+> const.
 
-> I briefly looked at it just after writing the email, but quickly got
-> lost in printk.c because of the multi-line handling it has. We could
-> instead trace each call to printk(), so the multi-line stuff would end
-> up in multiple events, but all of that code is too much vodoo for me :)
-
-Here's what can go into printk.c:
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 1455a0d..4b8445a 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -542,6 +542,7 @@ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
- static void _call_console_drivers(unsigned start,
- 				unsigned end, int msg_log_level)
- {
-+	trace_console(&LOG_BUF(start), end - start);
- 	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
- 			console_drivers && start != end) {
- 		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
-
-
-And then you can make a TRACE_EVENT(console) that takes a buffer and a
-len, and write that to the ring buffer.
-
--- Steve
-
-
+So you only applied part of the patch and are complaining that it you get an
+error?
