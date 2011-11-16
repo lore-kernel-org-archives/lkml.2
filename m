@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab1KPQub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:50:31 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35969 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab1KPQuO convert rfc822-to-8bit (ORCPT
+	id S1755900Ab1KPQvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:51:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44879 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab1KPQu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:50:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <op.v40bngvvwcw97g@localhost>
-References: <op.v4z4ihs2wcw97g@localhost>
-	<20111115195832.GA9384@srcf.ucam.org>
-	<op.v4z8zxnwwcw97g@localhost>
-	<20111115204201.GA10466@srcf.ucam.org>
-	<op.v40bngvvwcw97g@localhost>
-Date: Wed, 16 Nov 2011 08:50:12 -0800
-Message-ID: <CAK3HsqtQp=hSAX6nOU4wJTHNxyWNdgEF7uBiS=C=XrTCMiXX1w@mail.gmail.com>
-Subject: Re: Resuming from hibernation on T61 with nvidia
-From: Joshua Scoggins <theoretically.x64@gmail.com>
-To: dienet <dienet@poczta.fm>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
+	Wed, 16 Nov 2011 11:50:58 -0500
+Date: Wed, 16 Nov 2011 08:50:43 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: oskar.andero@sonyericsson.com,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
+        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
+Subject: Re: [PATCH v2] input: add driver support for Sharp gp2ap002a00f
+ proximity sensor
+Message-ID: <20111116165043.GB19305@core.coreip.homeip.net>
+References: <1321285158-7123-1-git-send-email-oskar.andero@sonyericsson.com>
+ <20111114170352.GA12659@core.coreip.homeip.net>
+ <20111115073400.GD9307@caracas.corpusers.net>
+ <1321457952.1790.16.camel@anish-Inspiron-N5050>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321457952.1790.16.camel@anish-Inspiron-N5050>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't forget that you can use nvidia-reportbug.sh...can't remember
-exactly what its called but
-I know that nvidia does actually look at those generated bug reports.
+On Thu, Nov 17, 2011 at 12:39:12AM +0900, anish kumar wrote:
+> On Tue, 2011-11-15 at 08:34 +0100, oskar.andero@sonyericsson.com wrote:
+> > > > +#ifdef CONFIG_PM_SLEEP
+> > > > +static int gp2a_suspend(struct device *dev)
+> > > > +{
+> > > > +	struct i2c_client *client = to_i2c_client(dev);
+> > > > +	struct gp2a_data *dt = i2c_get_clientdata(client);
+> > > > +	int error;
+> > > > +
+> > > > +	if (device_may_wakeup(&client->dev)) {
+> > > > +		enable_irq_wake(client->irq);
+> > > > +	} else {
+> > > 
+> > > This needs locking WRT open/close. Please acquire dt->device->mutex and
+> > > only disable if dt->device->users != 0. Similar shoudl be done for
+> > > resume.
+> > 
+> > I see what you mean. I will fix it. 
+> Is my understanding correct?You are going to disable the device 
+> only when there are users of the driver and not disable the device
+> otherwise.As anyway if there are no users the driver would have been
+> already disabled right?
 
--Josh
+Right, if there are no usrs device should already be in low power mode
+and we do not need anything to do here. Additionally, if device has no
+users we do not wantt o power it on in esume() as this will only cause
+us to waste power.
 
-On Tue, Nov 15, 2011 at 1:36 PM, dienet <dienet@poczta.fm> wrote:
-> On Tue, 15 Nov 2011 21:42:01 +0100, Matthew Garrett <mjg59@srcf.ucam.org>
->  wrote:
->
->> In that case it's almost certainly something you need to bring up with
->> nvidia.
->
-> Yes, but that might be hard, or even impossible. Maybe there is something
->  that I can change in kernel to fix it, without breaking too much or not
->  breaking anything ;)
->
-> --
-> pozdr0
-> dienet
->
-> "Old C programmers never die. They're just cast into void."
->
-> ----------------------------------------------------------------
-> Mamy mieszkanie wlasnie dla Ciebie! Sprawdz >>
-> http://linkint.pl/f2a80
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks.
+
+-- 
+Dmitry
