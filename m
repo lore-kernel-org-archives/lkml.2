@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab1KPElu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 23:41:50 -0500
-Received: from ozlabs.org ([203.10.76.45]:50593 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586Ab1KPElt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 23:41:49 -0500
-Date: Wed, 16 Nov 2011 15:40:32 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "B04825@freescale.com" <B04825@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "scottwood@freescale.com" <scottwood@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [RFC PATCH 0/2] powerpc: CPU cache op cleanup
-Message-ID: <20111116044032.GA26476@bloggs.ozlabs.ibm.com>
-References: <1320986410.21206.48.camel@pasglop>
- <1321324332-22964-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <1321396146.3170.11.camel@pasglop>
- <022078B9-CD41-4D24-B44A-F85256A69D0A@boeing.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <022078B9-CD41-4D24-B44A-F85256A69D0A@boeing.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752537Ab1KPEnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 23:43:17 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64764 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab1KPEnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 23:43:16 -0500
+Subject: [PATCH] usb : gadget : usbstring : fix style problems
+From: Tonylijo <mail@tonylijo.in>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 10:13:02 +0530
+Message-ID: <1321418582.2443.4.camel@debian1.ic>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 04:45:18PM -0600, Moffett, Kyle D wrote:
-> On Nov 15, 2011, at 17:29, Benjamin Herrenschmidt wrote:
-> > On Mon, 2011-11-14 at 21:32 -0500, Kyle Moffett wrote:
-> >> Unfortunately, I've been staring at PPC asm for long enough that I
-> >> have a migraine headache and I'm going to have to stop here for now.
-> >> If somebody else wants to tackle fixing up the 32-bit copy_page() and
-> >> __copy_tofrom_user() routines it would be highly appreciated. 
-> > 
-> > Yeah that's the one everybody's avoiding :-)
-> > 
-> > What about my idea of instead compiling it multiple times with a
-> > different size and fixing up the branch to call the right one ?
-> 
-> I guess that's doable, although I have to admit that idea almost gives
-> me more of a headache than trying to fix up the 32-bit ASM.
-> 
-> One thing that bothers me in particular is that both 32/64 versions of
-> __copy_tofrom_user() are dramatically overcomplicated for what they
-> ought to be doing.
-> 
-> It would seem that if we get a page fault during an unaligned copy, we
-> ought to just give up and fall back to a simple byte-by-byte copy loop
-> from wherever we left off.  That would eliminate 90% of the ugly
-> special cases without actually hurting performance, right?
+Minor fixes for problems found by checkpatch.pl in usbstring.c.
 
-That's basically what we do, IIRC, and most of the complexity comes
-from working out where we were up to.  We could probably use a simpler
-approximation that means we might copy some bytes twice.  In fact the
-greatest simplification would probably be to implement range entries
-in the exception table so we can just have one entry for all the loads
-and stores instead of an entry for each individual load and store.
+Signed-off-by: Tonylijo Jose <mail@tonylijo.in>
+---
+diff --git a/drivers/usb/gadget/usbstring.c
+b/drivers/usb/gadget/usbstring.c
+index 58c4d37..2bdc56a 100644
+--- a/drivers/usb/gadget/usbstring.c
++++ b/drivers/usb/gadget/usbstring.c
+@@ -32,8 +32,9 @@ static int utf8_to_utf16le(const char *s, __le16 *cp,
+unsigned len)
+ 	 */
+ 	while (len != 0 && (c = (u8) *s++) != 0) {
+ 		if (unlikely(c & 0x80)) {
+-			// 2-byte sequence:
+-			// 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
++			/* 2-byte sequence:
++			 * 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
++			 */
+ 			if ((c & 0xe0) == 0xc0) {
+ 				uchar = (c & 0x1f) << 6;
+ 
+@@ -43,8 +44,9 @@ static int utf8_to_utf16le(const char *s, __le16 *cp,
+unsigned len)
+ 				c &= 0x3f;
+ 				uchar |= c;
+ 
+-			// 3-byte sequence (most CJKV characters):
+-			// zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
++			/* 3-byte sequence (most CJKV characters):
++			 * zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
++			 */
+ 			} else if ((c & 0xf0) == 0xe0) {
+ 				uchar = (c & 0x0f) << 12;
+ 
+@@ -64,12 +66,12 @@ static int utf8_to_utf16le(const char *s, __le16
+*cp, unsigned len)
+ 				if (0xd800 <= uchar && uchar <= 0xdfff)
+ 					goto fail;
+ 
+-			// 4-byte sequence (surrogate pairs, currently rare):
+-			// 11101110wwwwzzzzyy + 110111yyyyxxxxxx
+-			//     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
+-			// (uuuuu = wwww + 1)
+-			// FIXME accept the surrogate code points (only)
+-
++			/* 4-byte sequence (surrogate pairs, currently rare):
++			 * 11101110wwwwzzzzyy + 110111yyyyxxxxxx
++			 *     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
++			 * (uuuuu = wwww + 1)
++			 * FIXME accept the surrogate code points (only)
++			 */
+ 			} else
+ 				goto fail;
+ 		} else
+@@ -85,7 +87,7 @@ fail:
+ 
+ 
+ /**
+- * usb_gadget_get_string - fill out a string descriptor 
++ * usb_gadget_get_string - fill out a string descriptor
+  * @table: of c strings encoded using UTF-8
+  * @id: string id, from low byte of wValue in get string descriptor
+  * @buf: at least 256 bytes
+@@ -102,17 +104,17 @@ fail:
+  * characters (which are also widely used in C strings).
+  */
+ int
+-usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8
+*buf)
++usb_gadget_get_string(struct usb_gadget_strings *table, int id, u8
+*buf)
+ {
+ 	struct usb_string	*s;
+ 	int			len;
+ 
+ 	/* descriptor 0 has the language id */
+ 	if (id == 0) {
+-		buf [0] = 4;
+-		buf [1] = USB_DT_STRING;
+-		buf [2] = (u8) table->language;
+-		buf [3] = (u8) (table->language >> 8);
++		buf[0] = 4;
++		buf[1] = USB_DT_STRING;
++		buf[2] = (u8) table->language;
++		buf[3] = (u8) (table->language >> 8);
+ 		return 4;
+ 	}
+ 	for (s = table->strings; s && s->s; s++)
+@@ -124,13 +126,13 @@ usb_gadget_get_string (struct usb_gadget_strings
+*table, int id, u8 *buf)
+ 		return -EINVAL;
+ 
+ 	/* string descriptors have length, tag, then UTF16-LE text */
+-	len = min ((size_t) 126, strlen (s->s));
+-	memset (buf + 2, 0, 2 * len);	/* zero all the bytes */
++	len = min((size_t) 126, strlen(s->s));
++	memset(buf + 2, 0, 2 * len);	/* zero all the bytes */
+ 	len = utf8_to_utf16le(s->s, (__le16 *)&buf[2], len);
+ 	if (len < 0)
+ 		return -EINVAL;
+-	buf [0] = (len + 1) * 2;
+-	buf [1] = USB_DT_STRING;
+-	return buf [0];
++	buf[0] = (len + 1) * 2;
++	buf[1] = USB_DT_STRING;
++	return buf[0];
+ }
+ 
 
-> For a page-fault during a cacheline-aligned copy, we should be able to
-> handle the exception and retry from the last cacheline without much
-> logic, again with good performance.
-> 
-> With that said, I'm curious about the origin of the PPC32 ASM.  In
-> particular, it looks like it was generated by GCC at some point in the
-> distant past, and I'm wondering if there's a good way to rewrite that
-> file in C and trick GCC into generating the relevant exception tables
-> for it?
 
-Why do you think it was generated by gcc?  I wrote the original
-version, but I think it got extended and macro-ized by others.
-
-Paul.
