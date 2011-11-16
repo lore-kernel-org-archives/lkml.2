@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab1KPL0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 06:26:40 -0500
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:41753 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756156Ab1KPL0i (ORCPT
+	id S1756280Ab1KPL0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 06:26:42 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:38003 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756087Ab1KPL0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 06:26:38 -0500
+	Wed, 16 Nov 2011 06:26:40 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <rabin.vincent@stericsson.com>, <linus.walleij@stericsson.com>,
         <srinidhi.kasagar@stericsson.com>
@@ -18,9 +18,9 @@ Cc: <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
         <grant.likely@secretlab.ca>
-Subject: [PATCH 2/5] mfd/stmpe: Move struct stmpe_variant_info to linux/mfd/stmpe.h
-Date: Wed, 16 Nov 2011 16:56:07 +0530
-Message-ID: <2387af0d60d15dda03153a8802905196eeb6ad8f.1321442150.git.viresh.kumar@st.com>
+Subject: [PATCH 3/5] mfd/stmpe: Add support for stmpe variant 610
+Date: Wed, 16 Nov 2011 16:56:08 +0530
+Message-ID: <ac67418530980e5ac3c25e8665d5ba3c5ef37c8e.1321442150.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1321442150.git.viresh.kumar@st.com>
 References: <cover.1321442150.git.viresh.kumar@st.com>
@@ -30,112 +30,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratyush Anand <pratyush.anand@st.com>
+STMPE610 is very much like STMPE811, except the number of gpio pins, which is 8
+in 811 and 6 in 610. This patch adds support for variant 610. STMPE610 will
+share most of the code with STMPE811.
 
-Some variants like GPIO of STMPE801 have different register definition. So,
-variant ID will be needed by stmpe-gpio.c to distinguish between STMPE801. Move
-this struct definition from drivers/mfd/stmpe.h to include/linux/stmpe.h
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/mfd/stmpe.h       |   32 --------------------------------
- include/linux/mfd/stmpe.h |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+), 32 deletions(-)
+ drivers/mfd/stmpe-i2c.c   |    1 +
+ drivers/mfd/stmpe-spi.c   |    1 +
+ drivers/mfd/stmpe.c       |   20 ++++++++++++++++++--
+ include/linux/mfd/stmpe.h |    1 +
+ 4 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
-index a73f4c1..7df0bda 100644
---- a/drivers/mfd/stmpe.h
-+++ b/drivers/mfd/stmpe.h
-@@ -44,38 +44,6 @@ struct stmpe_variant_block {
+diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
+index 671fd5c..c004319 100644
+--- a/drivers/mfd/stmpe-i2c.c
++++ b/drivers/mfd/stmpe-i2c.c
+@@ -71,6 +71,7 @@ static int __devexit stmpe_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static const struct i2c_device_id stmpe_i2c_id[] = {
++	{ "stmpe610", STMPE610 },
+ 	{ "stmpe811", STMPE811 },
+ 	{ "stmpe1601", STMPE1601 },
+ 	{ "stmpe2401", STMPE2401 },
+diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
+index 21861d8..25928f6 100644
+--- a/drivers/mfd/stmpe-spi.c
++++ b/drivers/mfd/stmpe-spi.c
+@@ -109,6 +109,7 @@ static int __devexit stmpe_spi_remove(struct spi_device *spi)
+ }
+ 
+ static const struct spi_device_id stmpe_spi_id[] = {
++	{ "stmpe610", STMPE610 },
+ 	{ "stmpe811", STMPE811 },
+ 	{ "stmpe1601", STMPE1601 },
+ 	{ "stmpe2401", STMPE2401 },
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index a564f91..34046b5 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -321,7 +321,7 @@ static struct mfd_cell stmpe_keypad_cell = {
  };
  
- /**
-- * struct stmpe_variant_info - variant-specific information
-- * @name:	part name
-- * @id_val:	content of CHIPID register
-- * @id_mask:	bits valid in CHIPID register for comparison with id_val
-- * @num_gpios:	number of GPIOS
-- * @af_bits:	number of bits used to specify the alternate function
-- * @regs: variant specific registers.
-- * @blocks:	list of blocks present on this device
-- * @num_blocks:	number of blocks present on this device
-- * @num_irqs:	number of internal IRQs available on this device
-- * @enable:	callback to enable the specified blocks.
-- *		Called with the I/O lock held.
-- * @get_altfunc: callback to get the alternate function number for the
-- *		 specific block
-- * @enable_autosleep: callback to configure autosleep with specified timeout
-- */
--struct stmpe_variant_info {
--	const char *name;
--	u16 id_val;
--	u16 id_mask;
--	int num_gpios;
--	int af_bits;
--	const u8 *regs;
--	struct stmpe_variant_block *blocks;
--	int num_blocks;
--	int num_irqs;
--	int (*enable)(struct stmpe *stmpe, unsigned int blocks, bool enable);
--	int (*get_altfunc)(struct stmpe *stmpe, enum stmpe_block block);
--	int (*enable_autosleep)(struct stmpe *stmpe, int autosleep_timeout);
--};
--
--/**
-  * struct stmpe_client_info - i2c or spi specific routines/info
-  * @data: client specific data
-  * @read_byte: read single byte
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index 5afaf89..102c06d 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -51,6 +51,7 @@ enum {
+ /*
+- * Touchscreen (STMPE811)
++ * Touchscreen (STMPE811 or STMPE610)
+  */
  
- struct stmpe_variant_info;
- struct stmpe_client_info;
-+struct stmpe_variant_block;
- 
- /**
-  * struct stmpe - STMPE MFD structure
-@@ -86,6 +87,38 @@ struct stmpe {
- 	struct stmpe_platform_data *pdata;
+ static struct resource stmpe_ts_resources[] = {
+@@ -346,7 +346,7 @@ static struct mfd_cell stmpe_ts_cell = {
  };
  
-+/**
-+ * struct stmpe_variant_info - variant-specific information
-+ * @name:	part name
-+ * @id_val:	content of CHIPID register
-+ * @id_mask:	bits valid in CHIPID register for comparison with id_val
-+ * @num_gpios:	number of GPIOS
-+ * @af_bits:	number of bits used to specify the alternate function
-+ * @regs: variant specific registers.
-+ * @blocks:	list of blocks present on this device
-+ * @num_blocks:	number of blocks present on this device
-+ * @num_irqs:	number of internal IRQs available on this device
-+ * @enable:	callback to enable the specified blocks.
-+ *		Called with the I/O lock held.
-+ * @get_altfunc: callback to get the alternate function number for the
-+ *		 specific block
-+ * @enable_autosleep: callback to configure autosleep with specified timeout
-+ */
-+struct stmpe_variant_info {
-+	const char *name;
-+	u16 id_val;
-+	u16 id_mask;
-+	int num_gpios;
-+	int af_bits;
-+	const u8 *regs;
-+	struct stmpe_variant_block *blocks;
-+	int num_blocks;
-+	int num_irqs;
-+	int (*enable)(struct stmpe *stmpe, unsigned int blocks, bool enable);
-+	int (*get_altfunc)(struct stmpe *stmpe, enum stmpe_block block);
-+	int (*enable_autosleep)(struct stmpe *stmpe, int autosleep_timeout);
+ /*
+- * STMPE811
++ * STMPE811 or STMPE610
+  */
+ 
+ static const u8 stmpe811_regs[] = {
+@@ -417,6 +417,21 @@ static struct stmpe_variant_info stmpe811 = {
+ 	.get_altfunc	= stmpe811_get_altfunc,
+ };
+ 
++/* Similar to 811, except number of gpios */
++static struct stmpe_variant_info stmpe610 = {
++	.name		= "stmpe610",
++	.id_val		= 0x0811,
++	.id_mask	= 0xffff,
++	.num_gpios	= 6,
++	.af_bits	= 1,
++	.regs		= stmpe811_regs,
++	.blocks		= stmpe811_blocks,
++	.num_blocks	= ARRAY_SIZE(stmpe811_blocks),
++	.num_irqs	= STMPE811_NR_INTERNAL_IRQS,
++	.enable		= stmpe811_enable,
++	.get_altfunc	= stmpe811_get_altfunc,
 +};
 +
- extern int stmpe_reg_write(struct stmpe *stmpe, u8 reg, u8 data);
- extern int stmpe_reg_read(struct stmpe *stmpe, u8 reg);
- extern int stmpe_block_read(struct stmpe *stmpe, u8 reg, u8 length,
+ /*
+  * STMPE1601
+  */
+@@ -651,6 +666,7 @@ static struct stmpe_variant_info stmpe2403 = {
+ };
+ 
+ static struct stmpe_variant_info *stmpe_variant_info[] = {
++	[STMPE610]	= &stmpe610,
+ 	[STMPE811]	= &stmpe811,
+ 	[STMPE1601]	= &stmpe1601,
+ 	[STMPE2401]	= &stmpe2401,
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index 102c06d..79e4fc4 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -20,6 +20,7 @@ enum stmpe_block {
+ };
+ 
+ enum stmpe_partnum {
++	STMPE610,
+ 	STMPE811,
+ 	STMPE1601,
+ 	STMPE2401,
 -- 
 1.7.2.2
 
