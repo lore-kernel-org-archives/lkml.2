@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab1KPSxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 13:53:07 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:50345 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab1KPSxD (ORCPT
+	id S1752220Ab1KPSzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 13:55:01 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57878 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab1KPSzA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 13:53:03 -0500
-Message-ID: <4EC40682.2050602@linux.vnet.ibm.com>
-Date: Wed, 16 Nov 2011 16:52:50 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Wed, 16 Nov 2011 13:55:00 -0500
 MIME-Version: 1.0
-To: Roberto Sassu <roberto.sassu@polito.it>
-CC: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it> <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
-In-Reply-To: <4EC3CA9A.3070401@polito.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111618-9254-0000-0000-000007425B35
+In-Reply-To: <4EB9E726.2000500@gmail.com>
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
+ <1320801583-12774-8-git-send-email-grant.likely@secretlab.ca> <4EB9E726.2000500@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 16 Nov 2011 11:54:38 -0700
+X-Google-Sender-Auth: H3GOQ0UxdHwd7ni2uajKlUyl6I4
+Message-ID: <CACxGe6u=oph84k4uS6V3EJN=aiQfHxVOGPahOuWB4Vfx-6bEHA@mail.gmail.com>
+Subject: Re: [RFC 7/8] arm/clkdev: lookup clocks from OF clock providers
+To: Rob Herring <robherring2@gmail.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
-
-On 16-11-2011 12:37, Roberto Sassu wrote:
-> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
->> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
->>> The ima_add_digest_entry() function has been split in order to avoid
->>> adding an entry in the measurements list for which the PCR extend
->>> operation subsequently fails. Required memory is allocated earlier 
->>> in the
->>> new function ima_prepare_template_entry() and the template entry is 
->>> added
->>> after ima_pcr_extend().
->>>
->>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+On Tue, Nov 8, 2011 at 7:36 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 11/08/2011 07:19 PM, Grant Likely wrote:
+>> From: Jeremy Kerr <jeremy.kerr@canonical.com>
 >>
+>> Hook the OF clock provider infrastructure to clk_get.
+>>
+>> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  drivers/clk/clkdev.c |    7 +++++++
+>>  1 files changed, 7 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+>> index 6db161f..63f81c9 100644
+>> --- a/drivers/clk/clkdev.c
+>> +++ b/drivers/clk/clkdev.c
+>> @@ -19,6 +19,8 @@
+>>  #include <linux/mutex.h>
+>>  #include <linux/clk.h>
+>>  #include <linux/clkdev.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_clk.h>
+>>
+>>  static LIST_HEAD(clocks);
+>>  static DEFINE_MUTEX(clocks_mutex);
+>> @@ -78,6 +80,11 @@ EXPORT_SYMBOL(clk_get_sys);
+>>  struct clk *clk_get(struct device *dev, const char *con_id)
+>>  {
+>>       const char *dev_id = dev ? dev_name(dev) : NULL;
+>> +     struct clk *clk;
+>> +
 >
-> Hi Mimi
+> Need NULL check for dev (and then init clk to NULL):
 >
-> i don't know if this condition can happen, but suppose that
-> for whatever reason the PCR extend fails. In this case, since
-> the PCR is not extended, the measurements list can be modified,
-> by removing the non-measured entry, without this fact being
-> detected by the verifier. So, probably we can avoid to display
-> the entry.
+>        if (dev && dev->of_node)
+>> +     clk = of_clk_get_by_name(dev->of_node, con_id);
 >
->
-Hi Roberto,
+>> +     if (clk && __clk_get(clk))
+>> +             return clk;
 
-IMA's trustworthiness is built on the assumption that the TPM underneath can
-be trusted. If that can't be, the eventlog alone doesn't provide us any 
-security.
-It's the TPM device driver's job though to workaround any HW bug so that 
-in the
-end all its stakeholders have their commands processed successfully, as 
-we've
-pursued in some changes here:
+Fixed, thanks.
 
-http://marc.info/?l=linux-kernel&m=132144742019589&w=2 
-<http://marc.info/?l=linux-kernel&m=132144742019589&w=2>
-
-What you're doing is to indeed move part of that trust to the software 
-stack,
-assuming that in case the TPM fails to process a command, you could fall 
-back to
-the event log anyways. It isn't a matter of it's a right or wrong 
-software engineering
-decision, but inside the trusted computing scope, it breaks the model.
-
-Rajiv
-
+g.
