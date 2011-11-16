@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1KPPj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:39:27 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47192 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab1KPPj0 (ORCPT
+	id S1754636Ab1KPPmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:42:14 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:35203 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754000Ab1KPPmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:39:26 -0500
-Date: Thu, 17 Nov 2011 02:39:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, pjones@redhat.com
-Subject: Re: swiotlb and ibft tree
-Message-Id: <20111117023915.1ff86ab1f99f0cf8ba5cbc24@canb.auug.org.au>
-In-Reply-To: <20111116135650.GA6958@phenom.dumpdata.com>
-References: <20111116135650.GA6958@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Nov_2011_02_39_15_+1100_zLLTApR3lBaiFAml"
+	Wed, 16 Nov 2011 10:42:12 -0500
+Date: Wed, 16 Nov 2011 10:42:11 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
+In-Reply-To: <1321449252.2565.2.camel@hp6530s>
+Message-ID: <Pine.LNX.4.44L0.1111161038360.2086-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Nov_2011_02_39_15_+1100_zLLTApR3lBaiFAml
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 16 Nov 2011, Lin Ming wrote:
 
-Hi Konrad,
+> > > Something to be careful about is there are different types of suspend
+> > > states (PMSG_*).  IIUC, runtime PM is using PMSG_SUSPEND.  Other
+> > > states may or may not be compatible with PMSG_SUSPEND expectations, so
+> > > you can skip suspend operation if the newly requested state is
+> > > PMSG_SUSPEND but otherwise the controller needs to be woken up and
+> > > told to comply to the new state.
+> > 
+> > That's right.  Surprisingly enough (and contrary to what I wrote
+> > earlier), the sd_suspend() routine doesn't spin down a drive for
+> > runtime suspend.  This probably should be considered a bug.
+> > 
+> > Anyway, it looks like the correct approach would be more like this:
+> 
+> Thanks.
+> 
+> I think ata_port_suspend also needs to call pm_runtime_resume, as below.
+> 
+> static int ata_port_suspend(struct device *dev)
+> {
+>         struct ata_port *ap = to_ata_port(dev);
+>         int rc;
+> 
+>         pm_runtime_resume(dev);
+>         rc = ata_port_request_pm(ap, PMSG_SUSPEND, 0, ATA_EHI_QUIET, 1);
+>         return rc;
+> }
 
-On Wed, 16 Nov 2011 08:56:50 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
-e.com> wrote:
->
-> Can you drop those two trees please? They haven't been much if any new up=
-dates
-> to those trees and if there are - I will be more than happy to send a req=
-uest asking
-> for them to be included in linux-next.
+Maybe not.  You know a lot more about the state of the ATA ports than
+you do about the state of the SCSI devices.  If there's no difference
+in the port states for runtime suspend and system sleep then you don't
+have to power up the port just in order to power it down again.
 
-Done.
+Alan Stern
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__17_Nov_2011_02_39_15_+1100_zLLTApR3lBaiFAml
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOw9kjAAoJEECxmPOUX5FE918P/jJfENiD4ReZGUsRDROZSHQN
-1xeWvdquc9rKduxr9VT0Ob2ex9otgOKqNwKrpm+S9waaSLCAMp/2MTraRoRH3jF7
-idnPDVTC8aQs2MRk0f30LyO9pgSombNioJ6oE8nPQ5Rc65IFWCB5QDoACe23aKXH
-b+QYI9DY9Wc4Oyq9kDWomg450e/bOYyFatlTluQg2MnEuLIuy4mJy1FTgqK1kbiC
-LEPPy1NRQqxnkNNT2x6opADkFYsLYdsa6dWvJlNtzM39pV/KhQFN1gPtUT6xEqWS
-2Kb+Mh1CziH/btEG3dkh06pV3E1ZfzMo51/qd6IfAyy9HNt9AP9sVH16jicgoh1B
-6r7eoNNeIDrcUELzY8Kb36AJkJvcFyRH0hV8irQnLgfXBRBdExnNO+lJkXdQ37W0
-s794PUxuik7+d2nVMCXT2Gj4Vwf0T2e5MMb+6M9If6GH0njyYpaLnE6G7LWz46oB
-RhahIptl7IPhqmCGSi5POT8XxA8Rb5tNARi7eMmPWU9wZpS1MgqZf669PHdT7eLb
-WC6+EMczOEGP0hSvde5kfaSz4KqyXtpeBIkIjS6J5G+Nn6pFsYdiSB84Vvyv97PC
-bZrPRF2xPZU2XiIEeOEVWLKtOiJEvz6bC7HktE5oAXWSoy+OEi2s15fbU+nV8ryu
-hXHebI7dTt46LpXbXXpL
-=/7kE
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Nov_2011_02_39_15_+1100_zLLTApR3lBaiFAml--
