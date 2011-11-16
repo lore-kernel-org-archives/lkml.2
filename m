@@ -1,98 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab1KPWlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:41:25 -0500
-Received: from mail132.messagelabs.com ([216.82.242.115]:47718 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab1KPWlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:41:24 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-132.messagelabs.com!1321483202!22154251!23
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>
-Date: Wed, 16 Nov 2011 16:41:11 -0600
-Subject: RE: basic_mmio_gpio: Add hook for simple debounce register
-Thread-Topic: basic_mmio_gpio: Add hook for simple debounce register
-Thread-Index: AcykqFLzbfG14FU2RjSs/lUk2YRcyAAB5lSA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3E93FE16A@AUSP01VMBX24.collaborationhost.net>
-References: <201111161202.15485.hartleys@visionengravers.com>
- <20111116214007.GA26380@oksana.dev.rtsoft.ru>
-In-Reply-To: <20111116214007.GA26380@oksana.dev.rtsoft.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754108Ab1KPWpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:45:00 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45541 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab1KPWo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 17:44:58 -0500
+Date: Wed, 16 Nov 2011 14:44:47 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 2/9] rcu: Add rcutorture system-shutdown
+ capability
+Message-ID: <20111116224447.GO2355@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111115202736.GA11030@linux.vnet.ibm.com>
+ <1321388885-11211-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111115214615.GD31473@leaf>
+ <20111116203226.GK2355@linux.vnet.ibm.com>
+ <20111116221545.GA2325@leaf>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116221545.GA2325@leaf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11111622-5806-0000-0000-000007B20268
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAGMfXNv000783
 
-On Wednesday, November 16, 2011 2:40 PM, Anton Vorontsov wrote:
+On Wed, Nov 16, 2011 at 02:15:45PM -0800, Josh Triplett wrote:
+> On Wed, Nov 16, 2011 at 12:32:26PM -0800, Paul E. McKenney wrote:
+> > On Tue, Nov 15, 2011 at 01:46:15PM -0800, Josh Triplett wrote:
+> > > On Tue, Nov 15, 2011 at 12:27:58PM -0800, Paul E. McKenney wrote:
+> > > > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > 
+> > > > Although it is easy to run rcutorture tests under KVM, there is currently
+> > > > no nice way to run such a test for a fixed time period, collect all of
+> > > > the rcutorture data, and then shut the system down cleanly.  This commit
+> > > > therefore adds an rcutorture module parameter named "shutdown_secs" that
+> > > > specified the run duration in seconds, after which rcutorture terminates
+> > > > the test and powers the system down.  The default value for "shutdown_secs"
+> > > > is zero, which disables shutdown.
+> > > > 
+> > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > >From your recent post on this, I thought you found a solution through
+> > > the init= parameter, which seems preferable.
+> > 
+> > For some things, the init= parameter does work great.  I do intend to
+> > use it when collecting event-tracing and debugfs data, for example.
+> > 
+> > However, there is still a need for RCU torture testing that will operate
+> > correctly regardless of how userspace is set up.  That, and there are
+> > quite a few different kernel test setup, each with their own peculiar
+> > capabilities and limitations.  So what happened was that before people
+> > suggested the init= approach, I implemented enough of the in-kernel
+> > approach to appreciate how much it simplifies life for the common case of
+> > "just torture-test RCU".  As in I should have done this long ago.
 > 
-> Hello,
-> 
-> On Wed, Nov 16, 2011 at 12:02:15PM -0700, H Hartley Sweeten wrote:
->> Some platforms using the basic memory-mapped GPIO library have
->> simple input debounce support that is enabled/disabled, per-input,
->> by setting/clearing bits in a control register. Add a hook in the
->> bgpio_chip structure to hold the void __iomem * for this register.
->> 
->> This register, and the gc.set_debounce callback should set by the
->> platform after calling bgpio_init() and before calling gpiochip_add().
->
-> I think it is possible to add 'reg_db' into the device-specific
-> (private) structure, so no need to add it into the generic one
-> (the fact that the generic gpio code does not use it at all, is a
-> sign that you should place it into a private struct).
+> Seems like it would work just as easily to point init at a statically
+> linked C program which just sleeps for a fixed time and then shuts down.
+> However, given the special-purpose nature of rcutorture, I won't
+> complain that strongly.
 
-Good point.
+I did consider a statically linked C program, but that can introduce the
+need for cross-compilation into situations that do not otherwise need it.
 
-I'm working on converting the gpio-ep93xx driver's interrupt support
-over to genirq.  The debounce register was the only thing hanging this
-up.
+> > > > --- a/kernel/rcutorture.c
+> > > > +++ b/kernel/rcutorture.c
+> > > > @@ -61,9 +61,10 @@ static int test_no_idle_hz;	/* Test RCU's support for tickless idle CPUs. */
+> > > >  static int shuffle_interval = 3; /* Interval between shuffles (in sec)*/
+> > > >  static int stutter = 5;		/* Start/stop testing interval (in sec) */
+> > > >  static int irqreader = 1;	/* RCU readers from irq (timers). */
+> > > > -static int fqs_duration = 0;	/* Duration of bursts (us), 0 to disable. */
+> > > > -static int fqs_holdoff = 0;	/* Hold time within burst (us). */
+> > > > +static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
+> > > > +static int fqs_holdoff;		/* Hold time within burst (us). */
+> > > 
+> > > Looks like these lines picked up unrelated whitespace changes in this
+> > > commit.
+> > 
+> > Turns out that my initial patch added another variable that I explicitly
+> > initialized to zero.  Of course, checkpatch yelled at me about this, so
+> > I figured I should fix the other nearby occurrences of this while I was
+> > at it.  Doesn't really seem to me to be worth a separate patch, though.
+> 
+> Ah, I missed the removal of the initializer.  However, I don't see the
+> harm in splitting out the trivial two-line patch, rather than folding it
+> into an unrelated change which just happens to change lines nearby.
 
-> I.e. something like this:
-> 
-> struct foo_chip {
-> 	struct bgpio_chip bgc;
-> 	void __iomem *reg_db;
-> };
-> 
-> static struct foo_chip *to_foo_chip(struct bgpio_chip *bgc)
-> {
-> 	return container_of(bgc, struct foo_chip, bgc);
-> }
-> 
-> static void foo_gpio_set_debounce(struct gpio_chip *gc, ...)
-> {
-> 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> 	struct foo_chip *fgc = to_foo_chip(bgc);
-> 
-> 	writel(..., fgc->reg_db);
-> }
-> 
-> 
-> Or, if the generic code will use that register, then please introduce
-> the code at the same time you introduce reg_db.
+Ummm...  Laziness on my part?  ;-)
 
-Currently the reg_db usage is outside the generic code.
+> > > > +static int
+> > > > +rcu_torture_shutdown(void *arg)
+> > > > +{
+> > > > +	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
+> > > > +	while (ULONG_CMP_LT(jiffies, shutdown_time) &&
+> > > > +	       !kthread_should_stop()) {
+> > > > +		if (verbose)
+> > > > +			printk(KERN_ALERT "%s" TORTURE_FLAG
+> > > > +			       "rcu_torture_shutdown task: %lu "
+> > > > +			       "jiffies remaining\n",
+> > > > +			       torture_type, shutdown_time - jiffies);
+> > > > +		schedule_timeout_interruptible(HZ);
+> > > > +	}
+> > > 
+> > > Any particular reason to wake up once a second here?  If !verbose, this could just
+> > > sleep until shutdown time.  (And does the verbose output really help
+> > > here, given printk timestamps?)
+> > 
+> > It actually did help me find a bug where it was failing to shut down.
+> > I could use different code paths, but that would defeat the debugging.
+> > 
+> > So I increased the sleep time to 30 seconds.  Fair enough?
+> 
+> Well, now that you've debugged rcutorture's shutdown routine, would it
+> suffice to have a printk when you actually go to shut down, without
+> waking up for previous printks when not shutting down yet?
+> 
+> (The poll time doesn't really matter, and sleeping for 30 seconds before
+> checking the time means you might overshoot by up to 30 seconds.  I'd
+> like to avoid polling to begin with when you know exactly how long you
+> need to sleep.)
 
-I'll modify the gpio-ep93xx driver using something like you have shown
-above.  If it looks reasonable to add to gpio-generic we can move it later.
+Indeed, good points!  But please see below for what this function turns
+into when taking that approach.
 
-Thanks,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> > > > +	if (ULONG_CMP_LT(jiffies, shutdown_time)) {
+> > > > +		VERBOSE_PRINTK_STRING("rcu_torture_shutdown task stopping");
+> > > > +		return 0;
+> > > > +	}
+> > > > +
+> > > > +	/* OK, shut down the system. */
+> > > > +
+> > > > +	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task shutting down system");
+> > > > +	shutdown_task = NULL;	/* Avoid self-kill deadlock. */
+> > > 
+> > > Not that it matters much here, but won't this cause a leak?
+> > 
+> > Only if we are shutting down.  And the alternative is a deadlock
+> > where this task invokes kthread_stop() on itself.  ;-)
+> 
+> Hence why I said it didn't matter much. :)
+
+;-)
+
+								Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu_torture_shutdown(void *arg)
+{
+	long delta;
+	unsigned long jiffies_snap;
+
+	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
+	jiffies_snap = ACCESS_ONCE(jiffies);
+	while (ULONG_CMP_LT(jiffies_snap, shutdown_time) &&
+	       !kthread_should_stop()) {
+		delta = shutdown_time - jiffies_snap;
+		if (verbose)
+			printk(KERN_ALERT "%s" TORTURE_FLAG
+			       "rcu_torture_shutdown task: %lu "
+			       "jiffies remaining\n",
+			       torture_type, delta);
+		schedule_timeout_interruptible(delta);
+		jiffies_snap = ACCESS_ONCE(jiffies);
+	}
+	if (ULONG_CMP_LT(jiffies_snap, shutdown_time)) {
+		VERBOSE_PRINTK_STRING("rcu_torture_shutdown task stopping");
+		return 0;
+	}
+
+	/* OK, shut down the system. */
+
+	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task shutting down system");
+	shutdown_task = NULL;	/* Avoid self-kill deadlock. */
+	rcu_torture_cleanup();	/* Get the success/failure message. */
+	kernel_power_off();	/* Shut down the system. */
+	return 0;
+}
+
