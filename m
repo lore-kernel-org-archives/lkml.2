@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab1KPTmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 14:42:05 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42015 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab1KPTmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 14:42:02 -0500
-Date: Wed, 16 Nov 2011 11:41:20 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org,
-        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH RFC tip/core/rcu 19/28] nohz: Allow rcu extended
- quiescent state handling seperately from tick stop
-Message-ID: <20111116194120.GG2355@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-19-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103040003.GE2042@leaf>
- <20111103115426.GD8198@somewhere.redhat.com>
- <20111103133231.GA2287@linux.vnet.ibm.com>
- <20111103153102.GC18443@leaf>
- <20111103160656.GC2287@linux.vnet.ibm.com>
- <20111109164804.GA17538@somewhere.redhat.com>
- <20111110172219.GC2354@linux.vnet.ibm.com>
- <20111115183026.GB3234@somewhere>
+	id S1753130Ab1KPTnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 14:43:14 -0500
+Received: from smtpo.poczta.interia.pl ([217.74.65.206]:45599 "EHLO
+	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab1KPTnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 14:43:12 -0500
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: linux-acpi@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Resuming from hibernation on T61 with nvidia
+References: <op.v4z4ihs2wcw97g@localhost>
+	<4EC2BED2.3000707@linux.vnet.ibm.com>
+Date: Wed, 16 Nov 2011 20:43:27 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115183026.GB3234@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11111619-3534-0000-0000-00000212ACD7
+From: dienet <dienet@poczta.fm>
+Message-ID: <op.v4102pcrwcw97g@localhost>
+In-Reply-To: <4EC2BED2.3000707@linux.vnet.ibm.com>
+User-Agent: Opera Mail/11.52 (Linux)
+X-Interia-Antivirus: OK
+X-EMID: 83d5bf9c
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 07:30:29PM +0100, Frederic Weisbecker wrote:
-> On Thu, Nov 10, 2011 at 09:22:19AM -0800, Paul E. McKenney wrote:
-> > On Wed, Nov 09, 2011 at 05:48:11PM +0100, Frederic Weisbecker wrote:
-> > > On Thu, Nov 03, 2011 at 09:06:56AM -0700, Paul E. McKenney wrote:
-> > > > On Thu, Nov 03, 2011 at 08:31:02AM -0700, Josh Triplett wrote:
-> > > > > On Thu, Nov 03, 2011 at 06:32:31AM -0700, Paul E. McKenney wrote:
-> > > > > > On Thu, Nov 03, 2011 at 12:54:33PM +0100, Frederic Weisbecker wrote:
-> > > > > > > On Wed, Nov 02, 2011 at 09:00:03PM -0700, Josh Triplett wrote:
-> > > > > > > > On Wed, Nov 02, 2011 at 01:30:40PM -0700, Paul E. McKenney wrote:
-> > > > > > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > > > > > 
-> > > > > > > > > It is assumed that rcu won't be used once we switch to tickless
-> > > > > > > > > mode and until we restart the tick. However this is not always
-> > > > > > > > > true, as in x86-64 where we dereference the idle notifiers after
-> > > > > > > > > the tick is stopped.
-> > > > > > > > > 
-> > > > > > > > > To prepare for fixing this, add two new APIs:
-> > > > > > > > > tick_nohz_idle_enter_norcu() and tick_nohz_idle_exit_norcu().
-> > > > > > > > > 
-> > > > > > > > > If no use of RCU is made in the idle loop between
-> > > > > > > > > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the arch
-> > > > > > > > > must instead call the new *_norcu() version such that the arch doesn't
-> > > > > > > > > need to call rcu_idle_enter() and rcu_idle_exit().
-> > > > > > > > 
-> > > > > > > > The _norcu names confused me a bit.  At first, I thought they meant
-> > > > > > > > "idle but not RCU idle, so you can use RCU", but from re-reading the
-> > > > > > > > commit message, apparently they mean "idle and RCU idle, so don't use
-> > > > > > > > RCU".  What about something like _forbid_rcu instead?  Or,
-> > > > > > > > alternatively, why not just go ahead and separate the two types of idle
-> > > > > > > > entirely rather than introducing the _norcu variants first?
-> > > > > > > 
-> > > > > > > Or tick_nohz_idle_enter_rcu_stop() and tick_nohz_idle_exit_rcu_restart()?
-> > > > > > > 
-> > > > > > > Sounds clear but too long. May be we can shorten the tick_nohz thing in the
-> > > > > > > beginning.
-> > > > > > 
-> > > > > > How about tick_nohz_rcu_idle_enter() vs. tick_nohz_idle_enter() on
-> > > > > > entry to the idle loop and tick_nohz_rcu_idle_exit() vs
-> > > > > > tick_nohz_idle_exit() on exit?
-> > > > > > 
-> > > > > > That said, I don't feel all that strongly on this naming topic.
-> > > > > 
-> > > > > Mostly I think that since this series tries to separate the concepts of
-> > > > > "idle nohz" and "rcu extended quiescent state", we should end up with
-> > > > > two entirely separate functions delimiting those two, without any
-> > > > > functions that poke both with correspondingly complex compound names.
-> > > > 
-> > > > Having four API members rather than the current six does seem quite
-> > > > attractive to me.  Frederic, any reason why this approach won't work?
-> > > 
-> > > The approach I took might sound silly but it's mostly an optimization:
-> > > 
-> > > I did the *_norcu() variant mostly to be able to keep rcu_idle_enter()
-> > > call under the same local_irq_disable() section.
-> > > 
-> > > This way we can't have an interrupt in between that can needlessly perform
-> > > RCU work (and trigger the softirq in the worst case), delaying the point
-> > > where we actually put the CPU to sleep.
-> > 
-> > But we have to tolerate this sort of thing on some architectures (x86
-> > and Power) in order to allow idle-task use of RCU read-side primitives,
-> > right?
-> > 
-> > So consolidating from six to four APIs doesn't expand the overall state
-> > space.
-> 
-> Well, we tolerate that, the two more APIs are there for optimization, not
-> to provide correctness.
-> But if you want me to remove the optimization and keep only the four APIs I can do it.
+On Tue, 15 Nov 2011 20:34:42 +0100, Srivatsa S. Bhat  
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-Probably best to start with the simpler API and expand it if performance
-considerations suggest that this is approapriate.
+> You can try using the pm_test framework for debugging this, to a certain
+> extent. See Documentation/power/basic-pm-debugging.txt for details on how
+> to use it.
 
-							Thanx, Paul
+So I run some test:
 
+Using platform in state file:
+
+1. echo freezer > pm_test - no problems.
+2. echo devices > pm_test - problems: no picture (LCD is up and shining,  
+but there is only black picture [even after 60 seconds]). I can use power  
+button to shut down the system. Other keyboard keys are not working (I was  
+trying to type reboot with no luck).
+3. echo processors > pm_test - the same as above
+4. echo core > pm_test - the same as above
+5. I turn off the X11 (telinit 2), but the nvidia module is still loaded -  
+no problems.
+6. I left X11 working on f7 (7th tty) and switch to f1 (1st tty) - echo  
+core > pm_test works OK, but switching back to X11 (alt+f7) will give me  
+the same as in 2. I can change the brightness of black screen, but I can  
+not go back to tty1 (ctrl+alt+f1).
+
+Is there more I can do?
+
+-- 
+pozdr0
+dienet
+
+"Old C programmers never die. They're just cast into void."
+
+----------------------------------------------------------------
+Mamy mieszkanie wlasnie dla Ciebie! 
+Sprawdz >>
+http://linkint.pl/f2a80
