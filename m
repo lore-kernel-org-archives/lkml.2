@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1KPB0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 20:26:50 -0500
-Received: from fieldses.org ([174.143.236.118]:59432 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757688Ab1KPB0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 20:26:49 -0500
-Date: Tue, 15 Nov 2011 20:26:48 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the nfsd tree
-Message-ID: <20111116012648.GE12453@fieldses.org>
-References: <20111116102952.d653d19f69ca5a7fad8a0291@canb.auug.org.au>
- <20111116001404.GD12453@fieldses.org>
+	id S932916Ab1KPBhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 20:37:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40761 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834Ab1KPBhs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 20:37:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116001404.GD12453@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <21257.1321403368@turing-police.cc.vt.edu>
+References: <1321318357-17723-1-git-send-email-grundler@chromium.org>
+	<21257.1321403368@turing-police.cc.vt.edu>
+Date: Tue, 15 Nov 2011 17:37:47 -0800
+X-Google-Sender-Auth: ylwxPLgvwhxYXQA-9kf_BXYSWr4
+Message-ID: <CANEJEGtnUS5B1ggdoPn8gcCbFm==dfgHCgXVgcgpuooFUAowJA@mail.gmail.com>
+Subject: Re: [PATCH 5/5] net-next:asix: v2 update VERSION only
+From: Grant Grundler <grundler@chromium.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Allan Chou <allan@asix.com.tw>, Freddy Xin <freddy@asix.com.tw>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 07:14:04PM -0500, J. Bruce Fields wrote:
-> On Wed, Nov 16, 2011 at 10:29:52AM +1100, Stephen Rothwell wrote:
-> > Hi Bruce,
-> > 
-> > After merging the nfsd tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > fs/nfsd/nfs4state.c:4446:5: error: expected ';', ',' or ')' before 'void'
-> > fs/nfsd/nfs4state.c: In function 'nfsd_forget_locks':
-> > fs/nfsd/nfs4state.c:4468:2: error: implicit declaration of function 'nfsd_release_n_owners' [-Werror=implicit-function-declaration]
-> > 
-> > Caused by commit 16bfdaafa2c6 ("nfsd4: share open and lock owner hash
-> > tables").  Please build test *before* releasing code ...  :-(
-> 
-> I do--so what happened?
-> 
-> Aie, sorry, I see: we added a CONFIG_NFSD_FAULT_INJECTION recently, but
-> I didn't add that to my configs....
-> 
-> OK, I've fixed up my test scripts, and I'll push out a fix soon.
+On Tue, Nov 15, 2011 at 4:29 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Mon, 14 Nov 2011 16:52:37 PST, Grant Grundler said:
+>
+>> -#define DRIVER_VERSION "26-Sep-2011"
+>> +#define DRIVER_VERSION "08-Nov-2011"
+>
+> Aren't these sort of things more than a tad silly for an in-kernel driver?
 
-Done, thanks for the report.
+Definitely not. Supporting linux device drivers essentially requires
+some mechanism like this. We could use anything (SHA1, Mayan Calendar,
+etc). This driver happens to use a ISO-like date code.
 
---b.
+Upstream drivers are routinely back ported to distro releases. Version
+is the primary means for a vendor (like ASIX) to determine what was
+back ported. Distro maintainers and 1st tier support organizations
+also need to track versions and "ethtool -i" is the canonical way to
+look this up on a running system.
+
+grant
