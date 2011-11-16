@@ -1,190 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab1KPWMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:12:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35685 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab1KPWMy (ORCPT
+	id S1753923Ab1KPWP1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:15:27 -0500
+Received: from mail-gx0-f202.google.com ([209.85.161.202]:54332 "EHLO
+	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab1KPWPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:12:54 -0500
-Date: Wed, 16 Nov 2011 15:12:50 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 6/8] of: add clock providers
-Message-ID: <20111116221250.GA12884@ponder.secretlab.ca>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
- <20111109091328.GY16886@pengutronix.de>
- <4EBA62AD.3000407@ti.com>
- <20111109114936.GL16886@pengutronix.de>
- <4EBD7E47.8010502@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EBD7E47.8010502@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Nov 2011 17:15:25 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v6 0/9] net-sysfs+forcedeth: stats & debug enhancements
+Date: Wed, 16 Nov 2011 14:15:06 -0800
+Message-Id: <cover.1321481064.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 08:57:59PM +0100, Cousson, Benoit wrote:
-> On 11/9/2011 12:49 PM, Sascha Hauer wrote:
-> >On Wed, Nov 09, 2011 at 12:23:25PM +0100, Cousson, Benoit wrote:
-> >>On 11/9/2011 10:13 AM, Sascha Hauer wrote:
-> >>>On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
-> >>
-> >>[...]
-> >>
-> >>>>+Sources of clock signal can be represented by any node in the device
-> >>>>+tree.  Those nodes are designated as clock providers.  Clock consumer
-> >>>>+nodes use a phandle and clock specifier pair to connect clock provider
-> >>>>+outputs to clock inputs.  Similar to the gpio specifiers, a clock
-> >>>>+specifier is an array of one more more cells identifying the clock
-> >>>>+output on a device.  The length of a clock specifier is defined by the
-> >>>>+value of a #clock-cells property in the clock provider node.
-> >>>>+
-> >>>>+[1] http://patchwork.ozlabs.org/patch/31551/
-> >>>>+
-> >>>>+==Clock providers==
-> >>>>+
-> >>>>+Required properties:
-> >>>>+#clock-cells:	   Number of cells in a clock specifier; typically will be
-> >>>>+		   set to 1
-> >>>>+
-> >>>>+Optional properties:
-> >>>>+clock-output-name: Recommended to be a list of strings of clock output signal
-> >>>>+		   names indexed by the first cell in the clock specifier.
-> >>>>+		   However, the meaning of clock-output-names is domain
-> >>>>+		   specific to the clock provider, and is only provided to
-> >>>>+		   encourage using the same meaning for the majority of clock
-> >>>>+		   providers.  This format may not work for clock providers
-> >>>>+		   using a complex clock specifier format.  In those cases it
-> >>>>+		   is recommended to omit this property and create a binding
-> >>>>+		   specific names property.
-> >>>
-> >>>If the clock-output-name property is omitted, does this mean a clock
-> >>>provider only has a single output or does it mean that it's not known
-> >>>how many clock outputs a provider actually has?
+These changes provide a new generic network tx_timeout sysfs queue
+attribute and implement the ndo_get_stats64 API for forcedeth. They
+also add a few more stats and debugging features for forcedeth. They
+ensure that stats updates are correct in SMP systems, 32 or 64-bits.
 
-As Rob said, it only means that there are no names assigned to those
-inputs.  In fact, it leaves it up to the specific clock binding as to
-what it really means.  One driver may require the clock-output-name
-property to be present because it uses data from there to figure out
-how to configure the clock.  Another might not require it at all and
-the only reason for its existence is informational.
+Thanks to all the reviewers of the previous versions of this series!
 
-> >>Allowing several outputs for a single clock node might lead to a lot
-> >>of confusion. What will be the meaning of a clock rate if you have
-> >>several outputs at different frequency?
+Note: patch 1 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
+stats on hardware without extended stats support")
 
-No, clock-frequency is specific to the fixed-clock binding (which I
-need to document).  That may or may not be present in other clock
-provider nodes.  For instance, there is a xilinx clock divider ip
-block that doesn't have any frequency of its own, but rather has
-multiple clock outputs that are a scale of the input clock.  The node
-for that device would never have a clock-frequency property because it
-relies entirely on the upstream clock.
+Changes since v5:
+  - get_stats64: back to using u64_stats_sync.h instead of atomic
+    integers, but this time with 2 seqcounts: one for TX, one for RX
 
-This proposed binding is only about one thing: attaching clock
-providers to clock consumers.  It doesn't make any statements about
-how the clock provider driver is organized or how it manages its
-clocks.
+Changes since v4:
+  - tx_timeout counter now a generic sysfs attribute. Credits to
+    Stephen Hemminger for initial implementation
+  - revert get_stats64 to using atomic variables: see
+    http://patchwork.ozlabs.org/patch/125861/ for motivations
+  - dropped patch "expose module parameters in /sys/module" for now: I
+    will work on this later, following Stephen's recommendations
+    (http://patchwork.ozlabs.org/patch/125862/).
 
-This is by design to prevent clock consumers from digging into a clock
-provider node manually without consulting its driver.  The consumer
-only has a reference to a clock provider node + arguments.  It is the
-job of the producer driver to interpret the arguments.
+Changes since v3:
+  - updated get_stats64 + rx_dropped patches to use u64_stats_sync.h
+  - dropped indentation "whitespace/indentation fixes" (included in
+    get_stats64 api patch)
 
-The proposed API also reflects this.  The consumer driver requests a
-clock, but it is the producer driver that determines what the clock
-reference actually means, and which struct clk to return.
+Changes since v2:
+  - patch 1/9 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
+    stats on hardware without extended stats support")
+  - removed patch 5/10 "stats for rx_packets based on hardware
+    registers" because packets&bytes stats are updated in software
+    only (898bdf2cb43e)
 
-> >>I think it will be better to define a clock node as a single source
-> >>of clock. If several outputs are needed, then we should define
-> >>several clock nodes.
+Changes since v1:
+  - patch 1/10 is the same as
+    http://patchwork.ozlabs.org/patch/125017/ (targetting net)
+  - other patches updated to take patch 1/10 into account
+  - various commit message updates
 
-That is entirely up to the binding for the specific clock device(s).
-If it makes sense to have one node per clock, so be it.  If it makes
-more sense to have a clock nexus node for other hardware, then that is
-fine too.
 
-> >>If we let a clock node be any kind of big clock blob, we will never
-> >>be able to define some generic reusable clock node API. Everybody
-> >>will define its own custom clock blobs.
-> >
-> >Generally +1. I asked myself the same question whether it's a good thing
-> >to allow a node to have multiple clocks. For i.MX I can say that I don't
-> >need this and that I do not intend to use this feature. Grants concerns
-> >about this are that the clock part of the device tree might explode when
-> >we put each and every clock into the devicetree, so he wants to allow
-> >bigger blobs of multiple clocks.
-> 
-> I can clearly understand this concern, because in the case of OMAP4,
-> we will have to add ~250 nodes if we want to define the current
-> clock tree.
+Tested:
+  ~150Mbps incoming TCP, ethtool -S in a loop, x86_64 16-way:
+     tx_bytes: 5441989419
+     rx_packets: 5439224
+     tx_timeout: 0
+     tx_packets: 5456705
+     rx_bytes: 5566763850
 
-I'm really not convinced that it is a good idea to break out the
-entire clock tree into one node per struct clk.  To begin with, that
-looks to be very centric around the current 'struct clk' Linux
-abstraction, which is potentially in flux.  Also, looking at Sascha's
-initial RFC for describing the clock tree, I see cases where it looks
-like a clock nexus node really makes sense.  For instance, the
-'divider-ipg@0x53fd4014' node which has a list of child nodes
-which merely provide a register offset and shift value
-(reg=0x53fd4068..0x53fd4084, shift=0x0..0xf).  It would be natural to
-instead encode that as part of the clock reference, or map it directly
-from the clock reference (ie, assign names to each of the clocks, and
-let the clock provider driver match up the name to the reg offset &
-shift values).
+Tested:
+  pktgen + loopback report same RX/TX packets and bytes stats
 
-I had originally thought that it would be better to use names directly
-for references to clocks (ie. clock = <phandle>,"name") , but after
-actually playing with it and looking at the existing DT conventions,
-I've reverted to cell values for the arguments and a separate set of
-clock-{input,output}-name properties for attaching meaningful names,
-just like we decided to do for assigning names to 'reg' properties.
+Tested:
+  tests above with Kconfig DEBUG_PAGEALLOC DEBUG_MUTEXES
+  DEBUG_SPINLOCK LOCKUP_DETECTOR DEBUG_RT_MUTEXES DEBUG_LOCK_ALLOC
+  PROVE_LOCKING DEBUG_ATOMIC_SLEEP DEBUG_STACK_USAGE DEBUG_KOBJECT
+  DEBUG_VM DEBUG_LIST DEBUG_SG DEBUG_NOTIFIERS TEST_KSTRTOX
+  STRICT_DEVMEM DEBUG_STACKOVERFLOW
 
-> >My impression gets more and more that we either put the clock tree in the
-> >devicetree or we do not do it, but there's not much room in between.
 
-I disagree here entirely because there is a lot of room in between.
-Drivers still need to understand the hardware block they are driving,
-and there will still be a lot of hardware-specific knowledge encoded
-into clock provider drivers (just as there is for every other kind of
-driver).  The trick (and even artistry) is to determine the ideal
-balance between hard coding static hardware details and
-parameterization of interconnects between blocks.
+############################################
+# Patch Set Summary:
 
-> 
-> If we are not ready to accept 4k lines of clock data inside the
-> devicetree, which is indeed huge and mostly useless, then I think we
-> should just expose the leaf clocks. But then they will depend on
-> parent that will not be in DT but in static files, which might be
-> weird.
-> 
-> I'm not sure what the right answer is :-(
+David Decotigny (6):
+  net-sysfs: fixed minor sparse warning
+  kbuild: document RPS/XPS network Kconfig options
+  net: new counter for tx_timeout errors in sysfs
+  forcedeth: implement ndo_get_stats64() API
+  forcedeth: account for dropped RX frames
+  forcedeth: stats updated with a deferrable timer
 
-I think you're right.  Expose the leaf clocks, and maybe the
-interconnects between clock providers.  There is no need to expose
-every single intermediary clock, especially when those clocks are
-merely internal to a device IP block and are never exposed to
-anything outside of itself.
+Mike Ditto (1):
+  forcedeth: Add messages to indicate using MSI or MSI-X
 
-I'm even okay with having a single clock driver for an entire SoC if
-there isn't a very high likelyhood of any of it's internal clock
-components will ever get reused somewhere else.  When compared with
-board designs, internal SoC clock structure really doesn't change much
-at all so there isn't the same need for breaking all the detail out to
-the device tree.
+Sameer Nanda (1):
+  forcedeth: allow to silence "TX timeout" debug messages
 
-Oh, and it shouldn't be weird because even clock nexus nodes that
-handle several clock outputs can have clock inputs from other sources.
-For instance, there could be a node for the clock provided by the
-on-board crystal.
+david decotigny (1):
+  forcedeth: fix stats on hardware without extended stats support
 
-g.
+ drivers/net/ethernet/nvidia/forcedeth.c |  321 ++++++++++++++++++++++---------
+ include/linux/netdevice.h               |   12 +-
+ net/Kconfig                             |   22 ++-
+ net/core/net-sysfs.c                    |   49 ++++--
+ net/sched/sch_generic.c                 |    1 +
+ 5 files changed, 296 insertions(+), 109 deletions(-)
+
+-- 
+1.7.3.1
 
