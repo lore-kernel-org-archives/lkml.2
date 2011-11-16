@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1KPOsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 09:48:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52026 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1KPOsv (ORCPT
+	id S1753770Ab1KPOuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 09:50:03 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58499 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1KPOuB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 09:48:51 -0500
-X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=l4wf8OQxcBQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=zZN5Q0qEMgAH7JSpnMYA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH] tracing: add trace console
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1321453846.4502.0.camel@jlt3.sipsolutions.net>
-References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
-	 <1321452954.4181.20.camel@frodo>  <1321453537.27735.0.camel@twins>
-	 <1321453846.4502.0.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Nov 2011 09:48:48 -0500
-Message-ID: <1321454928.4181.22.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Nov 2011 09:50:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
+References: <1320240899-16889-1-git-send-email-anarsoul@gmail.com> <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
+From: Vasily <anarsoul@gmail.com>
+Date: Wed, 16 Nov 2011 17:49:38 +0300
+Message-ID: <CA+E=qVeiwPhdmHub+5NGGfyydG68z3jH+5=GiVL7J6C_QDDd5A@mail.gmail.com>
+Subject: Re: [PATCH RESEND] Fix reboot regression on Acer Aspire One AOA110
+To: Peter Chubb <peter.chubb@nicta.com.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        stable@kernel.org,
+        =?UTF-8?Q?Uro=C5=A1_Vampl?= <mobile.leecher@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 15:30 +0100, Johannes Berg wrote:
-> On Wed, 2011-11-16 at 15:25 +0100, Peter Zijlstra wrote:
-> 
-> > > >  kernel/trace/Kconfig         |   13 ++++++++++
-> > > >  kernel/trace/Makefile        |    2 +
-> > > >  kernel/trace/trace-console.c |   55 +++++++++++++++++++++++++++++++++++++++++++
-> > > >  3 files changed, 70 insertions(+)
-> > > > 
-> > > > --- a/kernel/trace/Kconfig    2011-11-16 11:11:27.000000000 +0100
-> > > > +++ b/kernel/trace/Kconfig    2011-11-16 11:11:35.000000000 +0100
-> > > > @@ -368,6 +368,19 @@ config BLK_DEV_IO_TRACE
-> > > >  
-> > > >         If unsure, say N.
-> > > >  
-> > > > +config TRACE_CONSOLE
-> > > > +     tristate "Support for a tracing console"
-> > > > +     help
-> > > > +       Say M (or Y if you must, but this is not recommended) 
-> > 
-> > Why not?
-> 
-> It'll always be registered and you have no way to turn it off then, so
-> you can't trace without getting every printk. I didn't want to add extra
-> API to toggle it, but building it in might be a bit odd that way.
+2011/11/3 Peter Chubb <peter.chubb@nicta.com.au>:
+>>>>>> "Vasily" == Vasily Khoruzhick <anarsoul@gmail.com> writes:
+>
+> Vasily> From: Uroš Vampl <mobile.leecher@gmail.com> Starting with
+> Vasily> kernel 3.0, my Acer Aspire One AOA110 hangs on reboot. Doing
+> Vasily> an internet search, I found that in git commit
+> Vasily> b49c78d4827be8d7e67e5b94adac6b30a4a9ad14 the machine was made
+> Vasily> to reboot with the bios method, but it does not work on most
+> Vasily> (all?) AOA110s.
+>
+> That change was made in July to fix the broken ACPI reboot method.  It
+> certainly works on my AOA110.  What BIOS do you have installed?
+> (although looking at what's been published, I can't see any booting
+> problems mentioned in the BIOS changelogs).
+>
+> Vasily> This patch introduces new quirks section for machines that
+> Vasily> only reboot with the kbd method and put the Aspire One into
+> Vasily> it.
+>
+> You don't need yet another table, just change the callback.
+>
+>
+> Try this:
 
-Actually, that's not quite true. You could just do:
+Any chance to get this patch merged? Would be nice to see it in stable aswell.
 
-echo 0 > /debug/tracing/options/trace_printk
+Regards
+Vasily
 
--- Steve
-
-
+> Index: linux-2.6/arch/x86/kernel/reboot.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/reboot.c     2011-10-31 14:35:50.105623537 +1100
+> +++ linux-2.6/arch/x86/kernel/reboot.c  2011-11-03 11:54:12.487901547 +1100
+> @@ -124,7 +124,7 @@
+>  */
+>
+>  /*
+> - * Some machines require the "reboot=b"  commandline option,
+> + * Some machines require the "reboot=b" or "reboot=k"  commandline options,
+>  * this quirk makes that automatic.
+>  */
+>  static int __init set_bios_reboot(const struct dmi_system_id *d)
+> @@ -136,6 +136,15 @@
+>        return 0;
+>  }
+>
+> +static int __init set_kbd_reboot(const struct dmi_system_id *d)
+> +{
+> +       if (reboot_type != BOOT_KBD) {
+> +               reboot_type = BOOT_KBD;
+> +               printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboots.\n", d->ident);
+> +       }
+> +       return 0;
+> +}
+> +
+>  static struct dmi_system_id __initdata reboot_dmi_table[] = {
+>        {       /* Handle problems with rebooting on Dell E520's */
+>                .callback = set_bios_reboot,
+> @@ -295,7 +304,7 @@
+>                },
+>        },
+>        { /* Handle reboot issue on Acer Aspire one */
+> -               .callback = set_bios_reboot,
+> +               .callback = set_kbd_reboot,
+>                .ident = "Acer Aspire One A110",
+>                .matches = {
+>                        DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+> --
+> Dr Peter Chubb                                  peter DOT chubb AT nicta.com.au
+> http://www.ertos.nicta.com.au               ERTOS within National ICT Australia
+> All things shall perish from under the sky/Music alone shall live, never to die
+>
