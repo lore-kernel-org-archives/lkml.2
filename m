@@ -1,176 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab1KPPIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:08:50 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:7921 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab1KPPIt (ORCPT
+	id S1757010Ab1KPPKG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:10:06 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:42622 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab1KPPKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:08:49 -0500
-X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 10:08:49 EST
-Subject: Re: ip_local_deliver_finish: proto 108 (IPComp) isn't netns-ready
-From: Dilip Daya <dilip.daya@hp.com>
-Reply-To: dilip.daya@hp.com
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "adobrian@gmail.com" <adobrian@gmail.com>
-In-Reply-To: <m1d3d0oraf.fsf@fess.ebiederm.org>
-References: <1320858706.2531.45.camel@pro6455b.example.com>
-	 <m1d3d0oraf.fsf@fess.ebiederm.org>
-Content-Type: multipart/mixed; boundary="=-TUR0reZ3hQhz4MwWHrXp"
-Organization: Hewlett-Packard Company
-Date: Wed, 16 Nov 2011 10:01:55 -0500
-Message-ID: <1321455715.2530.27.camel@pro6455b.example.com>
+	Wed, 16 Nov 2011 10:10:03 -0500
+Subject: [PATCH v2] tracing: add trace console
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1321452954.4181.20.camel@frodo>
+References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
+	 <1321452954.4181.20.camel@frodo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 16:09:58 +0100
+Message-ID: <1321456198.4502.10.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Johannes Berg <johannes.berg@intel.com>
 
---=-TUR0reZ3hQhz4MwWHrXp
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+As described in the Kconfig entry, logging printk
+output is useful to correlate (existing) printk
+debugging with (existing) tracing. The easiest way
+to achieve this is to register a console that just
+calls trace_printk(), which this module does.
 
-Hi Eric,
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+v2: change Kconfig wording
 
-> If you have a clue what is going on with ip compression my
-> recommendation would be to add .netns_ok = 1.  Verify that the
-> everything works and send the patch.  You probably want to
-> verify and test ipv6 as well.  It really looks like the code
-> is fine and it just needs to be enabled.
+ kernel/trace/Kconfig         |   15 +++++++++++
+ kernel/trace/Makefile        |    2 +
+ kernel/trace/trace-console.c |   55 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 72 insertions(+)
 
-Thank you for the above feedback.
+--- a/kernel/trace/Kconfig	2011-11-16 15:33:29.000000000 +0100
++++ b/kernel/trace/Kconfig	2011-11-16 16:08:27.000000000 +0100
+@@ -368,6 +368,21 @@ config BLK_DEV_IO_TRACE
+ 
+ 	  If unsure, say N.
+ 
++config TRACE_CONSOLE
++	tristate "Support for a tracing console"
++	help
++	  Enable this to get a tracing console that puts every kernel message
++	  into the tracing infrastructure using trace_printk(). This is useful
++	  to correlate (existing) printk debugging with tracing. When using it
++	  remember to set the console level, e.g. with "dmesg -n8".
++
++	  Note that if you say Y here you will get every message into tracing
++	  and will not be able to turn it off.
++
++	  The module is called trace-console.
++
++	  Say N if unsure.
++
+ config KPROBE_EVENT
+ 	depends on KPROBES
+ 	depends on HAVE_REGS_AND_STACK_ACCESS_API
+--- a/kernel/trace/Makefile	2011-11-16 15:33:29.000000000 +0100
++++ b/kernel/trace/Makefile	2011-11-16 16:07:14.000000000 +0100
+@@ -62,4 +62,6 @@ ifeq ($(CONFIG_TRACING),y)
+ obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+ endif
+ 
++obj-$(CONFIG_TRACE_CONSOLE) += trace-console.o
++
+ libftrace-y := ftrace.o
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ b/kernel/trace/trace-console.c	2011-11-16 16:07:14.000000000 +0100
+@@ -0,0 +1,55 @@
++/*
++ * Copyright (c) 2011 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ * The full GNU General Public License is included in this distribution in
++ * the file called COPYING.
++ *
++ * Author: Johannes Berg <johannes.berg@intel.com>
++ */
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/console.h>
++
++MODULE_AUTHOR("Johannes Berg <johannes.berg@intel.com>");
++MODULE_DESCRIPTION("Console driver for tracing");
++MODULE_LICENSE("GPL");
++
++
++static void trace_msg(struct console *con, const char *msg, unsigned int len)
++{
++	trace_printk("%*s", len, msg);
++}
++
++static struct console traceconsole = {
++	.name	= "tracecon",
++	.flags	= CON_ENABLED,
++	.write	= trace_msg,
++};
++
++static int __init init_traceconsole(void)
++{
++	register_console(&traceconsole);
++	return 0;
++}
++
++static void __exit exit_traceconsole(void)
++{
++	unregister_console(&traceconsole);
++}
++
++module_init(init_traceconsole);
++module_exit(exit_traceconsole);
 
-FYI..my results
-
-Environment:
-- v3.0.9-stable kernel with  ".netns_ok	= 1" applied to ipcomp.c
-  (see attached patch)
-- Same setup as described earlier for two netns stacks on single system.
-- ltp-network test results:
-
-- /usr/lib/ltp/testcases/bin/tcp[4|6]-multi-diffip13
-  IPv4: no issues
-  IPv6: no issues
-
-- /usr/lib/ltp/testcases/bin/udp4-multi-diffip06
-  IPv4 -> no issues
-  IPv6 -> script issue (work-in-progress)
-
-- /usr/lib/ltp/testcases/bin/udp[4|6]-multi-diffnic06
-  IPv4: no issues
-  IPv6:	no issues
-
-- /usr/lib/ltp/testcases/bin/udp[4|6]-multi-diffport06
-  IPv4 -> multiple messages:
-    UDP: short packet: From 10.0.9.2:1025 1008/267 to 10.0.9.1:55575
-    UDP: short packet: From 10.0.0.1:54544 253/38 to 10.0.0.2:1050
-    UDP: short packet: From 10.0.0.1:21601 27128/1008 to 10.0.0.2:27137
-
-  IPv6 -> multiple messages:
-    UDPv6: short packet: From [fd00:1:1:1::2]:1028 242/122 to
-[fd00:1:1:1::1]:38438
-    UDPv6: short packet: From [fd00:1:1:1::2]:37972 21588/29 to
-[fd00:1:1:1::1]:21588
-    UDPv6: short packet: From [fd00:1:1:1::2]:1026 1008/898 to
-[fd00:1:1:1::1]:55703
-
-- /usr/lib/ltp/testcases/bin/icmp4-multi-diffip06
-  IPv4 -> no issues
-  IPv6 -> multiple messages:
-    ICMPv6 checksum failed [fd00:0001:0000:0003:0000:0000:0000:0001 >
-fd00:0001:0000:0003:0000:0000:0000:0002]
-				
-
-...continuing with debug.
-
-
---DilipD.
-
-On Wed, 2011-11-09 at 22:38 +0000, Eric W. Biederman wrote:
-> Dilip Daya <dilip.daya@hp.com> writes:
-> 
-> > Hi All,
-> >
-> > LTP-network tests produced:
-> >
-> > 	"ip_local_deliver_finish: proto 108 (IPComp) isn't netns-ready"
-> >
-> > Question:
-> > Is the above a bug or feature (IPComp, mode: transport) not netns
-> > enabled?
-> 
-> I would call it a missing feature.
-> 
-> > Environment:
-> >
-> > * v3.1-stable kernel.
-> >
-> > * Configured two network-namespaces via "ip netns add ...".
-> >   on a single system: netns0 (assigned as server) and
-> >   netns1 (assigned as client).
-> >   - assigned multiple physical NICs to netns0 and netns1.
-> >
-> > * Entered netns1 (ip netns exec netns1 bash) to execute
-> >   ltp-network suite of tests between netns1 and netns0.
-> >
-> > * The following LTP tests produced messages:
-> >
-> >   "kernel: ip_local_deliver_finish: proto 108 isn't netns-ready"
-> >
-> >    - /usr/lib/ltp/testcases/bin/icmp4-multi-diffip06
-> >    - /usr/lib/ltp/testcases/bin/tcp4-multi-diffip13
-> >    - /usr/lib/ltp/testcases/bin/udp4-multi-diffip06
-> >    - /usr/lib/ltp/testcases/bin/udp4-multi-diffnic06
-> >    - /usr/lib/ltp/testcases/bin/udp4-multi-diffport06
-> >
-> > * I also noticed missing ".netns_ok = 1" in:
-> >   - http://lxr.linux.no/linux+v3.1/net/ipv4/ipcomp.c#L150
-> 
-> The .netns_ok flag indicates that someone has audited the code and made
-> certain it all works with network namespaces.
-> 
-> Skimming the code I don't see anything that jumps out as me as
-> wrong.  And it looks like Alexy did the work in Jan of 2010.
-> 
->    commit a92df2545402c1a08e7a158f4477a52dea0eeeed
->    Author: Alexey Dobriyan <adobriyan@gmail.com>
->    Date:   Mon Jan 25 10:38:34 2010 +0000
->    
->        netns xfrm: ipcomp support
->        
->        Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
->        Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> However it is clear that no one has actually tested ipcomp with
-> network namespaces.
-> 
-> If you have a clue what is going on with ip compression my
-> recommendation would be to add .netns_ok = 1.  Verify that the
-> everything works and send the patch.  You probably want to
-> verify and test ipv6 as well.  It really looks like the code
-> is fine and it just needs to be enabled.
-> 
-> Eric
-
---=-TUR0reZ3hQhz4MwWHrXp
-Content-Disposition: attachment; filename="ipcomp_netns.patch"
-Content-Type: text/x-patch; name="ipcomp_netns.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
---- a/ipv4/ipcomp.c	2011-11-11 13:12:24.000000000 -0500
-+++ b/net/ipv4/ipcomp.c	2011-11-08 09:12:37.000000000 -0500
-@@ -151,6 +151,7 @@ static const struct net_protocol ipcomp4
- 	.handler	=	xfrm4_rcv,
- 	.err_handler	=	ipcomp4_err,
- 	.no_policy	=	1,
-+	.netns_ok		= 1,
- };
-
- static int __init ipcomp4_init(void)
-
---=-TUR0reZ3hQhz4MwWHrXp--
 
