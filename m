@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab1KPLzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 06:55:03 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34340 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab1KPLzA (ORCPT
+	id S1756517Ab1KPL4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 06:56:44 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:41063 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab1KPL4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 06:55:00 -0500
-Date: Wed, 16 Nov 2011 15:54:55 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhu <richard.zhu@linaro.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata: ahci_platform: fix DT probing
-Message-ID: <20111116115455.GB21448@oksana.dev.rtsoft.ru>
-References: <1321412456-31107-1-git-send-email-robherring2@gmail.com>
+	Wed, 16 Nov 2011 06:56:43 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2] PM/Memory-hotplug: Avoid task freezing failures
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Wed, 16 Nov 2011 17:25:23 +0530
+Message-ID: <20111116115515.25945.35368.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1321412456-31107-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 09:00:56PM -0600, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> The change in commit 904c04feaf13ed "ahci_platform: Add the board_ids..."
-> doesn't work for the DT probing case as platform_get_device_id returns
-> NULL. Pick the default ahci_port_info in this case.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Richard Zhu <richard.zhu@linaro.org>
-> Cc: Anton Vorontsov <avorontsov@mvista.com>
-> Cc: Jeff Garzik <jgarzik@pobox.com>
-> Cc: linux-ide@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
+The lock_system_sleep() function is used in the memory hotplug code at
+several places in order to implement mutual exclusion with hibernation.
+However, this function tries to acquire the 'pm_mutex' lock using
+mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
+get the lock. This would lead to task freezing failures and hence
+hibernation failure as a consequence, even though the hibernation call path
+successfully acquired the lock.
 
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+This patch fixes this issue by modifying lock_system_sleep() to use
+mutex_trylock() in a loop until the lock is acquired, instead of using
+mutex_lock(), in order to avoid going to uninterruptible sleep.
+Also, try_to_freeze() is called within the loop, so that we don't cause
+freezing failures due to busy looping.
 
-Thanks!
+v2: Tejun pointed problems with using mutex_lock_interruptible() in a
+    while loop, when signals not related to freezing are involved.
+    So, replaced it with mutex_trylock().
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ include/linux/suspend.h |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 57a6924..c2b5aab 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -5,6 +5,7 @@
+ #include <linux/notifier.h>
+ #include <linux/init.h>
+ #include <linux/pm.h>
++#include <linux/freezer.h>
+ #include <linux/mm.h>
+ #include <asm/errno.h>
+ 
+@@ -380,7 +381,18 @@ static inline void unlock_system_sleep(void) {}
+ 
+ static inline void lock_system_sleep(void)
+ {
+-	mutex_lock(&pm_mutex);
++	/*
++	 * We should not use mutex_lock() here because, in case we fail to
++	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
++	 * state, which would lead to task freezing failures. As a
++	 * consequence, hibernation would fail (even though it had acquired
++	 * the 'pm_mutex' lock).
++	 *
++	 * We should use try_to_freeze() in the while loop so that we don't
++	 * cause freezing failures due to busy looping.
++	 */
++	while (!mutex_trylock(&pm_mutex))
++		try_to_freeze();
+ }
+ 
+ static inline void unlock_system_sleep(void)
+
