@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab1KPJAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:00:16 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:38266 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751988Ab1KPJAO (ORCPT
+	id S1754685Ab1KPJBE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:01:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42853 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1KPJBB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:00:14 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: print pin range in GPIO range debugs
-Date: Wed, 16 Nov 2011 09:59:50 +0100
-Message-ID: <1321433990-17403-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 16 Nov 2011 04:01:01 -0500
+Subject: Re: [PATCH] sched: add the inline keyword to the prototype.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: Il Han <corone.il.han@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 Nov 2011 10:00:38 +0100
+In-Reply-To: <4EC36631.8030805@google.com>
+References: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>
+	 <4EC36631.8030805@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321434038.1421.73.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, 2011-11-15 at 23:28 -0800, Paul Turner wrote:
+> On 11/15/2011 10:16 AM, Il Han wrote:
+> > The prototype has to agree with the definition.
+> > Add the inline keyword to the prototype also
+> >
+> 
+> Hmm... this would then cause the prototypes to disagree in the 
+> !CONFIG_CFS_BANDWIDTH case.
 
-Show the mapped pin range corresponding to the GPIO range in
-debugfs for pin controllers.
+I'm very sure I've compiled a lot of kernels yesterday with various
+permutations including FAIR_GROUP && !CFS_BANDWIDTH and I'm also very
+sure I haven't actually seen any complaints like this.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/core.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index a1a679c..4598fc5 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -402,8 +402,11 @@ static int pinctrl_gpioranges_show(struct seq_file *s, void *what)
- 	/* Loop over the ranges */
- 	mutex_lock(&pctldev->gpio_ranges_lock);
- 	list_for_each_entry(range, &pctldev->gpio_ranges, node) {
--		seq_printf(s, "%u: %s [%u - %u]\n", range->id, range->name,
--			   range->base, (range->base + range->npins - 1));
-+		seq_printf(s, "%u: %s GPIOS [%u - %u] PINS [%u - %u]\n",
-+			   range->id, range->name,
-+			   range->base, (range->base + range->npins - 1),
-+			   range->pin_base,
-+			   (range->pin_base + range->npins - 1));
- 	}
- 	mutex_unlock(&pctldev->gpio_ranges_lock);
- 
--- 
-1.7.3.2
-
+It this some new fangled GCC 'feature'? I'm currently still on 4.5 which
+admittedly is somewhat stale.
