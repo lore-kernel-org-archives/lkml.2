@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab1KPKgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 05:36:16 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:7185 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755394Ab1KPKgO (ORCPT
+	id S1755931Ab1KPKq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 05:46:28 -0500
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:42686 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab1KPKq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 05:36:14 -0500
-From: <oskar.andero@sonyericsson.com>
-Date: Wed, 16 Nov 2011 11:37:06 +0100
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
-Subject: Re: [PATCH v3] input: add driver support for Sharp gp2ap002a00f
- proximity sensor
-Message-ID: <20111116103705.GA14696@caracas.corpusers.net>
-References: <1321349160-2931-1-git-send-email-oskar.andero@sonyericsson.com>
- <20111115094342.GD13157@core.coreip.homeip.net>
- <20111115125352.GA23767@caracas.corpusers.net>
- <20111115182909.GB6410@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111115182909.GB6410@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 16 Nov 2011 05:46:26 -0500
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 05:46:26 EST
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>, stable@vger.kernel.org
+Subject: [PATCH] HID: Correct General touch PID
+Date: Wed, 16 Nov 2011 11:39:52 +0100
+Message-Id: <1321439992-5221-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19:29 Tue 15 Nov     , Dmitry Torokhov wrote:
-> On Tue, Nov 15, 2011 at 01:53:52PM +0100, oskar.andero@sonyericsson.com wrote:
-> > On 10:43 Tue 15 Nov     , Dmitry Torokhov wrote:
-> > > On Tue, Nov 15, 2011 at 10:26:00AM +0100, oskar.andero@sonyericsson.com wrote:
-> > > > From: Courtney Cavin <courtney.cavin@sonyericsson.com>
-> > > > +
-> > > > +#ifdef CONFIG_PM_SLEEP
-> > > > +static int gp2a_suspend(struct device *dev)
-> > > > +{
-> > > > +	struct i2c_client *client = to_i2c_client(dev);
-> > > > +	struct gp2a_data *dt = i2c_get_clientdata(client);
-> > > > +	int error;
-> > > > +
-> > > > +	mutex_lock(&dt->device->mutex);
-> > > > +
-> > > > +	if (dt->device->users) {
-> > > > +		if (device_may_wakeup(&client->dev)) {
-> > > > +			enable_irq_wake(client->irq);
-> > > 
-> > > I think this part should happen regardless of whether device has users,
-> > > only non wakeup source case needs it.
-> > 
-> > Hmm.. why would one want to enable irq_wake when there are no users?
-> > Wouldn't this cause the device to wakeup at every irq and report an
-> > switch event that no one listens to?
-> 
-> You are suspending the system and want to have this device as a wakeup
-> source. Note: not wake up _device_ at every IRQ but wake up the whole
-> _system_ when device generates an IRQ while system is asleep.
-> It does not matter whether there are users for the events; you
-> want the system to wake up.
-> 
-> At least this is the usual semantics.
+Genera Touch told us that 0001 is their single point device
+and 0003 is the multitouch one. Apparently, we made the tests
+someone having a prototype, and not the final product.
+They said it should be safe to do the switch.
 
-I see you point. However, the way we use the proximity sensor we can only wake up
-the system when we have an application that is actually interested in the change.
-This is for power save reasons.
-If we use the "usual semantic", we would wake up the system at every proximity
-detection regardlessly. For instance, I wouldn't want to wake up a cell phone laying
-on the desk when I put my hand over it. That would hurt the battery time.
+this partially revert 5572da08a784621f2ab4fdc8dc65471261871795
 
--Oskar
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/hid/hid-core.c |    2 +-
+ drivers/hid/hid-ids.h  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 6780796..5278f1f 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1727,8 +1727,8 @@ static const struct hid_device_id hid_ignore_list[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0001) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0002) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0003) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0004) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GLAB, USB_DEVICE_ID_4_PHIDGETSERVO_30) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GLAB, USB_DEVICE_ID_1_PHIDGETSERVO_30) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 0a541a9..75062c3 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -256,7 +256,7 @@
+ #define USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR	0x0002
+ 
+ #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
+-#define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0001
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
+ 
+ #define USB_VENDOR_ID_GLAB		0x06c2
+ #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
+-- 
+1.7.4.4
+
