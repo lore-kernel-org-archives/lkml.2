@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1KPDh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 22:37:58 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:56682
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752369Ab1KPDh5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 22:37:57 -0500
-X-SpamScore: -19
-X-BigFish: VS-19(zz9371K1447M542M1432Nzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro define
-Thread-Topic: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro define
-Thread-Index: AQHMo3sQH1uSMXK7A0CXBFeCz5DabpWuqjYAgAAqs5CAAATUQA==
-Date: Wed, 16 Nov 2011 03:37:53 +0000
-Message-ID: <65EE16ACC360FA4D99C96DC085B3F7722D0FCB@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1321350910-8685-1-git-send-email-dong.aisheng@linaro.org>
- <74CDBE0F657A3D45AFBB94109FB122FF1740805DF4@HQMAIL01.nvidia.com> 
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.89]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751824Ab1KPDkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 22:40:37 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60879 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1KPDkg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 22:40:36 -0500
+Date: Wed, 16 Nov 2011 14:40:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Salter <msalter@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: c6x architecture merge (Was: Re: Linux 3.2-rc2)
+Message-Id: <20111116144028.ab0f5880fca2b26f2e528382@canb.auug.org.au>
+In-Reply-To: <CA+55aFzWkXNtLe4jxuXfTJzbXgDF+ig2OuGY3ca+nNCJxAtOZQ@mail.gmail.com>
+References: <CA+55aFzWkXNtLe4jxuXfTJzbXgDF+ig2OuGY3ca+nNCJxAtOZQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_Nov_2011_14_40_28_+1100_F13J0hdlkVwHi8af"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dong Aisheng-B29396
-> Sent: Wednesday, November 16, 2011 11:31 AM
-> To: 'Stephen Warren'; Dong Aisheng; linux-kernel@vger.kernel.org
-> Cc: grant.likely@secretlab.ca; arnd@arndb.de; s.hauer@pengutronix.de; Guo
-> Shawn-R65073; kernel@pengutronix.de
-> Subject: RE: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro
-> define
-> 
->  -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> > owner@vger.kernel.org] On Behalf Of Stephen Warren
-> > Sent: Wednesday, November 16, 2011 2:42 AM
-> > To: Dong Aisheng; linux-kernel@vger.kernel.org
-> > Cc: grant.likely@secretlab.ca; arnd@arndb.de; s.hauer@pengutronix.de;
-> > Guo Shawn-R65073; kernel@pengutronix.de
-> > Subject: RE: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro
-> > define
-> >
-> > Dong Aisheng wrote at Tuesday, November 15, 2011 2:55 AM:
-> > ...
-> > > diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-> > ...
-> > > -#define MXS_SET		0x4
-> > > -#define MXS_CLR		0x8
-> >
-> > If the long-term direction on MXS is to move to gpiolib, won't
-> It looks gpio-mxs driver is already using gpiolib.
-> 
-> > MX_SET_ADDR etc. and the inline functions that use it eventually be
-> > removed from mach-mxs/include/mach/mxs.h hence requiring the #define
-> > be moved back into the GPIO driver?
-> >
-> Yes, i agree with you.
-> Eventually we will remove using <mach/mxs.h>.
-> Thanks for the comments.
-> 
-Sorry for missing Linux-arm-kernel list. Add it.
-BTW, one concern is that if we move defines like #define MXS_SET into driver,
-then every drivers wanting to use it will define it respectively which will
-cause a little code duplication.
-Not sure if people would like it.
+--Signature=_Wed__16_Nov_2011_14_40_28_+1100_F13J0hdlkVwHi8af
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards
-Dong Aisheng
+Hi Linus,
 
+On Tue, 15 Nov 2011 15:44:07 -0200 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> Linux 3.2-rc2 is out there now. Well, the git trees are there
 
+Did you decide if you are going to merge the c6x architecture?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__16_Nov_2011_14_40_28_+1100_F13J0hdlkVwHi8af
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOwzCsAAoJEECxmPOUX5FEfrUP/3dtaFi92ODttyxF0fYF2f4I
+rABsDVdxfy+bs+fYpe6B2DKn/q7vzQ6VxOpi+rkdzMoBxKtyU+crnCV4eHGEJbZo
+CfEh1ELLdCwZ39NMdq9GG60cjwPQeLLFKJsn7/MyUGWDjL/CLQ/QoSD+3YfmFzMx
+TUUNju7Upx2I5lpbxL4kuqSeAv64EVRNBeMQfLYK+tGzDlnYqnI2Vhls3y+vEmjp
+miCd2DJn0xsklUD1n3AKrObU2FIVQGqffP3riiH0g7WWOeK8rkdNKE06LQ3aA5Yu
+KcPJhheZzh5edqDgbPx4Th+GXLL2NDADnlLiPU7vjJ/dyAlFtAkVQNj4ZzEo1sa1
++h63QWs25cGh1ywb3gAA3oX4WLrS0mmGkrMDsf3OPzI8Y5bPeUt/IdtHqq6wg8Lm
+UpTXMbZ5Z4jmHEPYmeAMwAuJWHguVD4Yd0FnASXhxsMBwUxE0Zff9YByLaHOj2Xd
+c2bXjWidAhHOTxpR5XjRGyjb8BAlLujkCCePmfWqfy07wN8eCdzJRP3wdqYfTDXI
+lMfYBJYTBrMXENbmvFX4oDWS++dM/0pzVeKmfzUuvSPUYCXU6DH9GbJU/zLHY2Pj
+2fknapNStefM12Em2E6cR1ZZpkjnm4NqVLO3awdzzswJOn0pzQ91n5lkkK54QpjY
+mkhJNpBF0SMmD51PVyc1
+=gYiW
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Nov_2011_14_40_28_+1100_F13J0hdlkVwHi8af--
