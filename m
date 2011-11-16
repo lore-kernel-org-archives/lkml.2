@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1KPSkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 13:40:25 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39206 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab1KPSkY (ORCPT
+	id S1753098Ab1KPSmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 13:42:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49028 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab1KPSmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 13:40:24 -0500
-Message-ID: <4EC40391.7080508@google.com>
-Date: Wed, 16 Nov 2011 10:40:17 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 16 Nov 2011 13:42:03 -0500
+Date: Wed, 16 Nov 2011 10:41:57 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2] PM/Memory-hotplug: Avoid task freezing failures
+Message-ID: <20111116184157.GA25497@google.com>
+References: <20111116115515.25945.35368.stgit@srivatsabhat.in.ibm.com>
+ <20111116162601.GB18919@google.com>
+ <4EC3F146.7050801@linux.vnet.ibm.com>
+ <20111116174302.GD18919@google.com>
+ <4EC3FFC4.2010904@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Il Han <corone.il.han@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: add the inline keyword to the prototype.
-References: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>  <4EC36631.8030805@google.com> <1321434038.1421.73.camel@twins>
-In-Reply-To: <1321434038.1421.73.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC3FFC4.2010904@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2011 01:00 AM, Peter Zijlstra wrote:
-> On Tue, 2011-11-15 at 23:28 -0800, Paul Turner wrote:
->> On 11/15/2011 10:16 AM, Il Han wrote:
->>> The prototype has to agree with the definition.
->>> Add the inline keyword to the prototype also
->>>
->>
->> Hmm... this would then cause the prototypes to disagree in the
->> !CONFIG_CFS_BANDWIDTH case.
->
-> I'm very sure I've compiled a lot of kernels yesterday with various
-> permutations including FAIR_GROUP&&  !CFS_BANDWIDTH and I'm also very
-> sure I haven't actually seen any complaints like this.
->
-> It this some new fangled GCC 'feature'? I'm currently still on 4.5 which
-> admittedly is somewhat stale.
+Hello,
 
-gcc (even 4.6) won't give warnings either way about the inline attribute on a 
-forward declaration not matching in either direction.  I would imagine this was 
-found by code-inspection.
+On Wed, Nov 16, 2011 at 11:54:04PM +0530, Srivatsa S. Bhat wrote:
+> Ok, so by "proper solution", are you referring to a totally different
+> method (than grabbing pm_mutex) to implement mutual exclusion between
+> subsystems and suspend/hibernation, something like the suspend blockers
+> stuff and friends?
+> Or are you hinting at just the existing code itself being fixed more
+> properly than what this patch does, to avoid having side effects like
+> you pointed out?
 
-I was only pointing out with this we have:
+Oh, nothing fancy.  Just something w/o busy looping would be fine.
+The stinking thing is we don't have mutex_lock_freezable().  Lack of
+proper freezable interface seems to be a continuing problem and I'm
+not sure what the proper solution should be at this point.  Maybe we
+should promote freezable to a proper task state.  Maybe freezable
+kthread is a bad idea to begin with.  Maybe instead of removing
+freezable_with_signal() we should make that default, that way,
+freezable can hitch on the pending signal handling (this creates
+another set of problems tho - ie. who's responsible for clearing
+TIF_SIGPENDING?).  I don't know.
 
-#if CONFIG_CFS_BANDWIDTH
-static __always_inline xxx() { stuff; } [1]
-#else
-static xxx() {} [2]
-#endif
+Maybe just throw in msleep(10) there with fat ugly comment explaining
+why the hack is necessary?
 
-And that by only changing the pre-declaration to match [1] it now similarly 
-(silently) would not match [2] in the !CONFIG case.
+Thanks.
 
-- Paul
+-- 
+tejun
