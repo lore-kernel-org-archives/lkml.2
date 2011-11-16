@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1KPFnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 00:43:52 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60183 "EHLO mx3.mail.elte.hu"
+	id S1753420Ab1KPFof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 00:44:35 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:37662 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab1KPFnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 00:43:51 -0500
-Date: Wed, 16 Nov 2011 06:41:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: x86@kernel.org, Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
-Message-ID: <20111116054156.GA20847@elte.hu>
-References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20111012153415.GA26529@elte.hu>
- <20111016014203.1dfb2cb8@lenov0n>
- <20111015145646.GA9516@elte.hu>
+	id S1752916Ab1KPFoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 00:44:34 -0500
+Date: Tue, 15 Nov 2011 21:44:27 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [PATCH 0/4] Checkpoint/Restore: Show in proc IDs of objects that
+ can be shared between tasks
+Message-ID: <20111116054427.GA14827@count0.beaverton.ibm.com>
+References: <4EC24E9E.8040502@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111015145646.GA9516@elte.hu>
+In-Reply-To: <4EC24E9E.8040502@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+x-cbid: 11111605-6078-0000-0000-00000471D42D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+On Tue, Nov 15, 2011 at 03:35:58PM +0400, Pavel Emelyanov wrote:
+> While doing the checkpoint-restore in the userspace one need to determine
+> whether various kernel objects (like mm_struct-s of file_struct-s) are shared
+> between tasks and restore this state.
 > 
-> > On Wed, 12 Oct 2011 17:34:15 +0200,
-> > Ingo Molnar <mingo@elte.hu> wrote:
-> > 
-> > > 
-> > > * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
-> > > 
-> > > > From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-> > > > 
-> > > > 
-> > > > Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> > > 
-> > > That's not a valid signoff sequence. Did you intend this to be:
-> > > 
-> > >   From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-> > >  
-> > >   Signed-off-by: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-> > >   Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> > > 
-> > > ?
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > 
-> > Yes, this should be signed off by Jonas Fonseca as well. This will 
-> > be updated in the next patches set.
+> The 2nd step can for now be solved by using respective CLONE_XXX flags and
+> the unshare syscall, while there's currently no ways for solving the 1st one.
 > 
-> I've already applied the current patches with the SOBs fixed (the 
-> merge window is getting close), to the tip:x86/platform branch.
+> One of the ways for checking whether two tasks share e.g. an mm_struct is to
+> provide some mm_struct ID of a task to its proc file. The best from the
+> performance point of view ID is the object address in the kernel, but showing
+> them to the userspace is not good for performance reasons.
+
+(I think you meant "not good for security reasons."...)
+
+> The previous attempt to solve this was to generate an ID for slab/slub and then
+> mix it up with the object index on the slab page. This attempt wasn't met
+> warmly by slab maintainers, so here's the 2nd approach.
 > 
-> Please send any fixes as add-on delta patches against tip:master:
-> 
->    git://tesla.tglx.de/git/linux-2.6-tip.git
+> The object address is XOR-ed with a "random" value of the same size and then
+> shown in proc. Providing this poison is not leaked into the userspace then
+> ID seem to be safe.
 
-(tap, tap, is this thing on?)
+Really? There's no way to quickly derive the random number from known
+allocation patterns and thereby break the obfuscation scheme?
+To start we can note that the low N bits are directly exposed in the ID
+of anything that requires 2^N-byte alignment.
 
-Should i drop these commits:
+I think it's really a question of whether the high order bits can be derived.
 
- 32a85aa727ce: x86/platform: Add TS-5500 ADC support
- 3a338d79aa95: x86/platform: Add TS-5500 LED support
- 2437b498abac: x86/platform: Add TS-5500 GPIO support
- 37f9a16c166c: x86/platform: Add TS-5500 base support
+And of course the random number only needs to be derived once per boot
+before it reveals the address of everything with an ID.
 
-from tip:x86/platform?
+Some wild speculation:
 
-Had this (probably trivial) build failure been fixed when i reported 
-it over a month ago then these commits could have been included in 
-the v3.2 upstream kernel - now they will probably have to be delayed 
-to v3.3.
+I bet you could use some cpu affinity, mem policy, slab info, mmap
+tricks, etc. to derive more low bits of the random number. You can probably
+get even more when you consider objects that don't fit evenly in slabs.
+Speaking of slabs, is there some way to use the fact that nearby slab objects
+will share their high ID bits? If any of the ID-bearing objects allocated via
+kmalloc then inducing memory pressure and/or watching for buddy allocator
+merge/splits might reveal more low bits...
 
-Thanks,
+Cheers,
+	-Matt Helsley
 
-	Ingo
