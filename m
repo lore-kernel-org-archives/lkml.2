@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab1KPJe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:34:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56190 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab1KPJeY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:34:24 -0500
-Date: Wed, 16 Nov 2011 17:32:56 +0800
-From: wangyanqing <udknight@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: castet.matthieu@free.fr, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, gregkh@suse.de, tglx@linutronix.de,
-        mingo@elte.hu, hpa@linux.intel.com, spock@gentoo.org
-Subject: Re: [PATCH -V1] x86: make executable for video bios area
-Message-ID: <20111116093256.GA5390@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
-	linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
-	torvalds@linux-foundation.org, akpm@linux-foundation.org,
-	gregkh@suse.de, tglx@linutronix.de, mingo@elte.hu,
-	hpa@linux.intel.com, spock@gentoo.org
-References: <20111115064237.GA3990@udknight.homenetwork>
+	id S1755428Ab1KPJk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:40:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3287 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753677Ab1KPJk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 04:40:27 -0500
+Message-ID: <4EC384FF.4050003@redhat.com>
+Date: Wed, 16 Nov 2011 11:40:15 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115064237.GA3990@udknight.homenetwork>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Ohad Ben-Cohen <ohad@wizery.com>,
+        David Brown <davidb@codeaurora.org>, kvm@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH 0/2] Introduce iommu_commit() function
+References: <1308843083-10442-1-git-send-email-joerg.roedel@amd.com> <1308843536.16742.48.camel@i7.infradead.org>
+In-Reply-To: <1308843536.16742.48.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All!
-Here is the result of my research, hope it is useful to resolve this question.
+On 06/23/2011 06:38 PM, David Woodhouse wrote:
+> On Thu, 2011-06-23 at 17:31 +0200, Joerg Roedel wrote:
+> > David, I think especially VT-d can benefit from such a callback. I will
+> > implement support for it in the AMD IOMMU driver and post a patch-set
+> > soon.
+> > 
+> > Any comments, thoughts?
+>
+> Ick. We *already* do the flushes as appropriate while we're filling the
+> page tables. So every time we move on from one page table page to the
+> next, we'll flush the old one. And when we've *done* filling the page
+> tables for the range we've been asked to map, we flush the last writes
+> too.
 
-Notice:trace from up to down	
-1:pci_arch_init()
+For the current kvm use case flushing just once on commit is most
+efficient.  If/when we get resumable io faults, per-page flushing
+becomes worthwhile.
 
-2:pci_mmcfg_early_init() ;boot without PCI_PROBE_NOEARLY  
+> The problem with KVM is that it calls us over and over again to map a
+> single 4KiB page.
+>
+> It doesn't seem simple to make use of a 'commit' function, because we'd
+> have to keep track of *which* page tables are dirty.
 
-3:__pci_mmcfg_init(1);
+You could easily do that by using a free bit in the pte as a dirty bit. 
+You can then choose whether to use per-page flush or a full flush.
 
-4:pci_mmcfg_arch_init(); mmcfg need acpi
+> I'd much rather KVM just gave us a list of the pages to map, in a single
+> call. 
 
-5:pci_probe = (pci_probe & ~PCI_PROBE_MASK) | PCI_PROBE_MMCONF; <== IMPORTANT: clean PCI_PROBE_BIOS away
+The list can easily be several million pages long.
 
-6:pci_pcbios_init();
+> Or even a 'translation' callback we could call to get the physical
+> address for each page in the range.
 
-7:pci_probe & PCI_PROBE_BIOS ; it will fail
+This is doable, and is probably most flexible.  If the translation also
+returns ranges, then you don't have to figure out large mappings yourself.
 
-8:pci_find_bios() will no chance to execute 
+Not that there's a huge difference between
 
-the result is:
-1:pcibios_enabled will always 0
-2:set_bios_x will no chance to execute, so from BIOS_BEGIN to BIOS_END is  NX
+   iommu_begin(iommu_transaction, domain)
+   for (page in range)
+         iommu_map(iommu_transaction, page, translate(page))
+    iommu_commit(iommu_transaction)
 
-lrmi:linux real mode interface project, http://sourceforge.net/projects/lrmi/
-v86d use lrmi
-lrmi.c:358
+and
 
- if (!map_file((void *)0xc0000, 0x40000,
-                PROT_READ | PROT_EXEC,
-                MAP_FIXED | MAP_SHARED, "/dev/mem", 0xc0000)) {
-                munmap((void *)0, 0x502);
-                munmap((void *)0xa0000, 0x20000);
-                real_mem_deinit();
-                return 0;
-        }
-this function to map 000c0000-00100000 with X privilege
+   iommu_map(domain, range, translate)
 
-00000000-00001000 rw-s 00000000 00:01 822        /dev/mem 
-00009000-0000a000 r-xp 00001000 00:01 912        /sbin/v86d 
-00010000-00050000 rwxp 00000000 00:01 818        /dev/zero 
-000a0000-000c0000 rw-s 000a0000 00:01 822        /dev/mem 
-000c0000-00100000 r-xs 000c0000 00:01 822        /dev/mem 
-08048000-0804c000 r-xp 00001000 00:01 912        /sbin/v86d 
-0804c000-0804d000 rw-p 00004000 00:01 912        /sbin/v86d 
-b779a000-b779b000 r-xp 00000000 00:00 0          [vdso]
-bfac2000-bfae3000 rw-p 00000000 00:00 0          [stack]
+- one can be converted to the other.
 
-At last we get the reason that my machine hang with black screen
-The reason is when I boot with ACPI, BIOS_BEGIN to BIOS_END is NX,
-then v86d try to map 0xc0000 to 0x100000 with executable privilege, 
-it mmap success(mem.c:300, mmap_mem haven't check whether it is illegal), 
-but the pages between BIOS_BEGIN and BIOS_END is NX at all, so it hang!
-
-Question:
-1:boot with ACPI make BIOS area NX on X86, is that what we want?
-2:mmap_mem haven't check whether it is illegal the mmap target address, right?
-
-Thanks
-
-
-
+-- 
+error compiling committee.c: too many arguments to function
 
