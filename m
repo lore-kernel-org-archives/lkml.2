@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab1KPOac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 09:30:32 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:59275 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932392Ab1KPOaa (ORCPT
+	id S932593Ab1KPOaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 09:30:52 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:51411 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118Ab1KPOav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 09:30:30 -0500
-Date: Wed, 16 Nov 2011 15:30:13 +0100
-From: Patrick Combes <p-combes@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hugo Dupras <h-dupras@ti.com>
-Subject: Re: [RFC][PATCH] gpiolib: add irq_wake (power-management) sysfs
- file
-Message-ID: <20111116143011.GA5847@una0919255>
-References: <1321004406-15663-1-git-send-email-p-combes@ti.com>
- <20111115131636.GA31028@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115131636.GA31028@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 16 Nov 2011 09:30:51 -0500
+Subject: Re: [PATCH] tracing: add trace console
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1321453537.27735.0.camel@twins>
+References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
+	 <1321452954.4181.20.camel@frodo>  <1321453537.27735.0.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 15:30:46 +0100
+Message-ID: <1321453846.4502.0.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 01:16:37PM +0000, Mark Brown wrote:
-> On Fri, Nov 11, 2011 at 10:40:06AM +0100, Patrick Combes wrote:
-> 
-> > By calling poll() on the /sys/class/gpio/gpioN/value sysfs file, usermode
-> > application can take benefit of gpio interrupts.
-> > However, depending on the power state reached, this interrupt may not wake-up
-> > the CPU.
-> > This patch creates a new sysfs file /sys/class/gpio/gpioN/irq_wake to enable
-> > usermode application to set the wake properties of a gpio IRQ.
-> > This option can be set or not for each gpio to preserve power consumption (e.g
-> > embedded systems).
-> 
-> There's already device global control for this in sysfs via the power
-> framework - 
+On Wed, 2011-11-16 at 15:25 +0100, Peter Zijlstra wrote:
 
-I didn't know so I had a (quick) look at it. It seems to me that this interface
-will fit better for a global GPIO wakeup capability. By the way, this is maybe
-what you mean by 'global control'...
-Therefore, there is still a need (at least I have) for an interface with a
-deeper granularity.
+> > >  kernel/trace/Kconfig         |   13 ++++++++++
+> > >  kernel/trace/Makefile        |    2 +
+> > >  kernel/trace/trace-console.c |   55 +++++++++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 70 insertions(+)
+> > > 
+> > > --- a/kernel/trace/Kconfig    2011-11-16 11:11:27.000000000 +0100
+> > > +++ b/kernel/trace/Kconfig    2011-11-16 11:11:35.000000000 +0100
+> > > @@ -368,6 +368,19 @@ config BLK_DEV_IO_TRACE
+> > >  
+> > >         If unsure, say N.
+> > >  
+> > > +config TRACE_CONSOLE
+> > > +     tristate "Support for a tracing console"
+> > > +     help
+> > > +       Say M (or Y if you must, but this is not recommended) 
+> 
+> Why not?
 
-> 
-> Also...
-> 
-> > +	else if (sysfs_streq(buf, "enable") || sysfs_streq(buf, "1"))
-> > +		status = enable_irq_wake(gpio_to_irq(gpio));
-> > +	else if (sysfs_streq(buf, "disable") || sysfs_streq(buf, "0"))
-> > +		status = disable_irq_wake(gpio_to_irq(gpio));
-> > +	else
-> > +		status = -EINVAL;
-> 
-> ...this doesn't do anything to stop userspace doing multiple enables and
-> disables.
+It'll always be registered and you have no way to turn it off then, so
+you can't trace without getting every printk. I didn't want to add extra
+API to toggle it, but building it in might be a bit odd that way.
 
-Do you mean there is a need to prevent that?
-Basically the code above accepts both "1" or "enable" strings to enable the
-property. I could limit that to "enable" / "disable" if it is confusing.
+johannes
 
-> 
-> > +	if (gpio_irq_data)
-> > +		status = sprintf(buf, " Wakeup %s\n",
-> > +					irqd_is_wakeup_set(gpio_irq_data)
-> > +					? " enable" : "disable");
-> 
-> This is *really* non-idiomatic for sysfs output, you'd expect the sysfs
-> output to look like the input.  It's supposed to machine parsable...
-
-Maybe good for the debug but not for a parser; I fix it.
