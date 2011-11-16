@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab1KPQzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:55:41 -0500
-Received: from smtp-out-055.synserver.de ([212.40.185.55]:1052 "HELO
-	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754919Ab1KPQzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:55:38 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 24959
-Message-ID: <4EC3EB33.8010304@metafoo.de>
-Date: Wed, 16 Nov 2011 17:56:19 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Iceowl/1.0b2 Icedove/3.1.15
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
-Subject: Re: [PATCH 7/7] staging:iio:dac: Add AD5380 driver
-References: <1321457302-8724-1-git-send-email-lars@metafoo.de> <1321457302-8724-7-git-send-email-lars@metafoo.de>
-In-Reply-To: <1321457302-8724-7-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756993Ab1KPQz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:55:57 -0500
+Received: from mx3.utsp.utwente.nl ([130.89.2.14]:4802 "EHLO mx.utwente.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756830Ab1KPQzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 11:55:54 -0500
+X-Greylist: delayed 2443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Nov 2011 11:55:54 EST
+Subject: Routing problem on PTPP server since kernel 2.6.39
+From: Jeroen van Ingen <jeroen@zijndomein.nl>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 17:14:59 +0100
+Message-ID: <1321460099.3366.49.camel@icts-sp-039>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
+X-UTwente-MailScanner-Information: Scanned by MailScanner. Contact icts.servicedesk@utwente.nl for more information.
+X-UTwente-MailScanner: Found to be clean
+X-UTwente-MailScanner-From: jeroen@zijndomein.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2011 04:28 PM, Lars-Peter Clausen wrote:
-> This patch adds support for the Analog Devices D5380, AD5381,
-> AD5382, AD5383, AD5384, AD5390, AD5391, AD5392 multi-channel
-> Digital to Analog Converters.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-> ---
-> There should be no compile time dependencies to the regmap patches earlier in
-> this series, so this patch can be merged independently of it.
-> ---
->  drivers/staging/iio/dac/Kconfig  |   11 +
->  drivers/staging/iio/dac/Makefile |    1 +
->  drivers/staging/iio/dac/ad5380.c |  669 ++++++++++++++++++++++++++++++++++++++
->  3 files changed, 681 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/iio/dac/ad5380.c
-> 
-> diff --git a/drivers/staging/iio/dac/Kconfig b/drivers/staging/iio/dac/Kconfig
-> index a71defb..aaa6d46 100644
-> --- a/drivers/staging/iio/dac/Kconfig
-> +++ b/drivers/staging/iio/dac/Kconfig
-> @@ -24,6 +24,17 @@ config AD5360
->  	  To compile this driver as module choose M here: the module will be called
->  	  ad5360.
->  
-> +config AD5380
-> +	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
-> +	depends on (SPI_MASTER || I2C)
+Hi,
 
-Somehow the 'select REGMAP_I2C if I2C' and 'select REGMAP_SPI if SPI_MASTER'
-didn't made it into this patch. I'll fix it for v2.
+We're in the process of upgrading our Linux-based (Ubuntu) VPN servers
+and running into a problem with PPTP connections.
 
-> +	help
-> +	  Say yes here to build support for Analog Devices AD5380, AD5381,
-> +	  AD5382, AD5383, AD5384, AD5390, AD5391, AD5392 multi-channel
-> +	  Digital to Analog Converters (DAC).
-> +
-> +	  To compile this driver as module choose M here: the module will be called
-> +	  ad5380.
-> +
->  config AD5421
->  	tristate "Analog Devices AD5421 DAC driver"
->  	depends on SPI
-> diff --git a/drivers/staging/iio/dac/Makefile b/drivers/staging/iio/dac/Makefile
-> index e75b0c8..840e94e 100644
-> --- a/drivers/staging/iio/dac/Makefile
-> +++ b/drivers/staging/iio/dac/Makefile
-> @@ -3,6 +3,7 @@
->  #
->  
->  obj-$(CONFIG_AD5360) += ad5360.o
-> +obj-$(CONFIG_AD5380) += ad5380.o
->  obj-$(CONFIG_AD5421) += ad5421.o
->  obj-$(CONFIG_AD5624R_SPI) += ad5624r_spi.o
->  obj-$(CONFIG_AD5064) += ad5064.o
-> [...]
+So far, we have been able to narrow it down to the following:
+
+
+Problem:
+
+* First PPTP client connects successfully, consecutive PPTP clients
+can't connect. Cause seems to be: RADIUS authentication times out
+because DHCP address allocation fails, because somehow the DHCPDISCOVER
+to 255.255.255.255 is routed out ppp0 and not out of eth0.
+
+* Routing tables look fine, both before and after first PPTP client is
+connected.
+
+* Route cache however shows an entry for 255.255.255.255. pointing
+towards ppp0 and we can't explain how it got there. After flushing the
+route cache this entry quickly reappears.
+
+
+Last kernel working OK:
+* 2.6.38
+
+Kernels where we hit this issue:
+* First: 2.6.39
+* Most recent one tested: 3.1.1
+* All tested kernels are from Ubuntu repository.
+
+
+Questions:
+
+* Is this the correct list to assist in troubleshooting / narrowing down
+the cause? If not, which one is? Netdev or some other?
+
+* What specific info is needed? Already gathered is output from "ip rule
+list", "ip route show table" for the various tables and "ip route show
+cache", both with kernel 2.6.38 and kernel 2.6.39.
+
+
+Thanks in advance for any advice, insights or assistance.
+
+
+Regards,
+
+Jeroen van Ingen
+ICT Service Centre
+University of Twente, P.O.Box 217, 7500 AE Enschede, The Netherlands
+Telephone +31 53 489 2526, Fax +31 53 489 2383
+J.vanIngenSchenau@utwente.nl; http://www.utwente.nl/icts
+
