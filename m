@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab1KPPdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:33:50 -0500
-Received: from gate.crashing.org ([63.228.1.57]:57659 "EHLO gate.crashing.org"
+	id S1753011Ab1KPPfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:35:30 -0500
+Received: from gate.crashing.org ([63.228.1.57]:57683 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab1KPPds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:33:48 -0500
-Subject: Re: [PATCH 2/5, v3] fsl-rio: Add two ports and rapidio message units support
+	id S1751163Ab1KPPf3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 10:35:29 -0500
+Subject: Re: [PATCH 3/5,v3] powerpc/85xx: Update SRIO device tree nodes
 Mime-Version: 1.0 (Apple Message framework v1251.1)
 Content-Type: text/plain; charset=us-ascii
 From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E552024917CC@CORPEXCH1.na.ads.idt.com>
-Date: Wed, 16 Nov 2011 09:33:15 -0600
-Cc: Liu Gang <Gang.Liu@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        Jin Qing <b24347@freescale.com>, r58472@freescale.com,
-        linux-kernel@vger.kernel.org, r61911@freescale.com,
-        akpm@linux-foundation.org, B11780@freescale.com
-Content-Transfer-Encoding: 7bit
-Message-Id: <D97116A8-B63C-4A38-B637-EDCD3129A078@kernel.crashing.org>
-References: <1321099352-21462-1-git-send-email-Gang.Liu@freescale.com> <1321099352-21462-2-git-send-email-Gang.Liu@freescale.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552024917CC@CORPEXCH1.na.ads.idt.com>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+In-Reply-To: <1321099352-21462-3-git-send-email-Gang.Liu@freescale.com>
+Date: Wed, 16 Nov 2011 09:35:11 -0600
+Cc: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>, <B11780@freescale.com>, <r61911@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F2C5B7D0-98F0-45C2-A9CA-EF6A783B4485@kernel.crashing.org>
+References: <1321099352-21462-1-git-send-email-Gang.Liu@freescale.com> <1321099352-21462-3-git-send-email-Gang.Liu@freescale.com>
+To: Liu Gang <Gang.Liu@freescale.com>
 X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Nov 16, 2011, at 7:39 AM, Bounine, Alexandre wrote:
+On Nov 12, 2011, at 6:02 AM, Liu Gang wrote:
 
->> -----Original Message-----
->> From: linuxppc-dev-bounces+alexandre.bounine=idt.com@lists.ozlabs.org
->> [mailto:linuxppc-dev-
->> bounces+alexandre.bounine=idt.com@lists.ozlabs.org] On Behalf Of Liu
->> Gang
->> Sent: Saturday, November 12, 2011 7:02 AM
->> To: linuxppc-dev@lists.ozlabs.org; Bounine, Alexandre
->> Cc: Jin Qing; r58472@freescale.com; r61911@freescale.com; linux-
->> kernel@vger.kernel.org; Liu Gang; akpm@linux-foundation.org;
->> B11780@freescale.com
->> Subject: [PATCH 2/5, v3] fsl-rio: Add two ports and rapidio message
->> units support
->> 
->> Usually, freescale rapidio endpoint can support one or two 1x or 4X
->> LP-Serial link interfaces, and rapidio message transactions can be
->> implemented by two message units. This adds the support of two
->> rapidio ports and initializes message unit 0 and message unit 1. And
->> these ports and message units can work simultaneously.
->> 
->> Signed-off-by: Li Yang <leoli@freescale.com>
->> Signed-off-by: Jin Qing <b24347@freescale.com>
->> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
->> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
->> ---
->> arch/powerpc/sysdev/fsl_rio.c |  391 +++++++++++++++++++++-----------
->> arch/powerpc/sysdev/fsl_rio.h |   75 ++++++-
->> arch/powerpc/sysdev/fsl_rmu.c |  502
-> ++++++++++++++++++---------------
->> --------
->> 3 files changed, 545 insertions(+), 423 deletions(-)
->> 
+> From: Kumar Gala <galak@kernel.crashing.org>
 > 
-> Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> Update all dts files that support SRIO controllers to match the new
+> fsl,srio device tree binding.
 > 
+> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+> ---
+> arch/powerpc/boot/dts/mpc8568mds.dts   |   66 ++++++++++++++++++++++-------
+> arch/powerpc/boot/dts/mpc8569mds.dts   |   72 +++++++++++++++++++++++++------
+> arch/powerpc/boot/dts/mpc8641_hpcn.dts |   69 ++++++++++++++++++++++++-------
+> arch/powerpc/boot/dts/p2041rdb.dts     |   11 +++++
+> arch/powerpc/boot/dts/p2041si.dtsi     |   20 +++++++++
+> arch/powerpc/boot/dts/p3041ds.dts      |   11 +++++
+> arch/powerpc/boot/dts/p3041si.dtsi     |   26 ++++++++---
+> arch/powerpc/boot/dts/p4080ds.dts      |   12 ++++-
+> arch/powerpc/boot/dts/p4080si.dtsi     |   64 +++++++++++++++++++++++-----
+> arch/powerpc/boot/dts/p5020ds.dts      |   11 +++++
+> arch/powerpc/boot/dts/p5020si.dtsi     |   26 ++++++++---
+> 11 files changed, 314 insertions(+), 74 deletions(-)
 
-applied to 'next'
+I'm holding off on this, since I'm reworking the .dts.  I'll workup a new patch based on top of the dts changes.
 
 - k
