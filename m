@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab1KPWP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:15:27 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:54332 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab1KPWPZ (ORCPT
+	id S1753907Ab1KPWPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:15:40 -0500
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:49270 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab1KPWPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:15:25 -0500
+	Wed, 16 Nov 2011 17:15:34 -0500
 From: David Decotigny <david.decotigny@google.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -18,104 +18,204 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
         Ayaz Abdulla <AAbdulla@nvidia.com>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v6 0/9] net-sysfs+forcedeth: stats & debug enhancements
-Date: Wed, 16 Nov 2011 14:15:06 -0800
-Message-Id: <cover.1321481064.git.david.decotigny@google.com>
+Subject: [PATCH net-next v6 4/9] net: new counter for tx_timeout errors in sysfs
+Date: Wed, 16 Nov 2011 14:15:10 -0800
+Message-Id: <69fc9885c6febb83152fe3dce1c20ea7237538d1.1321481064.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
+References: <cover.1321481064.git.david.decotigny@google.com>
+In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
+References: <cover.1321481064.git.david.decotigny@google.com>
 Organization: Google, Inc.
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These changes provide a new generic network tx_timeout sysfs queue
-attribute and implement the ndo_get_stats64 API for forcedeth. They
-also add a few more stats and debugging features for forcedeth. They
-ensure that stats updates are correct in SMP systems, 32 or 64-bits.
+This adds the /sys/class/net/DEV/queues/Q/tx_timeout attribute
+containing the total number of timeout events on the given queue. It
+is always available with CONFIG_SYSFS, independently of
+CONFIG_RPS/XPS.
 
-Thanks to all the reviewers of the previous versions of this series!
-
-Note: patch 1 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
-stats on hardware without extended stats support")
-
-Changes since v5:
-  - get_stats64: back to using u64_stats_sync.h instead of atomic
-    integers, but this time with 2 seqcounts: one for TX, one for RX
-
-Changes since v4:
-  - tx_timeout counter now a generic sysfs attribute. Credits to
-    Stephen Hemminger for initial implementation
-  - revert get_stats64 to using atomic variables: see
-    http://patchwork.ozlabs.org/patch/125861/ for motivations
-  - dropped patch "expose module parameters in /sys/module" for now: I
-    will work on this later, following Stephen's recommendations
-    (http://patchwork.ozlabs.org/patch/125862/).
-
-Changes since v3:
-  - updated get_stats64 + rx_dropped patches to use u64_stats_sync.h
-  - dropped indentation "whitespace/indentation fixes" (included in
-    get_stats64 api patch)
-
-Changes since v2:
-  - patch 1/9 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
-    stats on hardware without extended stats support")
-  - removed patch 5/10 "stats for rx_packets based on hardware
-    registers" because packets&bytes stats are updated in software
-    only (898bdf2cb43e)
-
-Changes since v1:
-  - patch 1/10 is the same as
-    http://patchwork.ozlabs.org/patch/125017/ (targetting net)
-  - other patches updated to take patch 1/10 into account
-  - various commit message updates
-
+Credits to Stephen Hemminger for a preliminary version of this patch.
 
 Tested:
-  ~150Mbps incoming TCP, ethtool -S in a loop, x86_64 16-way:
-     tx_bytes: 5441989419
-     rx_packets: 5439224
-     tx_timeout: 0
-     tx_packets: 5456705
-     rx_bytes: 5566763850
-
-Tested:
-  pktgen + loopback report same RX/TX packets and bytes stats
-
-Tested:
-  tests above with Kconfig DEBUG_PAGEALLOC DEBUG_MUTEXES
-  DEBUG_SPINLOCK LOCKUP_DETECTOR DEBUG_RT_MUTEXES DEBUG_LOCK_ALLOC
-  PROVE_LOCKING DEBUG_ATOMIC_SLEEP DEBUG_STACK_USAGE DEBUG_KOBJECT
-  DEBUG_VM DEBUG_LIST DEBUG_SG DEBUG_NOTIFIERS TEST_KSTRTOX
-  STRICT_DEVMEM DEBUG_STACKOVERFLOW
+  without CONFIG_SYSFS (compilation only)
+  with sysfs and without CONFIG_RPS & CONFIG_XPS
+  with sysfs and without CONFIG_RPS
+  with sysfs and without CONFIG_XPS
+  with defaults
 
 
-############################################
-# Patch Set Summary:
 
-David Decotigny (6):
-  net-sysfs: fixed minor sparse warning
-  kbuild: document RPS/XPS network Kconfig options
-  net: new counter for tx_timeout errors in sysfs
-  forcedeth: implement ndo_get_stats64() API
-  forcedeth: account for dropped RX frames
-  forcedeth: stats updated with a deferrable timer
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ include/linux/netdevice.h |   12 ++++++++++--
+ net/core/net-sysfs.c      |   37 +++++++++++++++++++++++++++++++------
+ net/sched/sch_generic.c   |    1 +
+ 3 files changed, 42 insertions(+), 8 deletions(-)
 
-Mike Ditto (1):
-  forcedeth: Add messages to indicate using MSI or MSI-X
-
-Sameer Nanda (1):
-  forcedeth: allow to silence "TX timeout" debug messages
-
-david decotigny (1):
-  forcedeth: fix stats on hardware without extended stats support
-
- drivers/net/ethernet/nvidia/forcedeth.c |  321 ++++++++++++++++++++++---------
- include/linux/netdevice.h               |   12 +-
- net/Kconfig                             |   22 ++-
- net/core/net-sysfs.c                    |   49 ++++--
- net/sched/sch_generic.c                 |    1 +
- 5 files changed, 296 insertions(+), 109 deletions(-)
-
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index cbeb586..9e6cf09 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -530,7 +530,7 @@ struct netdev_queue {
+ 	struct Qdisc		*qdisc;
+ 	unsigned long		state;
+ 	struct Qdisc		*qdisc_sleeping;
+-#if defined(CONFIG_RPS) || defined(CONFIG_XPS)
++#ifdef CONFIG_SYSFS
+ 	struct kobject		kobj;
+ #endif
+ #if defined(CONFIG_XPS) && defined(CONFIG_NUMA)
+@@ -545,6 +545,12 @@ struct netdev_queue {
+ 	 * please use this field instead of dev->trans_start
+ 	 */
+ 	unsigned long		trans_start;
++
++	/*
++	 * Number of TX timeouts for this queue
++	 * (/sys/class/net/DEV/Q/trans_timeout)
++	 */
++	unsigned long		trans_timeout;
+ } ____cacheline_aligned_in_smp;
+ 
+ static inline int netdev_queue_numa_node_read(const struct netdev_queue *q)
+@@ -1184,9 +1190,11 @@ struct net_device {
+ 
+ 	unsigned char		broadcast[MAX_ADDR_LEN];	/* hw bcast add	*/
+ 
+-#if defined(CONFIG_RPS) || defined(CONFIG_XPS)
++#ifdef CONFIG_SYSFS
+ 	struct kset		*queues_kset;
++#endif
+ 
++#ifdef CONFIG_RPS
+ 	struct netdev_rx_queue	*_rx;
+ 
+ 	/* Number of RX queues allocated at register_netdev() time */
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index a64382f..602b141 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -780,7 +780,7 @@ net_rx_queue_update_kobjects(struct net_device *net, int old_num, int new_num)
+ #endif
+ }
+ 
+-#ifdef CONFIG_XPS
++#ifdef CONFIG_SYSFS
+ /*
+  * netdev_queue sysfs structures and functions.
+  */
+@@ -826,6 +826,23 @@ static const struct sysfs_ops netdev_queue_sysfs_ops = {
+ 	.store = netdev_queue_attr_store,
+ };
+ 
++static ssize_t show_trans_timeout(struct netdev_queue *queue,
++				  struct netdev_queue_attribute *attribute,
++				  char *buf)
++{
++	unsigned long trans_timeout;
++
++	spin_lock_irq(&queue->_xmit_lock);
++	trans_timeout = queue->trans_timeout;
++	spin_unlock_irq(&queue->_xmit_lock);
++
++	return sprintf(buf, "%lu", trans_timeout);
++}
++
++static struct netdev_queue_attribute queue_trans_timeout =
++	__ATTR(tx_timeout, S_IRUGO, show_trans_timeout, NULL);
++
++#ifdef CONFIG_XPS
+ static inline unsigned int get_netdev_queue_index(struct netdev_queue *queue)
+ {
+ 	struct net_device *dev = queue->dev;
+@@ -1020,12 +1037,17 @@ error:
+ 
+ static struct netdev_queue_attribute xps_cpus_attribute =
+     __ATTR(xps_cpus, S_IRUGO | S_IWUSR, show_xps_map, store_xps_map);
++#endif /* CONFIG_XPS */
+ 
+ static struct attribute *netdev_queue_default_attrs[] = {
++	&queue_trans_timeout.attr,
++#ifdef CONFIG_XPS
+ 	&xps_cpus_attribute.attr,
++#endif
+ 	NULL
+ };
+ 
++#ifdef CONFIG_XPS
+ static void netdev_queue_release(struct kobject *kobj)
+ {
+ 	struct netdev_queue *queue = to_netdev_queue(kobj);
+@@ -1076,10 +1098,13 @@ static void netdev_queue_release(struct kobject *kobj)
+ 	memset(kobj, 0, sizeof(*kobj));
+ 	dev_put(queue->dev);
+ }
++#endif /* CONFIG_XPS */
+ 
+ static struct kobj_type netdev_queue_ktype = {
+ 	.sysfs_ops = &netdev_queue_sysfs_ops,
++#ifdef CONFIG_XPS
+ 	.release = netdev_queue_release,
++#endif
+ 	.default_attrs = netdev_queue_default_attrs,
+ };
+ 
+@@ -1102,12 +1127,12 @@ static int netdev_queue_add_kobject(struct net_device *net, int index)
+ 
+ 	return error;
+ }
+-#endif /* CONFIG_XPS */
++#endif /* CONFIG_SYSFS */
+ 
+ int
+ netdev_queue_update_kobjects(struct net_device *net, int old_num, int new_num)
+ {
+-#ifdef CONFIG_XPS
++#ifdef CONFIG_SYSFS
+ 	int i;
+ 	int error = 0;
+ 
+@@ -1125,14 +1150,14 @@ netdev_queue_update_kobjects(struct net_device *net, int old_num, int new_num)
+ 	return error;
+ #else
+ 	return 0;
+-#endif
++#endif /* CONFIG_SYSFS */
+ }
+ 
+ static int register_queue_kobjects(struct net_device *net)
+ {
+ 	int error = 0, txq = 0, rxq = 0, real_rx = 0, real_tx = 0;
+ 
+-#if defined(CONFIG_RPS) || defined(CONFIG_XPS)
++#ifdef CONFIG_SYSFS
+ 	net->queues_kset = kset_create_and_add("queues",
+ 	    NULL, &net->dev.kobj);
+ 	if (!net->queues_kset)
+@@ -1173,7 +1198,7 @@ static void remove_queue_kobjects(struct net_device *net)
+ 
+ 	net_rx_queue_update_kobjects(net, real_rx, 0);
+ 	netdev_queue_update_kobjects(net, real_tx, 0);
+-#if defined(CONFIG_RPS) || defined(CONFIG_XPS)
++#ifdef CONFIG_SYSFS
+ 	kset_unregister(net->queues_kset);
+ #endif
+ }
+diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
+index 69fca27..79ac145 100644
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -246,6 +246,7 @@ static void dev_watchdog(unsigned long arg)
+ 				    time_after(jiffies, (trans_start +
+ 							 dev->watchdog_timeo))) {
+ 					some_queue_timedout = 1;
++					txq->trans_timeout++;
+ 					break;
+ 				}
+ 			}
 -- 
 1.7.3.1
 
