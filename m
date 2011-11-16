@@ -1,119 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1KPTHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 14:07:20 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37563 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1KPTHT convert rfc822-to-8bit (ORCPT
+	id S1752714Ab1KPTLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 14:11:01 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:15748 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab1KPTK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 14:07:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111114021359.GA25796@b20223-02.ap.freescale.net>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
- <4EB9EA46.3030300@gmail.com> <20111114021359.GA25796@b20223-02.ap.freescale.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 16 Nov 2011 12:06:56 -0700
-X-Google-Sender-Auth: _LyPvm-pufXqgrP63bquo95TF64
-Message-ID: <CACxGe6tHF7K4y9FqUxYraK0pgRRtN671-pp3Z88SEj4nStQiCg@mail.gmail.com>
-Subject: Re: [RFC 6/8] of: add clock providers
-To: Richard Zhao <richard.zhao@linaro.org>
-Cc: Rob Herring <robherring2@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Nov 2011 14:10:59 -0500
+Date: Wed, 16 Nov 2011 20:10:48 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: York Sun <yorksun@freescale.com>
+Cc: <guenter.roeck@ericsson.com>, Tabi Timur-B04825 <B04825@freescale.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        B29983@freescale.com
+Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+Message-ID: <20111116201048.4b7877dd@endymion.delvare>
+In-Reply-To: <1321467638.7847.73.camel@oslab-l1>
+References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+	<CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
+	<E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
+	<ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
+	<1321464509.7847.41.camel@oslab-l1>
+	<1321464968.2309.384.camel@groeck-laptop>
+	<1321466135.7847.55.camel@oslab-l1>
+	<20111116190954.67c846fc@endymion.delvare>
+	<1321467638.7847.73.camel@oslab-l1>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 7:14 PM, Richard Zhao <richard.zhao@linaro.org> wrote:
-> On Tue, Nov 08, 2011 at 08:49:42PM -0600, Rob Herring wrote:
->> > +For example:
->> > +
->> > +    oscillator {
->> > +        #clock-cells = <1>;
->> > +        clock-output-name = "ckil", "ckih";
->> > +    };
->> > +
->> > +- this node defines a device with two clock outputs, the first named
->> > +  "ckil" and the second named "ckih".  Consumer nodes always reference
->> > +  clocks by index. The names should reflect the clock output signal
->> > +  names for the device.
->> > +
->> > +==Clock consumers==
->> > +
->> > +Required properties:
->> > +clock-input:       List of phandle and clock specifier pairs, one pair
->> > +           for each clock input to the device.
->> > +clock-input-name: List of clock input name strings sorted in the same
->> > +           order as the clock-input property.  Consumers drivers
->> > +           will use clock-input-name to match clock input names
->> > +           with clock-input specifiers.
->> > +
->> > +For example:
->> > +
->> > +    uart {
->> > +        clock-input = <&osc 1> <&ref 0>;
->> > +        clock-input-name = "baud", "register";
->> > +    };
->>
->> This is duplicated below.
+On Wed, 16 Nov 2011 10:20:38 -0800, York Sun wrote:
+> On Wed, 2011-11-16 at 19:09 +0100, Jean Delvare wrote:
+> > Your thinking is too focused on I2C block reads (or even block read of
+> > data over the network or on disk). SMBus block read is something
+> > completely different. It's not about reading 200 bytes of data and
+> > receiving it in 16-byte chunks (I2C block read works that way, on
+> > EEPROMs in particular.) There is no "data length" and "block size" to
+> > compare to each other. It's about reading the value of _one_ register
+> > and this value happens to be multi-byte. There is typically _no_
+> > register pointer increment (automatic or not) involved as can happen
+> > with EEPROMs. If an SMBus block read from register N returns 10 bytes,
+> > you're not going to read the next 10 bytes from register N+10. There
+> > are no "next 10 bytes" to read, and register N+10 is something
+> > completely unrelated.
+> > 
+> > And for this reason, it is not possible to mix SMBus block reads with
+> > byte reads, as can be done with I2C block reads.
+> > 
+> > Also note that there is a limit of 32 bytes for SMBus block transfers,
+> > per SMBus specification. All slaves and masters must comply with it.
+> > 
+> > I hope I managed to clarify the case this time...
+> 
+> You have made it much clear. If block size is fixed and block read
+> cannot mix with byte read, shall we do this
+> 
+> if length < block_size
+>    read block_size
+> else {
+>    while (length) {
+>        read block_size
+>        length -= block_size
+>    }
 
-I'm okay with that. It's not entirely the same, and I think having
-several examples is helpful.
+Which part of
 
+  There is no "data length" and "block size" to compare to each other.
 
->> > +    /* external oscillator */
->> > +    osc: oscillator {
->> > +        compatible = "fixed-clock";
->> > +        #clock-cells = <1>;
->> > +        frequency  = <32678>;
->>
->> The code is using "clock-frequency" here.
+did you not understand?
 
-Fixed
-
->>
->> > +        clock-output-name = "osc";
->> > +    };
->> > +
->> > +    /* phase-locked-loop device, generates a higher frequency clock
->> > +     * from the external oscillator reference */
->> > +    pll: pll {
->> > +        compatible = "some-pll-interface"
->> > +        #clock-cells = <1>;
->> > +        clock-input = <&osc 0>;
->>
->> There's a mismatch in #clock-cells size and this.
->
-> osc #clock-cells is 1. "0" is one cell too. Nothing wrong. Correct my understanding?
-
-Richard is correct.  The #clock-cells value needs to be 1, which in
-the clock binding means one cell for the phandle and one cell for the
-attached arguments.  Exactly the same as the gpio binding.
-
->> > +static struct clk *__of_clk_get_from_provider(struct of_phandle_args *clkspec)
->> > +{
->> > +   struct of_clk_provider *provider;
->> > +   struct clk *clk = NULL;
->> > +
->> > +   /* Check if we have such a provider in our array */
->> > +   mutex_lock(&of_clk_lock);
->> > +   list_for_each_entry(provider, &of_clk_providers, link) {
->> > +           if (provider->node == clkspec->np)
->> > +                   clk = provider->get(clkspec, provider->data);
->>
->> How about:
->>
->> if (provider->get)
->>       clk = provider->get(clkspec, provider->data);
->> else
->>       clk = provider->data;
-
-I'd rather make it a requirement for every clock driver to provide the
-get hook; even if it uses a stock version that simply returns ->data.
-
-Thanks for the review.
-
-g.
+-- 
+Jean Delvare
