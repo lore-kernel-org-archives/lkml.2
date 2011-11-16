@@ -1,212 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab1KPVxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 16:53:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58919 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753707Ab1KPVw5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 16:52:57 -0500
-Date: Wed, 16 Nov 2011 21:52:36 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, Greg KH <greg@kroah.com>,
-        Dave Jones <davej@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Message-ID: <20111116215236.GD3366@decadent.org.uk>
-References: <1319773015.6759.30.camel@deadeye>
+	id S1753775Ab1KPVz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 16:55:56 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:42925 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751980Ab1KPVzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 16:55:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Date: Wed, 16 Nov 2011 22:58:39 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
+        Colin Cross <ccross@android.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Linux-MM" <linux-mm@kvack.org>
+References: <20111114140421.GA27150@suse.de> <alpine.LFD.2.02.1111160908310.2446@tux.localdomain> <alpine.DEB.2.00.1111161340010.16596@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1111161340010.16596@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319773015.6759.30.camel@deadeye>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 1/2] lockdep,rtmutex,bug: Show taint flags on error
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111162258.39346.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please could you ack or nak this?
+On Wednesday, November 16, 2011, David Rientjes wrote:
+> On Wed, 16 Nov 2011, Pekka Enberg wrote:
+> 
+> > > diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> > > index fdd4263..01aa9b5 100644
+> > > --- a/kernel/power/suspend.c
+> > > +++ b/kernel/power/suspend.c
+> > > @@ -297,9 +297,11 @@ int enter_state(suspend_state_t state)
+> > >                goto Finish;
+> > > 
+> > >        pr_debug("PM: Entering %s sleep\n", pm_states[state]);
+> > > +       oom_killer_disable();
+> > >        pm_restrict_gfp_mask();
+> > >        error = suspend_devices_and_enter(state);
+> > >        pm_restore_gfp_mask();
+> > > +       oom_killer_enable();
+> > > 
+> > >  Finish:
+> > >        pr_debug("PM: Finishing wakeup.\n");
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 6e8ecb6..d8c31b7 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -2177,9 +2177,9 @@ rebalance:
+> > >         * running out of options and have to consider going OOM
+> > >         */
+> > >        if (!did_some_progress) {
+> > > -               if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+> > > -                       if (oom_killer_disabled)
+> > > +               if (oom_killer_disabled)
+> > >                                goto nopage;
+> 
+> You're allowing __GFP_NOFAIL allocations to fail.
+> 
+> > > +               if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+> > >                        page = __alloc_pages_may_oom(gfp_mask, order,
+> > >                                        zonelist, high_zoneidx,
+> > >                                        nodemask, preferred_zone,
+> > > 
+> > 
+> > I'd prefer something like this. The whole 'gfp_allowed_flags' thing was
+> > designed to make GFP_KERNEL work during boot time where it's obviously safe to
+> > do that. I really don't think that's going to work suspend cleanly.
+> > 
+> 
+> Adding Rafael to the cc.
+> 
+> This has been done since 2.6.34 and presumably has been working quite 
+> well.
 
-Ben.
+Yes, it has.
 
-On Fri, Oct 28, 2011 at 04:36:55AM +0100, Ben Hutchings wrote:
-> Currently lock debugging is disabled when the kernel is tainted, with
-> a few exceptions.  It is already recognised that this can be useful
-> for staging modules (TAINT_CRAP), but that also goes for out-of-tree
-> modules (TAINT_OOT_MODULE) so long as core kernel developers don't
-> have to spend time debugging them.  Also, there are several reasons
-> for tainting that are unlikely to introduce false locking bug reports
-> (e.g. TAINT_FIRMWARE_WORKAROUND).
-> 
-> Instead of disabling lock debugging, show the taint flags in all
-> lockdep and rtmutex-debug error messages.
-> 
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  kernel/lockdep.c       |   23 +++++++++++++++--------
->  kernel/panic.c         |   10 ----------
->  kernel/rtmutex-debug.c |    1 +
->  3 files changed, 16 insertions(+), 18 deletions(-)
-> 
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index e69434b..b2c4537 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -567,11 +567,12 @@ static void lockdep_print_held_locks(struct task_struct *curr)
->  	}
->  }
->  
-> -static void print_kernel_version(void)
-> +static void print_kernel_ident(void)
->  {
-> -	printk("%s %.*s\n", init_utsname()->release,
-> +	printk("%s %.*s %s\n", init_utsname()->release,
->  		(int)strcspn(init_utsname()->version, " "),
-> -		init_utsname()->version);
-> +		init_utsname()->version,
-> +		print_tainted());
->  }
->  
->  static int very_verbose(struct lock_class *class)
-> @@ -1148,7 +1149,7 @@ print_circular_bug_header(struct lock_list *entry, unsigned int depth,
->  	printk("\n");
->  	printk("======================================================\n");
->  	printk("[ INFO: possible circular locking dependency detected ]\n");
-> -	print_kernel_version();
-> +	print_kernel_ident();
->  	printk("-------------------------------------------------------\n");
->  	printk("%s/%d is trying to acquire lock:\n",
->  		curr->comm, task_pid_nr(curr));
-> @@ -1487,7 +1488,7 @@ print_bad_irq_dependency(struct task_struct *curr,
->  	printk("======================================================\n");
->  	printk("[ INFO: %s-safe -> %s-unsafe lock order detected ]\n",
->  		irqclass, irqclass);
-> -	print_kernel_version();
-> +	print_kernel_ident();
->  	printk("------------------------------------------------------\n");
->  	printk("%s/%d [HC%u[%lu]:SC%u[%lu]:HE%u:SE%u] is trying to acquire:\n",
->  		curr->comm, task_pid_nr(curr),
-> @@ -1716,7 +1717,7 @@ print_deadlock_bug(struct task_struct *curr, struct held_lock *prev,
->  	printk("\n");
->  	printk("=============================================\n");
->  	printk("[ INFO: possible recursive locking detected ]\n");
-> -	print_kernel_version();
-> +	print_kernel_ident();
->  	printk("---------------------------------------------\n");
->  	printk("%s/%d is trying to acquire lock:\n",
->  		curr->comm, task_pid_nr(curr));
-> @@ -2223,7 +2224,7 @@ print_usage_bug(struct task_struct *curr, struct held_lock *this,
->  	printk("\n");
->  	printk("=================================\n");
->  	printk("[ INFO: inconsistent lock state ]\n");
-> -	print_kernel_version();
-> +	print_kernel_ident();
->  	printk("---------------------------------\n");
->  
->  	printk("inconsistent {%s} -> {%s} usage.\n",
-> @@ -2288,7 +2289,7 @@ print_irq_inversion_bug(struct task_struct *curr,
->  	printk("\n");
->  	printk("=========================================================\n");
->  	printk("[ INFO: possible irq lock inversion dependency detected ]\n");
-> -	print_kernel_version();
-> +	print_kernel_ident();
->  	printk("---------------------------------------------------------\n");
->  	printk("%s/%d just changed the state of lock:\n",
->  		curr->comm, task_pid_nr(curr));
-> @@ -3169,6 +3170,7 @@ print_unlock_inbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
->  	printk("\n");
->  	printk("=====================================\n");
->  	printk("[ BUG: bad unlock balance detected! ]\n");
-> +	print_kernel_ident();
->  	printk("-------------------------------------\n");
->  	printk("%s/%d is trying to release lock (",
->  		curr->comm, task_pid_nr(curr));
-> @@ -3613,6 +3615,7 @@ print_lock_contention_bug(struct task_struct *curr, struct lockdep_map *lock,
->  	printk("\n");
->  	printk("=================================\n");
->  	printk("[ BUG: bad contention detected! ]\n");
-> +	print_kernel_ident();
->  	printk("---------------------------------\n");
->  	printk("%s/%d is trying to contend lock (",
->  		curr->comm, task_pid_nr(curr));
-> @@ -3987,6 +3990,7 @@ print_freed_lock_bug(struct task_struct *curr, const void *mem_from,
->  	printk("\n");
->  	printk("=========================\n");
->  	printk("[ BUG: held lock freed! ]\n");
-> +	print_kernel_ident();
->  	printk("-------------------------\n");
->  	printk("%s/%d is freeing memory %p-%p, with a lock still held there!\n",
->  		curr->comm, task_pid_nr(curr), mem_from, mem_to-1);
-> @@ -4044,6 +4048,7 @@ static void print_held_locks_bug(struct task_struct *curr)
->  	printk("\n");
->  	printk("=====================================\n");
->  	printk("[ BUG: lock held at task exit time! ]\n");
-> +	print_kernel_ident();
->  	printk("-------------------------------------\n");
->  	printk("%s/%d is exiting with locks still held!\n",
->  		curr->comm, task_pid_nr(curr));
-> @@ -4141,6 +4146,7 @@ void lockdep_sys_exit(void)
->  		printk("\n");
->  		printk("================================================\n");
->  		printk("[ BUG: lock held when returning to user space! ]\n");
-> +		print_kernel_ident();
->  		printk("------------------------------------------------\n");
->  		printk("%s/%d is leaving the kernel with locks still held!\n",
->  				curr->comm, curr->pid);
-> @@ -4160,6 +4166,7 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
->  	printk("\n");
->  	printk("===============================\n");
->  	printk("[ INFO: suspicious RCU usage. ]\n");
-> +	print_kernel_ident();
->  	printk("-------------------------------\n");
->  	printk("%s:%d %s!\n", file, line, s);
->  	printk("\nother info that might help us debug this:\n\n");
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index b2659360..ad03fb5 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -233,16 +233,6 @@ unsigned long get_taint(void)
->  
->  void add_taint(unsigned flag)
->  {
-> -	/*
-> -	 * Can't trust the integrity of the kernel anymore.
-> -	 * We don't call directly debug_locks_off() because the issue
-> -	 * is not necessarily serious enough to set oops_in_progress to 1
-> -	 * Also we want to keep up lockdep for staging development and
-> -	 * post-warning case.
-> -	 */
-> -	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
-> -		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
-> -
->  	set_bit(flag, &tainted_mask);
->  }
->  EXPORT_SYMBOL(add_taint);
-> diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
-> index a2e7e72..077257f 100644
-> --- a/kernel/rtmutex-debug.c
-> +++ b/kernel/rtmutex-debug.c
-> @@ -101,6 +101,7 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
->  
->  	printk("\n============================================\n");
->  	printk(  "[ BUG: circular locking deadlock detected! ]\n");
-> +	printk("%s\n", print_tainted());
->  	printk(  "--------------------------------------------\n");
->  	printk("%s/%d is deadlocking current task %s/%d\n\n",
->  	       task->comm, task_pid_nr(task),
-> -- 
-> 1.7.7
-> 
-> 
-> 
+> I don't have a specific objection to gfp_allowed_flags to be used 
+> outside of boot since it seems plausible that there are system-level 
+> contexts that would need different behavior in the page allocator and this 
+> does it effectively without major surgery or a slower fastpath.  Suspend 
+> is using it just like boot does before irqs are enabled, so I don't have 
+> an objection to it.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Good. :-)
+
+Thanks,
+Rafael
