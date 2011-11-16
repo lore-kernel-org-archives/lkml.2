@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab1KPRWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 12:22:38 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10970 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab1KPRWh convert rfc822-to-8bit (ORCPT
+	id S1757469Ab1KPRWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:22:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42395 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753528Ab1KPRWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 12:22:37 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 16 Nov 2011 09:22:33 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Wed, 16 Nov 2011 09:22:32 -0800
-Subject: RE: [PATCH] pinctrl: print pin range in GPIO range debugs
-Thread-Topic: [PATCH] pinctrl: print pin range in GPIO range debugs
-Thread-Index: AcykPihnRnav8gjgQwOC9NF+kmTHtAARhHPg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D748C6@HQMAIL01.nvidia.com>
-References: <1321433990-17403-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1321433990-17403-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Nov 2011 12:22:49 -0500
+Date: Wed, 16 Nov 2011 17:22:47 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
+Subject: Re: [PATCH 5/7] regmap: Check if a register is writable instead of
+ readable in regcache_read
+Message-ID: <20111116172246.GS29986@opensource.wolfsonmicro.com>
+References: <1321457302-8724-1-git-send-email-lars@metafoo.de>
+ <1321457302-8724-5-git-send-email-lars@metafoo.de>
+ <20111116161631.GK29986@opensource.wolfsonmicro.com>
+ <4EC3E619.70503@metafoo.de>
+ <20111116163812.GM29986@opensource.wolfsonmicro.com>
+ <4EC3EA61.2000705@metafoo.de>
+ <20111116165622.GP29986@opensource.wolfsonmicro.com>
+ <4EC3EE32.2090007@metafoo.de>
+ <20111116171213.GR29986@opensource.wolfsonmicro.com>
+ <4EC3EFB3.9080205@metafoo.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC3EFB3.9080205@metafoo.de>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, November 16, 2011 2:00 AM:
-> Show the mapped pin range corresponding to the GPIO range in
-> debugfs for pin controllers.
+On Wed, Nov 16, 2011 at 06:15:31PM +0100, Lars-Peter Clausen wrote:
+> On 11/16/2011 06:12 PM, Mark Brown wrote:
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+> > We should at least check that we actually have a cached value there -
+> > the cache is sparse after all.
 
--- 
-nvpublic
+> That's what the cache already does today, you recently change the rbtree
+> implementation to return -ENOENT if there is no cached value.
 
+Oh, sorry -  this is in the cache specific code isn't it?  In that case
+yes the check is just totally redundant and can be removed on those
+grounds alone.
