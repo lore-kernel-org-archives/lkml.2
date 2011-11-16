@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab1KPQ40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:56:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34744 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757113Ab1KPQ4Z (ORCPT
+	id S1755317Ab1KPRA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:00:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45997 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab1KPRA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:56:25 -0500
-Date: Wed, 16 Nov 2011 16:56:22 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
-Subject: Re: [PATCH 5/7] regmap: Check if a register is writable instead of
- readable in regcache_read
-Message-ID: <20111116165622.GP29986@opensource.wolfsonmicro.com>
-References: <1321457302-8724-1-git-send-email-lars@metafoo.de>
- <1321457302-8724-5-git-send-email-lars@metafoo.de>
- <20111116161631.GK29986@opensource.wolfsonmicro.com>
- <4EC3E619.70503@metafoo.de>
- <20111116163812.GM29986@opensource.wolfsonmicro.com>
- <4EC3EA61.2000705@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC3EA61.2000705@metafoo.de>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Nov 2011 12:00:58 -0500
+X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=l4wf8OQxcBQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=WcGvJwXxC1aDNIH_oQkA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH] tracing: add trace console
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <1321461902.4502.14.camel@jlt3.sipsolutions.net>
+References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
+	 <20111116151037.GA26166@infradead.org>
+	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
+	 <1321461693.4181.26.camel@frodo>
+	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 12:00:56 -0500
+Message-ID: <1321462856.4181.28.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 05:52:49PM +0100, Lars-Peter Clausen wrote:
-> On 11/16/2011 05:38 PM, Mark Brown wrote:
+On Wed, 2011-11-16 at 17:45 +0100, Johannes Berg wrote:
 
-> >> Hm? The use case here is chips which do not support readback. So we never
-> >> want to fallback to a hardware read but still want to be able to do a cached
-> >> read.
+> I briefly looked at it just after writing the email, but quickly got
+> lost in printk.c because of the multi-line handling it has. We could
+> instead trace each call to printk(), so the multi-line stuff would end
+> up in multiple events, but all of that code is too much vodoo for me :)
 
-> > This code will be run on every chip, including chips with read/write
-> > access.  Caches are useful for all chips.
+Here's what can go into printk.c:
 
-> Of course. And it still works for chips with read/write support with this
-> patch, but it doesn't work for chips without read support without this patch.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 1455a0d..4b8445a 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -542,6 +542,7 @@ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
+ static void _call_console_drivers(unsigned start,
+ 				unsigned end, int msg_log_level)
+ {
++	trace_console(&LOG_BUF(start), end - start);
+ 	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
+ 			console_drivers && start != end) {
+ 		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
 
-No, it'll fail if we ever cache volatile registers at startup (which
-is a perfectly sensible thing to do for things like chip revisions -
-they're not something we can hard code the default for but they're not
-going to change at runtime).
 
-> > If you're looking at the read function and it's checking to see if the
-> > register is writeable the first thought would be that this is a
-> > cut'n'paste error.  The above code is at best *way* too cute.
+And then you can make a TRACE_EVENT(console) that takes a buffer and a
+len, and write that to the ring buffer.
 
-> We can of course add a comment explaining why it is regmap_writable instead
-> of regmap_readable.
+-- Steve
 
-No, really - just do something legible and robust.  For example, teach
-regmap_readable() about the cache.
+
