@@ -1,90 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab1KPPEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 10:04:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33850 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab1KPPEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 10:04:33 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
-Date: Thu, 17 Nov 2011 00:04:08 +0900
-Message-Id: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1756206Ab1KPPHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 10:07:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52751 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752432Ab1KPPHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 10:07:54 -0500
+Date: Wed, 16 Nov 2011 15:07:50 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
+ allocations
+Message-ID: <20111116150750.GO27150@suse.de>
+References: <20111110151211.523fa185.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
+ <20111111101414.GJ3083@suse.de>
+ <20111114154408.10de1bc7.akpm@linux-foundation.org>
+ <20111115132513.GF27150@suse.de>
+ <alpine.DEB.2.00.1111151303230.23579@chino.kir.corp.google.com>
+ <20111115234845.GK27150@suse.de>
+ <alpine.DEB.2.00.1111151554190.3781@chino.kir.corp.google.com>
+ <20111116041350.GA3306@redhat.com>
+ <20111116133056.GC3306@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20111116133056.GC3306@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If slab caches set to SLAB_MEM_SPREAD flags, The allocation is spread evenly over all the memory nodes instead of favoring allocation on the node local to current cpu.
+On Wed, Nov 16, 2011 at 02:30:56PM +0100, Andrea Arcangeli wrote:
+> On Wed, Nov 16, 2011 at 05:13:50AM +0100, Andrea Arcangeli wrote:
+> > After checking my current thp vmstat I think Andrew was right and we
+> > backed out for a good reason before. I'm getting significantly worse
+> > success rate, not sure why it was a small reduction in success rate
+> > but hey I cannot exclude I may have broke something with some other
+> > patch. I've been running it together with a couple more changes. If
+> > it's this change that reduced the success rate, I'm afraid going
+> > always async is not ok.
+> 
+> I wonder if the high failure rate when shutting off "sync compaction"
+> and forcing only "async compaction" for THP (your patch queued in -mm)
+> is also because of ISOLATE_CLEAN being set in compaction from commit
+> 39deaf8. ISOLATE_CLEAN skipping PageDirty means all tmpfs/anon pages
+> added to swapcache (or removed from swapcache which sets the dirty bit
+> on the page because the pte may be mapped clean) are skipped entirely
+> by async compaction for no good reason.
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
----
- fs/ext4/mballoc.c |    9 +++++----
- fs/ext4/page-io.c |    6 ++++--
- 2 files changed, 9 insertions(+), 6 deletions(-)
+Good point! Even though these pages can be migrated without IO or
+incurring a sync, we are skipping over them. I'm still
+looking at passing sync down to ->migratepages and as part of that,
+ISOLATE_CLEAN will need new smarts.
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index e2d8be8..86efde7 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2407,7 +2407,8 @@ static int ext4_groupinfo_create_slab(size_t size)
- 				bb_counters[blocksize_bits + 2]);
- 
- 	cachep = kmem_cache_create(ext4_groupinfo_slab_names[cache_index],
--					slab_size, 0, SLAB_RECLAIM_ACCOUNT,
-+					slab_size, 0, SLAB_RECLAIM_ACCOUNT |
-+					SLAB_MEM_SPREAD,
- 					NULL);
- 
- 	ext4_groupinfo_caches[cache_index] = cachep;
-@@ -2730,19 +2731,19 @@ static void ext4_remove_debugfs_entry(void)
- int __init ext4_init_mballoc(void)
- {
- 	ext4_pspace_cachep = KMEM_CACHE(ext4_prealloc_space,
--					SLAB_RECLAIM_ACCOUNT);
-+					SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD);
- 	if (ext4_pspace_cachep == NULL)
- 		return -ENOMEM;
- 
- 	ext4_ac_cachep = KMEM_CACHE(ext4_allocation_context,
--				    SLAB_RECLAIM_ACCOUNT);
-+				SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD);
- 	if (ext4_ac_cachep == NULL) {
- 		kmem_cache_destroy(ext4_pspace_cachep);
- 		return -ENOMEM;
- 	}
- 
- 	ext4_free_ext_cachep = KMEM_CACHE(ext4_free_data,
--					  SLAB_RECLAIM_ACCOUNT);
-+					SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD);
- 	if (ext4_free_ext_cachep == NULL) {
- 		kmem_cache_destroy(ext4_pspace_cachep);
- 		kmem_cache_destroy(ext4_ac_cachep);
-diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
-index 7ce1d0b..4f848e0 100644
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -34,10 +34,12 @@ static struct kmem_cache *io_page_cachep, *io_end_cachep;
- 
- int __init ext4_init_pageio(void)
- {
--	io_page_cachep = KMEM_CACHE(ext4_io_page, SLAB_RECLAIM_ACCOUNT);
-+	io_page_cachep = KMEM_CACHE(ext4_io_page, SLAB_RECLAIM_ACCOUNT |
-+				SLAB_MEM_SPREAD);
- 	if (io_page_cachep == NULL)
- 		return -ENOMEM;
--	io_end_cachep = KMEM_CACHE(ext4_io_end, SLAB_RECLAIM_ACCOUNT);
-+	io_end_cachep = KMEM_CACHE(ext4_io_end, SLAB_RECLAIM_ACCOUNT |
-+				SLAB_MEM_SPREAD);
- 	if (io_end_cachep == NULL) {
- 		kmem_cache_destroy(io_page_cachep);
- 		return -ENOMEM;
+> That can't possibly be ok,
+> because those don't actually require any I/O or blocking to be
+> migrated. PageDirty is a "blocking/IO" operation only for filebacked
+> pages. So I think we must revert 39deaf8, instead of cleaning it up
+> with my cleanup posted in Message-Id 20111115020831.GF4414@redhat.com .
+> 
+
+It would be preferable if the pages that would block during migration
+could be identified in advance but that may be unrealistic. What may be
+a better compromise is to only isolate PageDirty pages with a
+->migratepage callback.
+
+> ISOLATED_CLEAN still looks right for may_writepage, for reclaim dirty
+> bit set on the page is a I/O event, for migrate it's not if it's
+> tmpfs/anon.
+> 
+> Did you run your compaction tests with some swap activity?
+> 
+
+Some, but not intensive.
+
+> Reducing the async compaction effectiveness while there's some swap
+> activity then also leads in more frequently than needed running sync
+> compaction and page reclaim.
+> 
+> I'm hopeful however that by running just 2 passes of migrate_pages
+> main loop with the "avoid overwork in migrate sync mode" patch, we can
+> fix the excessive hanging. If that works number of passes could
+> actually be a tunable, and setting it to 1 (instead of 2) would then
+> provide 100% "async compaction" behavior again. And if somebody
+> prefers to stick to 10 he can... so then he can do trylock pass 0,
+> lock_page pass1, wait_writeback pass2, wait pin pass3, finally migrate
+> pass4. (something 2 passes alone won't allow). So making the migrate
+> passes/force-threshold tunable (maybe only for the new sync=2
+> migration mode) could be good idea. Or we could just return to sync
+> true/false and have the migration tunable affect everything but that
+> would alter the reliability of sys_move_pages and other numa things
+> too, where I guess 10 passes are ok. This is why I added a sync=2 mode
+> for migrate.
+
+I am vaguely concerned that this will just make the stalling harder to
+reproduce and diagnose. While you investigate this route, I'm going to
+keep investigating using only async migration for THP and having async
+compaction move pages it can migrate without blocking.
+
 -- 
-1.7.4.4
-
+Mel Gorman
+SUSE Labs
