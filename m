@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab1KPTcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 14:32:54 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:18571 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab1KPTcx (ORCPT
+	id S1753032Ab1KPTdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 14:33:49 -0500
+Received: from smtp-out-060.synserver.de ([212.40.185.60]:1146 "HELO
+	smtp-out-058.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1751953Ab1KPTdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 14:32:53 -0500
-Subject: Re: [PATCH net-next v5 07/10] forcedeth: implement
- ndo_get_stats64() API
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Decotigny <david.decotigny@google.com>
-CC: Stephen Hemminger <shemminger@vyatta.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>
-In-Reply-To: <CAG88wWa7UsPSfX_NdNDkQeuWN0LYYDVckShgDj9GvMq2mtrpbQ@mail.gmail.com>
-References: <cover.1321420513.git.david.decotigny@google.com>
-	 <dcc1ec263220b7bb1f7271933c30a8f89c19d991.1321420513.git.david.decotigny@google.com>
-	 <20111116085533.0982001e@s6510.linuxnetplumber.net>
-	 <1321463694.2709.1.camel@bwh-desktop>
-	 <CAG88wWa7UsPSfX_NdNDkQeuWN0LYYDVckShgDj9GvMq2mtrpbQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Wed, 16 Nov 2011 19:32:47 +0000
-Message-ID: <1321471967.2709.14.camel@bwh-desktop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18522.005
-X-TM-AS-Result: No--21.139000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 16 Nov 2011 19:32:52.0531 (UTC) FILETIME=[88471030:01CCA496]
+	Wed, 16 Nov 2011 14:33:47 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 16707
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH  v2 1/2] regmap: Properly round cache_word_size
+Date: Wed, 16 Nov 2011 20:34:03 +0100
+Message-Id: <1321472044-15686-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 11:25 -0800, David Decotigny wrote:
-> Thanks for your feedback on these concerns.
-> 
-> On Wed, Nov 16, 2011 at 9:14 AM, Ben Hutchings
-> <bhutchings@solarflare.com> wrote:
-> > On Wed, 2011-11-16 at 08:55 -0800, Stephen Hemminger wrote:
-> >> Or realize that the Tx side is single threaded by dev->xmit_lock already
-> >> and the Rx side is single threaded by NAPI.
-> >
-> > Right.
-> 
-> Yes, that's what I meant by "Each software stat field is updated by
-> one single writer." in a previous email. However, I think that TX and
-> RX paths are not always synchronized. So I'm afraid that if I'm using
-> a single seqcount, I might run into trouble in the absence of a lock
-> around each update.... and I'd really prefer to avoid such a lock. Are
-> you suggesting I should use 2 independent seqcounts? One for RX path,
-> the other for TX path, all this without a lock around writers?
+regcache currently only properly works with val bit sizes of 8 or 16, since
+it will, when calculating the cache word size, round down. This causes the
+cache storage to be too small to hold the full register value. Fix this by
+rounding up instead.
 
-Yes, there should be 1 for each path.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Ben.
+---
+Changes since v1:
+ * Use DIV_ROUND_UP
+---
+ drivers/base/regmap/regcache.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index d687df6..6d93e49 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -111,8 +111,8 @@ int regcache_init(struct regmap *map, const struct regmap_config *config)
+ 	map->num_reg_defaults = config->num_reg_defaults;
+ 	map->num_reg_defaults_raw = config->num_reg_defaults_raw;
+ 	map->reg_defaults_raw = config->reg_defaults_raw;
+-	map->cache_size_raw = (config->val_bits / 8) * config->num_reg_defaults_raw;
+-	map->cache_word_size = config->val_bits / 8;
++	map->cache_word_size = DIV_ROUND_UP(config->val_bits, 8);
++	map->cache_size_raw = map->cache_word_size * config->num_reg_defaults_raw;
+ 
+ 	map->cache = NULL;
+ 	map->cache_ops = cache_types[i];
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.7.1
 
