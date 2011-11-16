@@ -1,139 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab1KPJNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 04:13:07 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:5631 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab1KPJND (ORCPT
+	id S1755206Ab1KPJRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:17:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39229 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab1KPJRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 04:13:03 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <Michael.Hennerich@analog.com>,
-        <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, <spi-devel-general@lists.sourceforge.net>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 0/5] Generalize module_platform_driver
-Date: Wed, 16 Nov 2011 10:13:34 +0100
-Message-ID: <1321434819-23678-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.7.1
+	Wed, 16 Nov 2011 04:17:05 -0500
+Date: Wed, 16 Nov 2011 17:16:53 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
+ memcg_check_events()
+Message-ID: <20111116091653.GA8692@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LFD.2.02.1111150050590.4902@ionos>
+ <20111115084059.GA23250@zhy>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111115084059.GA23250@zhy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely recently introduced the module_platform_driver macro which can be
-used to eliminate a few lines on boilerplate code in platform driver modules.
-The same approach can be used to do the same for other bus type drivers.
+Looking at commit 4799401f [memcg: Fix race condition in
+memcg_check_events() with this_cpu usage], we just want
+to disable migration. So use the right API in -rt. This
+will cure below warning.
 
-The first patch of this series generalizes the module_platform_driver macro and
-introduces the module_driver macro. It is similar to module_platform_driver
-macro but has two additional parameters to pass in the driver register and
-unregister function. The intend is that this macro is used to construct bus
-specific macros for generating the driver register/unregister boilerplate code.
+BUG: sleeping function called from invalid context at linux/kernel/rtmutex.c:645
+in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: swapper/0
+1 lock held by swapper/0/1:
+ #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81154c45>] prepare_bprm_creds+0x35/0x80
+Pid: 1, comm: swapper/0 Not tainted 3.2.0-rc1-rt2-11311-g3c4c0e7-dirty #10
+Call Trace:
+ [<ffffffff81040c4e>] __might_sleep+0x12e/0x1e0
+ [<ffffffff815f4d74>] rt_spin_lock+0x24/0x60
+ [<ffffffff8114506e>] memcg_check_events+0x11e/0x230
+ [<ffffffff81146c5a>] T.1144+0x8a/0xf0
+ [<ffffffff81146d16>] __mem_cgroup_commit_charge_lrucare+0x56/0x180
+ [<ffffffff810430c9>] ? sub_preempt_count+0xa9/0xe0
+ [<ffffffff81147d08>] mem_cgroup_cache_charge+0xd8/0xe0
+ [<ffffffff81103a49>] add_to_page_cache_locked+0x49/0x100
+ [<ffffffff8110344f>] ? find_get_page+0xdf/0x1a0
+ [<ffffffff81103b22>] add_to_page_cache_lru+0x22/0x50
+ [<ffffffff81103ca5>] do_read_cache_page+0x75/0x1a0
+ [<ffffffff812695f0>] ? nfs_follow_link+0xc0/0xc0
+ [<ffffffff81103e1c>] read_cache_page_async+0x1c/0x20
+ [<ffffffff81103e2e>] read_cache_page+0xe/0x20
+ [<ffffffff81269589>] nfs_follow_link+0x59/0xc0
+ [<ffffffff8115de07>] path_openat+0x2a7/0x470
+ [<ffffffff8115e0e9>] do_filp_open+0x49/0xa0
+ [<ffffffff81155b22>] open_exec+0x32/0xf0
+ [<ffffffff811a3e0b>] load_elf_binary+0x85b/0x1d30
+ [<ffffffff81096d55>] ? __lock_acquire+0x4f5/0xbf0
+ [<ffffffff8100a819>] ? native_sched_clock+0x29/0x80
+ [<ffffffff8108429f>] ? local_clock+0x4f/0x60
+ [<ffffffff815f4658>] ? rt_spin_lock_slowunlock+0x78/0x80
+ [<ffffffff81091a39>] ? trace_hardirqs_off_caller+0x29/0x120
+ [<ffffffff8109119e>] ? put_lock_stats+0xe/0x40
+ [<ffffffff815f4658>] ? rt_spin_lock_slowunlock+0x78/0x80
+ [<ffffffff811a35b0>] ? elf_map+0x1d0/0x1d0
+ [<ffffffff810430c9>] ? sub_preempt_count+0xa9/0xe0
+ [<ffffffff811a35b0>] ? elf_map+0x1d0/0x1d0
+ [<ffffffff81154748>] search_binary_handler+0x1c8/0x4b0
+ [<ffffffff811545d7>] ? search_binary_handler+0x57/0x4b0
+ [<ffffffff81156876>] do_execve_common+0x276/0x330
+ [<ffffffff811569ba>] do_execve+0x3a/0x40
+ [<ffffffff8100bdca>] sys_execve+0x4a/0x80
+ [<ffffffff815f85e8>] kernel_execve+0x68/0xd0
+ [<ffffffff81000333>] ? run_init_process+0x23/0x30
+ [<ffffffff81000398>] init_post+0x58/0xd0
+ [<ffffffff81b5e6bd>] kernel_init+0x156/0x160
+ [<ffffffff815f8574>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810423bc>] ? finish_task_switch+0x8c/0x110
+ [<ffffffff815f5bab>] ? _raw_spin_unlock_irq+0x3b/0x70
+ [<ffffffff815f5f61>] ? retint_restore_args+0xe/0xe
+ [<ffffffff81b5e567>] ? parse_early_options+0x20/0x20
+ [<ffffffff815f8570>] ? gs_change+0xb/0xb
 
-The next two patches in this series add the module_i2c_driver and
-module_spi_driver macro which use the module_driver macro to generate the I2C
-and SPI driver boilerplate code.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ mm/memcontrol.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-The last two patches convert the driver found in the IIO framework to use the
-new module_i2c_driver and module_spi_driver macros to demonstrate their
-potential and remove over 700 lines of code.
-
-While this series only introduces these kind of helper macros for I2C and SPI
-bus drivers the same scheme should be applicable to most other bus driver types.
-For example PCI and USB seem to be good candidates.
-
-It probably makes sense to merge the first three patches together. The last two
-can probably, since this is not urgent, wait until the first three have reached
-mainline.
-
-- Lars
-
-Lars-Peter Clausen (5):
-  drivercore: Generalize module_platform_driver
-  I2C: Add helper macro for i2c_driver boilerplate
-  SPI: Add helper macro for spi_driver boilerplate
-  staging:iio: Use module_i2c_driver to register I2C drivers
-  staging:iio: Use module_spi_driver to register SPI driver
-
- drivers/staging/iio/accel/adis16201_core.c      |   13 +------------
- drivers/staging/iio/accel/adis16203_core.c      |   13 +------------
- drivers/staging/iio/accel/adis16204_core.c      |   13 +------------
- drivers/staging/iio/accel/adis16209_core.c      |   13 +------------
- drivers/staging/iio/accel/adis16220_core.c      |   13 +------------
- drivers/staging/iio/accel/adis16240_core.c      |   13 +------------
- drivers/staging/iio/accel/kxsd9.c               |   13 +------------
- drivers/staging/iio/accel/lis3l02dq_core.c      |   13 +------------
- drivers/staging/iio/accel/sca3000_core.c        |   13 +------------
- drivers/staging/iio/adc/ad7192.c                |   13 +------------
- drivers/staging/iio/adc/ad7280a.c               |   13 +------------
- drivers/staging/iio/adc/ad7291.c                |   14 +-------------
- drivers/staging/iio/adc/ad7298_core.c           |   13 +------------
- drivers/staging/iio/adc/ad7476_core.c           |   13 +------------
- drivers/staging/iio/adc/ad7606_spi.c            |   13 +------------
- drivers/staging/iio/adc/ad7780.c                |   13 +------------
- drivers/staging/iio/adc/ad7793.c                |   13 +------------
- drivers/staging/iio/adc/ad7816.c                |   14 +-------------
- drivers/staging/iio/adc/ad7887_core.c           |   13 +------------
- drivers/staging/iio/adc/ad799x_core.c           |   14 +-------------
- drivers/staging/iio/adc/adt7310.c               |   14 +-------------
- drivers/staging/iio/adc/adt7410.c               |   14 +-------------
- drivers/staging/iio/adc/max1363_core.c          |   14 +-------------
- drivers/staging/iio/addac/adt7316-i2c.c         |   14 +-------------
- drivers/staging/iio/addac/adt7316-spi.c         |   14 +-------------
- drivers/staging/iio/cdc/ad7150.c                |   14 +-------------
- drivers/staging/iio/cdc/ad7152.c                |   14 +-------------
- drivers/staging/iio/cdc/ad7746.c                |   14 +-------------
- drivers/staging/iio/dac/ad5064.c                |   13 +------------
- drivers/staging/iio/dac/ad5360.c                |   13 +------------
- drivers/staging/iio/dac/ad5446.c                |   13 +------------
- drivers/staging/iio/dac/ad5504.c                |   13 +------------
- drivers/staging/iio/dac/ad5624r_spi.c           |   13 +------------
- drivers/staging/iio/dac/ad5686.c                |   13 +------------
- drivers/staging/iio/dac/ad5791.c                |   13 +------------
- drivers/staging/iio/dac/max517.c                |   14 +-------------
- drivers/staging/iio/dds/ad5930.c                |   13 +------------
- drivers/staging/iio/dds/ad9832.c                |   13 +------------
- drivers/staging/iio/dds/ad9834.c                |   13 +------------
- drivers/staging/iio/dds/ad9850.c                |   13 +------------
- drivers/staging/iio/dds/ad9852.c                |   13 +------------
- drivers/staging/iio/dds/ad9910.c                |   13 +------------
- drivers/staging/iio/dds/ad9951.c                |   13 +------------
- drivers/staging/iio/gyro/adis16080_core.c       |   13 +------------
- drivers/staging/iio/gyro/adis16130_core.c       |   13 +------------
- drivers/staging/iio/gyro/adis16260_core.c       |   13 +------------
- drivers/staging/iio/gyro/adxrs450_core.c        |   13 +------------
- drivers/staging/iio/impedance-analyzer/ad5933.c |   13 +------------
- drivers/staging/iio/imu/adis16400_core.c        |   13 +------------
- drivers/staging/iio/light/isl29018.c            |   14 +-------------
- drivers/staging/iio/light/tsl2563.c             |   14 +-------------
- drivers/staging/iio/light/tsl2583.c             |   14 +-------------
- drivers/staging/iio/magnetometer/ak8975.c       |   14 +-------------
- drivers/staging/iio/magnetometer/hmc5843.c      |   14 +-------------
- drivers/staging/iio/meter/ade7753.c             |   13 +------------
- drivers/staging/iio/meter/ade7754.c             |   13 +------------
- drivers/staging/iio/meter/ade7758_core.c        |   13 +------------
- drivers/staging/iio/meter/ade7759.c             |   13 +------------
- drivers/staging/iio/meter/ade7854-i2c.c         |   14 +-------------
- drivers/staging/iio/meter/ade7854-spi.c         |   13 +------------
- drivers/staging/iio/resolver/ad2s1200.c         |   13 +------------
- drivers/staging/iio/resolver/ad2s1210.c         |   13 +------------
- drivers/staging/iio/resolver/ad2s90.c           |   13 +------------
- include/linux/i2c.h                             |   13 +++++++++++++
- include/linux/init.h                            |   21 +++++++++++++++++++++
- include/linux/platform_device.h                 |   12 ++----------
- include/linux/spi/spi.h                         |   11 +++++++++++
- 67 files changed, 110 insertions(+), 784 deletions(-)
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6aff93c..afa1954 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -722,7 +722,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
+  */
+ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ {
+-	preempt_disable();
++	migrate_disable();
+ 	/* threshold event is triggered in finer grain than soft limit */
+ 	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
+ 		mem_cgroup_threshold(memcg);
+@@ -742,7 +742,7 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 		}
+ #endif
+ 	}
+-	preempt_enable();
++	migrate_enable();
+ }
+ 
+ static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
 -- 
-1.7.7.1
-
+1.7.5.4
 
