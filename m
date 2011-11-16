@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1KPWtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:49:31 -0500
-Received: from marge.uochb.cas.cz ([147.231.129.3]:49300 "EHLO
-	marge.uochb.cas.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147Ab1KPWta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:49:30 -0500
-Message-ID: <4EC43DF7.4010902@atlas.cz>
-Date: Wed, 16 Nov 2011 23:49:27 +0100
-From: Clarinet <clarinet@atlas.cz>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754402Ab1KPWvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:51:40 -0500
+Received: from mail.sf-mail.de ([62.27.20.61]:47544 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753154Ab1KPWvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 17:51:39 -0500
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Andrei Warkentin <andreiw@vmware.com>
+Cc: linux-kernel@vger.kernel.org, opensuse-kernel@opensuse.org
+Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+Date: Wed, 16 Nov 2011 23:51:01 +0100
+Message-ID: <1472546.S58to4y67R@donald.sf-tec.de>
+User-Agent: KMail/4.7.3 (Linux/3.1.0-46-desktop; KDE/4.7.3; i686; ; )
+In-Reply-To: <1321473366-31053-1-git-send-email-andreiw@vmware.com>
+References: <1321473366-31053-1-git-send-email-andreiw@vmware.com>
 MIME-Version: 1.0
-To: 647095@bugs.debian.org
-CC: Jonathan Nieder <jrnieder@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        john.stultz@linaro.org
-Subject: Re: CPU hyperthreading turned on after soft power-cycle
-References: <20111030110543.5872.61279.reportbug@supermicro.uochb.cas.cz> <1319988329.6759.88.camel@deadeye> <4EAE9D3A.7000108@atlas.cz> <4EB92181.5030500@seznam.cz> <20111110015212.GB2399@elie.gateway.2wire.net> <4EBD2825.6050806@atlas.cz>
-In-Reply-To: <4EBD2825.6050806@atlas.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart1698982.ypUGZYjyn8"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi all,
+--nextPart1698982.ypUGZYjyn8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
 
->> Result of bisecting: v2.6.38-rc1 exhibits the problem. v2.6.37 and
->> many of the topic branches merged in the 2.6.38 merge window work ok.
->> Some other topic branches do not boot at all.
->>
->> Jiri: if you have gitk installed, then "git bisect visualize" can help
->> get a sense of what's in the middle of the regression range.
->> "gitk --bisect --first-parent v2.6.37..v2.6.38-rc1" might be a good way
->> to find mainline commits to test before finding a topic branch to delve
->> into.
->
-> I have been able to narrow the interval manually a little bit from the
-> "top" (the bad side) and I will go on from the bottom now. However,
-> there seems to be a large area where kernels are unbootable for me -
-> they mostly stop when init is called and I do not know why.
+Andrei Warkentin wrote:
+> 1 is a power of two, therefore rounddown_pow_of_two(1) should return 1. It
+> does in case the argument is a variable but in case it's a constant it
+> behaves wrong and returns 0. Probably nobody ever did it so this was never
+> noticed, however net/drivers/vmxnet3 with latest GCC does and breaks on
+> unicpu systems.
 
-Finally! After another 50+ compilations a have it! It took some time as 
-first I had to find a reason why some revisions did not boot (almost 2/3 
-were unbootable and the first bad commit was among them). Having this 
-solved I have been able to bisect without "skipping". The result is 
-surprising (at least for me) - believe it or not, the first bad commit 
-is 6610e089 "RTC: Rework RTC code to use timerqueue for events" from 
-John Stultz (I am sending him a copy of this message).
+Obviously correct.
 
-I would never expect this would be a problem, but my understanding of 
-this commit is very limited, so I am certainly missing the point. 
-However, I have tried to compile 2.6.38 (which was "bad") with "Real 
-Time Clock" configuration option turned off and it behaves "normally" 
-then (= is "good").
+Reviewed-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
 
-Can you please comment this result? What does it mean? Any idea what is 
-"wrong" there?
+--nextPart1698982.ypUGZYjyn8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
-Best regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
 
-Jiri Polach
+iEYEABECAAYFAk7EPl0ACgkQXKSJPmm5/E55MQCfSLK88YCJLSyuE55U6k2RrhXF
+nRUAn1xuXFp5K7T7/C5J0pgru8faZA8I
+=zTiQ
+-----END PGP SIGNATURE-----
+
+--nextPart1698982.ypUGZYjyn8--
 
