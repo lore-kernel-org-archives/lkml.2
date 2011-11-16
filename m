@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825Ab1KPA60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 19:58:26 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48832 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932708Ab1KPA6Z (ORCPT
+	id S932832Ab1KPBGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 20:06:03 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38578 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757655Ab1KPBGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 19:58:25 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 16 Nov 2011 09:57:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
-        jbottomley@parallels.com, pjt@google.com, cgroups@vger.kernel.org
-Subject: Re: [PATCH 0/4] Provide cpuacct functionality in cpu cgroup
-Message-Id: <20111116095706.6304e695.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1321372757-1581-1-git-send-email-glommer@parallels.com>
-References: <1321372757-1581-1-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 15 Nov 2011 20:06:00 -0500
+Message-ID: <4EC30C0C.9020409@xenotime.net>
+Date: Tue, 15 Nov 2011 17:04:12 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Mark Einon <mark.einon@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: [PATCH -next] staging: fix more ET131X build errors
+References: <20111115131742.f9ebaf818fd152ef779f4d19@canb.auug.org.au>
+In-Reply-To: <20111115131742.f9ebaf818fd152ef779f4d19@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Nov 2011 13:59:13 -0200
-Glauber Costa <glommer@parallels.com> wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> Hi,
-> 
-> This is an excerpt of the last patches I sent regarding cpu cgroup.
-> It is mostly focused on cleaning up what we have now, so it can
-> be considered largely preparation. As a user of the new organization
-> of things, I am including cpuacct stats functionality in the end of
-> the series. The files related to cpuusage are left to be sent in
-> an upcoming series after this one is included.
-> 
-> Let me know if there is anything you'd like me to address.
-> 
+ET131X is a network device, so it should depend on
+NETDEVICES.  (This part won't be needed when the driver
+moves to drivers/net/.)  It also uses PHYLIB interfaces,
+so it should select PHYLIB.  Fixes these build errors:
 
-I'm sorry but let me several questions.
+ERROR: "phy_connect" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_find_first" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "mdiobus_register" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "mdiobus_alloc" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_stop" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_start" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "mdiobus_free" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "mdiobus_unregister" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_print_status" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_ethtool_gset" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_ethtool_sset" [drivers/staging/et131x/et131x.ko] undefined!
+ERROR: "phy_mii_ioctl" [drivers/staging/et131x/et131x.ko] undefined!
 
-Why cpu cgroup but cpuacct cgroup ?
-If scheduler stat is reported via cpu cgroup, it makes sense.
-If user accounting information is reported via cpu cgroup, I feel it's strange.
-Do you want to make cpuacct cgroup obsolete and merge 2 cgroups ?
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-What's relationship between this new counters and cpuacct cgroup ?
-Aren't users confused ?
-
-Please provide Documenation.
-
- 
-Thanks,
--Kame
-
+Apply after "depends on NET" patch.
+--- next-2011-1115.orig/drivers/staging/et131x/Kconfig
++++ next-2011-1115/drivers/staging/et131x/Kconfig
+@@ -1,6 +1,7 @@
+ config ET131X
+ 	tristate "Agere ET-1310 Gigabit Ethernet support"
+-	depends on PCI && NET
++	depends on PCI && NET && NETDEVICES
++	select PHYLIB
+ 	default n
+ 	---help---
+ 	  This driver supports Agere ET-1310 ethernet adapters.
