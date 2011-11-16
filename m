@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab1KPQUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 11:20:24 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60103 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab1KPQUW (ORCPT
+	id S1755762Ab1KPQXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 11:23:05 -0500
+Received: from smtp-out-055.synserver.de ([212.40.185.55]:1188 "HELO
+	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753121Ab1KPQXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 11:20:22 -0500
-Subject: Re: [PATCH v2] input: add driver support for Sharp gp2ap002a00f
- proximity sensor
-From: anish kumar <anish198519851985@gmail.com>
-To: oskar.andero@sonyericsson.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>
-In-Reply-To: <20111116155625.GB3375@caracas.corpusers.net>
-References: <1321285158-7123-1-git-send-email-oskar.andero@sonyericsson.com>
-	 <20111114170352.GA12659@core.coreip.homeip.net>
-	 <20111115073400.GD9307@caracas.corpusers.net>
-	 <1321457952.1790.16.camel@anish-Inspiron-N5050>
-	 <20111116155625.GB3375@caracas.corpusers.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 01:20:14 +0900
-Message-ID: <1321460414.1833.11.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 16 Nov 2011 11:23:03 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 15469
+Message-ID: <4EC3E385.4060006@metafoo.de>
+Date: Wed, 16 Nov 2011 17:23:33 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Iceowl/1.0b2 Icedove/3.1.15
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org, drivers@analog.com
+Subject: Re: [PATCH 2/7] regmap: Make reg_config reg_defaults const
+References: <1321457302-8724-1-git-send-email-lars@metafoo.de> <1321457302-8724-2-git-send-email-lars@metafoo.de> <20111116161316.GI29986@opensource.wolfsonmicro.com>
+In-Reply-To: <20111116161316.GI29986@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 16:56 +0100, oskar.andero@sonyericsson.com wrote:
-> > > > > +#ifdef CONFIG_PM_SLEEP
-> > > > > +static int gp2a_suspend(struct device *dev)
-> > > > > +{
-> > > > > +	struct i2c_client *client = to_i2c_client(dev);
-> > > > > +	struct gp2a_data *dt = i2c_get_clientdata(client);
-> > > > > +	int error;
-> > > > > +
-> > > > > +	if (device_may_wakeup(&client->dev)) {
-> > > >  > +		enable_irq_wake(client->irq);
-> > > > > +	} else {
-> > > > 
-> > > > This needs locking WRT open/close. Please acquire dt->device->mutex and
-> > > > only disable if dt->device->users != 0. Similar shoudl be done for
-> > > > resume.
-> > > 
-> > > I see what you mean. I will fix it. 
-> > Is my understanding correct?You are going to disable the device 
-> > only when there are users of the driver and not disable the device
-> > otherwise.As anyway if there are no users the driver would have been
-> > already disabled right?
+On 11/16/2011 05:13 PM, Mark Brown wrote:
+> On Wed, Nov 16, 2011 at 04:28:17PM +0100, Lars-Peter Clausen wrote:
+>> The reg_defaults field usually points to a static per driver array, which should
+>> not be modified. Make requirement this explicit by making reg_defaults const.
 > 
-> Please, see PATCH v3 for the answer to your question.
+> You should've got reams of sparse warnings from that - the indexed cache
+> is writing to the defaults table (which is very naughty and i keep
+> thinking about deleting it as a result).
 
-Perhaps I didn't explain what I wanted to know.Can you kindly let me
-know explain below statement by dmitry:
-"This needs locking WRT open/close. Please acquire dt->device->mutex and
-only disable if dt->device->users != 0. Similar shoudl be done for
-resume"
+This patch makes reg_defaults const in the reg_config struct not in the
+regmap struct.
 
+Since we duplicate the reg_config reg_defaults into the regmap reg_defaults
+the index cache works on a runtime allocated array. (Though I wouldn't
+object to see it gone. For the average uscase it uses more memory and is
+slower than the rbnode cache).
 
-
-
+- Lars
