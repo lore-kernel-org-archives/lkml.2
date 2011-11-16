@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1KPT4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 14:56:46 -0500
-Received: from peace.netnation.com ([204.174.223.2]:52874 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab1KPT4p (ORCPT
+	id S1753389Ab1KPT51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 14:57:27 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43261 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab1KPT50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 14:56:45 -0500
-Date: Wed, 16 Nov 2011 11:56:43 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: XFS read hangs in 3.1-rc10
-Message-ID: <20111116195643.GF24411@hostway.ca>
-References: <20111020224214.GC22772@hostway.ca> <20111021132240.GA24136@infradead.org> <20111021202857.GB30100@hostway.ca> <20111024082219.GA19941@infradead.org> <20111025200748.GA25043@hostway.ca> <20111026112521.GA10432@infradead.org> <20111104210324.GB14983@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111104210324.GB14983@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 16 Nov 2011 14:57:26 -0500
+X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=l4wf8OQxcBQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=IYDwl5-2H67agAs8fSQA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH] tracing: add trace console
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <1321468380.4502.16.camel@jlt3.sipsolutions.net>
+References: <1321438728.4773.16.camel@jlt3.sipsolutions.net>
+	 <20111116151037.GA26166@infradead.org>
+	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
+	 <1321461693.4181.26.camel@frodo>
+	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
+	 <1321462856.4181.28.camel@frodo>
+	 <1321468380.4502.16.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Nov 2011 14:57:23 -0500
+Message-ID: <1321473443.4181.38.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 05:03:24PM -0400, Christoph Hellwig wrote:
-
-> Sorry Simon,
+On Wed, 2011-11-16 at 19:33 +0100, Johannes Berg wrote:
+> On Wed, 2011-11-16 at 12:00 -0500, Steven Rostedt wrote:
+> > On Wed, 2011-11-16 at 17:45 +0100, Johannes Berg wrote:
+> > 
+> > > I briefly looked at it just after writing the email, but quickly got
+> > > lost in printk.c because of the multi-line handling it has. We could
+> > > instead trace each call to printk(), so the multi-line stuff would end
+> > > up in multiple events, but all of that code is too much vodoo for me :)
+> > 
+> > Here's what can go into printk.c:
+> > 
+> > diff --git a/kernel/printk.c b/kernel/printk.c
+> > index 1455a0d..4b8445a 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -542,6 +542,7 @@ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
+> >  static void _call_console_drivers(unsigned start,
+> >  				unsigned end, int msg_log_level)
+> >  {
+> > +	trace_console(&LOG_BUF(start), end - start);
+> >  	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
+> >  			console_drivers && start != end) {
+> >  		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
+> > 
+> > 
+> > And then you can make a TRACE_EVENT(console) that takes a buffer and a
+> > len, and write that to the ring buffer.
 > 
-> I haven't really been able to get back to this as fast as I wanted to
-> do.  Can you do another run and check if the patch still helps your
-> issue even if you remove the xfs_log_force line?
+> Yes, of course, but if we're going to modify the code then I thought we
+> should probably trace everything independent of the console printk
+> level.
+> 
 
-Hello!
+This will trace everything independent from the console level. Noticed
+that I put the tracepoint before the msg_log_level is checked.
 
-Sorry for the delay in testing.
+-- Steve
 
-Yes, everything looks fine even with the xfs_log_force line from your
-patch commented out. So, the changes in xfs_reclaim_inode() are just the
-set_bit(XBT_FORCE_FLUSH) and wake_up_process(), relative to 3.1.
 
-Simon-
