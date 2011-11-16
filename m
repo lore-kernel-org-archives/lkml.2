@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1KPI4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 03:56:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41770 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab1KPI4s convert rfc822-to-8bit (ORCPT
+	id S1754243Ab1KPJAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 04:00:16 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:38266 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751988Ab1KPJAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 03:56:48 -0500
-Subject: Re: [PATCH] sched: avoid unnecessary overflow in sched_clock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: Mike Galbraith <efault@gmx.de>, john stultz <johnstul@us.ibm.com>,
-        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Nov 2011 09:56:22 +0100
-In-Reply-To: <4EC36165.3090002@google.com>
-References: <20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com>
-	  <1321398123.2352.29.camel@work-vm>
-	 <1321425705.12017.1.camel@marge.simson.net> <4EC36165.3090002@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321433782.1421.71.camel@twins>
-Mime-Version: 1.0
+	Wed, 16 Nov 2011 04:00:14 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: print pin range in GPIO range debugs
+Date: Wed, 16 Nov 2011 09:59:50 +0100
+Message-ID: <1321433990-17403-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 23:08 -0800, Paul Turner wrote:
-> Probably a good idea -- This especially sucks rocks in the sched_clock_stable==1 
-> case; resulting in it coming straight back out of sched_clock_cpu() and trashing 
-> rq->clock. 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-There's another problem there in that TSC will wrap too soon and things
-will blow up in your face that way.
+Show the mapped pin range corresponding to the GPIO range in
+debugfs for pin controllers.
 
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index a1a679c..4598fc5 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -402,8 +402,11 @@ static int pinctrl_gpioranges_show(struct seq_file *s, void *what)
+ 	/* Loop over the ranges */
+ 	mutex_lock(&pctldev->gpio_ranges_lock);
+ 	list_for_each_entry(range, &pctldev->gpio_ranges, node) {
+-		seq_printf(s, "%u: %s [%u - %u]\n", range->id, range->name,
+-			   range->base, (range->base + range->npins - 1));
++		seq_printf(s, "%u: %s GPIOS [%u - %u] PINS [%u - %u]\n",
++			   range->id, range->name,
++			   range->base, (range->base + range->npins - 1),
++			   range->pin_base,
++			   (range->pin_base + range->npins - 1));
+ 	}
+ 	mutex_unlock(&pctldev->gpio_ranges_lock);
+ 
+-- 
+1.7.3.2
 
