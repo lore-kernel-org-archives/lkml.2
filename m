@@ -1,124 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab1KPU2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 15:28:33 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:52919 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab1KPU2c (ORCPT
+	id S1753435Ab1KPUck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 15:32:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36067 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab1KPUci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 15:28:32 -0500
-From: Thieu Le <thieule@chromium.org>
-To: tyhicks@canonical.com
-Cc: viro@zeniv.linux.org.uk, hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thieu Le <thieule@chromium.org>
-Subject: Re: [PATCH] vfs: Export fallocate facility to kernel modules
-Date: Wed, 16 Nov 2011 12:22:41 -0800
-Message-Id: <1321474961-17595-1-git-send-email-thieule@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111105170357.GA24875@boyd>
-References: <20111105170357.GA24875@boyd>
-X-System-Of-Record: true
+	Wed, 16 Nov 2011 15:32:38 -0500
+Message-ID: <1321475553.3274.3.camel@edumazet-laptop>
+Subject: Re: [PATCH net-next v5 07/10] forcedeth: implement
+ ndo_get_stats64() API
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: David Decotigny <david.decotigny@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>
+Date: Wed, 16 Nov 2011 21:32:33 +0100
+In-Reply-To: <1321471967.2709.14.camel@bwh-desktop>
+References: <cover.1321420513.git.david.decotigny@google.com>
+	 <dcc1ec263220b7bb1f7271933c30a8f89c19d991.1321420513.git.david.decotigny@google.com>
+	 <20111116085533.0982001e@s6510.linuxnetplumber.net>
+	 <1321463694.2709.1.camel@bwh-desktop>
+	 <CAG88wWa7UsPSfX_NdNDkQeuWN0LYYDVckShgDj9GvMq2mtrpbQ@mail.gmail.com>
+	 <1321471967.2709.14.camel@bwh-desktop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export fallocate facility so layered file systems such as ecryptfs can
-take advantage of this feature.  One example of the need for fallocate
-is by ecryptfs.  ecryptfs has recently switched to a writeback cache
-model so its dirty pages are not written to the lower file system
-immediately.  In order to ensure that space is available when the page
-is later written, ecryptfs can efficiently preallocate that space using
-vfs_fallocate().
+Le mercredi 16 novembre 2011 à 19:32 +0000, Ben Hutchings a écrit :
+> On Wed, 2011-11-16 at 11:25 -0800, David Decotigny wrote:
+> > Thanks for your feedback on these concerns.
+> > 
+> > On Wed, Nov 16, 2011 at 9:14 AM, Ben Hutchings
+> > <bhutchings@solarflare.com> wrote:
+> > > On Wed, 2011-11-16 at 08:55 -0800, Stephen Hemminger wrote:
+> > >> Or realize that the Tx side is single threaded by dev->xmit_lock already
+> > >> and the Rx side is single threaded by NAPI.
+> > >
+> > > Right.
+> > 
+> > Yes, that's what I meant by "Each software stat field is updated by
+> > one single writer." in a previous email. However, I think that TX and
+> > RX paths are not always synchronized. So I'm afraid that if I'm using
+> > a single seqcount, I might run into trouble in the absence of a lock
+> > around each update.... and I'd really prefer to avoid such a lock. Are
+> > you suggesting I should use 2 independent seqcounts? One for RX path,
+> > the other for TX path, all this without a lock around writers?
+> 
+> Yes, there should be 1 for each path.
 
-vfs_fallocate() does not perform all of the checkings of do_fallocate()
-because those checks are done higher in the stack.  Checking of offset and
-len are done by rw_verify_area() and generic_write_checks().  These
-functions are called by VFS before ecryptfs invokes vfs_fallocate() in its
-ecryptfs_write_end() function.  And since ecryptfs directly opens the lower
-file, it ensures that the file is opened with the proper flags and mode.
+David, drivers/net/ethernet/marvell/sky2.c contains code like that
+(different syncpfor rx/tx)
 
-Signed-off-by: Thieu Le <thieule@chromium.org>
----
- fs/open.c          |   32 ++++++++++++++++++++------------
- include/linux/fs.h |    2 ++
- 2 files changed, 22 insertions(+), 12 deletions(-)
+TX path:
+                        u64_stats_update_begin(&sky2->tx_stats.syncp);
+                        ++sky2->tx_stats.packets;
+                        sky2->tx_stats.bytes += skb->len;
+                        u64_stats_update_end(&sky2->tx_stats.syncp);
 
-diff --git a/fs/open.c b/fs/open.c
-index 22c41b5..65c0049 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -214,13 +214,9 @@ SYSCALL_ALIAS(sys_ftruncate64, SyS_ftruncate64);
- #endif /* BITS_PER_LONG == 32 */
- 
- 
--int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
-+int vfs_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- {
- 	struct inode *inode = file->f_path.dentry->d_inode;
--	long ret;
--
--	if (offset < 0 || len <= 0)
--		return -EINVAL;
- 
- 	/* Return error if mode is not supported */
- 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-@@ -231,13 +227,28 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	    !(mode & FALLOC_FL_KEEP_SIZE))
- 		return -EOPNOTSUPP;
- 
--	if (!(file->f_mode & FMODE_WRITE))
--		return -EBADF;
--
- 	/* It's not possible punch hole on append only file */
- 	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
- 		return -EPERM;
- 
-+	if (!file->f_op->fallocate)
-+		return -EOPNOTSUPP;
-+
-+	return file->f_op->fallocate(file, mode, offset, len);
-+}
-+EXPORT_SYMBOL(vfs_fallocate);
-+
-+int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
-+{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	long ret;
-+
-+	if (offset < 0 || len <= 0)
-+		return -EINVAL;
-+
-+	if (!(file->f_mode & FMODE_WRITE))
-+		return -EBADF;
-+
- 	if (IS_IMMUTABLE(inode))
- 		return -EPERM;
- 
-@@ -263,10 +274,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
- 		return -EFBIG;
- 
--	if (!file->f_op->fallocate)
--		return -EOPNOTSUPP;
--
--	return file->f_op->fallocate(file, mode, offset, len);
-+	return vfs_fallocate(file, mode, offset, len);
- }
- 
- SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0c4df26..e7d26ee 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1524,6 +1524,8 @@ extern int vfs_link(struct dentry *, struct inode *, struct dentry *);
- extern int vfs_rmdir(struct inode *, struct dentry *);
- extern int vfs_unlink(struct inode *, struct dentry *);
- extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *);
-+extern int vfs_fallocate(struct file *file, int mode, loff_t offset,
-+			 loff_t len);
- 
- /*
-  * VFS dentry helper functions.
--- 
-1.7.3.1
+
+RX path:
+
+        u64_stats_update_begin(&sky2->rx_stats.syncp);
+        sky2->rx_stats.packets += packets;
+        sky2->rx_stats.bytes += bytes;
+        u64_stats_update_end(&sky2->rx_stats.syncp);
+
 
