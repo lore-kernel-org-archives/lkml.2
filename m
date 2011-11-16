@@ -1,133 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab1KPKKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 05:10:50 -0500
+	id S1755656Ab1KPKKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 05:10:54 -0500
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:63114 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab1KPKKr (ORCPT
+	with ESMTP id S1755497Ab1KPKKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 05:10:47 -0500
+	Wed, 16 Nov 2011 05:10:52 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com, jmorris@namei.org,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH 1/2] ima: split ima_add_digest_entry() function
-Date: Wed, 16 Nov 2011 11:10:25 +0100
-Message-Id: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH 2/2] ima: free memory of unused template entries
+Date: Wed, 16 Nov 2011 11:10:26 +0100
+Message-Id: <1321438229-18925-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----919F2F262CA39AF46BD61BCAC9928689"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----734AC66C24557D7B299A49D71E104C29"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------919F2F262CA39AF46BD61BCAC9928689
+------734AC66C24557D7B299A49D71E104C29
 
-The ima_add_digest_entry() function has been split in order to avoid
-adding an entry in the measurements list for which the PCR extend
-operation subsequently fails. Required memory is allocated earlier in the
-new function ima_prepare_template_entry() and the template entry is added
-after ima_pcr_extend().
+This patch solves the following issues:
+- free the memory allocated for template entries that are already present
+  in the measurements list;
+- since template entries are added to the measurements list after the
+  PCR extend operation (with the previous patch), they can be now safely
+  removed if the latter fails.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- security/integrity/ima/ima_queue.c |   35 ++++++++++++++++++++++++++---------
- 1 files changed, 26 insertions(+), 9 deletions(-)
+ security/integrity/ima/ima_api.c   |    4 ++--
+ security/integrity/ima/ima_queue.c |    5 ++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 0d50df0..88a2788 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -178,8 +178,8 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+ 
+ 	result = ima_store_template(entry, violation, inode);
+-	if (!result)
++	if (!result || result == -EEXIST)
+ 		iint->flags |= IMA_MEASURED;
+-	else
++	if (result < 0)
+ 		kfree(entry);
+ }
 diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-index 8e28f04..ddc7e18 100644
+index ddc7e18..7ae1e9a 100644
 --- a/security/integrity/ima/ima_queue.c
 +++ b/security/integrity/ima/ima_queue.c
-@@ -59,30 +59,41 @@ static struct ima_queue_entry *ima_lookup_digest_entry(u8 *digest_value)
- 	return ret;
+@@ -105,7 +105,8 @@ static int ima_pcr_extend(const u8 *hash)
+ 
+ 	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
+ 	if (result != 0)
+-		pr_err("IMA: Error Communicating to TPM chip\n");
++		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
++		       result);
+ 	return result;
  }
  
--/* ima_add_template_entry helper function:
-- * - Add template entry to measurement list and hash table.
-+/* ima_prepare_template_entry helper function:
-+ * - prepare template entry before adding it to the measurement list.
-  *
-  * (Called with ima_extend_list_mutex held.)
-  */
--static int ima_add_digest_entry(struct ima_template_entry *entry)
-+static struct ima_queue_entry *ima_prepare_template_entry(
-+					struct ima_template_entry *entry)
- {
- 	struct ima_queue_entry *qe;
--	unsigned int key;
- 
- 	qe = kmalloc(sizeof(*qe), GFP_KERNEL);
- 	if (qe == NULL) {
- 		pr_err("IMA: OUT OF MEMORY ERROR creating queue entry.\n");
--		return -ENOMEM;
-+		goto out;
- 	}
- 	qe->entry = entry;
-+out:
-+	return qe;
-+}
-+
-+/* ima_add_digest_entry helper function:
-+ * - Add template entry to measurement list and hash table.
-+ *
-+ * (Called with ima_extend_list_mutex held.)
-+ */
-+static void ima_add_digest_entry(struct ima_queue_entry *qe)
-+{
-+	unsigned int key;
- 
- 	INIT_LIST_HEAD(&qe->later);
- 	list_add_tail_rcu(&qe->later, &ima_measurements);
- 
- 	atomic_long_inc(&ima_htable.len);
--	key = ima_hash_key(entry->digest);
-+	key = ima_hash_key(qe->entry->digest);
- 	hlist_add_head_rcu(&qe->hnext, &ima_htable.queue[key]);
--	return 0;
- }
- 
- static int ima_pcr_extend(const u8 *hash)
-@@ -104,6 +115,7 @@ static int ima_pcr_extend(const u8 *hash)
- int ima_add_template_entry(struct ima_template_entry *entry, int violation,
- 			   const char *op, struct inode *inode)
- {
-+	struct ima_queue_entry *qe;
- 	u8 digest[IMA_DIGEST_SIZE];
- 	const char *audit_cause = "hash_added";
- 	int audit_info = 1;
-@@ -118,10 +130,11 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+@@ -126,6 +127,7 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+ 		memcpy(digest, entry->digest, sizeof digest);
+ 		if (ima_lookup_digest_entry(digest)) {
+ 			audit_cause = "hash_exists";
++			result = -EEXIST;
+ 			goto out;
  		}
  	}
- 
--	result = ima_add_digest_entry(entry);
--	if (result < 0) {
-+	qe = ima_prepare_template_entry(entry);
-+	if (qe == NULL) {
- 		audit_cause = "ENOMEM";
- 		audit_info = 0;
-+		result = -ENOMEM;
- 		goto out;
- 	}
- 
-@@ -132,7 +145,11 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+@@ -145,6 +147,7 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
  	if (result != 0) {
  		audit_cause = "TPM error";
  		audit_info = 0;
-+		kfree(qe);
-+		goto out;
++		result = -ECOMM;
+ 		kfree(qe);
+ 		goto out;
  	}
-+
-+	ima_add_digest_entry(qe);
- out:
- 	mutex_unlock(&ima_extend_list_mutex);
- 	integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode,
 -- 
 1.7.6.4
 
 
-------919F2F262CA39AF46BD61BCAC9928689
+------734AC66C24557D7B299A49D71E104C29
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -165,17 +127,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTExMTYxMDEwMjlaMCMGCSqG
-SIb3DQEJBDEWBBSFAxqJqxNSpDy+RS0DtI2d/eI2dDB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTExMTYxMDEwNDhaMCMGCSqG
+SIb3DQEJBDEWBBT+TOtnvRcA66GojXak0GcAUYVVmTB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCKe6iOWtc3Rbe6NM2jaruAhEiT
-u9iI8k25LOQnk1kTl6U4Uc2X2ZJh89ci7jYnGORiHkTMYtutI08J9/EdO4K1uj4s
-X85Lk+NrNhSQerp5+tKae+gFfHurqLDeONdJF9S00kYtwQcPyKR1aOM157OJYRJD
-yjQZ92FYD9xTiCWrQwS65Lx7NXDhd9ceTRwuSH1N00K7RwyYRMzpJaKvCj9/zlBJ
-t1XVK6pnIPp+t4gnNg5Nknhn3JXb29ZUOEBatApVEJuQr7UNr+ay7UqDY908K8Zf
-D2nbX3Gi+wQ6iq29e0mh0MeS2PEQqvo8GRj2wk03HcB4R8eyH21qyxUWOnkY
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAwMusKTG+LktYrZxMdBm9vjavp
+t+szl6PSUaWxqmIHkKrZAn7l27nsWcdIgi038rrcxNQx1EP0hZc8n88JTgQ2HTYY
+E1KF/5sleP8kMu8IGCUce1Znxe46JrjGN0EFPzoI7kMhadMYIBhftfeZFtcszH5Y
+j++F8pQevZLorDe+6Pym1kHYrXMHaWxp7fADXIhYtT7wMPz5qgtnrTqpxoGssKEw
+MEydlp3R0quBxeorXdXj3MQPxn475O3CPYOAPnSNQcaBZ0uwu7p/xo4tTRWV3XLi
+K9z/eNWuIjZiwqJAK1LywxXZ83PkYbPtE8NBlnM8P0K7pBKGKXVbF9mqM3T+
 
-------919F2F262CA39AF46BD61BCAC9928689--
+------734AC66C24557D7B299A49D71E104C29--
 
 
