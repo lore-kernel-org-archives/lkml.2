@@ -1,64 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997Ab1KPCdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 21:33:11 -0500
-Received: from ozlabs.org ([203.10.76.45]:41446 "EHLO ozlabs.org"
+	id S1757776Ab1KPCd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 21:33:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:49244 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756186Ab1KPCdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 21:33:08 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization\@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH] virtio-mmio: Correct the name of the guest features selector
-In-Reply-To: <1321367122.3137.142.camel@hornet.cambridge.arm.com>
-References: <1321366638-28408-1-git-send-email-levinsasha928@gmail.com> <1321367122.3137.142.camel@hornet.cambridge.arm.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 16 Nov 2011 11:15:14 +1030
-Message-ID: <87pqgsopyd.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932999Ab1KPCdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 21:33:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,518,1315206000"; 
+   d="scan'208";a="37537818"
+From: Chen Gong <gong.chen@linux.intel.com>
+To: tony.luck@intel.com
+Cc: andi.kleen@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH] [RESEND] x86: add IRQ context simulation in module mce-inject
+Date: Wed, 16 Nov 2011 10:35:08 +0800
+Message-Id: <1321410908-1773-2-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.8.rc1.14.g248db
+In-Reply-To: <1321410908-1773-1-git-send-email-gong.chen@linux.intel.com>
+References: <1321410908-1773-1-git-send-email-gong.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Nov 2011 14:25:22 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Tue, 2011-11-15 at 14:17 +0000, Sasha Levin wrote:
-> > Guest features selector spelling mistake.
-> >
-> > diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
-> > index 27c7ede..5c7b6f0 100644
-> > --- a/include/linux/virtio_mmio.h
-> > +++ b/include/linux/virtio_mmio.h
-> > @@ -63,7 +63,7 @@
-> >  #define VIRTIO_MMIO_GUEST_FEATURES	0x020
-> >  
-> >  /* Activated features set selector - Write Only */
-> > -#define VIRTIO_MMIO_GUEST_FEATURES_SET	0x024
-> > +#define VIRTIO_MMIO_GUEST_FEATURES_SEL	0x024
-> >  
-> >  /* Guest's memory page size in bytes - Write Only */
-> >  #define VIRTIO_MMIO_GUEST_PAGE_SIZE	0x028
-> 
-> Damn. Sorry about it. But if you change the header you'll need to change
-> the driver:
-> 
-> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> index 1f25bb9..10bb8b9 100644
-> --- a/drivers/virtio/virtio_mmio.c
-> +++ b/drivers/virtio/virtio_mmio.c
-> @@ -161,7 +161,7 @@ static void vm_finalize_features(struct virtio_device *vdev)
->         vring_transport_features(vdev);
->  
->         for (i = 0; i < ARRAY_SIZE(vdev->features); i++) {
-> -               writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SET);
-> +               writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SEL);
->                 writel(vdev->features[i],
->                                 vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES);
->         }
+module mce-inject is an interface which is used by user space app
+such as mce-inject. According to it one can inject all kinds of
+error combinations into the kernel. In this way, one can check
+error condition coverage in the kernel. To satisify this needs,
+module mce-inject must simulate enough scenarios such as process
+context, IRQ context, even NMI context, to ensure related kernel
+codes are strong and reliable. In current implementation, IRQ
+context hasn't been simulated. This patch is for this purpose.
 
-Rolled together and applied.
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+---
+ arch/x86/include/asm/mce.h              |    9 ++++---
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |   34 +++++++++++++++++++++++++++---
+ 2 files changed, 35 insertions(+), 8 deletions(-)
 
-Thanks,
-Rusty.
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index c9321f3..312d770 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -50,10 +50,11 @@
+ #define MCJ_CTX_MASK		3
+ #define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
+ #define MCJ_CTX_RANDOM		0    /* inject context: random */
+-#define MCJ_CTX_PROCESS		1    /* inject context: process */
+-#define MCJ_CTX_IRQ		2    /* inject context: IRQ */
+-#define MCJ_NMI_BROADCAST	4    /* do NMI broadcasting */
+-#define MCJ_EXCEPTION		8    /* raise as exception */
++#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
++#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
++#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
++#define MCJ_EXCEPTION		0x8  /* raise as exception */
++#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
+ 
+ /* Fields are zero when not available */
+ struct mce {
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 6199232..505461e 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -17,6 +17,7 @@
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
++#include <linux/preempt.h>
+ #include <linux/smp.h>
+ #include <linux/notifier.h>
+ #include <linux/kdebug.h>
+@@ -92,6 +93,18 @@ static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
+ 	return NMI_HANDLED;
+ }
+ 
++static void mce_irq_ipi(void *info)
++{
++	int cpu = smp_processor_id();
++	struct mce *m = &__get_cpu_var(injectm);
++
++	if (cpumask_test_cpu(cpu, mce_inject_cpumask) &&
++			m->inject_flags & MCJ_EXCEPTION) {
++		cpumask_clear_cpu(cpu, mce_inject_cpumask);
++		raise_exception(m, NULL);
++	}
++}
++
+ /* Inject mce on current CPU */
+ static int raise_local(void)
+ {
+@@ -139,9 +152,10 @@ static void raise_mce(struct mce *m)
+ 		return;
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	if (m->inject_flags & MCJ_NMI_BROADCAST) {
++	if (m->inject_flags & (MCJ_IRQ_BRAODCAST | MCJ_NMI_BROADCAST)) {
+ 		unsigned long start;
+ 		int cpu;
++
+ 		get_online_cpus();
+ 		cpumask_copy(mce_inject_cpumask, cpu_online_mask);
+ 		cpumask_clear_cpu(get_cpu(), mce_inject_cpumask);
+@@ -151,13 +165,25 @@ static void raise_mce(struct mce *m)
+ 			    MCJ_CTX(mcpu->inject_flags) != MCJ_CTX_RANDOM)
+ 				cpumask_clear_cpu(cpu, mce_inject_cpumask);
+ 		}
+-		if (!cpumask_empty(mce_inject_cpumask))
+-			apic->send_IPI_mask(mce_inject_cpumask, NMI_VECTOR);
++		if (!cpumask_empty(mce_inject_cpumask)) {
++			if (m->inject_flags & MCJ_IRQ_BRAODCAST) {
++				/*
++				 * don't wait because mce_irq_ipi is necessary
++				 * to be sync with following raise_local
++				 */
++				preempt_disable();
++				smp_call_function_many(mce_inject_cpumask,
++					mce_irq_ipi, NULL, 0);
++				preempt_enable();
++			} else if (m->inject_flags & MCJ_NMI_BROADCAST)
++				apic->send_IPI_mask(mce_inject_cpumask,
++						NMI_VECTOR);
++		}
+ 		start = jiffies;
+ 		while (!cpumask_empty(mce_inject_cpumask)) {
+ 			if (!time_before(jiffies, start + 2*HZ)) {
+ 				printk(KERN_ERR
+-				"Timeout waiting for mce inject NMI %lx\n",
++				"Timeout waiting for mce inject %lx\n",
+ 					*cpumask_bits(mce_inject_cpumask));
+ 				break;
+ 			}
+-- 
+1.7.7.rc0.70.g82660
+
