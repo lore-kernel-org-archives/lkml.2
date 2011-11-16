@@ -1,58 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab1KPFKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 00:10:53 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1105 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab1KPFKw (ORCPT
+	id S1752112Ab1KPFOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 00:14:12 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:48220 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab1KPFOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 00:10:52 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 15 Nov 2011 21:10:51 -0800
-From: vbyravarasu@nvidia.com
-To: dbrownell@users.sourceforge.net, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, a.zummo@towertech.it, bunk@kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: venu byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] bcd: limit bin2bcd input value to lie between 0-99
-Date: Wed, 16 Nov 2011 10:41:32 +0530
-Message-Id: <1321420292-26970-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-X-NVConfidentiality: public
+	Wed, 16 Nov 2011 00:14:10 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v4 00/10] net-sysfs+forcedeth: stats & debug enhancements
+Date: Tue, 15 Nov 2011 21:13:52 -0800
+Message-Id: <cover.1321420223.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: venu byravarasu <vbyravarasu@nvidia.com>
+These changes provide a new tx_timeout sysfs attribute and implement
+the ndo_get_stats64 API. They also add a few more stats and debugging
+features for forcedeth. They ensure that stats updates are correct in
+SMP systems, 32 or 64-bits.
 
-Current implementation of bin2bcd allows any value
-between 0x0 to 0xF to be stored in the most significant
-nibble of its returned value, against to the BCD limits
-of 0 - 9. Hence fixing it.
+Note: patch 1 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
+stats on hardware without extended stats support")
 
-e.g. say val passed to bin2bcd is 123.
-In that case the expected value to be returned by
-this function is 0x23.
-However, without the fix being added, it would
-return 0xC3.
+Changes since v4:
+  - tx_timeout counter now a generic sysfs attribute. Credits to
+    Stephen Hemminger for initial implementation
+  - revert get_stats64 to using atomic variables: see
+    http://patchwork.ozlabs.org/patch/125861/ for motivations
+  - dropped patch "expose module parameters in /sys/module" for now: I
+    will work on this later, following Stephen's recommendations
+    (http://patchwork.ozlabs.org/patch/125862/).
 
-Signed-off-by: venu byravarasu <vbyravarasu@nvidia.com>
----
- lib/bcd.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Changes since v3:
+  - updated get_stats64 + rx_dropped patches to use u64_stats_sync.h
+  - dropped indentation "whitespace/indentation fixes" (included in
+    get_stats64 api patch)
 
-diff --git a/lib/bcd.c b/lib/bcd.c
-index d74257f..d715474 100644
---- a/lib/bcd.c
-+++ b/lib/bcd.c
-@@ -9,6 +9,7 @@ EXPORT_SYMBOL(bcd2bin);
- 
- unsigned char bin2bcd(unsigned val)
- {
-+	val %= 100;
- 	return ((val / 10) << 4) + val % 10;
- }
- EXPORT_SYMBOL(bin2bcd);
+Changes since v2:
+  - patch 1/9 is the cherry-pick of 898bdf2cb43e ("forcedeth: fix
+    stats on hardware without extended stats support")
+  - removed patch 5/10 "stats for rx_packets based on hardware
+    registers" because packets&bytes stats are updated in software
+    only (898bdf2cb43e)
+
+Changes since v1:
+  - patch 1/10 is the same as
+    http://patchwork.ozlabs.org/patch/125017/ (targetting net)
+  - other patches updated to take patch 1/10 into account
+  - various commit message updates
+
+
+Tested:
+  ~150Mbps incoming TCP, ethtool -S in a loop, x86_64 16-way:
+     tx_bytes: 5441989419
+     rx_packets: 5439224
+     tx_timeout: 0
+     tx_packets: 5456705
+     rx_bytes: 5566763850
+
+Tested:
+  pktgen + loopback report same RX/TX packets and bytes stats
+
+Tested:
+  tests above with Kconfig DEBUG_PAGEALLOC DEBUG_MUTEXES
+  DEBUG_SPINLOCK LOCKUP_DETECTOR DEBUG_RT_MUTEXES DEBUG_LOCK_ALLOC
+  PROVE_LOCKING DEBUG_ATOMIC_SLEEP DEBUG_STACK_USAGE DEBUG_KOBJECT
+  DEBUG_VM DEBUG_LIST DEBUG_SG DEBUG_NOTIFIERS TEST_KSTRTOX
+  STRICT_DEVMEM DEBUG_STACKOVERFLOW
+
+
+############################################
+# Patch Set Summary:
+
+David Decotigny (7):
+  net-sysfs: fixed minor sparse warning
+  kbuild: document RPS/XPS network Kconfig options
+  net: provide counter for tx_timeout errors in sysfs
+  forcedeth: implement ndo_get_stats64() API
+  forcedeth: account for dropped RX frames
+  forcedeth: stats updated with a deferrable timer
+  forcedeth: whitespace/indentation fixes
+
+Mike Ditto (1):
+  forcedeth: Add messages to indicate using MSI or MSI-X
+
+Sameer Nanda (1):
+  forcedeth: allow to silence "TX timeout" debug messages
+
+david decotigny (1):
+  forcedeth: fix stats on hardware without extended stats support
+
+ drivers/net/ethernet/nvidia/forcedeth.c |  320 ++++++++++++++++++++++---------
+ include/linux/netdevice.h               |   12 +-
+ net/Kconfig                             |   16 ++-
+ net/core/net-sysfs.c                    |   49 ++++--
+ net/sched/sch_generic.c                 |    1 +
+ 5 files changed, 293 insertions(+), 105 deletions(-)
+
 -- 
-1.7.1.1
+1.7.3.1
 
