@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1KPHW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 02:22:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754450Ab1KPHWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 02:22:25 -0500
-Message-ID: <4EC36494.30803@redhat.com>
-Date: Wed, 16 Nov 2011 15:21:56 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
+	id S1754723Ab1KPH2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 02:28:53 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34548 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab1KPH2w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 02:28:52 -0500
+Message-ID: <4EC36631.8030805@google.com>
+Date: Tue, 15 Nov 2011 23:28:49 -0800
+From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        Lennart Poettering <lennart@poettering.net>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Patch] tmpfs: add fallocate support
-References: <1321346525-10187-1-git-send-email-amwang@redhat.com>	 <4EC23DB0.3020306@redhat.com> <1321379039.12374.11.camel@nimitz>
-In-Reply-To: <1321379039.12374.11.camel@nimitz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Newsgroups: gmane.linux.kernel
+To: Il Han <corone.il.han@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: add the inline keyword to the prototype.
+References: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>
+In-Reply-To: <1321380994-5768-1-git-send-email-corone.il.han@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年11月16日 01:43, Dave Hansen 写道:
-> On Tue, 2011-11-15 at 18:23 +0800, Cong Wang wrote:
->>> +static long shmem_fallocate(struct file *file, int mode,
->>> +			    loff_t offset, loff_t len)
->>> +{
->>> +	struct inode *inode = file->f_path.dentry->d_inode;
->>> +	struct address_space *mapping = inode->i_mapping;
->>> +	struct shmem_inode_info *info = SHMEM_I(inode);
->>> +	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
->>> +	pgoff_t start = DIV_ROUND_UP(offset, PAGE_CACHE_SIZE);
->>> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
->>> +	pgoff_t index = start;
->>> +	gfp_t gfp = mapping_gfp_mask(mapping);
->>> +	loff_t i_size = i_size_read(inode);
->>> +	struct page *page = NULL;
->>> +	int ret;
->>> +
->>> +	if ((offset + len)<= i_size)
->>> +		return 0;
->
-> This seems to say that if the fallocate() call ends before the end of
-> the file we should ignore the call.  In other words, this can only be
-> used to extend the file, but could not be used to fill in the holes of a
-> sparse file.
->
-> Is there a reason it was done that way?
-
-Hmm, I missed the case of sparse file, so you are right, I need to fix it.
-
->
->>> +	if (!(mode&   FALLOC_FL_KEEP_SIZE)) {
->>> +		ret = inode_newsize_ok(inode, (offset + len));
->>> +		if (ret)
->>> +			return ret;
->>> +	}
->
-> inode_newsize_ok()'s comments say:
->
->   * inode_newsize_ok must be called with i_mutex held.
->
-> But I don't see any trace of it.
+On 11/15/2011 10:16 AM, Il Han wrote:
+> The prototype has to agree with the definition.
+> Add the inline keyword to the prototype also
 >
 
-Hmm, even for tmpfs? I see none of the tmpfs code takes
-i_mutex lock though...
+Hmm... this would then cause the prototypes to disagree in the 
+!CONFIG_CFS_BANDWIDTH case.
 
->>> +	if (start == end) {
->>> +		if (!(mode&   FALLOC_FL_KEEP_SIZE))
->>> +			i_size_write(inode, offset + len);
->>> +		return 0;
->>> +	}
+Can you update?
+
+> Signed-off-by: Il Han<corone.il.han@gmail.com>
+> ---
+>   kernel/sched_fair.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
 >
-> There's a whitespace borkage like that 'mode&' all over this patch.
-> Probably needs a little love.
-
-Odd, it is fine in my local patch, and it passed checkpatch.pl
-check before I sent it.
-
-<...>	
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 5c9e679..c7c93d2 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -306,7 +306,7 @@ find_matching_se(struct sched_entity **se, struct sched_entity **pse)
 >
-> This seems to have borrowed quite generously from shmem_getpage_gfp().
-> Seems like some code consolidation is in order before this level of
-> copy-n-paste.
+>   #endif	/* CONFIG_FAIR_GROUP_SCHED */
+>
+> -static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+> +static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+>   				   unsigned long delta_exec);
+>
+>   /**************************************************************
+> @@ -1052,7 +1052,7 @@ static void clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>   		__clear_buddies_skip(se);
+>   }
+>
+> -static void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
+> +static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq);
+>
+>   static void
+>   dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 
-Yes, I will separate the similar code.
-
-Thanks for review!
