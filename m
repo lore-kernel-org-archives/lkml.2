@@ -1,41 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1KPFre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 00:47:34 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:48112 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab1KPFrd (ORCPT
+	id S1753549Ab1KPFzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 00:55:15 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44674 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab1KPFzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 00:47:33 -0500
-Subject: Re: [PATCH] Bluetooth: Add AR30XX device ID on Asus laptops
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Keng-Yu Lin <kengyu@canonical.com>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Nov 2011 14:46:46 +0900
-In-Reply-To: <1321413683-4502-1-git-send-email-kengyu@canonical.com>
-References: <1321413683-4502-1-git-send-email-kengyu@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	Wed, 16 Nov 2011 00:55:12 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EC35024.8090004@jp.fujitsu.com>
+Date: Wed, 16 Nov 2011 14:54:44 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai.lu@oracle.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] PCI: Make sriov work with hotplug remove
+References: <4E9A3092.4080309@oracle.com> <4E9A3408.9080905@oracle.com> <CAErSpo5XdM+1OFmoU+rN_QNWCJ0Wzv1VwKxsTo9hTq=2=7KEHA@mail.gmail.com> <4E9C6F0E.40501@oracle.com> <CAErSpo7ofdVixyGR74_mc6ND5C3LROiR9PVzwNZaDe23ptJ2=Q@mail.gmail.com> <4E9CAB21.2020302@oracle.com> <CAErSpo4PLDfapndXJp-sXS-SJtv0a7PaD=UKX0HV0OV34an3kQ@mail.gmail.com> <4E9DB11A.7030505@oracle.com> <4EBD8D09.9060903@oracle.com>
+In-Reply-To: <4EBD8D09.9060903@oracle.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-ID: <1321422409.15441.510.camel@aeonflux>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keng-Yu,
+(2011/11/12 6:00), Yinghai Lu wrote:
+> 
+> When hot remove pci express module that have pcie switch and support SRIOV, got
+> 
+> [ 5918.610127] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 1
+> [ 5918.615779] pciehp 0000:80:02.2:pcie04: Attention button interrupt received
+> [ 5918.622730] pciehp 0000:80:02.2:pcie04: Button pressed on Slot(3)
+> [ 5918.629002] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 1f9
+> [ 5918.637416] pciehp 0000:80:02.2:pcie04: PCI slot #3 - powering off due to button press.
+> [ 5918.647125] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 10
+> [ 5918.653039] pciehp 0000:80:02.2:pcie04: pciehp_green_led_blink: SLOTCTRL a8 write cmd 200
+> [ 5918.661229] pciehp 0000:80:02.2:pcie04: pciehp_set_attention_status: SLOTCTRL a8 write cmd c0
+> [ 5924.667627] pciehp 0000:80:02.2:pcie04: Disabling domain:bus:device=0000:b0:00
+> [ 5924.674909] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 2f9
+> [ 5924.683262] pciehp 0000:80:02.2:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:b0:00
+> [ 5924.693976] libfcoe_device_notification: NETDEV_UNREGISTER eth6
+> [ 5924.764979] libfcoe_device_notification: NETDEV_UNREGISTER eth14
+> [ 5924.873539] libfcoe_device_notification: NETDEV_UNREGISTER eth15
+> [ 5924.995209] libfcoe_device_notification: NETDEV_UNREGISTER eth16
+> [ 5926.114407] sxge 0000:b2:00.0: PCI INT A disabled
+> [ 5926.119342] BUG: unable to handle kernel NULL pointer dereference at (null)
+> [ 5926.127189] IP: [<ffffffff81353a3b>] pci_stop_bus_device+0x33/0x83
+> [ 5926.133377] PGD 0
+> [ 5926.135402] Oops: 0000 [#1] SMP
+> [ 5926.138659] CPU 2
+> [ 5926.140499] Modules linked in:
+> ...
+> [ 5926.143754]
+> [ 5926.275823] Call Trace:
+> [ 5926.278267]  [<ffffffff81353a38>] pci_stop_bus_device+0x30/0x83
+> [ 5926.284180]  [<ffffffff81353af4>] pci_remove_bus_device+0x1a/0xba
+> [ 5926.290264]  [<ffffffff81366311>] pciehp_unconfigure_device+0x110/0x17b
+> [ 5926.296866]  [<ffffffff81365dd9>] ? pciehp_disable_slot+0x188/0x188
+> [ 5926.303123]  [<ffffffff81365d6f>] pciehp_disable_slot+0x11e/0x188
+> [ 5926.309206]  [<ffffffff81365e68>] pciehp_power_thread+0x8f/0xe0
+> ...
+> 
+>   +-[0000:80]-+-00.0-[81-8f]--
+>   |           +-01.0-[90-9f]--
+>   |           +-02.0-[a0-af]--
+>   |           +-02.2-[b0-bf]----00.0-[b1-b3]--+-02.0-[b2]--+-00.0 Device
+>   |           |                               |            +-00.1 Device
+>   |           |                               |            +-00.2 Device
+>   |           |                               |            \-00.3 Device
+>   |           |                               \-03.0-[b3]--+-00.0 Device
+>   |           |                                            +-00.1 Device
+>   |           |                                            +-00.2 Device
+>   |           |                                            \-00.3 Device
+> 
+> root complex: 80:02.2
+> pci express modules: have pcie switch and are listed as b0:00.0, b1:02.0 and b1:03.0.
+>                  end devices  are b2:00.0 and b3.00.0.
+>                  VFs are: b2:00.1,... b2:00.3, and b3:00.1,...,b3:00.3
+> 
+> Root cause: when doing pci_stop_bus_device() with phys fn, it will stop virt fn and
+> remove the fn, so
+> 	list_for_each_safe(l, n,&bus->devices)
+> will have problem to refer freed n that is pointed to vf entry.
+> 
+> Solution is just call pci_stop_bus_device() with phys fn only. and before that need to
+> save phys fn aside and avoid to use bus->devices to loop.
+> 
+> During reviewing the patch, Bjorn said:
+> |   The PCI hot-remove path calls pci_stop_bus_devices() via
+> |   pci_remove_bus_device().
+> |
+> |   pci_stop_bus_devices() traverses the bus->devices list (point A below),
+> |   stopping each device in turn, which calls the driver remove() method.  When
+> |   the device is an SR-IOV PF, the driver calls pci_disable_sriov(), which
+> |   also uses pci_remove_bus_device() to remove the VF devices from the
+> |   bus->devices list (point B).
+> |
+> |       pci_remove_bus_device
+> |         pci_stop_bus_device
+> |           pci_stop_bus_devices(subordinate)
+> |             list_for_each(bus->devices)<-- A
+> |               pci_stop_bus_device(PF)
+> |                 ...
+> |                   driver->remove
+> |                     pci_disable_sriov
+> |                       ...
+> |                         pci_remove_bus_device(VF)
+> |<remove from bus_list>   <-- B
+> |
+> |   At B, we're changing the same list we're iterating through at A, so when
+> |   the driver remove() method returns, the pci_stop_bus_devices() iterator has
+> |   a pointer to a list entry that has already been freed.
+> |
+> |   This patch avoids the problem by building a separate list of all PFs on
+> |   the bus and traversing that at A instead of the bus->devices list.
+> 
+> Discussion thread can be found : https://lkml.org/lkml/2011/10/15/141
+> 
+> -v2: updated changelog.
+> 
+> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
+> 
+> ---
+>   drivers/pci/remove.c |   33 +++++++++++++++++++++++++++++++++
+>   1 file changed, 33 insertions(+)
+> 
+> Index: linux-2.6/drivers/pci/remove.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/remove.c
+> +++ linux-2.6/drivers/pci/remove.c
+> @@ -120,10 +120,43 @@ void pci_remove_behind_bridge(struct pci
+>   			pci_remove_bus_device(pci_dev_b(l));
+>   }
+> 
+> +struct dev_list {
+> +	struct pci_dev *dev;
+> +	struct list_head list;
+> +};
+> +
+>   static void pci_stop_bus_devices(struct pci_bus *bus)
+>   {
+>   	struct list_head *l, *n;
+> +	struct dev_list *dl, *dn;
+> +	LIST_HEAD(physfn_list);
+> +
+> +	/* Save phys_fn aside at first */
+> +	list_for_each(l,&bus->devices) {
+> +		struct pci_dev *dev = pci_dev_b(l);
+> +
+> +		if (!dev->is_virtfn) {
+> +			dl = kmalloc(sizeof(*dl), GFP_KERNEL);
+> +			if (!dl)
+> +				continue;
+> +			dl->dev = dev;
+> +			list_add_tail(&dl->list,&physfn_list);
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * stop bus device for phys_fn at first
+> +	 *  it will stop and remove vf in driver remove action
+> +	 */
+> +	list_for_each_entry_safe(dl, dn,&physfn_list, list) {
+> +		struct pci_dev *dev = dl->dev;
+> +
+> +		pci_stop_bus_device(dev);
+> +
+> +		kfree(dl);
+> +	}
+> 
+> +	/* Do it again for left over in case */
+>   	list_for_each_safe(l, n,&bus->devices) {
+>   		struct pci_dev *dev = pci_dev_b(l);
+>   		pci_stop_bus_device(dev);
 
-> The ID is found on Asus K54HR and K53U.
-> Blacklist the AR3011-based device ID [0489:e03d]
-> and add to ath3k.c for firmware loading.
+Sorry for the delayed comment.
 
-please include the output of /proc/bus/usb/devices or usb-devices script
-for this hardware before and after firmware loading. I want this as part
-of the commit message so we have it for future reference.
+I don't think allocating new memory for device removal is good idea. And
+your code doesn't seem to work if memory allocation failed. What about
+something like below? Note that it is not tested at all, sorry.
 
-Regards
+By the way, I think the root cause is that current SR-IOV design doesn't
+match pci device driver model very well, IMHO.
 
-Marcel
+Regards,
+Kenji Kaneshige
 
+---
+ drivers/pci/remove.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
+Index: 20111116/drivers/pci/remove.c
+===================================================================
+--- 20111116.orig/drivers/pci/remove.c
++++ 20111116/drivers/pci/remove.c
+@@ -122,11 +122,25 @@ void pci_remove_behind_bridge(struct pci
+ 
+ static void pci_stop_bus_devices(struct pci_bus *bus)
+ {
+-	struct list_head *l, *n;
++	struct list_head *pos, *head;
+ 
+-	list_for_each_safe(l, n, &bus->devices) {
+-		struct pci_dev *dev = pci_dev_b(l);
++	head = &bus->devices;
++	pos = head->next;
++	while (pos != head) {
++		struct pci_dev *dev = pci_dev_b(pos);
++		/*
++		 * NOTE: We need special handling here because VFs are
++		 * removed by pci_remove_bus_device() in the
++		 * pci_stop_bus_devices() code path for PF. Seems
++		 * current SR-IOV code doesn't match linux pci driver
++		 * model. Need refactoring.
++		 */
++		if (dev->is_virtfn)
++			goto next;
+ 		pci_stop_bus_device(dev);
++	next:
++		barrier();
++		pos = pos->next;
+ 	}
+ }
