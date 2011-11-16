@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013Ab1KPCdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 21:33:12 -0500
-Received: from ozlabs.org ([203.10.76.45]:46737 "EHLO ozlabs.org"
+	id S932997Ab1KPCdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 21:33:11 -0500
+Received: from ozlabs.org ([203.10.76.45]:41446 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756335Ab1KPCdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756186Ab1KPCdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Nov 2011 21:33:08 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pawel Moll <pawel.moll@arm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>
 Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH] virtio: add HAS_IOMEM dependency to MMIO platform bus driver
-In-Reply-To: <1321353118.3137.92.camel@hornet.cambridge.arm.com>
-References: <1321348404-3549-1-git-send-email-heiko.carstens@de.ibm.com> <1321353118.3137.92.camel@hornet.cambridge.arm.com>
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH] virtio-mmio: Correct the name of the guest features selector
+In-Reply-To: <1321367122.3137.142.camel@hornet.cambridge.arm.com>
+References: <1321366638-28408-1-git-send-email-levinsasha928@gmail.com> <1321367122.3137.142.camel@hornet.cambridge.arm.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 16 Nov 2011 10:58:30 +1030
-Message-ID: <87vcqkoqq9.fsf@rustcorp.com.au>
+Date: Wed, 16 Nov 2011 11:15:14 +1030
+Message-ID: <87pqgsopyd.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Nov 2011 10:31:58 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Tue, 2011-11-15 at 09:13 +0000, Heiko Carstens wrote:
-> > Fix this compile error on s390:
-> > 
-> >   CC [M]  drivers/virtio/virtio_mmio.o
-> > drivers/virtio/virtio_mmio.c: In function 'vm_get_features':
-> > drivers/virtio/virtio_mmio.c:107:2: error: implicit declaration of function 'writel'
+On Tue, 15 Nov 2011 14:25:22 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Tue, 2011-11-15 at 14:17 +0000, Sasha Levin wrote:
+> > Guest features selector spelling mistake.
+> >
+> > diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
+> > index 27c7ede..5c7b6f0 100644
+> > --- a/include/linux/virtio_mmio.h
+> > +++ b/include/linux/virtio_mmio.h
+> > @@ -63,7 +63,7 @@
+> >  #define VIRTIO_MMIO_GUEST_FEATURES	0x020
+> >  
+> >  /* Activated features set selector - Write Only */
+> > -#define VIRTIO_MMIO_GUEST_FEATURES_SET	0x024
+> > +#define VIRTIO_MMIO_GUEST_FEATURES_SEL	0x024
+> >  
+> >  /* Guest's memory page size in bytes - Write Only */
+> >  #define VIRTIO_MMIO_GUEST_PAGE_SIZE	0x028
 > 
-> One learns something new every day :-O
+> Damn. Sorry about it. But if you change the header you'll need to change
+> the driver:
 > 
-> Thanks and apologies for inconvenience!
-> 
-> > Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> > Cc: Pawel Moll <pawel.moll@arm.com>
-> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> 
-> Acked-by: Pawel Moll <pawel.moll@arm.com>
+> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+> index 1f25bb9..10bb8b9 100644
+> --- a/drivers/virtio/virtio_mmio.c
+> +++ b/drivers/virtio/virtio_mmio.c
+> @@ -161,7 +161,7 @@ static void vm_finalize_features(struct virtio_device *vdev)
+>         vring_transport_features(vdev);
+>  
+>         for (i = 0; i < ARRAY_SIZE(vdev->features); i++) {
+> -               writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SET);
+> +               writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SEL);
+>                 writel(vdev->features[i],
+>                                 vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES);
+>         }
 
-Applied, thanks!
+Rolled together and applied.
 
-Cheers,
+Thanks,
 Rusty.
