@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab1KPKPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 05:15:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47359 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab1KPKPY (ORCPT
+	id S1755791Ab1KPKPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 05:15:35 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44144 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755736Ab1KPKPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 05:15:24 -0500
-From: Il Han <corone.il.han@gmail.com>
-To: Marin Mitov <mitov@issp.bas.bg>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Il Han <corone.il.han@gmail.com>
-Subject: [PATCH] dt3155v4l: make the parameter declarations agree.
-Date: Wed, 16 Nov 2011 19:15:07 +0900
-Message-Id: <1321438507-28446-1-git-send-email-corone.il.han@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 16 Nov 2011 05:15:33 -0500
+Date: Wed, 16 Nov 2011 10:16:23 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Rob Clark <rob.clark@linaro.org>
+Subject: Re: linux-next: build failure after merge of the drm tree
+Message-ID: <20111116101623.7a59b686@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
+References: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assignment from incompatible pointer type.
-Make the parameter declarations agree.
+> drivers/staging/gma500/framebuffer.c: In function 'psb_framebuffer_init':
+> drivers/staging/gma500/framebuffer.c:297:2: warning: passing argument 2 of 'drm_helper_mode_fill_fb_struct' from incompatible pointer type [enabled by default]
+> include/drm/drm_crtc_helper.h:121:12: note: expected 'struct drm_mode_fb_cmd2 *' but argument is of type 'struct drm_mode_fb_cmd *'
+> drivers/staging/gma500/framebuffer.c:564:2: warning: passing argument 2 of 'psb_framebuffer_create' from incompatible pointer type [enabled by default]
+> drivers/staging/gma500/framebuffer.c:314:32: note: expected 'struct drm_mode_fb_cmd *' but argument is of type 'struct drm_mode_fb_cmd2 *'
 
-Signed-off-by: Il Han <corone.il.han@gmail.com>
----
- drivers/staging/media/dt3155v4l/dt3155v4l.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+gma500 is frozen pending Dave Airlie's applying the patches moving it out
+of staging.
 
-diff --git a/drivers/staging/media/dt3155v4l/dt3155v4l.c b/drivers/staging/media/dt3155v4l/dt3155v4l.c
-index 04e93c4..2e50924 100644
---- a/drivers/staging/media/dt3155v4l/dt3155v4l.c
-+++ b/drivers/staging/media/dt3155v4l/dt3155v4l.c
-@@ -218,9 +218,9 @@ dt3155_start_acq(struct dt3155_priv *pd)
-  *	driver-specific callbacks (vb2_ops)
-  */
- static int
--dt3155_queue_setup(struct vb2_queue *q, unsigned int *num_buffers,
--			unsigned int *num_planes, unsigned long sizes[],
--						void *alloc_ctxs[])
-+dt3155_queue_setup(struct vb2_queue *q, const struct v4l2_format *fmt,
-+			unsigned int *num_buffers, unsigned int *num_planes,
-+			unsigned long sizes[], void *alloc_ctxs[])
- {
- 	struct dt3155_priv *pd = vb2_get_drv_priv(q);
- 	void *ret;
-@@ -262,7 +262,7 @@ dt3155_buf_prepare(struct vb2_buffer *vb)
- }
- 
- static int
--dt3155_start_streaming(struct vb2_queue *q)
-+dt3155_start_streaming(struct vb2_queue *q, unsigned int count)
- {
- 	return 0;
- }
--- 
-1.7.4.1
+<Prod, prod>
 
+Alan
