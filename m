@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1KPNMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 08:12:09 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:38099 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756547Ab1KPNMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 08:12:07 -0500
-Message-ID: <1321449126.16478.2.camel@Joe-Laptop>
-Subject: Re: [PATCH] MAINTAINERS: update maintainers for blackfin arch and
- drivers.
-From: Joe Perches <joe@perches.com>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Sonic Zhang <sonic.zhang@analog.com>
-Date: Wed, 16 Nov 2011 05:12:06 -0800
-In-Reply-To: <1321429708-13862-1-git-send-email-sonic.adi@gmail.com>
-References: <1321429708-13862-1-git-send-email-sonic.adi@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1756894Ab1KPNP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 08:15:26 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53322 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756708Ab1KPNPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 08:15:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,521,1315206000"; 
+   d="scan'208";a="75644409"
+Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+In-Reply-To: <Pine.LNX.4.44L0.1111151052160.2345-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1111151052160.2345-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 16 Nov 2011 21:14:12 +0800
+Message-ID: <1321449252.2565.2.camel@hp6530s>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 15:48 +0800, Sonic Zhang wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
+On Wed, 2011-11-16 at 00:08 +0800, Alan Stern wrote:
+> On Tue, 15 Nov 2011, Tejun Heo wrote:
 > 
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> ---
->  MAINTAINERS |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
+> > On Tue, Nov 15, 2011 at 04:51:29PM +0800, Lin Ming wrote:
+> > > > This is not the right approach.  You should look instead at 
+> > > > scsi_dev_type_suspend() in scsi_pm.c.  If the device is already runtime 
+> > > > suspended then the routine should return immediately.
+> > > 
+> > > How about below?
+> > > 
+> > > diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> > > index d329f8b..94b60bd 100644
+> > > --- a/drivers/scsi/scsi_pm.c
+> > > +++ b/drivers/scsi/scsi_pm.c
+> > > @@ -20,6 +20,9 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
+> > >  	struct device_driver *drv;
+> > >  	int err;
+> > >  
+> > > +	if (pm_runtime_suspended(dev))
+> > > +		return 0;
+> > > +
+> > 
+> > Something to be careful about is there are different types of suspend
+> > states (PMSG_*).  IIUC, runtime PM is using PMSG_SUSPEND.  Other
+> > states may or may not be compatible with PMSG_SUSPEND expectations, so
+> > you can skip suspend operation if the newly requested state is
+> > PMSG_SUSPEND but otherwise the controller needs to be woken up and
+> > told to comply to the new state.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 7f6bc29..86941ba 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1481,6 +1481,7 @@ F:	fs/bfs/
->  F:	include/linux/bfs_fs.h
->  
->  BLACKFIN ARCHITECTURE
-> +M:	Bob Liu <lliubbo@kernel.org>
->  M:	Mike Frysinger <vapier@gentoo.org>
->  L:	uclinux-dist-devel@blackfin.uclinux.org
->  W:	http://blackfin.uclinux.org
-> @@ -1494,14 +1495,12 @@ S:	Supported
->  F:	drivers/net/ethernet/adi/
->  
->  BLACKFIN RTC DRIVER
-> -M:	Mike Frysinger <vapier.adi@gmail.com>
->  L:	uclinux-dist-devel@blackfin.uclinux.org
->  W:	http://blackfin.uclinux.org
->  S:	Supported
->  F:	drivers/rtc/rtc-bfin.c
->  
->  BLACKFIN SDH DRIVER
-> -M:	Cliff Cai <cliff.cai@analog.com>
->  L:	uclinux-dist-devel@blackfin.uclinux.org
->  W:	http://blackfin.uclinux.org
->  S:	Supported
-> @@ -1515,7 +1514,6 @@ S:	Supported
->  F:	drivers/tty/serial/bfin_5xx.c
->  
->  BLACKFIN WATCHDOG DRIVER
-> -M:	Mike Frysinger <vapier.adi@gmail.com>
->  L:	uclinux-dist-devel@blackfin.uclinux.org
->  W:	http://blackfin.uclinux.org
->  S:	Supported
+> That's right.  Surprisingly enough (and contrary to what I wrote
+> earlier), the sd_suspend() routine doesn't spin down a drive for
+> runtime suspend.  This probably should be considered a bug.
+> 
+> Anyway, it looks like the correct approach would be more like this:
 
-Drivers or arches without specific people to maintain
-them really should not have "S: Supported".
-These should really be "S: Orphan".
+Thanks.
+
+I think ata_port_suspend also needs to call pm_runtime_resume, as below.
+
+static int ata_port_suspend(struct device *dev)
+{
+        struct ata_port *ap = to_ata_port(dev);
+        int rc;
+
+        pm_runtime_resume(dev);
+        rc = ata_port_request_pm(ap, PMSG_SUSPEND, 0, ATA_EHI_QUIET, 1);
+        return rc;
+}
+
+> 
+>  static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
+>  {
+>  	int err = 0;
+>  
+> -	if (scsi_is_sdev_device(dev))
+> +	if (scsi_is_sdev_device(dev)) {
+>  		pm_runtime_resume(dev);
+>  		err = scsi_dev_type_suspend(dev, msg);
+> +	}
+>  	return err;
+>  }
+> 
+> Alan Stern
+> 
 
 
