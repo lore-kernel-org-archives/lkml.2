@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab1KPWRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:17:14 -0500
-Received: from mail-vx0-f202.google.com ([209.85.220.202]:49306 "EHLO
-	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab1KPWPi (ORCPT
+	id S1754362Ab1KPWRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:17:19 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42505 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab1KPWRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:15:38 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v6 8/9] forcedeth: account for dropped RX frames
-Date: Wed, 16 Nov 2011 14:15:14 -0800
-Message-Id: <5bbe62a35ef59180b02d8dd0086641a04b17d38a.1321481064.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
-References: <cover.1321481064.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
-References: <cover.1321481064.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Wed, 16 Nov 2011 17:17:16 -0500
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 131.252.244.140
+Date: Wed, 16 Nov 2011 14:17:00 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 3/9] rcu: Control rcutorture startup from
+ kernel boot parameters
+Message-ID: <20111116221659.GB2325@leaf>
+References: <20111115202736.GA11030@linux.vnet.ibm.com>
+ <1321388885-11211-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111115214932.GE31473@leaf>
+ <20111116203851.GM2355@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116203851.GM2355@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds code to update the stats counter for dropped RX frames.
+On Wed, Nov 16, 2011 at 12:38:51PM -0800, Paul E. McKenney wrote:
+> On Tue, Nov 15, 2011 at 01:49:32PM -0800, Josh Triplett wrote:
+> > On Tue, Nov 15, 2011 at 12:27:59PM -0800, Paul E. McKenney wrote:
+> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > 
+> > > Currently, if rcutorture is built into the kernel, it must be manually
+> > > started or started from an init script.  This is inconvenient for
+> > > automated KVM testing, where it is good to be able to fully control
+> > > rcutorture execution from the kernel parameters.  This patch therefore
+> > > adds a module parameter named "rcutorture_runnable" that defaults
+> > > to zero ("don't start automatically"), but which can be set to one
+> > > to cause rcutorture to start up immediately during boot.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > ---
+> > >  kernel/rcutorture.c |    2 ++
+> > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> > > index 41802be..fd7a0e6 100644
+> > > --- a/kernel/rcutorture.c
+> > > +++ b/kernel/rcutorture.c
+> > > @@ -164,6 +164,8 @@ static int stutter_pause_test;
+> > >  #define RCUTORTURE_RUNNABLE_INIT 0
+> > >  #endif
+> > >  int rcutorture_runnable = RCUTORTURE_RUNNABLE_INIT;
+> > > +module_param(rcutorture_runnable, int, 0444);
+> > > +MODULE_PARM_DESC(rcutorture_runnable, "Start rcutorture at boot");
+> > 
+> > Perhaps this should become a bool rather than an int, so that the kernel
+> > would recognize various variations on the parameter value, such as "on"
+> > or "true".
+> 
+> I had a funny feeling that I would be needing other values to do things
+> like say at what phase of boot the test was to start.
+> 
+> But if no need for this sort of function appears in the next while, then
+> switching to bool would indeed make a lot of sense.
 
+Ah, fair enough.
 
-
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 427c9c1..9bf993d 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -815,6 +815,7 @@ struct fe_priv {
- 	u64 stat_rx_packets;
- 	u64 stat_rx_bytes; /* not always available in HW */
- 	u64 stat_rx_missed_errors;
-+	u64 stat_rx_dropped;
- 
- 	/* media detection workaround.
- 	 * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
-@@ -1758,6 +1759,7 @@ nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
- 		syncp_start = u64_stats_fetch_begin(&np->swstats_rx_syncp);
- 		storage->rx_packets       = np->stat_rx_packets;
- 		storage->rx_bytes         = np->stat_rx_bytes;
-+		storage->rx_dropped       = np->stat_rx_dropped;
- 		storage->rx_missed_errors = np->stat_rx_missed_errors;
- 	} while (u64_stats_fetch_retry(&np->swstats_rx_syncp, syncp_start));
- 
-@@ -1828,8 +1830,12 @@ static int nv_alloc_rx(struct net_device *dev)
- 				np->put_rx.orig = np->first_rx.orig;
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
--		} else
-+		} else {
-+			u64_stats_update_begin(&np->swstats_rx_syncp);
-+			np->stat_rx_dropped++;
-+			u64_stats_update_end(&np->swstats_rx_syncp);
- 			return 1;
-+		}
- 	}
- 	return 0;
- }
-@@ -1860,8 +1866,12 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
- 				np->put_rx.ex = np->first_rx.ex;
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
--		} else
-+		} else {
-+			u64_stats_update_begin(&np->swstats_rx_syncp);
-+			np->stat_rx_dropped++;
-+			u64_stats_update_end(&np->swstats_rx_syncp);
- 			return 1;
-+		}
- 	}
- 	return 0;
- }
--- 
-1.7.3.1
-
+- Josh Triplett
