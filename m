@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab1KPDbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 22:31:40 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:33177
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752423Ab1KPDbi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 22:31:38 -0500
-X-SpamScore: -19
-X-BigFish: VS-19(zz9371K1447M542M1432Nzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: RE: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro define
-Thread-Topic: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro define
-Thread-Index: AQHMo3sQH1uSMXK7A0CXBFeCz5DabpWuqjYAgAAqs5A=
-Date: Wed, 16 Nov 2011 03:31:34 +0000
-Message-ID: <65EE16ACC360FA4D99C96DC085B3F7722D0FA4@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1321350910-8685-1-git-send-email-dong.aisheng@linaro.org>
- <74CDBE0F657A3D45AFBB94109FB122FF1740805DF4@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740805DF4@HQMAIL01.nvidia.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.89]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1752818Ab1KPDgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 22:36:41 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:54683 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab1KPDgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 22:36:40 -0500
+Date: Wed, 16 Nov 2011 14:36:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: kvmtool (Was: Re: Linux 3.2-rc2)
+Message-Id: <20111116143632.914b0f0cc828d90d6ec371f6@canb.auug.org.au>
+In-Reply-To: <CA+55aFzWkXNtLe4jxuXfTJzbXgDF+ig2OuGY3ca+nNCJxAtOZQ@mail.gmail.com>
+References: <CA+55aFzWkXNtLe4jxuXfTJzbXgDF+ig2OuGY3ca+nNCJxAtOZQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_Nov_2011_14_36_32_+1100_qgT8nYfYDi1SBa32"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Stephen Warren
-> Sent: Wednesday, November 16, 2011 2:42 AM
-> To: Dong Aisheng; linux-kernel@vger.kernel.org
-> Cc: grant.likely@secretlab.ca; arnd@arndb.de; s.hauer@pengutronix.de; Guo
-> Shawn-R65073; kernel@pengutronix.de
-> Subject: RE: [PATCH 1/1] gpio: gpio-mxs: remove the duplicated micro
-> define
-> 
-> Dong Aisheng wrote at Tuesday, November 15, 2011 2:55 AM:
-> ...
-> > diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-> ...
-> > -#define MXS_SET		0x4
-> > -#define MXS_CLR		0x8
-> 
-> If the long-term direction on MXS is to move to gpiolib, won't
-It looks gpio-mxs driver is already using gpiolib.
+--Signature=_Wed__16_Nov_2011_14_36_32_+1100_qgT8nYfYDi1SBa32
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> MX_SET_ADDR etc. and the inline functions that use it eventually be
-> removed from mach-mxs/include/mach/mxs.h hence requiring the #define be
-> moved back into the GPIO driver?
-> 
-Yes, i agree with you.
-Eventually we will remove using <mach/mxs.h>.
-Thanks for the comments.
+On Tue, 15 Nov 2011 15:44:07 -0200 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> And for being an -rc2 release of a pretty large merge-window, it seems
+> to be quite reasonably sized. In fact, despite this having been the
+> largest linux-next in a release in our linux-next history (I think),
 
-Regards
-Dong Aisheng
+That is true (see http://neuling.org/linux-next-size.html).  However,
+linux-next "bottomed out" with >1500 (non-merge) commits still in it.  Of
+those, 900 are from the kvmtool tree,  So, has there been any decision
+about whether kvmtool will ever be included in the upstream tree?
 
+I do not want to reinflame the discussion and am happy to carry it along
+(it doesn't really interact with the rest of the tree), but if it is
+never going to be merged, then I may as well drop it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__16_Nov_2011_14_36_32_+1100_qgT8nYfYDi1SBa32
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOwy/AAAoJEECxmPOUX5FEy3kP/0bJ5Km5qDQu7KBWZ8gUwDoP
+7O0tiTZH4nkuMl543alGlBvhunVUCrECrnqR7slpCqxt4K105OEtA6oUO6QKLQJW
+Inh46izMRTlAt8dZIqzZU1K0Bf/v4bMVCnBmvhEiO0Cubl8Csoqgn7R/Bbbdiri4
+BlTtu7Y/BLUKLu2AlV0dYXayhvUpSDGRhy40xJ2E/+W7dDlOUafSa+H86JkLVt0f
+BM7F9b/5fyeeG/e27BFQgHIx2bKgESwpQIrrfUQr5Vvw6Fcr9DqNlh/C98qcqUQk
+1VWCJGCwVt/bUPw4nYrYGwvQe4COs4hUiAD50XzXsmnEhYNx2//NbjYLDVpMhIHm
+ETXL7YfK/9X4lWT/M9BGGSRIDrvwGtQPPyzqx015z08sNtLd2N0DYLZRtnbw641a
+htLOebWjKN7a88qgX6yNvTI1c+5vws49ewWOwG+fFSy7l6ift16Qh14saWJWcsrv
+85ntaBYvYWd7kMU7LclrzvYqMk0TolIfUEDmkdiRRz74gTW0J0YnoBivqw83lrNW
+qSg66zd7SkvYbKxWmLIme5SIhkTX/23nRGVHMPR6HXhITqIctliQeTSecRD6CiR1
+4lksSq1cnp3Jl7Zp4HyvebVERMcePxNtGrGcz552rpttgDS5inXzyEETHuazRO07
+jPfvyf9+LksK8ytMopQC
+=ZSKg
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Nov_2011_14_36_32_+1100_qgT8nYfYDi1SBa32--
