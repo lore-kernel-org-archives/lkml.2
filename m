@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab1KPFRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 00:17:18 -0500
-Received: from mail-fx0-f74.google.com ([209.85.161.74]:50264 "EHLO
-	mail-fx0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab1KPFQd (ORCPT
+	id S1752851Ab1KPFQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 00:16:32 -0500
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:48774 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab1KPFQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 00:16:33 -0500
+	Wed, 16 Nov 2011 00:16:30 -0500
 From: David Decotigny <david.decotigny@google.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,11 +16,11 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <bhutchings@solarflare.com>,
         Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
         Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>, Mike Ditto <mditto@google.com>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v5 08/10] forcedeth: account for dropped RX frames
-Date: Tue, 15 Nov 2011 21:15:56 -0800
-Message-Id: <ed7284fbf466dee109a5fb6b33ad1d0443403231.1321420513.git.david.decotigny@google.com>
+Subject: [PATCH net-next v5 05/10] forcedeth: Add messages to indicate using MSI or MSI-X
+Date: Tue, 15 Nov 2011 21:15:53 -0800
+Message-Id: <9a8c7d2454facab2475f53339ee680e4b22a71d5.1321420513.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <cover.1321420513.git.david.decotigny@google.com>
 References: <cover.1321420513.git.david.decotigny@google.com>
@@ -32,68 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds code to update the stats counter for dropped RX frames.
+From: Mike Ditto <mditto@google.com>
+
+This adds a few kernel messages to indicate whether PCIe interrupts
+are signaled with MSI or MSI-X.
 
 
 
 Signed-off-by: David Decotigny <david.decotigny@google.com>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/nvidia/forcedeth.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 6aeb0d6..d9b5a4d 100644
+index 374625b..fe17e42 100644
 --- a/drivers/net/ethernet/nvidia/forcedeth.c
 +++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -824,6 +824,7 @@ struct fe_priv {
- 	struct nv_driver_stat stat_rx_packets;
- 	struct nv_driver_stat stat_rx_bytes; /* not always available in HW */
- 	struct nv_driver_stat stat_rx_missed_errors;
-+	struct nv_driver_stat stat_rx_dropped;
- 
- 	/* media detection workaround.
- 	 * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
-@@ -1739,6 +1740,7 @@ static void nv_update_stats(struct net_device *dev)
- 	/* update software stats */
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_packets);
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_bytes);
-+	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_dropped);
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_missed_errors);
- 
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_tx_packets);
-@@ -1786,6 +1788,8 @@ nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
- 			&np->stat_tx_bytes);
- 		storage->rx_errors  = np->estats.rx_errors_total;
- 		storage->tx_errors  = np->estats.tx_errors_total;
-+		storage->rx_dropped = NV_DRIVER_STAT_GET_TOTAL(
-+			&np->stat_rx_dropped);
- 		storage->tx_dropped = NV_DRIVER_STAT_GET_TOTAL(
- 			&np->stat_tx_dropped);
- 
-@@ -1841,8 +1845,10 @@ static int nv_alloc_rx(struct net_device *dev)
- 				np->put_rx.orig = np->first_rx.orig;
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
--		} else
-+		} else {
-+			NV_DRIVER_STAT_ATOMIC_INC(&np->stat_rx_dropped);
- 			return 1;
-+		}
+@@ -3810,6 +3810,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 				writel(0, base + NvRegMSIXMap0);
+ 				writel(0, base + NvRegMSIXMap1);
+ 			}
++			netdev_info(dev, "MSI-X enabled\n");
+ 		}
  	}
- 	return 0;
- }
-@@ -1873,8 +1879,10 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
- 				np->put_rx.ex = np->first_rx.ex;
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
--		} else
-+		} else {
-+			NV_DRIVER_STAT_ATOMIC_INC(&np->stat_rx_dropped);
- 			return 1;
-+		}
+ 	if (ret != 0 && np->msi_flags & NV_MSI_CAPABLE) {
+@@ -3831,6 +3832,7 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 			writel(0, base + NvRegMSIMap1);
+ 			/* enable msi vector 0 */
+ 			writel(NVREG_MSI_VECTOR_0_ENABLED, base + NvRegMSIIrqMask);
++			netdev_info(dev, "MSI enabled\n");
+ 		}
  	}
- 	return 0;
- }
+ 	if (ret != 0) {
 -- 
 1.7.3.1
 
