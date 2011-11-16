@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab1KPLlx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 06:41:53 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:53870 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756039Ab1KPLlw (ORCPT
+	id S1756404Ab1KPLvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 06:51:44 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:35930 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756087Ab1KPLvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 06:41:52 -0500
-Message-ID: <4EC3A160.8050608@st.com>
-Date: Wed, 16 Nov 2011 17:11:20 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Wed, 16 Nov 2011 06:51:43 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6531"; a="135767758"
+Message-ID: <e56e6a44db4d8a0103825c1cc909f125.squirrel@www.codeaurora.org>
+Date: Wed, 16 Nov 2011 03:51:26 -0800 (PST)
+Subject: Re: [PATCH] mmc: core: Add packed command for eMMC4.5 device
+From: merez@codeaurora.org
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: svenkatr@ti.com, linux-mmc@vger.kernel.org,
+        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dh.han@samsung.com
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Dan <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>
-Subject: Re: [PATCH 1/3] dmaengine: Allow controller drivers to set channel
- ids
-References: <63faf72913f4f35b0a542c859522e8333e878c95.1316687776.git.viresh.kumar@st.com>  <1317200887.1573.1768.camel@vkoul-udesk3>  <4E96A55F.6050408@st.com> <1318571018.1546.383.camel@vkoul-udesk3> <4EAE76CB.3070508@st.com>
-In-Reply-To: <4EAE76CB.3070508@st.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 3:52 PM, Viresh Kumar wrote:
-> On 10/14/2011 11:13 AM, Vinod Koul wrote:
->>>> >> > Hi Vinod/Dan,
->>>> >> > 
->>>> >> > Any update/feedback on this?
->> > Since this touches non slave stuff as well, I need Dan to ack it first
-> Hi Dan,
-> 
-> Can you please provide some comments on this.
+> +			if (reqs >= 2) {
+> +				mmc_blk_packed_hdr_wrq_prep(mq->mqrq_cur, card, mq, reqs);
+> +				if (rq_data_dir(rqc) == READ) {
+> +					areq = &mq->mqrq_cur->mmc_active;
+> +					mmc_wait_for_req(card->host, areq->mrq);
+Packing read requests requires preparation of two requests. After sending
+the header we wait for its completion before sending the next request
+(mmc_wait_for_req is used). Therefore, if we try to pack 2 read requests
+we might end up with worse performance in comparison to sending each
+request by itself (which allows the preparation of one request while the
+other is sent).
+I suggest to check the size of the packed commands list and in case it is
+less than 3 send the requests one by one. If you move mmc_blk_chk_packable
+to queue.c after the first fetch this change should be very easy and can
+be done by removing the requests from the packed_list and calling issue_fn
+for each one of them.
 
-Vinod,
+Thanks,
+Maya Erez
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
-It looks Dan has missed this patchset somehow. :(
-Can you please get his views about this patchset, if possible.
 
--- 
-viresh
+
+
+
+
