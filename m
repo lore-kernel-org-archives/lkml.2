@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab1KPCdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 21:33:10 -0500
-Received: from ozlabs.org ([203.10.76.45]:37125 "EHLO ozlabs.org"
+	id S933013Ab1KPCdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 21:33:12 -0500
+Received: from ozlabs.org ([203.10.76.45]:46737 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755327Ab1KPCdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 21:33:07 -0500
+	id S1756335Ab1KPCdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 21:33:08 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jan Beulich <JBeulich@suse.com>, Kevin Cernekee <cernekee@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/2] module: Fix performance regression on modules with large symbol tables
-In-Reply-To: <4EC0E4040200007800060B1C@nat28.tlf.novell.com>
-References: <73defb5e4bca04a6431392cc341112b1@localhost> <e80b536093214489c32ce319b54b0f80@localhost> <4EC0E4040200007800060B1C@nat28.tlf.novell.com>
+To: Pawel Moll <pawel.moll@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH] virtio: add HAS_IOMEM dependency to MMIO platform bus driver
+In-Reply-To: <1321353118.3137.92.camel@hornet.cambridge.arm.com>
+References: <1321348404-3549-1-git-send-email-heiko.carstens@de.ibm.com> <1321353118.3137.92.camel@hornet.cambridge.arm.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 16 Nov 2011 10:54:27 +1030
-Message-ID: <87y5vgoqx0.fsf@rustcorp.com.au>
+Date: Wed, 16 Nov 2011 10:58:30 +1030
+Message-ID: <87vcqkoqq9.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Nov 2011 08:48:52 +0000, "Jan Beulich" <JBeulich@suse.com> wrote:
-> > +		name = &mod->strtab[src->st_name];
-> > +		if (unlikely(!test_bit(src->st_name, info->strmap))) {
-> > +			/* Symbol name has already been copied; find it. */
-> > +			char *dup;
-> > +
-> > +			for (dup = mod->core_strtab; strcmp(dup, name); dup++)
-> > +				BUG_ON(dup > s);
+On Tue, 15 Nov 2011 10:31:58 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Tue, 2011-11-15 at 09:13 +0000, Heiko Carstens wrote:
+> > Fix this compile error on s390:
+> > 
+> >   CC [M]  drivers/virtio/virtio_mmio.o
+> > drivers/virtio/virtio_mmio.c: In function 'vm_get_features':
+> > drivers/virtio/virtio_mmio.c:107:2: error: implicit declaration of function 'writel'
 > 
-> Aren't you concerned that this again will be rather slow? It would be
-> pretty easy to accelerate by comparing only with the tail of each string
-> (as nothing else can possibly match), moving from string to string instead
-> of from character to character.
+> One learns something new every day :-O
+> 
+> Thanks and apologies for inconvenience!
+> 
+> > Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> > Cc: Pawel Moll <pawel.moll@arm.com>
+> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 
+> Acked-by: Pawel Moll <pawel.moll@arm.com>
 
-Kevin's central thesis is that this is actually really unusual.
+Applied, thanks!
 
-I'm not sure how much faster a tail search would be in practice.  We're
-still scanning the string.  Perhaps a "dup[0] == name[0] &&" would
-optimize it almost as well, if gcc doesn't already?
-
-Kevin, you're probably in an optimal position to get numbers on this?
-
-Thanks,
+Cheers,
 Rusty.
