@@ -1,144 +1,422 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1KPWQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 17:16:03 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53187 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245Ab1KPWP7 (ORCPT
+	id S1754208Ab1KPWPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 17:15:53 -0500
+Received: from mail-ww0-f74.google.com ([74.125.82.74]:59006 "EHLO
+	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab1KPWPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 17:15:59 -0500
-X-Originating-IP: 217.70.178.129
-X-Originating-IP: 131.252.244.140
-Date: Wed, 16 Nov 2011 14:15:45 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 2/9] rcu: Add rcutorture system-shutdown
- capability
-Message-ID: <20111116221545.GA2325@leaf>
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
- <1321388885-11211-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111115214615.GD31473@leaf>
- <20111116203226.GK2355@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116203226.GK2355@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Nov 2011 17:15:39 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v6 7/9] forcedeth: implement ndo_get_stats64() API
+Date: Wed, 16 Nov 2011 14:15:13 -0800
+Message-Id: <185a0f33c69ff07e8fe3482828b368371420bf47.1321481064.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
+References: <cover.1321481064.git.david.decotigny@google.com>
+In-Reply-To: <cover.1321481064.git.david.decotigny@google.com>
+References: <cover.1321481064.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 12:32:26PM -0800, Paul E. McKenney wrote:
-> On Tue, Nov 15, 2011 at 01:46:15PM -0800, Josh Triplett wrote:
-> > On Tue, Nov 15, 2011 at 12:27:58PM -0800, Paul E. McKenney wrote:
-> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > 
-> > > Although it is easy to run rcutorture tests under KVM, there is currently
-> > > no nice way to run such a test for a fixed time period, collect all of
-> > > the rcutorture data, and then shut the system down cleanly.  This commit
-> > > therefore adds an rcutorture module parameter named "shutdown_secs" that
-> > > specified the run duration in seconds, after which rcutorture terminates
-> > > the test and powers the system down.  The default value for "shutdown_secs"
-> > > is zero, which disables shutdown.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > >From your recent post on this, I thought you found a solution through
-> > the init= parameter, which seems preferable.
-> 
-> For some things, the init= parameter does work great.  I do intend to
-> use it when collecting event-tracing and debugfs data, for example.
-> 
-> However, there is still a need for RCU torture testing that will operate
-> correctly regardless of how userspace is set up.  That, and there are
-> quite a few different kernel test setup, each with their own peculiar
-> capabilities and limitations.  So what happened was that before people
-> suggested the init= approach, I implemented enough of the in-kernel
-> approach to appreciate how much it simplifies life for the common case of
-> "just torture-test RCU".  As in I should have done this long ago.
+This commit implements the ndo_get_stats64() API for forcedeth. Since
+hardware stats are being updated from different contexts (process and
+timer), this commit adds synchronization. For software stats, it
+relies on the u64_stats_sync.h API.
 
-Seems like it would work just as easily to point init at a statically
-linked C program which just sleeps for a fixed time and then shuts down.
-However, given the special-purpose nature of rcutorture, I won't
-complain that strongly.
+Tested:
+  - 16-way SMP x86_64 ->
+    RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
+  - pktgen + loopback: identical rx_bytes/tx_bytes and rx_packets/tx_packets
 
-> > > --- a/kernel/rcutorture.c
-> > > +++ b/kernel/rcutorture.c
-> > > @@ -61,9 +61,10 @@ static int test_no_idle_hz;	/* Test RCU's support for tickless idle CPUs. */
-> > >  static int shuffle_interval = 3; /* Interval between shuffles (in sec)*/
-> > >  static int stutter = 5;		/* Start/stop testing interval (in sec) */
-> > >  static int irqreader = 1;	/* RCU readers from irq (timers). */
-> > > -static int fqs_duration = 0;	/* Duration of bursts (us), 0 to disable. */
-> > > -static int fqs_holdoff = 0;	/* Hold time within burst (us). */
-> > > +static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
-> > > +static int fqs_holdoff;		/* Hold time within burst (us). */
-> > 
-> > Looks like these lines picked up unrelated whitespace changes in this
-> > commit.
-> 
-> Turns out that my initial patch added another variable that I explicitly
-> initialized to zero.  Of course, checkpatch yelled at me about this, so
-> I figured I should fix the other nearby occurrences of this while I was
-> at it.  Doesn't really seem to me to be worth a separate patch, though.
 
-Ah, I missed the removal of the initializer.  However, I don't see the
-harm in splitting out the trivial two-line patch, rather than folding it
-into an unrelated change which just happens to change lines nearby.
 
-> > > +static int
-> > > +rcu_torture_shutdown(void *arg)
-> > > +{
-> > > +	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
-> > > +	while (ULONG_CMP_LT(jiffies, shutdown_time) &&
-> > > +	       !kthread_should_stop()) {
-> > > +		if (verbose)
-> > > +			printk(KERN_ALERT "%s" TORTURE_FLAG
-> > > +			       "rcu_torture_shutdown task: %lu "
-> > > +			       "jiffies remaining\n",
-> > > +			       torture_type, shutdown_time - jiffies);
-> > > +		schedule_timeout_interruptible(HZ);
-> > > +	}
-> > 
-> > Any particular reason to wake up once a second here?  If !verbose, this could just
-> > sleep until shutdown time.  (And does the verbose output really help
-> > here, given printk timestamps?)
-> 
-> It actually did help me find a bug where it was failing to shut down.
-> I could use different code paths, but that would defeat the debugging.
-> 
-> So I increased the sleep time to 30 seconds.  Fair enough?
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |  197 +++++++++++++++++++++++--------
+ 1 files changed, 146 insertions(+), 51 deletions(-)
 
-Well, now that you've debugged rcutorture's shutdown routine, would it
-suffice to have a printk when you actually go to shut down, without
-waking up for previous printks when not shutting down yet?
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 9b917ff..427c9c1 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -65,7 +65,8 @@
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
+ #include <linux/prefetch.h>
+-#include  <linux/io.h>
++#include <linux/u64_stats_sync.h>
++#include <linux/io.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/system.h>
+@@ -736,6 +737,16 @@ struct nv_skb_map {
+  * - tx setup is lockless: it relies on netif_tx_lock. Actual submission
+  *	needs netdev_priv(dev)->lock :-(
+  * - set_multicast_list: preparation lockless, relies on netif_tx_lock.
++ *
++ * Hardware stats updates are protected by hwstats_lock:
++ * - updated by nv_do_stats_poll (timer). This is meant to avoid
++ *   integer wraparound in the NIC stats registers, at low frequency
++ *   (0.1 Hz)
++ * - updated by nv_get_ethtool_stats + nv_get_stats64
++ *
++ * Software stats are accessed only through 64b synchronization points
++ * and are not subject to other synchronization techniques (single
++ * update thread on the TX or RX paths).
+  */
+ 
+ /* in dev: base, irq */
+@@ -745,9 +756,10 @@ struct fe_priv {
+ 	struct net_device *dev;
+ 	struct napi_struct napi;
+ 
+-	/* General data:
+-	 * Locking: spin_lock(&np->lock); */
++	/* hardware stats are updated in syscall and timer */
++	spinlock_t hwstats_lock;
+ 	struct nv_ethtool_stats estats;
++
+ 	int in_shutdown;
+ 	u32 linkspeed;
+ 	int duplex;
+@@ -798,6 +810,12 @@ struct fe_priv {
+ 	u32 nic_poll_irq;
+ 	int rx_ring_size;
+ 
++	/* RX software stats */
++	struct u64_stats_sync swstats_rx_syncp;
++	u64 stat_rx_packets;
++	u64 stat_rx_bytes; /* not always available in HW */
++	u64 stat_rx_missed_errors;
++
+ 	/* media detection workaround.
+ 	 * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
+ 	 */
+@@ -820,6 +838,12 @@ struct fe_priv {
+ 	struct nv_skb_map *tx_end_flip;
+ 	int tx_stop;
+ 
++	/* TX software stats */
++	struct u64_stats_sync swstats_tx_syncp;
++	u64 stat_tx_packets; /* not always available in HW */
++	u64 stat_tx_bytes;
++	u64 stat_tx_dropped;
++
+ 	/* msi/msi-x fields */
+ 	u32 msi_flags;
+ 	struct msix_entry msi_x_entry[NV_MSI_X_MAX_VECTORS];
+@@ -1635,11 +1659,19 @@ static void nv_mac_reset(struct net_device *dev)
+ 	pci_push(base);
+ }
+ 
+-static void nv_get_hw_stats(struct net_device *dev)
++/* Caller must appropriately lock netdev_priv(dev)->hwstats_lock */
++static void nv_update_stats(struct net_device *dev)
+ {
+ 	struct fe_priv *np = netdev_priv(dev);
+ 	u8 __iomem *base = get_hwbase(dev);
+ 
++	/* If it happens that this is run in top-half context, then
++	 * replace the spin_lock of hwstats_lock with
++	 * spin_lock_irqsave() in calling functions. */
++	WARN_ONCE(in_irq(), "forcedeth: estats spin_lock(_bh) from top-half");
++	assert_spin_locked(&np->hwstats_lock);
++
++	/* query hardware */
+ 	np->estats.tx_bytes += readl(base + NvRegTxCnt);
+ 	np->estats.tx_zero_rexmt += readl(base + NvRegTxZeroReXmt);
+ 	np->estats.tx_one_rexmt += readl(base + NvRegTxOneReXmt);
+@@ -1698,40 +1730,72 @@ static void nv_get_hw_stats(struct net_device *dev)
+ }
+ 
+ /*
+- * nv_get_stats: dev->get_stats function
++ * nv_get_stats64: dev->ndo_get_stats64 function
+  * Get latest stats value from the nic.
+  * Called with read_lock(&dev_base_lock) held for read -
+  * only synchronized against unregister_netdevice.
+  */
+-static struct net_device_stats *nv_get_stats(struct net_device *dev)
++static struct rtnl_link_stats64*
++nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
++	__acquires(&netdev_priv(dev)->hwstats_lock)
++	__releases(&netdev_priv(dev)->hwstats_lock)
+ {
+ 	struct fe_priv *np = netdev_priv(dev);
++	unsigned int syncp_start;
++
++	/*
++	 * Note: because HW stats are not always available and for
++	 * consistency reasons, the following ifconfig stats are
++	 * managed by software: rx_bytes, tx_bytes, rx_packets and
++	 * tx_packets. The related hardware stats reported by ethtool
++	 * should be equivalent to these ifconfig stats, with 4
++	 * additional bytes per packet (Ethernet FCS CRC), except for
++	 * tx_packets when TSO kicks in.
++	 */
++
++	/* software stats */
++	do {
++		syncp_start = u64_stats_fetch_begin(&np->swstats_rx_syncp);
++		storage->rx_packets       = np->stat_rx_packets;
++		storage->rx_bytes         = np->stat_rx_bytes;
++		storage->rx_missed_errors = np->stat_rx_missed_errors;
++	} while (u64_stats_fetch_retry(&np->swstats_rx_syncp, syncp_start));
++
++	do {
++		syncp_start = u64_stats_fetch_begin(&np->swstats_tx_syncp);
++		storage->tx_packets = np->stat_tx_packets;
++		storage->tx_bytes   = np->stat_tx_bytes;
++		storage->tx_dropped = np->stat_tx_dropped;
++	} while (u64_stats_fetch_retry(&np->swstats_tx_syncp, syncp_start));
+ 
+ 	/* If the nic supports hw counters then retrieve latest values */
+-	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
+-		nv_get_hw_stats(dev);
++	if (np->driver_data & DEV_HAS_STATISTICS_V123) {
++		spin_lock_bh(&np->hwstats_lock);
+ 
+-		/*
+-		 * Note: because HW stats are not always available and
+-		 * for consistency reasons, the following ifconfig
+-		 * stats are managed by software: rx_bytes, tx_bytes,
+-		 * rx_packets and tx_packets. The related hardware
+-		 * stats reported by ethtool should be equivalent to
+-		 * these ifconfig stats, with 4 additional bytes per
+-		 * packet (Ethernet FCS CRC).
+-		 */
++		nv_update_stats(dev);
++
++		/* generic stats */
++		storage->rx_errors = np->estats.rx_errors_total;
++		storage->tx_errors = np->estats.tx_errors_total;
++
++		/* meaningful only when NIC supports stats v3 */
++		storage->multicast = np->estats.rx_multicast;
++
++		/* detailed rx_errors */
++		storage->rx_length_errors = np->estats.rx_length_error;
++		storage->rx_over_errors   = np->estats.rx_over_errors;
++		storage->rx_crc_errors    = np->estats.rx_crc_errors;
++		storage->rx_frame_errors  = np->estats.rx_frame_align_error;
++		storage->rx_fifo_errors   = np->estats.rx_drop_frame;
+ 
+-		/* copy to net_device stats */
+-		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
+-		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
+-		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
+-		dev->stats.rx_over_errors = np->estats.rx_over_errors;
+-		dev->stats.rx_fifo_errors = np->estats.rx_drop_frame;
+-		dev->stats.rx_errors = np->estats.rx_errors_total;
+-		dev->stats.tx_errors = np->estats.tx_errors_total;
++		/* detailed tx_errors */
++		storage->tx_carrier_errors = np->estats.tx_carrier_errors;
++		storage->tx_fifo_errors    = np->estats.tx_fifo_errors;
++
++		spin_unlock_bh(&np->hwstats_lock);
+ 	}
+ 
+-	return &dev->stats;
++	return storage;
+ }
+ 
+ /*
+@@ -1932,8 +1996,11 @@ static void nv_drain_tx(struct net_device *dev)
+ 			np->tx_ring.ex[i].bufhigh = 0;
+ 			np->tx_ring.ex[i].buflow = 0;
+ 		}
+-		if (nv_release_txskb(np, &np->tx_skb[i]))
+-			dev->stats.tx_dropped++;
++		if (nv_release_txskb(np, &np->tx_skb[i])) {
++			u64_stats_update_begin(&np->swstats_tx_syncp);
++			np->stat_tx_dropped++;
++			u64_stats_update_end(&np->swstats_tx_syncp);
++		}
+ 		np->tx_skb[i].dma = 0;
+ 		np->tx_skb[i].dma_len = 0;
+ 		np->tx_skb[i].dma_single = 0;
+@@ -2390,11 +2457,14 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 		if (np->desc_ver == DESC_VER_1) {
+ 			if (flags & NV_TX_LASTPACKET) {
+ 				if (flags & NV_TX_ERROR) {
+-					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
++					if ((flags & NV_TX_RETRYERROR)
++					    && !(flags & NV_TX_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
+ 				} else {
+-					dev->stats.tx_packets++;
+-					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
++					u64_stats_update_begin(&np->swstats_tx_syncp);
++					np->stat_tx_packets++;
++					np->stat_tx_bytes += np->get_tx_ctx->skb->len;
++					u64_stats_update_end(&np->swstats_tx_syncp);
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2403,11 +2473,14 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 		} else {
+ 			if (flags & NV_TX2_LASTPACKET) {
+ 				if (flags & NV_TX2_ERROR) {
+-					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
++					if ((flags & NV_TX2_RETRYERROR)
++					    && !(flags & NV_TX2_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
+ 				} else {
+-					dev->stats.tx_packets++;
+-					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
++					u64_stats_update_begin(&np->swstats_tx_syncp);
++					np->stat_tx_packets++;
++					np->stat_tx_bytes += np->get_tx_ctx->skb->len;
++					u64_stats_update_end(&np->swstats_tx_syncp);
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2441,15 +2514,18 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+ 
+ 		if (flags & NV_TX2_LASTPACKET) {
+ 			if (flags & NV_TX2_ERROR) {
+-				if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK)) {
++				if ((flags & NV_TX2_RETRYERROR)
++				    && !(flags & NV_TX2_RETRYCOUNT_MASK)) {
+ 					if (np->driver_data & DEV_HAS_GEAR_MODE)
+ 						nv_gear_backoff_reseed(dev);
+ 					else
+ 						nv_legacybackoff_reseed(dev);
+ 				}
+ 			} else {
+-				dev->stats.tx_packets++;
+-				dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
++					u64_stats_update_begin(&np->swstats_tx_syncp);
++					np->stat_tx_packets++;
++					np->stat_tx_bytes += np->get_tx_ctx->skb->len;
++					u64_stats_update_end(&np->swstats_tx_syncp);
+ 			}
+ 
+ 			dev_kfree_skb_any(np->get_tx_ctx->skb);
+@@ -2662,8 +2738,11 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 					}
+ 					/* the rest are hard errors */
+ 					else {
+-						if (flags & NV_RX_MISSEDFRAME)
+-							dev->stats.rx_missed_errors++;
++						if (flags & NV_RX_MISSEDFRAME) {
++							u64_stats_update_begin(&np->swstats_rx_syncp);
++							np->stat_rx_missed_errors++;
++							u64_stats_update_end(&np->swstats_rx_syncp);
++						}
+ 						dev_kfree_skb(skb);
+ 						goto next_pkt;
+ 					}
+@@ -2706,8 +2785,10 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 		skb_put(skb, len);
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		napi_gro_receive(&np->napi, skb);
+-		dev->stats.rx_packets++;
+-		dev->stats.rx_bytes += len;
++		u64_stats_update_begin(&np->swstats_rx_syncp);
++		np->stat_rx_packets++;
++		np->stat_rx_bytes += len;
++		u64_stats_update_end(&np->swstats_rx_syncp);
+ next_pkt:
+ 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
+ 			np->get_rx.orig = np->first_rx.orig;
+@@ -2790,8 +2871,10 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 				__vlan_hwaccel_put_tag(skb, vid);
+ 			}
+ 			napi_gro_receive(&np->napi, skb);
+-			dev->stats.rx_packets++;
+-			dev->stats.rx_bytes += len;
++			u64_stats_update_begin(&np->swstats_rx_syncp);
++			np->stat_rx_packets++;
++			np->stat_rx_bytes += len;
++			u64_stats_update_end(&np->swstats_rx_syncp);
+ 		} else {
+ 			dev_kfree_skb(skb);
+ 		}
+@@ -4000,11 +4083,18 @@ static void nv_poll_controller(struct net_device *dev)
+ #endif
+ 
+ static void nv_do_stats_poll(unsigned long data)
++	__acquires(&netdev_priv(dev)->hwstats_lock)
++	__releases(&netdev_priv(dev)->hwstats_lock)
+ {
+ 	struct net_device *dev = (struct net_device *) data;
+ 	struct fe_priv *np = netdev_priv(dev);
+ 
+-	nv_get_hw_stats(dev);
++	/* If lock is currently taken, the stats are being refreshed
++	 * and hence fresh enough */
++	if (spin_trylock(&np->hwstats_lock)) {
++		nv_update_stats(dev);
++		spin_unlock(&np->hwstats_lock);
++	}
+ 
+ 	if (!np->in_shutdown)
+ 		mod_timer(&np->stats_poll,
+@@ -4711,14 +4801,18 @@ static int nv_get_sset_count(struct net_device *dev, int sset)
+ 	}
+ }
+ 
+-static void nv_get_ethtool_stats(struct net_device *dev, struct ethtool_stats *estats, u64 *buffer)
++static void nv_get_ethtool_stats(struct net_device *dev,
++				 struct ethtool_stats *estats, u64 *buffer)
++	__acquires(&netdev_priv(dev)->hwstats_lock)
++	__releases(&netdev_priv(dev)->hwstats_lock)
+ {
+ 	struct fe_priv *np = netdev_priv(dev);
+ 
+-	/* update stats */
+-	nv_get_hw_stats(dev);
+-
+-	memcpy(buffer, &np->estats, nv_get_sset_count(dev, ETH_SS_STATS)*sizeof(u64));
++	spin_lock_bh(&np->hwstats_lock);
++	nv_update_stats(dev);
++	memcpy(buffer, &np->estats,
++	       nv_get_sset_count(dev, ETH_SS_STATS)*sizeof(u64));
++	spin_unlock_bh(&np->hwstats_lock);
+ }
+ 
+ static int nv_link_test(struct net_device *dev)
+@@ -5362,7 +5456,7 @@ static int nv_close(struct net_device *dev)
+ static const struct net_device_ops nv_netdev_ops = {
+ 	.ndo_open		= nv_open,
+ 	.ndo_stop		= nv_close,
+-	.ndo_get_stats		= nv_get_stats,
++	.ndo_get_stats64	= nv_get_stats64,
+ 	.ndo_start_xmit		= nv_start_xmit,
+ 	.ndo_tx_timeout		= nv_tx_timeout,
+ 	.ndo_change_mtu		= nv_change_mtu,
+@@ -5379,7 +5473,7 @@ static const struct net_device_ops nv_netdev_ops = {
+ static const struct net_device_ops nv_netdev_ops_optimized = {
+ 	.ndo_open		= nv_open,
+ 	.ndo_stop		= nv_close,
+-	.ndo_get_stats		= nv_get_stats,
++	.ndo_get_stats64	= nv_get_stats64,
+ 	.ndo_start_xmit		= nv_start_xmit_optimized,
+ 	.ndo_tx_timeout		= nv_tx_timeout,
+ 	.ndo_change_mtu		= nv_change_mtu,
+@@ -5418,6 +5512,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
+ 	np->dev = dev;
+ 	np->pci_dev = pci_dev;
+ 	spin_lock_init(&np->lock);
++	spin_lock_init(&np->hwstats_lock);
+ 	SET_NETDEV_DEV(dev, &pci_dev->dev);
+ 
+ 	init_timer(&np->oom_kick);
+-- 
+1.7.3.1
 
-(The poll time doesn't really matter, and sleeping for 30 seconds before
-checking the time means you might overshoot by up to 30 seconds.  I'd
-like to avoid polling to begin with when you know exactly how long you
-need to sleep.)
-
-> > > +	if (ULONG_CMP_LT(jiffies, shutdown_time)) {
-> > > +		VERBOSE_PRINTK_STRING("rcu_torture_shutdown task stopping");
-> > > +		return 0;
-> > > +	}
-> > > +
-> > > +	/* OK, shut down the system. */
-> > > +
-> > > +	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task shutting down system");
-> > > +	shutdown_task = NULL;	/* Avoid self-kill deadlock. */
-> > 
-> > Not that it matters much here, but won't this cause a leak?
-> 
-> Only if we are shutting down.  And the alternative is a deadlock
-> where this task invokes kthread_stop() on itself.  ;-)
-
-Hence why I said it didn't matter much. :)
-
-- Josh Triplett
