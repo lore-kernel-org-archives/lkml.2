@@ -1,135 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab1KPRLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 12:11:06 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:45337 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab1KPRLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 12:11:04 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] MAINTAINERS: update maintainers for blackfin arch and drivers.
-Date: Wed, 16 Nov 2011 12:11:02 -0500
-User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; x86_64; ; )
-Cc: uclinux-dist-devel@blackfin.uclinux.org, Sonic Zhang <sonic.adi@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <1321429708-13862-1-git-send-email-sonic.adi@gmail.com> <201111161020.53989.vapier@gentoo.org> <1321461375.16820.7.camel@Joe-Laptop>
-In-Reply-To: <1321461375.16820.7.camel@Joe-Laptop>
+	id S1757276Ab1KPRLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 12:11:52 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50014 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab1KPRLu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 12:11:50 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1430709.s52lrfzv7F";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111161211.03784.vapier@gentoo.org>
+In-Reply-To: <1321434819-23678-2-git-send-email-lars@metafoo.de>
+References: <1321434819-23678-1-git-send-email-lars@metafoo.de> <1321434819-23678-2-git-send-email-lars@metafoo.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 16 Nov 2011 10:11:27 -0700
+X-Google-Sender-Auth: o-0SV5EWQbV2hR82yJ6Uk2hglzI
+Message-ID: <CACxGe6twCU9Nb+b00ei83jxaz0YnVa6nT0ra6Kp0c4PO7hjT6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/5] drivercore: Generalize module_platform_driver
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1430709.s52lrfzv7F
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 16, 2011 at 2:13 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> This patch generalizes the module_platform_driver macro and introduces a new
+> module_driver macro. The module_driver macro takes a driver name, a register
+> and a unregister function for this driver type. Using these it construct the
+> module init and exit sections which register and unregister the driver. Since
+> such init/exit sections are commonly found in drivers this macro can be used
+> to eliminate a lot of boilerplate code.
+>
+> The macro is not intended to be used by driver modules directly, instead it
+> should be used to generate bus specific macros for registering drivers like
+> the module_platform_driver macro.
+>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-On Wednesday 16 November 2011 11:36:15 Joe Perches wrote:
-> On Wed, 2011-11-16 at 10:20 -0500, Mike Frysinger wrote:
-> > On Wednesday 16 November 2011 08:12:06 Joe Perches wrote:
-> > > On Wed, 2011-11-16 at 15:48 +0800, Sonic Zhang wrote:
-> > > > --- a/MAINTAINERS
-> > > > +++ b/MAINTAINERS
-> > > >=20
-> > > >  BLACKFIN ARCHITECTURE
-> > > > +M:	Bob Liu <lliubbo@kernel.org>
-> > > >  M:	Mike Frysinger <vapier@gentoo.org>
-> > > >  L:	uclinux-dist-devel@blackfin.uclinux.org
-> > > >  W:	http://blackfin.uclinux.org
-> > > > =20
-> > > >  BLACKFIN RTC DRIVER
-> > > > -M:	Mike Frysinger <vapier.adi@gmail.com>
-> > > >  L:	uclinux-dist-devel@blackfin.uclinux.org
-> > > >  W:	http://blackfin.uclinux.org
-> > > >  S:	Supported
-> > > >  F:	drivers/rtc/rtc-bfin.c
-> > > > =20
-> > > >  BLACKFIN SDH DRIVER
-> > > > -M:	Cliff Cai <cliff.cai@analog.com>
-> > > >  L:	uclinux-dist-devel@blackfin.uclinux.org
-> > > >  W:	http://blackfin.uclinux.org
-> > > >  S:	Supported
-> > > > =20
-> > > >  BLACKFIN WATCHDOG DRIVER
-> > > > -M:	Mike Frysinger <vapier.adi@gmail.com>
-> > > >  L:	uclinux-dist-devel@blackfin.uclinux.org
-> > > >  W:	http://blackfin.uclinux.org
-> > > >  S:	Supported
-> > >=20
-> > > Drivers or arches without specific people to maintain
-> > > them really should not have "S: Supported".
-> > > These should really be "S: Orphan".
-> >=20
-> > all the drivers are still maintained.  use the L: option to find the
-> > maintainer.
->=20
-> I believe I know how the MAINTAINERS
-> entries work.
->=20
-> From MAINTAINERS:
-> 	M: Mail patches to: FullName <address@domain>
-> 	L: Mailing list that is relevant to this area
->=20
-> Mailing lists aren't maintainers.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-they contain all the maintainers
+> ---
+>  include/linux/init.h            |   21 +++++++++++++++++++++
+>  include/linux/platform_device.h |   12 ++----------
+>  2 files changed, 23 insertions(+), 10 deletions(-)
+>
+> diff --git a/include/linux/init.h b/include/linux/init.h
+> index 9146f39..3e2d238 100644
+> --- a/include/linux/init.h
+> +++ b/include/linux/init.h
+> @@ -346,4 +346,25 @@ void __init parse_early_options(char *cmdline);
+>  #define __exit_p(x) NULL
+>  #endif
+>
+> +/**
+> + * module_driver() - Helper macro for drivers that don't do anything
+> + * special in module init/exit. This eliminates a lot of boilerplate.
+> + * Each module may only use this macro once, and calling it replaces
+> + * module_init() and module_exit().
+> + * Use this macro to construct bus specific macros for registering
+> + * drivers.
+> + */
+> +#define module_driver(__driver, __register, __unregister) \
+> +static int __init __driver##_init(void) \
+> +{ \
+> +       return __register(&(__driver)); \
+> +} \
+> +module_init(__driver##_init); \
+> +static void __exit __driver##_exit(void) \
+> +{ \
+> +       __unregister(&(__driver)); \
+> +} \
+> +module_exit(__driver##_exit);
+> +
+>  #endif /* _LINUX_INIT_H */
+> +
+> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+> index 2a23f7d..165a8d1 100644
+> --- a/include/linux/platform_device.h
+> +++ b/include/linux/platform_device.h
+> @@ -196,16 +196,8 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
+>  * calling it replaces module_init() and module_exit()
+>  */
+>  #define module_platform_driver(__platform_driver) \
+> -static int __init __platform_driver##_init(void) \
+> -{ \
+> -       return platform_driver_register(&(__platform_driver)); \
+> -} \
+> -module_init(__platform_driver##_init); \
+> -static void __exit __platform_driver##_exit(void) \
+> -{ \
+> -       platform_driver_unregister(&(__platform_driver)); \
+> -} \
+> -module_exit(__platform_driver##_exit);
+> +       module_driver(__platform_driver, platform_driver_register, \
+> +                       platform_driver_unregister)
+>
+>  extern struct platform_device *platform_create_bundle(struct platform_driver *driver,
+>                                        int (*probe)(struct platform_device *),
+> --
+> 1.7.7.1
+>
+>
+>
 
-> Maybe Analog Devices should create
-> an email address alias like
-> linux-devel@analog.com
 
-so we should duplicate the ml into an alias to keep MAINTAINERS happy ?  ma=
-kes=20
-no sense.  use the ml.
 
-> btw, from blackfin.uclinux.org:
->=20
-> -----------------------
-> We are moving the open source help forums for u-boot, GNU Toolchain and
-> Linux for Blackfin to the Analog Devices' EngineerZone since Oct.24,
-> 2011.
->=20
-> These old forums will turn to readonly after Nov.1st, 2011.  Please only
-> ask new questions in the new Engineer Zone communities after the
-> launching.
-> ---------------------
->=20
-> So maybe the support links should be:
-> http://ez.analog.com/community/dsp/open-source/linux-blackfin
-
-no.  the ml/trackers/source/etc... are still on blackfin.u.o.  only the for=
-ums=20
-have moved, and generally the people sending patches aren't using those.
-=2Dmike
-
---nextPart1430709.s52lrfzv7F
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJOw+6nAAoJEEFjO5/oN/WBQWwP/2zg+LrAcyUTJRTmMfBniSB8
-ikM6ALaB38IgR5jjyG3Dx41Q1x6XNp+v/stNL56T4CItGKa3SJTcTf1Leq22gVRA
-wJX8R7cMjTl+hYWmAY0vTS4Bx5uVLYm9xs3MdWwjzHY++JldQWhRY57TE1xI0/MW
-DYpi0UABnPOiTZyohuMUZeLnsQ+GZCTjQSsVhve6zDZ72MFVnfWUuSJmxZ/rz8Q2
-Q/cr/ObTryR4SI4DsAhM42boyHhVwVyUna30L6Jt2qXS0QEMgv/DkqmjiRWEWnuY
-wE49Ye9eywhSTqb6kT0mV0PeZSzTWY3CYmpFZY6iDwBbNHYQYxMLE1fp464ogS2Z
-C+kFsqcpYnzpxWhHkqBPhQmaLonD1IxNkjrxcqR57bHxQbjYKXPwrPa3zsTvW/oi
-uolldX9uC+7kzBP6qB/Y+fGrUzIJDP9KxI20B4VJDJ7XopnjXTgNYddFObAKvEyM
-LeQk5EgDMOqu3rE1t12h2tYOS35ppyCbKiAto3xCUTKmunBKPKJtIWZwuuyQ1GjB
-YBHxesFQ8uTy4A3ziN1j4lM2uJuj3iDevDVhoGaDprAajO6x9XqIK3Ju2qDpxr57
-WKjNUXjqvKcdV+2MtkOEHwxIzgHfWKZeZHScjn7PHtxav4o70zjM8dapp9tir5Xr
-1chMamY6d83D48kCCDXm
-=05gB
------END PGP SIGNATURE-----
-
---nextPart1430709.s52lrfzv7F--
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
