@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab1KPMJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 07:09:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54849 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452Ab1KPMJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 07:09:31 -0500
-Message-ID: <4EC3A7C3.8010802@mvista.com>
-Date: Wed, 16 Nov 2011 16:08:35 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1756678Ab1KPMM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 07:12:26 -0500
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:40394 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756452Ab1KPMMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 07:12:25 -0500
+Date: Wed, 16 Nov 2011 12:12:07 +0000
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Victor Kamensky <kamensky@cisco.com>
+Cc: David Daney <david.daney@cavium.com>,
+        "manesoni@cisco.com" <manesoni@cisco.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 2/4] MIPS Kprobes: Deny probes on ll/sc instructions
+Message-ID: <20111116121207.GA5079@linux-mips.org>
+References: <20111108170336.GA16526@cisco.com>
+ <20111108170535.GC16526@cisco.com>
+ <4EB98A8E.4060900@cavium.com>
+ <Pine.GSO.4.58.1111081504560.10959@infra-view9.cisco.com>
 MIME-Version: 1.0
-To: Tonylijo <mail@tonylijo.in>
-CC: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb : gadget : usbstring : fix style problems
-References: <1321418582.2443.4.camel@debian1.ic>
-In-Reply-To: <1321418582.2443.4.camel@debian1.ic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.GSO.4.58.1111081504560.10959@infra-view9.cisco.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Nov 08, 2011 at 03:26:42PM -0800, Victor Kamensky wrote:
 
-On 16-11-2011 8:43, Tonylijo wrote:
+> > s/insturctions/instructions/
+> >
+> > Not only is it a bad idea, it will probably make them fail 100% of the time.
+> >
+> > It is also an equally bad idea to place a probe between any LL and SC
+> > instructions.  How do you prevent that?
+> 
+> As per below code comment we don't prevent that. There is no way to do
+> that.
 
-> Minor fixes for problems found by checkpatch.pl in usbstring.c.
+Similar to the way that the addresses of loads and stores from userspace
+are recorded in a special section we could build a list of forbidden
+address range.
 
-> Signed-off-by: Tonylijo Jose<mail@tonylijo.in>
-> ---
-> diff --git a/drivers/usb/gadget/usbstring.c
-> b/drivers/usb/gadget/usbstring.c
-> index 58c4d37..2bdc56a 100644
-> --- a/drivers/usb/gadget/usbstring.c
-> +++ b/drivers/usb/gadget/usbstring.c
-[...]
-> @@ -102,17 +104,17 @@ fail:
->    * characters (which are also widely used in C strings).
->    */
->   int
-> -usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8
-> *buf)
-> +usb_gadget_get_string(struct usb_gadget_strings *table, int id, u8
-> *buf)
+Is it worth it?
 
-    The patch was line-wrapped by your mailer. Seems easy to fix though...
-
-> @@ -124,13 +126,13 @@ usb_gadget_get_string (struct usb_gadget_strings
-> *table, int id, u8 *buf)
->   		return -EINVAL;
->
->   	/* string descriptors have length, tag, then UTF16-LE text */
-> -	len = min ((size_t) 126, strlen (s->s));
-> -	memset (buf + 2, 0, 2 * len);	/* zero all the bytes */
-> +	len = min((size_t) 126, strlen(s->s));
-
-    Worth converting to min_t() probably...
-
-WBR, Sergei
+  Ralf
