@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab1KPNrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 08:47:52 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61567 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab1KPNrv (ORCPT
+	id S1757318Ab1KPNsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 08:48:25 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:33046 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755238Ab1KPNsY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 08:47:51 -0500
-Subject: [PATCH RFC] mm: abort inode pruning if it has active pages
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 16 Nov 2011 17:47:47 +0300
-Message-ID: <20111116134747.8958.11569.stgit@zurg>
-User-Agent: StGit/0.15
+	Wed, 16 Nov 2011 08:48:24 -0500
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 4/5,v3] powerpc/8xxx: Update device tree bus probe for new RapidIO node binding
+Date: Wed, 16 Nov 2011 05:48:09 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552024917D5@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1321099352-21462-4-git-send-email-Gang.Liu@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 4/5,v3] powerpc/8xxx: Update device tree bus probe for new RapidIO node binding
+Thread-Index: AcyhMwuZxi91m5OrTMW8LFQ61EBrXgDM0hXQ
+References: <1321099352-21462-1-git-send-email-Gang.Liu@freescale.com> <1321099352-21462-4-git-send-email-Gang.Liu@freescale.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Liu Gang <Gang.Liu@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>, <B11780@freescale.com>, <r61911@freescale.com>,
+        Kai Jiang <Kai.Jiang@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inode cache pruning can throw out some usefull data from page cache.
-This patch aborts inode invalidation and keep inode alive if it still has
-active pages. It improves interaction between inode cache and page cache.
+> -----Original Message-----
+> From: Liu Gang [mailto:Gang.Liu@freescale.com]
+> Sent: Saturday, November 12, 2011 7:03 AM
+> To: linuxppc-dev@lists.ozlabs.org; Bounine, Alexandre
+> Cc: akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
+> r58472@freescale.com; B11780@freescale.com; r61911@freescale.com; Kai
+> Jiang; Kumar Gala
+> Subject: [PATCH 4/5,v3] powerpc/8xxx: Update device tree bus probe for
+> new RapidIO node binding
+> 
+> From: Kai Jiang <Kai.Jiang@freescale.com>
+> 
+> Update of_platform_bus_probe() RapidIO node to be compitable with
+> new RapidIO dts compatible property.
+> 
+> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
+> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+> ---
+>  arch/powerpc/platforms/85xx/corenet_ds.c   |    2 +-
+>  arch/powerpc/platforms/85xx/mpc85xx_mds.c  |    2 +-
+>  arch/powerpc/platforms/86xx/mpc86xx_hpcn.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/inode.c         |    4 ++--
- include/linux/fs.h |    2 ++
- mm/truncate.c      |   46 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 50 insertions(+), 2 deletions(-)
-
-diff --git a/fs/inode.c b/fs/inode.c
-index 1f6c48d..8d55a63 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -663,8 +663,8 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
- 			spin_unlock(&inode->i_lock);
- 			spin_unlock(&sb->s_inode_lru_lock);
- 			if (remove_inode_buffers(inode))
--				reap += invalidate_mapping_pages(&inode->i_data,
--								0, -1);
-+				reap += invalidate_inode_inactive_pages(
-+						&inode->i_data, 0, -1);
- 			iput(inode);
- 			spin_lock(&sb->s_inode_lru_lock);
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0c4df26..05875d7 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2211,6 +2211,8 @@ extern int invalidate_partition(struct gendisk *, int);
- #endif
- unsigned long invalidate_mapping_pages(struct address_space *mapping,
- 					pgoff_t start, pgoff_t end);
-+unsigned long invalidate_inode_inactive_pages(struct address_space *mapping,
-+					pgoff_t start, pgoff_t end);
- 
- static inline void invalidate_remote_inode(struct inode *inode)
- {
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 632b15e..ac739bc 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -379,6 +379,52 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
- EXPORT_SYMBOL(invalidate_mapping_pages);
- 
- /*
-+ * This is like invalidate_mapping_pages(),
-+ * except it aborts invalidation at the first active page.
-+ */
-+unsigned long invalidate_inode_inactive_pages(struct address_space *mapping,
-+					    pgoff_t start, pgoff_t end)
-+{
-+	struct pagevec pvec;
-+	pgoff_t index = start;
-+	unsigned long ret;
-+	unsigned long count = 0;
-+	int i;
-+
-+	pagevec_init(&pvec, 0);
-+	while (index <= end && pagevec_lookup(&pvec, mapping, index,
-+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-+
-+		mem_cgroup_uncharge_start();
-+		for (i = 0; i < pagevec_count(&pvec); i++) {
-+			struct page *page = pvec.pages[i];
-+
-+			if (PageActive(page)) {
-+				index = end;
-+				break;
-+			}
-+
-+			/* We rely upon deletion not changing page->index */
-+			index = page->index;
-+			if (index > end)
-+				break;
-+
-+			if (!trylock_page(page))
-+				continue;
-+			WARN_ON(page->index != index);
-+			ret = invalidate_inode_page(page);
-+			unlock_page(page);
-+			count += ret;
-+		}
-+		pagevec_release(&pvec);
-+		mem_cgroup_uncharge_end();
-+		cond_resched();
-+		index++;
-+	}
-+	return count;
-+}
-+
-+/*
-  * This is like invalidate_complete_page(), except it ignores the page's
-  * refcount.  We do this because invalidate_inode_pages2() needs stronger
-  * invalidation guarantees, and cannot afford to leave pages behind because
+Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
 
