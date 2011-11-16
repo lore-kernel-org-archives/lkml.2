@@ -1,106 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab1KPSvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 13:51:14 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:38476 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab1KPSvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 13:51:10 -0500
-Message-ID: <4EC4064D.6010706@calvaedi.com>
-Date: Wed, 16 Nov 2011 19:51:57 +0100
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+	id S1752091Ab1KPSww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 13:52:52 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:37229 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751336Ab1KPSwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 13:52:50 -0500
+Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: York Sun <yorksun@freescale.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Tabi Timur-B04825 <B04825@freescale.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "B29983@freescale.com" <B29983@freescale.com>
+In-Reply-To: <1321467638.7847.73.camel@oslab-l1>
+References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
+	 <CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
+	 <E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
+	 <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
+	 <1321464509.7847.41.camel@oslab-l1>
+	 <1321464968.2309.384.camel@groeck-laptop>
+	 <1321466135.7847.55.camel@oslab-l1>
+	 <20111116190954.67c846fc@endymion.delvare>
+	 <1321467638.7847.73.camel@oslab-l1>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Wed, 16 Nov 2011 10:51:31 -0800
+Message-ID: <1321469491.2309.409.camel@groeck-laptop>
 MIME-Version: 1.0
-To: Mattia Dongili <malattia@linux.it>
-CC: platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] to fix scancodes returned by sony-laptop driver
-Content-Type: multipart/mixed;
- boundary="------------030509090309030601060508"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030509090309030601060508
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, 2011-11-16 at 13:20 -0500, York Sun wrote:
+> On Wed, 2011-11-16 at 19:09 +0100, Jean Delvare wrote:
+> > On Wed, 16 Nov 2011 09:55:35 -0800, York Sun wrote:
+> > > On Wed, 2011-11-16 at 09:36 -0800, Guenter Roeck wrote:
+> > > > York,
+> > > > 
+> > > > The calling code expects the data length in data[0], and the actual data
+> > > > in data[1] .. data[<byte_count>]. The initial value for length is 1; the
+> > > > byte count is added to it, so <byte count + 1> bytes are placed into the
+> > > > buffer.
+> > > > 
+> > > > Thanks,
+> > > > Guenter
+> > > 
+> > > Thanks for explanation. I am more confused by the length += byte now.
+> > > For I2C bus, if you need length of byte, just keep reading until you get
+> > > all of them. Of course you need to deal with the ACK. For SMBus, it is
+> > > similar but you shouldn't read more after the byte count which is in the
+> > > first data.
+> > 
+> > You shouldn't read less either. The slave tells how much bytes it wants
+> > to send, and the master must honor that.
+> > 
+> > > If you want to read length of data but the block size is
+> > > bigger than length, you should call block read at first place. If the
+> > > block size is smaller than length, why increase the length? Does your
+> > > SMBus controller only support fixed block size and not support single
+> > > byte read? If it does, I would do
+> > > 
+> > > Block, Block, Block, byte, byte... until length of data
+> > 
+> > Your thinking is too focused on I2C block reads (or even block read of
+> > data over the network or on disk). SMBus block read is something
+> > completely different. It's not about reading 200 bytes of data and
+> > receiving it in 16-byte chunks (I2C block read works that way, on
+> > EEPROMs in particular.) There is no "data length" and "block size" to
+> > compare to each other. It's about reading the value of _one_ register
+> > and this value happens to be multi-byte. There is typically _no_
+> > register pointer increment (automatic or not) involved as can happen
+> > with EEPROMs. If an SMBus block read from register N returns 10 bytes,
+> > you're not going to read the next 10 bytes from register N+10. There
+> > are no "next 10 bytes" to read, and register N+10 is something
+> > completely unrelated.
+> > 
+> > And for this reason, it is not possible to mix SMBus block reads with
+> > byte reads, as can be done with I2C block reads.
+> > 
+> > Also note that there is a limit of 32 bytes for SMBus block transfers,
+> > per SMBus specification. All slaves and masters must comply with it.
+> > 
+> > I hope I managed to clarify the case this time...
+> > 
+> 
+> You have made it much clear. If block size is fixed and block read
+> cannot mix with byte read, shall we do this
+> 
+> if length < block_size
+>    read block_size
+> else {
+>    while (length) {
+>        read block_size
+>        length -= block_size
+>    }
+> 
 
-Fix scancodes returned by driver to match scancodes used to remap keys.
+I am giving up. I don't need SMBus block reads to work on our board, I
+am having trouble installing my test image on it, I don't see
+constructive feedback but only a theoretic discussion about how SMBus
+block reads work or are perceived to work or should work, for which I
+don't have time, and we already know that the zl6100 driver (which
+originated this discussion and was the reason for the patch) is working
+fine with the patch applied.
 
-(Before the patch FN/E returned scancode 0x1B, but to remap scancode 
-0x14 had to be used).
+I simply don't have time for this, and spent way too much time on it
+already. Jean, please drop this patch. If someone else needs it, he or
+she can revive and re-submit it. If folks can complain about the patch
+w/o understanding how SMBus block reads work, but are not willing to
+test it, something is wrong anyway.
+
+Thanks,
+Guenter
 
 
---------------030509090309030601060508
-Content-Type: text/x-patch;
- name="sony-scancode.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="sony-scancode.patch"
-
-The scancodes returned by the sony-laptop driver for function keys did not
-match the scancodes used to remap keys.  Also, since the scancode was sent
-to the input subsystem after the mapped keysym the /lib/udev/keymap
-utility was confused about which scancode to report for which keysym.
-
-This patch fixes the driver so the correct scancode is shown for each
-key.  It also adds to the documentation a description of where to find
-the scancodes.
-
-Signed-off-by: John Hughes <john@calva.com>
-
-diff --git a/Documentation/laptops/sony-laptop.txt b/Documentation/laptops/sony-laptop.txt
-index 2bd4e82..0d5ac7f 100644
---- a/Documentation/laptops/sony-laptop.txt
-+++ b/Documentation/laptops/sony-laptop.txt
-@@ -17,6 +17,11 @@ subsystem. See the logs of acpid or /proc/acpi/event and
- devices are created by the driver. Additionally, loading the driver with the
- debug option will report all events in the kernel log.
- 
-+The "scancodes" passed to the input system (that can be remapped with udev)
-+are indexes to the table "sony_laptop_input_keycode_map" in the sony-laptop.c
-+module.  For example the "FN/E" key combination (EJECTCD on some models)
-+generates the scancode 20 (0x14).
-+
- Backlight control:
- ------------------
- If your laptop model supports it, you will find sysfs files in the
-diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
-index bbd182e..f148459 100644
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -347,6 +347,7 @@ static void sony_laptop_report_input_event(u8 event)
- 	struct input_dev *jog_dev = sony_laptop_input.jog_dev;
- 	struct input_dev *key_dev = sony_laptop_input.key_dev;
- 	struct sony_laptop_keypress kp = { NULL };
-+	int scancode;
- 
- 	if (event == SONYPI_EVENT_FNKEY_RELEASED ||
- 			event == SONYPI_EVENT_ANYBUTTON_RELEASED) {
-@@ -380,8 +381,8 @@ static void sony_laptop_report_input_event(u8 event)
- 			dprintk("sony_laptop_report_input_event, event not known: %d\n", event);
- 			break;
- 		}
--		if (sony_laptop_input_index[event] != -1) {
--			kp.key = sony_laptop_input_keycode_map[sony_laptop_input_index[event]];
-+		if ((scancode = sony_laptop_input_index[event]) != -1) {
-+			kp.key = sony_laptop_input_keycode_map[scancode];
- 			if (kp.key != KEY_UNKNOWN)
- 				kp.dev = key_dev;
- 		}
-@@ -389,9 +390,9 @@ static void sony_laptop_report_input_event(u8 event)
- 	}
- 
- 	if (kp.dev) {
--		input_report_key(kp.dev, kp.key, 1);
- 		/* we emit the scancode so we can always remap the key */
--		input_event(kp.dev, EV_MSC, MSC_SCAN, event);
-+		input_event(kp.dev, EV_MSC, MSC_SCAN, scancode);
-+		input_report_key(kp.dev, kp.key, 1);
- 		input_sync(kp.dev);
- 
- 		/* schedule key release */
-
---------------030509090309030601060508--
