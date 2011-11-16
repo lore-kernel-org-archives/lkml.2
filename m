@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1KPXsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 18:48:04 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36420 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754146Ab1KPXsC (ORCPT
+	id S1754649Ab1KPXtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 18:49:51 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59637 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab1KPXtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 18:48:02 -0500
-X-Sasl-enc: pF/N6Ua1p6KifXVvDvq5l6kosNPpjJDEkbVkEvDbyDGE 1321487280
-Date: Wed, 16 Nov 2011 15:45:49 -0800
-From: Greg KH <greg@kroah.com>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>,
-        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] mfd: twl4030-audio: Fix audio codec breakage
-Message-ID: <20111116234549.GB3533@kroah.com>
-References: <1319013845-2628-1-git-send-email-jarkko.nikula@bitmer.com>
- <1848643.7W84dlC6t3@barack>
- <4EBCE0E6.5020202@bitmer.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EBCE0E6.5020202@bitmer.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Nov 2011 18:49:49 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 17 Nov 2011 08:48:14 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Luis Henriques <henrix@camandro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
+ memcg_check_events()
+Message-Id: <20111117084814.0e6b8169.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111116171809.GA1999@hades>
+References: <alpine.LFD.2.02.1111150050590.4902@ionos>
+	<20111115084059.GA23250@zhy>
+	<20111116091653.GA8692@zhy>
+	<1321452758.4181.18.camel@frodo>
+	<alpine.LFD.2.02.1111161801270.4902@ionos>
+	<20111116171809.GA1999@hades>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 10:46:30AM +0200, Jarkko Nikula wrote:
-> On 11/02/2011 09:41 AM, Péter Ujfalusi wrote:
-> >On Wednesday 19 October 2011 11:44:05 Jarkko Nikula wrote:
-> >>Commit 57fe725 ("MFD: twl4030-codec ->  twl4030-audio: Rename the driver")
-> >>broke the device registration for twl4030 codec if twl6040 is not set.
-> >>
-> >>Reason for breakage is that commit didn't update the changed config name for
-> >>macro twl_has_codec().
-> >>
-> >>Signed-off-by: Jarkko Nikula<jarkko.nikula@bitmer.com>
-> >>Cc: Peter Ujfalusi<peter.ujfalusi@ti.com>
-> >>---
-> >>I don't know is this too late for 3.1 or would it be better to queue for
-> >>stable when it's out? Anyway breakage happened in 3.1-rc cycle and
-> >>unfortunately I noticed it only now.
-> >
-> >Thanks Jarkko for noticing this. I have overlooked it probably because I'm
-> >using omap2plus_defconf for most of the time.
-> >
-> >The breakage also present in 3.0. Can we queue this patch for stable 3.0.x,
-> >and 3.1.x?
-> >
-> >Acked-by: Peter Ujfalusi<peter.ujfalusi@ti.com>
-> >
-> Actually this is already fixed by f09ee04 ("mfd: Fix twl4030
-> dependencies for audio codec") which is now in 3.2-rc. Is that
-> commit queued for stable too?
+On Wed, 16 Nov 2011 17:18:09 +0000
+Luis Henriques <henrix@camandro.org> wrote:
 
-Now it is :)
+> On Wed, Nov 16, 2011 at 06:02:42PM +0100, Thomas Gleixner wrote:
+> > On Wed, 16 Nov 2011, Steven Rostedt wrote:
+> > > On Wed, 2011-11-16 at 17:16 +0800, Yong Zhang wrote:
+> > > > Looking at commit 4799401f [memcg: Fix race condition in
+> > > > memcg_check_events() with this_cpu usage], we just want
+> > > > to disable migration. So use the right API in -rt. This
+> > > > will cure below warning.
+> > > No this won't work. Not even for -rt. If we disable migration but not
+> > > preemption, then two tasks can take this path. And the checks in
+> > > __memcg_event_check() will be corrupted because nothing is protecting
+> > > the updates from two tasks going into the same path.
+> > > 
+> > > Perhaps a local_lock would work.
+> > 
+> > Yes, that's the only sensible option for now. Untested patch below.
+> 
+> I run a quick test and it looks like the problem is gone.
+> 
+> Cheers,
 
-thanks,
+Could you CC the final patch to cgroups@vger.kernel.org ?
+Does this fix will go thorugh rt tree rather than -mm ?
 
-greg k-h
+Thanks,
+-Kame
+
