@@ -1,86 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab1KPIZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 03:25:38 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:9036 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab1KPIZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 03:25:37 -0500
-Message-ID: <4EC3736C.2040006@parallels.com>
-Date: Wed, 16 Nov 2011 12:25:16 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754992Ab1KPI2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 03:28:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49538 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab1KPI2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 03:28:20 -0500
+Date: Wed, 16 Nov 2011 08:27:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        linux-arm-kernel-request@lists.arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        linux-arm-request@lists.arm.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: Crash when memset of shared mapped memory in ARM
+Message-ID: <20111116082759.GD9581@n2100.arm.linux.org.uk>
+References: <CAJ8eaTzOtgMzcZeRr6f=+WhtsykK1NZraOGBPoqGncwcAGcTyQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Matt Helsley <matthltc@us.ibm.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/4] Checkpoint/Restore: Show in proc IDs of objects that
- can be shared between tasks
-References: <4EC24E9E.8040502@parallels.com> <20111116054427.GA14827@count0.beaverton.ibm.com>
-In-Reply-To: <20111116054427.GA14827@count0.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJ8eaTzOtgMzcZeRr6f=+WhtsykK1NZraOGBPoqGncwcAGcTyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2011 09:44 AM, Matt Helsley wrote:
-> On Tue, Nov 15, 2011 at 03:35:58PM +0400, Pavel Emelyanov wrote:
->> While doing the checkpoint-restore in the userspace one need to determine
->> whether various kernel objects (like mm_struct-s of file_struct-s) are shared
->> between tasks and restore this state.
->>
->> The 2nd step can for now be solved by using respective CLONE_XXX flags and
->> the unshare syscall, while there's currently no ways for solving the 1st one.
->>
->> One of the ways for checking whether two tasks share e.g. an mm_struct is to
->> provide some mm_struct ID of a task to its proc file. The best from the
->> performance point of view ID is the object address in the kernel, but showing
->> them to the userspace is not good for performance reasons.
+On Wed, Nov 16, 2011 at 11:05:49AM +0530, naveen yadav wrote:
+> Hi All,
 > 
-> (I think you meant "not good for security reasons."...)
+> I am running below Test program on ARM cortex a9/a8 on kernel version
+> 2.6.35.14 as well as on 3.0.
 > 
->> The previous attempt to solve this was to generate an ID for slab/slub and then
->> mix it up with the object index on the slab page. This attempt wasn't met
->> warmly by slab maintainers, so here's the 2nd approach.
->>
->> The object address is XOR-ed with a "random" value of the same size and then
->> shown in proc. Providing this poison is not leaked into the userspace then
->> ID seem to be safe.
+> Please find the test case where:
 > 
-> Really? There's no way to quickly derive the random number from known
-> allocation patterns and thereby break the obfuscation scheme?
-> To start we can note that the low N bits are directly exposed in the ID
-> of anything that requires 2^N-byte alignment.
+> 1. Create shared memory object using shm_open(If we use normal open
+> then no problem only problem with shm_open)
 > 
-> I think it's really a question of whether the high order bits can be derived.
+> 2. ftruncate to given size
 > 
-> And of course the random number only needs to be derived once per boot
-> before it reveals the address of everything with an ID.
+> 3. memory map the shared object to given memory address ( I haved
+> tested without MAP_SHARED, MAP_FIXED as well, problem exist)
+> 
+> 4. Memset the shared memory (got page fault when accessing the second page)
+> 
+> 
+> 
+> 
+> Observation: Only observed in ARM ( i.e not present in MIPS and X86)
 
-Tejun already proposed to split ID space and use different poisons for them.
+Yes, so, what happens?
 
-> Some wild speculation:
 > 
-> I bet you could use some cpu affinity, mem policy, slab info, mmap
-> tricks, etc. to derive more low bits of the random number. You can probably
-> get even more when you consider objects that don't fit evenly in slabs.
-> Speaking of slabs, is there some way to use the fact that nearby slab objects
-> will share their high ID bits?
-
-OK, let's assume we found out that two mm_struct IDs have higher bits equal, what
-can we do next to split address bits from the poison ones?
-
-> If any of the ID-bearing objects allocated via
-> kmalloc then inducing memory pressure and/or watching for buddy allocator
-> merge/splits might reveal more low bits...
 > 
-> Cheers,
-> 	-Matt Helsley
+> #undef NDEBUG
+> #define _GNU_SOURCE
+> #include <unistd.h>
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <sys/ipc.h>
+> #include <sys/shm.h>
+> #include <errno.h>
+> #include <pthread.h>
+> #include <string.h>
+> #include <signal.h>
+> #include <fcntl.h>
+> #include <sys/types.h>
+> #include <sys/mman.h>
 > 
-> .
+> enum {
+>  SHM_INIT,
+>  SHM_GET
+>  };
 > 
-
+> enum {
+>  PARENT,
+>  CHILD
+>  };
+> 
+> #define FIXED_MMAP_ADDR 0x20000000
+> #define MMAP_SIZE	0x10000
+> 
+> static int shmid;
+> static char shm_name[100];
+> static int sleep_period = 100000;
+> void * shmem_init(int flag)
+> {	
+> 	int start = FIXED_MMAP_ADDR;
+> 	int memory_size = MMAP_SIZE;
+> 	int mode = 0666;
+> 	void *addr;
+> 	int ret;
+> 	sprintf(shm_name, "/shmem_1234");
+> 	shmid = shm_open (shm_name, O_RDWR | O_EXCL | O_CREAT | O_TRUNC, mode);
+> 	if (shmid < 0) {
+>     		if (errno == EEXIST) {
+> 			printf ("shm_open: %s\n", strerror(errno));
+>        			shmid = shm_open (shm_name, O_RDWR, mode);
+> 
+> 		} else {
+>     			printf("failed to shm_open, err=%s\n", strerror(errno));
+> 			return NULL;
+>   		}
+> 	}
+>   	ret = fcntl (shmid, F_SETFD, FD_CLOEXEC);
+>   	if (ret < 0) {
+>     		printf("fcntl: %s\n", strerror(errno));
+> 		return NULL;
+>   	}
+> 	ret = ftruncate (shmid, memory_size);
+> 	if (ret < 0) {
+>     		printf("ftruncate: %s\n", strerror(errno));
+> 		return NULL;
+>   	}
+> 	addr = mmap ((void *)start, memory_size, PROT_READ | PROT_WRITE,
+>  			     MAP_SHARED | MAP_FIXED, shmid, 0);
+>   	if (addr == MAP_FAILED) {
+> 		printf ("mmap: %s\n", strerror(errno));
+>      		close (shmid);
+>     		shm_unlink (shm_name);
+> 		return NULL;
+> 	}
+> 	
+> 	if (flag == SHM_INIT){
+> 		printf ("mmap: addr %p\n", addr);
+> 		/* memset on arm creates a unhandled page fault, works fine on mips */
+> 		memset(addr, 0, memory_size);
+> 	}
+> 	return (void *)addr;
+> }
+> 
+> pthread_mutex_t * shmem_mutex_init(int flag)
+> {
+> 	pthread_mutex_t * pmutex = (pthread_mutex_t *)shmem_init(flag);
+> #if 0
+> 	pthread_mutexattr_t attr;
+> 	if (flag == SHM_INIT) {
+> 		pthread_mutexattr_init (&attr);
+> 		pthread_mutexattr_setpshared (&attr, PTHREAD_PROCESS_SHARED);
+> 		pthread_mutexattr_setprotocol (&attr, PTHREAD_PRIO_INHERIT);
+> 		pthread_mutexattr_setrobust_np (&attr,
+>  						PTHREAD_MUTEX_STALLED_NP);
+> 		pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_ERRORCHECK);
+> 		if (pthread_mutex_init (pmutex, &attr) != 0) {
+>     			printf("Init mutex failed, err=%s\n", strerror(errno));
+> 			pthread_mutexattr_destroy (&attr);
+> 			return NULL;
+> 		}
+> 	}
+> #endif
+> 	return pmutex;
+> }
+> 
+> void long_running_task(int flag)
+> {	
+> 	static int counter = 0;
+> 	if (flag == PARENT)
+>  		usleep(5*sleep_period);
+> 	else
+> 		usleep(3*sleep_period);
+> 	counter = (counter + 1) % 100;
+> 	printf("%d: completed %d computing\n", getpid(), counter);
+> }
+> 
+> void sig_handler(int signum)
+> {
+> 	close(shmid);
+> 	shm_unlink(shm_name);
+> 	exit(0);
+> }
+> 
+> int main(int argc, char *argv[])
+> {
+> 	pthread_mutex_t *mutex_parent, *mutex_child;
+> //	signal(SIGUSR1, sig_handler);
+> //	if (fork()) {
+> 		/* parent process */
+> 		if ((mutex_parent = shmem_mutex_init(SHM_INIT)) == NULL) {
+> 			printf("failed to get the shmem_mutex\n");
+> 			exit(-1);
+> 		}
+> #if 0
+> 		while (1) {
+> 			printf("%d: try to hold the lock\n", getpid());
+>  			pthread_mutex_lock(mutex_parent);
+> 			printf("%d: got the lock\n", getpid());
+>  			long_running_task(PARENT);
+> 			pthread_mutex_unlock(mutex_parent);
+> 			printf("%d: released the lock\n", getpid());
+> 		}
+> #endif
+> //	} else {
+> #if 0
+> 		/* child process */
+> 		usleep(sleep_period);
+> 		if ((mutex_child = shmem_mutex_init(SHM_GET)) == NULL) {
+> 			printf("failed to get the shmem_mutex\n");
+> 			exit(-1);
+> 		}
+> 		while (1) {
+> 			printf("%d: try to hold the lock\n", getpid());
+>  			pthread_mutex_lock(mutex_child);
+> 			printf("%d: got the lock\n", getpid());
+>  			long_running_task(CHILD);
+> 			pthread_mutex_unlock(mutex_child);
+> 			printf("%d: released the lock\n", getpid());
+> 		}
+> #endif
+> //	}
+> 	return 0;
+> }
