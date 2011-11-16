@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab1KPCZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Nov 2011 21:25:11 -0500
-Received: from mga03.intel.com ([143.182.124.21]:56654 "EHLO mga03.intel.com"
+	id S932970Ab1KPCdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Nov 2011 21:33:10 -0500
+Received: from ozlabs.org ([203.10.76.45]:37125 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753040Ab1KPCZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Nov 2011 21:25:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,518,1315206000"; 
-   d="scan'208";a="37534582"
-Subject: [PATCH] x86: fix an erroneous debug message
-From: Zhang Rui <rui.zhang@intel.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Renninger <trenn@suse.de>
-Content-Type: multipart/mixed; boundary="=-9MvsXf2pyFq29WKVA4YH"
-Date: Wed, 16 Nov 2011 10:23:20 +0800
-Message-ID: <1321410200.19828.4.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755327Ab1KPCdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Nov 2011 21:33:07 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jan Beulich <JBeulich@suse.com>, Kevin Cernekee <cernekee@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] module: Fix performance regression on modules with large symbol tables
+In-Reply-To: <4EC0E4040200007800060B1C@nat28.tlf.novell.com>
+References: <73defb5e4bca04a6431392cc341112b1@localhost> <e80b536093214489c32ce319b54b0f80@localhost> <4EC0E4040200007800060B1C@nat28.tlf.novell.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 16 Nov 2011 10:54:27 +1030
+Message-ID: <87y5vgoqx0.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 14 Nov 2011 08:48:52 +0000, "Jan Beulich" <JBeulich@suse.com> wrote:
+> > +		name = &mod->strtab[src->st_name];
+> > +		if (unlikely(!test_bit(src->st_name, info->strmap))) {
+> > +			/* Symbol name has already been copied; find it. */
+> > +			char *dup;
+> > +
+> > +			for (dup = mod->core_strtab; strcmp(dup, name); dup++)
+> > +				BUG_ON(dup > s);
+> 
+> Aren't you concerned that this again will be rather slow? It would be
+> pretty easy to accelerate by comparing only with the tail of each string
+> (as nothing else can possibly match), moving from string to string instead
+> of from character to character.
 
---=-9MvsXf2pyFq29WKVA4YH
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Kevin's central thesis is that this is actually really unusual.
 
-Fix an erroneous debug message.
-    
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+I'm not sure how much faster a tail search would be in practice.  We're
+still scanning the string.  Perhaps a "dup[0] == name[0] &&" would
+optimize it almost as well, if gcc doesn't already?
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 3c31fa9..1a691f5 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3641,8 +3641,8 @@ int io_apic_set_pci_routing(struct device *dev, int irq,
- 	int node;
- 
- 	if (!IO_APIC_IRQ(irq)) {
--		apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ 0\n",
--			    irq_attr->ioapic);
-+		apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ %d\n",
-+			    irq_attr->ioapic, irq);
- 		return -EINVAL;
- 	}
- 
+Kevin, you're probably in an optimal position to get numbers on this?
 
-
---=-9MvsXf2pyFq29WKVA4YH
-Content-Disposition: attachment; filename="fix-1.patch"
-Content-Type: text/x-patch; name="fix-1.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-commit 73291d135bbf4b627bbf0cd99587f0d3fbbc82f4
-Author: Zhang Rui <rui.zhang@intel.com>
-Date:   Wed Nov 16 10:12:56 2011 +0800
-
-    Fix a buggy debug messagge.
-    
-    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 3c31fa9..1a691f5 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3641,8 +3641,8 @@ int io_apic_set_pci_routing(struct device *dev, int irq,
- 	int node;
- 
- 	if (!IO_APIC_IRQ(irq)) {
--		apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ 0\n",
--			    irq_attr->ioapic);
-+		apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ %d\n",
-+			    irq_attr->ioapic, irq);
- 		return -EINVAL;
- 	}
- 
-
---=-9MvsXf2pyFq29WKVA4YH--
-
+Thanks,
+Rusty.
