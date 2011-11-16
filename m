@@ -1,89 +1,427 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab1KPNtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 08:49:42 -0500
-Received: from tac.ki.iif.hu ([193.6.222.43]:57701 "EHLO tac.ki.iif.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757744Ab1KPNtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 08:49:39 -0500
-From: Ferenc Wagner <wferi@niif.hu>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Christoph <cr2005@u-club.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
-References: <4E1C70AD.1010101@u-club.de> <201109260010.50649.rjw@sisk.pl>
-	<4EA2DDD3.8080306@u-club.de> <201110222335.29573.rjw@sisk.pl>
-Date: Wed, 16 Nov 2011 14:49:23 +0100
-In-Reply-To: <201110222335.29573.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Sat, 22 Oct 2011 23:35:29 +0200")
-Message-ID: <874ny4jhy4.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757786Ab1KPNtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 08:49:41 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48210 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757741Ab1KPNti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 08:49:38 -0500
+From: annie.li@oracle.com
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org
+Cc: kurt.hackel@oracle.com, paul.durrant@citrix.com, Ian.Campbell@citrix.com,
+        annie.li@oracle.com
+Subject: [PATCH 2/3] xen/granttable: Grant tables V2 implementation
+Date: Wed, 16 Nov 2011 21:49:32 +0800
+Message-Id: <1321451372-13596-1-git-send-email-annie.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <4EC3B62F.6080702@oracle.com>
+References: <4EC3B62F.6080702@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4EC3BF6E.0002,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+From: Annie Li <annie.li@oracle.com>
 
-> On Saturday, October 22, 2011, Christoph wrote:
->
->>> PM / Freezer: Freeze filesystems while freezing processes (v2)
->>> 
->>> On Sunday, August 07, 2011, Dave Chinner wrote:
->>>
->>>> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
->>>>
->>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
->>>>> 
->>>>> Freeze all filesystems during the freezing of tasks by calling 
->>>>> freeze_bdev() for each of them and thaw them during the thawing of
->>>>> tasks with the help of thaw_bdev().
->>>>> 
->>>>> This is needed by hibernation, because some filesystems (e.g. XFS) 
->>>>> deadlock with the preallocation of memory used by it if the memory 
->>>>> pressure caused by it is too heavy.
->>>
->>> Below is an alternative fix, the changelog pretty much explains the
->>> idea.
->>> 
->>> I've tested it on Toshiba Portege R500, but I don't have an XFS
->>> partition to verify that it really helps, so I'd appreciate it if
->>> someone able to reproduce the original issue could test it and report
->>> back.
->> 
->> Well, the kernel bugtracker is still down and I just like to post my
->> experience with kernel (x64) v3.1-rc8/9 + patches. My machine is a
->> MacBookPro, doomed with 4GB RAM running debian.
->> 
->> Bug #1
->> 
->> on the way to hibernate, machine hangs on
->> 
->> "PM: Preallocating image memory..."
->> 
->> this patch worked for me now for weeks:
->> "[PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)"
->> https://lkml.org/lkml/2011/9/24/77
->
-> This patch is going to be merged into 3.2.
+Receiver-side copying of packets is based on this implementation, it gives
+better performance and better CPU accounting. It totally supports three types:
+full-page, sub-page and transitive grants.
 
-Hi,
+However this patch does not cover sub-page and transitive grants, it mainly
+focus on Full-page part and implements grant table V2 interfaces corresponding
+to what already exists in grant table V1, such as: grant table V2
+initialization, mapping, releasing and exported interfaces.
 
-I was the original reporter of the Bugzilla issue, just didn't know
-about this thread until recently.  Anyway, I'm running 3.2-rc1 now,
-which contains the alternative fix, and I can confirm that it indeed
-works: hibernation does not deadlock on my XFS rooted system anymore
-during memory preallocation.  Thanks everybody for his or her work on
-the issue!
+Each guest can only supports one type of grant table type, every entry in grant
+table should be the same version. It is necessary to set V1 or V2 version before
+initializing the grant table.
 
-To add something still, preallocation now ends with a couple of seconds
-of heavy disk activity, but with several seconds of total inactivity
-beforehand.  Is this warranted by some CPU intensive task at that stage?
+Grant table exported interfaces of V2 are same with those of V1, Xen is
+responsible to judge what grant table version guests are using in every grant
+operation.
+
+V2 fulfills the same role of V1, and it is totally backwards compitable with V1.
+If dom0 support grant table V2, the guests runing on it can run with either V1
+or V2.
+
+Signed-off-by: Annie Li <annie.li@oracle.com>
+---
+ arch/x86/xen/grant-table.c |   37 +++++++++-
+ drivers/xen/grant-table.c  |  187 +++++++++++++++++++++++++++++++++++++++++--
+ include/xen/grant_table.h  |    6 +-
+ 3 files changed, 218 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+index c6ab2e7..510fca0 100644
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -54,6 +54,20 @@ static int map_pte_fn(pte_t *pte, struct page *pmd_page,
+ 	return 0;
+ }
+ 
++/*
++ * This function is used to map shared frames to store grant status. It is
++ * different from map_pte_fn above, the frames type here is uint64_t.
++ */
++static int map_pte_fn_status(pte_t *pte, struct page *pmd_page,
++			     unsigned long addr, void *data)
++{
++	uint64_t **frames = (uint64_t **)data;
++
++	set_pte_at(&init_mm, addr, pte, mfn_pte((*frames)[0], PAGE_KERNEL));
++	(*frames)++;
++	return 0;
++}
++
+ static int unmap_pte_fn(pte_t *pte, struct page *pmd_page,
+ 			unsigned long addr, void *data)
+ {
+@@ -83,7 +97,28 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ 	return rc;
+ }
+ 
+-void arch_gnttab_unmap_shared(void *shared, unsigned long nr_gframes)
++int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
++			   unsigned long max_nr_gframes,
++			   grant_status_t **__shared)
++{
++	int rc;
++	grant_status_t *shared = *__shared;
++
++	if (shared == NULL) {
++		struct vm_struct *area =
++			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
++		BUG_ON(area == NULL);
++		shared = area->addr;
++		*__shared = shared;
++	}
++
++	rc = apply_to_page_range(&init_mm, (unsigned long)shared,
++				 PAGE_SIZE * nr_gframes,
++				 map_pte_fn_status, &frames);
++	return rc;
++}
++
++void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
+ {
+ 	apply_to_page_range(&init_mm, (unsigned long)shared,
+ 			    PAGE_SIZE * nr_gframes, unmap_pte_fn, NULL);
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 1bd9d5f..0b412ce 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -44,6 +44,7 @@
+ #include <xen/page.h>
+ #include <xen/grant_table.h>
+ #include <xen/interface/memory.h>
++#include <xen/hvc-console.h>
+ #include <asm/xen/hypercall.h>
+ 
+ #include <asm/pgtable.h>
+@@ -53,7 +54,10 @@
+ /* External tools reserve first few grant table entries. */
+ #define NR_RESERVED_ENTRIES 8
+ #define GNTTAB_LIST_END 0xffffffff
+-#define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry_v1))
++#define GREFS_PER_GRANT_FRAME \
++(grant_table_version == 1 ?                      \
++ (PAGE_SIZE / sizeof(struct grant_entry_v1)) :   \
++ (PAGE_SIZE / sizeof(union grant_entry_v2)))
+ 
+ static grant_ref_t **gnttab_list;
+ static unsigned int nr_grant_frames;
+@@ -66,6 +70,7 @@ EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
+ 
+ static union {
+ 	struct grant_entry_v1 *v1;
++	union grant_entry_v2 *v2;
+ 	void *addr;
+ } gnttab_shared;
+ 
+@@ -118,6 +123,9 @@ static struct {
+ 	int (*query_foreign_access)(grant_ref_t);
+ } gnttab_interface;
+ 
++/*This reflects status of grant entries, so act as a global value*/
++static grant_status_t *grstatus;
++
+ static int grant_table_version;
+ 
+ static struct gnttab_free_callback *gnttab_free_callback_list;
+@@ -125,6 +133,7 @@ static struct gnttab_free_callback *gnttab_free_callback_list;
+ static int gnttab_expand(unsigned int req_entries);
+ 
+ #define RPP (PAGE_SIZE / sizeof(grant_ref_t))
++#define SPP (PAGE_SIZE / sizeof(grant_status_t))
+ 
+ static inline grant_ref_t *__gnttab_entry(grant_ref_t entry)
+ {
+@@ -197,6 +206,7 @@ static void put_free_entry(grant_ref_t ref)
+ }
+ 
+ /*
++ * Following comments apply to update_grant_entry_v1 and update_grant_entry_v2.
+  * Introducing a valid entry into the grant table:
+  *  1. Write ent->domid.
+  *  2. Write ent->frame:
+@@ -215,6 +225,15 @@ static void update_grant_entry_v1(grant_ref_t ref, domid_t domid,
+ 	gnttab_shared.v1[ref].flags = flags;
+ }
+ 
++static void update_grant_entry_v2(grant_ref_t ref, domid_t domid,
++				  unsigned long frame, unsigned flags)
++{
++	gnttab_shared.v2[ref].hdr.domid = domid;
++	gnttab_shared.v2[ref].full_page.frame = frame;
++	wmb();
++	gnttab_shared.v2[ref].hdr.flags = GTF_permit_access | flags;
++}
++
+ /*
+  * Public grant-issuing interface functions
+  */
+@@ -246,6 +265,11 @@ static int gnttab_query_foreign_access_v1(grant_ref_t ref)
+ 	return gnttab_shared.v1[ref].flags & (GTF_reading|GTF_writing);
+ }
+ 
++static int gnttab_query_foreign_access_v2(grant_ref_t ref)
++{
++	return grstatus[ref] & (GTF_reading|GTF_writing);
++}
++
+ int gnttab_query_foreign_access(grant_ref_t ref)
+ {
+ 	return gnttab_interface.query_foreign_access(ref);
+@@ -271,6 +295,29 @@ static int gnttab_end_foreign_access_ref_v1(grant_ref_t ref, int readonly)
+ 	return 1;
+ }
+ 
++static int gnttab_end_foreign_access_ref_v2(grant_ref_t ref, int readonly)
++{
++	gnttab_shared.v2[ref].hdr.flags = 0;
++	mb();
++	if (grstatus[ref] & (GTF_reading|GTF_writing)) {
++		return 0;
++	} else {
++		/* The read of grstatus needs to have acquire
++		semantics.  On x86, reads already have
++		that, and we just need to protect against
++		compiler reorderings.  On other
++		architectures we may need a full
++		barrier. */
++#ifdef CONFIG_X86
++		barrier();
++#else
++		mb();
++#endif
++		}
++
++	return 1;
++}
++
+ int gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
+ {
+ 	return gnttab_interface.end_foreign_access_ref(ref, readonly);
+@@ -344,6 +391,37 @@ static unsigned long gnttab_end_foreign_transfer_ref_v1(grant_ref_t ref)
+ 	return frame;
+ }
+ 
++static unsigned long gnttab_end_foreign_transfer_ref_v2(grant_ref_t ref)
++{
++	unsigned long frame;
++	u16           flags;
++	u16          *pflags;
++
++	pflags = &gnttab_shared.v2[ref].hdr.flags;
++
++	/*
++	 * If a transfer is not even yet started, try to reclaim the grant
++	 * reference and return failure (== 0).
++	 */
++	while (!((flags = *pflags) & GTF_transfer_committed)) {
++		if (sync_cmpxchg(pflags, flags, 0) == flags)
++			return 0;
++		cpu_relax();
++	}
++
++	/* If a transfer is in progress then wait until it is completed. */
++	while (!(flags & GTF_transfer_completed)) {
++		flags = *pflags;
++		cpu_relax();
++	}
++
++	rmb();  /* Read the frame number /after/ reading completion status. */
++	frame = gnttab_shared.v2[ref].full_page.frame;
++	BUG_ON(frame == 0);
++
++	return frame;
++}
++
+ unsigned long gnttab_end_foreign_transfer_ref(grant_ref_t ref)
+ {
+ 	return gnttab_interface.end_foreign_transfer_ref(ref);
+@@ -591,6 +669,11 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ }
+ EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+ 
++static unsigned nr_status_frames(unsigned nr_grant_frames)
++{
++	return (nr_grant_frames * GREFS_PER_GRANT_FRAME + SPP - 1) / SPP;
++}
++
+ static int gnttab_map_frames_v1(unsigned long *frames, unsigned int nr_gframes)
+ {
+ 	int rc;
+@@ -605,7 +688,56 @@ static int gnttab_map_frames_v1(unsigned long *frames, unsigned int nr_gframes)
+ 
+ static void gnttab_unmap_frames_v1(void)
+ {
+-	arch_gnttab_unmap_shared(gnttab_shared.addr, nr_grant_frames);
++	arch_gnttab_unmap(gnttab_shared.addr, nr_grant_frames);
++}
++
++static int gnttab_map_frames_v2(unsigned long *frames, unsigned int nr_gframes)
++{
++	uint64_t *sframes;
++	unsigned int nr_sframes;
++	struct gnttab_get_status_frames getframes;
++	int rc;
++
++	nr_sframes = nr_status_frames(nr_gframes);
++
++	/* No need for kzalloc as it is initialized in following hypercall
++	 * GNTTABOP_get_status_frames.
++	 */
++	sframes = kmalloc(nr_sframes  * sizeof(uint64_t), GFP_ATOMIC);
++	if (!sframes)
++		return -ENOMEM;
++
++	getframes.dom        = DOMID_SELF;
++	getframes.nr_frames  = nr_sframes;
++	set_xen_guest_handle(getframes.frame_list, sframes);
++
++	rc = HYPERVISOR_grant_table_op(GNTTABOP_get_status_frames,
++				       &getframes, 1);
++	if (rc == -ENOSYS) {
++		kfree(sframes);
++		return -ENOSYS;
++	}
++
++	BUG_ON(rc || getframes.status);
++
++	rc = arch_gnttab_map_status(sframes, nr_sframes,
++				    nr_status_frames(gnttab_max_grant_frames()),
++				    &grstatus);
++	BUG_ON(rc);
++	kfree(sframes);
++
++	rc = arch_gnttab_map_shared(frames, nr_gframes,
++				    gnttab_max_grant_frames(),
++				    &gnttab_shared.addr);
++	BUG_ON(rc);
++
++	return 0;
++}
++
++static void gnttab_unmap_frames_v2(void)
++{
++	arch_gnttab_unmap(gnttab_shared.addr, nr_grant_frames);
++	arch_gnttab_unmap(grstatus, nr_status_frames(nr_grant_frames));
+ }
+ 
+ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+@@ -639,6 +771,9 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ 		return rc;
+ 	}
+ 
++	/* No need for kzalloc as it is initialized in following hypercall
++	 * GNTTABOP_setup_table.
++	 */
+ 	frames = kmalloc(nr_gframes * sizeof(unsigned long), GFP_ATOMIC);
+ 	if (!frames)
+ 		return -ENOMEM;
+@@ -659,20 +794,54 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ 
+ 	kfree(frames);
+ 
++	if (rc < 0)
++		return rc;
+ 	return 0;
+ }
+ 
+ static void gnttab_request_version(void)
+ {
+-	grant_table_version = 1;
+-	gnttab_interface.map_frames = gnttab_map_frames_v1;
+-	gnttab_interface.unmap_frames = gnttab_unmap_frames_v1;
+-	gnttab_interface.update_entry = update_grant_entry_v1;
+-	gnttab_interface.end_foreign_access_ref =
++	int rc;
++	struct gnttab_set_version gsv;
++	const char *str = "we need grant tables version 2, but only version 1 is available\n";
++
++	gsv.version = 2;
++	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
++	if (rc == 0) {
++		grant_table_version = 2;
++		gnttab_interface.map_frames = gnttab_map_frames_v2;
++		gnttab_interface.unmap_frames = gnttab_unmap_frames_v2;
++		gnttab_interface.update_entry = update_grant_entry_v2;
++		gnttab_interface.end_foreign_access_ref =
++					gnttab_end_foreign_access_ref_v2;
++		gnttab_interface.end_foreign_transfer_ref =
++					gnttab_end_foreign_transfer_ref_v2;
++		gnttab_interface.query_foreign_access =
++					gnttab_query_foreign_access_v2;
++	} else {
++		if (grant_table_version == 2) {
++			/*
++			 * If we've already used version 2 features,
++			 * but then suddenly discover that they're not
++			 * available (e.g. migrating to an older
++			 * version of Xen), almost unbounded badness
++			 * can happen.
++			 */
++			xen_raw_printk(str);
++			panic(str);
++		}
++		grant_table_version = 1;
++		gnttab_interface.map_frames = gnttab_map_frames_v1;
++		gnttab_interface.unmap_frames = gnttab_unmap_frames_v1;
++		gnttab_interface.update_entry = update_grant_entry_v1;
++		gnttab_interface.end_foreign_access_ref =
+ 					gnttab_end_foreign_access_ref_v1;
+-	gnttab_interface.end_foreign_transfer_ref =
++		gnttab_interface.end_foreign_transfer_ref =
+ 					gnttab_end_foreign_transfer_ref_v1;
+-	gnttab_interface.query_foreign_access = gnttab_query_foreign_access_v1;
++		gnttab_interface.query_foreign_access =
++					gnttab_query_foreign_access_v1;
++
++	}
+ 	printk(KERN_INFO "Grant tables using version %d layout.\n",
+ 		grant_table_version);
+ }
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index c7a40f8..5494c40 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -146,8 +146,10 @@ gnttab_set_unmap_op(struct gnttab_unmap_grant_ref *unmap, phys_addr_t addr,
+ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ 			   unsigned long max_nr_gframes,
+ 			   void **__shared);
+-void arch_gnttab_unmap_shared(void *shared,
+-			      unsigned long nr_gframes);
++int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
++			   unsigned long max_nr_gframes,
++			   grant_status_t **__shared);
++void arch_gnttab_unmap(void *shared, unsigned long nr_gframes);
+ 
+ extern unsigned long xen_hvm_resume_frames;
+ unsigned int gnttab_max_grant_frames(void);
 -- 
-Thanks,
-Feri.
+1.7.6.4
+
