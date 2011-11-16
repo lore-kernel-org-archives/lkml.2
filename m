@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1KPM1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 07:27:34 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34655 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab1KPM1d (ORCPT
+	id S1753544Ab1KPMmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 07:42:36 -0500
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:48383 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab1KPMmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 07:27:33 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH REPOST] genirq: don't allow per cpu interrupts to be suspended
-Date: Wed, 16 Nov 2011 12:27:39 +0000
-Message-Id: <1321446459-31409-1-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 16 Nov 2011 12:27:28.0818 (UTC) FILETIME=[1AF58920:01CCA45B]
-X-MC-Unique: 111111612273002701
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 16 Nov 2011 07:42:35 -0500
+Message-ID: <4EC3AFAE.3010804@linux.vnet.ibm.com>
+Date: Wed, 16 Nov 2011 10:42:22 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: roberto.sassu@polito.it, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>
+Subject: [PULL] TPM: error handling and infrastructure improvements
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111612-1524-0000-0000-0000001FCDF2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pAGCRm1J029914
 
-The power management functions related to interrupts do not know
-(yet) about per-cpu interrupts and end up calling the wrong
-low-level methods to enable/disable interrupts.
+Hi James,
 
-This leads to all kind of interesting issues (action taken on one
-CPU only, updating a refcount which is not used otherwise...).
+Please pull the following changes since commit e163bc8e4a0cd1cdffadb58253f7651201722d56:
 
-The workaround for the time being is simply to flag these interrupts
-with IRQF_NO_SUSPEND. At least on ARM, these interrupts are actually
-dealt with at the architecture level.
+   Documentation: clarify the purpose of LSMs (2011-11-16 12:37:27 +1100)
 
-Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- kernel/irq/manage.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+that are available in the git repository at:
+   git://github.com/srajiv/tpm.git for-james
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 63c1625..6e04134 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1596,7 +1596,7 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 		return -ENOMEM;
- 
- 	action->handler = handler;
--	action->flags = IRQF_PERCPU;
-+	action->flags = IRQF_PERCPU | IRQF_NO_SUSPEND;
- 	action->name = devname;
- 	action->percpu_dev_id = dev_id;
- 
--- 
-1.7.0.4
+Rajiv Andrade (4):
+       TPM: Use vendor specific function for status probe
+       TPM: Export wait_for_stat for other vendor specific drivers
+       TPM: NSC and TIS drivers X86 dependency fix
+       TPM: fix transmit_cmd error logic
+
+Stefan Berger (5):
+       tpm: Have tpm_get_timeouts return an error code
+       tpm: Cleanup tpm_continue_selftest
+       tpm: Introduce function to poll for result of self test
+       tpm_tis: Check return code from getting timeouts/durations
+       tpm_tis: add delay after aborting command
+
+  drivers/char/tpm/Kconfig   |    2 +
+  drivers/char/tpm/tpm.c     |  137 +++++++++++++++++++++++++++++++++++++-------
+  drivers/char/tpm/tpm.h     |    9 ++-
+  drivers/char/tpm/tpm_tis.c |   84 +++++++++------------------
+  4 files changed, 152 insertions(+), 80 deletions(-)
 
 
