@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab1KQM1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 07:27:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58316 "EHLO mx1.redhat.com"
+	id S1757287Ab1KQM1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 07:27:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31042 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757092Ab1KQM1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 07:27:01 -0500
-Date: Thu, 17 Nov 2011 14:28:26 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
+	id S1757092Ab1KQM1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 07:27:12 -0500
+Date: Thu, 17 Nov 2011 17:57:06 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Virtualization List <virtualization@lists.linux-foundation.org>,
         levinsasha928@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 06/11] virtio: blk: Add freeze, restore handlers to
+Subject: Re: [PATCH v3 09/11] virtio: net: Add freeze, restore handlers to
  support S4
-Message-ID: <20111117122825.GC19682@redhat.com>
+Message-ID: <20111117122706.GA2873@amit-x200.redhat.com>
 References: <cover.1321530505.git.amit.shah@redhat.com>
- <81e98fc00370152ded2eef20f0953f19fad6f0f5.1321530505.git.amit.shah@redhat.com>
+ <85eca44fe83d2deabfdf402bfed72531ebad6026.1321530505.git.amit.shah@redhat.com>
+ <20111117121907.GA19682@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <81e98fc00370152ded2eef20f0953f19fad6f0f5.1321530505.git.amit.shah@redhat.com>
+In-Reply-To: <20111117121907.GA19682@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 05:27:37PM +0530, Amit Shah wrote:
-> Delete the vq and flush any pending requests from the block queue on the
-> freeze callback to prepare for hibernation.
+On (Thu) 17 Nov 2011 [14:19:09], Michael S. Tsirkin wrote:
+> On Thu, Nov 17, 2011 at 05:27:40PM +0530, Amit Shah wrote:
+
+> > +#ifdef CONFIG_PM
+> > +static int virtnet_freeze(struct virtio_device *vdev)
+> > +{
+> > +	struct virtnet_info *vi = vdev->priv;
+> > +
+> > +	netif_device_detach(vi->dev);
+> > +	remove_vq_common(vi);
 > 
-> Re-create the vq in the restore callback to resume normal function.
+> This stops TX in progress, if any, but not RX
+> which might use the RX VQ. Then remove_vq_common
+> might delete this VQ while it's still in use.
 > 
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> ---
->  drivers/block/virtio_blk.c |   36 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 36 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 467f218..f73fb2d 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -568,6 +568,38 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
->  	ida_simple_remove(&vd_index_ida, index);
->  }
->  
-> +#ifdef CONFIG_PM
-> +static int virtblk_freeze(struct virtio_device *vdev)
-> +{
-> +	struct virtio_blk *vblk = vdev->priv;
-> +
-> +	flush_work(&vblk->config_work);
+> So I think we need to call something like napi_disable.
+> However, the subtle twist is that we need to call that
+> *after interrupts have been disabled*.
+> Otherwise we might schedule another napi callback.
 
-What if a new config_work is scheduled after this point?
-The right thing to do seems to be to flush after disabling interrupts.
+resetting the vqs will mean the host won't pass us any data in the
+vqs.  Plus we're removing the vqs altogether.  Also, we're disabling
+the pci device in virtio_pci.c, so all of these actions will take
+care of that, isn't it?
 
-> +	spin_lock_irq(vblk->disk->queue->queue_lock);
-> +	blk_stop_queue(vblk->disk->queue);
-> +	spin_unlock_irq(vblk->disk->queue->queue_lock);
-> +	blk_sync_queue(vblk->disk->queue);
-> +
-> +	/* Stop all the virtqueues. */
-> +	vdev->config->reset(vdev);
-> +	vdev->config->del_vqs(vdev);
+In addition, once the vqs are taken off, there's no chance for any
+other rx to happen, so napi_disable() after plugging off vqs doesn't
+make sense.
 
-I think del_vqs should be followed by reset:
-del_vqs assumes the device in a state find put it in.
-
-> +	return 0;
-> +}
-> +
-> +static int virtblk_restore(struct virtio_device *vdev)
-> +{
-> +	struct virtio_blk *vblk = vdev->priv;
-> +	int ret;
-> +
-> +	ret = init_vq(vdev->priv);
-> +	if (!ret) {
-> +		spin_lock_irq(vblk->disk->queue->queue_lock);
-> +		blk_start_queue(vblk->disk->queue);
-> +		spin_unlock_irq(vblk->disk->queue->queue_lock);
-> +	}
-> +	return ret;
-> +}
-> +#endif
-> +
->  static const struct virtio_device_id id_table[] = {
->  	{ VIRTIO_ID_BLOCK, VIRTIO_DEV_ANY_ID },
->  	{ 0 },
-> @@ -593,6 +625,10 @@ static struct virtio_driver __refdata virtio_blk = {
->  	.probe			= virtblk_probe,
->  	.remove			= __devexit_p(virtblk_remove),
->  	.config_changed		= virtblk_config_changed,
-> +#ifdef CONFIG_PM
-> +	.freeze			= virtblk_freeze,
-> +	.restore		= virtblk_restore,
-> +#endif
->  };
->  
->  static int __init init(void)
-> -- 
-> 1.7.7.1
+		Amit
