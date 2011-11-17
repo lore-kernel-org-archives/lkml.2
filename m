@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab1KQPZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 10:25:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34789 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab1KQPZy convert rfc822-to-8bit (ORCPT
+	id S1757836Ab1KQP1p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 10:27:45 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:57676 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab1KQP1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 10:25:54 -0500
-Subject: Re: [RFC] tracepoint/jump_label overhead
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        rostedt <rostedt@goodmis.org>
-Date: Thu, 17 Nov 2011 16:25:20 +0100
-In-Reply-To: <1321502104.3274.22.camel@edumazet-laptop>
-References: <1321502104.3274.22.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321543520.27735.67.camel@twins>
+	Thu, 17 Nov 2011 10:27:44 -0500
+Date: Thu, 17 Nov 2011 10:27:34 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
+Message-ID: <20111117102734.6780299c@v0nbox>
+In-Reply-To: <20111026154151.GA1588@elte.hu>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<20111012153415.GA26529@elte.hu>
+	<20111016014203.1dfb2cb8@lenov0n>
+	<20111026154151.GA1588@elte.hu>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; i386-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 04:55 +0100, Eric Dumazet wrote:
-> The general admitted claim of a tracepoint being on x86 a single
-> instruction :
+On Wed, 26 Oct 2011 17:41:51 +0200,
+Ingo Molnar <mingo@elte.hu> wrote:
+> * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
 > 
-> jmp +0
+> > On Wed, 12 Oct 2011 17:34:15 +0200,
+> > Ingo Molnar <mingo@elte.hu> wrote:
+> > 
+> > > 
+> > > * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+> > > 
+> > > > From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> > > > 
+> > > > 
+> > > > Signed-off-by: Vivien Didelot
+> > > > <vivien.didelot@savoirfairelinux.com>
+> > > 
+> > > That's not a valid signoff sequence. Did you intend this to be:
+> > > 
+> > >   From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> > >  
+> > >   Signed-off-by: Jonas Fonseca
+> > > <jonas.fonseca@savoirfairelinux.com> Signed-off-by: Vivien
+> > > Didelot <vivien.didelot@savoirfairelinux.com>
+> > > 
+> > > ?
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > 
+> > Yes, this should be signed off by Jonas Fonseca as well. This will 
+> > be updated in the next patches set.
 > 
-> Is not always true.
+> Note that the patches are currently stalled, due to the build bug i 
+> reported. They won't be able to make it into the v3.2 upstream kernel 
+> if the bug is not fixed in time.
 > 
-> For example in mm/slub.c, kmem_cache_alloc()
+> The patches are in the -tip tree:
 > 
-> void *ret = slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_); 
-> trace_kmem_cache_alloc(_RET_IP_, ret, s->objsize, s->size, gfpflags);
-> return ret;
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
 > 
-> We can check compiler output and see that 4 extra instructions were
-> added because s->objsize & s->size are evaluated.
+> in the x86/platform branch (also integrated into the master branch).
 > 
-> I noticed this in a perf session, because these 4 extra instructions
-> added some noticeable latency/cost.
+> Thanks,
 > 
-> c10e26a4:       8b 5d d8                mov    -0x28(%ebp),%ebx
-> c10e26a7:       85 db                   test   %ebx,%ebx
-> c10e26a9:       75 6d                   jne    c10e2718   (doing the memset())
-> c10e26ab:       8b 76 0c                mov    0xc(%esi),%esi   // extra 1
-> c10e26ae:       8b 5d 04                mov    0x4(%ebp),%ebx   // extra 2
-> c10e26b1:       89 75 f0                mov    %esi,-0x10(%ebp) // extra 3
-> c10e26b4:       89 5d ec                mov    %ebx,-0x14(%ebp) // extra 4
-> c10e26b7:       e9 00 00 00 00          jmp    c10e26bc 
-> c10e26bc:       8b 45 d8                mov    -0x28(%ebp),%eax
-> c10e26bf:       83 c4 28                add    $0x28,%esp
-> c10e26c2:       5b                      pop    %ebx
-> c10e26c3:       5e                      pop    %esi
-> c10e26c4:       5f                      pop    %edi
-> c10e26c5:       c9                      leave
-> 
-> 
-> A fix would be to not declare an inline function but a macro...
-> 
-> #define trace_kmem_cache_alloc(...) \
-> 	if (static_branch(&__tracepoint_kmem_cache_alloc.key)) \
-> 		__DO_TRACE(&__tracepoint_kmem_cache_alloc,	\
-> 			...
-> 
-> Anyone has some clever idea how to make this possible ?
+> 	Ingo
 
-Right so you're not really supposed to use arguments that require
-evaluation in tracepoints, although I bet its common these days :/
+Hi,
 
-The problem here is that its 'hard' to pass s in and have the
-TP_fast_assign() thing do the dereference because of the sl[auo]b thing.
+Sorry for the late reply, I wasn't able to work on this platform for
+the last two months. Now I'm back :)
+
+I will look at this build failure today.
+
+Thanks for being patient,
+
+	Vivien
