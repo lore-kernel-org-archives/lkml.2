@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab1KQWTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 17:19:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40818 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab1KQWTH (ORCPT
+	id S1753387Ab1KQWWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 17:22:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37199 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1KQWWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 17:19:07 -0500
-Message-ID: <4EC588A8.3030907@solonet.org.ua>
-Date: Fri, 18 Nov 2011 00:20:24 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH] arm: s3c24xx: Add new LCD (W35i) support for Mini2440 board
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Nov 2011 17:22:15 -0500
+Date: Thu, 17 Nov 2011 14:22:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Miao Xie <miaox@cn.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
+ for mempolicy or disjoint nodemask
+Message-Id: <20111117142213.2b34469d.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new LCD (W35i) support for Mini2440 board
+On Wed, 16 Nov 2011 13:08:33 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
----
+> c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
+> cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
+> nodes from changing for a thread.  This causes any update to a set of
+> allowed nodes to stall until put_mems_allowed() is called.
+> 
+> This stall is unncessary, however, if at least one node remains unchanged
+> in the update to the set of allowed nodes.  This was addressed by
+> 89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
+> node remains set"), but it's still possible that an empty nodemask may be
+> read from a mempolicy because the old nodemask may be remapped to the new
+> nodemask during rebind.  To prevent this, only avoid the stall if there
+> is no mempolicy for the thread being changed.
+> 
+> This is a temporary solution until all reads from mempolicy nodemasks can
+> be guaranteed to not be empty without the get_mems_allowed()
+> synchronization.
+> 
+> Also moves the check for nodemask intersection inside task_lock() so that
+> tsk->mems_allowed cannot change.
 
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index fc2dc0b..951eadd 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -167,6 +167,24 @@ static struct s3c2410fb_display mini2440_lcd_cfg[] __initdata = {
- 		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
- 				   S3C2410_LCDCON5_HWSWP),
- 	},
-+	/* mini2440 + 3.5" TFT (LCD-W35i, LQ035Q1DG06 type) + touchscreen*/
-+	[3] = {
-+		_LCD_DECLARE(
-+			/* clock */
-+			7,
-+			/* xres, margin_right, margin_left, hsync */
-+			320, 68, 66, 4,
-+			/* yres, margin_top, margin_bottom, vsync */
-+			240, 4, 4, 9,
-+			/* refresh rate */
-+			60),
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+				   S3C2410_LCDCON5_INVVDEN |
-+				   S3C2410_LCDCON5_INVVFRAME |
-+				   S3C2410_LCDCON5_INVVLINE |
-+				   S3C2410_LCDCON5_INVVCLK |
-+				   S3C2410_LCDCON5_HWSWP),
-+	},
- };
- 
- /* todo - put into gpio header */
+The patch doesn't actually apply, due to changes made by your earlier
+89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if
+one node remains set").  Please recheck/redo/resend/etc?
