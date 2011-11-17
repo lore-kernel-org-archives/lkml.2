@@ -1,188 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1KQAtj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 19:49:39 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50796 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab1KQAti (ORCPT
+	id S1754941Ab1KQBAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 20:00:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:32884 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1KQBAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 19:49:38 -0500
-X-Originating-IP: 217.70.178.132
-X-Originating-IP: 131.252.240.124
-Date: Wed, 16 Nov 2011 16:49:23 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 2/9] rcu: Add rcutorture system-shutdown
- capability
-Message-ID: <20111117004923.GB5201@leaf>
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
- <1321388885-11211-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111115214615.GD31473@leaf>
- <20111116203226.GK2355@linux.vnet.ibm.com>
- <20111116221545.GA2325@leaf>
- <20111116224447.GO2355@linux.vnet.ibm.com>
- <20111116225856.GD2325@leaf>
- <20111116234358.GP2355@linux.vnet.ibm.com>
+	Wed, 16 Nov 2011 20:00:35 -0500
+Message-ID: <4EC45CAE.1000704@gmail.com>
+Date: Wed, 16 Nov 2011 17:00:30 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-In-Reply-To: <20111116234358.GP2355@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] hugetlb: Provide a default HPAGE_SHIFT if !CONFIG_HUGETLB_PAGE
+References: <1321472611-13283-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111161327180.16596@chino.kir.corp.google.com> <4EC43488.3070400@gmail.com> <alpine.DEB.2.00.1111161512371.16596@chino.kir.corp.google.com> <4EC44AD0.5070800@gmail.com> <alpine.DEB.2.00.1111161552450.25089@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1111161552450.25089@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/16/2011 04:08 PM, David Rientjes wrote:
+> On Wed, 16 Nov 2011, David Daney wrote:
+>
+>>>>>> This is required now to get MIPS kernels to compile with
+>>>>>> !CONFIG_HUGETLB_PAGE.
+>>>>>>
+>>>>>
+>>>>> Why?
+>>>>
+>>>> I should have been more specific.  The failure is in Ralf's
+>>>> mips-for-linux-next branch.
+>>>>
+>>>
+>>> I can't find that branch (it's not in Ralf's tree at git.kernel.org), so
+>>> I'm looking at next-20111116.  It doesn't compile for mips for other
+>>> reasons related to arch/mips/sgi-ip22/ip22-gio.c.
+>>
+>> Ralf's various trees are accessible via linux-mips.org
+>>
+>
+> Wow, we've certainly gone a long way from a patch that appears to be
+> fixing a problem in Linus' tree based on your commit message.  You're
+> working from ralf/upstream-sfr.git#mips-for-linux-next from
+> git.linux-mips.org.
+>
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, as I already said, I should have been more specific about this.
 
-[Resending with attachment this time.]
+> Might want to have mentioned that for a patch labeled "hugetlb".
+>
+>>> Which is wrong.  MIPS code should not be using HPAGE_SHIFT without
+>>> CONFIG_HUGETLB_PAGE and in fact defines it itself for such a configuration
+>>> in arch/mips/include/asm/page.h.  The only generic uses are in
+>>> page_alloc.c where we need CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which isn't
+>>> available on mips, and in mm/hugetlb.c which requires CONFIG_HUGETLB_PAGE
+>>> by way of CONFIG_HUGETLBFS.
+>>>
+>>> So feel free to show the actual compile error this time and I'll suggest a
+>>> mips fix for it.
+>>
+>> arch/mips/mm/tlb-r4k.c: In function ‘local_flush_tlb_range’:
+>> arch/mips/mm/tlb-r4k.c:129:28: error: ‘HPAGE_SHIFT’ undeclared (first use in
+>> this function)
+>>
+>
+> Do you see where that file has #ifdef's for CONFIG_HUGETLB_PAGE?
 
-On Wed, Nov 16, 2011 at 03:43:58PM -0800, Paul E. McKenney wrote:
-> On Wed, Nov 16, 2011 at 02:58:56PM -0800, Josh Triplett wrote:
-> > On Wed, Nov 16, 2011 at 02:44:47PM -0800, Paul E. McKenney wrote:
-> > > On Wed, Nov 16, 2011 at 02:15:45PM -0800, Josh Triplett wrote:
-> > > > On Wed, Nov 16, 2011 at 12:32:26PM -0800, Paul E. McKenney wrote:
-> > > > > On Tue, Nov 15, 2011 at 01:46:15PM -0800, Josh Triplett wrote:
-> > > > > > On Tue, Nov 15, 2011 at 12:27:58PM -0800, Paul E. McKenney wrote:
-> > > > > > > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > > > > > 
-> > > > > > > Although it is easy to run rcutorture tests under KVM, there is currently
-> > > > > > > no nice way to run such a test for a fixed time period, collect all of
-> > > > > > > the rcutorture data, and then shut the system down cleanly.  This commit
-> > > > > > > therefore adds an rcutorture module parameter named "shutdown_secs" that
-> > > > > > > specified the run duration in seconds, after which rcutorture terminates
-> > > > > > > the test and powers the system down.  The default value for "shutdown_secs"
-> > > > > > > is zero, which disables shutdown.
-> > > > > > > 
-> > > > > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > > 
-> > > > > > >From your recent post on this, I thought you found a solution through
-> > > > > > the init= parameter, which seems preferable.
-> > > > > 
-> > > > > For some things, the init= parameter does work great.  I do intend to
-> > > > > use it when collecting event-tracing and debugfs data, for example.
-> > > > > 
-> > > > > However, there is still a need for RCU torture testing that will operate
-> > > > > correctly regardless of how userspace is set up.  That, and there are
-> > > > > quite a few different kernel test setup, each with their own peculiar
-> > > > > capabilities and limitations.  So what happened was that before people
-> > > > > suggested the init= approach, I implemented enough of the in-kernel
-> > > > > approach to appreciate how much it simplifies life for the common case of
-> > > > > "just torture-test RCU".  As in I should have done this long ago.
-> > > > 
-> > > > Seems like it would work just as easily to point init at a statically
-> > > > linked C program which just sleeps for a fixed time and then shuts down.
-> > > > However, given the special-purpose nature of rcutorture, I won't
-> > > > complain that strongly.
-> > > 
-> > > I did consider a statically linked C program, but that can introduce the
-> > > need for cross-compilation into situations that do not otherwise need it.
-> > 
-> > Wouldn't you need to cross-compile the kernel anyway in such situations?
-> 
-> Not necessarily, consider for example ABAT.  (IBM-specific test setup
-> for those unfamiliar with it -- related to autotest.)
+Yes I see that.  With git annotate we can even see who wrote it.
 
-Which already handles compiling a kernel for you; ABAT just doesn't make
-it as easy to compile userspace programs as it does for kernels. :)
+The code would be much cleaner if that #ifdef were removed.  The author 
+was unaware that a dummy version of pmd_huge() existed in hugetlb.h, 
+making the entire if(pmd_huge()) huge block dead code.
 
-> I suspect that the only way for you to be convinced is for you to write
-> a script that takes your preferred approach for injecting a test into
-> (say) a KVM instance.
+I will prepare a patch that gets rid of the #ifdef CONFIG_HUGETLB_PAGE 
+in that file.
 
-Done and attached.
+>  You need
+> them here too.  The problem is that is_vm_hugetlb_page() is not #define to
+> 0 for CONFIG_HUGETLB_PAGE=n so the clauses using HPAGE_* aren't compiled
+> out like the author is expecting.
+>
+>> However, I call B.S. on your reasoning.
+>>
+>> It is a well established kernel idiom to supply dummy values for symbols that
+>> are required to be defined in order to form a syntactically correct C program,
+>> but that are known by the programmer to be used only on dead code paths.
+>>
+>> This is exactly what we are doing here.
+>>
+>> To do otherwise requires that code be cluttered with #ifdefery.
+>>
+>
+> You're wrong,
 
-> Then compare that script to adding a few parameters to the boot line,
-> namely: "rcutorture.stat_interval=15 rcutorture.shutdown_secs=3600
-> rcutorture.rcutorture_runnable=1".  ;-)
+Ok, then please tell me why:
 
-I actually think stat_interval makes perfect sense, as does runnable.
+1) the dummy version of is_vm_hugetlb_page() exists in hugetlb_inline.h?
+2) the dummy version of PageHuge() exists in hugetlb.h
+3) the dummy version of reset_vma_resv_huge_pages()
+4) the dummy version of hugetlb_total_pages() exists in hugetlb.h
+5) the dummy version of follow_hugetlb_page() exists in hugetlb.h
+6) the dummy version of follow_huge_addr() exists in hugetlb.h
+7) the dummy version of copy_hugetlb_page_range() exists in hugetlb.h
+8) the dummy version of hugetlb_prefault() exists in hugetlb.h
+9) the dummy version of unmap_hugepage_range() exists in hugetlb.h
+10) the dummy version of hugetlb_report_meminfo() exists in hugetlb.h
+11) the dummy version of hugetlb_report_node_meminfo() exists in hugetlb.h
+12) the dummy version of follow_huge_pmd() exists in hugetlb.h
+13) the dummy version of follow_huge_pud() exists in hugetlb.h
+14) the dummy version of prepare_hugepage_range() exists in hugetlb.h
+15) the dummy version of pmd_huge() exists in hugetlb.h
+16) the dummy version of pud_huge() exists in hugetlb.h
+17) the dummy version of is_hugepage_only_range() exists in hugetlb.h
+17) the dummy version of hugetlb_free_pgd_range() exists in hugetlb.h
+18) the dummy version of hugetlb_fault() exists in hugetlb.h
+19) the dummy version of huge_pte_offset() exists in hugetlb.h
+20) the dummy version of dequeue_hwpoisoned_huge_page() exists in hugetlb.h
+21) the dummy version of copy_huge_page() exists in hugetlb.h
+22) the dummy version of hugetlb_change_protection() exists in hugetlb.h
+.
+.
+.
+[Other non HUGETLB_PAGE examples omitted for conciseness]
 
-> > > rcu_torture_shutdown(void *arg)
-> > > {
-> > > 	long delta;
-> > > 	unsigned long jiffies_snap;
-> > > 
-> > > 	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
-> > > 	jiffies_snap = ACCESS_ONCE(jiffies);
-> > 
-> > Why do you need to snapshot jiffies in this version but not in the
-> > version you originally posted?
-> 
-> Because in the original, the maximum error was one second, which was
-> not worth worrying about.
+> nobody should be using HPAGE_SHIFT unless they are working
+> with hugepages and, in fact, that code that placed those "dummy values"
+> for HPAGE_MASK and HPAGE_SIZE there has since been removed since 2005.
+>
+> Defining HPAGE_SHIFT to be PAGE_SHIFT is just stupid and doing so may
+> allow the program to compile but will hide real bugs later on.  In
+> fact if you merged your patch, it would be a bug since the vma would have
+> VM_HUGETLB but you'd now be operating on PAGE_SIZE pages!
+>
+> Like I said, we should be removing those existing definitions of
+> HPAGE_MASK and HPAGE_SIZE rather than leaving them so someone like you can
+> come along and pretend there's any legitimacy to them whatsoever and
+> extend the insanity.
+>
+> You may not realize it, but changes to include/linux/hugetlb.h go through
+> Andrew; Ralf won't be merging anything into this generic header file
+> because of a mips problem.
 
-The original shouldn't have an error either.  If something incorrectly
-caches jiffies, either version would sleep forever, not just for an
-extra second.
+Indeed, you may not realize that akpm has been on the to or cc list for 
+this entire thread because I explicitly put him there for this exact reason.
 
-> > > 	while (ULONG_CMP_LT(jiffies_snap, shutdown_time) &&
-> > > 	       !kthread_should_stop()) {
-> > > 		delta = shutdown_time - jiffies_snap;
-> > > 		if (verbose)
-> > > 			printk(KERN_ALERT "%s" TORTURE_FLAG
-> > > 			       "rcu_torture_shutdown task: %lu "
-> > > 			       "jiffies remaining\n",
-> > > 			       torture_type, delta);
-> > 
-> > I suggested dropping this print entirely; under normal circumstances it
-> > should never print.  It will only print if
-> > schedule_timeout_interruptible wakes up spuriously.
-> 
-> OK, I can qualify with a firsttime local variable.
+Thanks,
+David Daney
 
-Oh, i see; it does print the very first time through.  In that case, you
-could move the print out of the loop entirely, rather than using a
-"first time" flag.
-
-> > > 		schedule_timeout_interruptible(delta);
-> > > 		jiffies_snap = ACCESS_ONCE(jiffies);
-> > > 	}
-> > 
-> > Any reason this entire loop body couldn't just become
-> > msleep_interruptible()?
-> 
-> Aha!!!  Because then it won't break out of the loop if someone does
-> a rmmod of rcutorture.  Which will cause the rmmod to hang until
-> the thing decides that it is time to shut down the system.  Which
-> is why I need to do the sleep in smallish pieces -- I cannot sleep
-> longer than I would be comfortable delaying the rmmod.
-> 
-> Which is why I think I need to revert back to the old version that
-> did the schedule_timeout_interruptible(1).
-
-Does kthread_stop not interrupt an interruptible kthread?  As far as I
-can tell, rmmod of rcutorture currently finishes immediately, rather
-than after all the one-second sleeps finish, which suggests that it
-wakes up the threads in question.
-
-- Josh Triplett
-
---EVF5PPMfhYS0aIcm
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="sleep-shutdown.tar.gz"
-Content-Transfer-Encoding: base64
-
-H4sIABFYxE4CA+2WXWvbMBSGfVv9ikNWaApzajt2AukH61jKNigdYZDLoNonsRZbMpLc0H38
-98luuyaBbVfJ2HaeG6GjcyThV68sUyBWvslrm6mVPPF2QeAYJknThsMkWG+f8MJwMAiDJA7C
-2AvCKIkSDxJvD9TGcg3gfVIm/1Xe78b/Usym/pPx5Zvr8Q70H8TxT/WPn/WPXOP078eB0z8g
-/XfOJRhRVgWCkMJqXs4NpEpa7rpyARwqrRYuDKtcpDk058RAc1LA5gjm3lgsgc8taghZrmrd
-Y+y9+6Sgawmdki+x8/KxdiWKAlKN3CJwubae5CVm0Nk8iZ0ewMccJWsmWt6VUIglukWFGTHW
-9P0laokF3H5+V/IFgt9OmMHmNODzqkKZwZFyG9a9irs10W3XnLsuHjHvP2fL/9dOsbkocK/+
-j6Loyf/9YdJ3/o/DYUT+37/+o9aW7ADTXMHhGXyFtBIKfPUWJK5SuIDDV4w1OaMto/VSdrBI
-U/Dd57TCtVPu7O5PUWulm6l81damBXI5YgfaOXi+bdZ2cY/4c/7fFnXf///+MAid/5NBPCD/
-74MXQqZFnSGcGZsJ1csv2Fro3pxovFXKbsZrKVx2E3N3gYXSvRa6d0pkx+wLA0ctjVhI91Nv
-RtsjNbOiRDiH/iAITtsc9yhwr47u8+hxG27YqGg762kP5Q/b6k5ezz7cTMeT2c3V1eNI1V45
-3c64vXkqtULdPGXUfN75UWtrLSE8Zd/otiEIgiAIgiAIgiAIgiAIgiAIgiD+Kb4DTTvpYwAo
-AAA=
-
---EVF5PPMfhYS0aIcm--
