@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab1KQJwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 04:52:13 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:42846 "EHLO imr4.ericy.com"
+	id S1756413Ab1KQJyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:54:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54418 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab1KQJwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 04:52:11 -0500
-Date: Thu, 17 Nov 2011 01:50:17 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Donggeun Kim <dg77.kim@samsung.com>
-CC: Paul Bolle <pebolle@tiscali.nl>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7] hwmon: Add driver for EXYNOS4 TMU
-Message-ID: <20111117095017.GA22540@ericsson.com>
-References: <1315388948-20346-1-git-send-email-dg77.kim@samsung.com>
- <1321389279.20271.241.camel@x61.thuisdomein>
- <1321392253.2309.379.camel@groeck-laptop>
- <4EC4999F.8030604@samsung.com>
+	id S1756215Ab1KQJyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 04:54:20 -0500
+Date: Thu, 17 Nov 2011 10:54:16 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Wang Sheng-Hui <shhuiw@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: cleanup the comment for head/tail pages of compound
+ pages in mm/page_alloc.c
+In-Reply-To: <20111117082148.GA30544@tiehlicka.suse.cz>
+Message-ID: <alpine.LNX.2.00.1111171054050.15187@pobox.suse.cz>
+References: <4EC21D78.4080508@gmail.com> <20111115132409.GA7551@tiehlicka.suse.cz> <4EC2FE33.7030905@gmail.com> <20111117082148.GA30544@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4EC4999F.8030604@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 12:20:31AM -0500, Donggeun Kim wrote:
-[ ... ]
-> >>>  
-> >>> +config SENSORS_EXYNOS4_TMU
-> >>> +	tristate "Temperature sensor on Samsung EXYNOS4"
-> >>> +	depends on EXYNOS4_DEV_TMU
-> >>
-> >> It doesn't look like that Kconfig symbol is part of the tree just yet.
-> >> That means people will not be able to build this driver from the
-> >> mainline tree. Why is this dependency needed? In a (rather quick) scan
-> >> of the code of this driver I couldn't spot anything not yet available in
-> >> the tree.
-> >>
-> > I have to defer to the driver author for that. Maybe the dependency was
-> > renamed at some point, or removed altogether.
-> > 
-> The dependency will be renamed to 'ARCH_EXYNOS4'.
-> 
-Please submit a patch.
+On Thu, 17 Nov 2011, Michal Hocko wrote:
 
-Thanks,
-Guenter
+> [CCing trivial tree]
+> 
+> Unquoted patch at https://lkml.org/lkml/2011/11/15/402
+> 
+> On Wed 16-11-11 08:05:07, Wang Sheng-Hui wrote:
+> [...]
+> > Thanks, Michal.
+> > 
+> > New patch generated.
+> > 
+> > 
+> > [PATCH] mm: cleanup the comment for head/tail pages of compound pages in mm/page_alloc.c
+> > 
+> > Only tail pages point at the head page using their ->first_page fields.
+> > 
+> > Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+Applied, thanks.
+
+-- 
+Jiri Kosina
+SUSE Labs
