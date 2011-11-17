@@ -1,88 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab1KQL7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:59:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:36630 "EHLO mga14.intel.com"
+	id S1757217Ab1KQMAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 07:00:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45953 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756972Ab1KQL7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:59:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,526,1315206000"; 
-   d="scan'208";a="76151200"
-Date: Thu, 17 Nov 2011 19:59:14 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] writeback: hard throttle 1000+ dd on a slow USB stick
-Message-ID: <20111117115914.GA24502@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757004Ab1KQL6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 06:58:17 -0500
+From: Amit Shah <amit.shah@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
+Subject: [PATCH v3 03/11] virtio: console: Move out vq and vq buf removal into separate functions
+Date: Thu, 17 Nov 2011 17:27:34 +0530
+Message-Id: <402c5e19ada70420e1cb8d87c913dd07d2e75495.1321530505.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1321530505.git.amit.shah@redhat.com>
+References: <cover.1321530505.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1321530505.git.amit.shah@redhat.com>
+References: <cover.1321530505.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sleep based balance_dirty_pages() can pause at most MAX_PAUSE=200ms
-on every 1 4KB-page, which means it cannot throttle a task under
-4KB/200ms=20KB/s. So when there are more than 512 dd writing to a
-10MB/s USB stick, its bdi dirty pages could grow out of control.
+This common code will be shared with the PM freeze function.
 
-Even if we can increase MAX_PAUSE, the minimal (task_ratelimit = 1)
-means a limit of 4KB/s.
-
-They can eventually be safeguarded by the global limit check
-(nr_dirty < dirty_thresh). However if someone is also writing to an
-HDD at the same time, it'll get poor HDD write performance.
-
-We at least want to maintain good write performance for other devices
-when one device is attacked by some "massive parallel" workload, or
-suffers from slow write bandwidth, or somehow get stalled due to some
-error condition (eg. NFS server not responding).
-
-For a stalled device, we need to completely block its dirtiers, too,
-before its bdi dirty pages grow all the way up to the global limit and
-leave no space for the other functional devices.
-
-So change the loop exit condition to
-
-	/*
-	 * Always enforce global dirty limit; also enforce bdi dirty limit
-	 * if the normal max_pause sleeps cannot keep things under control.
-	 */
-	if (nr_dirty < dirty_thresh &&
-	    (bdi_dirty < bdi_thresh || bdi->dirty_ratelimit > 1))
-		break;
-
-which can be further simplified to
-
-	if (task_ratelimit)
-		break;
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- mm/page-writeback.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/char/virtio_console.c |   68 ++++++++++++++++++++++++-----------------
+ 1 files changed, 40 insertions(+), 28 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-11-17 19:23:57.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-11-17 19:23:59.000000000 +0800
-@@ -1136,14 +1136,11 @@ pause:
- 		__set_current_state(TASK_KILLABLE);
- 		io_schedule_timeout(pause);
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 8e3c46d..e14f5aa 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1271,6 +1271,20 @@ static void remove_port(struct kref *kref)
+ 	kfree(port);
+ }
  
--		dirty_thresh = hard_dirty_limit(dirty_thresh);
- 		/*
--		 * max-pause area. If dirty exceeded but still within this
--		 * area, no need to sleep for more than 200ms: (a) 8 pages per
--		 * 200ms is typically more than enough to curb heavy dirtiers;
--		 * (b) the pause time limit makes the dirtiers more responsive.
-+		 * This is typically equal to (nr_dirty < dirty_thresh) and can
-+		 * also keep "1000+ dd on a slow USB stick" under control.
- 		 */
--		if (nr_dirty < dirty_thresh)
-+		if (task_ratelimit)
- 			break;
++static void remove_port_data(struct port *port)
++{
++	struct port_buffer *buf;
++
++	/* Remove unused data this port might have received. */
++	discard_port_data(port);
++
++	reclaim_consumed_buffers(port);
++
++	/* Remove buffers we queued up for the Host to send us data in. */
++	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
++		free_buf(buf);
++}
++
+ /*
+  * Port got unplugged.  Remove port from portdev's list and drop the
+  * kref reference.  If no userspace has this port opened, it will
+@@ -1278,8 +1292,6 @@ static void remove_port(struct kref *kref)
+  */
+ static void unplug_port(struct port *port)
+ {
+-	struct port_buffer *buf;
+-
+ 	spin_lock_irq(&port->portdev->ports_lock);
+ 	list_del(&port->list);
+ 	spin_unlock_irq(&port->portdev->ports_lock);
+@@ -1300,14 +1312,7 @@ static void unplug_port(struct port *port)
+ 		hvc_remove(port->cons.hvc);
+ 	}
  
- 		if (fatal_signal_pending(current))
+-	/* Remove unused data this port might have received. */
+-	discard_port_data(port);
+-
+-	reclaim_consumed_buffers(port);
+-
+-	/* Remove buffers we queued up for the Host to send us data in. */
+-	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+-		free_buf(buf);
++	remove_port_data(port);
+ 
+ 	/*
+ 	 * We should just assume the device itself has gone off --
+@@ -1659,6 +1664,28 @@ static const struct file_operations portdev_fops = {
+ 	.owner = THIS_MODULE,
+ };
+ 
++static void remove_vqs(struct ports_device *portdev)
++{
++	portdev->vdev->config->del_vqs(portdev->vdev);
++	kfree(portdev->in_vqs);
++	kfree(portdev->out_vqs);
++}
++
++static void remove_controlq_data(struct ports_device *portdev)
++{
++	struct port_buffer *buf;
++	unsigned int len;
++
++	if (!use_multiport(portdev))
++		return;
++
++	while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
++		free_buf(buf);
++
++	while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
++		free_buf(buf);
++}
++
+ /*
+  * Once we're further in boot, we get probed like any other virtio
+  * device.
+@@ -1764,9 +1791,7 @@ free_vqs:
+ 	/* The host might want to notify mgmt sw about device add failure */
+ 	__send_control_msg(portdev, VIRTIO_CONSOLE_BAD_ID,
+ 			   VIRTIO_CONSOLE_DEVICE_READY, 0);
+-	vdev->config->del_vqs(vdev);
+-	kfree(portdev->in_vqs);
+-	kfree(portdev->out_vqs);
++	remove_vqs(portdev);
+ free_chrdev:
+ 	unregister_chrdev(portdev->chr_major, "virtio-portsdev");
+ free:
+@@ -1804,21 +1829,8 @@ static void virtcons_remove(struct virtio_device *vdev)
+ 	 * have to just stop using the port, as the vqs are going
+ 	 * away.
+ 	 */
+-	if (use_multiport(portdev)) {
+-		struct port_buffer *buf;
+-		unsigned int len;
+-
+-		while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
+-			free_buf(buf);
+-
+-		while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
+-			free_buf(buf);
+-	}
+-
+-	vdev->config->del_vqs(vdev);
+-	kfree(portdev->in_vqs);
+-	kfree(portdev->out_vqs);
+-
++	remove_controlq_data(portdev);
++	remove_vqs(portdev);
+ 	kfree(portdev);
+ }
+ 
+-- 
+1.7.7.1
+
