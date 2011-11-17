@@ -1,70 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab1KQXW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 18:22:58 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38842 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab1KQXW4 (ORCPT
+	id S1754346Ab1KQXZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 18:25:38 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:47055 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753241Ab1KQXZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 18:22:56 -0500
-Date: Thu, 17 Nov 2011 15:22:53 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>, linux-arch@vger.kernel.org,
-        Robin Holt <holt@sgi.com>
-Subject: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and
- HPAGE_SIZE
-In-Reply-To: <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com>
-References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Nov 2011 18:25:36 -0500
+Date: Thu, 17 Nov 2011 18:25:34 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [RFC PATCH] Tracepoint: introduce tracepoint() API
+Message-ID: <20111117232533.GA14356@Krystal>
+References: <1321502104.3274.22.camel@edumazet-laptop> <1321543520.27735.67.camel@twins> <20111117155617.GA12665@Krystal> <20111117205053.GA26484@Krystal> <1321564014.3533.13.camel@frodo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321564014.3533.13.camel@frodo>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:21:19 up 359 days,  4:24,  6 users,  load average: 0.08, 0.03,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dummy, non-zero definitions for HPAGE_MASK and HPAGE_SIZE were added in
-51c6f666fceb ("mm: ZAP_BLOCK causes redundant work") to avoid a divide
-by zero in generic kernel code.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Thu, 2011-11-17 at 15:50 -0500, Mathieu Desnoyers wrote:
+> > Introduce:
+> > 
+> >   tracepoint(event_name, arg1, arg2, ...)
+> > 
+> > while keeping the old tracepoint API in place, e.g.:
+> > 
+> >   trace_event_name(arg1, arg2, ...)
+> > 
+> > This allows skipping parameter side-effects (pointer dereference,
+> > function calls, ...) when the tracepoint is not dynamically activated.
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > ---
+> > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> > index d530a44..c9c73f7 100644
+> > --- a/include/linux/tracepoint.h
+> > +++ b/include/linux/tracepoint.h
+> > @@ -107,6 +107,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> >  
+> >  #ifdef CONFIG_TRACEPOINTS
+> >  
+> > +#define tracepoint(name, args...)					\
+> > +	do {								\
+> > +		if (static_branch(&__tracepoint_##name.key))		\
+> > +			__trace_##name(args);				\
+> > +	} while (0)
+> > +
+> >  /*
+> >   * it_func[0] is never NULL because there is at least one element in the array
+> >   * when the array itself is non NULL.
+> > @@ -144,13 +150,17 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> >   */
+> >  #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
+> >  	extern struct tracepoint __tracepoint_##name;			\
+> > +	static inline void __trace_##name(proto)			\
+> > +	{								\
+> > +		__DO_TRACE(&__tracepoint_##name,			\
+> > +			TP_PROTO(data_proto),				\
+> > +			TP_ARGS(data_args),				\
+> > +			TP_CONDITION(cond));				\
+> > +	}								\
+> 
+> I wrote a patch earlier today that does almost the exact same thing, but
+> I had more in macro part, which I would have cleaned up after the RFC. I
+> didn't add another static inline, but I think this approach is a little
+> cleaner (with the second static inline).
 
-That code has since been removed, but probably should never have been
-added in the first place: we don't want HPAGE_SIZE to act like PAGE_SIZE
-for code that is working with hugepages, for example, when the dependency
-on CONFIG_HUGETLB_PAGE has not been fulfilled.
+I'm glad you like it :)
 
-Because hugepage size can differ from architecture to architecture, each
-is required to have their own definitions for both HPAGE_MASK and
-HPAGE_SIZE.  This is always done in arch/*/include/asm/page.h.
+> 
+> I didn't post mine because I was still analyzing the assembly to make
+> sure it did what I expected. But I got side tracked on other things (RT
+> related) and didn't quite finish the analysis.
+> 
+> Did you do a compare of kmem_cache_alloc() to see if this fixes the
+> reported problem?
 
-So, just remove the dummy and dangerous definitions since they are no
-longer needed and reveals the correct dependencies.  Tested on
-architectures using the definitions with allyesconfig: x86 (even with
-thp), hppa, mips, powerpc, s390, sh3, sh4, sparc, and sparc64, and
-with defconfig on ia64.
+I did not test it against this specific reported case, but I had this
+exact same kind of issue a while back when moving from Kernel Markers
+(which were macros) to the Tracepoint static inlines. Macros were
+letting the compiler optimize away the side-effects, which was not
+possible with static inlines only.
 
-Cc: Robin Holt <holt@sgi.com>
-Cc: David Daney <david.daney@cavium.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/hugetlb.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+Eric, does it work better for you with this patch and by using
+tracepoint() instead of trace_...() ?
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -110,11 +110,6 @@ static inline void copy_huge_page(struct page *dst, struct page *src)
- 
- #define hugetlb_change_protection(vma, address, end, newprot)
- 
--#ifndef HPAGE_MASK
--#define HPAGE_MASK	PAGE_MASK		/* Keep the compiler happy */
--#define HPAGE_SIZE	PAGE_SIZE
--#endif
--
- #endif /* !CONFIG_HUGETLB_PAGE */
- 
- #define HUGETLB_ANON_FILE "anon_hugepage"
+Thanks,
+
+Mathieu
+
+> 
+> -- Steve
+> 
+> >  	static inline void trace_##name(proto)				\
+> >  	{								\
+> >  		if (static_branch(&__tracepoint_##name.key))		\
+> > -			__DO_TRACE(&__tracepoint_##name,		\
+> > -				TP_PROTO(data_proto),			\
+> > -				TP_ARGS(data_args),			\
+> > -				TP_CONDITION(cond));			\
+> > +			__trace_##name(args);				\
+> >  	}								\
+> >  	static inline int						\
+> >  	register_trace_##name(void (*probe)(data_proto), void *data)	\
+> > @@ -193,7 +203,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> >  	EXPORT_SYMBOL(__tracepoint_##name)
+> >  
+> >  #else /* !CONFIG_TRACEPOINTS */
+> > +
+> > +#define tracepoint(name, args...)	__trace_##name(args)
+> > +
+> >  #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
+> > +	static inline void __trace_##name(proto)			\
+> > +	{ }								\
+> >  	static inline void trace_##name(proto)				\
+> >  	{ }								\
+> >  	static inline int						\
+> > 
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
