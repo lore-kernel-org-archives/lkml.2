@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab1KQLYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:24:03 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:34851 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806Ab1KQLYA (ORCPT
+	id S1756832Ab1KQLYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:24:01 -0500
+Received: from mail-qy0-f202.google.com ([209.85.216.202]:50415 "EHLO
+	mail-qy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756788Ab1KQLX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:24:00 -0500
+	Thu, 17 Nov 2011 06:23:58 -0500
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: jkosina@suse.cz, oneukum@suse.de, bleung@chromium.org
 Cc: stern@rowland.harvard.edu, olofj@chromium.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-Date: Thu, 17 Nov 2011 19:23:50 +0800
-Message-Id: <1321529030-7845-4-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 2/3] HID: usbhid: hid-core: submit queued urbs before suspend
+Date: Thu, 17 Nov 2011 19:23:49 +0800
+Message-Id: <1321529030-7845-3-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1321529030-7845-1-git-send-email-djkurtz@chromium.org>
 References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org>
@@ -23,183 +23,329 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Defer LED setting action to a workqueue.
-This is more likely to send all LED change events in a single URB.
+If any userspace program has opened a keyboard device, the input core
+de-activates the keyboard's LEDs upon suspend().  It does this by sending
+individual EV_LED[LED_X]=0 events to the underlying device driver by
+directly calling the driver's registered event() handler.
+
+The usb-hid driver event() handler processes each request by immediately
+attempting to submit a CTRL URB to turn off the LED.  USB URB submission
+is asynchronous.  First the URB is added to the head of the ctrl queue.
+Then, if the CTRL_RUNNING flag is false, the URB is submitted immediately
+(and CTRL_RUNNING is set).  If the CTRL_RUNNING flag was already true,
+then the newly queued URB is submitted in the ctrl completion handler when
+all previously submitted URBs have completed.  When all queued URBs have
+been submitted, the completion handler clears the CTRL_RUNNING flag.
+
+In the 2-LED suspend case, at input suspend(), 2 LED event CTRL URBs get
+queued, with only the first actually submitted.  Soon after input
+suspend() handler finishes, the usb-hid suspend() handler gets called.
+Since this is NOT a PM_EVENT_AUTO suspend, the handler sets
+REPORTED_IDLE, then waits for io to complete.
+
+Unfortunately, this usually happens while the first LED request is
+actually still being processed.  Thus when the completion handler tries
+to submit the second LED request it fails, since REPORTED_IDLE is
+already set!  This REPORTED_IDLE check failure causes the completion
+handler to complete, however without clearing the CTRL_RUNNING flag.
+This, in turn, means that the suspend() handler's wait_io() condition
+is never satisfied, and instead it times out after 10 seconds, aborting
+the original system suspend.
+
+This patch changes the behavior to the following:
+  (1) allow completion handler to finish submitting all queued URBs, even if
+      REPORTED_IDLE is set.  This guarantees that all URBs queued before the
+      hid-core suspend() call will be submitted before the system is
+      suspended.
+  (2) if REPORTED_IDLE is set and the URB queue is empty, queue, but
+      don't submit, new URB submission requests.  These queued requests get
+      submitted when resume() flushes the URB queue. This is similar to the
+      existing behavior, however, any requests that arrive while the queue is
+      not yet empty will still get submitted before suspend.
+  (3) set the RUNNING flag when flushing the URB queue in resume().
+      This keeps URBs that were queued in (2) from colliding with any new
+      URBs that are being submitted during the resume process.  The new URB
+      submission requests upon resume get properly queued behind the ones
+      being flushed instead of the current situation where they collide,
+      causing memory corruption and oopses.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/hid/hid-input.c       |   42 ++++++++++++++++++++++++++++++++++++
- drivers/hid/usbhid/hid-core.c |   47 +++++++++++++++++++++++++++++++---------
- drivers/hid/usbhid/usbhid.h   |    2 +
- include/linux/hid.h           |    2 +
- 4 files changed, 82 insertions(+), 11 deletions(-)
+ drivers/hid/usbhid/hid-core.c |  184 +++++++++++++++++++++++------------------
+ 1 files changed, 105 insertions(+), 79 deletions(-)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 6e32526..9509684 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -867,6 +867,48 @@ int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int
- }
- EXPORT_SYMBOL_GPL(hidinput_find_field);
- 
-+struct hid_field *hidinput_get_led_field(struct hid_device *hid)
-+{
-+	struct hid_report *report;
-+	struct hid_field *field;
-+	int i, j;
-+
-+	list_for_each_entry(report,
-+			    &hid->report_enum[HID_OUTPUT_REPORT].report_list,
-+			    list) {
-+		for (i = 0; i < report->maxfield; i++) {
-+			field = report->field[i];
-+			for (j = 0; j < field->maxusage; j++)
-+				if (field->usage[j].type == EV_LED)
-+					return field;
-+		}
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(hidinput_get_led_field);
-+
-+unsigned int hidinput_count_leds(struct hid_device *hid)
-+{
-+	struct hid_report *report;
-+	struct hid_field *field;
-+	int i, j;
-+	unsigned int count = 0;
-+
-+	list_for_each_entry(report,
-+			    &hid->report_enum[HID_OUTPUT_REPORT].report_list,
-+			    list) {
-+		for (i = 0; i < report->maxfield; i++) {
-+			field = report->field[i];
-+			for (j = 0; j < field->maxusage; j++)
-+				if (field->usage[j].type == EV_LED &&
-+				    field->value[j])
-+					count += 1;
-+		}
-+	}
-+	return count;
-+}
-+EXPORT_SYMBOL_GPL(hidinput_count_leds);
-+
- static int hidinput_open(struct input_dev *dev)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
 diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 719f6b0..5bf91db 100644
+index 6606134..719f6b0 100644
 --- a/drivers/hid/usbhid/hid-core.c
 +++ b/drivers/hid/usbhid/hid-core.c
-@@ -602,6 +602,30 @@ void usbhid_submit_report(struct hid_device *hid, struct hid_report *report, uns
- }
- EXPORT_SYMBOL_GPL(usbhid_submit_report);
- 
-+/* Workqueue routine to send requests to change LEDs */
-+static void hid_led(struct work_struct *work)
-+{
-+	struct usbhid_device *usbhid =
-+		container_of(work, struct usbhid_device, led_work);
-+	struct hid_device *hid = usbhid->hid;
-+	struct hid_field *field;
-+	unsigned long flags;
-+
-+	field = hidinput_get_led_field(hid);
-+	if (!field) {
-+		hid_warn(hid, "LED event field not found\n");
-+		return;
-+	}
-+
-+	spin_lock_irqsave(&usbhid->lock, flags);
-+	if (!test_bit(HID_DISCONNECTED, &usbhid->iofl)) {
-+		usbhid->ledcount = hidinput_count_leds(hid);
-+		hid_dbg(usbhid->hid, "New ledcount = %u\n", usbhid->ledcount);
-+		__usbhid_submit_report(hid, field->report, USB_DIR_OUT);
-+	}
-+	spin_unlock_irqrestore(&usbhid->lock, flags);
-+}
-+
- static int usb_hidinput_input_event(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+@@ -197,16 +197,24 @@ static int usbhid_restart_out_queue(struct usbhid_device *usbhid)
  {
- 	struct hid_device *hid = input_get_drvdata(dev);
-@@ -621,17 +645,15 @@ static int usb_hidinput_input_event(struct input_dev *dev, unsigned int type, un
- 		return -1;
- 	}
+ 	struct hid_device *hid = usb_get_intfdata(usbhid->intf);
+ 	int kicked;
++	int r;
  
-+	spin_lock_irqsave(&usbhid->lock, flags);
- 	hid_set_field(field, offset, value);
--	if (value) {
--		spin_lock_irqsave(&usbhid->lock, flags);
--		usbhid->ledcount++;
--		spin_unlock_irqrestore(&usbhid->lock, flags);
--	} else {
--		spin_lock_irqsave(&usbhid->lock, flags);
--		usbhid->ledcount--;
--		spin_unlock_irqrestore(&usbhid->lock, flags);
--	}
--	usbhid_submit_report(hid, field->report, USB_DIR_OUT);
-+	spin_unlock_irqrestore(&usbhid->lock, flags);
+ 	if (!hid)
+ 		return 0;
+ 
+ 	if ((kicked = (usbhid->outhead != usbhid->outtail))) {
+ 		dbg("Kicking head %d tail %d", usbhid->outhead, usbhid->outtail);
 +
-+	/*
-+	 * Defer performing requested LED action.
-+	 * This is more likely gather all LED changes into a single URB.
-+	 */
-+	schedule_work(&usbhid->led_work);
++		r = usb_autopm_get_interface_async(usbhid->intf);
++		if (r < 0)
++			return r;
++		/* Asynchronously flush queue. */
++		set_bit(HID_OUT_RUNNING, &usbhid->iofl);
+ 		if (hid_submit_out(hid)) {
+ 			clear_bit(HID_OUT_RUNNING, &usbhid->iofl);
+-			wake_up(&usbhid->wait);
++			usb_autopm_put_interface_async(usbhid->intf);
+ 		}
++		wake_up(&usbhid->wait);
+ 	}
+ 	return kicked;
+ }
+@@ -215,6 +223,7 @@ static int usbhid_restart_ctrl_queue(struct usbhid_device *usbhid)
+ {
+ 	struct hid_device *hid = usb_get_intfdata(usbhid->intf);
+ 	int kicked;
++	int r;
  
+ 	WARN_ON(hid == NULL);
+ 	if (!hid)
+@@ -222,10 +231,17 @@ static int usbhid_restart_ctrl_queue(struct usbhid_device *usbhid)
+ 
+ 	if ((kicked = (usbhid->ctrlhead != usbhid->ctrltail))) {
+ 		dbg("Kicking head %d tail %d", usbhid->ctrlhead, usbhid->ctrltail);
++
++		r = usb_autopm_get_interface_async(usbhid->intf);
++		if (r < 0)
++			return r;
++		/* Asynchronously flush queue. */
++		set_bit(HID_CTRL_RUNNING, &usbhid->iofl);
+ 		if (hid_submit_ctrl(hid)) {
+ 			clear_bit(HID_CTRL_RUNNING, &usbhid->iofl);
+-			wake_up(&usbhid->wait);
++			usb_autopm_put_interface_async(usbhid->intf);
+ 		}
++		wake_up(&usbhid->wait);
+ 	}
+ 	return kicked;
+ }
+@@ -304,30 +320,21 @@ static int hid_submit_out(struct hid_device *hid)
+ 	report = usbhid->out[usbhid->outtail].report;
+ 	raw_report = usbhid->out[usbhid->outtail].raw_report;
+ 
+-	r = usb_autopm_get_interface_async(usbhid->intf);
+-	if (r < 0)
+-		return -1;
++	usbhid->urbout->transfer_buffer_length = ((report->size - 1) >> 3) +
++						 1 + (report->id > 0);
++	usbhid->urbout->dev = hid_to_usb_dev(hid);
++	memcpy(usbhid->outbuf, raw_report,
++	       usbhid->urbout->transfer_buffer_length);
++	kfree(raw_report);
+ 
+-	/*
+-	 * if the device hasn't been woken, we leave the output
+-	 * to resume()
+-	 */
+-	if (!test_bit(HID_REPORTED_IDLE, &usbhid->iofl)) {
+-		usbhid->urbout->transfer_buffer_length = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+-		usbhid->urbout->dev = hid_to_usb_dev(hid);
+-		memcpy(usbhid->outbuf, raw_report, usbhid->urbout->transfer_buffer_length);
+-		kfree(raw_report);
+-
+-		dbg_hid("submitting out urb\n");
++	dbg_hid("submitting out urb\n");
+ 
+-		if (usb_submit_urb(usbhid->urbout, GFP_ATOMIC)) {
+-			hid_err(hid, "usb_submit_urb(out) failed\n");
+-			usb_autopm_put_interface_async(usbhid->intf);
+-			return -1;
+-		}
+-		usbhid->last_out = jiffies;
++	r = usb_submit_urb(usbhid->urbout, GFP_ATOMIC);
++	if (r < 0) {
++		hid_err(hid, "usb_submit_urb(out) failed: %d\n", r);
++		return r;
+ 	}
+-
++	usbhid->last_out = jiffies;
  	return 0;
  }
-@@ -1126,7 +1148,7 @@ static void usbhid_stop(struct hid_device *hid)
- 		return;
  
- 	clear_bit(HID_STARTED, &usbhid->iofl);
--	spin_lock_irq(&usbhid->lock);	/* Sync with error handler */
-+	spin_lock_irq(&usbhid->lock);	/* Sync with error and led handlers */
- 	set_bit(HID_DISCONNECTED, &usbhid->iofl);
- 	spin_unlock_irq(&usbhid->lock);
- 	usb_kill_urb(usbhid->urbin);
-@@ -1260,6 +1282,8 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
- 	setup_timer(&usbhid->io_retry, hid_retry_timeout, (unsigned long) hid);
- 	spin_lock_init(&usbhid->lock);
+@@ -343,50 +350,48 @@ static int hid_submit_ctrl(struct hid_device *hid)
+ 	raw_report = usbhid->ctrl[usbhid->ctrltail].raw_report;
+ 	dir = usbhid->ctrl[usbhid->ctrltail].dir;
  
-+	INIT_WORK(&usbhid->led_work, hid_led);
+-	r = usb_autopm_get_interface_async(usbhid->intf);
+-	if (r < 0)
+-		return -1;
+-	if (!test_bit(HID_REPORTED_IDLE, &usbhid->iofl)) {
+-		len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+-		if (dir == USB_DIR_OUT) {
+-			usbhid->urbctrl->pipe = usb_sndctrlpipe(hid_to_usb_dev(hid), 0);
+-			usbhid->urbctrl->transfer_buffer_length = len;
+-			memcpy(usbhid->ctrlbuf, raw_report, len);
+-			kfree(raw_report);
+-		} else {
+-			int maxpacket, padlen;
+-
+-			usbhid->urbctrl->pipe = usb_rcvctrlpipe(hid_to_usb_dev(hid), 0);
+-			maxpacket = usb_maxpacket(hid_to_usb_dev(hid), usbhid->urbctrl->pipe, 0);
+-			if (maxpacket > 0) {
+-				padlen = DIV_ROUND_UP(len, maxpacket);
+-				padlen *= maxpacket;
+-				if (padlen > usbhid->bufsize)
+-					padlen = usbhid->bufsize;
+-			} else
+-				padlen = 0;
+-			usbhid->urbctrl->transfer_buffer_length = padlen;
+-		}
+-		usbhid->urbctrl->dev = hid_to_usb_dev(hid);
+-
+-		usbhid->cr->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | dir;
+-		usbhid->cr->bRequest = (dir == USB_DIR_OUT) ? HID_REQ_SET_REPORT : HID_REQ_GET_REPORT;
+-		usbhid->cr->wValue = cpu_to_le16(((report->type + 1) << 8) | report->id);
+-		usbhid->cr->wIndex = cpu_to_le16(usbhid->ifnum);
+-		usbhid->cr->wLength = cpu_to_le16(len);
+-
+-		dbg_hid("submitting ctrl urb: %s wValue=0x%04x wIndex=0x%04x wLength=%u\n",
+-			usbhid->cr->bRequest == HID_REQ_SET_REPORT ? "Set_Report" : "Get_Report",
+-			usbhid->cr->wValue, usbhid->cr->wIndex, usbhid->cr->wLength);
+-
+-		if (usb_submit_urb(usbhid->urbctrl, GFP_ATOMIC)) {
+-			usb_autopm_put_interface_async(usbhid->intf);
+-			hid_err(hid, "usb_submit_urb(ctrl) failed\n");
+-			return -1;
+-		}
+-		usbhid->last_ctrl = jiffies;
++	len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
++	if (dir == USB_DIR_OUT) {
++		usbhid->urbctrl->pipe = usb_sndctrlpipe(hid_to_usb_dev(hid), 0);
++		usbhid->urbctrl->transfer_buffer_length = len;
++		memcpy(usbhid->ctrlbuf, raw_report, len);
++		kfree(raw_report);
++	} else {
++		int maxpacket, padlen;
 +
- 	ret = hid_add_device(hid);
- 	if (ret) {
- 		if (ret != -ENODEV)
-@@ -1292,6 +1316,7 @@ static void hid_cancel_delayed_stuff(struct usbhid_device *usbhid)
- {
- 	del_timer_sync(&usbhid->io_retry);
- 	cancel_work_sync(&usbhid->reset_work);
-+	cancel_work_sync(&usbhid->led_work);
++		usbhid->urbctrl->pipe = usb_rcvctrlpipe(hid_to_usb_dev(hid), 0);
++		maxpacket = usb_maxpacket(hid_to_usb_dev(hid),
++					  usbhid->urbctrl->pipe, 0);
++		if (maxpacket > 0) {
++			padlen = DIV_ROUND_UP(len, maxpacket);
++			padlen *= maxpacket;
++			if (padlen > usbhid->bufsize)
++				padlen = usbhid->bufsize;
++		} else
++			padlen = 0;
++		usbhid->urbctrl->transfer_buffer_length = padlen;
+ 	}
+-
++	usbhid->urbctrl->dev = hid_to_usb_dev(hid);
++
++	usbhid->cr->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | dir;
++	usbhid->cr->bRequest = (dir == USB_DIR_OUT) ? HID_REQ_SET_REPORT :
++						      HID_REQ_GET_REPORT;
++	usbhid->cr->wValue = cpu_to_le16(((report->type + 1) << 8) |
++					 report->id);
++	usbhid->cr->wIndex = cpu_to_le16(usbhid->ifnum);
++	usbhid->cr->wLength = cpu_to_le16(len);
++
++	dbg_hid("submitting ctrl urb: %s wValue=0x%04x wIndex=0x%04x wLength=%u\n",
++		usbhid->cr->bRequest == HID_REQ_SET_REPORT ? "Set_Report" :
++							     "Get_Report",
++		usbhid->cr->wValue, usbhid->cr->wIndex, usbhid->cr->wLength);
++
++	r = usb_submit_urb(usbhid->urbctrl, GFP_ATOMIC);
++	if (r < 0) {
++		hid_err(hid, "usb_submit_urb(ctrl) failed: %d\n", r);
++		return r;
++	}
++	usbhid->last_ctrl = jiffies;
+ 	return 0;
  }
  
- static void hid_cease_io(struct usbhid_device *usbhid)
-diff --git a/drivers/hid/usbhid/usbhid.h b/drivers/hid/usbhid/usbhid.h
-index 2d8957c..cb8f703 100644
---- a/drivers/hid/usbhid/usbhid.h
-+++ b/drivers/hid/usbhid/usbhid.h
-@@ -96,6 +96,8 @@ struct usbhid_device {
- 	struct work_struct reset_work;                                  /* Task context for resets */
- 	wait_queue_head_t wait;						/* For sleeping */
- 	int ledcount;							/* counting the number of active leds */
-+
-+	struct work_struct led_work;					/* Task context for setting LEDs */
- };
+@@ -423,11 +428,8 @@ static void hid_irq_out(struct urb *urb)
+ 	else
+ 		usbhid->outtail = (usbhid->outtail + 1) & (HID_OUTPUT_FIFO_SIZE - 1);
  
- #define	hid_to_usb_dev(hid_dev) \
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index deed5f9..0df7d62 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -711,6 +711,8 @@ extern void hidinput_disconnect(struct hid_device *);
- int hid_set_field(struct hid_field *, unsigned, __s32);
- int hid_input_report(struct hid_device *, int type, u8 *, int, int);
- int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
-+struct hid_field *hidinput_get_led_field(struct hid_device *hid);
-+unsigned int hidinput_count_leds(struct hid_device *hid);
- void hid_output_report(struct hid_report *report, __u8 *data);
- struct hid_device *hid_allocate_device(void);
- struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+-	if (usbhid->outhead != usbhid->outtail) {
+-		if (hid_submit_out(hid)) {
+-			clear_bit(HID_OUT_RUNNING, &usbhid->iofl);
+-			wake_up(&usbhid->wait);
+-		}
++	if (usbhid->outhead != usbhid->outtail && !hid_submit_out(hid)) {
++		/* Successfully submitted next urb in queue */
+ 		spin_unlock_irqrestore(&usbhid->lock, flags);
+ 		return;
+ 	}
+@@ -474,13 +476,9 @@ static void hid_ctrl(struct urb *urb)
+ 	else
+ 		usbhid->ctrltail = (usbhid->ctrltail + 1) & (HID_CONTROL_FIFO_SIZE - 1);
+ 
+-	if (usbhid->ctrlhead != usbhid->ctrltail) {
+-		if (hid_submit_ctrl(hid)) {
+-			clear_bit(HID_CTRL_RUNNING, &usbhid->iofl);
+-			wake_up(&usbhid->wait);
+-		}
++	if (usbhid->ctrlhead != usbhid->ctrltail && !hid_submit_ctrl(hid)) {
++		/* Successfully submitted next urb in queue */
+ 		spin_unlock(&usbhid->lock);
+-		usb_autopm_put_interface_async(usbhid->intf);
+ 		return;
+ 	}
+ 
+@@ -515,9 +513,23 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
+ 		usbhid->out[usbhid->outhead].report = report;
+ 		usbhid->outhead = head;
+ 
++		/* Try to awake from autosuspend... */
++		if (usb_autopm_get_interface_async(usbhid->intf) < 0)
++			return;
++
++		/*
++		 * But if still suspended, leave urb enqueued, don't submit.
++		 * Submission will occur if/when resume() drains the queue.
++		 */
++		if (test_bit(HID_REPORTED_IDLE, &usbhid->iofl))
++			return;
++
+ 		if (!test_and_set_bit(HID_OUT_RUNNING, &usbhid->iofl)) {
+-			if (hid_submit_out(hid))
++			if (hid_submit_out(hid)) {
+ 				clear_bit(HID_OUT_RUNNING, &usbhid->iofl);
++				usb_autopm_put_interface_async(usbhid->intf);
++			}
++			wake_up(&usbhid->wait);
+ 		} else {
+ 			/*
+ 			 * the queue is known to run
+@@ -549,9 +561,23 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
+ 	usbhid->ctrl[usbhid->ctrlhead].dir = dir;
+ 	usbhid->ctrlhead = head;
+ 
++	/* Try to awake from autosuspend... */
++	if (usb_autopm_get_interface_async(usbhid->intf) < 0)
++		return;
++
++	/*
++	 * If already suspended, leave urb enqueued, but don't submit.
++	 * Submission will occur if/when resume() drains the queue.
++	 */
++	if (test_bit(HID_REPORTED_IDLE, &usbhid->iofl))
++		return;
++
+ 	if (!test_and_set_bit(HID_CTRL_RUNNING, &usbhid->iofl)) {
+-		if (hid_submit_ctrl(hid))
++		if (hid_submit_ctrl(hid)) {
+ 			clear_bit(HID_CTRL_RUNNING, &usbhid->iofl);
++			usb_autopm_put_interface_async(usbhid->intf);
++		}
++		wake_up(&usbhid->wait);
+ 	} else {
+ 		/*
+ 		 * the queue is known to run
 -- 
 1.7.3.1
 
