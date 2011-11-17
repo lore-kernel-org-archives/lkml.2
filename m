@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469Ab1KQQAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 11:00:11 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:56971 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331Ab1KQQAJ (ORCPT
+	id S932488Ab1KQQAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 11:00:45 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:18357 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932331Ab1KQQAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 11:00:09 -0500
-X-Greylist: delayed 1895 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Nov 2011 11:00:08 EST
-Date: Thu, 17 Nov 2011 15:28:32 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Robin Dong <hao.bigrat@gmail.com>
-Cc: linux-api@vger.kernel.org, linux-netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davidel@xmailserver.org
-Subject: Re: [Bug] epoll_wait return EPOLLOUT even with EPOLLET flag
-Message-ID: <20111117152832.GA4525@jl-vm1.vm.bytemark.co.uk>
+	Thu, 17 Nov 2011 11:00:43 -0500
+Date: Thu, 17 Nov 2011 11:00:21 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 3/5] x86: add a sysctl parameter to panic on stack
+ overflow
+Message-ID: <20111117160021.GC6008@phenom.dumpdata.com>
+References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp>
+ <20111107055301.7928.91628.stgit@ltc219.sdl.hitachi.co.jp>
+ <20111110195538.GB22646@phenom.dumpdata.com>
+ <4EC4B38B.2010301@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFZ0FUWptNqUJUkoj8=3eLSMrGKPKB5c7NcFv_5iJfJLuJF+sw@mail.gmail.com>
+In-Reply-To: <4EC4B38B.2010301@hitachi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4EC52F9E.00BC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robin Dong wrote:
-> Hi,
+On Thu, Nov 17, 2011 at 04:11:07PM +0900, HAYASAKA Mitsuo wrote:
+> Hi Konrad,
 > 
-> I am a linux user and I found some question when using epoll with EPOLLET.
+> >> diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
+> >> index 530cfd0..d720813 100644
+> >> --- a/arch/x86/kernel/irq_64.c
+> >> +++ b/arch/x86/kernel/irq_64.c
+> >> @@ -20,6 +20,8 @@
+> >>  #include <asm/idle.h>
+> >>  #include <asm/apic.h>
+> >>  
+> >> +int sysctl_panic_on_stackoverflow;
+> > __read_mostly
 > 
-> My program's step:
+> I don't mind if I add __read_mostly here, but I think it's not
+> necessary because this variable is seldom read as well.
+
+The definition of __read_mostly is that it moves this variable to a cold cache area.
+Which is what you want.
+
 > 
-> 1. create a socket (sfd) and connect to server
-> 2. create epoll (efd)
-> 3. add socket descriptor (sfd) to epoll (efd) with flag EPOLLET
-> 4. get a EPOLLOUT event through epoll_wait
 > 
-> After that, the program will nerver get a EPOLLOUT event because ituse
-> EPOLLET mode (the same event will not be got twice)
+> >> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+> >> index 6318b51..24fc654 100644
+> >> --- a/kernel/sysctl_binary.c
+> >> +++ b/kernel/sysctl_binary.c
+> >> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+> >>  	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+> >>  	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+> >>  	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
+> >> +	{ CTL_INT,	KERN_PANIC_ON_STACKOVERFLOW,	"panic_on_stackoverflow" },
+> > This shouldn't be wrapped in the #ifdef?
+> >
+> 
+> It seems that we do not need to add this entry to bin_kern_table[]
+> according to the following information and patch series:
+> 
+> [Removing binary sysctl]
+> 	http://lwn.net/Articles/361453/
+> 
+> [Removal of binary sysctl support]
+> 	http://lwn.net/Articles/361001/
+> 
+> So, I'm going to remove this changes for sysctl.h and sysctl_binary.c.
 
-Hi Robin,
-
-With EPOLLET|EPOLLOUT, you should get a message from epoll whenever
-the fd's status changes from "cannot output" to "can output".
-
-So you should get a message when sfd transitions from write()
-returning EAGAIN to write() accepting more data.
-
-Until you get EAGAIN while writing, your program should assume the
-socket is still writable.  "man epoll" has a few things to say about
-this (look for all the places here it says EAGAIN).
-
-> BUT，when a message comes from server，the client socket will get aevent
-> and this event contains EPOLLOUT and EPOLLIN, looks epoll_waitreturn
-> too much events than it should
-
-The message always contains the latest status, so says EPOLLOUT|EPOLLIN.
-
-It's doesn't mean there's an EPOLLOUT "event", it just means a message
-is triggered (by the socket becoming readable) so you get a status
-update.  In theory the program doesn't need to be told about EPOLLOUT
-here (it should be assuming the socket is writable already), but it
-doesn't do any harm.
-
-EPOLLET is just a way to reduce the number of messages from epoll when
-you call epoll_wait().  In effect you are telling the kernel "don't
-send me repeated status messages and I'll maintain my own flags".  But
-it doesn't change the status value in messages that are sent.
-
-Enjoy,
--- Jamie
+<nods>
