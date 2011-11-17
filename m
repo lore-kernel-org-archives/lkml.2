@@ -1,100 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1KQXIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 18:08:13 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41610 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab1KQXIM (ORCPT
+	id S1754082Ab1KQXKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 18:10:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63410 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab1KQXKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 18:08:12 -0500
-Date: Thu, 17 Nov 2011 15:08:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Miao Xie <miaox@cn.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch v2 for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-In-Reply-To: <20111117142213.2b34469d.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1111171507340.9933@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <20111117142213.2b34469d.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Nov 2011 18:10:32 -0500
+Message-ID: <4EC59460.7020705@gmail.com>
+Date: Thu, 17 Nov 2011 16:10:24 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: acme@ghostprotocols.net
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        fweisbec@gmail.com
+Subject: Re: [PATCH v2] perf tools: make -C consistent across commands (for
+ cpu list arg)
+References: <1321209008-7004-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1321209008-7004-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
+On 11/13/2011 11:30 AM, David Ahern wrote:
+> Currently the meaning of -C varies by perf command: for perf-top,
+> perf-stat, perf-record it means cpu list. For perf-report it
+> means comm list. Then perf-annotate, perf-report and perf-script
+> use -c for cpu list.
+> 
+> Fix annotate, report and script to use -C for cpu list to be
+> consistent with top, stat and record. This means report needs
+> to use -c for comm list which does introduce a backward
+> compatibility change.
 
-c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
-cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
-nodes from changing for a thread.  This causes any update to a set of
-allowed nodes to stall until put_mems_allowed() is called.
+Any objections to making this argument consistent? I am waiting to send
+a follow-on patch that adds comm filtering to perf-script.
 
-This stall is unncessary, however, if at least one node remains unchanged
-in the update to the set of allowed nodes.  This was addressed by
-89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
-node remains set"), but it's still possible that an empty nodemask may be
-read from a mempolicy because the old nodemask may be remapped to the new
-nodemask during rebind.  To prevent this, only avoid the stall if there
-is no mempolicy for the thread being changed.
+David
 
-This is a temporary solution until all reads from mempolicy nodemasks can
-be guaranteed to not be empty without the get_mems_allowed()
-synchronization.
 
-Also moves the check for nodemask intersection inside task_lock() so that
-tsk->mems_allowed cannot change.  This ensures that nothing can set this
-tsk's mems_allowed out from under us and also protects tsk->mempolicy.
-
-Reported-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- kernel/cpuset.c |   16 +++++++++++-----
- 1 files changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -949,7 +949,7 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
- static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 					nodemask_t *newmems)
- {
--	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
-+	bool need_loop;
- 
- repeat:
- 	/*
-@@ -962,6 +962,14 @@ repeat:
- 		return;
- 
- 	task_lock(tsk);
-+	/*
-+	 * Determine if a loop is necessary if another thread is doing
-+	 * get_mems_allowed().  If at least one node remains unchanged and
-+	 * tsk does not have a mempolicy, then an empty nodemask will not be
-+	 * possible when mems_allowed is larger than a word.
-+	 */
-+	need_loop = tsk->mempolicy ||
-+			!nodes_intersects(*newmems, tsk->mems_allowed);
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
- 
-@@ -981,11 +989,9 @@ repeat:
- 
- 	/*
- 	 * Allocation of memory is very fast, we needn't sleep when waiting
--	 * for the read-side.  No wait is necessary, however, if at least one
--	 * node remains unchanged.
-+	 * for the read-side.
- 	 */
--	while (masks_disjoint &&
--			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
-+	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
- 		task_unlock(tsk);
- 		if (!task_curr(tsk))
- 			yield();
+> 
+> v1 -> v2
+> - update perf-script.txt too
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> ---
+>  tools/perf/Documentation/perf-annotate.txt |    2 +-
+>  tools/perf/Documentation/perf-report.txt   |    4 ++--
+>  tools/perf/Documentation/perf-script.txt   |    2 +-
+>  tools/perf/builtin-annotate.c              |    2 +-
+>  tools/perf/builtin-report.c                |    4 ++--
+>  tools/perf/builtin-script.c                |    2 +-
+>  6 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+> index fe6762e..476029d 100644
+> --- a/tools/perf/Documentation/perf-annotate.txt
+> +++ b/tools/perf/Documentation/perf-annotate.txt
+> @@ -66,7 +66,7 @@ OPTIONS
+>  	used. This interfaces starts by centering on the line with more
+>  	samples, TAB/UNTAB cycles through the lines with more samples.
+>  
+> --c::
+> +-C::
+>  --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+>  	be provided as a comma-separated list with no space: 0,1. Ranges of
+>  	CPUs are specified with -: 0-2. Default is to report samples on all
+> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+> index 212f24d..dc85392 100644
+> --- a/tools/perf/Documentation/perf-report.txt
+> +++ b/tools/perf/Documentation/perf-report.txt
+> @@ -39,7 +39,7 @@ OPTIONS
+>  -T::
+>  --threads::
+>  	Show per-thread event counters
+> --C::
+> +-c::
+>  --comms=::
+>  	Only consider symbols in these comms. CSV that understands
+>  	file://filename entries.
+> @@ -128,7 +128,7 @@ OPTIONS
+>  --symfs=<directory>::
+>          Look for files with symbols relative to this directory.
+>  
+> --c::
+> +-C::
+>  --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+>  	be provided as a comma-separated list with no space: 0,1. Ranges of
+>  	CPUs are specified with -: 0-2. Default is to report samples on all
+> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+> index dec87ec..3613b0a 100644
+> --- a/tools/perf/Documentation/perf-script.txt
+> +++ b/tools/perf/Documentation/perf-script.txt
+> @@ -182,7 +182,7 @@ OPTIONS
+>  --hide-call-graph::
+>          When printing symbols do not display call chain.
+>  
+> --c::
+> +-C::
+>  --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+>  	be provided as a comma-separated list with no space: 0,1. Ranges of
+>  	CPUs are specified with -: 0-2. Default is to report samples on all
+> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+> index 46b4c24..1b5e68c 100644
+> --- a/tools/perf/builtin-annotate.c
+> +++ b/tools/perf/builtin-annotate.c
+> @@ -269,7 +269,7 @@ static const struct option options[] = {
+>  		    "print matching source lines (may be slow)"),
+>  	OPT_BOOLEAN('P', "full-paths", &full_paths,
+>  		    "Don't shorten the displayed pathnames"),
+> -	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+> +	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+>  	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+>  		   "Look for files with symbols relative to this directory"),
+>  	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index 4d7c834..85a3160 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -474,7 +474,7 @@ static const struct option options[] = {
+>  	OPT_BOOLEAN('G', "inverted", &inverted_callchain, "alias for inverted call graph"),
+>  	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+>  		   "only consider symbols in these dsos"),
+> -	OPT_STRING('C', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+> +	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+>  		   "only consider symbols in these comms"),
+>  	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+>  		   "only consider these symbols"),
+> @@ -488,7 +488,7 @@ static const struct option options[] = {
+>  		    "Only display entries resolved to a symbol"),
+>  	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+>  		    "Look for files with symbols relative to this directory"),
+> -	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+> +	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+>  	OPT_BOOLEAN('I', "show-info", &show_full_info,
+>  		    "Display extended information about perf.data file"),
+>  	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index 2f62a29..01329ca 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -1083,7 +1083,7 @@ static const struct option options[] = {
+>  	OPT_CALLBACK('f', "fields", NULL, "str",
+>  		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+>  		     parse_output_fields),
+> -	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+> +	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+>  	OPT_BOOLEAN('I', "show-info", &show_full_info,
+>  		    "display extended information from perf.data file"),
+>  	OPT_END()
