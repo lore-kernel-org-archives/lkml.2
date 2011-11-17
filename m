@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab1KQJp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 04:45:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62811 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab1KQJp0 convert rfc822-to-8bit (ORCPT
+	id S1756306Ab1KQJue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:50:34 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60875 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057Ab1KQJuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 04:45:26 -0500
+	Thu, 17 Nov 2011 04:50:32 -0500
+Date: Thu, 17 Nov 2011 01:50:21 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>
+Subject: Re: [PATCH] ocfs2: send correct UUID to cleancache initialization
+Message-ID: <20111117095019.GE7319@noexit.corp.google.com>
+Mail-Followup-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+	Steven Whitehouse <swhiteho@redhat.com>,
+	Sunil Mushran <sunil.mushran@oracle.com>
+References: <dd238ce4-fe92-4dc0-a4b6-7f273c386366@default>
 MIME-Version: 1.0
-In-Reply-To: <1321023744-16249-1-git-send-email-linkinjeon@gmail.com>
-References: <1321023744-16249-1-git-send-email-linkinjeon@gmail.com>
-Date: Thu, 17 Nov 2011 15:15:25 +0530
-Message-ID: <CADDb1s21Px4vP5S48O770vCT6FNAw4CDR9uDRcBn=rPqfKnzQA@mail.gmail.com>
-Subject: Re: [PATCH] ext4: remove unneeded variable.
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dd238ce4-fe92-4dc0-a4b6-7f273c386366@default>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any feedback for this patch? We surely don't need 'ret2' variable in this code.
+On Mon, Oct 17, 2011 at 04:47:17PM -0700, Dan Magenheimer wrote:
+> ocfs2: Fix cleancache initialization call to correctly pass uuid
+> 
+> As reported by Steven Whitehouse in https://lkml.org/lkml/2011/5/27/221 
+> the ocfs2 volume UUID is incorrectly passed to cleancache.
+> As a result, shared-ephemeral tmem pools will not actually
+> be created; instead they will be private (unshared) which
+> misses out on a major benefit of tmem.
+> 
+> Reported-by: Steven Whitehouse <swhiteho@redhat.com>
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-Thanks & Regards,
-Amit Sahrawat
+	This patch is now in the 'fixes' branch of ocfs2.git.
 
-On Fri, Nov 11, 2011 at 8:32 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
-> ret2 is not needed in ext4_flush_completed_IO().
->
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-> ---
->  fs/ext4/fsync.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-> index 00a2cb7..40397ac 100644
-> --- a/fs/ext4/fsync.c
-> +++ b/fs/ext4/fsync.c
-> @@ -81,7 +81,6 @@ int ext4_flush_completed_IO(struct inode *inode)
->        struct ext4_inode_info *ei = EXT4_I(inode);
->        unsigned long flags;
->        int ret = 0;
-> -       int ret2 = 0;
->
->        dump_completed_IO(inode);
->        spin_lock_irqsave(&ei->i_completed_io_lock, flags);
-> @@ -105,12 +104,10 @@ int ext4_flush_completed_IO(struct inode *inode)
->                 */
->                spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
->                ret = ext4_end_io_nolock(io);
-> -               if (ret < 0)
-> -                       ret2 = ret;
->                spin_lock_irqsave(&ei->i_completed_io_lock, flags);
->        }
->        spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
-> -       return (ret2 < 0) ? ret2 : 0;
-> +       return (ret < 0) ? ret : 0;
->  }
->
->  /*
-> --
-> 1.7.4.4
->
->
+Joel
+
+> 
+> diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
+> --- a/fs/ocfs2/super.c
+> +++ b/fs/ocfs2/super.c
+> @@ -2374,7 +2374,7 @@ static int ocfs2_initialize_super(struct super_block *sb,
+>  		mlog_errno(status);
+>  		goto bail;
+>  	}
+> -	cleancache_init_shared_fs((char *)&uuid_net_key, sb);
+> +	cleancache_init_shared_fs((char *)&di->id2.i_super.s_uuid, sb);
+>  
+>  bail:
+>  	return status;
+
+-- 
+
+"Well-timed silence hath more eloquence than speech."  
+         - Martin Fraquhar Tupper
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
