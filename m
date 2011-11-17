@@ -1,161 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab1KQRfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 12:35:54 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63826 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750847Ab1KQRfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 12:35:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,528,1315206000"; 
-   d="scan'208";a="91970844"
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Thu, 17 Nov 2011 09:36:21 -0800
-In-Reply-To: <1321547917.6308.48.camel@marge.simson.net>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1753462Ab1KQRjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 12:39:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37352 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab1KQRjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 12:39:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <1321511678.3274.30.camel@edumazet-laptop>
+References: <cover.1321481064.git.david.decotigny@google.com>
+ <185a0f33c69ff07e8fe3482828b368371420bf47.1321481064.git.david.decotigny@google.com>
+ <1321511678.3274.30.camel@edumazet-laptop>
+From: David Decotigny <david.decotigny@google.com>
+Date: Thu, 17 Nov 2011 09:39:21 -0800
+Message-ID: <CAG88wWbiwVKUVtQxV=FzBTfaCngeGYXL9M_00NQKCgbEqic4-w@mail.gmail.com>
+Subject: Re: [PATCH net-next v6 7/9] forcedeth: implement ndo_get_stats64() API
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 08:38 -0800, Mike Galbraith wrote:
-> On Thu, 2011-11-17 at 16:56 +0100, Peter Zijlstra wrote:
-> > Something like the below maybe, although I'm certain it all can be
-> > written much nicer indeed.
-> 
-> I'll give it a go.
-> 
-> Squabbling with bouncing buddies in an isolated and otherwise idle
-> cpuset ate my day.
->  
+On Wed, Nov 16, 2011 at 10:34 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> You should use the _bh variants.
 
-Well looks like I managed to have the similar issue in my patch too.
-Anyways here is the updated cleaned up version of the patch ;)
----
+Oooops. It's unforgivable: the sky2 implementation you mentioned in a
+previous message was the simple and right model to follow. Grrrrrr.
+Sending a fix shortly.
 
-Avoid select_idle_sibling() from picking a sibling thread if there's
-an idle core that shares cache.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- kernel/sched.c      |    2 +
- kernel/sched_fair.c |   57 ++++++++++++++++++++++++++++++++++++--------------
- 2 files changed, 43 insertions(+), 16 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0e9344a..4b0bc6a 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -734,6 +734,8 @@ static inline int cpu_of(struct rq *rq)
- #define for_each_domain(cpu, __sd) \
- 	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); __sd; __sd = __sd->parent)
- 
-+#define for_each_lower_domain(sd) for (; sd; sd = sd->child)
-+
- #define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
- #define this_rq()		(&__get_cpu_var(runqueues))
- #define task_rq(p)		cpu_rq(task_cpu(p))
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5c9e679..020483a 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2241,6 +2241,28 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- 	return idlest;
- }
- 
-+/**
-+ * highest_flag_domain - Return highest sched_domain containing flag.
-+ * @cpu:	The cpu whose highest level of sched domain is to
-+ *		be returned.
-+ * @flag:	The flag to check for the highest sched_domain
-+ *		for the given cpu.
-+ *
-+ * Returns the highest sched_domain of a cpu which contains the given flag.
-+ */
-+static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
-+{
-+	struct sched_domain *sd, *hsd = NULL;
-+
-+	for_each_domain(cpu, sd) {
-+		if (!(sd->flags & flag))
-+			break;
-+		hsd = sd;
-+	}
-+
-+	return hsd;
-+}
-+
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
-@@ -2249,6 +2271,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	struct sched_domain *sd;
-+	struct sched_group *sg;
- 	int i;
- 
- 	/*
-@@ -2269,25 +2292,27 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
- 	rcu_read_lock();
--	for_each_domain(target, sd) {
--		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
--			break;
-+	sd = highest_flag_domain(target, SD_SHARE_PKG_RESOURCES);
-+	for_each_lower_domain(sd) {
-+		sg = sd->groups;
-+		do {
-+			if (!cpumask_intersects(sched_group_cpus(sg),
-+						tsk_cpus_allowed(p)))
-+				goto next;
- 
--		for_each_cpu_and(i, sched_domain_span(sd), tsk_cpus_allowed(p)) {
--			if (idle_cpu(i)) {
--				target = i;
--				break;
-+			for_each_cpu(i, sched_group_cpus(sg)) {
-+				if (!idle_cpu(i))
-+					goto next;
- 			}
--		}
- 
--		/*
--		 * Lets stop looking for an idle sibling when we reached
--		 * the domain that spans the current cpu and prev_cpu.
--		 */
--		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
--		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
--			break;
-+			target = cpumask_first_and(sched_group_cpus(sg),
-+					tsk_cpus_allowed(p));
-+			goto done;
-+next:
-+			sg = sg->next;
-+		} while (sg != sd->groups);
- 	}
-+done:
- 	rcu_read_unlock();
- 
- 	return target;
-
-
+Thanks!
