@@ -1,98 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab1KQUkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 15:40:46 -0500
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:53740 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab1KQUkp (ORCPT
+	id S1756046Ab1KQUlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 15:41:51 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38515 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693Ab1KQUlu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 15:40:45 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4EC5714D.7000008@cam.ac.uk>
-Date: Thu, 17 Nov 2011 20:40:45 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	Thu, 17 Nov 2011 15:41:50 -0500
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.drivers.sensors
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-CC: Ben Hutchings <bhutchings@solarflare.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, dg77.kim@samsung.com,
-        kyungmin.park@samsung.com
-Subject: Re: [RFC PATCH 0/2] HWMON: add in-kernel interfaces to read sensor
- values.
-References: <1320389433-1671-1-git-send-email-myungjoo.ham@samsung.com> <1321044403.2757.23.camel@bwh-desktop> <CAJ0PZbQsTYZvoVMgZ_L5uPUxCTbzH72zzUqUkvXNnmqiDOGY=g@mail.gmail.com> <4EC1444E.5080108@cam.ac.uk> <CAJ0PZbR=8PPKNNREOBXL1U8To+jjp9=gkQz_NKUVKU8DhyWPJQ@mail.gmail.com>
-In-Reply-To: <CAJ0PZbR=8PPKNNREOBXL1U8To+jjp9=gkQz_NKUVKU8DhyWPJQ@mail.gmail.com>
+In-Reply-To: <4EC54132.5070908@gmail.com>
+References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
+ <4EC52BCF.7020609@gmail.com> <20111117155428.GS19069@tbergstrom-lnx.Nvidia.com>
+ <CACxGe6ub2QBO0ZLwNdSvMxP1U087pqL-qL+dfWAbn-08gBQyvg@mail.gmail.com> <4EC54132.5070908@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 17 Nov 2011 13:41:28 -0700
+X-Google-Sender-Auth: tuL1ounZW6j2riM8jM94OkVmXxU
+Message-ID: <CACxGe6vP3dFUeSN0xLPi0iywGbdtZLgieD1k=5z2EiS9cw6VsA@mail.gmail.com>
+Subject: Re: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
+To: Rob Herring <robherring2@gmail.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Marc Dietrich <marvin24@gmx.de>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Colin Cross <ccross@android.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 08:22 AM, MyungJoo Ham wrote:
-> On Tue, Nov 15, 2011 at 1:39 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
->> On 11/14/2011 01:31 AM, MyungJoo Ham wrote:
->>> On Sat, Nov 12, 2011 at 5:46 AM, Ben Hutchings
->>> <bhutchings@solarflare.com> wrote:
->>>> On Fri, 2011-11-04 at 15:50 +0900, MyungJoo Ham wrote:
->>>>> We have been reading hwmon values (TMU, the SoC-core temperature sensor,
->>>>> and NTC, the ambient or battery surface temperature sensor) for
->>>>> Charger-Manager. However, because hwmon does not have in-kernel interface,
->>>>> we have been using undesired method, including "../../../fs/*.h".
->>>>>
->>>>> This patch is to provide in-kernel interface for hwmon:
->>>>> hwmon_get_value and hwmon_set_value. In order to use these two functions,
->>>>> the hwmon driver should provide its sysfs attributes to hwmon framework
->>>>> as well. If the hwmon driver does not provide (by providing NULL), the users
->>>>> of the hwmon won't be able to use hwmon_get/set_value();
->>>>> The sysfs attribute (struct attribuyte_group *) is provided with
->>>>> hwmon_device_register; adding the second parameter to hwmon_device_register().
->>>>> The 2/2 patch shows the changes in device drivers due to this.
->>>> [...]
->>>>
->>>> This is an improvement, but I don't think it is quite enough.  As I
->>>> understand the hwmon sysfs interface, all sensor values should be
->>>> integers.  So the in-kernel interface should also work with integers,
->>>> not strings.
->>>>
->>>> As a first implementation you could perhaps parse the strings back to
->>>> integers.  However in the longer term the driver API should be changed
->>>> so that hwmon drivers fully describe their sensors to the core and the
->>>> core takes care of exposing them through sysfs and the in-kernel API.
->>>
->>> I agree.
->>>
->>> I'll let it the in-kernel interfaces provide integer value although it will
->>> simply parse strings as you've addressed until we have some other
->>> interfaces for sysfs entries in hwmon device drivers.
->>>
->>>
->> To throw another option into the mix, you could make it an IIO driver
->> and sit hwmon on top of that (there is already a simple driver for
->> doing this) - IIO has in kernel interfaces of the type
->> you want.  Not everything is there yet though.
+On Thu, Nov 17, 2011 at 10:15 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 11/17/2011 10:53 AM, Grant Likely wrote:
 >>
->> Jonathan
-> 
-> Yes, we may alter the HWMON drivers to be IIO drivers as well.
-> 
-> However, to me, at least for the HWMON devices I've been looking, IIO
-> seems to be an overkill and more complex than needed for the target
-> devices.
-It should (at least in theory) be very simple for anything like a simple
-hwmon device on which one wants to do polled reads.
+>> On Nov 17, 2011 8:54 AM, "Peter De Schrijver" <pdeschrijver@nvidia.com
+>> <mailto:pdeschrijver@nvidia.com>> wrote:
+>>>
+>>> On Thu, Nov 17, 2011 at 04:44:15PM +0100, Rob Herring wrote:
+>>> > On 11/17/2011 09:07 AM, Peter De Schrijver wrote:
+>>> > > Convert tegra20 IRQ intialization to the GIC devicetree binding.
+>> Modify the
+>>> > > interrupt definitions in the dts files according to
+>>> > > Documentation/devicetree/bindings/arm/gic.txt
+>>> > >
+>>> > > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com
+>> <mailto:pdeschrijver@nvidia.com>>
+>>> >
+>>> > One minor comment below, but otherwise:
+>>> >
+>>> > Acked-by: Rob Herring <rob.herring@calxeda.com
+>> <mailto:rob.herring@calxeda.com>>
+>>> >
+>>> > > ---
+>>> > >  arch/arm/boot/dts/tegra-paz00.dts |    2 +-
+>>> > >  arch/arm/boot/dts/tegra20.dtsi    |   52
+>> ++++++++++++++++++------------------
+>>> > >  arch/arm/mach-tegra/irq.c         |   18 +++++++++++-
+>>> > >  3 files changed, 43 insertions(+), 29 deletions(-)
+>>> > >
+>>> > > diff --git a/arch/arm/boot/dts/tegra-paz00.dts
+>> b/arch/arm/boot/dts/tegra-paz00.dts
+>>> > > index 15a949f..7ff8f6f 100644
+>>> > > --- a/arch/arm/boot/dts/tegra-paz00.dts
+>>> > > +++ b/arch/arm/boot/dts/tegra-paz00.dts
+>>> > > @@ -32,7 +32,7 @@
+>>> > >             #size-cells = <0>;
+>>> > >             compatible = "nvidia,nvec";
+>>> > >             reg = <0x7000C500 0x100>;
+>>> > > -           interrupts = <124>;
+>>> > > +           interrupts = <0 92 0x04>;
+>>> > >             clock-frequency = <80000>;
+>>> > >             request-gpios = <&gpio 170 0>;
+>>> > >             slave-addr = <138>;
+>>> > > diff --git a/arch/arm/boot/dts/tegra20.dtsi
+>> b/arch/arm/boot/dts/tegra20.dtsi
+>>> > > index 795b921..cd01b01 100644
+>>> > > --- a/arch/arm/boot/dts/tegra20.dtsi
+>>> > > +++ b/arch/arm/boot/dts/tegra20.dtsi
+>>> > > @@ -5,9 +5,9 @@
+>>> > >     interrupt-parent = <&intc>;
+>>> > >
+>>> > >     intc: interrupt-controller@50041000 {
+>>> > > -           compatible = "nvidia,tegra20-gic";
+>>> > > +           compatible = "arm,cortex-a9-gic";
+>>> > >             interrupt-controller;
+>>> >
+>>> > You should add an "interrupt-parent;" here so the gic's parent is null
+>>> > and not the gic.
+>>>
+>>> Ok. I will add that in the next version.
+>>
+>> No, there is no need to do that, nor is it convention. The gic node
+>> doesn't have an interrupts property, so the interrupt-parent is irrelevant.
+>>
+> Can't resist the inbox? Go back to your sabbatical.. :) We discussed
+> this before and I though agreed this was the correct approach.
 
-All you do is allocate an iio_dev, set up the channel descriptions,
-register it with the core.  Then a map is used to match supplied
-channels to their consumers in kernel.
+It's a little hard to stop cold turkey.  :-(
 
-There is a simple hwmon driver that then takes one of these maps if
-you want conventional hwmon interfaces.  Other interested drivers can
-have their own maps.
+Yup, we had discussed it (and your description below jogged my
+memory), but I don't remember talking about adding an empty
+interrupt-parent property.  I only remember making sure that
+of_irq_find_parent() got fixed.
 
-Anyhow, IIO is complex for some devices, but pretty simple for simple
-things (at least it should be!)
+> It inherits the interrupt-parent from the parent node. Originally
+> of_irq_find_parent would return that node, but this was fixed. So it
+> doesn't really matter from a functional standpoint.
+>
+> So is no interrupt parent defined as no interrupts property or
+> interrupt-parent being null phandle?
 
-Jonathan
+There is no precedence for setting a null interrupt-parent and no need
+to, so I say just leave it out.
+
+>> Rob, perhaps we should adjust of_init_irq() to only set the parent
+>> pointer if interrupts is present.
+>>
+>
+> It works correctly already either way.
+
+Okay, I wasn't sure.  Let's leave it alone.
+
+g.
