@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab1KQL63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:58:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35702 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757160Ab1KQL61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:58:27 -0500
-From: Amit Shah <amit.shah@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v3 08/11] virtio: net: Move out vq and vq buf removal into separate function
-Date: Thu, 17 Nov 2011 17:27:39 +0530
-Message-Id: <b47ee757fe31d57d1b66755db75373f2772798e5.1321530505.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1321530505.git.amit.shah@redhat.com>
-References: <cover.1321530505.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1321530505.git.amit.shah@redhat.com>
-References: <cover.1321530505.git.amit.shah@redhat.com>
+	id S1757320Ab1KQL7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:59:34 -0500
+Received: from www.linutronix.de ([62.245.132.108]:35894 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab1KQL7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 06:59:31 -0500
+Date: Thu, 17 Nov 2011 12:59:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Luis Henriques <henrix@camandro.org>
+cc: Yong Zhang <yong.zhang0@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
+ memcg_check_events()
+In-Reply-To: <20111117114451.GC3762@hades>
+Message-ID: <alpine.LFD.2.02.1111171258060.4902@ionos>
+References: <alpine.LFD.2.02.1111150050590.4902@ionos> <20111115084059.GA23250@zhy> <20111116091653.GA8692@zhy> <1321452758.4181.18.camel@frodo> <alpine.LFD.2.02.1111161801270.4902@ionos> <20111117030332.GA14492@zhy> <alpine.LFD.2.02.1111171125020.4902@ionos>
+ <20111117114451.GC3762@hades>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The remove and PM freeze functions will share this code.
+Luis,
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/net/virtio_net.c |   23 ++++++++++++++---------
- 1 files changed, 14 insertions(+), 9 deletions(-)
+On Thu, 17 Nov 2011, Luis Henriques wrote:
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 6baa563..fbff37a 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1123,24 +1123,29 @@ static void free_unused_bufs(struct virtnet_info *vi)
- 	BUG_ON(vi->num != 0);
- }
- 
--static void __devexit virtnet_remove(struct virtio_device *vdev)
-+static void remove_vq_common(struct virtnet_info *vi)
- {
--	struct virtnet_info *vi = vdev->priv;
--
--	/* Stop all the virtqueues. */
--	vdev->config->reset(vdev);
--
--
--	unregister_netdev(vi->dev);
- 	cancel_delayed_work_sync(&vi->refill);
- 
- 	/* Free unused buffers in both send and recv, if any. */
- 	free_unused_bufs(vi);
- 
--	vdev->config->del_vqs(vi->vdev);
-+	vi->vdev->config->del_vqs(vi->vdev);
- 
- 	while (vi->pages)
- 		__free_pages(get_a_page(vi, GFP_KERNEL), 0);
-+}
-+
-+static void __devexit virtnet_remove(struct virtio_device *vdev)
-+{
-+	struct virtnet_info *vi = vdev->priv;
-+
-+	/* Stop all the virtqueues. */
-+	vdev->config->reset(vdev);
-+
-+	unregister_netdev(vi->dev);
-+
-+	remove_vq_common(vi);
- 
- 	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
--- 
-1.7.7.1
+> On Thu, Nov 17, 2011 at 11:25:56AM +0100, Thomas Gleixner wrote:
+> > Johannes came up with a different solution. Could you please give it a try?
+> 
+> Again, I've run a quick test and it looks like this solves the issue.
 
+thanks for testing. That solution is way better than the local_lock
+based one.
+
+Thanks,
+
+	tglx
