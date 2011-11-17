@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab1KQGeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 01:34:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49937 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442Ab1KQGep (ORCPT
+	id S1753952Ab1KQGhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 01:37:53 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54139 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab1KQGhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 01:34:45 -0500
-Message-ID: <1321511678.3274.30.camel@edumazet-laptop>
-Subject: Re: [PATCH net-next v6 7/9] forcedeth: implement ndo_get_stats64()
- API
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Decotigny <david.decotigny@google.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>
-Date: Thu, 17 Nov 2011 07:34:38 +0100
-In-Reply-To: <185a0f33c69ff07e8fe3482828b368371420bf47.1321481064.git.david.decotigny@google.com>
-References: <cover.1321481064.git.david.decotigny@google.com>
-	 <185a0f33c69ff07e8fe3482828b368371420bf47.1321481064.git.david.decotigny@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 17 Nov 2011 01:37:52 -0500
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH] spi-topcliff-pch: Fix count calculation issue
+Date: Thu, 17 Nov 2011 15:37:21 +0900
+Message-Id: <1321511841-12824-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 16 novembre 2011 à 14:15 -0800, David Decotigny a écrit :
-> This commit implements the ndo_get_stats64() API for forcedeth. Since
-> hardware stats are being updated from different contexts (process and
-> timer), this commit adds synchronization. For software stats, it
-> relies on the u64_stats_sync.h API.
-> 
-> Tested:
->   - 16-way SMP x86_64 ->
->     RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
->   - pktgen + loopback: identical rx_bytes/tx_bytes and rx_packets/tx_packets
-> 
-> 
-> 
-> Signed-off-by: David Decotigny <david.decotigny@google.com>
-> ---
->  drivers/net/ethernet/nvidia/forcedeth.c |  197 +++++++++++++++++++++++--------
->  1 files changed, 146 insertions(+), 51 deletions(-)
-> 
+Currently, count value is not correct more than len=8193 like below.
 
+len	Current-cnt	New-cnt		Anticipated-cnt
+4095	1		1		1
+4096	1		1		1
+4097	2		2		2
 
-> +static struct rtnl_link_stats64*
-> +nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
-> +	__acquires(&netdev_priv(dev)->hwstats_lock)
-> +	__releases(&netdev_priv(dev)->hwstats_lock)
->  {
->  	struct fe_priv *np = netdev_priv(dev);
-> +	unsigned int syncp_start;
-> +
-> +	/*
-> +	 * Note: because HW stats are not always available and for
-> +	 * consistency reasons, the following ifconfig stats are
-> +	 * managed by software: rx_bytes, tx_bytes, rx_packets and
-> +	 * tx_packets. The related hardware stats reported by ethtool
-> +	 * should be equivalent to these ifconfig stats, with 4
-> +	 * additional bytes per packet (Ethernet FCS CRC), except for
-> +	 * tx_packets when TSO kicks in.
-> +	 */
-> +
-> +	/* software stats */
-> +	do {
-> +		syncp_start = u64_stats_fetch_begin(&np->swstats_rx_syncp);
-> +		storage->rx_packets       = np->stat_rx_packets;
-> +		storage->rx_bytes         = np->stat_rx_bytes;
-> +		storage->rx_missed_errors = np->stat_rx_missed_errors;
-> +	} while (u64_stats_fetch_retry(&np->swstats_rx_syncp, syncp_start));
-> +
-> +	do {
-> +		syncp_start = u64_stats_fetch_begin(&np->swstats_tx_syncp);
-> +		storage->tx_packets = np->stat_tx_packets;
-> +		storage->tx_bytes   = np->stat_tx_bytes;
-> +		storage->tx_dropped = np->stat_tx_dropped;
-> +	} while (u64_stats_fetch_retry(&np->swstats_tx_syncp, syncp_start));
->  
+8191	2		2		2
+8192	2		2		2
+8193	2(NG)		3		3
 
-I have no idea why you think u64_stats_fetch_begin() is safe on 32bit
-arch here.
+12287	3		3		3
+12288	3		3		3
+12289	3(NG)		4		4
 
-Hint : On CONFIG_SMP=n build, only preemption is disabled in
-u64_stats_fetch_begin()
+This patch fixes the issue.
 
-So an interrupt could come and change your counters while you were
-reading them.
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/spi/spi-topcliff-pch.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Its very unlikely, but its possible.
-
-You should use the _bh variants.
-
-
-
-
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 9fb0541..08b5f31 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -1247,7 +1247,9 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+ 		}
+ 		spin_unlock(&data->lock);
+ 
+-		cnt = data->cur_trans->len / (PCH_BUF_SIZE + 1) + 1;
++		if (!data->cur_trans->len)
++			goto out;
++		cnt = (data->cur_trans->len - 1) / PCH_BUF_SIZE + 1;
+ 		data->save_total_len = data->cur_trans->len;
+ 		if (data->use_dma) {
+ 			int i;
+-- 
+1.7.4.4
 
