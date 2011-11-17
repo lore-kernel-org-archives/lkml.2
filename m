@@ -1,109 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab1KQCjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 21:39:25 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:62195 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab1KQCjY (ORCPT
+	id S1755446Ab1KQCpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 21:45:51 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:53360 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab1KQCpu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 21:39:24 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v6 3/9] kbuild: document RPS/XPS network Kconfig options
-Date: Wed, 16 Nov 2011 18:39:05 -0800
-Message-Id: <e0bb736123d687a921f15e4bb0254eeeabe22dcb.1321496595.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321496595.git.david.decotigny@google.com>
-References: <cover.1321496595.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Wed, 16 Nov 2011 21:45:50 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz9371K936eK542M1432N98dKzz1202hzz8275bh8275dhz32i2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Joe Perches <joe@perches.com>, Sonic Zhang <sonic.adi@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>
+Date: Wed, 16 Nov 2011 21:45:45 -0500
+Subject: RE: [PATCH] MAINTAINERS: update maintainers for blackfin arch and
+ drivers.
+Thread-Topic: [PATCH] MAINTAINERS: update maintainers for blackfin arch and
+ drivers.
+Thread-Index: AcykYXy2WJYgVMUKTda06QLhdsWMrAAcCBUg
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16D3BC319BE@NWD2CMBX1.ad.analog.com>
+References: <1321429708-13862-1-git-send-email-sonic.adi@gmail.com>
+ <1321449126.16478.2.camel@Joe-Laptop>
+In-Reply-To: <1321449126.16478.2.camel@Joe-Laptop>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a description of RPS/XPS options and allow them to be
-changed at make menuconfig time.
-
-It also fixes following checkpatch syntax warnings:
-ERROR: trailing whitespace
-+^I  $
-
-ERROR: trailing whitespace
-+^I$
 
 
+>-----Original Message-----
+>From: Joe Perches [mailto:joe@perches.com]
+>Sent: Wednesday, November 16, 2011 9:12 PM
+>To: Sonic Zhang
+>Cc: LKML; uclinux-dist-devel@blackfin.uclinux.org; Zhang, Sonic
+>Subject: Re: [PATCH] MAINTAINERS: update maintainers for
+>blackfin arch and drivers.
+>
+>On Wed, 2011-11-16 at 15:48 +0800, Sonic Zhang wrote:
+>> From: Sonic Zhang <sonic.zhang@analog.com>
+>>
+>> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+>> ---
+>>  MAINTAINERS |    4 +---
+>>  1 files changed, 1 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS index 7f6bc29..86941ba 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -1481,6 +1481,7 @@ F:     fs/bfs/
+>>  F:  include/linux/bfs_fs.h
+>>
+>>  BLACKFIN ARCHITECTURE
+>> +M:  Bob Liu <lliubbo@kernel.org>
+>>  M:  Mike Frysinger <vapier@gentoo.org>
+>>  L:  uclinux-dist-devel@blackfin.uclinux.org
+>>  W:  http://blackfin.uclinux.org
+>> @@ -1494,14 +1495,12 @@ S:   Supported
+>>  F:  drivers/net/ethernet/adi/
+>>
+>>  BLACKFIN RTC DRIVER
+>> -M:  Mike Frysinger <vapier.adi@gmail.com>
+>>  L:  uclinux-dist-devel@blackfin.uclinux.org
+>>  W:  http://blackfin.uclinux.org
+>>  S:  Supported
+>>  F:  drivers/rtc/rtc-bfin.c
+>>
+>>  BLACKFIN SDH DRIVER
+>> -M:  Cliff Cai <cliff.cai@analog.com>
+>>  L:  uclinux-dist-devel@blackfin.uclinux.org
+>>  W:  http://blackfin.uclinux.org
+>>  S:  Supported
+>> @@ -1515,7 +1514,6 @@ S:     Supported
+>>  F:  drivers/tty/serial/bfin_5xx.c
+>>
+>>  BLACKFIN WATCHDOG DRIVER
+>> -M:  Mike Frysinger <vapier.adi@gmail.com>
+>>  L:  uclinux-dist-devel@blackfin.uclinux.org
+>>  W:  http://blackfin.uclinux.org
+>>  S:  Supported
+>
+>Drivers or arches without specific people to maintain them
+>really should not have "S: Supported".
+>These should really be "S: Orphan".
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- net/Kconfig |   21 ++++++++++++++++-----
- 1 files changed, 16 insertions(+), 5 deletions(-)
+The former maintainers quit ADI Linux team. Although no dedicated person is assigned this role, these drivers are still supported by the team under mailing list uclinux-dist-devel@blackfin.uclinux.org.
 
-diff --git a/net/Kconfig b/net/Kconfig
-index a073148..991379e 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -10,7 +10,7 @@ menuconfig NET
- 	  The reason is that some programs need kernel networking support even
- 	  when running on a stand-alone machine that isn't connected to any
- 	  other computer.
--	  
-+
- 	  If you are upgrading from an older kernel, you
- 	  should consider updating your networking tools too because changes
- 	  in the kernel and the tools often go hand in hand. The tools are
-@@ -217,20 +217,32 @@ source "net/dns_resolver/Kconfig"
- source "net/batman-adv/Kconfig"
- 
- config RPS
--	boolean
-+	boolean "Enable Receive Packet Steering"
- 	depends on SMP && SYSFS && USE_GENERIC_SMP_HELPERS
- 	default y
-+	help
-+	  RPS distributes the load of received packet processing
-+	  across multiple CPUs. If unsure, say Y.
- 
- config RFS_ACCEL
--	boolean
-+	boolean "Enable Hardware Acceleration of RFS"
- 	depends on RPS && GENERIC_HARDIRQS
- 	select CPU_RMAP
- 	default y
-+	help
-+	  Allow drivers for multiqueue hardware with flow filter
-+	  tables to accelerate RFS. If unsure, say Y.
- 
- config XPS
--	boolean
-+	boolean "Enable Transmit Packet Steering"
- 	depends on SMP && SYSFS && USE_GENERIC_SMP_HELPERS
- 	default y
-+	help
-+	  For multiqueue devices, XPS selects a transmit queue during
-+	  packet transmission based on configuration. This is done by
-+	  mapping the CPU transmitting the packet to a queue. XPS can
-+	  reduce transmit network latency on SMP systems. If unsure,
-+	  say Y.
- 
- config HAVE_BPF_JIT
- 	bool
-@@ -274,7 +286,6 @@ config NET_TCPPROBE
- 
- 	Documentation on how to use TCP connection probing can be found
- 	at:
--	
- 	  http://www.linuxfoundation.org/collaborate/workgroups/networking/tcpprobe
- 
- 	To compile this code as a module, choose M here: the
--- 
-1.7.3.1
+
+Thanks
+
+Sonic Zhang
+>
+>
+>
+>
 
