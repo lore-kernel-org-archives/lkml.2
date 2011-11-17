@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758566Ab1KVLn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:43:29 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52778 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab1KVLmk (ORCPT
+	id S1758558Ab1KVLn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:43:28 -0500
+Received: from www17.your-server.de ([213.133.104.17]:40349 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758442Ab1KVLml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:42:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321880398-12605-1-git-send-email-linus.walleij@stericsson.com>
-References: <1321880398-12605-1-git-send-email-linus.walleij@stericsson.com>
-Date: Tue, 22 Nov 2011 17:12:39 +0530
-Message-ID: <CAJuYYwQU7A1ikPoy=vNfCMtG-cQc6+t6PS=d4TCh1=KatZWADg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: GPIO direction support for muxing
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Nov 2011 06:42:41 -0500
+Subject: [PATCH] aoe: Use kmemdup rather than duplicating its implementation
+From: Thomas Meyer <thomas@m3y3r.de>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Date: Thu, 17 Nov 2011 23:43:40 +0100
+Message-ID: <1321569820.1624.279.camel@localhost.localdomain>
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 November 2011 18:29, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> When requesting a single GPIO pin to be muxed in, some controllers
-> will need to poke a different value into the control register
-> depending on whether the pin will be used for GPIO output or GPIO
-> input. So create pinmux counterparts to gpio_direction_[input|output]
-> in the pinctrl framework.
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
 
-Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
-One minor comment below.
-
->
-
-[...]
-
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-> index 214b961..4a946ba 100644
-> --- a/Documentation/pinctrl.txt
-> +++ b/Documentation/pinctrl.txt
-
-[...]
-
-> +Alternatively to using these special functions, it is fully allowed to use
-> +named functions for each GPIO pin, the pinmux_request_gpio() will attempt to
-> +obtain the function "gpioN" where "N" is the global GPIO pin number if no
-> +special GPIO-handler is registered.
-> +
-> +The public functions to enable a certain GPIO pin
-
-Is the above sentence incomplete?
-
-Thanks,
-Thomas.
+diff -u -p a/drivers/block/aoe/aoechr.c b/drivers/block/aoe/aoechr.c
+--- a/drivers/block/aoe/aoechr.c 2011-11-07 19:39:05.287793252 +0100
++++ b/drivers/block/aoe/aoechr.c 2011-11-08 10:37:35.225430670 +0100
+@@ -134,13 +134,12 @@ bail:		spin_unlock_irqrestore(&emsgs_loc
+ 		return;
+ 	}
+ 
+-	mp = kmalloc(n, GFP_ATOMIC);
++	mp = kmemdup(msg, n, GFP_ATOMIC);
+ 	if (mp == NULL) {
+ 		printk(KERN_ERR "aoe: allocation failure, len=%ld\n", n);
+ 		goto bail;
+ 	}
+ 
+-	memcpy(mp, msg, n);
+ 	em->msg = mp;
+ 	em->flags |= EMFL_VALID;
+ 	em->len = n;
