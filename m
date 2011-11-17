@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab1KQUdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 15:33:12 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:54318 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410Ab1KQUdL (ORCPT
+	id S1755976Ab1KQUkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 15:40:46 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:53740 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab1KQUkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 15:33:11 -0500
-Message-ID: <1321561946.25715.16.camel@work-vm>
-Subject: Re: CPU hyperthreading turned on after soft power-cycle
-From: John Stultz <john.stultz@linaro.org>
-To: Clarinet <clarinet@atlas.cz>
-Cc: 647095@bugs.debian.org, Jonathan Nieder <jrnieder@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Date: Thu, 17 Nov 2011 12:32:26 -0800
-In-Reply-To: <4EC43DF7.4010902@atlas.cz>
-References: <20111030110543.5872.61279.reportbug@supermicro.uochb.cas.cz>
-	 <1319988329.6759.88.camel@deadeye> <4EAE9D3A.7000108@atlas.cz>
-	 <4EB92181.5030500@seznam.cz> <20111110015212.GB2399@elie.gateway.2wire.net>
-	 <4EBD2825.6050806@atlas.cz> <4EC43DF7.4010902@atlas.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	Thu, 17 Nov 2011 15:40:45 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4EC5714D.7000008@cam.ac.uk>
+Date: Thu, 17 Nov 2011 20:40:45 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.linux.drivers.sensors
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+CC: Ben Hutchings <bhutchings@solarflare.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, dg77.kim@samsung.com,
+        kyungmin.park@samsung.com
+Subject: Re: [RFC PATCH 0/2] HWMON: add in-kernel interfaces to read sensor
+ values.
+References: <1320389433-1671-1-git-send-email-myungjoo.ham@samsung.com> <1321044403.2757.23.camel@bwh-desktop> <CAJ0PZbQsTYZvoVMgZ_L5uPUxCTbzH72zzUqUkvXNnmqiDOGY=g@mail.gmail.com> <4EC1444E.5080108@cam.ac.uk> <CAJ0PZbR=8PPKNNREOBXL1U8To+jjp9=gkQz_NKUVKU8DhyWPJQ@mail.gmail.com>
+In-Reply-To: <CAJ0PZbR=8PPKNNREOBXL1U8To+jjp9=gkQz_NKUVKU8DhyWPJQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11111720-3270-0000-0000-000001D94748
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 23:49 +0100, Clarinet wrote:
-> Hi all,
+On 11/17/2011 08:22 AM, MyungJoo Ham wrote:
+> On Tue, Nov 15, 2011 at 1:39 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>> On 11/14/2011 01:31 AM, MyungJoo Ham wrote:
+>>> On Sat, Nov 12, 2011 at 5:46 AM, Ben Hutchings
+>>> <bhutchings@solarflare.com> wrote:
+>>>> On Fri, 2011-11-04 at 15:50 +0900, MyungJoo Ham wrote:
+>>>>> We have been reading hwmon values (TMU, the SoC-core temperature sensor,
+>>>>> and NTC, the ambient or battery surface temperature sensor) for
+>>>>> Charger-Manager. However, because hwmon does not have in-kernel interface,
+>>>>> we have been using undesired method, including "../../../fs/*.h".
+>>>>>
+>>>>> This patch is to provide in-kernel interface for hwmon:
+>>>>> hwmon_get_value and hwmon_set_value. In order to use these two functions,
+>>>>> the hwmon driver should provide its sysfs attributes to hwmon framework
+>>>>> as well. If the hwmon driver does not provide (by providing NULL), the users
+>>>>> of the hwmon won't be able to use hwmon_get/set_value();
+>>>>> The sysfs attribute (struct attribuyte_group *) is provided with
+>>>>> hwmon_device_register; adding the second parameter to hwmon_device_register().
+>>>>> The 2/2 patch shows the changes in device drivers due to this.
+>>>> [...]
+>>>>
+>>>> This is an improvement, but I don't think it is quite enough.  As I
+>>>> understand the hwmon sysfs interface, all sensor values should be
+>>>> integers.  So the in-kernel interface should also work with integers,
+>>>> not strings.
+>>>>
+>>>> As a first implementation you could perhaps parse the strings back to
+>>>> integers.  However in the longer term the driver API should be changed
+>>>> so that hwmon drivers fully describe their sensors to the core and the
+>>>> core takes care of exposing them through sysfs and the in-kernel API.
+>>>
+>>> I agree.
+>>>
+>>> I'll let it the in-kernel interfaces provide integer value although it will
+>>> simply parse strings as you've addressed until we have some other
+>>> interfaces for sysfs entries in hwmon device drivers.
+>>>
+>>>
+>> To throw another option into the mix, you could make it an IIO driver
+>> and sit hwmon on top of that (there is already a simple driver for
+>> doing this) - IIO has in kernel interfaces of the type
+>> you want.  Not everything is there yet though.
+>>
+>> Jonathan
 > 
-> >> Result of bisecting: v2.6.38-rc1 exhibits the problem. v2.6.37 and
-> >> many of the topic branches merged in the 2.6.38 merge window work ok.
-> >> Some other topic branches do not boot at all.
-> >>
-> >> Jiri: if you have gitk installed, then "git bisect visualize" can help
-> >> get a sense of what's in the middle of the regression range.
-> >> "gitk --bisect --first-parent v2.6.37..v2.6.38-rc1" might be a good way
-> >> to find mainline commits to test before finding a topic branch to delve
-> >> into.
-> >
-> > I have been able to narrow the interval manually a little bit from the
-> > "top" (the bad side) and I will go on from the bottom now. However,
-> > there seems to be a large area where kernels are unbootable for me -
-> > they mostly stop when init is called and I do not know why.
+> Yes, we may alter the HWMON drivers to be IIO drivers as well.
 > 
-> Finally! After another 50+ compilations a have it! It took some time as 
-> first I had to find a reason why some revisions did not boot (almost 2/3 
-> were unbootable and the first bad commit was among them). Having this 
-> solved I have been able to bisect without "skipping". The result is 
-> surprising (at least for me) - believe it or not, the first bad commit 
-> is 6610e089 "RTC: Rework RTC code to use timerqueue for events" from 
-> John Stultz (I am sending him a copy of this message).
-> 
-> I would never expect this would be a problem, but my understanding of 
-> this commit is very limited, so I am certainly missing the point. 
-> However, I have tried to compile 2.6.38 (which was "bad") with "Real 
-> Time Clock" configuration option turned off and it behaves "normally" 
-> then (= is "good").
+> However, to me, at least for the HWMON devices I've been looking, IIO
+> seems to be an overkill and more complex than needed for the target
+> devices.
+It should (at least in theory) be very simple for anything like a simple
+hwmon device on which one wants to do polled reads.
 
-Huh. That's *very* odd.  Is your system doing anything in-particular
-with the RTC?  I don't have a clue right off, so probably the next step
-is doing a bit of instrumentation to try to figure out where exactly we
-trigger the behavior. Could you checkout commit 6610e089 and apply the
-patch below to see if we can't narrow it down?
+All you do is allocate an iio_dev, set up the channel descriptions,
+register it with the core.  Then a map is used to match supplied
+channels to their consumers in kernel.
 
-Could you also send your .config to me?
+There is a simple hwmon driver that then takes one of these maps if
+you want conventional hwmon interfaces.  Other interested drivers can
+have their own maps.
 
-thanks
--john
+Anyhow, IIO is complex for some devices, but pretty simple for simple
+things (at least it should be!)
 
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 5856167..d049344 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -497,13 +497,13 @@ static int cmos_procfs(struct device *dev, struct seq_file *seq)
- static const struct rtc_class_ops cmos_rtc_ops = {
- 	.read_time		= cmos_read_time,
- 	.set_time		= cmos_set_time,
--	.read_alarm		= cmos_read_alarm,
--	.set_alarm		= cmos_set_alarm,
--	.proc			= cmos_procfs,
--	.irq_set_freq		= cmos_irq_set_freq,
--	.irq_set_state		= cmos_irq_set_state,
--	.alarm_irq_enable	= cmos_alarm_irq_enable,
--	.update_irq_enable	= cmos_update_irq_enable,
-+//	.read_alarm		= cmos_read_alarm,
-+//	.set_alarm		= cmos_set_alarm,
-+//	.proc			= cmos_procfs,
-+//	.irq_set_freq		= cmos_irq_set_freq,
-+//	.irq_set_state		= cmos_irq_set_state,
-+//	.alarm_irq_enable	= cmos_alarm_irq_enable,
-+//	.update_irq_enable	= cmos_update_irq_enable,
- };
- 
- /*----------------------------------------------------------------*/
-
-
-
+Jonathan
