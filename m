@@ -1,127 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1KQUlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 15:41:51 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38515 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab1KQUlu convert rfc822-to-8bit (ORCPT
+	id S1755957Ab1KQUqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 15:46:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59365 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab1KQUqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 15:41:50 -0500
+	Thu, 17 Nov 2011 15:46:13 -0500
+Message-ID: <4EC572E1.1020209@solonet.org.ua>
+Date: Thu, 17 Nov 2011 22:47:29 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <4EC54132.5070908@gmail.com>
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
- <4EC52BCF.7020609@gmail.com> <20111117155428.GS19069@tbergstrom-lnx.Nvidia.com>
- <CACxGe6ub2QBO0ZLwNdSvMxP1U087pqL-qL+dfWAbn-08gBQyvg@mail.gmail.com> <4EC54132.5070908@gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 17 Nov 2011 13:41:28 -0700
-X-Google-Sender-Auth: tuL1ounZW6j2riM8jM94OkVmXxU
-Message-ID: <CACxGe6vP3dFUeSN0xLPi0iywGbdtZLgieD1k=5z2EiS9cw6VsA@mail.gmail.com>
-Subject: Re: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-To: Rob Herring <robherring2@gmail.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Marc Dietrich <marvin24@gmx.de>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Colin Cross <ccross@android.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+CC: Stephen Warren <swarren@nvidia.com>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use gpiolib
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 10:15 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On 11/17/2011 10:53 AM, Grant Likely wrote:
->>
->> On Nov 17, 2011 8:54 AM, "Peter De Schrijver" <pdeschrijver@nvidia.com
->> <mailto:pdeschrijver@nvidia.com>> wrote:
->>>
->>> On Thu, Nov 17, 2011 at 04:44:15PM +0100, Rob Herring wrote:
->>> > On 11/17/2011 09:07 AM, Peter De Schrijver wrote:
->>> > > Convert tegra20 IRQ intialization to the GIC devicetree binding.
->> Modify the
->>> > > interrupt definitions in the dts files according to
->>> > > Documentation/devicetree/bindings/arm/gic.txt
->>> > >
->>> > > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com
->> <mailto:pdeschrijver@nvidia.com>>
->>> >
->>> > One minor comment below, but otherwise:
->>> >
->>> > Acked-by: Rob Herring <rob.herring@calxeda.com
->> <mailto:rob.herring@calxeda.com>>
->>> >
->>> > > ---
->>> > >  arch/arm/boot/dts/tegra-paz00.dts |    2 +-
->>> > >  arch/arm/boot/dts/tegra20.dtsi    |   52
->> ++++++++++++++++++------------------
->>> > >  arch/arm/mach-tegra/irq.c         |   18 +++++++++++-
->>> > >  3 files changed, 43 insertions(+), 29 deletions(-)
->>> > >
->>> > > diff --git a/arch/arm/boot/dts/tegra-paz00.dts
->> b/arch/arm/boot/dts/tegra-paz00.dts
->>> > > index 15a949f..7ff8f6f 100644
->>> > > --- a/arch/arm/boot/dts/tegra-paz00.dts
->>> > > +++ b/arch/arm/boot/dts/tegra-paz00.dts
->>> > > @@ -32,7 +32,7 @@
->>> > >             #size-cells = <0>;
->>> > >             compatible = "nvidia,nvec";
->>> > >             reg = <0x7000C500 0x100>;
->>> > > -           interrupts = <124>;
->>> > > +           interrupts = <0 92 0x04>;
->>> > >             clock-frequency = <80000>;
->>> > >             request-gpios = <&gpio 170 0>;
->>> > >             slave-addr = <138>;
->>> > > diff --git a/arch/arm/boot/dts/tegra20.dtsi
->> b/arch/arm/boot/dts/tegra20.dtsi
->>> > > index 795b921..cd01b01 100644
->>> > > --- a/arch/arm/boot/dts/tegra20.dtsi
->>> > > +++ b/arch/arm/boot/dts/tegra20.dtsi
->>> > > @@ -5,9 +5,9 @@
->>> > >     interrupt-parent = <&intc>;
->>> > >
->>> > >     intc: interrupt-controller@50041000 {
->>> > > -           compatible = "nvidia,tegra20-gic";
->>> > > +           compatible = "arm,cortex-a9-gic";
->>> > >             interrupt-controller;
->>> >
->>> > You should add an "interrupt-parent;" here so the gic's parent is null
->>> > and not the gic.
->>>
->>> Ok. I will add that in the next version.
->>
->> No, there is no need to do that, nor is it convention. The gic node
->> doesn't have an interrupts property, so the interrupt-parent is irrelevant.
->>
-> Can't resist the inbox? Go back to your sabbatical.. :) We discussed
-> this before and I though agreed this was the correct approach.
+Make s3c24xx LEDS driver use gpiolib.
 
-It's a little hard to stop cold turkey.  :-(
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+---
 
-Yup, we had discussed it (and your description below jogged my
-memory), but I don't remember talking about adding an empty
-interrupt-parent property.  I only remember making sure that
-of_irq_find_parent() got fixed.
+Patch is against 3.0.9
+Tested on Mini2440 board which implements most complex case where both
+S3C24XX_LEDF_ACTLOW and S3C24XX_LEDF_TRISTATE are set
 
-> It inherits the interrupt-parent from the parent node. Originally
-> of_irq_find_parent would return that node, but this was fixed. So it
-> doesn't really matter from a functional standpoint.
->
-> So is no interrupt parent defined as no interrupts property or
-> interrupt-parent being null phandle?
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index a77771d..b36f123 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -40,28 +40,40 @@ static inline struct s3c24xx_gpio_led
+*to_gpio(struct led_classdev *led_cdev)
+ }
 
-There is no precedence for setting a null interrupt-parent and no need
-to, so I say just leave it out.
+ static void s3c24xx_led_set(struct led_classdev *led_cdev,
+-			    enum led_brightness value)
++				enum led_brightness value)
+ {
+ 	struct s3c24xx_gpio_led *led = to_gpio(led_cdev);
+ 	struct s3c24xx_led_platdata *pd = led->pdata;
 
->> Rob, perhaps we should adjust of_init_irq() to only set the parent
->> pointer if interrupts is present.
->>
->
-> It works correctly already either way.
+-	/* there will be a short delay between setting the output and
+-	 * going from output to input when using tristate. */
+-
+-	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
+-			    (pd->flags & S3C24XX_LEDF_ACTLOW));
+-
+-	if (pd->flags & S3C24XX_LEDF_TRISTATE)
+-		s3c2410_gpio_cfgpin(pd->gpio,
+-			value ? S3C2410_GPIO_OUTPUT : S3C2410_GPIO_INPUT);
++	/*
++	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
++	 * (only 100% brightness is supported)
++	 */
++	value = value ? 1 : 0;
++
++	if (pd->flags & S3C24XX_LEDF_TRISTATE) {
++		if (value) {
++			/* invert value if S3C24XX_LEDF_ACTLOW is set */
++			value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++			gpio_direction_output(pd->gpio, value);
++		} else {
++			gpio_direction_input(pd->gpio);
++		}
++	} else {
++		/* invert value if S3C24XX_LEDF_ACTLOW is set */
++		value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++		gpio_set_value(pd->gpio, value);
++	}
 
-Okay, I wasn't sure.  Let's leave it alone.
+ }
 
-g.
+ static int s3c24xx_led_remove(struct platform_device *dev)
+ {
++	struct s3c24xx_led_platdata *pdata = dev->dev.platform_data;
+ 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+
+ 	led_classdev_unregister(&led->cdev);
++	gpio_free(pdata->gpio);
+ 	kfree(led);
+
+ 	return 0;
+@@ -76,7 +88,8 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	led = kzalloc(sizeof(struct s3c24xx_gpio_led), GFP_KERNEL);
+ 	if (led == NULL) {
+ 		dev_err(&dev->dev, "No memory for device\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_kzalloc;
+ 	}
+
+ 	platform_set_drvdata(dev, led);
+@@ -91,12 +104,15 @@ static int s3c24xx_led_probe(struct platform_device
+*dev)
+ 	/* no point in having a pull-up if we are always driving */
+
+ 	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
++		ret = gpio_request_one(pdata->gpio, GPIOF_IN, pdata->name);
+ 	} else {
+-		s3c2410_gpio_pullup(pdata->gpio, 0);
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
++		ret = gpio_request_one(pdata->gpio, GPIOF_OUT_INIT_LOW,
++												pdata->name);
++		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
++	}
++	if (ret < 0) {
++		dev_err(&dev->dev, "gpio_request failed\n");
++		goto err_gpio_request;
+ 	}
+
+ 	/* register our new led device */
+@@ -104,11 +120,17 @@ static int s3c24xx_led_probe(struct
+platform_device *dev)
+ 	ret = led_classdev_register(&dev->dev, &led->cdev);
+ 	if (ret < 0) {
+ 		dev_err(&dev->dev, "led_classdev_register failed\n");
+-		kfree(led);
+-		return ret;
++		goto err_led_classdev_register;
+ 	}
+
+ 	return 0;
++
++err_led_classdev_register:
++		gpio_free(pdata->gpio);
++err_gpio_request:
++		kfree(led);
++err_kzalloc:
++		return ret;
+ }
+
+ static struct platform_driver s3c24xx_led_driver = {
