@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab1KSL3m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 06:29:42 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41057 "EHLO
+	id S1754778Ab1KSLbl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 06:31:41 -0500
+Received: from www17.your-server.de ([213.133.104.17]:55705 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab1KSL3g (ORCPT
+	with ESMTP id S1754457Ab1KSLbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 06:29:36 -0500
-Subject: [PATCH] iscsi-target: Use kmemdup rather than duplicating its
+	Sat, 19 Nov 2011 06:31:39 -0500
+Subject: [PATCH] MIPS: Alchemy: Use kmemdup rather than duplicating its
  implementation
 From: Thomas Meyer <thomas@m3y3r.de>
-To: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Thu, 17 Nov 2011 23:43:40 +0100
-Message-ID: <1321569820.1624.298.camel@localhost.localdomain>
+Message-ID: <1321569820.1624.272.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -29,55 +28,38 @@ in scripts/coccinelle/api/memdup.cocci.
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
---- a/drivers/target/iscsi/iscsi_target.c 2011-11-07 19:39:05.771133928 +0100
-+++ b/drivers/target/iscsi/iscsi_target.c 2011-11-08 10:52:55.794437559 +0100
-@@ -614,13 +614,12 @@ int iscsit_add_reject(
- 	hdr	= (struct iscsi_reject *) cmd->pdu;
- 	hdr->reason = reason;
+diff -u -p a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
+--- a/arch/mips/alchemy/common/platform.c 2011-11-07 19:37:22.596233458 +0100
++++ b/arch/mips/alchemy/common/platform.c 2011-11-08 11:02:32.915507198 +0100
+@@ -307,13 +307,12 @@ static void __init alchemy_setup_macs(in
+ 	if (alchemy_get_macs(ctype) < 1)
+ 		return;
  
--	cmd->buf_ptr = kzalloc(ISCSI_HDR_LEN, GFP_KERNEL);
-+	cmd->buf_ptr = kmemdup(buf, ISCSI_HDR_LEN, GFP_KERNEL);
- 	if (!cmd->buf_ptr) {
- 		pr_err("Unable to allocate memory for cmd->buf_ptr\n");
- 		iscsit_release_cmd(cmd);
- 		return -1;
+-	macres = kmalloc(sizeof(struct resource) * MAC_RES_COUNT, GFP_KERNEL);
++	macres = kmemdup(au1xxx_eth0_resources[ctype],
++			 sizeof(struct resource) * MAC_RES_COUNT, GFP_KERNEL);
+ 	if (!macres) {
+ 		printk(KERN_INFO "Alchemy: no memory for MAC0 resources\n");
+ 		return;
  	}
--	memcpy(cmd->buf_ptr, buf, ISCSI_HDR_LEN);
+-	memcpy(macres, au1xxx_eth0_resources[ctype],
+-	       sizeof(struct resource) * MAC_RES_COUNT);
+ 	au1xxx_eth0_device.resource = macres;
  
- 	spin_lock_bh(&conn->cmd_lock);
- 	list_add_tail(&cmd->i_list, &conn->conn_cmd_list);
-@@ -661,13 +660,12 @@ int iscsit_add_reject_from_cmd(
- 	hdr	= (struct iscsi_reject *) cmd->pdu;
- 	hdr->reason = reason;
+ 	i = prom_get_ethernet_addr(ethaddr);
+@@ -329,13 +328,12 @@ static void __init alchemy_setup_macs(in
+ 	if (alchemy_get_macs(ctype) < 2)
+ 		return;
  
--	cmd->buf_ptr = kzalloc(ISCSI_HDR_LEN, GFP_KERNEL);
-+	cmd->buf_ptr = kmemdup(buf, ISCSI_HDR_LEN, GFP_KERNEL);
- 	if (!cmd->buf_ptr) {
- 		pr_err("Unable to allocate memory for cmd->buf_ptr\n");
- 		iscsit_release_cmd(cmd);
- 		return -1;
+-	macres = kmalloc(sizeof(struct resource) * MAC_RES_COUNT, GFP_KERNEL);
++	macres = kmemdup(au1xxx_eth1_resources[ctype],
++			 sizeof(struct resource) * MAC_RES_COUNT, GFP_KERNEL);
+ 	if (!macres) {
+ 		printk(KERN_INFO "Alchemy: no memory for MAC1 resources\n");
+ 		return;
  	}
--	memcpy(cmd->buf_ptr, buf, ISCSI_HDR_LEN);
+-	memcpy(macres, au1xxx_eth1_resources[ctype],
+-	       sizeof(struct resource) * MAC_RES_COUNT);
+ 	au1xxx_eth1_device.resource = macres;
  
- 	if (add_to_conn) {
- 		spin_lock_bh(&conn->cmd_lock);
-diff -u -p a/drivers/target/iscsi/iscsi_target_nego.c b/drivers/target/iscsi/iscsi_target_nego.c
---- a/drivers/target/iscsi/iscsi_target_nego.c 2011-11-07 19:38:13.413671958 +0100
-+++ b/drivers/target/iscsi/iscsi_target_nego.c 2011-11-08 10:52:59.521154183 +0100
-@@ -981,14 +981,13 @@ struct iscsi_login *iscsi_target_init_ne
- 		return NULL;
- 	}
- 
--	login->req = kzalloc(ISCSI_HDR_LEN, GFP_KERNEL);
-+	login->req = kmemdup(login_pdu, ISCSI_HDR_LEN, GFP_KERNEL);
- 	if (!login->req) {
- 		pr_err("Unable to allocate memory for Login Request.\n");
- 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
- 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
- 		goto out;
- 	}
--	memcpy(login->req, login_pdu, ISCSI_HDR_LEN);
- 
- 	login->req_buf = kzalloc(MAX_KEY_VALUE_PAIRS, GFP_KERNEL);
- 	if (!login->req_buf) {
+ 	ethaddr[5] += 1;	/* next addr for 2nd MAC */
