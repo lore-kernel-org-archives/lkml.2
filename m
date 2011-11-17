@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1KQC7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 21:59:33 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:47954 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab1KQC7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 21:59:32 -0500
-Date: Wed, 16 Nov 2011 21:59:01 -0500 (EST)
-Message-Id: <20111116.215901.100218898762260021.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: david.decotigny@google.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ian.campbell@citrix.com,
-        eric.dumazet@gmail.com, jeffrey.t.kirsher@intel.com, jpirko@redhat.com,
-        joe@perches.com, szymon@janc.net.pl, rick.jones2@hp.com,
-        AAbdulla@nvidia.com, therbert@google.com
-Subject: Re: [PATCH net-next v6 3/9] kbuild: document RPS/XPS network
- Kconfig options
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1321498443.2885.80.camel@deadeye>
-References: <1321485122.2709.55.camel@bwh-desktop>
-	<CAG88wWZ853cHkykNbQ+Lqrk_D1p-SCmB0Y29YE6GpSSUORwCxg@mail.gmail.com>
-	<1321498443.2885.80.camel@deadeye>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755667Ab1KQC7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 21:59:39 -0500
+Received: from zmta1.lps.org ([204.137.66.178]:43903 "EHLO zmta1.lps.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755602Ab1KQC7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 21:59:36 -0500
+Date: Wed, 16 Nov 2011 20:54:31 -0600 (CST)
+From: Miss Antonia Laura Joseph <lruppert@lps.org>
+Reply-To: antonia_laura_joseph@globomail.com
+Subject: INVITATION TO USA SEMINAR
+Message-ID: <3a2737c8-f124-416e-9348-1730e290b421@zmail.lps.org>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 16 Nov 2011 18:59:04 -0800 (PST)
+MIME-Version: 1.0
+X-Originating-IP: [41.82.183.76]
+X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Thu, 17 Nov 2011 02:54:03 +0000
 
-> On Wed, 2011-11-16 at 17:54 -0800, David Decotigny wrote:
->> On Wed, Nov 16, 2011 at 3:12 PM, Ben Hutchings
->> <bhutchings@solarflare.com> wrote:
->> > On Wed, 2011-11-16 at 14:15 -0800, David Decotigny wrote:
->> >> This adds a description of RPS/XPS options and allow them to be
->> >> changed at make menuconfig time.
->> >
->> > I'm not sure why you think this is necessary.
->> 
->> On my copy, make menuconfig doesn't let me change these CONFIG_ items,
->> unless I add the string after "boolean", which this patch does. I
->> agree, the help I added after is pure cosmetic.
-> [...]
-> 
-> I know, but I'm asking why you think it's necessary to make them
-> optional.
 
-They shouldn't be, they are internal dependency descriptions and should
-be invisible to the user.
+Dear Sir/Madam,
+
+It gives me a great pleasure to invite you to the forth-coming international seminar which the United Foundation for Human Rights (UFFHR) is excited to be hosting in December 9th to 10th 2011 first Phase at Elm Croft Manor New York City USA, And then from December 12th to 16th 2011, Second phase at Lagasca Madrid Spain.
+
+The theme of the forth coming seminar is; Racism and Human Right.
+
+Delegates who are interested in making a paper presentation are advice to make a summary presentation on the above subject.
+
+Note: the (UFFHR) will be providing all delegates with to and fro Air ticket and also visa's guidance for the seminar purpose.
+
+Registration is open now!
+
+Contact the organizing secretary Mrs. Estrella G. Desmond for more information. Email: estrella.g.desmond@globomail.com
+
+See you in the Seminar.
+
+Regards
+
+Miss Antonia Laura Joseph
+antonia_laura_joseph@globomail.com
