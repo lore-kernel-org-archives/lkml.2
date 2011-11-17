@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1KQVev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:34:51 -0500
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:54844 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752554Ab1KQVeu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:34:50 -0500
-X-AuditID: 12074423-b7f266d0000008b8-21-4ec57df987ea
-Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
-Date: Thu, 17 Nov 2011 16:34:52 -0500
-Cc: Theodore Tso <tytso@MIT.EDU>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A5A56693-9C4C-4957-AAA5-3D1BD8AA7DCE@mit.edu>
-References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com> <47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu> <alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com> <CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com> <CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com> <8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
-To: NamJae Jeon <linkinjeon@gmail.com>
-X-Mailer: Apple Mail (2.1251.1)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsUixG6nrvuz9qifwcWNghbNqx8wWVy/e4vZ
-	Yua8O2wWl3fNYbNoW7KRyYHVY+esu+weCzaVenzeJBfAHMVlk5Kak1mWWqRvl8CV8XTlb6aC
-	l0wVfeuPsjYwTmXqYuTkkBAwkWh4/gzKFpO4cG89WxcjF4eQwD5GiUXL3rODJIQENjBK/H7N
-	C2GvYpLY32MBYgsLuEg8+vaaEcTmFTCWWHPrHQuIzSygJXHj30uwoWwCShJ3Pu0Hi3MKWEs0
-	vFnGCmKzCKhKnDl+hAVkGbPAXkaJo7uOMkE0a0ssW/iaGWKolcS6pkvMEBe9ZpJ42twANklE
-	QE1i35aJzBBny0u0fL3DNoFRcBaSQ2YhOWQWkrkLGJlXMcqm5Fbp5iZm5hSnJusWJyfm5aUW
-	6Zrp5WaW6KWmlG5iBIe5i/IOxj8HlQ4xCnAwKvHwTrY96ifEmlhWXJl7iFGSg0lJlLcRGCVC
-	fEn5KZUZicUZ8UWlOanFhxglOJiVRHhfeQDleFMSK6tSi/JhUtIcLErivDI7HfyEBNITS1Kz
-	U1MLUotgsjIcHEoSvH4gQwWLUtNTK9Iyc0oQ0kwcnCDDeYCGV2eDDC8uSMwtzkyHyJ9i1OV4
-	9GHTaUYhlrz8vFQpcd5EkEECIEUZpXlwc2Dp6RWjONBbwrzuIFU8wNQGN+kV0BImoCW5e46A
-	LClJREhJNTC2T/qoLbDAw8tXvG/KHY+v8xSe9Bh/6t5Zan+7znvb0c2fOcyCg1J8L+o8PnAs
-	6vAmc/H9+037Iyx4Co8tWfj9tdNS5VQ9NYusxscTEw9XfZz8bPa09EP/mZhSrH4a7Zt/51y/
-	t8jHxE1TnVekPDzD5lt1ccPRqAbnY5trXcTXdj8+t/bvt/dvlViKMxINtZiLihMBPN7zuioD
-	AAA=
+	id S1753278Ab1KQVfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:35:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58611 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1KQVe5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 16:34:57 -0500
+Date: Thu, 17 Nov 2011 13:34:54 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Claudio Scordino <claudio@evidence.eu.com>
+cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/base/node.c: fix compilation error
+In-Reply-To: <4EC4DD20.6080201@evidence.eu.com>
+Message-ID: <alpine.DEB.2.00.1111171334350.15918@chino.kir.corp.google.com>
+References: <4EC4DD20.6080201@evidence.eu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 17 Nov 2011, Claudio Scordino wrote:
 
-On Nov 17, 2011, at 10:11 AM, Theodore Tso wrote:
+> Subject: /drivers/base/node.c: fix compilation error
+> From: Claudio Scordino <claudio@evidence.eu.com>
 > 
-> So accessing non-local memory can be a really, really big deal.  And this
-> isn't just theoretical, but have you considered what might happen on a 8
-> core AMD machine?
+> Patch to fix the error message "directives may not be used inside a macro
+> argument" which appears when the kernel is compiled for the cris architecture.
+> 
+> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
 
-Sorry, typo.  This should have read, "have you considered what might happen on a 8 _socket_ AMD machine"?
+Acked-by: David Rientjes <rientjes@google.com>
 
--- Ted
-
+Thanks Claudio!
