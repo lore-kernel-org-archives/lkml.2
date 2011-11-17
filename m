@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1KTSiu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 13:38:50 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:33897 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab1KTSit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 13:38:49 -0500
-Date: Sun, 20 Nov 2011 13:38:46 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: NamJae Jeon <linkinjeon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH v2] ext4: group info caches set to SLAB_MEM_SPREAD
- flags.
-Message-ID: <20111120183846.GB12868@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	NamJae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org,
-	Amit Sahrawat <amit.sahrawat83@gmail.com>
-References: <1321747359-1919-1-git-send-email-linkinjeon@gmail.com>
- <CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1753870Ab1KTTJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 14:09:56 -0500
+Received: from www17.your-server.de ([213.133.104.17]:33241 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab1KTTJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 14:09:54 -0500
+Subject: [PATCH] brcm80211: smac: Use kmemdup rather than duplicating its
+ implementation
+From: Thomas Meyer <thomas@m3y3r.de>
+To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Date: Thu, 17 Nov 2011 23:43:40 +0100
+Message-ID: <1321569820.1624.289.camel@localhost.localdomain>
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 20, 2011 at 02:45:32PM +0900, NamJae Jeon wrote:
-> This patch is not really meaningful ? or you need to see performance
-> data although cpuset mem spread flags patch is proved before.
-> I am waiting for your decision.
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
 
-I don't think it's really going to make much of a difference, to be
-honest.  It's probably technically a little better, but at the end of
-the day, it's not really worth the tiny amount of effort to process
-the patch.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
-I put it in the same category as people who like to remove whitespaces
-from files or remove unused variables.  It marginally makes the code a
-tiny amount better, but at the moment, review bandwidth in the ext4
-subsystem is a critically tight resource, and in terms of the grand
-scheme of things, there are higher priority things that I need to
-worry about, as opposed to people constantly resending trivial patches
-and demanding a decision.
-
-So let me ask a counter question --- why are you sending these
-patches?  Especially when you don't even have a system that would
-benefit from such changes?  Is it just ego to have your name in the
-kernel, or to be counted amongst kernel developers?  Is this a warm up
-because you'd like to do more substantive work in ext4, or other parts
-of the kernel?  Is this a University exercise?  And if you're from a
-company, which company, and what's your interest in ext4?  I
-understand how Whamcloud uses ext4, and how the Android folks are
-using ext4, and to a lesser extent how Tao Bao is using ext4, and that
-helps me understand where they are going with ext4 and why they submit
-the kind of patches that they do.
-
-But I don't understand why *you* are submitting these sorts of
-patches.  If there's substantive work that you plan to do with ext4,
-then the investment I might make in helping you become more proficient
-ext4 developers is quite different from say, the sort of attention I
-might give someone who is working on ext4 for a class project or for
-ego reasons.
-
-Best regards,
-
-						- Ted
+diff -u -p a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
+--- a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c 2011-11-07 19:39:05.641131954 +0100
++++ b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c 2011-11-08 10:44:56.761349456 +0100
+@@ -1561,11 +1561,10 @@ int brcms_ucode_init_buf(struct brcms_in
+ 			if (le32_to_cpu(hdr->idx) == idx) {
+ 				pdata = wl->fw.fw_bin[i]->data +
+ 					le32_to_cpu(hdr->offset);
+-				*pbuf = kmalloc(len, GFP_ATOMIC);
++				*pbuf = kmemdup(pdata, len, GFP_ATOMIC);
+ 				if (*pbuf == NULL)
+ 					goto fail;
+ 
+-				memcpy(*pbuf, pdata, len);
+ 				return 0;
+ 			}
+ 		}
