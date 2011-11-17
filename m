@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1KQCyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 21:54:15 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:53180 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab1KQCyO (ORCPT
+	id S1755486Ab1KQC6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 21:58:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57800 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101Ab1KQC6K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 21:54:14 -0500
-Message-ID: <1321498443.2885.80.camel@deadeye>
-Subject: Re: [PATCH net-next v6 3/9] kbuild: document RPS/XPS network
- Kconfig options
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Decotigny <david.decotigny@google.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
-        Ayaz Abdulla <AAbdulla@nvidia.com>, Tom Herbert <therbert@google.com>
-Date: Thu, 17 Nov 2011 02:54:03 +0000
-In-Reply-To: <CAG88wWZ853cHkykNbQ+Lqrk_D1p-SCmB0Y29YE6GpSSUORwCxg@mail.gmail.com>
-References: <cover.1321481064.git.david.decotigny@google.com>
-	 <c7e7b57596f9a06b1c40c8b6e671cc6ac69dd304.1321481064.git.david.decotigny@google.com>
-	 <1321485122.2709.55.camel@bwh-desktop>
-	 <CAG88wWZ853cHkykNbQ+Lqrk_D1p-SCmB0Y29YE6GpSSUORwCxg@mail.gmail.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Nov 2011 21:58:10 -0500
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18522.005
-X-TM-AS-Result: No--19.232200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 17 Nov 2011 02:54:13.0716 (UTC) FILETIME=[304B3940:01CCA4D4]
+In-Reply-To: <4EC47632.2000904@parallels.com>
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
+	<1320182360-20043-15-git-send-email-glommer@parallels.com>
+	<4EBD94A0.9070703@google.com>
+	<4EBE4A80.6090607@parallels.com>
+	<CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
+	<CAKTCnzkFb2rRyOJ3Uxt13mXrB-9Ox=zgXAOZ5bZ_6Kwr64AbTA@mail.gmail.com>
+	<20111117085251.443fefa5.kamezawa.hiroyu@jp.fujitsu.com>
+	<4EC47632.2000904@parallels.com>
+Date: Thu, 17 Nov 2011 08:28:08 +0530
+Message-ID: <CAKTCnznzpqUbMJEMwaewwjvMW1fG0J3=a8JxqKiHKNuffO7azg@mail.gmail.com>
+Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
+From: Balbir Singh <bsingharora@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
+        a.p.zijlstra@chello.nl, jbottomley@parallels.com, fweisbec@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 17:54 -0800, David Decotigny wrote:
-> On Wed, Nov 16, 2011 at 3:12 PM, Ben Hutchings
-> <bhutchings@solarflare.com> wrote:
-> > On Wed, 2011-11-16 at 14:15 -0800, David Decotigny wrote:
-> >> This adds a description of RPS/XPS options and allow them to be
-> >> changed at make menuconfig time.
-> >
-> > I'm not sure why you think this is necessary.
-> 
-> On my copy, make menuconfig doesn't let me change these CONFIG_ items,
-> unless I add the string after "boolean", which this patch does. I
-> agree, the help I added after is pure cosmetic.
-[...]
+On Thu, Nov 17, 2011 at 8:19 AM, Glauber Costa <glommer@parallels.com> wrote:
+> On 11/16/2011 09:52 PM, KAMEZAWA Hiroyuki wrote:
+>>
+>> On Wed, 16 Nov 2011 15:51:27 +0530
+>> Balbir Singh<bsingharora@gmail.com>  wrote:
+>>
+>>>>
+>>>> On the other hand, I don't think much discussion remains for cpuacct,
+>>>> everyone's pretty unanimous in that they'd like to see it deprecated.
+>>>> By splitting this up we can close out that quickly while we figure out
+>>>> the
+>>>> best way to resolve the above.
+>>>>
+>>>
+>>> I'd give it a thumbs up, if we can create sched groups and provide
+>>> accounting without control - like we can for the memory cgroup today.
+>>>
+>>
+>> Isn't it possible ?
+>>
+>> Thanks,
+>> -Kame
+>>
+> I must say I don't really understand what exactly you propose, and how it is
+> different from what we have today.
+>
+> My take is that you are talking about a single cgroup in which you can have
+> the functionality of both cpuacct and cpu, but surrounded by knobs that
+> allows you to turn them off individually.
+>
+> Am I right?
+>
 
-I know, but I'm asking why you think it's necessary to make them
-optional.
+No here is what I am asking for
 
-Ben.
+I don't want CPU control, just accounting, so I create the following groups
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+                          a
+                       /    \
+                      V    V
+                      b     c
 
+Today, with the cpu controller, the moment I create a, b and c, they
+get default shares and if I put tasks, their b/w is decided by the
+shares, what if I don't want control, but I want to account for their
+time only?
+
+Balbir
