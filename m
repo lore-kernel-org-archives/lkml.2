@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab1KQL6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:58:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25680 "EHLO mx1.redhat.com"
+	id S1757281Ab1KQL6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:58:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42413 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757205Ab1KQL6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:58:30 -0500
+	id S1757221Ab1KQL6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 06:58:32 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
         linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v3 09/11] virtio: net: Add freeze, restore handlers to support S4
-Date: Thu, 17 Nov 2011 17:27:40 +0530
-Message-Id: <85eca44fe83d2deabfdf402bfed72531ebad6026.1321530505.git.amit.shah@redhat.com>
+Subject: [PATCH v3 10/11] virtio: balloon: Move out vq initialization into separate function
+Date: Thu, 17 Nov 2011 17:27:41 +0530
+Message-Id: <fdde281e044bfc433186abd1a120e1a6e0171a3f.1321530505.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1321530505.git.amit.shah@redhat.com>
 References: <cover.1321530505.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1321530505.git.amit.shah@redhat.com>
@@ -22,85 +22,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all the vqs and detach from the netdev on hibernation.
-
-Re-create vqs after restoring from a hibernated image and re-attach the
-netdev.  This keeps networking working across hibernation.
+The probe and PM restore functions will share this code.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/net/virtio_net.c |   37 ++++++++++++++++++++++++++++++++++---
- 1 files changed, 34 insertions(+), 3 deletions(-)
+ drivers/virtio/virtio_balloon.c |   48 ++++++++++++++++++++++++--------------
+ 1 files changed, 30 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index fbff37a..167b555 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1127,6 +1127,9 @@ static void remove_vq_common(struct virtnet_info *vi)
- {
- 	cancel_delayed_work_sync(&vi->refill);
- 
-+	/* Stop all the virtqueues. */
-+	vi->vdev->config->reset(vi->vdev);
-+
- 	/* Free unused buffers in both send and recv, if any. */
- 	free_unused_bufs(vi);
- 
-@@ -1140,9 +1143,6 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
- {
- 	struct virtnet_info *vi = vdev->priv;
- 
--	/* Stop all the virtqueues. */
--	vdev->config->reset(vdev);
--
- 	unregister_netdev(vi->dev);
- 
- 	remove_vq_common(vi);
-@@ -1151,6 +1151,33 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
- 	free_netdev(vi->dev);
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 94fd738..1ff3cf4 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -275,32 +275,21 @@ static int balloon(void *_vballoon)
+ 	return 0;
  }
  
-+#ifdef CONFIG_PM
-+static int virtnet_freeze(struct virtio_device *vdev)
-+{
-+	struct virtnet_info *vi = vdev->priv;
-+
-+	netif_device_detach(vi->dev);
-+	remove_vq_common(vi);
-+
+-static int virtballoon_probe(struct virtio_device *vdev)
++static int init_vqs(struct virtio_balloon *vb)
+ {
+-	struct virtio_balloon *vb;
+ 	struct virtqueue *vqs[3];
+ 	vq_callback_t *callbacks[] = { balloon_ack, balloon_ack, stats_request };
+ 	const char *names[] = { "inflate", "deflate", "stats" };
+ 	int err, nvqs;
+ 
+-	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
+-	if (!vb) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-
+-	INIT_LIST_HEAD(&vb->pages);
+-	vb->num_pages = 0;
+-	init_waitqueue_head(&vb->config_change);
+-	vb->vdev = vdev;
+-	vb->need_stats_update = 0;
+-
+-	/* We expect two virtqueues: inflate and deflate,
+-	 * and optionally stat. */
++	/*
++	 * We expect two virtqueues: inflate and deflate, and
++	 * optionally stat.
++	 */
+ 	nvqs = virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_STATS_VQ) ? 3 : 2;
+-	err = vdev->config->find_vqs(vdev, nvqs, vqs, callbacks, names);
++	err = vb->vdev->config->find_vqs(vb->vdev, nvqs, vqs, callbacks, names);
+ 	if (err)
+-		goto out_free_vb;
++		return err;
+ 
+ 	vb->inflate_vq = vqs[0];
+ 	vb->deflate_vq = vqs[1];
+@@ -317,6 +306,29 @@ static int virtballoon_probe(struct virtio_device *vdev)
+ 			BUG();
+ 		virtqueue_kick(vb->stats_vq);
+ 	}
 +	return 0;
 +}
 +
-+static int virtnet_restore(struct virtio_device *vdev)
++static int virtballoon_probe(struct virtio_device *vdev)
 +{
-+	struct virtnet_info *vi = vdev->priv;
++	struct virtio_balloon *vb;
 +	int err;
 +
-+	err = init_vqs(vi);
++	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
++	if (!vb) {
++		err = -ENOMEM;
++		goto out;
++	}
++
++	INIT_LIST_HEAD(&vb->pages);
++	vb->num_pages = 0;
++	init_waitqueue_head(&vb->config_change);
++	vb->vdev = vdev;
++	vb->need_stats_update = 0;
++
++	err = init_vqs(vb);
 +	if (err)
-+		return err;
-+
-+	try_fill_recv(vi, GFP_KERNEL);
-+
-+	netif_device_attach(vi->dev);
-+	return 0;
-+}
-+#endif
-+
- static struct virtio_device_id id_table[] = {
- 	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
- 	{ 0 },
-@@ -1175,6 +1202,10 @@ static struct virtio_driver virtio_net_driver = {
- 	.probe =	virtnet_probe,
- 	.remove =	__devexit_p(virtnet_remove),
- 	.config_changed = virtnet_config_changed,
-+#ifdef CONFIG_PM
-+	.freeze =	virtnet_freeze,
-+	.restore =	virtnet_restore,
-+#endif
- };
++		goto out_free_vb;
  
- static int __init init(void)
+ 	vb->thread = kthread_run(balloon, vb, "vballoon");
+ 	if (IS_ERR(vb->thread)) {
 -- 
 1.7.7.1
 
