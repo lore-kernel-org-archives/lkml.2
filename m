@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab1KQOMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 09:12:37 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51040 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757431Ab1KQOMg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 09:12:36 -0500
+	id S1757650Ab1KQOMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 09:12:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9264 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757597Ab1KQOMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 09:12:43 -0500
+Message-ID: <4EC51636.3030001@redhat.com>
+Date: Thu, 17 Nov 2011 16:12:06 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <4EC515B40200007800061921@nat28.tlf.novell.com>
-References: <4EC4F0FD0200007800061840@nat28.tlf.novell.com>
-	<CA+rthh-1WxhWPeKE-Aqa5NCatxVoKu9=KHhLygkT1A6K35CBDA@mail.gmail.com>
-	<4EC515B40200007800061921@nat28.tlf.novell.com>
-Date: Thu, 17 Nov 2011 15:12:35 +0100
-Message-ID: <CA+rthh_Qg91ciZMoctAtzSH-q01XTdkDu37Y7fYOvFOswZQDRQ@mail.gmail.com>
-Subject: Re: your patch "crypto: sha1 - SSSE3 based SHA1 implementation for
- x86-64" vs xsave
-From: Mathias Krause <minipli@googlemail.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, Jason Baron <jbaron@redhat.com>,
+        rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC] remove jump_label optimization for perf sched events
+References: <20111117123029.GB16853@redhat.com>   <1321534159.27735.33.camel@twins> <20111117130032.GC16853@redhat.com>  <1321535413.27735.35.camel@twins> <4EC50B02.1060307@redhat.com> <1321537668.27735.38.camel@twins>
+In-Reply-To: <1321537668.27735.38.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 2:09 PM, Jan Beulich <JBeulich@suse.com> wrote:
->> I don't see where X86_CR4_OSXSAVE would get reset after xsave init.
->> Can you give me a pointer to that code?
+On 11/17/2011 03:47 PM, Peter Zijlstra wrote:
+> On Thu, 2011-11-17 at 15:24 +0200, Avi Kivity wrote:
+> > On 11/17/2011 03:10 PM, Peter Zijlstra wrote:
+> > > On Thu, 2011-11-17 at 15:00 +0200, Gleb Natapov wrote:
+> > >
+> > > > > That said, I'd much rather throttle this particular jump label than
+> > > > > remove it altogether, some people really don't like all this scheduler
+> > > > > hot path crap.
+> > > > What about moving perf_event_task_sched() to sched_(in|out)_preempt_notifiers?
+> > > > preempt notifiers checking is already on the scheduler hot path, so no
+> > > > additional overhead for perf case.
+> > >
+> > > Same problem really, some people complain about the overhead of preempt
+> > > notifiers, also not all kernels have those in. 
+> > 
+> > We could combine the two, sort-circuit preempt notifiers with jump
+> > labels if empty && not much activity on them.
 >
-> I didn't say it would get cleared. I said it should be used in favor of
-> cpu_has_osxsave.
+> Jump-labels are still more efficient, also I don't much like preempt
+> notifiers.
 >
->>> Additionally, under a hypervisor, CPUID.OSXSAVE may be set (due to
->>> the hypervisor having enabled xsave), while the kernel may be running
->>> with xsave disabled (e.g. due to a command line option saying so).
->>
->> When noxsave is given on the kernel command line, X86_FEATURE_XSAVE
->> will be cleared and xsave_init() won't call xstate_enable(), so not
->> setting X86_CR4_OSXSAVE. All fine.
+> > > Futhermore I loathe notifier lists because they obscure wtf is done.
+> > 
+> > That's life in a general purpose kernel, if everyone gets their hook in
+> > to keep their code clean, the scheduler will bloat.
 >
-> But you're not looking at this bit, you're looking at cpu_has_osxsave,
-> which is a CPUID bit (not a CR4 one).
+> Uhm, no. The bloat isn't different, the only difference is you can
+> actually see it. So I very much prefer direct hooks.
+>
+> > An advantage of preempt notifiers is that you can make the perf code
+> > modular.
+>
+> Yeah, and you know I loathe modules even more.
 
-You're right. But that's no problem at all, as the cpu_has_* tests are
-only to error out early. They also ensure it is save to execute the
-next instruction -- xsetbv(). This instruction actually does the xsave
-runtime support check by looking at the extended control register XCR0
-and the enabled features in there.
-So you're right that the cpu_has_osxsave might be superfluous here but
-it doesn't hurt either.
+Is there something you like?
 
-Mathias
+-- 
+error compiling committee.c: too many arguments to function
+
