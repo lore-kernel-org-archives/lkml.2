@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab1KQWFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 17:05:34 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60477 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab1KQWFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 17:05:33 -0500
-Message-ID: <1321567402.25715.35.camel@work-vm>
-Subject: Re: [PATCH 15/16] time: Update tiemkeeper structure using a local
- shadow
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Date: Thu, 17 Nov 2011 14:03:22 -0800
-In-Reply-To: <1321329846-14755-16-git-send-email-john.stultz@linaro.org>
-References: <1321329846-14755-1-git-send-email-john.stultz@linaro.org>
-	 <1321329846-14755-16-git-send-email-john.stultz@linaro.org>
+	id S1753219Ab1KQWIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 17:08:15 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43396 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab1KQWIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 17:08:14 -0500
+Subject: Re: [PATCH 1/3] mtd/nand: fix coding style issue in
+ drivers/mtd/nand/fsl_elbc.c
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: b35362@freescale.com
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, leoli@freescale.com,
+        scottwood@freescale.com
+Date: Fri, 18 Nov 2011 00:08:08 +0200
+In-Reply-To: <1321349355-1639-1-git-send-email-b35362@freescale.com>
+References: <1321349355-1639-1-git-send-email-b35362@freescale.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1321567690.2272.24.camel@koala>
 Mime-Version: 1.0
-x-cbid: 11111722-9360-0000-0000-000000B5C909
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-14 at 20:04 -0800, John Stultz wrote:
-> Uses a local shadow structure to update the timekeeper. This
-> reduces the timekeeper.lock hold time.
+On Tue, 2011-11-15 at 17:29 +0800, b35362@freescale.com wrote:
+> From: Liu Shuo <b35362@freescale.com>
 > 
-> WARNING: This introduces a race, but the window might be provably
-> so small as to not be observable. This patch needs lots more math
-> and comments to validate that assumption.
+> fix whitespaces,tabs coding style issue and use #include <linux/io.h> instead of <asm/io.h>
+> in drivers/mtd/nand/fsl_elbc.c.
+> 
+> Signed-off-by: Liu Shuo <b35362@freescale.com>
+> Signed-off-by: Li Yang <leoli@freescale.com>
 
-Bah. After thinking about it, this patch won't work, since it would
-possibly lose updates via settimeofday(), etc.
+Hi, It is really matter of taste whether to use only tabs for
+indentations or tabs + few spaces to align nicely with the previous
+line. I personally prefer the latter and dislike when people use only
+tabs. But other people love tabs and use them everywhere, even like
+#define\tBLAH_BLAH\tvalue, which I find ugly, but I do not mind people
+using this.
 
-So I'm coming around to Thomas' double lock reader-seq/writer-lock
-method.
+So no, please, let's leave the indentation as is in this file. It is ok
+to assume tab is 8 spaces in the kernel.
 
-thanks
--john
+Artem.
 
