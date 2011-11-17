@@ -1,161 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab1KQLP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:15:58 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58355 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753225Ab1KQLP5 (ORCPT
+	id S1756761Ab1KQLV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:21:27 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2186 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751365Ab1KQLVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:15:57 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <baruch@tkos.co.il>, <grant.likely@secretlab.ca>
-Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH] GPIO/pl061: Add suspend resume capability
-Date: Thu, 17 Nov 2011 16:45:35 +0530
-Message-ID: <6c6957c60969ac5df8bfe59a2502a4077284d2e1.1321528179.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
+	Thu, 17 Nov 2011 06:21:25 -0500
+From: <oskar.andero@sonyericsson.com>
+Date: Thu, 17 Nov 2011 12:22:19 +0100
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "aghayal@codeaurora.org" <aghayal@codeaurora.org>,
+        "Cavin, Courtney" <Courtney.Cavin@sonyericsson.com>,
+        Shubhrajyoti <shubhrajyoti@ti.com>
+Subject: Re: [PATCH v3] input: add driver support for Sharp gp2ap002a00f
+ proximity sensor
+Message-ID: <20111117112219.GA14781@caracas.corpusers.net>
+References: <1321349160-2931-1-git-send-email-oskar.andero@sonyericsson.com>
+ <20111115094342.GD13157@core.coreip.homeip.net>
+ <20111115125352.GA23767@caracas.corpusers.net>
+ <20111115182909.GB6410@core.coreip.homeip.net>
+ <20111116103705.GA14696@caracas.corpusers.net>
+ <4EC39E7B.7020706@ti.com>
+ <20111116121803.GB14696@caracas.corpusers.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111116121803.GB14696@caracas.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Deepak Sikri <deepak.sikri@st.com>
+Hi Dmitry,
 
-This patch adds the suspend and resume operations in the driver. The patch
-ensures the data save and restore for the device registers during the
-suspend and resume operations respectively.
+On 13:18 Wed 16 Nov     , Oskar Andero wrote:
+> On 12:28 Wed 16 Nov     , Shubhrajyoti wrote:
+> > On Wednesday 16 November 2011 04:07 PM, oskar.andero@sonyericsson.com
+> > wrote:
+> > > On 19:29 Tue 15 Nov     , Dmitry Torokhov wrote:
+> > >> On Tue, Nov 15, 2011 at 01:53:52PM +0100, oskar.andero@sonyericsson.com wrote:
+> > >>> On 10:43 Tue 15 Nov     , Dmitry Torokhov wrote:
+> > >>>> On Tue, Nov 15, 2011 at 10:26:00AM +0100, oskar.andero@sonyericsson.com wrote:
+> > >>>>> From: Courtney Cavin <courtney.cavin@sonyericsson.com>
+> > >>>>> +
+> > >>>>> +#ifdef CONFIG_PM_SLEEP
+> > >>>>> +static int gp2a_suspend(struct device *dev)
+> > >>>>> +{
+> > >>>>> +	struct i2c_client *client = to_i2c_client(dev);
+> > >>>>> +	struct gp2a_data *dt = i2c_get_clientdata(client);
+> > >>>>> +	int error;
+> > >>>>> +
+> > >>>>> +	mutex_lock(&dt->device->mutex);
+> > >>>>> +
+> > >>>>> +	if (dt->device->users) {
+> > >>>>> +		if (device_may_wakeup(&client->dev)) {
+> > >>>>> +			enable_irq_wake(client->irq);
+> > >>>> I think this part should happen regardless of whether device has users,
+> > >>>> only non wakeup source case needs it.
+> > >>> Hmm.. why would one want to enable irq_wake when there are no users?
+> > >>> Wouldn't this cause the device to wakeup at every irq and report an
+> > >>> switch event that no one listens to?
+> > >> You are suspending the system and want to have this device as a wakeup
+> > >> source. Note: not wake up _device_ at every IRQ but wake up the whole
+> > >> _system_ when device generates an IRQ while system is asleep.
+> > >> It does not matter whether there are users for the events; you
+> > >> want the system to wake up.
+> > >>
+> > >> At least this is the usual semantics.
+> > > I see you point. However, the way we use the proximity sensor we can only wake up
+> > > the system when we have an application that is actually interested in the change.
+> > > This is for power save reasons.
+> > > If we use the "usual semantic", we would wake up the system at every proximity
+> > > detection regardlessly. For instance, I wouldn't want to wake up a cell phone laying
+> > > on the desk when I put my hand over it. That would hurt the battery time.
+> > Even in that case it shouldn't harm the power if no user is there the
+> > close would have been called
+> > and you should  be in the shut down mode? Am I missing something?
+> 
+> You are right - the chip will only generate interrupts when it's opened, so the case
+> I described shouldn't actually be a problem. However, does it make sense to enable irq_wake
+> for a device that will never generate interrupts?
 
-Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
----
- drivers/gpio/gpio-pl061.c |   73 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 73 insertions(+), 0 deletions(-)
+Do you have any input on my question above? My suggestion is to keep the code as it is,
+unless you see a reason for enabling wake_irq on an irq that will never happen.
 
-diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-index 093c90b..d64dc1c 100644
---- a/drivers/gpio/gpio-pl061.c
-+++ b/drivers/gpio/gpio-pl061.c
-@@ -23,6 +23,7 @@
- #include <linux/amba/bus.h>
- #include <linux/amba/pl061.h>
- #include <linux/slab.h>
-+#include <linux/pm.h>
- 
- #define GPIODIR 0x400
- #define GPIOIS  0x404
-@@ -35,6 +36,17 @@
- 
- #define PL061_GPIO_NR	8
- 
-+#ifdef CONFIG_PM
-+struct gpio_context_save_regs {
-+	u8 gpio_data;
-+	u8 gpio_dir;
-+	u8 gpio_is;
-+	u8 gpio_ibe;
-+	u8 gpio_iev;
-+	u8 gpio_ie;
-+};
-+#endif
-+
- struct pl061_gpio {
- 	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
- 	 * interrupts controller of the system. We need this to support systems
-@@ -54,6 +66,10 @@ struct pl061_gpio {
- 	void __iomem		*base;
- 	unsigned		irq_base;
- 	struct gpio_chip	gc;
-+
-+#ifdef CONFIG_PM
-+	struct gpio_context_save_regs	csave_regs;
-+#endif
- };
- 
- static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
-@@ -330,6 +346,8 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
- 		irq_set_chip_data(i + chip->irq_base, chip);
- 	}
- 
-+	amba_set_drvdata(dev, chip);
-+
- 	return 0;
- 
- iounmap:
-@@ -342,6 +360,60 @@ free_mem:
- 	return ret;
- }
- 
-+#ifdef CONFIG_PM
-+static int pl061_suspend(struct device *dev)
-+{
-+	struct pl061_gpio *chip = dev_get_drvdata(dev);
-+	int offset;
-+
-+	chip->csave_regs.gpio_data = 0;
-+	chip->csave_regs.gpio_dir = readb(chip->base + GPIODIR);
-+	chip->csave_regs.gpio_is = readb(chip->base + GPIOIS);
-+	chip->csave_regs.gpio_ibe = readb(chip->base + GPIOIBE);
-+	chip->csave_regs.gpio_iev = readb(chip->base + GPIOIEV);
-+	chip->csave_regs.gpio_ie = readb(chip->base + GPIOIE);
-+
-+	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
-+		if (chip->csave_regs.gpio_dir & (1 << offset))
-+			chip->csave_regs.gpio_data |=
-+				pl061_get_value(&chip->gc, offset) << offset;
-+	}
-+
-+	return 0;
-+}
-+
-+static int pl061_resume(struct device *dev)
-+{
-+	struct pl061_gpio *chip = dev_get_drvdata(dev);
-+	int offset;
-+
-+	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
-+		if (chip->csave_regs.gpio_dir & (1 << offset))
-+			pl061_direction_output(&chip->gc, offset,
-+					chip->csave_regs.gpio_data &
-+					(1 << offset));
-+		else
-+			pl061_direction_input(&chip->gc, offset);
-+	}
-+
-+	writeb(chip->csave_regs.gpio_is, chip->base + GPIOIS);
-+	writeb(chip->csave_regs.gpio_ibe, chip->base + GPIOIBE);
-+	writeb(chip->csave_regs.gpio_iev, chip->base + GPIOIEV);
-+	writeb(chip->csave_regs.gpio_ie, chip->base + GPIOIE);
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops pl061_dev_pm_ops = {
-+	.suspend = pl061_suspend,
-+	.resume = pl061_resume,
-+};
-+
-+#define PL061_DEV_PM_OPS (&pl061_dev_pm_ops)
-+#else
-+#define PL061_DEV_PM_OPS NULL
-+#endif
-+
- static struct amba_id pl061_ids[] = {
- 	{
- 		.id	= 0x00041061,
-@@ -353,6 +425,7 @@ static struct amba_id pl061_ids[] = {
- static struct amba_driver pl061_gpio_driver = {
- 	.drv = {
- 		.name	= "pl061_gpio",
-+		.pm	= PL061_DEV_PM_OPS,
- 	},
- 	.id_table	= pl061_ids,
- 	.probe		= pl061_probe,
--- 
-1.7.2.2
+I'll prepare v4 as soon as I have your answer.
 
+Thanks!
+
+-Oskar
