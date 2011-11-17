@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab1KQBbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 20:31:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57272 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094Ab1KQBbu (ORCPT
+	id S1755288Ab1KQBcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 20:32:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51922 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab1KQBcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 20:31:50 -0500
-Date: Wed, 16 Nov 2011 17:31:36 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Cong Wang <amwang@redhat.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org, kay.sievers@vrfy.org
-Subject: Re: [Patch] tmpfs: add fallocate support
-In-Reply-To: <4EC3633D.6090900@redhat.com>
-Message-ID: <alpine.LSU.2.00.1111161634360.1957@sister.anvils>
-References: <1321346525-10187-1-git-send-email-amwang@redhat.com> <CAOJsxLEXbWbEhqX2YfzcQhyLJrY0H2ifCJCvGkoFHZsYAZEMPA@mail.gmail.com> <4EC361C0.7040309@redhat.com> <alpine.LFD.2.02.1111160911320.2446@tux.localdomain> <4EC3633D.6090900@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-434404406-1321493505=:1957"
+	Wed, 16 Nov 2011 20:32:35 -0500
+From: Marcos Paulo de Souza <marcos.mage@gmail.com>
+To: chris.mason@oracle.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcos Paulo de Souza <marcos.mage@gmail.com>
+Subject: [PATCH] fs/btrfs/locking.c: Removed some unneeded return statements
+Date: Wed, 16 Nov 2011 23:31:54 -0200
+Message-Id: <1321493514-2562-1-git-send-email-marcos.mage@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
+---
+ fs/btrfs/locking.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
---8323584-434404406-1321493505=:1957
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+diff --git a/fs/btrfs/locking.c b/fs/btrfs/locking.c
+index d77b67c..8abb870 100644
+--- a/fs/btrfs/locking.c
++++ b/fs/btrfs/locking.c
+@@ -48,7 +48,6 @@ void btrfs_set_lock_blocking_rw(struct extent_buffer *eb, int rw)
+ 		atomic_dec(&eb->spinning_readers);
+ 		read_unlock(&eb->lock);
+ 	}
+-	return;
+ }
+ 
+ /*
+@@ -71,7 +70,6 @@ void btrfs_clear_lock_blocking_rw(struct extent_buffer *eb, int rw)
+ 		if (atomic_dec_and_test(&eb->blocking_readers))
+ 			wake_up(&eb->read_lock_wq);
+ 	}
+-	return;
+ }
+ 
+ /*
+-- 
+1.7.4.4
 
-On Wed, 16 Nov 2011, Cong Wang wrote:
-> =E4=BA=8E 2011=E5=B9=B411=E6=9C=8816=E6=97=A5 15:12, Pekka Enberg =E5=86=
-=99=E9=81=93:
-> > On Wed, 16 Nov 2011, Cong Wang wrote:
-> > > > What's the use case for this?
-> > >=20
-> > > Systemd needs it, see http://lkml.org/lkml/2011/10/20/275.
-> > > I am adding Kay into Cc.
-> >=20
-> > The post doesn't mention why it needs it, though.
-> >=20
->=20
-> Right, I should mention this in the changelog. :-/
-
-Yes, but I think Pekka's point is that the page which you link to does not
-explain why Plumbers would want tmpfs to support fallocate() properly.
-
-What good is it going to do for them?  Why not just do it in userspace,
-either by dd if=3D/dev/zero of=3Dtmpfsfile, or by mmap() and touch if very
-anxious to avoid the triple memset/memcpy (once reading from /dev/zero,
-once allocating tmpfs pages, once copying to tmpfs pages)?  Or splice().
-
-I don't want to stand in the way of progress, but there's a lot of
-things tmpfs does not support (a persistent filesystem would be top
-of the list; but readahead, direct I/O, AIO, ....), and it may be
-better to continue not to support them unless there's good reason.
-tmpfs does not have a disk layout that we need to optimize.
-
-I did not study your implementation in detail, but agree with Dave
-and Kame that (if it needs to be in kernel at all) you should reuse
-the existing code rather than repeating extracts: shmem_getpage_gfp()
-is the one place which looks after all of shmem page allocation, so
-I'd prefer you just make a loop of calls to that (with a new sgp_type
-if there's particular reason to do something differently in there).
-
-I've not yet looked up the specification of fallocate(), but it
-looked surprising to be allocating pages up to the point where a
-page already exists (when shmem_add_to_page_cache will fail) and
-then giving up with -EEXIST.
-
-Seeing your Subject, I imagined at first that you would be implementing
-FALLOC_FL_PUNCH_HOLE support. That is on my list to do: tmpfs has its
-own peculiar madvise(MADV_REMOVE) support (and yes, you may question
-whether we were right to add that in) - we should be converting
-MADV_REMOVE to use FALLOC_FL_PUNCH_HOLE, and tmpfs to support that.
-
-Thanks,
-Hugh
---8323584-434404406-1321493505=:1957--
