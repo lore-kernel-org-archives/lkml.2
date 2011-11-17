@@ -1,98 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab1KQE4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 23:56:08 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58078 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab1KQE4H (ORCPT
+	id S1751119Ab1KQFFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 00:05:07 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:47893 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750714Ab1KQFFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 23:56:07 -0500
-Date: Wed, 16 Nov 2011 20:56:03 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: David Daney <ddaney.cavm@gmail.com>
-cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Thu, 17 Nov 2011 00:05:05 -0500
+Date: Thu, 17 Nov 2011 10:34:43 +0530
+From: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+To: Vinod Koul <vkoul@infradead.org>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] hugetlb: Provide a default HPAGE_SHIFT if
- !CONFIG_HUGETLB_PAGE
-In-Reply-To: <4EC45CAE.1000704@gmail.com>
-Message-ID: <alpine.DEB.2.00.1111162047170.13603@chino.kir.corp.google.com>
-References: <1321472611-13283-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111161327180.16596@chino.kir.corp.google.com> <4EC43488.3070400@gmail.com> <alpine.DEB.2.00.1111161512371.16596@chino.kir.corp.google.com> <4EC44AD0.5070800@gmail.com>
- <alpine.DEB.2.00.1111161552450.25089@chino.kir.corp.google.com> <4EC45CAE.1000704@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+Subject: Re: [PATCH] dmaengine/ste_dma40: support pm in dma40
+Message-ID: <20111117050443.GA6256@bnru01>
+References: <1321425003-12062-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
+ <1321441623.1516.168.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1321441623.1516.168.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011, David Daney wrote:
-
-> > > It is a well established kernel idiom to supply dummy values for symbols
-> > > that
-> > > are required to be defined in order to form a syntactically correct C
-> > > program,
-> > > but that are known by the programmer to be used only on dead code paths.
-> > > 
-> > > This is exactly what we are doing here.
-> > > 
-> > > To do otherwise requires that code be cluttered with #ifdefery.
-> > > 
-> > 
-> > You're wrong,
+On Wed, Nov 16, 2011 at 12:07:03 +0100, Vinod Koul wrote:
+> On Wed, 2011-11-16 at 12:00 +0530, Narayanan G wrote:
 > 
-> Ok, then please tell me why:
+> when you fix something in patch usually convention is to reply in same
+> thread and not new one!
 > 
-> 1) the dummy version of is_vm_hugetlb_page() exists in hugetlb_inline.h?
-> 2) the dummy version of PageHuge() exists in hugetlb.h
-> 3) the dummy version of reset_vma_resv_huge_pages()
-> 4) the dummy version of hugetlb_total_pages() exists in hugetlb.h
-> 5) the dummy version of follow_hugetlb_page() exists in hugetlb.h
-> 6) the dummy version of follow_huge_addr() exists in hugetlb.h
-> 7) the dummy version of copy_hugetlb_page_range() exists in hugetlb.h
-> 8) the dummy version of hugetlb_prefault() exists in hugetlb.h
-> 9) the dummy version of unmap_hugepage_range() exists in hugetlb.h
-> 10) the dummy version of hugetlb_report_meminfo() exists in hugetlb.h
-> 11) the dummy version of hugetlb_report_node_meminfo() exists in hugetlb.h
-> 12) the dummy version of follow_huge_pmd() exists in hugetlb.h
-> 13) the dummy version of follow_huge_pud() exists in hugetlb.h
-> 14) the dummy version of prepare_hugepage_range() exists in hugetlb.h
-> 15) the dummy version of pmd_huge() exists in hugetlb.h
-> 16) the dummy version of pud_huge() exists in hugetlb.h
-> 17) the dummy version of is_hugepage_only_range() exists in hugetlb.h
-> 17) the dummy version of hugetlb_free_pgd_range() exists in hugetlb.h
-> 18) the dummy version of hugetlb_fault() exists in hugetlb.h
-> 19) the dummy version of huge_pte_offset() exists in hugetlb.h
-> 20) the dummy version of dequeue_hwpoisoned_huge_page() exists in hugetlb.h
-> 21) the dummy version of copy_huge_page() exists in hugetlb.h
-> 22) the dummy version of hugetlb_change_protection() exists in hugetlb.h
-> .
-> .
-> .
-> [Other non HUGETLB_PAGE examples omitted for conciseness]
-> 
+> >                               desc = d;
+> > -                             memset(desc, 0, sizeof(*desc));
+> > +                             memset(desc, 0, sizeof(struct d40_desc));
+> Bogus changes, previous one is better
 
-To avoid the #ifdef's, but you'll notice that they return either NULL, 0, 
-or are a no-op.  We don't substitute real values in dummy functions where 
-they could be used in generic code as though they were valid.  That's the 
-problem with defining HPAGE_SHIFT to be PAGE_SHIFT and, yes, defining 
-HPAGE_MASK and HPAGE_SIZE as well shouldn't be done and should be removed.  
+Will revert this change.
 
-We expect HPAGE_* to represent hugepages, not the native page size of the 
-bare metal.  This is why we do things like
+> > +static void d40_power_off(struct d40_base *base, int phy_num)
+> > +{
+> > +     u32 gcc;
+> > +     int i;
+> > +     int j;
+> > +     int p;
+> this is just waste of line; int 1, j p; would make sense as well
+> do consider them naming to something more meaningful as well
 
-	#define HPAGE_PMD_SHIFT ({ BUG(); 0; })
-	#define HPAGE_PMD_MASK ({ BUG(); 0; })
-	#define HPAGE_PMD_SIZE ({ BUG(); 0; })
+OK. Will correct this.
 
-for CONFIG_TRANSPARENT_HUGEPAGE=n.  We don't want to pretend that they're 
-valid outside the context of hugepages.
+> > +
+> > +     /*
+> > +      * Disable the rest of the code for v1, because of GCC register HW bugs
+> > +      * which are not worth working around.
+> last time I had questioned this one too?
 
-We also never use HPAGE_SHIFT, HPAGE_MASK, or HPAGE_SIZE in generic code 
-that isn't dependent on CONFIG_HUGETLB_PAGE.  If you'd like to submit a 
-patch to fix this in the mips tree, then that would be good, and if you'd 
-like to submit a patch to remove these dummy definitions all together by 
-auditing other arch code, then that would be great.
+Yes! I have changed the unconditional return to make it return only
+for v1 H/W.
+
+> > +      */
+> > +     if (base->rev == 1)
+> > +             return;
+> > +
+> > +
+> > +     spin_lock_irqsave(&d40c->base->usage_lock, flags);
+> > +
+> > +     d40_power_off(d40c->base, d40c->phy_chan->num);
+> if this does what it says then it is wrong.
+> power_off should be done in your suspend callbacks.
+> same for on as well!!
+
+Actually, we need to switch off the clocks for the event groups,
+that are not in use. Say, if only evengroup 2 is active, the other
+clocks can be switched off. The clocks for the unused event lines
+need not be on till the runtime suspend is called. May be, I should
+rename this function as d40_power_off_evt_grp(). 
+
+> > -             d40c->busy = true;
+> > +             if (!d40c->busy) {
+> > +                     d40_usage_inc(d40c);
+> > +                     d40c->busy = true;
+> > +             }
+> well here is problem!
+> You don't need to check busy here, juts call pm_runtime_get(). Power on
+> will be take care if it requires resume in your resume callback. No need
+> to have checks of busy. You are not properly utilizing functionality
+> provided by runtime_pm
+
+I have this usage_inc() function mainly for switching on and off the
+clocks for the desired event groups. The busy check here is to ensure
+that we don't need to do the usage_inc() (clock management) in case it is
+already on. 
+Is there a way to do this clock management at eventline granularity
+using the pm_runtime() framework?
+
+> > +     pm_runtime_irq_safe(base->dev);
+> > +     pm_runtime_set_autosuspend_delay(base->dev, DMA40_AUTOSUSPEND_DELAY);
+> > +     pm_runtime_use_autosuspend(base->dev);
+> > +     pm_runtime_enable(base->dev);
+> > +     pm_runtime_resume(base->dev);
+> seriously we need so many calls to initialize?
+
+The autosuspend_delay and irq_safe are causing the extra calls.
+I think we need this.
+
+Thanks,
+
+Narayanan
