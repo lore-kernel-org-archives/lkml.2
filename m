@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab1KQI4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:56:34 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:23217 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab1KQI4d (ORCPT
+	id S1756017Ab1KQJCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:02:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46892 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab1KQJC0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:56:33 -0500
-Message-ID: <4EC4CC3C.5040106@atmel.com>
-Date: Thu, 17 Nov 2011 09:56:28 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] net/cadence: enable by default NET_ATMEL
-References: <1321385790-15056-1-git-send-email-plagnioj@jcrosoft.com>
-In-Reply-To: <1321385790-15056-1-git-send-email-plagnioj@jcrosoft.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Nov 2011 04:02:26 -0500
+Subject: Re: [PATCH 2/2] lockdep: print lock name for lockdep_init_error
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Date: Thu, 17 Nov 2011 10:01:59 +0100
+In-Reply-To: <20111117084435.GA16757@zhy>
+References: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+	 <1321508072-23853-2-git-send-email-tom.leiming@gmail.com>
+	 <20111117060215.GB15644@zhy>
+	 <CACVXFVPo410dy5Mz_Kd3vC=iLazgg8MuPpHnMKfUbUypfXaGUg@mail.gmail.com>
+	 <20111117084435.GA16757@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321520520.27735.20.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2011 08:36 PM, Jean-Christophe PLAGNIOL-VILLARD :
-> so the defconfig of the atmel continue to have the support of the network
-> as before
-> 
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Thu, 2011-11-17 at 16:44 +0800, Yong Zhang wrote:
+> On Thu, Nov 17, 2011 at 04:01:16PM +0800, Ming Lei wrote:
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
-> Hi David,
+> To me that still means 'Arch code didn't call lockdep_init()
+> early enough'.
 > 
-> 	can we have this for the 3.2 so the atmel continue to work as before
-> 
-> Best Regards,
-> J.
->  drivers/net/ethernet/cadence/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/cadence/Kconfig b/drivers/net/ethernet/cadence/Kconfig
-> index 98849a1..b48378a 100644
-> --- a/drivers/net/ethernet/cadence/Kconfig
-> +++ b/drivers/net/ethernet/cadence/Kconfig
-> @@ -7,6 +7,7 @@ config HAVE_NET_MACB
->  
->  config NET_ATMEL
->  	bool "Atmel devices"
-> +	default y
->  	depends on HAVE_NET_MACB || (ARM && ARCH_AT91RM9200)
->  	---help---
->  	  If you have a network (Ethernet) card belonging to this class, say Y.
+> But anyway, let Peter/Ingo decide it.
 
-
--- 
-Nicolas Ferre
+I kinda like the hint as to what might have ran too early, so I've
+queued it.
