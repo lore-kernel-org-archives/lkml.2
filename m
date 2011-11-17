@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab1KQPRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 10:17:47 -0500
-Received: from home.keithp.com ([63.227.221.253]:44945 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab1KQPRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 10:17:45 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Mack <zonque@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, harald@redhat.com,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Fix invalid backpanel values for GEN3 or older chips
-In-Reply-To: <s5hlirgm1kg.wl%tiwai@suse.de>
-References: <s5hlirgm1kg.wl%tiwai@suse.de>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 16 Nov 2011 22:15:41 -0800
-Message-ID: <yunsjlnl1f6.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S932236Ab1KQPTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 10:19:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37596 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932186Ab1KQPTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 10:19:17 -0500
+Message-ID: <1321543120.2885.96.camel@deadeye>
+Subject: Re: [PATCH 1/2] lockdep,rtmutex,bug: Show taint flags on error
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Nick Bowler <nbowler@elliptictech.com>,
+        Greg KH <greg@kroah.com>, Dave Jones <davej@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Date: Thu, 17 Nov 2011 15:18:40 +0000
+In-Reply-To: <1321519709.27735.13.camel@twins>
+References: <1319773015.6759.30.camel@deadeye>
+	 <20111116215236.GD3366@decadent.org.uk> <1321519709.27735.13.camel@twins>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-iP4ypxUcT0o6J/j8iHaP"
+X-Mailer: Evolution 3.0.3-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+
+--=-iP4ypxUcT0o6J/j8iHaP
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 16 Nov 2011 18:14:55 +0100, Takashi Iwai <tiwai@suse.de> wrote:
+rap,On Thu, 2011-11-17 at 09:48 +0100, Peter Zijlstra wrote:
+> On Wed, 2011-11-16 at 21:52 +0000, Ben Hutchings wrote:
+> > On Fri, Oct 28, 2011 at 04:36:55AM +0100, Ben Hutchings wrote:
+> > > Currently lock debugging is disabled when the kernel is tainted, with
+> > > a few exceptions.  It is already recognised that this can be useful
+> > > for staging modules (TAINT_CRAP), but that also goes for out-of-tree
+> > > modules (TAINT_OOT_MODULE) so long as core kernel developers don't
+> > > have to spend time debugging them.  Also, there are several reasons
+> > > for tainting that are unlikely to introduce false locking bug reports
+> > > (e.g. TAINT_FIRMWARE_WORKAROUND).
+>=20
+>=20
+>=20
+> > > Instead of disabling lock debugging, show the taint flags in all
+> > > lockdep and rtmutex-debug error messages.
+>=20
+>=20
+> So this is two patches in one. I took the last part, the printing of the
+> taint flags thing, not the first part.
+>=20
+> I did a small patch adding TAINT_FIRMWARE_WORKAROUND to the list of
+> TAINTS that shouldn't disable lockdep.
+>=20
+> As for OOT_MODULE, with staging the only reason not to merge a module is
+> it being the wrong license and I really can't be arsed about OOT stuff
+> anyway, so no.
 
-> While refactoring of backlight control code in commit [a95735569:
-> drm/i915: Refactor panel backlight controls], the handling of the bit
-> 0 of duty-cycle was gone except for pineview.  This resulted in invalid
-> register values for old chips like 915GM.  When the bit 0 is set, the
-> backlight is turned off suddenly.
+That's not true.  For example, VirtualBox OSE is GPL but would not be
+accepted into staging.  But if VirtualBox developers want to use lockdep
+to fix their crap, we shouldn't stop them.
 
-I'm looking at the mentioned patch and I don't see how that managed to
-correctly handle bit 0; is this the patch that managed to break this?
+Ben.
 
-=2D-=20
-keith.packard@intel.com
+--=20
+Ben Hutchings
+The world is coming to an end.	Please log off.
 
---=-=-=
-Content-Type: application/pgp-signature
+--=-iP4ypxUcT0o6J/j8iHaP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIVAwUBTsSmjjYtFsjWk68qAQjSvRAAqkEtCdoEeR1cjy3bWsOhBe13cKxvHw/r
-EfAceq3cwptp3LkpujhKXYTT3UCGqI24T4+saXO31UpcziuB6qf98nX8waNEiP/h
-0bcg45OsjsDSh52VtHQGTSk66GhPq0EKgi9W9PuEp1i5FX7+1qVU2rCkuZmOgZ0P
-nHTrMatet84wFx5A/WOQ1RwDxb4L1hDOaaXDuWNI8jjeJoSmvyc8RnfsYNwcvY7l
-4E1E/2aSB52qPS6b/LsqAS20D3D0ww3nLb2U6HMTc93Y7ZLW0epyHtYE/rpfT/3s
-8y2H9fPM9jtQAXZzKMAG/JDx/mVW8Cezp/cVnyLnVSFqDTNtc0ZbVu0/gtMxjS2L
-P0lkM0Kb8uHeuTTBaOha6GYOc2yRSclb8pz2bohqxoAUAs4DxjvarfIt2PZEZ6gs
-Xy5y+a8bHZg/V8woBfr+EBmRjqohP21MsanbwepxncjQ4cUkvmacOFwAtSnUW8S0
-e/ymwge1ZF7Bin9mKTLDeQtm701ig8UBxW/OLFBDmnvlPB2nO0vJtGP1Xse+j3sg
-jZ1ulvILdvekKEI+eynWM+Lpi5YVis6qKDOj9oCsAuZY2lrZQw4J+RBA1LenwKKA
-/3zM8pw7dgRVuoL6lqEGZVSpGHWPuKkNGmfDscLi+iLFdfmX2oaPmsKg4EmJQACy
-HnSNIzwj/qc=
-=3+i6
+iQIVAwUATsUl0Oe/yOyVhhEJAQqA9Q/9ERPS3CKw7+GliOYINV6x2TyIfPQeE7Ae
+tftk1Ijvk84bOWD2HhCzV4PYkUErNpLzjvepvCmmBfCWD2yuJNfwvfJCV3MitN0E
+IVbDf9SE6Lecc++mM9M/Q1BUd14nXQoYw8DEmOosNUOWD8nRjJSplOtxK529RFHO
+Iah2c2RHrVo1koU0XzVrtOSJLhzdm/kxODQi+1DXC0sqkeSyhwPgBBoUb+2wBFMg
+V+jswpU3TTBjqsUcImgZLT7Bz0SUxS4p6yVXB5s+lo+JPuaaMSf23KVNTM//yO8l
+OhY6TJuERWktQwcCs5dkJQtz94byuUYX6/GlXIG2G4fiMlGxhQv3y7zJmeDKospm
+jOxytosxns8m390aq6sp4pAO+SaA1ZclpMXBH7yFTguf718bF7iffXo5Fdab49lK
+7A0kyEfa2fK1A8fsSSKTgCE4wA0PraRwjwK+khAU/u/3ma9DTuGbUMfbBjbZ8sP6
++0SaB62Rig0oMyKYyitB1t2iGFllate0hswAKoaHd+IL1mYvJtf4ZbY9JZcEZHDX
+owDHaIqxY12B/9HM6DxpzlKz+H7MJYIPTXv5E70a7GqsjekGp5s099+0eah4/tnq
+Fowe7YAU6+wtj7H/JOrlDYqUUlW5JeQ6sJf3YZrNsITaUPlpUTAt1ddHmPjTFawA
+NXpDqRWtHDA=
+=VTAC
 -----END PGP SIGNATURE-----
---=-=-=--
+
+--=-iP4ypxUcT0o6J/j8iHaP--
