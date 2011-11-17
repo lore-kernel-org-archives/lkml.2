@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab1KQO2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 09:28:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48211 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757480Ab1KQO2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 09:28:34 -0500
-From: Zac Storer <zac.3.14159@gmail.com>
-To: tytso@mit.edu
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zac Storer <zac.3.14159@gmail.com>
-Subject: [PATCH 2/2] Fs: ext4: extents: fixed a brace coding style issue
-Date: Thu, 17 Nov 2011 07:28:26 -0700
-Message-Id: <1321540106-4321-1-git-send-email-zac.3.14159@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1757715Ab1KQOdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 09:33:38 -0500
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:48744 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757659Ab1KQOdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 09:33:37 -0500
+Date: Thu, 17 Nov 2011 14:33:32 +0000
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Rene Bolldorf <xsecute@googlemail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Initial PCI support for Atheros 724x SoCs. (v2)
+Message-ID: <20111117143331.GE20183@linux-mips.org>
+References: <CAEWqx59k97AMU6hH0NCC2TMEY2mu8d5ytxO68oEsa=7uvLBA4A@mail.gmail.com>
+ <1321538577-548-1-git-send-email-xsecute@googlemail.com>
+ <1321538577-548-2-git-send-email-xsecute@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321538577-548-2-git-send-email-xsecute@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a brace coding style issue.
+On Thu, Nov 17, 2011 at 03:02:56PM +0100, Rene Bolldorf wrote:
 
-Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
----
- fs/ext4/extents.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Queued for 3.3 but:
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 61fa9e1..6544208 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4017,7 +4017,7 @@ got_allocated_blocks:
- 	ext4_ext_store_pblock(&newex, newblock + offset);
- 	newex.ee_len = cpu_to_le16(ar.len);
- 	/* Mark uninitialized */
--	if (flags & EXT4_GET_BLOCKS_UNINIT_EXT){
-+	if (flags & EXT4_GET_BLOCKS_UNINIT_EXT) {
- 		ext4_ext_mark_uninitialized(&newex);
- 		/*
- 		 * io_end structure was created for every IO write to an
--- 
-1.7.7.3
+> Subject: [PATCH 1/2] Initial PCI support for Atheros 724x SoCs. (v2)
 
+Please don't put the (v2) at the end of the subject line but rather into
+the initial part with the square brackets like:
+
+Subject: [PATCH 1/2, v2] Initial PCI support for Atheros 724x SoCs.
+
+That's so software like git-am will automatically discard that when
+applying a patch.
+
+Your use of non-ASCII characters is not quite yet supported in patchwork,
+see:
+
+  http://patchwork.linux-mips.org/patch/3019/
+  http://patchwork.linux-mips.org/patch/3020/
+
+My surname's spelling  is also suffering from ASCII brain damaged software ...
+
+> +	switch (size) {
+> +	case 1:
+> +		addr = where & ~3;
+> +		mask = 0xff000000 >> ((where % 4) * 8);
+> +		tval = reg_read(ATH724X_PCI_DEV_BASE + addr);
+> +		tval = tval & ~mask;
+> +		*value = (tval >> ((4 - (where % 4))*8));
+> +	break;
+> +	case 2:
+
+That's a very odd style of formatting.  The Linux coding style (see
+Documentation/) wants the break keyword indented with the same number
+of tabs as the preceeding block.
+
+Anyway, I took care of that.
+
+Thanks,
+
+  Ralf
