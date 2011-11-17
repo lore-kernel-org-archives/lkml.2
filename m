@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab1KQD2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 22:28:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755319Ab1KQD2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 22:28:19 -0500
-Message-ID: <4EC47FCA.5090908@redhat.com>
-Date: Thu, 17 Nov 2011 11:30:18 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1755753Ab1KQDgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 22:36:20 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:53342 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752155Ab1KQDgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 22:36:18 -0500
+Message-ID: <4EC48122.8050800@st.com>
+Date: Thu, 17 Nov 2011 09:06:02 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: tim@edgecast.com
-CC: tj@kernel.org, WANG Cong <xiyou.wangcong@gmail.com>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Crash during vmcore_init
-References: <1318376345.2050.20.camel@boudreau>	 <j9r5m5$b18$1@dough.gmane.org> <1321296650.2066.17.camel@boudreau>	 <4EC21F67.10905@redhat.com> <1321396371.4198.5.camel@boudreau>	 <4EC31E55.6040809@redhat.com> <1321467647.2137.4.camel@boudreau>
-In-Reply-To: <1321467647.2137.4.camel@boudreau>
-Content-Type: text/plain; charset=UTF-8
+To: Rabin Vincent <rabin@rab.in>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/5] mfd/stmpe: Pass partnum as param to stmpe_probe()
+References: <cover.1321442150.git.viresh.kumar@st.com> <004126aa92b5c1e0d1b464409510fd5dd9771523.1321442150.git.viresh.kumar@st.com> <CAH+eYFA=S6Jk-dar4bsiogA2sJii0Q5Akuf3eoa9TRpLPe3G9Q@mail.gmail.com>
+In-Reply-To: <CAH+eYFA=S6Jk-dar4bsiogA2sJii0Q5Akuf3eoa9TRpLPe3G9Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 02:20 AM, Tim Hartrick wrote:
+On 11/16/2011 9:05 PM, Rabin Vincent wrote:
+> On Wed, Nov 16, 2011 at 16:56, Viresh Kumar <viresh.kumar@st.com> wrote:
+>> partnum is required during probe to get variant's info. Currently partnum was
+>> getting set in i2c interface after it is used and is not at all getting set in
+>> spi interface.
+> 
+> So your previous patch is broken?  Please fix it and resend it instead
+> since it's not merged yet.
+> 
 
-> 
-> Dave,
-> 
-> On Wed, 2011-11-16 at 10:22 +0800, Dave Young wrote:
->> On 11/16/2011 06:32 AM, Tim Hartrick wrote:
+Sure.
+
 >>
->>>
->>> Dave,
->>>
->>> I tested with
->>>
->>> linux-image-3.1.1-030101-generic_3.1.1-030101.201111111651_amd64.deb
->>>
->>> which, as far as I know, is the Ubuntu build of the latest stable.
->>> Below are the results.
->>>
->>> [    1.427457] ioremap: invalid physical address 5800000000000
+>> This can be passed as param to stmpe_probe, so that it is available early. With
+>> this, there is no need of i2c interface's init() routine, as it does nothing
+>> else than calling dev_set_drvdata(). So better remove this routine for i2c.
 >>
->>
->> Hi, thanks for the testing
->>
->> Can you applied the debug patch to see if it's per cpu problem?
->>
->> Don't need test kdump, just
->> cd /sys/devices/system/cpu
->> cat cpu[x]/crash_notes
->>
->> probably cat crash notes of cpu number other than 0 will get the invalid
->> address
->>
+>> partnum defined in struct stmpe is of no use now, as it is only used once during
+>> probe of stmpe, so we can remove it from struct stmpe too.
 > 
-> Using 3.1.1 stable with your patch.  See below.
-> 
-> 
-> tim
-> 
-> # for i in /sys/devices/system/cpu/cpu[0-9]*/crash_notes; do cat $i; done
-> 5800000000000
-> 5800000000000
-> 5800000000000
-> 5800000000000
-> 5800000000000
-> 5800000000000
-> 5800000000000
-> 5800000000000
-> 
-> dmesg:
-> 
-> [  277.276349] per cpu addr ffff880c7fc19ad0
+> Not quite; it's used from drivers/input/keyboard/stmpe-keypad.c.  Please
+> preserve this stmpe->partnum, drop your 2/5 patch which exposes variant
+> externally, and instead use stmpe->partnum in 5/5.
 
-> [  277.276352] addr is not in vmalloc area
-
-
-This addr is converted to an invalid phys address,
-
-looking the code below:
-       if (in_first_chunk) {
-                if (!is_vmalloc_addr(addr))
-                        return __pa(addr);
-                else
-                        return page_to_phys(vmalloc_to_page(addr));
-        } else
-                return page_to_phys(pcpu_addr_to_page(addr));
-
-I dont understand per cpu allocation well, if addr is not in first chunk
-then it should be in vmalloc area?
-
-Tejun, do you have any idea about this?
-
-
-> [  277.277545] per cpu addr ffff880667c19ad0
-> [  277.277548] addr is not in vmalloc area
-> [  277.278832] per cpu addr ffff880c7fc39ad0
-> [  277.278835] addr is not in vmalloc area
-> [  277.280175] per cpu addr ffff880667c39ad0
-> [  277.280178] addr is not in vmalloc area
-> [  277.281406] per cpu addr ffff880c7fc59ad0
-> [  277.281409] addr is not in vmalloc area
-> [  277.282592] per cpu addr ffff880667c59ad0
-> [  277.282594] addr is not in vmalloc area
-> [  277.284019] per cpu addr ffff880c7fc79ad0
-> [  277.284022] addr is not in vmalloc area
-> [  277.285251] per cpu addr ffff880667c79ad0
-> [  277.285254] addr is not in vmalloc area
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-
-
+Yes, will do this.
 
 -- 
-Thanks
-Dave
+viresh
