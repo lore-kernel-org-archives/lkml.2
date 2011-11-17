@@ -1,80 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab1KQHIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 02:08:44 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:36868 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751986Ab1KQHIn (ORCPT
+	id S1755703Ab1KQHLW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 02:11:22 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:59649 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab1KQHLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 02:08:43 -0500
-Date: Thu, 17 Nov 2011 09:08:38 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH/RESEND #3 6/7] arm: omap: smartreflex: fix IRQ handling
- bug
-Message-ID: <20111117070836.GA30936@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1321346765-16633-1-git-send-email-balbi@ti.com>
- <1321346765-16633-7-git-send-email-balbi@ti.com>
- <87r51762a7.fsf@ti.com>
+	Thu, 17 Nov 2011 02:11:21 -0500
+X-AuditID: b753bd60-9785eba00000359c-5e-4ec4b3962599
+X-AuditID: b753bd60-9785eba00000359c-5e-4ec4b3962599
+Message-ID: <4EC4B38B.2010301@hitachi.com>
+Date: Thu, 17 Nov 2011 16:11:07 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-In-Reply-To: <87r51762a7.fsf@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 3/5] x86: add a sysctl parameter to panic on stack
+ overflow
+References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp> <20111107055301.7928.91628.stgit@ltc219.sdl.hitachi.co.jp> <20111110195538.GB22646@phenom.dumpdata.com>
+In-Reply-To: <20111110195538.GB22646@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Konrad,
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
+>> index 530cfd0..d720813 100644
+>> --- a/arch/x86/kernel/irq_64.c
+>> +++ b/arch/x86/kernel/irq_64.c
+>> @@ -20,6 +20,8 @@
+>>  #include <asm/idle.h>
+>>  #include <asm/apic.h>
+>>  
+>> +int sysctl_panic_on_stackoverflow;
+> __read_mostly
 
-On Wed, Nov 16, 2011 at 04:06:08PM -0800, Kevin Hilman wrote:
-> Felipe Balbi <balbi@ti.com> writes:
->=20
-> F> fix a bug which has been on this driver since
-> > it was added by the original commit 984aa6db
-> > which would never clear IRQSTATUS bits.
-> >
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
->=20
-> Queuing this fix for v3.2-rc (branch: for_3.2/fixes/pm)
+I don't mind if I add __read_mostly here, but I think it's not
+necessary because this variable is seldom read as well.
 
-should it go to stable too ??
 
---=20
-balbi
+>> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+>> index 6318b51..24fc654 100644
+>> --- a/kernel/sysctl_binary.c
+>> +++ b/kernel/sysctl_binary.c
+>> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+>>  	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+>>  	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+>>  	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
+>> +	{ CTL_INT,	KERN_PANIC_ON_STACKOVERFLOW,	"panic_on_stackoverflow" },
+> This shouldn't be wrapped in the #ifdef?
+>
 
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It seems that we do not need to add this entry to bin_kern_table[]
+according to the following information and patch series:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+[Removing binary sysctl]
+	http://lwn.net/Articles/361453/
 
-iQIcBAEBAgAGBQJOxLL0AAoJEIaOsuA1yqREvGUQAJKi7TZepPcjm285QCVTqzN0
-/sTK9FncxRFOXMlLD2zQGC4SCzaFht92fPmwg6IOIdj02amtkZsFjpLoPSQk5usH
-IjDSIuZw2Dm3s0JIrTVobIlhFMu6L5soS0oJwf7FW4rLIwKOvdJUaCOHQQT+kGD4
-yUqEqL5oqohVEBco8445AnCyDxwuHMKoZUV7PSCOU0n1d2LgCtYHq9EOVbAiNWoi
-1o3IttsWFYRlv40IgAaX/8WqxKwDg1g0uPvBeMC5NIyg5qRk4tC9WGkXrWGbImdh
-rR67jGEA0psXb2s2GvWnpx1dvwPHTksf+1rj7j8uL9wWX63vrnsuUa/96aDLLksg
-/CiwScdU+hPSDV40hPaILJGYxQH0zi/yS0IuwnF+FpEhD+YyMlWa8RAxfuoz7ycL
-HVrU9yDc3KQ0+LsqnBB4oQuR891lVzDIa/UOgR8LP9pMSPrxIiuNFNgmamL45EmG
-DzqvY7zA2jjnZywJKLUZ9fNBXW0LBQt7KHjtk92WI6uxQlZc3fTxqiMY5Og2UtZY
-KyAGZRQJfsdJ7cEBJppl9G2DL8Y2Tte9B9DLtFU3QO34tq1ZeE5xINFUrIeRB4k+
-4d46QqTf4mMVFiy5wG1FCbNFa9qOw0zlGYF0BgGqUVfubJ+oVnmyFo/D6d+j50mQ
-gPXl1i7F5b4QbRPk8goR
-=b+HO
------END PGP SIGNATURE-----
+[Removal of binary sysctl support]
+	http://lwn.net/Articles/361001/
 
---y0ulUmNC+osPPQO6--
+So, I'm going to remove this changes for sysctl.h and sysctl_binary.c.
+
+Thanks
+
+
+(2011/11/11 4:55), Konrad Rzeszutek Wilk wrote:
+> On Mon, Nov 07, 2011 at 02:53:01PM +0900, Mitsuo Hayasaka wrote:
+>> This patch adds kernel.panic_on_stackoverflow sysctl parameter,
+>> which can cause a panic when detecting the stack overflow.
+> 
+> Why would we want to panic?
+>>
+>> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+>> Cc: Randy Dunlap <rdunlap@xenotime.net>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> ---
+>>
+>>  Documentation/sysctl/kernel.txt |   13 +++++++++++++
+>>  arch/x86/kernel/irq_64.c        |    2 ++
+>>  include/linux/kernel.h          |    1 +
+>>  include/linux/sysctl.h          |    1 +
+>>  kernel/sysctl.c                 |    9 +++++++++
+>>  kernel/sysctl_binary.c          |    1 +
+>>  6 files changed, 27 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+>> index 704e474..eb8d263 100644
+>> --- a/Documentation/sysctl/kernel.txt
+>> +++ b/Documentation/sysctl/kernel.txt
+>> @@ -48,6 +48,7 @@ show up in /proc/sys/kernel:
+>>  - panic
+>>  - panic_on_oops
+>>  - panic_on_unrecovered_nmi
+>> +- panic_on_stackoverflow
+>>  - pid_max
+>>  - powersave-nap               [ PPC only ]
+>>  - printk
+>> @@ -385,6 +386,18 @@ Controls the kernel's behaviour when an oops or BUG is encountered.
+>>  
+>>  ==============================================================
+>>  
+>> +panic_on_stackoverflow:
+>> +
+>> +Controls the kernel's behaviour when detecting stack overflow.
+>> +This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+>> +
+>> +0: try to continue operation.
+>> +
+>> +1: panic immediately.
+>> +
+>> +==============================================================
+>> +
+>> +
+>>  pid_max:
+>>  
+>>  PID allocation wrap value.  When the kernel's next PID value
+>> diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
+>> index 530cfd0..d720813 100644
+>> --- a/arch/x86/kernel/irq_64.c
+>> +++ b/arch/x86/kernel/irq_64.c
+>> @@ -20,6 +20,8 @@
+>>  #include <asm/idle.h>
+>>  #include <asm/apic.h>
+>>  
+>> +int sysctl_panic_on_stackoverflow;
+> 
+> __read_mostly
+> 
+>> +
+>>  DEFINE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+>>  EXPORT_PER_CPU_SYMBOL(irq_stat);
+>>  
+>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>> index 8eefcf7..19b3595 100644
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -339,6 +339,7 @@ extern int panic_timeout;
+>>  extern int panic_on_oops;
+>>  extern int panic_on_unrecovered_nmi;
+>>  extern int panic_on_io_nmi;
+>> +extern int sysctl_panic_on_stackoverflow;
+>>  extern const char *print_tainted(void);
+>>  extern void add_taint(unsigned flag);
+>>  extern int test_taint(unsigned flag);
+>> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+>> index 9a1ec10..4b9dc3d 100644
+>> --- a/include/linux/sysctl.h
+>> +++ b/include/linux/sysctl.h
+>> @@ -153,6 +153,7 @@ enum
+>>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+>> +	KERN_PANIC_ON_STACKOVERFLOW = 77, /* int: panic on stack overflow */
+>>  };
+>>  
+>>  
+>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>> index 11d65b5..08a18f9 100644
+>> --- a/kernel/sysctl.c
+>> +++ b/kernel/sysctl.c
+>> @@ -792,6 +792,15 @@ static struct ctl_table kern_table[] = {
+>>  		.mode		= 0644,
+>>  		.proc_handler	= proc_dointvec,
+>>  	},
+>> +#if defined(CONFIG_DEBUG_STACKOVERFLOW)
+>> +	{
+>> +		.procname	= "panic_on_stackoverflow",
+>> +		.data		= &sysctl_panic_on_stackoverflow,
+>> +		.maxlen		= sizeof(int),
+>> +		.mode		= 0644,
+>> +		.proc_handler	= proc_dointvec,
+>> +	},
+>> +#endif
+>>  	{
+>>  		.procname	= "bootloader_type",
+>>  		.data		= &bootloader_type,
+>> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+>> index 6318b51..24fc654 100644
+>> --- a/kernel/sysctl_binary.c
+>> +++ b/kernel/sysctl_binary.c
+>> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+>>  	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+>>  	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+>>  	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
+>> +	{ CTL_INT,	KERN_PANIC_ON_STACKOVERFLOW,	"panic_on_stackoverflow" },
+> 
+> This shouldn't be wrapped in the #ifdef?
+> 
+>>  	{}
+>>  };
+>>  
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
