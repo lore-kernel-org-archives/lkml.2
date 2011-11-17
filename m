@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab1KQOPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 09:15:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36728 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757261Ab1KQOPS (ORCPT
+	id S932167Ab1KQORJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 09:17:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60609 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab1KQORH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 09:15:18 -0500
-Date: Thu, 17 Nov 2011 15:15:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tim Sander <tim.sander@hbm.com>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RT Throtteling with PREEMT-RT on UBIFS root fs update
-In-Reply-To: <201111171454.18742.tim.sander@hbm.com>
-Message-ID: <alpine.LFD.2.02.1111171511260.4902@ionos>
-References: <201111111056.53803.tim.sander@hbm.com> <201111171454.18742.tim.sander@hbm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 17 Nov 2011 09:17:07 -0500
+From: Zac Storer <zac.3.14159@gmail.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, Zac Storer <zac.3.14159@gmail.com>
+Subject: [PATCH] Kernel: time: fixed a brace coding style issue
+Date: Thu, 17 Nov 2011 07:16:50 -0700
+Message-Id: <1321539410-3982-1-git-send-email-zac.3.14159@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011, Tim Sander wrote:
-> Well it can be said that it is not ksoftirqd/0 going berserk which is 
-> triggering this. So i guess when this message is printed it just shows that 
-> the cpu had been temporarily overloded with work in interrupt context.
-> Is there more harm to expect from this message or save to ignore if the 
-> systemload is normal again?
+Fixed a brace coding style issue.
 
-There is no harm, this message is informative and if that behaviour is
-directly related to an ubifs update then I'd say we should not worry
-too much about it. Though it'd be interesting to poke the UBIFS folks
-about it.
+Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
+---
+ kernel/time.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/kernel/time.c b/kernel/time.c
+index 73e416d..7084be0 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -505,7 +505,7 @@ timespec_to_jiffies(const struct timespec *value)
+ 	unsigned long sec = value->tv_sec;
+ 	long nsec = value->tv_nsec + TICK_NSEC - 1;
+ 
+-	if (sec >= MAX_SEC_IN_JIFFIES){
++	if (sec >= MAX_SEC_IN_JIFFIES) {
+ 		sec = MAX_SEC_IN_JIFFIES;
+ 		nsec = 0;
+ 	}
+-- 
+1.7.7.3
 
-	tglx
