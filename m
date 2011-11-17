@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab1KQKIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:08:36 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51081 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756392Ab1KQKIf (ORCPT
+	id S1756577Ab1KQKKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:10:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49035 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478Ab1KQKKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:08:35 -0500
-Message-ID: <4EC4DD20.6080201@evidence.eu.com>
-Date: Thu, 17 Nov 2011 11:08:32 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Thu, 17 Nov 2011 05:10:01 -0500
+Date: Thu, 17 Nov 2011 11:09:57 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Juergen Beisert <jbe@pengutronix.de>,
+        Matthias Fuchs <mfuchs@ma-fu.de>
+Subject: Re: [PATCH 2/8] serial: 8250: Add ioctl to enable auto rs485 mode
+ with some Exar UARTs
+Message-ID: <20111117100957.GC2535@pengutronix.de>
+References: <1321460685-15753-1-git-send-email-w.sang@pengutronix.de>
+ <1321460685-15753-3-git-send-email-w.sang@pengutronix.de>
+ <4EC4D67E.1050102@evidence.eu.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] drivers/base/node.c: fix compilation error
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
+Content-Disposition: inline
+In-Reply-To: <4EC4D67E.1050102@evidence.eu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-	the current mainline kernel gives a "directives may not be used
-inside a macro argument" error message when compiled for the
-cris architecture.
-
-It happened for the /fs/proc/meminfo.c file, for which a patch has been
-already sent to LKML.
-
-It happens for drivers/base/node.c too. The patch below fixes the
-problem.
-
-Best regards,
-
-	Claudio
+--mvpLiMfbWzRoNl4x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
-Subject: /drivers/base/node.c: fix compilation error
-From: Claudio Scordino <claudio@evidence.eu.com>
+> > +		if (serial_inp(up, UART_FCTR)&  UART_FCTR_RS485)
+> > +			rs485ctrl.flags =3D SER_RS485_ENABLED;
+> > +		else
+> > +			rs485ctrl.flags =3D 0;
+>=20
+> This else branch may be removed, since the structure has been already mem=
+setted to 0.
 
-Patch to fix the error message "directives may not be used inside a macro
-argument" which appears when the kernel is compiled for the cris architecture.
+Correct, yet I didn't want to change Matthias' code, so reviewers can
+skip this patch if they reviewed his old code already. Flag handling
+will be handled different with the next patch anyway.
 
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
----
- drivers/base/node.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+Thanks,
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 793f796..5693ece 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -127,12 +127,13 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
- 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
- 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
- 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
--		       nid, K(node_page_state(nid, NR_ANON_PAGES)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+		       nid, K(node_page_state(nid, NR_ANON_PAGES)
- 			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
--			HPAGE_PMD_NR
-+			HPAGE_PMD_NR),
-+#else
-+		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
- #endif
--		       ),
- 		       nid, K(node_page_state(nid, NR_SHMEM)),
- 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
- 				THREAD_SIZE / 1024,
-@@ -143,13 +144,14 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
- 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
- 				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
- 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
--		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
- 			, nid,
- 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
--			HPAGE_PMD_NR)
-+			HPAGE_PMD_NR));
-+#else
-+		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
- #endif
--		       );
- 	n += hugetlb_report_node_meminfo(nid, buf + n);
- 	return n;
- }
--- 
-1.7.1
+   Wolfram
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--mvpLiMfbWzRoNl4x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7E3XUACgkQD27XaX1/VRvK1ACeOCUbtz7ToYJRme43QLSlEBX7
+FBMAoKMsRe/OJ/4j57Q68dcZbHkpYYod
+=QyTP
+-----END PGP SIGNATURE-----
+
+--mvpLiMfbWzRoNl4x--
