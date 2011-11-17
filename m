@@ -1,95 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab1KQLcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:32:50 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:56195 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab1KQLct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:32:49 -0500
-Subject: [RFC PATCH v2 0/4] cpuidle: (POWER) cpuidle driver for pSeries
-To: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
-        linux-pm@vger.kernel.org
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 17 Nov 2011 16:58:25 +0530
-Message-ID: <20111117112815.9191.2322.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1756849Ab1KQLfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:35:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35001 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756681Ab1KQLfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 06:35:07 -0500
+Date: Thu, 17 Nov 2011 11:35:01 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Colin Cross <ccross@android.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: mm: avoid livelock on !__GFP_FS allocations v2
+Message-ID: <20111117113501.GA20176@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111711-2000-0000-0000-000001C9075F
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series ports the cpuidle framework for ppc64 platform and
-implements a cpuidle back-end driver for ppc64 (pSeries) platform.
-Currently idle states are managed by pseries_{dedicated,shared}_idle_sleep()
-routines in arch/powerpc/platforms/pseries/setup.c.  There are
-two idle states (snooze and cede) that are exploited by
-these routines based on simple heuristics.
+Hi Andrew,
 
-Moving the idle states over to cpuidle framework can take advantage of
-the advanced heuristics, tunables, and features provided by cpuidle
-framework. Additional idle states like extended cede with hints would be
-included and exploited using the cpuidle framework. The statistics and 
-tracing infrastructure provided by the cpuidle framework also helps in 
-enabling power management related tools and help tune the system and 
-applications.
+This patch incorporates feedback from David Rientjes, adds some
+additional documentation and replaces the following patches in mmotm.
 
-This series aims to maintain compatibility and functionality to
-existing pSeries idle cpu management code.  There are no new functions
-or idle states added as part of this series.
+  mm-avoid-livelock-on-__gfp_fs-allocations.patch
+  mm-avoid-livelock-on-__gfp_fs-allocations-fix.patch
 
-The previous version of this patch can be found at
-https://lkml.org/lkml/2011/6/7/375
+Minchan is concerned that this adds an additional special case and
+that it should be possible to handle this case by altering how suspend
+works and how the global variable oom_killer_disabled is used.  At the
+time of writing, it's still allowing __GFP_NOFAIL allocations to fail
+and it might also impact GFP_NOIO allocations while processes are
+frozen (I didn't double check). If that approach reaches maturity,
+gets reviewed and confirmed by Colin to fix his problem, it will
+supersede this one but it's not there yet. Colin, your tested-by was
+removed in this version because it is functionally different to what
+you tested. Can you reconfirm this fixes your livelock problem please?
 
-Changes from the previous version (v1):
+Changelog since V1
+  o Move PM check to should_alloc_retry (David Rientjes)
+  o Update mm/swapfile.c to use pm_suspended_storage() instead of making
+    assumptions on the value of gfp_allowed_mask
+  o Add some additional documentation
 
-	1] Rebased to latest 3.2-rc2
+Colin Cross reported;
 
-	2] Incorporated the changes from the feedback provided by Ben
-	   in the previous version of this series.
+  Under the following conditions, __alloc_pages_slowpath can loop forever:
+  gfp_mask & __GFP_WAIT is true
+  gfp_mask & __GFP_FS is false
+  reclaim and compaction make no progress
+  order <= PAGE_ALLOC_COSTLY_ORDER
 
-	3] The first three patches in this series posted in v1 are not
-	   re-posted as they were taken from "idle cleanup - v3" posted by
-	   Len Brown (https://lkml.org/lkml/2011/4/2/8) which have made 
-	   to the mainline in 3.1. 
-	   This cleanup was a community requirement and major dependency
-	   before cpuidle framework can be ported over to powerpc
-	   architecture.
+  These conditions happen very often during suspend and resume,
+  when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
+  allocations into __GFP_WAIT.
 
-This patch series includes:
+  The oom killer is not run because gfp_mask & __GFP_FS is false,
+  but should_alloc_retry will always return true when order is less
+  than PAGE_ALLOC_COSTLY_ORDER.
 
-[1/4] - Provides arch specific cpu_idle_wait() function required by cpuidle
-  subsystem.
-[2/4] - pseries_idle cpuidle driver
-[3/4] - Enables cpuidle for pSeries and directly calls cpuidle_idle_call()
-[4/4] - Handles powersave=off kernel boot parameter and disables registration
-  of pseries_idle cpuidle driver.
+In his fix, he avoided retrying the allocation if reclaim made no
+progress and __GFP_FS was not set. The problem is that this would
+result in GFP_NOIO allocations failing that previously succeeded
+which would be very unfortunate.
 
-This series has been tested on ppc64 pSeries POWER7 system with the snooze
-and cede states
+The big difference between GFP_NOIO and suspend converting GFP_KERNEL
+to behave like GFP_NOIO is that normally flushers will be cleaning
+pages and kswapd reclaims pages allowing GFP_NOIO to succeed after
+a short delay. The same does not necessarily apply during suspend as
+the storage device may be suspended.
 
---
- arch/powerpc/Kconfig                            |    4 
- arch/powerpc/include/asm/processor.h            |    3 
- arch/powerpc/include/asm/system.h               |    9 +
- arch/powerpc/kernel/idle.c                      |   26 ++
- arch/powerpc/kernel/sysfs.c                     |    2 
- arch/powerpc/platforms/Kconfig                  |    6 
- arch/powerpc/platforms/pseries/Kconfig          |    9 +
- arch/powerpc/platforms/pseries/Makefile         |    1 
- arch/powerpc/platforms/pseries/processor_idle.c |  321 +++++++++++++++++++++++
- arch/powerpc/platforms/pseries/pseries.h        |    3 
- arch/powerpc/platforms/pseries/setup.c          |   89 ------
- arch/powerpc/platforms/pseries/smp.c            |    1 
- include/linux/cpuidle.h                         |    2 
- 13 files changed, 387 insertions(+), 89 deletions(-)
- create mode 100644 arch/powerpc/platforms/pseries/processor_idle.c
+This patch special cases the suspend case to fail the page allocation
+if reclaim cannot make progress and adds some documentation on how
+gfp_allowed_mask is currently used. Failing allocations like this
+may cause suspend to abort but that is better than a livelock.
 
+[mgorman@suse.de: Rework fix to be suspend specific]
+[rientjes@google.com: Move suspended device check to should_alloc_retry]
+Reported-by: Colin Cross <ccross@android.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/gfp.h |   16 ++++++++++++++++
+ mm/page_alloc.c     |   30 ++++++++++++++++++++++--------
+ mm/swapfile.c       |    6 +++---
+ 3 files changed, 41 insertions(+), 11 deletions(-)
 
-
--Deepthi 
-
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 3a76faf..033f55f 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -367,9 +367,25 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp);
+ void drain_all_pages(void);
+ void drain_local_pages(void *dummy);
+ 
++/*
++ * gfp_allowed_mask is set to GFP_BOOT_MASK during early boot to restrict what
++ * GFP flags are used before interrupts are enabled. Once interrupts are
++ * enabled, it is set to __GFP_BITS_MASK while the system is running. During
++ * hibernation, it is used by PM to avoid I/O during memory allocation while
++ * devices are suspended.
++ */
+ extern gfp_t gfp_allowed_mask;
+ 
+ extern void pm_restrict_gfp_mask(void);
+ extern void pm_restore_gfp_mask(void);
+ 
++#ifdef CONFIG_PM_SLEEP
++extern bool pm_suspended_storage(void);
++#else
++static inline bool pm_suspended_storage(void)
++{
++	return false;
++}
++#endif /* CONFIG_PM_SLEEP */
++
+ #endif /* __LINUX_GFP_H */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9dd443d..a72cbf9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -127,6 +127,13 @@ void pm_restrict_gfp_mask(void)
+ 	saved_gfp_mask = gfp_allowed_mask;
+ 	gfp_allowed_mask &= ~GFP_IOFS;
+ }
++
++bool pm_suspended_storage(void)
++{
++	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
++		return false;
++	return true;
++}
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+@@ -1795,12 +1802,25 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+ 
+ static inline int
+ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
++				unsigned long did_some_progress,
+ 				unsigned long pages_reclaimed)
+ {
+ 	/* Do not loop if specifically requested */
+ 	if (gfp_mask & __GFP_NORETRY)
+ 		return 0;
+ 
++	/* Always retry if specifically requested */
++	if (gfp_mask & __GFP_NOFAIL)
++		return 1;
++
++	/*
++	 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent reclaim
++	 * making forward progress without invoking OOM. Suspend also disables
++	 * storage devices so kswapd will not help. Bail if we are suspending.
++	 */
++	if (!did_some_progress && pm_suspended_storage())
++		return 0;
++
+ 	/*
+ 	 * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
+ 	 * means __GFP_NOFAIL, but that may not be true in other
+@@ -1819,13 +1839,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+ 	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
+ 		return 1;
+ 
+-	/*
+-	 * Don't let big-order allocations loop unless the caller
+-	 * explicitly requests that.
+-	 */
+-	if (gfp_mask & __GFP_NOFAIL)
+-		return 1;
+-
+ 	return 0;
+ }
+ 
+@@ -2218,7 +2231,8 @@ rebalance:
+ 
+ 	/* Check if we should retry the allocation */
+ 	pages_reclaimed += did_some_progress;
+-	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
++	if (should_alloc_retry(gfp_mask, order, did_some_progress,
++						pages_reclaimed)) {
+ 		/* Wait for some write requests to complete then retry */
+ 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
+ 		goto rebalance;
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index b1cd120..9520592 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -667,10 +667,10 @@ int try_to_free_swap(struct page *page)
+ 	 * original page might be freed under memory pressure, then
+ 	 * later read back in from swap, now with the wrong data.
+ 	 *
+-	 * Hibernation clears bits from gfp_allowed_mask to prevent
+-	 * memory reclaim from writing to disk, so check that here.
++	 * Hibration suspends storage while it is writing the image
++	 * to disk so check that here.
+ 	 */
+-	if (!(gfp_allowed_mask & __GFP_IO))
++	if (pm_suspended_storage())
+ 		return 0;
+ 
+ 	delete_from_swap_cache(page);
