@@ -1,112 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab1KQFcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 00:32:54 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:43931 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755597Ab1KQFcw (ORCPT
+	id S1755309Ab1KQFev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 00:34:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41674 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab1KQFeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 00:32:52 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <rabin.vincent@stericsson.com>, <linus.walleij@stericsson.com>,
-        <srinidhi.kasagar@stericsson.com>
-Cc: <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <armando.visconti@st.com>, <shiraz.hashim@st.com>,
-        <vipin.kumar@st.com>, <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
-        <grant.likely@secretlab.ca>
-Subject: [PATCH V2 5/5] gpio/gpio-stmpe: ADD support for stmpe variant 801
-Date: Thu, 17 Nov 2011 11:02:24 +0530
-Message-ID: <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1321507421.git.viresh.kumar@st.com>
-References: <cover.1321507421.git.viresh.kumar@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 17 Nov 2011 00:34:50 -0500
+From: tom.leiming@gmail.com
+To: mingo@elte.hu, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH 1/2] init/main.c: execute lockdep_init as early as possible
+Date: Thu, 17 Nov 2011 13:34:31 +0800
+Message-Id: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-STMPE801 is a GPIO expander. GPIO registers for 801 are slightly different from other
-variants. This patch adds support for STMPE801 in stmpe gpio driver.
+From: Ming Lei <tom.leiming@gmail.com>
 
-Signed-off-by: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+This patch removes the lockdep warning[1] on ARM platform.
+The warning is caused by printk inside smp_setup_processor_id.
+
+It is safe to do this because lockdep_init doesn't depend on
+smp_setup_processor_id, so make printk can be called as early
+as possible without lockdep complainment.
+
+[1], lockdep warning
+[    0.000000] WARNING: lockdep init error! Arch code didn't call
+lockdep_init() early enough?
+[    0.000000] Call stack leading to lockdep invocation was:
+[    0.000000]  [<c00164bc>] save_stack_trace_tsk+0x0/0x90
+[    0.000000]  [<ffffffff>] 0xffffffff
+
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- drivers/gpio/gpio-stmpe.c |   31 ++++++++++++++++++++++++++++---
- 1 files changed, 28 insertions(+), 3 deletions(-)
+ init/main.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index 4c980b5..000b019 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -65,7 +65,15 @@ static void stmpe_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
- 	u8 reg = stmpe->regs[which] - (offset / 8);
- 	u8 mask = 1 << (offset % 8);
+diff --git a/init/main.c b/init/main.c
+index 217ed23..2c76efb 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -469,13 +469,12 @@ asmlinkage void __init start_kernel(void)
+ 	char * command_line;
+ 	extern const struct kernel_param __start___param[], __stop___param[];
  
--	stmpe_reg_write(stmpe, reg, mask);
-+	/*
-+	 * Some variants have single register for gpio set/clear functionality.
-+	 * For them we need to write 0 to clear and 1 to set.
-+	 */
-+	if (!val && (stmpe->regs[STMPE_IDX_GPSR_LSB] ==
-+				stmpe->regs[STMPE_IDX_GPCR_LSB]))
-+		stmpe_set_bits(stmpe, reg, mask, ~mask);
-+	else
-+		stmpe_set_bits(stmpe, reg, mask, mask);
- }
+-	smp_setup_processor_id();
+-
+ 	/*
+ 	 * Need to run as early as possible, to initialize the
+ 	 * lockdep hash:
+ 	 */
+ 	lockdep_init();
++	smp_setup_processor_id();
+ 	debug_objects_early_init();
  
- static int stmpe_gpio_direction_output(struct gpio_chip *chip,
-@@ -125,10 +133,19 @@ static struct gpio_chip template_chip = {
- static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- {
- 	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
-+	struct stmpe *stmpe = stmpe_gpio->stmpe;
- 	int offset = d->irq - stmpe_gpio->irq_base;
- 	int regoffset = offset / 8;
- 	int mask = 1 << (offset % 8);
- 
-+	/* STMPE801 doesn't have RE and FE registers */
-+	if (stmpe->partnum == STMPE801) {
-+		if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_LEVEL_HIGH)
-+			return 0;
-+		else
-+			return -EINVAL;
-+	}
-+
- 	if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_LEVEL_HIGH)
- 		return -EINVAL;
- 
-@@ -165,6 +182,11 @@ static void stmpe_gpio_irq_sync_unlock(struct irq_data *d)
- 	int i, j;
- 
- 	for (i = 0; i < CACHE_NR_REGS; i++) {
-+		/* STMPE801 doesn't have RE and FE registers */
-+		if ((stmpe->partnum == STMPE801) &&
-+				(i != REG_IE))
-+			continue;
-+
- 		for (j = 0; j < num_banks; j++) {
- 			u8 old = stmpe_gpio->oldregs[i][j];
- 			u8 new = stmpe_gpio->regs[i][j];
-@@ -241,8 +263,11 @@ static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
- 		}
- 
- 		stmpe_reg_write(stmpe, statmsbreg + i, status[i]);
--		stmpe_reg_write(stmpe, stmpe->regs[STMPE_IDX_GPEDR_MSB] + i,
--				status[i]);
-+
-+		/* Edge detect register is not present on 801 */
-+		if (stmpe->partnum != STMPE801)
-+			stmpe_reg_write(stmpe, stmpe->regs[STMPE_IDX_GPEDR_MSB]
-+					+ i, status[i]);
- 	}
- 
- 	return IRQ_HANDLED;
+ 	/*
 -- 
-1.7.2.2
+1.7.5.4
 
