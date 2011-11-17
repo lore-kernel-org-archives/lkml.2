@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab1KQNJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 08:09:59 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:4426 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756345Ab1KQNJ6 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Thu, 17 Nov 2011 08:09:58 -0500
-Message-Id: <4EC515B40200007800061921@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 17 Nov 2011 13:09:56 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Mathias Krause" <minipli@googlemail.com>
-Cc: <herbert@gondor.hengli.com.au>, <linux-kernel@vger.kernel.org>
-Subject: Re: your patch "crypto: sha1 - SSSE3 based SHA1 implementation
- for x86-64" vs xsave
-References: <4EC4F0FD0200007800061840@nat28.tlf.novell.com>
- <CA+rthh-1WxhWPeKE-Aqa5NCatxVoKu9=KHhLygkT1A6K35CBDA@mail.gmail.com>
-In-Reply-To: <CA+rthh-1WxhWPeKE-Aqa5NCatxVoKu9=KHhLygkT1A6K35CBDA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932098Ab1KQNKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 08:10:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44308 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756345Ab1KQNKs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 08:10:48 -0500
+Subject: Re: [PATCH RFC] remove jump_label optimization for perf sched events
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
+        Jason Baron <jbaron@redhat.com>, rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 17 Nov 2011 14:10:12 +0100
+In-Reply-To: <20111117130032.GC16853@redhat.com>
+References: <20111117123029.GB16853@redhat.com>
+	 <1321534159.27735.33.camel@twins> <20111117130032.GC16853@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321535413.27735.35.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.11.11 at 13:36, Mathias Krause <minipli@googlemail.com> wrote:
-> On Thu, Nov 17, 2011 at 11:33 AM, Jan Beulich <JBeulich@suse.com> wrote:
->> Mathias,
->>
->> in avx_usable() you use cpu_has_osxsave to determine whether AVX can
->> actually be used, but I can't see how that conditional would ever evaluate
->> to true.
-> 
-> Well, it does, at least in my setup, a Core i7-2620M:
-> 
->   [   44.902613] sha1_ssse3: Using AVX optimized SHA-1 implementation
-> 
->> Checking CPUID.OSXSAVE is actually a user land requirement,
->> whereas in the kernel you should really look at kernel internal variables
->> to determine whether xsave was enabled
-> 
-> That's a valid point. I actually ported the check from the initial
-> assembler implementation which was written with userland code in mind.
-> Albeit this test can also be used in kernel code because the kernel
-> only sets this flag after xsave was enabled in
-> arch/x86/kernel/xsave.c:xstate_enable_boot_cpu/xstate_enable
+On Thu, 2011-11-17 at 15:00 +0200, Gleb Natapov wrote:
 
-Indeed, I got this the wrong way round.
+> > That said, I'd much rather throttle this particular jump label than
+> > remove it altogether, some people really don't like all this scheduler
+> > hot path crap.
+> What about moving perf_event_task_sched() to sched_(in|out)_preempt_notifiers?
+> preempt notifiers checking is already on the scheduler hot path, so no
+> additional overhead for perf case.
 
->> (or, if you really want to stay
->> with using cpu_has_osxsave you'd have to force re-execution of
->> get_cpu_cap() after xsave got enabled on individual CPUs), namely
->> mmu_cr4_features having X86_CR4_OSXSAVE set.
-> 
-> I don't see where X86_CR4_OSXSAVE would get reset after xsave init.
-> Can you give me a pointer to that code?
+Same problem really, some people complain about the overhead of preempt
+notifiers, also not all kernels have those in. 
 
-I didn't say it would get cleared. I said it should be used in favor of
-cpu_has_osxsave.
-
->> Additionally, under a hypervisor, CPUID.OSXSAVE may be set (due to
->> the hypervisor having enabled xsave), while the kernel may be running
->> with xsave disabled (e.g. due to a command line option saying so).
-> 
-> When noxsave is given on the kernel command line, X86_FEATURE_XSAVE
-> will be cleared and xsave_init() won't call xstate_enable(), so not
-> setting X86_CR4_OSXSAVE. All fine.
-
-But you're not looking at this bit, you're looking at cpu_has_osxsave,
-which is a CPUID bit (not a CR4 one).
-
-Jan
-
+Futhermore I loathe notifier lists because they obscure wtf is done.
