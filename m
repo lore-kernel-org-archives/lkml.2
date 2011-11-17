@@ -1,56 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab1KQItH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:49:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52382 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709Ab1KQItF convert rfc822-to-8bit (ORCPT
+	id S1756134Ab1KQIut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:50:49 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:48711 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751709Ab1KQIus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:49:05 -0500
-Subject: Re: [PATCH 1/2] lockdep,rtmutex,bug: Show taint flags on error
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Ingo Molnar <mingo@redhat.com>, Nick Bowler <nbowler@elliptictech.com>,
-        Greg KH <greg@kroah.com>, Dave Jones <davej@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Date: Thu, 17 Nov 2011 09:48:29 +0100
-In-Reply-To: <20111116215236.GD3366@decadent.org.uk>
-References: <1319773015.6759.30.camel@deadeye>
-	 <20111116215236.GD3366@decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321519709.27735.13.camel@twins>
-Mime-Version: 1.0
+	Thu, 17 Nov 2011 03:50:48 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: misc documentation fixups
+Date: Thu, 17 Nov 2011 09:50:21 +0100
+Message-ID: <1321519821-25022-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-16 at 21:52 +0000, Ben Hutchings wrote:
-> On Fri, Oct 28, 2011 at 04:36:55AM +0100, Ben Hutchings wrote:
-> > Currently lock debugging is disabled when the kernel is tainted, with
-> > a few exceptions.  It is already recognised that this can be useful
-> > for staging modules (TAINT_CRAP), but that also goes for out-of-tree
-> > modules (TAINT_OOT_MODULE) so long as core kernel developers don't
-> > have to spend time debugging them.  Also, there are several reasons
-> > for tainting that are unlikely to introduce false locking bug reports
-> > (e.g. TAINT_FIRMWARE_WORKAROUND).
+From: Linus Walleij <linus.walleij@linaro.org>
 
+This fixes up some various confusions in the pinctrl
+documentation.
 
+Reported-by: Rajendra Nayak <rnayak@ti.com>
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ Documentation/pinctrl.txt |   30 +++++++++++++++---------------
+ 1 files changed, 15 insertions(+), 15 deletions(-)
 
-> > Instead of disabling lock debugging, show the taint flags in all
-> > lockdep and rtmutex-debug error messages.
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index ea50804..348a59d 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -59,13 +59,13 @@ this in our driver:
+ #include <linux/pinctrl/pinctrl.h>
+ 
+ const struct pinctrl_pin_desc foo_pins[] = {
+-      PINCTRL_PIN(0, "A1"),
+-      PINCTRL_PIN(1, "A2"),
+-      PINCTRL_PIN(2, "A3"),
++      PINCTRL_PIN(0, "A8"),
++      PINCTRL_PIN(1, "B8"),
++      PINCTRL_PIN(2, "C8"),
+       ...
+-      PINCTRL_PIN(61, "H6"),
+-      PINCTRL_PIN(62, "H7"),
+-      PINCTRL_PIN(63, "H8"),
++      PINCTRL_PIN(61, "F1"),
++      PINCTRL_PIN(62, "G1"),
++      PINCTRL_PIN(63, "H1"),
+ };
+ 
+ static struct pinctrl_desc foo_desc = {
+@@ -90,11 +90,11 @@ selected drivers, you need to select them from your machine's Kconfig entry,
+ since these are so tightly integrated with the machines they are used on.
+ See for example arch/arm/mach-u300/Kconfig for an example.
+ 
+-Pins usually have fancier names than this. You can find these in the dataheet
++Pins usually have fancier names than this. You can find these in the datasheet
+ for your chip. Notice that the core pinctrl.h file provides a fancy macro
+ called PINCTRL_PIN() to create the struct entries. As you can see I enumerated
+-the pins from 0 in the upper left corner to 63 in the lower right corner,
+-this enumeration was arbitrarily chosen, in practice you need to think
++the pins from 0 in the upper left corner to 63 in the lower right corner.
++This enumeration was arbitrarily chosen, in practice you need to think
+ through your numbering system so that it matches the layout of registers
+ and such things in your driver, or the code may become complicated. You must
+ also consider matching of offsets to the GPIO ranges that may be handled by
+@@ -842,42 +842,42 @@ case), we define a mapping like this:
+ 	.name "2bit"
+ 	.ctrl_dev_name = "pinctrl.0",
+ 	.function = "mmc0",
+-	.group = "mmc0_0_grp",
++	.group = "mmc0_1_grp",
+ 	.dev_name = "foo-mmc.0",
+ },
+ {
+ 	.name "4bit"
+ 	.ctrl_dev_name = "pinctrl.0",
+ 	.function = "mmc0",
+-	.group = "mmc0_0_grp",
++	.group = "mmc0_1_grp",
+ 	.dev_name = "foo-mmc.0",
+ },
+ {
+ 	.name "4bit"
+ 	.ctrl_dev_name = "pinctrl.0",
+ 	.function = "mmc0",
+-	.group = "mmc0_1_grp",
++	.group = "mmc0_2_grp",
+ 	.dev_name = "foo-mmc.0",
+ },
+ {
+ 	.name "8bit"
+ 	.ctrl_dev_name = "pinctrl.0",
+ 	.function = "mmc0",
+-	.group = "mmc0_0_grp",
++	.group = "mmc0_1_grp",
+ 	.dev_name = "foo-mmc.0",
+ },
+ {
+ 	.name "8bit"
+ 	.ctrl_dev_name = "pinctrl.0",
+ 	.function = "mmc0",
+-	.group = "mmc0_1_grp",
++	.group = "mmc0_2_grp",
+ 	.dev_name = "foo-mmc.0",
+ },
+ {
+ 	.name "8bit"
+ 	.ctrl_dev_name = "pinctrl.0",
+ 	.function = "mmc0",
+-	.group = "mmc0_2_grp",
++	.group = "mmc0_3_grp",
+ 	.dev_name = "foo-mmc.0",
+ },
+ ...
+-- 
+1.7.3.2
 
-
-So this is two patches in one. I took the last part, the printing of the
-taint flags thing, not the first part.
-
-I did a small patch adding TAINT_FIRMWARE_WORKAROUND to the list of
-TAINTS that shouldn't disable lockdep.
-
-As for OOT_MODULE, with staging the only reason not to merge a module is
-it being the wrong license and I really can't be arsed about OOT stuff
-anyway, so no.
