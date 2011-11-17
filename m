@@ -1,80 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1KQEoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 23:44:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755094Ab1KQEoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 23:44:38 -0500
-Message-ID: <4EC491B3.705@redhat.com>
-Date: Thu, 17 Nov 2011 12:46:43 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1755788Ab1KQEv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 23:51:29 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:49929 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab1KQEv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 23:51:28 -0500
+Date: Thu, 17 Nov 2011 04:52:30 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Matt Helsley <matthltc@us.ibm.com>, richard@nod.at,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        oleg@redhat.com, dhowells@redhat.com, ebiederm@xmission.com
+Subject: user namespace: make signal.c respect user namespaces (v5)
+Message-ID: <20111117045230.GA26345@hallyn.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: WANG Cong <xiyou.wangcong@gmail.com>, kexec@lists.infradead.org,
-        tim@edgecast.com, linux-kernel@vger.kernel.org
-Subject: Re: Crash during vmcore_init
-References: <1318376345.2050.20.camel@boudreau> <j9r5m5$b18$1@dough.gmane.org> <1321296650.2066.17.camel@boudreau> <4EC21F67.10905@redhat.com> <1321396371.4198.5.camel@boudreau> <4EC31E55.6040809@redhat.com> <1321467647.2137.4.camel@boudreau> <4EC47FCA.5090908@redhat.com> <CAOS58YMOuJrvGxE1VxsU=ZPTLgY60HDJoLFjTowx9ZApUQ3tTw@mail.gmail.com>
-In-Reply-To: <CAOS58YMOuJrvGxE1VxsU=ZPTLgY60HDJoLFjTowx9ZApUQ3tTw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 12:34 PM, Tejun Heo wrote:
+ipc/mqueue.c: for __SI_MESQ, convert the uid being sent to recipient's
+user namespace. (new, thanks Oleg)
 
-> Hello,
-> 
-> On Wed, Nov 16, 2011 at 7:30 PM, Dave Young <dyoung@redhat.com> wrote:
->> This addr is converted to an invalid phys address,
-> 
-> I'm a bit lost on the context here. Who's calling per_cpu_ptr_to_phys()?
+__send_signal: convert current's uid to the recipient's user namespace
+for any siginfo which is not SI_FROMKERNEL (patch from Oleg, thanks
+again :)
 
+do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+user namespace
 
-It's drivers/base/cpu.c : show_crash_notes()
+ptrace_signal maps parent's uid into current's user namespace before
+including in signal to current.  IIUC Oleg has argued that this shouldn't
+matter as the debugger will play with it, but it seems like not converting
+the value currently being set is misleading.
 
-> 
->> looking the code below:
->>       if (in_first_chunk) {
->>                if (!is_vmalloc_addr(addr))
->>                        return __pa(addr);
->>                else
->>                        return page_to_phys(vmalloc_to_page(addr));
->>        } else
->>                return page_to_phys(pcpu_addr_to_page(addr));
->>
->> I dont understand per cpu allocation well, if addr is not in first chunk
->> then it should be in vmalloc area?
-> 
-> Yes, it is. First chunk can be embedded in the kernel linear address
-> space but from the second one, it's always set up from the top of the
-> vmalloc area with the same offset layout as the first chunk.
+Changelog:
+Sep 20: Inspired by Oleg's suggestion, define map_cred_ns() helper to
+	simplify callers and help make clear what we are translating
+        (which uid into which namespace).  Passing the target task would
+	make callers even easier to read, but we pass in user_ns because
+	current_user_ns() != task_cred_xxx(current, user_ns).
+Sep 20: As recommended by Oleg, also put task_pid_vnr() under rcu_read_lock
+	in ptrace_signal().
+Sep 23: In send_signal(), detect when (user) signal is coming from an
+	ancestor or unrelated user namespace.  Pass that on to __send_signal,
+	which sets si_uid to 0 or overflowuid if needed.
+Oct 12: Base on Oleg's fixup_uid() patch.  On top of that, handle all
+	SI_FROMKERNEL cases at callers, because we can't assume sender is
+	current in those cases.
+Nov 10: (mhelsley) rename fixup_uid to more meaningful usern_fixup_signal_uid
+Nov 10: (akpm) make the !CONFIG_USER_NS case clearer
 
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+---
+ ipc/mqueue.c    |    7 ++++++-
+ kernel/signal.c |   43 ++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 46 insertions(+), 4 deletions(-)
 
-in this case ffff880667c19ad0 fall out of vmalloc area and it's not in
-first chunk also.
-
-> 
->> Tejun, do you have any idea about this?
-> 
-> Can you please tell me how to reproduce the problem? I'll try to find
-> out what's going on.
-
-
-make sure kernel support CRASH DUMP, then cat
-/sys/devices/system/cpu/cpu[x]/crash_notes
-
-Tim Hartrick <tim@edgecast.com> reported the problem when test kdump.
-But I can not reproduce this. I think tim can help to test
-
-> 
-> Thanks.
-> 
-
-
-
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 2e0ecfc..4dbf3cb 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -32,6 +32,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/pid.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/user_namespace.h>
+ #include <linux/slab.h>
+ 
+ #include <net/sock.h>
+@@ -543,9 +544,13 @@ static void __do_notify(struct mqueue_inode_info *info)
+ 			sig_i.si_errno = 0;
+ 			sig_i.si_code = SI_MESGQ;
+ 			sig_i.si_value = info->notify.sigev_value;
++			/* map current pid/uid into info->owner's namespaces */
++			rcu_read_lock();
+ 			sig_i.si_pid = task_tgid_nr_ns(current,
+ 						ns_of_pid(info->notify_owner));
+-			sig_i.si_uid = current_uid();
++			sig_i.si_uid = user_ns_map_uid(info->user->user_ns,
++						current_cred(), current_uid());
++			rcu_read_lock();
+ 
+ 			kill_pid_info(info->notify.sigev_signo,
+ 				      &sig_i, info->notify_owner);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index b3f78d0..c0f0782 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -28,6 +28,7 @@
+ #include <linux/freezer.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/nsproxy.h>
++#include <linux/user_namespace.h>
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/signal.h>
+ 
+@@ -1019,6 +1020,34 @@ static inline int legacy_queue(struct sigpending *signals, int sig)
+ 	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
+ }
+ 
++/*
++ * map the uid in struct cred into user namespace *ns
++ */
++static inline uid_t map_cred_ns(const struct cred *cred,
++				struct user_namespace *ns)
++{
++	return user_ns_map_uid(ns, cred, cred->uid);
++}
++
++#ifdef CONFIG_USER_NS
++static inline void userns_fixup_signal_uid(struct siginfo *info, struct task_struct *t)
++{
++	if (current_user_ns() == task_cred_xxx(t, user_ns))
++		return;
++
++	if (SI_FROMKERNEL(info))
++		return;
++
++	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
++					current_cred(), info->si_uid);
++}
++#else
++static inline void userns_fixup_signal_uid(struct siginfo *info, struct task_struct *t)
++{
++	return;
++}
++#endif
++
+ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 			int group, int from_ancestor_ns)
+ {
+@@ -1088,6 +1117,9 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 				q->info.si_pid = 0;
+ 			break;
+ 		}
++
++		userns_fixup_signal_uid(info, t);
++
+ 	} else if (!is_si_special(info)) {
+ 		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
+ 			/*
+@@ -1626,7 +1658,8 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
+ 	 */
+ 	rcu_read_lock();
+ 	info.si_pid = task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
+-	info.si_uid = __task_cred(tsk)->uid;
++	info.si_uid = map_cred_ns(__task_cred(tsk),
++			task_cred_xxx(tsk->parent, user_ns));
+ 	rcu_read_unlock();
+ 
+ 	info.si_utime = cputime_to_clock_t(cputime_add(tsk->utime,
+@@ -1711,7 +1744,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
+ 	 */
+ 	rcu_read_lock();
+ 	info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
+-	info.si_uid = __task_cred(tsk)->uid;
++	info.si_uid = map_cred_ns(__task_cred(tsk),
++			task_cred_xxx(parent, user_ns));
+ 	rcu_read_unlock();
+ 
+ 	info.si_utime = cputime_to_clock_t(tsk->utime);
+@@ -2129,8 +2163,11 @@ static int ptrace_signal(int signr, siginfo_t *info,
+ 		info->si_signo = signr;
+ 		info->si_errno = 0;
+ 		info->si_code = SI_USER;
++		rcu_read_lock();
+ 		info->si_pid = task_pid_vnr(current->parent);
+-		info->si_uid = task_uid(current->parent);
++		info->si_uid = map_cred_ns(__task_cred(current->parent),
++				current_user_ns());
++		rcu_read_unlock();
+ 	}
+ 
+ 	/* If the (new) signal is now blocked, requeue it.  */
 -- 
-Thanks
-Dave
+1.7.5.4
+
