@@ -1,200 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab1KQKUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:20:25 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36640 "EHLO
+	id S1756635Ab1KQKV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:21:28 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52291 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab1KQKUY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756237Ab1KQKV0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:20:24 -0500
+	Thu, 17 Nov 2011 05:21:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <1321519821-25022-1-git-send-email-linus.walleij@stericsson.com>
-References: <1321519821-25022-1-git-send-email-linus.walleij@stericsson.com>
-Date: Thu, 17 Nov 2011 15:50:23 +0530
-Message-ID: <CAJuYYwSHoMFWkuL4+aEzOBt0XUaQwTUzob+cowvigPvYTRXS5Q@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: misc documentation fixups
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <CAE8kqZJGxra_tX=x-BQhnwKBDAhHLYq04Xon47coQ5JR5+0YmQ@mail.gmail.com>
+References: <CAE8kqZKQrDK4SAKc8vK7Wi46dGQBw6_LX2NFvkr-XZr_KmGhrQ@mail.gmail.com>
+	<20111013133815.GC2310@localhost.localdomain>
+	<CAE8kqZJGxra_tX=x-BQhnwKBDAhHLYq04Xon47coQ5JR5+0YmQ@mail.gmail.com>
+Date: Thu, 17 Nov 2011 18:21:26 +0800
+Message-ID: <CAE8kqZ+GV3CoxWMV=4GXgc6YYCcnAk_jnBxzwRubgccZL8VstA@mail.gmail.com>
+Subject: Re: [PATCH] fanotify: to differ file access event from different threads
+From: boyd yang <boyd.yang@gmail.com>
+To: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: eparis@redhat.com, xiyou.wangcong@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+How can this patch get merged?
+Who is responsible for this?
 
-On 17 November 2011 14:20, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+We are developing some real-time antivirus software, the fanotify can make
+it work without dirver/kenel-modues( like RedirFS).
+But the bug costs a lot trouble.
+If we used the patch, our software works great!
+
+I think other antivirus or file-motoring softwares are influnced by the bug
+too.
+
+
+On Fri, Oct 14, 2011 at 2:56 PM, boyd yang <boyd.yang@gmail.com> wrote:
 >
-> This fixes up some various confusions in the pinctrl
-> documentation.
-
-There are few other minor fixes in the documentation, if possible can
-these also be included in this patch.
-
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index be5cab3..80e531e 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -32,7 +32,7 @@ Definition of PIN:
-   be sparse - i.e. there may be gaps in the space with numbers where no
-   pin exists.
-
--When a PIN CONTROLLER is instatiated, it will register a descriptor to the
-+When a PIN CONTROLLER is instantiated, it will register a descriptor to the
- pin control framework, and this descriptor contains an array of pin descriptors
- describing the pins handled by this specific pin controller.
-
-@@ -254,7 +254,7 @@ chip b:
-  - pin range  : [64 .. 71]
-
- When GPIO-specific functions in the pin control subsystem are called, these
--ranges will be used to look up the apropriate pin controller by inspecting
-+ranges will be used to look up the appropriate pin controller by inspecting
- and matching the pin to the pin ranges across all controllers. When a
- pin controller handling the matching range is found, GPIO-specific functions
- will be called on that specific pin controller.
-@@ -434,7 +434,7 @@ you. Define enumerators only for the pins you can
-control if that makes sense.
-
- Assumptions:
-
--We assume that the number possible function maps to pin groups is limited by
-+We assume that the number of possible function maps to pin groups is limited by
- the hardware. I.e. we assume that there is no system where any function can be
- mapped to any pin, like in a phone exchange. So the available pins groups for
- a certain function will be limited to a few choices (say up to eight or so),
-@@ -581,7 +581,7 @@ int foo_list_funcs(struct pinctrl_dev *pctldev,
-unsigned selector)
-
- const char *foo_get_fname(struct pinctrl_dev *pctldev, unsigned selector)
- {
--	return myfuncs[selector].name;
-+	return foo_functions[selector].name;
- }
-
- static int foo_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
-@@ -602,13 +602,12 @@ int foo_enable(struct pinctrl_dev *pctldev,
-unsigned selector,
- 	return 0;
- }
-
--int foo_disable(struct pinctrl_dev *pctldev, unsigned selector,
-+void foo_disable(struct pinctrl_dev *pctldev, unsigned selector,
- 		unsigned group)
- {
- 	u8 regbit = (1 << group);
-
- 	writeb((readb(MUX) & ~(regbit)), MUX)
--	return 0;
- }
-
- struct pinmux_ops foo_pmxops = {
----
-
+> Thanks, I updated the patch.
+> Now it passed checkpatch.pl.
 >
-> Reported-by: Rajendra Nayak <rnayak@ti.com>
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  Documentation/pinctrl.txt |   30 +++++++++++++++---------------
->  1 files changed, 15 insertions(+), 15 deletions(-)
+> I used the flag you mentioned.
 >
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-> index ea50804..348a59d 100644
-> --- a/Documentation/pinctrl.txt
-> +++ b/Documentation/pinctrl.txt
-> @@ -59,13 +59,13 @@ this in our driver:
->  #include <linux/pinctrl/pinctrl.h>
+> fanotify: to differ file access event from different threads
+> When fanotify is monitoring the whole mount point "/", and multiple
+> threads iterate the same direcotry, some thread will hang.
+> This patch let fanotify to differ access events from different
+> threads, prevent fanotify from merging access events from different
+> threads.
+> It also hide overflow events to reach user space.
+> Signed-off-by: Boyd Yang <boyd.yang@gmail.com>
 >
->  const struct pinctrl_pin_desc foo_pins[] = {
-> -      PINCTRL_PIN(0, "A1"),
-> -      PINCTRL_PIN(1, "A2"),
-> -      PINCTRL_PIN(2, "A3"),
-> +      PINCTRL_PIN(0, "A8"),
-> +      PINCTRL_PIN(1, "B8"),
-> +      PINCTRL_PIN(2, "C8"),
->       ...
-> -      PINCTRL_PIN(61, "H6"),
-> -      PINCTRL_PIN(62, "H7"),
-> -      PINCTRL_PIN(63, "H8"),
-> +      PINCTRL_PIN(61, "F1"),
-> +      PINCTRL_PIN(62, "G1"),
-> +      PINCTRL_PIN(63, "H1"),
->  };
+> diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+> linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+> --- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c    2011-08-29
+> 12:16:01.000000000 +0800
+> +++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c 2011-10-14
+> 14:17:53.055958000 +0800
+> @@ -15,7 +15,8 @@
 >
->  static struct pinctrl_desc foo_desc = {
-> @@ -90,11 +90,11 @@ selected drivers, you need to select them from your machine's Kconfig entry,
->  since these are so tightly integrated with the machines they are used on.
->  See for example arch/arm/mach-u300/Kconfig for an example.
+>        if (old->to_tell == new->to_tell &&
+>            old->data_type == new->data_type &&
+> -           old->tgid == new->tgid) {
+> +           old->tgid == new->tgid &&
+> +           old->pid == new->pid) {
+>                switch (old->data_type) {
+>                case (FSNOTIFY_EVENT_PATH):
+>                        if ((old->path.mnt == new->path.mnt) &&
+> @@ -144,11 +145,16 @@
+>                return PTR_ERR(notify_event);
 >
-> -Pins usually have fancier names than this. You can find these in the dataheet
-> +Pins usually have fancier names than this. You can find these in the datasheet
->  for your chip. Notice that the core pinctrl.h file provides a fancy macro
->  called PINCTRL_PIN() to create the struct entries. As you can see I enumerated
-> -the pins from 0 in the upper left corner to 63 in the lower right corner,
-> -this enumeration was arbitrarily chosen, in practice you need to think
-> +the pins from 0 in the upper left corner to 63 in the lower right corner.
-> +This enumeration was arbitrarily chosen, in practice you need to think
->  through your numbering system so that it matches the layout of registers
->  and such things in your driver, or the code may become complicated. You must
->  also consider matching of offsets to the GPIO ranges that may be handled by
-> @@ -842,42 +842,42 @@ case), we define a mapping like this:
->        .name "2bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_0_grp",
-> +       .group = "mmc0_1_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "4bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_0_grp",
-> +       .group = "mmc0_1_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "4bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_1_grp",
-> +       .group = "mmc0_2_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "8bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_0_grp",
-> +       .group = "mmc0_1_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "8bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_1_grp",
-> +       .group = "mmc0_2_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "8bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_2_grp",
-> +       .group = "mmc0_3_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  ...
-> --
-> 1.7.3.2
+>  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> -       if (event->mask & FAN_ALL_PERM_EVENTS) {
+> -               /* if we merged we need to wait on the new event */
+> -               if (notify_event)
+> -                       event = notify_event;
+> -               ret = fanotify_get_response_from_access(group, event);
+> +       /*if overflow, do not wait for response*/
+> +       if (event->mask&FS_Q_OVERFLOW) {
+> +               pr_debug("fanotify overflow!\n");
+> +       }       else {
+> +               if (event->mask & FAN_ALL_PERM_EVENTS) {
+> +                       /* if we merged we need to wait on the new event */
+> +                       if (notify_event)
+> +                               event = notify_event;
+> +                       ret = fanotify_get_response_from_access(group, event);
+> +               }
+>        }
+>  #endif
+>
+> diff -r -u linux-3.1-rc4_orig/fs/notify/notification.c
+> linux-3.1-rc4/fs/notify/notification.c
+> --- linux-3.1-rc4_orig/fs/notify/notification.c 2011-08-29
+> 12:16:01.000000000 +0800
+> +++ linux-3.1-rc4/fs/notify/notification.c      2011-10-14 13:52:36.946608000 +0800
+> @@ -95,6 +95,7 @@
+>                BUG_ON(!list_empty(&event->private_data_list));
+>
+>                kfree(event->file_name);
+> +               put_pid(event->pid);
+>                put_pid(event->tgid);
+>                kmem_cache_free(fsnotify_event_cachep, event);
+>        }
+> @@ -374,6 +375,7 @@
+>                        return NULL;
+>                }
+>        }
+> +       event->pid = get_pid(old_event->pid);
+>        event->tgid = get_pid(old_event->tgid);
+>        if (event->data_type == FSNOTIFY_EVENT_PATH)
+>                path_get(&event->path);
+> @@ -417,6 +419,7 @@
+>                event->name_len = strlen(event->file_name);
+>        }
+>
+> +       event->pid = get_pid(task_pid(current));
+>        event->tgid = get_pid(task_tgid(current));
+>        event->sync_cookie = cookie;
+>        event->to_tell = to_tell;
+> diff -r -u linux-3.1-rc4_orig/include/linux/fsnotify_backend.h
+> linux-3.1-rc4/include/linux/fsnotify_backend.h
+> --- linux-3.1-rc4_orig/include/linux/fsnotify_backend.h 2011-08-29
+> 12:16:01.000000000 +0800
+> +++ linux-3.1-rc4/include/linux/fsnotify_backend.h      2011-10-14
+> 13:51:50.380168000 +0800
+> @@ -238,6 +238,7 @@
+>        u32 sync_cookie;        /* used to corrolate events, namely inotify mv events */
+>        const unsigned char *file_name;
+>        size_t name_len;
+> +       struct pid *pid;
+>        struct pid *tgid;
+>
+>  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
 >
 >
+>
+>
+>
+> On Thu, Oct 13, 2011 at 9:38 PM, Josef Bacik <josef@redhat.com> wrote:
+> > On Thu, Oct 13, 2011 at 04:56:43PM +0800, boyd yang wrote:
+> >> This patch fixes a hang problem of Eric Paris's fs Notification/fanotify.
+> >>
+> >> Fanotify brings a way to intercept file access events.
+> >> When multiple threadsiterate the same direcotry, some thread will hang.
+> >> This patch let fanotify to differ access events from different
+> >> threads, prevent fanotify from merging access events from different
+> >> threads.
+> >>
+> >
+> > You need to run this through checkpatch.pl, you have a ton of formatting
+> > problems.  Also your email client seems to have word-wrapped parts of this, so
+> > use a email client that doesn't word wrap.
+> >
+> >> =============================================================
+> >>
+> >> diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+> >> linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+> >> --- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c  2011-08-29
+> >> 12:16:01.000000000 +0800
+> >> +++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c       2011-10-10
+> >> 12:28:23.276847000 +0800
+> >> @@ -15,7 +15,8 @@
+> >>
+> >>       if (old->to_tell == new->to_tell &&
+> >>           old->data_type == new->data_type &&
+> >> -         old->tgid == new->tgid) {
+> >> +         old->tgid == new->tgid &&
+> >> +         old->pid == new->pid) {
+> >>               switch (old->data_type) {
+> >>               case (FSNOTIFY_EVENT_PATH):
+> >>                       if ((old->path.mnt == new->path.mnt) &&
+> >> @@ -144,11 +145,19 @@
+> >>               return PTR_ERR(notify_event);
+> >>
+> >>  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> >> -     if (event->mask & FAN_ALL_PERM_EVENTS) {
+> >> -             /* if we merged we need to wait on the new event */
+> >> -             if (notify_event)
+> >> -                     event = notify_event;
+> >> -             ret = fanotify_get_response_from_access(group, event);
+> >> +     //if overflow, do not wait for response
+> >> +     if(fsnotify_isoverflow(event))
+> >> +     {
+> >> +             pr_debug("fanotify overflow!\n");
+> >> +     }
+> >> +     else
+> >> +     {
+> >> +             if (event->mask & FAN_ALL_PERM_EVENTS) {
+> >> +                     /* if we merged we need to wait on the new event */
+> >> +                     if (notify_event)
+> >> +                             event = notify_event;
+> >> +                     ret = fanotify_get_response_from_access(group, event);
+> >> +             }
+> >>       }
+> >
+> > The overflow event should only have FS_Q_OVERFLOW set in it's mask right?  So
+> > why is this test needed at all?  Thanks,
+> >
+> > Josef
+> >
