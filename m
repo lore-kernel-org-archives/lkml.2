@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab1KQIBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:01:08 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:34380 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab1KQIBH (ORCPT
+	id S1756039Ab1KQIBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:01:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57347 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756003Ab1KQIBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:01:07 -0500
+	Thu, 17 Nov 2011 03:01:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <1321339226-29968-1-git-send-email-rnayak@ti.com>
-References: <1321339226-29968-1-git-send-email-rnayak@ti.com>
-Date: Thu, 17 Nov 2011 09:01:06 +0100
-Message-ID: <CACRpkdaK6vFqfZ7_ccizunqqD+8KqBG8vkzRG5mszMxmtwjeDQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Iterate over u300_pmx_mask's in u300_pmx_endisable
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
+In-Reply-To: <20111117060215.GB15644@zhy>
+References: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+	<1321508072-23853-2-git-send-email-tom.leiming@gmail.com>
+	<20111117060215.GB15644@zhy>
+Date: Thu, 17 Nov 2011 16:01:16 +0800
+Message-ID: <CACVXFVPo410dy5Mz_Kd3vC=iLazgg8MuPpHnMKfUbUypfXaGUg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] lockdep: print lock name for lockdep_init_error
+From: Ming Lei <tom.leiming@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 7:40 AM, Rajendra Nayak <rnayak@ti.com> wrote:
+Hi,
 
-> Fix u300_pmx_endisable() to iterate over the list of 'bits' and
-> 'mask' populated as part of u300_pmx_functions.mask[]
+Thanks for your review.
+
+On Thu, Nov 17, 2011 at 2:02 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Thu, Nov 17, 2011 at 01:34:32PM +0800, tom.leiming@gmail.com wrote:
+>> From: Ming Lei <tom.leiming@gmail.com>
+>>
+>> This patch prints the name of the lock which is acquired
+>> before lockdep_init is called, so that user can easily find
+>> which lock trigged the lockdep init error warning.
 >
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> ---
-> Linus W,
-> I am not sure if this is a right fix. I just stumbled
-> upon this while looking at the u300 pinmux driver
-> while I was writing one for OMAP. Maybe I am reading
-> the code completely wrong, and I don't even have a
-> way to test this, so its just compile tested with
-> u300_defconfig.
+> Should we care about that?
 
-Looks correct and works, I've just been saved by the fact that
-most mux settings are in a good default mode when powering
-on the system.
+Yes, we should, see below.
 
-Thanks, applied!
-Linus Walleij
+>
+> I think lockdep_init() called early enough give more hint.
+> Such as be the first C function called by arch.
+
+Maybe not early enough, before start_kernel is executed, arch
+asm code still can call some C function, can't it?
+
+The patch is just an improvement on original lockdep_init_error
+detect, plus fix on incorrect debug message.
+
+thanks,
+-- 
+Ming Lei
