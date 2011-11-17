@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab1KQJue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 04:50:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60875 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057Ab1KQJuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 04:50:32 -0500
-Date: Thu, 17 Nov 2011 01:50:21 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>
-Subject: Re: [PATCH] ocfs2: send correct UUID to cleancache initialization
-Message-ID: <20111117095019.GE7319@noexit.corp.google.com>
-Mail-Followup-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-	Steven Whitehouse <swhiteho@redhat.com>,
-	Sunil Mushran <sunil.mushran@oracle.com>
-References: <dd238ce4-fe92-4dc0-a4b6-7f273c386366@default>
+	id S1756342Ab1KQJwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:52:13 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:42846 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756185Ab1KQJwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 04:52:11 -0500
+Date: Thu, 17 Nov 2011 01:50:17 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Donggeun Kim <dg77.kim@samsung.com>
+CC: Paul Bolle <pebolle@tiscali.nl>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7] hwmon: Add driver for EXYNOS4 TMU
+Message-ID: <20111117095017.GA22540@ericsson.com>
+References: <1315388948-20346-1-git-send-email-dg77.kim@samsung.com>
+ <1321389279.20271.241.camel@x61.thuisdomein>
+ <1321392253.2309.379.camel@groeck-laptop>
+ <4EC4999F.8030604@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <dd238ce4-fe92-4dc0-a4b6-7f273c386366@default>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EC4999F.8030604@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 04:47:17PM -0700, Dan Magenheimer wrote:
-> ocfs2: Fix cleancache initialization call to correctly pass uuid
+On Thu, Nov 17, 2011 at 12:20:31AM -0500, Donggeun Kim wrote:
+[ ... ]
+> >>>  
+> >>> +config SENSORS_EXYNOS4_TMU
+> >>> +	tristate "Temperature sensor on Samsung EXYNOS4"
+> >>> +	depends on EXYNOS4_DEV_TMU
+> >>
+> >> It doesn't look like that Kconfig symbol is part of the tree just yet.
+> >> That means people will not be able to build this driver from the
+> >> mainline tree. Why is this dependency needed? In a (rather quick) scan
+> >> of the code of this driver I couldn't spot anything not yet available in
+> >> the tree.
+> >>
+> > I have to defer to the driver author for that. Maybe the dependency was
+> > renamed at some point, or removed altogether.
+> > 
+> The dependency will be renamed to 'ARCH_EXYNOS4'.
 > 
-> As reported by Steven Whitehouse in https://lkml.org/lkml/2011/5/27/221 
-> the ocfs2 volume UUID is incorrectly passed to cleancache.
-> As a result, shared-ephemeral tmem pools will not actually
-> be created; instead they will be private (unshared) which
-> misses out on a major benefit of tmem.
-> 
-> Reported-by: Steven Whitehouse <swhiteho@redhat.com>
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Please submit a patch.
 
-	This patch is now in the 'fixes' branch of ocfs2.git.
-
-Joel
-
-> 
-> diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
-> --- a/fs/ocfs2/super.c
-> +++ b/fs/ocfs2/super.c
-> @@ -2374,7 +2374,7 @@ static int ocfs2_initialize_super(struct super_block *sb,
->  		mlog_errno(status);
->  		goto bail;
->  	}
-> -	cleancache_init_shared_fs((char *)&uuid_net_key, sb);
-> +	cleancache_init_shared_fs((char *)&di->id2.i_super.s_uuid, sb);
->  
->  bail:
->  	return status;
-
--- 
-
-"Well-timed silence hath more eloquence than speech."  
-         - Martin Fraquhar Tupper
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+Thanks,
+Guenter
