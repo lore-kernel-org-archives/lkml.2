@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1KSL3o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 06:29:44 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41061 "EHLO
+	id S1754436Ab1KSL3n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 06:29:43 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41059 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab1KSL3h (ORCPT
+	with ESMTP id S1753582Ab1KSL3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 19 Nov 2011 06:29:37 -0500
-Subject: [PATCH] sparc: Use kmemdup rather than duplicating its
+Subject: [PATCH] RxRPC: Use kmemdup rather than duplicating its
  implementation
 From: Thomas Meyer <thomas@m3y3r.de>
-To: davem@davemloft.net, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Thu, 17 Nov 2011 23:43:40 +0100
-Message-ID: <1321569820.1624.274.camel@localhost.localdomain>
+Message-ID: <1321569820.1624.308.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -29,39 +28,30 @@ in scripts/coccinelle/api/memdup.cocci.
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/arch/sparc/kernel/ds.c b/arch/sparc/kernel/ds.c
---- a/arch/sparc/kernel/ds.c 2011-11-07 19:37:36.613113011 +0100
-+++ b/arch/sparc/kernel/ds.c 2011-11-08 11:00:49.874125928 +0100
-@@ -1181,13 +1181,11 @@ static int __devinit ds_probe(struct vio
+diff -u -p a/net/rxrpc/ar-key.c b/net/rxrpc/ar-key.c
+--- a/net/rxrpc/ar-key.c 2011-11-07 19:38:32.050621708 +0100
++++ b/net/rxrpc/ar-key.c 2011-11-08 10:59:18.926240106 +0100
+@@ -306,10 +306,9 @@ static int rxrpc_krb5_decode_tagged_data
+ 	td->data_len = len;
  
- 	dp->rcv_buf_len = 4096;
+ 	if (len > 0) {
+-		td->data = kmalloc(len, GFP_KERNEL);
++		td->data = kmemdup(xdr, len, GFP_KERNEL);
+ 		if (!td->data)
+ 			return -ENOMEM;
+-		memcpy(td->data, xdr, len);
+ 		len = (len + 3) & ~3;
+ 		toklen -= len;
+ 		xdr += len >> 2;
+@@ -401,10 +400,9 @@ static int rxrpc_krb5_decode_ticket(u8 *
+ 	_debug("ticket len %u", len);
  
--	dp->ds_states = kzalloc(sizeof(ds_states_template),
--				GFP_KERNEL);
-+	dp->ds_states = kmemdup(ds_states_template,
-+				sizeof(ds_states_template), GFP_KERNEL);
- 	if (!dp->ds_states)
- 		goto out_free_rcv_buf;
- 
--	memcpy(dp->ds_states, ds_states_template,
--	       sizeof(ds_states_template));
- 	dp->num_ds_states = ARRAY_SIZE(ds_states_template);
- 
- 	for (i = 0; i < dp->num_ds_states; i++)
-diff -u -p a/arch/sparc/kernel/prom_common.c b/arch/sparc/kernel/prom_common.c
---- a/arch/sparc/kernel/prom_common.c 2011-11-07 19:39:05.191125118 +0100
-+++ b/arch/sparc/kernel/prom_common.c 2011-11-08 11:00:52.007487860 +0100
-@@ -58,12 +58,10 @@ int of_set_property(struct device_node *
- 	void *new_val;
- 	int err;
- 
--	new_val = kmalloc(len, GFP_KERNEL);
-+	new_val = kmemdup(val, len, GFP_KERNEL);
- 	if (!new_val)
- 		return -ENOMEM;
- 
--	memcpy(new_val, val, len);
--
- 	err = -ENODEV;
- 
- 	mutex_lock(&of_set_property_mutex);
+ 	if (len > 0) {
+-		*_ticket = kmalloc(len, GFP_KERNEL);
++		*_ticket = kmemdup(xdr, len, GFP_KERNEL);
+ 		if (!*_ticket)
+ 			return -ENOMEM;
+-		memcpy(*_ticket, xdr, len);
+ 		len = (len + 3) & ~3;
+ 		toklen -= len;
+ 		xdr += len >> 2;
