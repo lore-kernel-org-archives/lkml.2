@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1KQAsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 19:48:22 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39260 "EHLO
+	id S1754737Ab1KQAtj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 19:49:39 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50796 "EHLO
 	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab1KQAsV (ORCPT
+	with ESMTP id S1754160Ab1KQAti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 19:48:21 -0500
-X-Originating-IP: 217.70.178.147
+	Wed, 16 Nov 2011 19:49:38 -0500
+X-Originating-IP: 217.70.178.132
 X-Originating-IP: 131.252.240.124
-Date: Wed, 16 Nov 2011 16:48:07 -0800
+Date: Wed, 16 Nov 2011 16:49:23 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -20,7 +20,7 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
 Subject: Re: [PATCH tip/core/rcu 2/9] rcu: Add rcutorture system-shutdown
  capability
-Message-ID: <20111117004806.GA5201@leaf>
+Message-ID: <20111117004923.GB5201@leaf>
 References: <20111115202736.GA11030@linux.vnet.ibm.com>
  <1321388885-11211-2-git-send-email-paulmck@linux.vnet.ibm.com>
  <20111115214615.GD31473@leaf>
@@ -30,13 +30,20 @@ References: <20111115202736.GA11030@linux.vnet.ibm.com>
  <20111116225856.GD2325@leaf>
  <20111116234358.GP2355@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="EVF5PPMfhYS0aIcm"
 Content-Disposition: inline
 In-Reply-To: <20111116234358.GP2355@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+[Resending with attachment this time.]
 
 On Wed, Nov 16, 2011 at 03:43:58PM -0800, Paul E. McKenney wrote:
 > On Wed, Nov 16, 2011 at 02:58:56PM -0800, Josh Triplett wrote:
@@ -159,3 +166,23 @@ than after all the one-second sleeps finish, which suggests that it
 wakes up the threads in question.
 
 - Josh Triplett
+
+--EVF5PPMfhYS0aIcm
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="sleep-shutdown.tar.gz"
+Content-Transfer-Encoding: base64
+
+H4sIABFYxE4CA+2WXWvbMBSGfVv9ikNWaApzajt2AukH61jKNigdYZDLoNonsRZbMpLc0H38
+98luuyaBbVfJ2HaeG6GjcyThV68sUyBWvslrm6mVPPF2QeAYJknThsMkWG+f8MJwMAiDJA7C
+2AvCKIkSDxJvD9TGcg3gfVIm/1Xe78b/Usym/pPx5Zvr8Q70H8TxT/WPn/WPXOP078eB0z8g
+/XfOJRhRVgWCkMJqXs4NpEpa7rpyARwqrRYuDKtcpDk058RAc1LA5gjm3lgsgc8taghZrmrd
+Y+y9+6Sgawmdki+x8/KxdiWKAlKN3CJwubae5CVm0Nk8iZ0ewMccJWsmWt6VUIglukWFGTHW
+9P0laokF3H5+V/IFgt9OmMHmNODzqkKZwZFyG9a9irs10W3XnLsuHjHvP2fL/9dOsbkocK/+
+j6Loyf/9YdJ3/o/DYUT+37/+o9aW7ADTXMHhGXyFtBIKfPUWJK5SuIDDV4w1OaMto/VSdrBI
+U/Dd57TCtVPu7O5PUWulm6l81damBXI5YgfaOXi+bdZ2cY/4c/7fFnXf///+MAid/5NBPCD/
+74MXQqZFnSGcGZsJ1csv2Fro3pxovFXKbsZrKVx2E3N3gYXSvRa6d0pkx+wLA0ctjVhI91Nv
+RtsjNbOiRDiH/iAITtsc9yhwr47u8+hxG27YqGg762kP5Q/b6k5ezz7cTMeT2c3V1eNI1V45
+3c64vXkqtULdPGXUfN75UWtrLSE8Zd/otiEIgiAIgiAIgiAIgiAIgiAIgiD+Kb4DTTvpYwAo
+AAA=
+
+--EVF5PPMfhYS0aIcm--
