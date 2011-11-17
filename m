@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab1KVLmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:42:35 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36710 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758455Ab1KVLmd (ORCPT
+	id S1758495Ab1KVLml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:42:41 -0500
+Received: from www17.your-server.de ([213.133.104.17]:40341 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758478Ab1KVLmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:42:33 -0500
-Date: Tue, 22 Nov 2011 12:42:32 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, shuox.liu@intel.com
-Subject: Re: [PATCH] PM / Suspend: Fix bug in suspend statistics update
-Message-ID: <20111122114231.GB32023@elf.ucw.cz>
-References: <20111119092019.27505.77215.stgit@srivatsabhat.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111119092019.27505.77215.stgit@srivatsabhat.in.ibm.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 22 Nov 2011 06:42:39 -0500
+Subject: [PATCH] ACPI: Use kmemdup rather than duplicating its
+ implementation
+From: Thomas Meyer <thomas@m3y3r.de>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Date: Thu, 17 Nov 2011 23:43:40 +0100
+Message-ID: <1321569820.1624.278.camel@localhost.localdomain>
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2011-11-19 14:50:26, Srivatsa S. Bhat wrote:
-> A pair of missing braces inside the state_store() function causes even
-> invalid arguments to suspend to be wrongly treated as failed suspend
-> attempts. Fix this.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
 
-ACK.
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+--- a/drivers/acpi/bus.c 2011-11-08 08:49:58.136858513 +0100
++++ b/drivers/acpi/bus.c 2011-11-08 10:40:30.311111025 +0100
+@@ -503,13 +503,12 @@ acpi_status acpi_run_osc(acpi_handle han
+ 	}
+ out_success:
+ 	context->ret.length = out_obj->buffer.length;
+-	context->ret.pointer = kmalloc(context->ret.length, GFP_KERNEL);
++	context->ret.pointer = kmemdup(out_obj->buffer.pointer,
++				       context->ret.length, GFP_KERNEL);
+ 	if (!context->ret.pointer) {
+ 		status =  AE_NO_MEMORY;
+ 		goto out_kfree;
+ 	}
+-	memcpy(context->ret.pointer, out_obj->buffer.pointer,
+-		context->ret.length);
+ 	status =  AE_OK;
+ 
+ out_kfree:
