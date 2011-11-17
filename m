@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1KQViS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:38:18 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36143 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab1KQViR (ORCPT
+	id S1752979Ab1KQVkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:40:13 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:50321 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1KQVkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:38:17 -0500
-Date: Thu, 17 Nov 2011 13:38:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Greg KH <gregkh@suse.de>
-cc: Claudio Scordino <claudio@evidence.eu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/base/node.c: fix compilation error
-In-Reply-To: <20111117175210.GE13208@suse.de>
-Message-ID: <alpine.DEB.2.00.1111171337020.15918@chino.kir.corp.google.com>
-References: <4EC4DD20.6080201@evidence.eu.com> <20111117175210.GE13208@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 17 Nov 2011 16:40:11 -0500
+From: Thomas Weber <weber@corscience.de>
+To: trivial@kernel.org
+Cc: jkosina@suse.cz, Thomas Weber <weber@corscience.de>,
+        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
+        linux-omap@vger.kernel.org (open list:OMAP SUPPORT),
+        linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list),
+        uwe.kleine-koenig@pengutronix.de
+Subject: [PATCHv2] ARM: OMAP: hsmmc: Fix mux for non-OMAP pins
+Date: Thu, 17 Nov 2011 22:39:40 +0100
+Message-Id: <1321565988-4511-3-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1321565988-4511-1-git-send-email-weber@corscience.de>
+References: <1321565988-4511-1-git-send-email-weber@corscience.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011, Greg KH wrote:
+The Devkit8000 uses a TWL4030 pin for card detection.
+Thats why the error:
+_omap_mux_init_gpio: Could not set gpio192
+occurs.
 
-> Is this a recent problem, or one that has been around for a long time
-> (i.e. this fix should go to the -stable trees?)
-> 
+This patch checks that the pin is on OMAP before
+calling omap_mux_init_gpio.
 
-The equivalent patch for /proc/meminfo in the -mm tree, 
-fs-proc-meminfoc-fix-compilation-error.patch, was cc'd to stable.  This 
-one would have to go back to 2.6.38+.
+Signed-off-by: Thomas Weber <weber@corscience.de>
+---
+Changelog:
+v2: Remove backslash at end of line
+
+ arch/arm/mach-omap2/hsmmc.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/hsmmc.c b/arch/arm/mach-omap2/hsmmc.c
+index f4a1020..c3aea79 100644
+--- a/arch/arm/mach-omap2/hsmmc.c
++++ b/arch/arm/mach-omap2/hsmmc.c
+@@ -200,10 +200,12 @@ static int nop_mmc_set_power(struct device *dev, int slot, int power_on,
+ static inline void omap_hsmmc_mux(struct omap_mmc_platform_data *mmc_controller,
+ 			int controller_nr)
+ {
+-	if (gpio_is_valid(mmc_controller->slots[0].switch_pin))
++	if (gpio_is_valid(mmc_controller->slots[0].switch_pin) &&
++		(mmc_controller->slots[0].switch_pin < OMAP_MAX_GPIO_LINES))
+ 		omap_mux_init_gpio(mmc_controller->slots[0].switch_pin,
+ 					OMAP_PIN_INPUT_PULLUP);
+-	if (gpio_is_valid(mmc_controller->slots[0].gpio_wp))
++	if (gpio_is_valid(mmc_controller->slots[0].gpio_wp) &&
++		(mmc_controller->slots[0].gpio_wp < OMAP_MAX_GPIO_LINES))
+ 		omap_mux_init_gpio(mmc_controller->slots[0].gpio_wp,
+ 					OMAP_PIN_INPUT_PULLUP);
+ 	if (cpu_is_omap34xx()) {
+-- 
+1.7.7.3
+
