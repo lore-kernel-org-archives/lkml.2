@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab1KQWvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 17:51:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43239 "EHLO mail.zytor.com"
+	id S1753800Ab1KQWx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 17:53:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43256 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab1KQWvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 17:51:38 -0500
-Message-ID: <4EC58E55.2020405@zytor.com>
-Date: Thu, 17 Nov 2011 14:44:37 -0800
+	id S1751221Ab1KQWx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 17:53:27 -0500
+Message-ID: <4EC58FF1.109@zytor.com>
+Date: Thu, 17 Nov 2011 14:51:29 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
@@ -39,11 +39,10 @@ On 11/17/2011 02:42 PM, Steven Rostedt wrote:
 > Did this cause some sort of bug before? What was the issue before this
 > patch?
 > 
-> -- Steve
-> 
 
-It didn't, but the subsequent patch moves NR_syscalls generation in
-asm-offsets*.c.
+(Of course, there are architectures on which the syscall set isn't a
+dense set of numbers in the range [0, NR_syscalls), but that's another
+issue entirely.)
 
 	-hpa
 
