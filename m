@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab1KQJnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 04:43:16 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35832 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755461Ab1KQJnO (ORCPT
+	id S1756321Ab1KQJp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:45:28 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62811 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756239Ab1KQJp0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 04:43:14 -0500
-Message-ID: <4EC4D72F.8030702@evidence.eu.com>
-Date: Thu, 17 Nov 2011 10:43:11 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Thu, 17 Nov 2011 04:45:26 -0500
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Juergen Beisert <jbe@pengutronix.de>,
-        Matthias Fuchs <mfuchs@ma-fu.de>
-Subject: Re: [PATCH 5/8] serial: 8250: reject delaying RTS with RS485
-References: <1321460685-15753-1-git-send-email-w.sang@pengutronix.de> <1321460685-15753-6-git-send-email-w.sang@pengutronix.de>
-In-Reply-To: <1321460685-15753-6-git-send-email-w.sang@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1321023744-16249-1-git-send-email-linkinjeon@gmail.com>
+References: <1321023744-16249-1-git-send-email-linkinjeon@gmail.com>
+Date: Thu, 17 Nov 2011 15:15:25 +0530
+Message-ID: <CADDb1s21Px4vP5S48O770vCT6FNAw4CDR9uDRcBn=rPqfKnzQA@mail.gmail.com>
+Subject: Re: [PATCH] ext4: remove unneeded variable.
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+Any feedback for this patch? We surely don't need 'ret2' variable in this code.
 
-Il 16/11/2011 17:24, Wolfram Sang ha scritto:
-> There might be chips capable of doing this, but for now nothing is implemented,
-> so reject usage of this feature.
+Thanks & Regards,
+Amit Sahrawat
 
-The delay must not necessarily be done by hardware. The drivers/tty/serial/crisv10.c 
-driver, for example, delays through a msleep.
-
-I don't know if having a software delay in this driver can make sense in some particular 
-circumstance.
-
-Best regards,
-
-	Claudio
+On Fri, Nov 11, 2011 at 8:32 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> ret2 is not needed in ext4_flush_completed_IO().
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> ---
+>  fs/ext4/fsync.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+> index 00a2cb7..40397ac 100644
+> --- a/fs/ext4/fsync.c
+> +++ b/fs/ext4/fsync.c
+> @@ -81,7 +81,6 @@ int ext4_flush_completed_IO(struct inode *inode)
+>        struct ext4_inode_info *ei = EXT4_I(inode);
+>        unsigned long flags;
+>        int ret = 0;
+> -       int ret2 = 0;
+>
+>        dump_completed_IO(inode);
+>        spin_lock_irqsave(&ei->i_completed_io_lock, flags);
+> @@ -105,12 +104,10 @@ int ext4_flush_completed_IO(struct inode *inode)
+>                 */
+>                spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
+>                ret = ext4_end_io_nolock(io);
+> -               if (ret < 0)
+> -                       ret2 = ret;
+>                spin_lock_irqsave(&ei->i_completed_io_lock, flags);
+>        }
+>        spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
+> -       return (ret2 < 0) ? ret2 : 0;
+> +       return (ret < 0) ? ret : 0;
+>  }
+>
+>  /*
+> --
+> 1.7.4.4
+>
+>
