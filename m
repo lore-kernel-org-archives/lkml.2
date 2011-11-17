@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab1KQThz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 14:37:55 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36183 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab1KQThy convert rfc822-to-8bit (ORCPT
+	id S1755870Ab1KQTid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 14:38:33 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:53707 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab1KQTib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 14:37:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+SEF_0ORtbHq+ZpxQyE=WTVrGCPoY7ZH1zCDD8zoJ=Zg@mail.gmail.com>
-References: <20111117184200.GA5037@www.outflux.net>
-	<CA+8MBb+SEF_0ORtbHq+ZpxQyE=WTVrGCPoY7ZH1zCDD8zoJ=Zg@mail.gmail.com>
-Date: Thu, 17 Nov 2011 11:37:53 -0800
-X-Google-Sender-Auth: hRoFaMRJsS0XmPGku4ePElh1Cv8
-Message-ID: <CAGXu5jK7kJotJVU8qAjEPACW6HEbbFTfLeAG+g+ccejGsqQ-9g@mail.gmail.com>
-Subject: Re: [PATCH] pstore: gracefully handle NULL pstore_info functions
-From: Kees Cook <keescook@chromium.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Chen Gong <gong.chen@linux.intel.com>, Don Zickus <dzickus@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Nov 2011 14:38:31 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Rick Jones <rick.jones2@hp.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH FIX net-next v1] net-forcedeth: fix possible stats inaccuracies on 32b hosts
+Date: Thu, 17 Nov 2011 11:38:23 -0800
+Message-Id: <34add86253ddd91d5d4d4c7fee9c90f63a8d8edf.1321558587.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321558587.git.david.decotigny@google.com>
+References: <cover.1321558587.git.david.decotigny@google.com>
+Organization: Google, Inc.
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 11:13 AM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Thu, Nov 17, 2011 at 10:42 AM, Kees Cook <keescook@chromium.org> wrote:
->> -       kmsg_dump_register(&pstore_dumper);
->> +       if (psi->write && psi->buf && psi->bufsize)
->> +               kmsg_dump_register(&pstore_dumper);
->
-> I can see that you might not need the other parts of the pstore
-> interface if your back-end is very simple (e.g. only has space for a
-> single record). But stub functions are cheap - so it isn't clear who
-> should pay the overhead.
+The software stats are updated from BH, this change ensures that 32b
+UP hosts use appropriate protection.
 
-Okay, fine by me. :) I'll resend with just the open/read/close/erase checked.
+Tested:
+  - HW/SW stats consistent with pktgen (in particular tx=rx)
+  - HW/SW stats consistent when tx/rx offloads disabled
+  - no problem with+without lockdep (SMP 16-way)
 
--Kees
 
+
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 0d8d5c0..4990534 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -1756,19 +1756,19 @@ nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
+ 
+ 	/* software stats */
+ 	do {
+-		syncp_start = u64_stats_fetch_begin(&np->swstats_rx_syncp);
++		syncp_start = u64_stats_fetch_begin_bh(&np->swstats_rx_syncp);
+ 		storage->rx_packets       = np->stat_rx_packets;
+ 		storage->rx_bytes         = np->stat_rx_bytes;
+ 		storage->rx_dropped       = np->stat_rx_dropped;
+ 		storage->rx_missed_errors = np->stat_rx_missed_errors;
+-	} while (u64_stats_fetch_retry(&np->swstats_rx_syncp, syncp_start));
++	} while (u64_stats_fetch_retry_bh(&np->swstats_rx_syncp, syncp_start));
+ 
+ 	do {
+-		syncp_start = u64_stats_fetch_begin(&np->swstats_tx_syncp);
++		syncp_start = u64_stats_fetch_begin_bh(&np->swstats_tx_syncp);
+ 		storage->tx_packets = np->stat_tx_packets;
+ 		storage->tx_bytes   = np->stat_tx_bytes;
+ 		storage->tx_dropped = np->stat_tx_dropped;
+-	} while (u64_stats_fetch_retry(&np->swstats_tx_syncp, syncp_start));
++	} while (u64_stats_fetch_retry_bh(&np->swstats_tx_syncp, syncp_start));
+ 
+ 	/* If the nic supports hw counters then retrieve latest values */
+ 	if (np->driver_data & DEV_HAS_STATISTICS_V123) {
 -- 
-Kees Cook
-ChromeOS Security
+1.7.3.1
+
