@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab1KQPRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 10:17:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45994 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757785Ab1KQPRd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 10:17:33 -0500
-X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=PQ8x_VTtLv8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=QyXUC8HyAAAA:8 a=e7DW1LSZoeMWQMrq26QA:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH] printk: add console output tracing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20111117150040.GB18437@somewhere>
-References: <20111116151037.GA26166@infradead.org>
-	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
-	 <1321461693.4181.26.camel@frodo>
-	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
-	 <1321462856.4181.28.camel@frodo>
-	 <1321468380.4502.16.camel@jlt3.sipsolutions.net>
-	 <1321473443.4181.38.camel@frodo>
-	 <1321478719.4502.20.camel@jlt3.sipsolutions.net>
-	 <20111117145502.GA18437@somewhere>
-	 <1321541877.3997.31.camel@jlt3.sipsolutions.net>
-	 <20111117150040.GB18437@somewhere>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 10:17:30 -0500
-Message-ID: <1321543050.3533.8.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932255Ab1KQPRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 10:17:47 -0500
+Received: from home.keithp.com ([63.227.221.253]:44945 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932219Ab1KQPRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 10:17:45 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Mack <zonque@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, harald@redhat.com,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Fix invalid backpanel values for GEN3 or older chips
+In-Reply-To: <s5hlirgm1kg.wl%tiwai@suse.de>
+References: <s5hlirgm1kg.wl%tiwai@suse.de>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 16 Nov 2011 22:15:41 -0800
+Message-ID: <yunsjlnl1f6.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 16:00 +0100, Frederic Weisbecker wrote:
-> On Thu, Nov 17, 2011 at 03:57:57PM +0100, Johannes Berg wrote:
-> > On Thu, 2011-11-17 at 15:55 +0100, Frederic Weisbecker wrote:
-> > 
-> > > > +++ b/kernel/trace/printk-trace.c	2011-11-16 21:22:20.000000000 +0100
-> > > > @@ -0,0 +1,14 @@
-> > > > +/*
-> > > > + * printk trace points
-> > > > + *
-> > > > + * Copyright (C) 2011 Johannes Berg <johannes.berg@intel.com>
-> > > > + */
-> > > > +
-> > > > +#include <linux/string.h>
-> > > > +#include <linux/types.h>
-> > > > +#include <linux/workqueue.h>
-> > > > +#include <linux/sched.h>
-> > > > +#include <linux/module.h>
-> > > > +
-> > > > +#define CREATE_TRACE_POINTS
-> > > > +#include <trace/events/printk.h>
-> > > 
-> > > Why not defining the tracepoint in kernel/printk.c ?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Right, there's no reason to add another file, except to get Johannes's
-copyright in the kernel ;-)
+On Wed, 16 Nov 2011 18:14:55 +0100, Takashi Iwai <tiwai@suse.de> wrote:
 
-> > 
-> > Is that even possible? Do you then have to do something like
-> > 
-> > #include <.../printk.h>
-> > #define CREATE_TRACE_POINTS
-> > #include <.../printk.h>
-> > 
-> > or how else? In any case it seemed more common to not do that.
-> 
-> You can just do what you did:
-> 
-> #define CREATE_TRACE_POINTS
-> #include <trace/events/printk.h>
-> 
-> but in kernel/printk.c
-> 
-> We typically define the tracepoint from the file where an unconditional user
-> resides.
+> While refactoring of backlight control code in commit [a95735569:
+> drm/i915: Refactor panel backlight controls], the handling of the bit
+> 0 of duty-cycle was gone except for pineview.  This resulted in invalid
+> register values for old chips like 915GM.  When the bit 0 is set, the
+> backlight is turned off suddenly.
 
-The above *is* the correct way to do this.
+I'm looking at the mentioned patch and I don't see how that managed to
+correctly handle bit 0; is this the patch that managed to break this?
 
-Thanks Frederic for pointing that out. I should have spotted it, but I
-blame my meds ;)
+=2D-=20
+keith.packard@intel.com
 
--- Steve
+--=-=-=
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIVAwUBTsSmjjYtFsjWk68qAQjSvRAAqkEtCdoEeR1cjy3bWsOhBe13cKxvHw/r
+EfAceq3cwptp3LkpujhKXYTT3UCGqI24T4+saXO31UpcziuB6qf98nX8waNEiP/h
+0bcg45OsjsDSh52VtHQGTSk66GhPq0EKgi9W9PuEp1i5FX7+1qVU2rCkuZmOgZ0P
+nHTrMatet84wFx5A/WOQ1RwDxb4L1hDOaaXDuWNI8jjeJoSmvyc8RnfsYNwcvY7l
+4E1E/2aSB52qPS6b/LsqAS20D3D0ww3nLb2U6HMTc93Y7ZLW0epyHtYE/rpfT/3s
+8y2H9fPM9jtQAXZzKMAG/JDx/mVW8Cezp/cVnyLnVSFqDTNtc0ZbVu0/gtMxjS2L
+P0lkM0Kb8uHeuTTBaOha6GYOc2yRSclb8pz2bohqxoAUAs4DxjvarfIt2PZEZ6gs
+Xy5y+a8bHZg/V8woBfr+EBmRjqohP21MsanbwepxncjQ4cUkvmacOFwAtSnUW8S0
+e/ymwge1ZF7Bin9mKTLDeQtm701ig8UBxW/OLFBDmnvlPB2nO0vJtGP1Xse+j3sg
+jZ1ulvILdvekKEI+eynWM+Lpi5YVis6qKDOj9oCsAuZY2lrZQw4J+RBA1LenwKKA
+/3zM8pw7dgRVuoL6lqEGZVSpGHWPuKkNGmfDscLi+iLFdfmX2oaPmsKg4EmJQACy
+HnSNIzwj/qc=
+=3+i6
+-----END PGP SIGNATURE-----
+--=-=-=--
