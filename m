@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1KQXrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 18:47:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53520 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab1KQXrb (ORCPT
+	id S1754926Ab1KQXwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 18:52:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44843 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab1KQXwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 18:47:31 -0500
-Date: Thu, 17 Nov 2011 15:47:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alessandro Rubini <ru@gnudd.com>
-Cc: fujita.tomonori@lab.ntt.co.jp, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        giancarlo.asnaghi@st.com, maddalena.brattoli@st.com,
-        alan@linux.intel.com
-Subject: Re: a question on DMA and remapping
-Message-Id: <20111117154729.afa24f07.akpm@linux-foundation.org>
-In-Reply-To: <20111117233059.GA659@mail.gnudd.com>
-References: <20111117233059.GA659@mail.gnudd.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 17 Nov 2011 18:52:31 -0500
+Message-ID: <4EC59E3C.5070204@gmail.com>
+Date: Thu, 17 Nov 2011 15:52:28 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Daney <ddaney.cavm@gmail.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Robin Holt <holt@sgi.com>
+Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and HPAGE_SIZE
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com> <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com> <20111117153526.f90ee248.akpm@linux-foundation.org> <alpine.DEB.2.00.1111171538540.13555@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1111171538540.13555@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011 00:30:59 +0100
-Alessandro Rubini <ru@gnudd.com> wrote:
+On 11/17/2011 03:44 PM, David Rientjes wrote:
+> On Thu, 17 Nov 2011, Andrew Morton wrote:
+>
+>>> So, just remove the dummy and dangerous definitions since they are no
+>>> longer needed and reveals the correct dependencies.  Tested on
+>>> architectures using the definitions with allyesconfig: x86 (even with
+>>> thp), hppa, mips, powerpc, s390, sh3, sh4, sparc, and sparc64, and
+>>> with defconfig on ia64.
+>>
+>> How could arch/mips/mm/tlb-r4k.c:local_flush_tlb_range() compile OK
+>> with this change?
+>>
+>
+> This was tested on Linus' tree, not on Ralf's linux-next tree.  All uses
+> of HPAGE_* are protected by CONFIG_HUGETLB_PAGE as it appropriately should
+> be in Linus' tree in that file.
+>
+>> What that function is doing looks reasonable to me.  Why fill the poor
+>> thing with an ifdef mess?
+>>
+>> otoh, catching mistakes is good too.  Doing it at runtime as David
+>> proposes is OK.
+>>
+>
+> Nobody else needs it other than Ralf's pending change, and you're
+> suggesting we need them in a generic header file when any sane arch that
+> uses hugepages (all of them, in the current tree) declares these
+> themselves in arch/*/include/asm/page.h where it's supposed to be done?
+>
+> Why on earth do we have CONFIG_HUGETLB_PAGE for at all, then?  To catch
+> code that's operating on hugepages when our kernel doesn't support it.
+> I'd much rather break the build than get a runtime BUG() because we want
+> to avoid an #ifdef or actually write well-written code like every other
+> arch has!  Panicking the code to find errors like this is just insanity.
+>
 
-> Hello.
-> This goes to the maintainers of x86::asm/dma-mapping.h and lib/swiotlb.c,
-> with Cc: to involved people.
-> 
-> I have an Intel evaluation board with the ST IO-Hub called STA2X11 and
-> I'm working to port the STA2X11 drivers to mainstream.  The code is
-> currently on sourceforge.  Since the device is based on a PCI-Amba
-> bridge, all DMA addresses are different from CPU addresses, even for
-> normal PCI devices, like EHCI.
-> 
-> Unfortunately, the current patch is changing 3 inlines to external
-> functions. They are dma_capable, phys_to_dma, dma_to_phys -- which
-> actually are only used in swiotlb.c .
-> 
-> I thought about the following two approaches towards a clean port:
-> 
->   - using dma_supported(), which relies on dev->dma_ops->dma_supported
->     and adding phys_to_dma and dma_to_phys to the dma operations. In
->     the new fields, the default NULL may be used to select the current
->     behaviour in an inline function.
+A counter argument would be:
 
-Sounds OK.  swiotlb.c isn't exactly super-fast code anyway.
+There are hundreds of places in the kernel where dummy definitions are 
+selected by !CONFIG_* so that we can do:
 
->   - copying lib/swiotlb.c to my own file, which will be almost
->     identical to the existing one but for a few lines.
+    if (test_something()) {
+       do_one_thing();
+    } else {
+       do_the_other_thing();
+    }
 
-Don't do that ;)
 
-> The former approach will have some tiny overhead on all users, besides
-> messing with dma_capable and dma_allowed, possibly introducing bugs in
-> some corner cases (but the current situation is quite messy, may I
-> say...)
-> 
-> The latter approach means code duplication, which is bad. Although
-> maybe over time I may be able to shrink the current swiotlb.c to a
-> much smaller snippet. I tend to prefer this one, but I'm not sure if
-> it's acceptable.
-> 
-> Any feedback is welcome. Thanks in advance.
+Rather than:
 
-Generalising the existing code to cover more cases isn't a bad thing to
-do.  Others might be able to use it, and they surely won't be able to
-use any cloned-and-owned swiotlb.c.
+#ifdef CONFIG_SOMETHING
+    if (test_something()) {
+       do_one_thing();
+    } else
+#else
+    {
+       do_the_other_thing();
+    }
 
-Please do carefully docment the new interfaces so others can understand
-why they exist and can use them successfully.
+
+
+We even do this all over the place with dummy definitions selected by 
+CONFIG_HUGETLB_PAGE, What exactly makes HPAGE_MASK special and not the 
+hundreds of other similar situations?
+
+David Daney
 
