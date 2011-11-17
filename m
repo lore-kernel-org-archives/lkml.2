@@ -1,211 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab1KQLfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:35:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756681Ab1KQLfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:35:07 -0500
-Date: Thu, 17 Nov 2011 11:35:01 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Colin Cross <ccross@android.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: mm: avoid livelock on !__GFP_FS allocations v2
-Message-ID: <20111117113501.GA20176@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756865Ab1KQLhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:37:03 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62358 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab1KQLhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 06:37:00 -0500
+Subject: [PATCH][RESEND] usb : gadget : usbstring : fix style problems
+From: Tonylijo <mail@tonylijo.in>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 16:29:04 +0530
+Message-ID: <1321527544.2367.29.camel@debian1.ic>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Minor fixes for problems found by checkpatch.pl in usbstring.c.
 
-This patch incorporates feedback from David Rientjes, adds some
-additional documentation and replaces the following patches in mmotm.
+checkpatch.pl -f --terse drivers/usb/gadget/usbstring.c
 
-  mm-avoid-livelock-on-__gfp_fs-allocations.patch
-  mm-avoid-livelock-on-__gfp_fs-allocations-fix.patch
+drivers/usb/gadget/usbstring.c:35: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:36: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:46: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:47: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:67: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:68: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:69: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:70: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:71: ERROR: do not use C99 // comments
+drivers/usb/gadget/usbstring.c:88: ERROR: trailing whitespace
+drivers/usb/gadget/usbstring.c:105: WARNING: space prohibited between function name and open parenthesis '('
+drivers/usb/gadget/usbstring.c:112: ERROR: space prohibited before open square bracket '['
+drivers/usb/gadget/usbstring.c:113: ERROR: space prohibited before open square bracket '['
+drivers/usb/gadget/usbstring.c:114: ERROR: space prohibited before open square bracket '['
+drivers/usb/gadget/usbstring.c:115: ERROR: space prohibited before open square bracket '['
+drivers/usb/gadget/usbstring.c:127: WARNING: space prohibited between function name and open parenthesis '('
+drivers/usb/gadget/usbstring.c:127: WARNING: space prohibited between function name and open parenthesis '('
+drivers/usb/gadget/usbstring.c:128: WARNING: space prohibited between function name and open parenthesis '('
+drivers/usb/gadget/usbstring.c:132: ERROR: space prohibited before open square bracket '['
+drivers/usb/gadget/usbstring.c:133: ERROR: space prohibited before open square bracket '['
+drivers/usb/gadget/usbstring.c:134: ERROR: space prohibited before open square bracket '['
+total: 17 errors, 4 warnings, 136 lines checked
 
-Minchan is concerned that this adds an additional special case and
-that it should be possible to handle this case by altering how suspend
-works and how the global variable oom_killer_disabled is used.  At the
-time of writing, it's still allowing __GFP_NOFAIL allocations to fail
-and it might also impact GFP_NOIO allocations while processes are
-frozen (I didn't double check). If that approach reaches maturity,
-gets reviewed and confirmed by Colin to fix his problem, it will
-supersede this one but it's not there yet. Colin, your tested-by was
-removed in this version because it is functionally different to what
-you tested. Can you reconfirm this fixes your livelock problem please?
-
-Changelog since V1
-  o Move PM check to should_alloc_retry (David Rientjes)
-  o Update mm/swapfile.c to use pm_suspended_storage() instead of making
-    assumptions on the value of gfp_allowed_mask
-  o Add some additional documentation
-
-Colin Cross reported;
-
-  Under the following conditions, __alloc_pages_slowpath can loop forever:
-  gfp_mask & __GFP_WAIT is true
-  gfp_mask & __GFP_FS is false
-  reclaim and compaction make no progress
-  order <= PAGE_ALLOC_COSTLY_ORDER
-
-  These conditions happen very often during suspend and resume,
-  when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
-  allocations into __GFP_WAIT.
-
-  The oom killer is not run because gfp_mask & __GFP_FS is false,
-  but should_alloc_retry will always return true when order is less
-  than PAGE_ALLOC_COSTLY_ORDER.
-
-In his fix, he avoided retrying the allocation if reclaim made no
-progress and __GFP_FS was not set. The problem is that this would
-result in GFP_NOIO allocations failing that previously succeeded
-which would be very unfortunate.
-
-The big difference between GFP_NOIO and suspend converting GFP_KERNEL
-to behave like GFP_NOIO is that normally flushers will be cleaning
-pages and kswapd reclaims pages allowing GFP_NOIO to succeed after
-a short delay. The same does not necessarily apply during suspend as
-the storage device may be suspended.
-
-This patch special cases the suspend case to fail the page allocation
-if reclaim cannot make progress and adds some documentation on how
-gfp_allowed_mask is currently used. Failing allocations like this
-may cause suspend to abort but that is better than a livelock.
-
-[mgorman@suse.de: Rework fix to be suspend specific]
-[rientjes@google.com: Move suspended device check to should_alloc_retry]
-Reported-by: Colin Cross <ccross@android.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Tonylijo Jose <mail@tonylijo.in>
 ---
- include/linux/gfp.h |   16 ++++++++++++++++
- mm/page_alloc.c     |   30 ++++++++++++++++++++++--------
- mm/swapfile.c       |    6 +++---
- 3 files changed, 41 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 3a76faf..033f55f 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -367,9 +367,25 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp);
- void drain_all_pages(void);
- void drain_local_pages(void *dummy);
+diff --git a/drivers/usb/gadget/usbstring.c b/drivers/usb/gadget/usbstring.c
+index 58c4d37..7ba2a58 100644
+--- a/drivers/usb/gadget/usbstring.c
++++ b/drivers/usb/gadget/usbstring.c
+@@ -26,14 +26,17 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
+ 	u8	c;
+ 	u16	uchar;
  
-+/*
-+ * gfp_allowed_mask is set to GFP_BOOT_MASK during early boot to restrict what
-+ * GFP flags are used before interrupts are enabled. Once interrupts are
-+ * enabled, it is set to __GFP_BITS_MASK while the system is running. During
-+ * hibernation, it is used by PM to avoid I/O during memory allocation while
-+ * devices are suspended.
-+ */
- extern gfp_t gfp_allowed_mask;
- 
- extern void pm_restrict_gfp_mask(void);
- extern void pm_restore_gfp_mask(void);
- 
-+#ifdef CONFIG_PM_SLEEP
-+extern bool pm_suspended_storage(void);
-+#else
-+static inline bool pm_suspended_storage(void)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
- #endif /* __LINUX_GFP_H */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9dd443d..a72cbf9 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -127,6 +127,13 @@ void pm_restrict_gfp_mask(void)
- 	saved_gfp_mask = gfp_allowed_mask;
- 	gfp_allowed_mask &= ~GFP_IOFS;
- }
-+
-+bool pm_suspended_storage(void)
-+{
-+	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
-+		return false;
-+	return true;
-+}
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
-@@ -1795,12 +1802,25 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
- 
- static inline int
- should_alloc_retry(gfp_t gfp_mask, unsigned int order,
-+				unsigned long did_some_progress,
- 				unsigned long pages_reclaimed)
- {
- 	/* Do not loop if specifically requested */
- 	if (gfp_mask & __GFP_NORETRY)
- 		return 0;
- 
-+	/* Always retry if specifically requested */
-+	if (gfp_mask & __GFP_NOFAIL)
-+		return 1;
-+
+-	/* this insists on correct encodings, though not minimal ones.
 +	/*
-+	 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent reclaim
-+	 * making forward progress without invoking OOM. Suspend also disables
-+	 * storage devices so kswapd will not help. Bail if we are suspending.
-+	 */
-+	if (!did_some_progress && pm_suspended_storage())
-+		return 0;
-+
- 	/*
- 	 * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
- 	 * means __GFP_NOFAIL, but that may not be true in other
-@@ -1819,13 +1839,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
- 	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
- 		return 1;
++	 * this insists on correct encodings, though not minimal ones.
+ 	 * BUT it currently rejects legit 4-byte UTF-8 code points,
+ 	 * which need surrogate pairs.  (Unicode 3.1 can use them.)
+ 	 */
+ 	while (len != 0 && (c = (u8) *s++) != 0) {
+ 		if (unlikely(c & 0x80)) {
+-			// 2-byte sequence:
+-			// 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
++			/*
++			 * 2-byte sequence:
++			 * 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
++			 */
+ 			if ((c & 0xe0) == 0xc0) {
+ 				uchar = (c & 0x1f) << 6;
  
--	/*
--	 * Don't let big-order allocations loop unless the caller
--	 * explicitly requests that.
--	 */
--	if (gfp_mask & __GFP_NOFAIL)
--		return 1;
+@@ -43,8 +46,10 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
+ 				c &= 0x3f;
+ 				uchar |= c;
+ 
+-			// 3-byte sequence (most CJKV characters):
+-			// zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
++			/*
++			 * 3-byte sequence (most CJKV characters):
++			 * zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
++			 */
+ 			} else if ((c & 0xf0) == 0xe0) {
+ 				uchar = (c & 0x0f) << 12;
+ 
+@@ -64,12 +69,13 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
+ 				if (0xd800 <= uchar && uchar <= 0xdfff)
+ 					goto fail;
+ 
+-			// 4-byte sequence (surrogate pairs, currently rare):
+-			// 11101110wwwwzzzzyy + 110111yyyyxxxxxx
+-			//     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
+-			// (uuuuu = wwww + 1)
+-			// FIXME accept the surrogate code points (only)
 -
- 	return 0;
++			/*
++			 * 4-byte sequence (surrogate pairs, currently rare):
++			 * 11101110wwwwzzzzyy + 110111yyyyxxxxxx
++			 *     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
++			 * (uuuuu = wwww + 1)
++			 * FIXME accept the surrogate code points (only)
++			 */
+ 			} else
+ 				goto fail;
+ 		} else
+@@ -84,8 +90,8 @@ fail:
  }
  
-@@ -2218,7 +2231,8 @@ rebalance:
  
- 	/* Check if we should retry the allocation */
- 	pages_reclaimed += did_some_progress;
--	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
-+	if (should_alloc_retry(gfp_mask, order, did_some_progress,
-+						pages_reclaimed)) {
- 		/* Wait for some write requests to complete then retry */
- 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
- 		goto rebalance;
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b1cd120..9520592 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -667,10 +667,10 @@ int try_to_free_swap(struct page *page)
- 	 * original page might be freed under memory pressure, then
- 	 * later read back in from swap, now with the wrong data.
- 	 *
--	 * Hibernation clears bits from gfp_allowed_mask to prevent
--	 * memory reclaim from writing to disk, so check that here.
-+	 * Hibration suspends storage while it is writing the image
-+	 * to disk so check that here.
- 	 */
--	if (!(gfp_allowed_mask & __GFP_IO))
-+	if (pm_suspended_storage())
- 		return 0;
+-/**
+- * usb_gadget_get_string - fill out a string descriptor 
++/*
++ * usb_gadget_get_string - fill out a string descriptor
+  * @table: of c strings encoded using UTF-8
+  * @id: string id, from low byte of wValue in get string descriptor
+  * @buf: at least 256 bytes
+@@ -102,17 +108,17 @@ fail:
+  * characters (which are also widely used in C strings).
+  */
+ int
+-usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
++usb_gadget_get_string(struct usb_gadget_strings *table, int id, u8 *buf)
+ {
+ 	struct usb_string	*s;
+ 	int			len;
  
- 	delete_from_swap_cache(page);
+ 	/* descriptor 0 has the language id */
+ 	if (id == 0) {
+-		buf [0] = 4;
+-		buf [1] = USB_DT_STRING;
+-		buf [2] = (u8) table->language;
+-		buf [3] = (u8) (table->language >> 8);
++		buf[0] = 4;
++		buf[1] = USB_DT_STRING;
++		buf[2] = (u8) table->language;
++		buf[3] = (u8) (table->language >> 8);
+ 		return 4;
+ 	}
+ 	for (s = table->strings; s && s->s; s++)
+@@ -124,13 +130,13 @@ usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
+ 		return -EINVAL;
+ 
+ 	/* string descriptors have length, tag, then UTF16-LE text */
+-	len = min ((size_t) 126, strlen (s->s));
+-	memset (buf + 2, 0, 2 * len);	/* zero all the bytes */
++	len = min((size_t) 126, strlen(s->s));
++	memset(buf + 2, 0, 2 * len);	/* zero all the bytes */
+ 	len = utf8_to_utf16le(s->s, (__le16 *)&buf[2], len);
+ 	if (len < 0)
+ 		return -EINVAL;
+-	buf [0] = (len + 1) * 2;
+-	buf [1] = USB_DT_STRING;
+-	return buf [0];
++	buf[0] = (len + 1) * 2;
++	buf[1] = USB_DT_STRING;
++	return buf[0];
+ }
+ 
+
+
