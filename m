@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1KQVf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:35:27 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:46212 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab1KQVfZ (ORCPT
+	id S1752874Ab1KQViS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:38:18 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36143 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab1KQViR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:35:25 -0500
-Date: Thu, 17 Nov 2011 16:35:01 -0500 (EST)
-Message-Id: <20111117.163501.1963137869848419475.davem@davemloft.net>
-To: jbottomley@parallels.com
-Cc: eric.dumazet@gmail.com, glommer@parallels.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        paul@paulmenage.org, lizf@cn.fujitsu.com, linux-mm@kvack.org,
-        devel@openvz.org, kirill@shutemov.name, gthelen@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [Devel] Re: [PATCH v5 00/10] per-cgroup tcp memory pressure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1321381632.3021.57.camel@dabdike.int.hansenpartnership.com>
-References: <1320679595-21074-1-git-send-email-glommer@parallels.com>
-	<4EBAC04F.1010901@parallels.com>
-	<1321381632.3021.57.camel@dabdike.int.hansenpartnership.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 17 Nov 2011 13:35:05 -0800 (PST)
+	Thu, 17 Nov 2011 16:38:17 -0500
+Date: Thu, 17 Nov 2011 13:38:14 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Greg KH <gregkh@suse.de>
+cc: Claudio Scordino <claudio@evidence.eu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/base/node.c: fix compilation error
+In-Reply-To: <20111117175210.GE13208@suse.de>
+Message-ID: <alpine.DEB.2.00.1111171337020.15918@chino.kir.corp.google.com>
+References: <4EC4DD20.6080201@evidence.eu.com> <20111117175210.GE13208@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Bottomley <jbottomley@parallels.com>
-Date: Tue, 15 Nov 2011 18:27:12 +0000
+On Thu, 17 Nov 2011, Greg KH wrote:
 
-> Ping on this, please.  We're blocked on this patch set until we can get
-> an ack that the approach is acceptable to network people.
+> Is this a recent problem, or one that has been around for a long time
+> (i.e. this fix should go to the -stable trees?)
+> 
 
-__sk_mem_schedule is now more expensive, because instead of short-circuiting
-the majority of the function's logic when "allocated <= prot->sysctl_mem[0]"
-and immediately returning 1, the whole rest of the function is run.
-
-The static branch protecting all of the cgroup code seems to be
-enabled if any memory based cgroup'ing is enabled.  What if people use
-the memory cgroup facility but not for sockets?  I am to understand
-that, of the very few people who are going to use this stuff in any
-capacity, this would be a common usage.
-
-TCP specific stuff in mm/memcontrol.c, at best that's not nice at all.
-
-Otherwise looks mostly good.
+The equivalent patch for /proc/meminfo in the -mm tree, 
+fs-proc-meminfoc-fix-compilation-error.patch, was cc'd to stable.  This 
+one would have to go back to 2.6.38+.
