@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab1KQInn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:43:43 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49381 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab1KQInl (ORCPT
+	id S1756150Ab1KQIoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:44:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49210 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab1KQIom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:43:41 -0500
-Message-ID: <4EC4C939.9080401@evidence.eu.com>
-Date: Thu, 17 Nov 2011 09:43:37 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Thu, 17 Nov 2011 03:44:42 -0500
+Date: Thu, 17 Nov 2011 16:44:35 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] lockdep: print lock name for lockdep_init_error
+Message-ID: <20111117084435.GA16757@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+ <1321508072-23853-2-git-send-email-tom.leiming@gmail.com>
+ <20111117060215.GB15644@zhy>
+ <CACVXFVPo410dy5Mz_Kd3vC=iLazgg8MuPpHnMKfUbUypfXaGUg@mail.gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] /fs/proc/meminfo.c: fix compilation error
-References: <4EB2C0DF.9050301@evidence.eu.com> <alpine.DEB.2.00.1111162105400.13603@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1111162105400.13603@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CACVXFVPo410dy5Mz_Kd3vC=iLazgg8MuPpHnMKfUbUypfXaGUg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/11/2011 06:06, David Rientjes ha scritto:
-> On Thu, 3 Nov 2011, Claudio Scordino wrote:
+On Thu, Nov 17, 2011 at 04:01:16PM +0800, Ming Lei wrote:
+> Hi,
 > 
->> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
->> index 5861741..80e4645 100644
->> --- a/fs/proc/meminfo.c
->> +++ b/fs/proc/meminfo.c
->> @@ -131,12 +131,13 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
->>   		K(i.freeswap),
->>   		K(global_page_state(NR_FILE_DIRTY)),
->>   		K(global_page_state(NR_WRITEBACK)),
->> -		K(global_page_state(NR_ANON_PAGES)
->>   #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->> +		K(global_page_state(NR_ANON_PAGES)
->>   		  + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
->> -		  HPAGE_PMD_NR
->> +		  HPAGE_PMD_NR),
->> +#else
->> +		K(global_page_state(NR_ANON_PAGES)),
->>   #endif
->> -		  ),
->>   		K(global_page_state(NR_FILE_MAPPED)),
->>   		K(global_page_state(NR_SHMEM)),
->>   		K(global_page_state(NR_SLAB_RECLAIMABLE) +
+> Thanks for your review.
 > 
-> Looks like this needs to be fixed for the per-node sysfs meminfo files as
-> well?  See node_read_meminfo() in drivers/base/node.c.
+> On Thu, Nov 17, 2011 at 2:02 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> > On Thu, Nov 17, 2011 at 01:34:32PM +0800, tom.leiming@gmail.com wrote:
+> >> From: Ming Lei <tom.leiming@gmail.com>
+> >>
+> >> This patch prints the name of the lock which is acquired
+> >> before lockdep_init is called, so that user can easily find
+> >> which lock trigged the lockdep init error warning.
+> >
+> > Should we care about that?
+> 
+> Yes, we should, see below.
+> 
+> >
+> > I think lockdep_init() called early enough give more hint.
+> > Such as be the first C function called by arch.
+> 
+> Maybe not early enough, before start_kernel is executed, arch
+> asm code still can call some C function, can't it?
 
-Hi David,
+To me that still means 'Arch code didn't call lockdep_init()
+early enough'.
 
-	that file cannot be compiled for the cris architecture
-(therefore, with the compiler that gave me the error) because
-CONFIG_NUMA cannot be defined for the cris architecture.
+But anyway, let Peter/Ingo decide it.
 
-However, I forced make to build also that file, and actually I got the
-same error (i.e., "directives may not be used inside a macro argument").
-
-Since Andrew already took the patch for the meminfo.c file, I'm going to
-send a further patch for this specific file.
-
-Let me know if instead you prefer to have a single patch for both files.
-
-Best regards,
-
-	Claudio
+Thanks,
+Yong
