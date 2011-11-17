@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab1KQVFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:05:44 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54069 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab1KQVFm convert rfc822-to-8bit (ORCPT
+	id S1752049Ab1KQVG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:06:58 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:45657 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1KQVG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:05:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321559636.20271.287.camel@x61.thuisdomein>
-References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
-	<1321182176.20271.43.camel@x61.thuisdomein>
-	<CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
-	<1321559636.20271.287.camel@x61.thuisdomein>
-Date: Thu, 17 Nov 2011 22:05:41 +0100
-X-Google-Sender-Auth: AEzZP7A0j7-yLBGifjggHG23WqI
-Message-ID: <CAMuHMdW73Nf+bP2u6NRZFMW5c0-PnqYCDtEbZ+weGLs_mzZ1_g@mail.gmail.com>
-Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Nov 2011 16:06:57 -0500
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=hsUE5kq4_wEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=7d_E57ReAAAA:8 a=zu7syDHqWfYUN45_3dAA:9 a=zyn-aM1LaKYMgSWNsF4A:7 a=QEXdDO2ut3YA:10 a=D6-X0JM3zdQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [RFC PATCH] Tracepoint: introduce tracepoint() API
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Christoph Lameter <cl@linux-foundation.org>
+In-Reply-To: <20111117205053.GA26484@Krystal>
+References: <1321502104.3274.22.camel@edumazet-laptop>
+	 <1321543520.27735.67.camel@twins> <20111117155617.GA12665@Krystal>
+	 <20111117205053.GA26484@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 16:06:54 -0500
+Message-ID: <1321564014.3533.13.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 20:53, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > But please keep SERIAL_CONSOLE.
->
-> Why do you care about SERIAL_CONSOLE? If it's only really used by
-> AMIGA_BUILTIN_SERIAL why shouldn't we rename it to
-> AMIGA_BUILTIN_SERIAL_CONSOLE?
+On Thu, 2011-11-17 at 15:50 -0500, Mathieu Desnoyers wrote:
+> Introduce:
+> 
+>   tracepoint(event_name, arg1, arg2, ...)
+> 
+> while keeping the old tracepoint API in place, e.g.:
+> 
+>   trace_event_name(arg1, arg2, ...)
+> 
+> This allows skipping parameter side-effects (pointer dereference,
+> function calls, ...) when the tracepoint is not dynamically activated.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> ---
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index d530a44..c9c73f7 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -107,6 +107,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+>  
+>  #ifdef CONFIG_TRACEPOINTS
+>  
+> +#define tracepoint(name, args...)					\
+> +	do {								\
+> +		if (static_branch(&__tracepoint_##name.key))		\
+> +			__trace_##name(args);				\
+> +	} while (0)
+> +
+>  /*
+>   * it_func[0] is never NULL because there is at least one element in the array
+>   * when the array itself is non NULL.
+> @@ -144,13 +150,17 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+>   */
+>  #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
+>  	extern struct tracepoint __tracepoint_##name;			\
+> +	static inline void __trace_##name(proto)			\
+> +	{								\
+> +		__DO_TRACE(&__tracepoint_##name,			\
+> +			TP_PROTO(data_proto),				\
+> +			TP_ARGS(data_args),				\
+> +			TP_CONDITION(cond));				\
+> +	}								\
 
-Because SERIAL_CONSOLE is a universal platform-independent symbol.
-Other arches have it as well (but less than in the past).
+I wrote a patch earlier today that does almost the exact same thing, but
+I had more in macro part, which I would have cleaned up after the RFC. I
+didn't add another static inline, but I think this approach is a little
+cleaner (with the second static inline).
 
-As soon as m68k gets a new serial driver, it will be used by 2 drivers again.
+I didn't post mine because I was still analyzing the assembly to make
+sure it did what I expected. But I got side tracked on other things (RT
+related) and didn't quite finish the analysis.
 
-Gr{oetje,eeting}s,
+Did you do a compare of kmem_cache_alloc() to see if this fixes the
+reported problem?
 
-                        Geert
+-- Steve
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>  	static inline void trace_##name(proto)				\
+>  	{								\
+>  		if (static_branch(&__tracepoint_##name.key))		\
+> -			__DO_TRACE(&__tracepoint_##name,		\
+> -				TP_PROTO(data_proto),			\
+> -				TP_ARGS(data_args),			\
+> -				TP_CONDITION(cond));			\
+> +			__trace_##name(args);				\
+>  	}								\
+>  	static inline int						\
+>  	register_trace_##name(void (*probe)(data_proto), void *data)	\
+> @@ -193,7 +203,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+>  	EXPORT_SYMBOL(__tracepoint_##name)
+>  
+>  #else /* !CONFIG_TRACEPOINTS */
+> +
+> +#define tracepoint(name, args...)	__trace_##name(args)
+> +
+>  #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
+> +	static inline void __trace_##name(proto)			\
+> +	{ }								\
+>  	static inline void trace_##name(proto)				\
+>  	{ }								\
+>  	static inline int						\
+> 
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
