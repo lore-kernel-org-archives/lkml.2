@@ -1,131 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab1KQNNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 08:13:51 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:45297 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757485Ab1KQNNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 08:13:50 -0500
-Message-ID: <4EC50882.2080803@Calva.COM>
-Date: Thu, 17 Nov 2011 14:13:38 +0100
-From: John Hughes <john@Calva.COM>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1757543Ab1KQNYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 08:24:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757428Ab1KQNYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 08:24:42 -0500
+Message-ID: <4EC50B02.1060307@redhat.com>
+Date: Thu, 17 Nov 2011 15:24:18 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Jim Rees <rees@umich.edu>, Trond Myklebust <trond.myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
- mount expires
-References: <4EC3FD8B.6000705@calvaedi.com>	<20111116144718.78b2e288@corrin.poochiereds.net>	<20111116234434.GA12882@umich.edu>	<20111116203119.1d9c0dd6@corrin.poochiereds.net> <20111116203810.4e1b9d28@corrin.poochiereds.net> <4EC4EA91.5070607@Calva.COM>
-In-Reply-To: <4EC4EA91.5070607@Calva.COM>
-Content-Type: multipart/mixed;
- boundary="------------010100050907000402030400"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, Jason Baron <jbaron@redhat.com>,
+        rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC] remove jump_label optimization for perf sched events
+References: <20111117123029.GB16853@redhat.com>  <1321534159.27735.33.camel@twins> <20111117130032.GC16853@redhat.com> <1321535413.27735.35.camel@twins>
+In-Reply-To: <1321535413.27735.35.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010100050907000402030400
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 17/11/11 12:05, John Hughes wrote:
-> On 17/11/11 02:38, Jeff Layton wrote:
->> Note too that the gssd code distinguishes between an expired TGT and a
->> non-existent credcache. The latter will give you the error you desire
->> here. So one possibility is just to remove the credcache from /tmp in
->> this situation.
+On 11/17/2011 03:10 PM, Peter Zijlstra wrote:
+> On Thu, 2011-11-17 at 15:00 +0200, Gleb Natapov wrote:
 >
-> Something to scan /tmp for expired credentials and zap em?  rpc.gssd 
-> would communicate that to the kernel?
+> > > That said, I'd much rather throttle this particular jump label than
+> > > remove it altogether, some people really don't like all this scheduler
+> > > hot path crap.
+> > What about moving perf_event_task_sched() to sched_(in|out)_preempt_notifiers?
+> > preempt notifiers checking is already on the scheduler hot path, so no
+> > additional overhead for perf case.
 >
-> Whadaya know, that works.
-Here's a dumb perl script that could be run from, for example, .xsession 
-to automatically destroy expired ticket caches.
+> Same problem really, some people complain about the overhead of preempt
+> notifiers, also not all kernels have those in. 
 
-Would need a bit of trickery to make it go away on end of session and 
-something in /etc/pm/sleep.d to send it a SIGALRM when the system wakes 
-from suspend or hibernate.
+We could combine the two, sort-circuit preempt notifiers with jump
+labels if empty && not much activity on them.
 
-It has a potential race between destroying an expired ticket and a new 
-ticket being granted.
+> Futhermore I loathe notifier lists because they obscure wtf is done.
 
-I guess now I'll look at a hack to rpc.gssd for a neater way of doing this.
+That's life in a general purpose kernel, if everyone gets their hook in
+to keep their code clean, the scheduler will bloat.
 
+An advantage of preempt notifiers is that you can make the perf code
+modular.
 
+-- 
+error compiling committee.c: too many arguments to function
 
-
-
---------------010100050907000402030400
-Content-Type: text/plain;
- name="monitor-tickets"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="monitor-tickets"
-
-#! /usr/bin/perl -w
-
-my $ALARMED = 0;
-
-$SIG{ALRM} = sub { ++$ALARMED; };
-
-use POSIX qw(mktime);
-
-# Work out ticket expiry
-
-# Valid starting     Expires            Service principal
-# 11/17/11 10:34:23  11/17/11 20:34:23  krbtgt/CALVAEDI.COM@CALVAEDI.COM
-# 	renew until 11/18/11 10:34:23
-# 11/17/11 10:34:23  11/17/11 20:34:23  nfs/olympic.calvaedi.com@CALVAEDI.COM
-# 	renew until 11/18/11 10:34:23
-# 11/17/11 11:24:24  11/17/11 20:34:23  host/olympic.calvaedi.com@CALVAEDI.COM
-# 	renew until 11/18/11 10:34:23
-
-# Eurgh - non localised, US format dates.
-
-sub expiry {
-	local *KLIST;
-	open KLIST, "/usr/bin/klist | " or return;
-	my $expiry;
-	while (<KLIST>) {
-		if (m((\d+)/(\d+)/(\d+) (\d+):(\d+):(\d+)  krbtgt)) {
-			$expiry = mktime ($6, $5, $4, $2, $1 - 1, 100 +  $3);
-			last;
-		}
-	}
-
-	$expiry;
-}
-
-
-for (;;) {
-	my $sleepytime = 60;
-
-	my $expiry = expiry ();
-	
-	if (defined $expiry) {
-		my $left = $expiry - time;
-		if ($left <= 0) {
-			# Ticket expired, zap it.  Potential race with
-			# new ticket creation.
-			print "Destroy expired ticket\n";
-			system "/usr/bin/kdestroy";
-		}
-		else {
-			$sleepytime = $left;
-		}
-	}
-
-	if ($ALARMED) {
-		$ALARMED = 0;
-		next;
-	}
-
-	# If machine freezes during this sleap how long will
-	# it sleep for?
-	print "Sleeping for $sleepytime seconds\n";
-	sleep $sleepytime;
-}
-
---------------010100050907000402030400--
