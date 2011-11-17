@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1KQWNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 17:13:40 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39832 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab1KQWNj (ORCPT
+	id S1753248Ab1KQWRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 17:17:35 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:56360 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1KQWRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 17:13:39 -0500
-Subject: Re: [PATCH 2/3] mtd/nand : set Nand flash page address to FBAR and
- FPAR correctly
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: b35362@freescale.com
-Cc: dwmw2@infradead.org, Artem.Bityutskiy@nokia.com,
-        linux-mtd@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        leoli@freescale.com, scottwood@freescale.com,
-        Jerry Huang <Chang-Ming.Huang@freescale.com>,
-        Tang Yuantian <b29983@freescale.com>
-Date: Fri, 18 Nov 2011 00:13:34 +0200
-In-Reply-To: <1321349355-1639-2-git-send-email-b35362@freescale.com>
-References: <1321349355-1639-1-git-send-email-b35362@freescale.com>
-	 <1321349355-1639-2-git-send-email-b35362@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321568016.2272.29.camel@koala>
-Mime-Version: 1.0
+	Thu, 17 Nov 2011 17:17:34 -0500
+Date: Thu, 17 Nov 2011 23:17:31 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Subject: Impossible high cpu-time values for migration threads
+Message-ID: <20111117221731.GA9229@x4.trippels.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 17:29 +0800, b35362@freescale.com wrote:
-> From: Liu Shuo <b35362@freescale.com>
-> 
-> If we use the Nand flash chip whose number of pages in a block is greater
-> than 64(for large page), we must treat the low bit of FBAR as being the
-> high bit of the page address due to the limitation of FCM, it simply uses
-> the low 6-bits (for large page) of the combined block/page address as the
-> FPAR component, rather than considering the actual block size.
+Just saw this for the first time:
 
-Looks like this patch depends on the previous white-space clean-up patch
-- could you please refactor it (and 3/3 too) and resend?
+  1  [||                                                          2.4%]     Tasks: 63, 31 thr, 54 kthr; 1 running
+  2  [||                                                          1.7%]     Load average: 0.03 0.06 0.36 
+  3  [||                                                          1.0%]     Uptime: 06:36:59
+  4  [||                                                          1.0%]
+  Mem[||||||||||||||||||||||||||||||||||                   1427/7977MB]
+  Mem:7977M used:1427M buffers:0M cache:2604M 
+  Swp[|                                                       0/2047MB]
 
-Artem.
+  PID USER     PRI  NI  VIRT   RES   SHR S CPU% MEM%   TIME+  Command
+   11 root      RT   0     0     0     0 S  0.0  0.0  5h38:27 migration/2
+   14 root      RT   0     0     0     0 S  0.0  0.0  5h30:29 migration/3
+ 1476 root      20   0 97672 38928  5024 S  1.0  0.5  4:49.06 /usr/bin/X -nolisten tcp :0 -auth /home/markus/.serverauth.1459
+ 1281 markus    20   0  931M  317M 40592 S  0.0  4.0  4:19.17 firefox
+ 1538 markus    20   0  200M 34544 18848 S  0.0  0.4  2:43.89 konsole -e /home/markus/start_screen
+  868 mpd       20   0  294M 20336  4868 S  0.0  0.2  2:04.88 mpd --no-daemon
+...
 
+As you can see the machine has an uptime of 06:36:59 and the two
+migration threads both show greater than 5h30min cpu-time.
+
+(Linux 3.2.0-rc2-00046-g317bfe8 on amd64)
+
+-- 
+Markus
