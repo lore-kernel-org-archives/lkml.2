@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab1KQKEq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:04:46 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61696 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756523Ab1KQKEo (ORCPT
+	id S1756566Ab1KQKIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:08:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51081 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392Ab1KQKIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:04:44 -0500
-Date: Thu, 17 Nov 2011 14:04:39 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] Introduce CAP_CHECKPOINT capability and filter map_files/
- access
-Message-ID: <20111117100439.GK20508@moon>
+	Thu, 17 Nov 2011 05:08:35 -0500
+Message-ID: <4EC4DD20.6080201@evidence.eu.com>
+Date: Thu, 17 Nov 2011 11:08:32 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+CC: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] drivers/base/node.c: fix compilation error
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal idea of checkpoint/restore is to provide this feature not
-for admins only but regular users as well. Still some operations
-are privileged -- such as accessing /proc/$pid/map_files.
+Hi all,
 
-So instead of requiring anyone who has a will to checkpoint/restore
-processes CAP_SYS_ADMIN privileges, it might (?) be worth to bring a way
-less powerful CAP_CHECKPOINT capability.
+	the current mainline kernel gives a "directives may not be used
+inside a macro argument" error message when compiled for the
+cris architecture.
 
-The following permissions for CAP_CHECKPOINT should be granted
- - read/write /proc/$pid/map_files/
- - (not yet merged) clone-with-specified-pid, might be changed to last_pid+clone setup
- - (not yet published/stabilized) prctls calls to tune up vDSO and elements
-   of mm_struct such as mm->start_code, mm->end_code, mm->start_data and etc
+It happened for the /fs/proc/meminfo.c file, for which a patch has been
+already sent to LKML.
 
-I would like to gather people opinions on such approach as a general.
-_ANY_ comments are highly appreciated. Would it worth it or not (since
-CAPs space is pretty limited one).
+It happens for drivers/base/node.c too. The patch below fixes the
+problem.
 
-(the patch is on top of -mm)
+Best regards,
 
-*NOT-FOR-INCLUSION*
+	Claudio
+
+
+Subject: /drivers/base/node.c: fix compilation error
+From: Claudio Scordino <claudio@evidence.eu.com>
+
+Patch to fix the error message "directives may not be used inside a macro
+argument" which appears when the kernel is compiled for the cris architecture.
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
 ---
- fs/proc/base.c             |    6 ++++--
- include/linux/capability.h |    7 ++++++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/base/node.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -2386,7 +2386,8 @@ static struct dentry *proc_map_files_loo
- 	struct mm_struct *mm;
- 
- 	result = ERR_PTR(-EACCES);
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!capable(CAP_SYS_ADMIN) &&
-+	    !capable(CAP_CHECKPOINT))
- 		goto out;
- 
- 	result = ERR_PTR(-ENOENT);
-@@ -2442,7 +2443,8 @@ proc_map_files_readdir(struct file *filp
- 	int ret;
- 
- 	ret = -EACCES;
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!capable(CAP_SYS_ADMIN) &&
-+	    !capable(CAP_CHECKPOINT))
- 		goto out;
- 
- 	ret = -ENOENT;
-Index: linux-2.6.git/include/linux/capability.h
-===================================================================
---- linux-2.6.git.orig/include/linux/capability.h
-+++ linux-2.6.git/include/linux/capability.h
-@@ -360,8 +360,13 @@ struct cpu_vfs_cap_data {
- 
- #define CAP_WAKE_ALARM            35
- 
-+/*
-+ * Allow to use privilege operations needed for
-+ * checkpoint/restore procedure.
-+ */
-+#define CAP_CHECKPOINT             36
- 
--#define CAP_LAST_CAP         CAP_WAKE_ALARM
-+#define CAP_LAST_CAP         CAP_CHECKPOINT
- 
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
- 
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 793f796..5693ece 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -127,12 +127,13 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+ 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+-		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+ 			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR
++			HPAGE_PMD_NR),
++#else
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
+ #endif
+-		       ),
+ 		       nid, K(node_page_state(nid, NR_SHMEM)),
+ 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+ 				THREAD_SIZE / 1024,
+@@ -143,13 +144,14 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
+ 				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
+-		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ 			, nid,
+ 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR)
++			HPAGE_PMD_NR));
++#else
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+ #endif
+-		       );
+ 	n += hugetlb_report_node_meminfo(nid, buf + n);
+ 	return n;
+ }
+-- 
+1.7.1
+
