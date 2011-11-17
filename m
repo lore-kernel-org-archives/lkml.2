@@ -1,147 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1KQTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 14:04:59 -0500
-Received: from mga03.intel.com ([143.182.124.21]:61840 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab1KQTE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 14:04:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,528,1315206000"; 
-   d="scan'208";a="38357084"
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Thu, 17 Nov 2011 11:08:23 -0800
-In-Reply-To: <1321545376.2495.1.camel@laptop>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1755093Ab1KQTHF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 14:07:05 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27851 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab1KQTHC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 14:07:02 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6533"; a="136291803"
+X-IronPort-AV: E=Sophos;i="4.69,527,1315206000"; 
+   d="scan'208";a="197506715"
+Message-ID: <4EC55B4A.7050001@qca.qualcomm.com>
+Date: Thu, 17 Nov 2011 21:06:50 +0200
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Sangwook Lee <sangwook.lee@linaro.org>
+CC: <mcgrof@frijolero.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <linux-wireless@vger.kernel.org>,
+        <ath9k-devel@venema.h4ckr.net>, <ralf@linux-mips.org>,
+        <juhosg@openwrt.org>, <rodrigue@qca.qualcomm.com>,
+        <linville@tuxdriver.com>, <rmanohar@qca.qualcomm.com>,
+        <patches@linaro.org>
+Subject: Re: [PATCH] ath9k: rename ath9k_platform.h to ath_platform.h
+References: <1321356224-5053-1-git-send-email-sangwook.lee@linaro.org>	<4EC29534.7010502@adurom.com> <CADPsn1YDOu9Xyu1yDfs5Z0LjGzBL-Rx6Fk35AT8n-8oOPhPzHA@mail.gmail.com>
+In-Reply-To: <CADPsn1YDOu9Xyu1yDfs5Z0LjGzBL-Rx6Fk35AT8n-8oOPhPzHA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1321556904.15339.25.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+X-Originating-IP: [10.64.3.78]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 07:56 -0800, Peter Zijlstra wrote:
-> D'0h, indeed.. 
+Hi Sangwook,
+
+On 11/16/2011 01:34 PM, Sangwook Lee wrote:
+
 > 
-> Something like the below maybe, although I'm certain it all can be
-> written much nicer indeed.
+> On 15 November 2011 16:37, Kalle Valo <kvalo@adurom.com
+> <mailto:kvalo@adurom.com>> wrote:
 > 
+>     Hi Sangwook,
+> 
+>     On 11/15/2011 01:23 PM, Sangwook Lee wrote:
+>     > The patch series proposes to rename ath9k_platform.h to
+>     "ath_platform.h
+>     > This header file handles platform data used only for ath9k,
+>     > but it can used by ath6k as well. We can take "wl12xx.h" as
+>     > as a example. Please let us change this file name so that
+>     > other Atheors WLANs use this file for their own platform data
+> 
+>     ath9k and ath6kl are very different devices, I'm not sure if sharing a
+>     platfrom struct between the two is really a good idea. Most likely there
+>     is very little the two drivers can share. What are your plans here?
+>      
+> 
+> 
+> As you know, if ath6kl is not SDIO powered (in most of cases, including
+> mine)
+> we need to use platform struct in order to control reset/power line,
+> because ath6k is designed for mobile and embedded devices.
 
-Peter, I just noticed that the -tip tree has the original proposed patch
-and the new sched/ directory. So updated my cleanup patch accordingly.
-Thanks.
----
+We have been actually planning to do the same, but it's still on our
+todo list. If you can do this it would be awesome.
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: sched: cleanup domain traversal in select_idle_sibling
+Also we need to provide some clock configuration from the board file and
+I'm sure there will be more in the future. But let's start with the
+power control.
 
-Instead of going through the scheduler domain hierarchy multiple times
-(for giving priority to an idle core over an idle SMT sibling in a busy
-core), start with the highest scheduler domain with the SD_SHARE_PKG_RESOURCES
-flag and traverse the domain hierarchy down till we find an idle group.
+> so I found out that there is already header file for ath9k's platform
+> struct. How about using the one header file instead of
+> "include/linux/ath9k_platform.h"
+> , and "include/linux/ath6k_platform.h" ?
+>  
+> 
+>     I myself was thinking that we would have include/linux/ath6kl.h
+>     dedicated just for ath6kl. That would makes things simpler.
+> 
+> But since I don't know much about ath9k, if you want to make the
+> separate header file for ath6kl's own struct, It would be fine as well.
 
-This cleanup also addresses an issue reported by Mike where the recent
-changes returned the busy thread even in the presence of an idle SMT
-sibling in single socket platforms.
+Yeah, I really would like to use separate file for ath6kl.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
----
- kernel/sched/fair.c  |   38 +++++++++++++++++++++++++-------------
- kernel/sched/sched.h |    2 ++
- 2 files changed, 27 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index cd3b642..537e16a 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2642,6 +2642,28 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- 	return idlest;
- }
- 
-+/**
-+ * highest_flag_domain - Return highest sched_domain containing flag.
-+ * @cpu:	The cpu whose highest level of sched domain is to
-+ *		be returned.
-+ * @flag:	The flag to check for the highest sched_domain
-+ *		for the given cpu.
-+ *
-+ * Returns the highest sched_domain of a cpu which contains the given flag.
-+ */
-+static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
-+{
-+	struct sched_domain *sd, *hsd = NULL;
-+
-+	for_each_domain(cpu, sd) {
-+		if (!(sd->flags & flag))
-+			break;
-+		hsd = sd;
-+	}
-+
-+	return hsd;
-+}
-+
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
-@@ -2651,7 +2673,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int prev_cpu = task_cpu(p);
- 	struct sched_domain *sd;
- 	struct sched_group *sg;
--	int i, smt = 0;
-+	int i;
- 
- 	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
-@@ -2671,19 +2693,9 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
- 	rcu_read_lock();
--again:
--	for_each_domain(target, sd) {
--		if (!smt && (sd->flags & SD_SHARE_CPUPOWER))
--			continue;
--
--		if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
--			if (!smt) {
--				smt = 1;
--				goto again;
--			}
--			break;
--		}
- 
-+	sd = highest_flag_domain(target, SD_SHARE_PKG_RESOURCES);
-+	for_each_lower_domain(sd) {
- 		sg = sd->groups;
- 		do {
- 			if (!cpumask_intersects(sched_group_cpus(sg),
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c2e7802..8715055 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -501,6 +501,8 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define for_each_domain(cpu, __sd) \
- 	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); __sd; __sd = __sd->parent)
- 
-+#define for_each_lower_domain(sd) for (; sd; sd = sd->child)
-+
- #define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
- #define this_rq()		(&__get_cpu_var(runqueues))
- #define task_rq(p)		cpu_rq(task_cpu(p))
-
-
+Kalle
