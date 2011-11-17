@@ -1,78 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab1KQNyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 08:54:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63810 "EHLO mx1.redhat.com"
+	id S1757604Ab1KQNzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 08:55:32 -0500
+Received: from tango.tkos.co.il ([62.219.50.35]:48750 "EHLO tango.tkos.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757565Ab1KQNyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 08:54:04 -0500
-Date: Thu, 17 Nov 2011 08:53:37 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Huang Ying <ying.huang@intel.com>, Mike Waychison <mikew@google.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [PATCH v2] pstore: pass allocated memory region back to caller
-Message-ID: <20111117135337.GL8685@redhat.com>
-References: <20111116211329.GA8328@www.outflux.net>
- <20111116222028.GK8685@redhat.com>
- <CA+8MBb+dEz+zOD_SsOYqV3z1O-H-Q8CRyr6gPU73S34xhxDWiQ@mail.gmail.com>
+	id S1757478Ab1KQNzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 08:55:32 -0500
+Date: Thu, 17 Nov 2011 15:54:34 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
+        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
+        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
+        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
+        mirko.gardi@st.com
+Subject: Re: [PATCH] GPIO/pl061: Add suspend resume capability
+Message-ID: <20111117135433.GC3299@sapphire.tkos.co.il>
+References: <6c6957c60969ac5df8bfe59a2502a4077284d2e1.1321528179.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+8MBb+dEz+zOD_SsOYqV3z1O-H-Q8CRyr6gPU73S34xhxDWiQ@mail.gmail.com>
+In-Reply-To: <6c6957c60969ac5df8bfe59a2502a4077284d2e1.1321528179.git.viresh.kumar@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 02:45:24PM -0800, Tony Luck wrote:
-> On Wed, Nov 16, 2011 at 2:20 PM, Don Zickus <dzickus@redhat.com> wrote:
-> > This is an interesting approach.  But are we leaving psinfo data exposed
-> > when you have a reader and writer at the same time?
+Hi Viresh,
+
+On Thu, Nov 17, 2011 at 04:45:35PM +0530, Viresh Kumar wrote:
+> From: Deepak Sikri <deepak.sikri@st.com>
 > 
-> I look at this as the first step in separating the read & write paths.
+> This patch adds the suspend and resume operations in the driver. The patch
+> ensures the data save and restore for the device registers during the
+> suspend and resume operations respectively.
 > 
-> I started out with the (good) idea that the back end should allocate & own
-> the buffer for the write path ... this means that the buffer is ready to use
-> when an oops/panic happens - which is obviously a bad time to need to
-> allocate memory :-)
+> Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+> ---
+>  drivers/gpio/gpio-pl061.c |   73 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 73 insertions(+), 0 deletions(-)
 
-Of course. :-)  But don't we have mechanisms which can use pre-allocated
-memory?  Like the lock-less link list or the ring buffer?
+[snip]
 
-Or maybe something safer, perhaps pass the backend buffer size to the
-dumper routine when it registers?  That way kmsg_dump can allocate memory
-at registration time which is sync'd in size with the backend.  This
-allows kmsg_dump to fill the buffer and pass it directly down to the
-backend (through pstore_dumper), with minimal locks, without breaking it
-up again and re-copying into yet another buffer.
+> +#ifdef CONFIG_PM
+> +struct gpio_context_save_regs {
 
-Thoughts?
+Nit: I think pl061_context_save_regs is a better name.
 
-> 
-> Then I reused the same buffer for read - in hindsight this was not such a
-> good idea - it led to all the discussions we've had about how to guarantee
-> that the dmesg data gets saved on panic - even in the cases where we
-> can't get the locks (so proposals have been made to bust the locks).
-> 
-> So Kees' patch is the functional equivalent of busting the spinlock.
+Other then that:
 
-> 
-> Next step would be to look at the back end drivers to see whether
-> they can handle a simultaneous read & write in a graceful way.
-> 
-I was just wondering if we should put a 'const' on the psinfo data being
-passed to the read/write routine, otherwise a broken backend could modify
-psinfo and corrupt any concurrent access, no?
+Acked-by: Baruch Siach <baruch@tkos.co.il>
 
-> I've queued this for linux-next. Probably missed the snapshot today,
-> but I expect it should show up in next-20111118
+baruch
 
-Cheers,
-Don
+> +	u8 gpio_data;
+> +	u8 gpio_dir;
+> +	u8 gpio_is;
+> +	u8 gpio_ibe;
+> +	u8 gpio_iev;
+> +	u8 gpio_ie;
+> +};
+> +#endif
+> +
+>  struct pl061_gpio {
+>  	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
+>  	 * interrupts controller of the system. We need this to support systems
+> @@ -54,6 +66,10 @@ struct pl061_gpio {
+>  	void __iomem		*base;
+>  	unsigned		irq_base;
+>  	struct gpio_chip	gc;
+> +
+> +#ifdef CONFIG_PM
+> +	struct gpio_context_save_regs	csave_regs;
+> +#endif
+>  };
+>  
+>  static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
+> @@ -330,6 +346,8 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
+>  		irq_set_chip_data(i + chip->irq_base, chip);
+>  	}
+>  
+> +	amba_set_drvdata(dev, chip);
+> +
+>  	return 0;
+>  
+>  iounmap:
+> @@ -342,6 +360,60 @@ free_mem:
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_PM
+> +static int pl061_suspend(struct device *dev)
+> +{
+> +	struct pl061_gpio *chip = dev_get_drvdata(dev);
+> +	int offset;
+> +
+> +	chip->csave_regs.gpio_data = 0;
+> +	chip->csave_regs.gpio_dir = readb(chip->base + GPIODIR);
+> +	chip->csave_regs.gpio_is = readb(chip->base + GPIOIS);
+> +	chip->csave_regs.gpio_ibe = readb(chip->base + GPIOIBE);
+> +	chip->csave_regs.gpio_iev = readb(chip->base + GPIOIEV);
+> +	chip->csave_regs.gpio_ie = readb(chip->base + GPIOIE);
+> +
+> +	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
+> +		if (chip->csave_regs.gpio_dir & (1 << offset))
+> +			chip->csave_regs.gpio_data |=
+> +				pl061_get_value(&chip->gc, offset) << offset;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int pl061_resume(struct device *dev)
+> +{
+> +	struct pl061_gpio *chip = dev_get_drvdata(dev);
+> +	int offset;
+> +
+> +	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
+> +		if (chip->csave_regs.gpio_dir & (1 << offset))
+> +			pl061_direction_output(&chip->gc, offset,
+> +					chip->csave_regs.gpio_data &
+> +					(1 << offset));
+> +		else
+> +			pl061_direction_input(&chip->gc, offset);
+> +	}
+> +
+> +	writeb(chip->csave_regs.gpio_is, chip->base + GPIOIS);
+> +	writeb(chip->csave_regs.gpio_ibe, chip->base + GPIOIBE);
+> +	writeb(chip->csave_regs.gpio_iev, chip->base + GPIOIEV);
+> +	writeb(chip->csave_regs.gpio_ie, chip->base + GPIOIE);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct dev_pm_ops pl061_dev_pm_ops = {
+> +	.suspend = pl061_suspend,
+> +	.resume = pl061_resume,
+> +};
+> +
+> +#define PL061_DEV_PM_OPS (&pl061_dev_pm_ops)
+> +#else
+> +#define PL061_DEV_PM_OPS NULL
+> +#endif
+> +
+>  static struct amba_id pl061_ids[] = {
+>  	{
+>  		.id	= 0x00041061,
+> @@ -353,6 +425,7 @@ static struct amba_id pl061_ids[] = {
+>  static struct amba_driver pl061_gpio_driver = {
+>  	.drv = {
+>  		.name	= "pl061_gpio",
+> +		.pm	= PL061_DEV_PM_OPS,
+>  	},
+>  	.id_table	= pl061_ids,
+>  	.probe		= pl061_probe,
 
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
