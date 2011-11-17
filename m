@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab1KQTxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 14:53:53 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46354 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753381Ab1KQTxv (ORCPT
+	id S1756296Ab1KQTyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 14:54:08 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:49518 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab1KQTyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 14:53:51 -0500
-X-Sasl-enc: WJ1XlP9okyy8zCMqcfloZ6JmqPC2gaEgoO1tvLPj4ZEq 1321559630
-Date: Thu, 17 Nov 2011 11:49:13 -0800
-From: Greg KH <greg@kroah.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg KH <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Michael Hennerich <Michael.Hennerich@analog.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH 0/5] Generalize module_platform_driver
-Message-ID: <20111117194913.GA23254@kroah.com>
-References: <1321434819-23678-1-git-send-email-lars@metafoo.de>
- <20111116160206.GA27049@suse.de>
- <20111116173618.0a847852@endymion.delvare>
- <20111116163728.GA7196@suse.de>
- <CACxGe6sMJN6ZuF2E5vtbf-jquJRUPizzo_Ttdy1UkwtMO4axUA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACxGe6sMJN6ZuF2E5vtbf-jquJRUPizzo_Ttdy1UkwtMO4axUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Nov 2011 14:54:05 -0500
+Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
+In-Reply-To: <CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
+References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
+	 <1321182176.20271.43.camel@x61.thuisdomein>
+	 <CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 20:53:56 +0100
+Message-ID: <1321559636.20271.287.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 10:13:31AM -0700, Grant Likely wrote:
-> On Wed, Nov 16, 2011 at 9:37 AM, Greg KH <gregkh@suse.de> wrote:
-> > On Wed, Nov 16, 2011 at 05:36:18PM +0100, Jean Delvare wrote:
-> >> On Wed, 16 Nov 2011 08:02:06 -0800, Greg KH wrote:
-> >> > On Wed, Nov 16, 2011 at 10:13:34AM +0100, Lars-Peter Clausen wrote:
-> >> > > Grant Likely recently introduced the module_platform_driver macro which can be
-> >> > > used to eliminate a few lines on boilerplate code in platform driver modules.
-> >> > > The same approach can be used to do the same for other bus type drivers.
-> >> > >
-> >> > > The first patch of this series generalizes the module_platform_driver macro and
-> >> > > introduces the module_driver macro. It is similar to module_platform_driver
-> >> > > macro but has two additional parameters to pass in the driver register and
-> >> > > unregister function. The intend is that this macro is used to construct bus
-> >> > > specific macros for generating the driver register/unregister boilerplate code.
-> >> > >
-> >> > > The next two patches in this series add the module_i2c_driver and
-> >> > > module_spi_driver macro which use the module_driver macro to generate the I2C
-> >> > > and SPI driver boilerplate code.
-> >> > >
-> >> > > The last two patches convert the driver found in the IIO framework to use the
-> >> > > new module_i2c_driver and module_spi_driver macros to demonstrate their
-> >> > > potential and remove over 700 lines of code.
-> >> > >
-> >> > > While this series only introduces these kind of helper macros for I2C and SPI
-> >> > > bus drivers the same scheme should be applicable to most other bus driver types.
-> >> > > For example PCI and USB seem to be good candidates.
-> >> > >
-> >> > > It probably makes sense to merge the first three patches together. The last two
-> >> > > can probably, since this is not urgent, wait until the first three have reached
-> >> > > mainline.
-> >> >
-> >> > Nice, I like this, unless people object, I'll merge the first patch to
-> >> > the driver-core tree.
-> >> >
-> >> > I'll gladly take the i2c and spi patches as well if the subsystem
-> >> > maintainers there don't object, and I'll work on the USB patch as well.
-> >>
-> >> No objection from me (for i2c).
+On Thu, 2011-11-17 at 20:33 +0100, Geert Uytterhoeven wrote:
+> On Sun, Nov 13, 2011 at 12:02, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > 1) I've been looking at this impressive dependency list a few days back.
+> > My impression was that it can be reduced to only AMIGA_BUILTIN_SERIAL=y.
+> > (After that this Kconfig symbol might better be renamed to
+> > AMIGA_BUILTIN_SERIAL_CONSOLE.)
 > >
-> > Wonderful, thanks for letting me know.
+> > I might have a draft patch to drop the dependencies somewhere. I need to
+> > have another look at that (draft) patch before I can submit it.
 > 
-> Yes, please take the spi patch too.
+> You are right: all drivers (except for AMIGA_BUILTIN_SERIAL) got lost due to
+> bitrot, or never made it to mainline. Will fix.
 
-Ok, will go queue these up, thanks.
+Nice.
 
-greg k-h
+> But please keep SERIAL_CONSOLE.
+
+Why do you care about SERIAL_CONSOLE? If it's only really used by
+AMIGA_BUILTIN_SERIAL why shouldn't we rename it to
+AMIGA_BUILTIN_SERIAL_CONSOLE?
+
+> BTW, updating the m68k defconfigs is also on my list.
+
+Nice too. Jiri Kosina already claimed to be able to handle any problems
+caused by my cleaning efforts (which I haven't made public, since I'm
+still pondering on a way to publish a 400K+ patch).
+
+
+Paul Bolle
+
