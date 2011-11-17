@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab1KQIwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:52:55 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59263 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709Ab1KQIwx convert rfc822-to-8bit (ORCPT
+	id S1756116Ab1KQI4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:56:34 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:23217 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab1KQI4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:52:53 -0500
+	Thu, 17 Nov 2011 03:56:33 -0500
+Message-ID: <4EC4CC3C.5040106@atmel.com>
+Date: Thu, 17 Nov 2011 09:56:28 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1321026853-16388-1-git-send-email-linkinjeon@gmail.com>
-References: <1321026853-16388-1-git-send-email-linkinjeon@gmail.com>
-Date: Thu, 17 Nov 2011 14:22:52 +0530
-Message-ID: <CADDb1s3fNxeXOvGZOUUK5Vjr5TLRTLn8mHezA8tc0u_JX7+ErQ@mail.gmail.com>
-Subject: Re: [PATCH] fs : remove unneeded plug in mpage_readpages.
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] net/cadence: enable by default NET_ATMEL
+References: <1321385790-15056-1-git-send-email-plagnioj@jcrosoft.com>
+In-Reply-To: <1321385790-15056-1-git-send-email-plagnioj@jcrosoft.com>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any feedback for this patch?
+On 11/15/2011 08:36 PM, Jean-Christophe PLAGNIOL-VILLARD :
+> so the defconfig of the atmel continue to have the support of the network
+> as before
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Thanks & Regards,
-Amit Sahrawat
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-On Fri, Nov 11, 2011 at 9:24 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
-> block plug in mpage_readpages is duplicated with plug of read_pages. So block plug is not needed in mpage_readpages.
->
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
 > ---
->  fs/mpage.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/mpage.c b/fs/mpage.c
-> index fdfae9f..643e9f5 100644
-> --- a/fs/mpage.c
-> +++ b/fs/mpage.c
-> @@ -371,9 +371,6 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
->        sector_t last_block_in_bio = 0;
->        struct buffer_head map_bh;
->        unsigned long first_logical_block = 0;
-> -       struct blk_plug plug;
-> -
-> -       blk_start_plug(&plug);
->
->        map_bh.b_state = 0;
->        map_bh.b_size = 0;
-> @@ -395,7 +392,6 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
->        BUG_ON(!list_empty(pages));
->        if (bio)
->                mpage_bio_submit(READ, bio);
-> -       blk_finish_plug(&plug);
->        return 0;
->  }
->  EXPORT_SYMBOL(mpage_readpages);
-> --
-> 1.7.4.4
->
->
+> Hi David,
+> 
+> 	can we have this for the 3.2 so the atmel continue to work as before
+> 
+> Best Regards,
+> J.
+>  drivers/net/ethernet/cadence/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/cadence/Kconfig b/drivers/net/ethernet/cadence/Kconfig
+> index 98849a1..b48378a 100644
+> --- a/drivers/net/ethernet/cadence/Kconfig
+> +++ b/drivers/net/ethernet/cadence/Kconfig
+> @@ -7,6 +7,7 @@ config HAVE_NET_MACB
+>  
+>  config NET_ATMEL
+>  	bool "Atmel devices"
+> +	default y
+>  	depends on HAVE_NET_MACB || (ARM && ARCH_AT91RM9200)
+>  	---help---
+>  	  If you have a network (Ethernet) card belonging to this class, say Y.
+
+
+-- 
+Nicolas Ferre
