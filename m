@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab1KQCCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 21:02:40 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:11784 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab1KQCCi convert rfc822-to-8bit (ORCPT
+	id S1755182Ab1KQCPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 21:15:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64957 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab1KQCPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 21:02:38 -0500
-X-AuditID: cbfee61a-b7cf1ae00000208e-a6-4ec46b2e95e4
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: merez@codeaurora.org
-Cc: "'S, Venkatraman'" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        dh.han@samsung.com
-References: <620ec9ffa6bdbba9ae5f76998e36f8dc.squirrel@www.codeaurora.org>
- <001001cca043$395dbfc0$ac193f40$%jun@samsung.com>
- <CANfBPZ-Zn+R4GosEL-RJxh8gduAr8e+qN876uPwDkHfiEpdERw@mail.gmail.com>
- <ea21d88d904af165cb911354e3f51ea6.squirrel@www.codeaurora.org>
- <001e01cca2b2$3b449310$b1cdb930$%jun@samsung.com>
- <faba552e7bd19ee5399c73c2b478a34d.squirrel@www.codeaurora.org>
-In-reply-to: <faba552e7bd19ee5399c73c2b478a34d.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Thu, 17 Nov 2011 11:02:21 +0900
-Message-id: <004901cca4cc$f18d6180$d4a82480$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyjlNiFtpxGwqr2TuCHP9zTPKPZxQBNw+qw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 Nov 2011 21:15:48 -0500
+Date: Thu, 17 Nov 2011 10:15:38 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
+ memcg_check_events()
+Message-ID: <20111117021538.GB9281@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LFD.2.02.1111150050590.4902@ionos>
+ <20111115084059.GA23250@zhy>
+ <20111116091653.GA8692@zhy>
+ <1321452758.4181.18.camel@frodo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1321452758.4181.18.camel@frodo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maya Erez wrote:
-> >> >>> >> >> > +       if (rqc)
-> >> >>> >> >> > +               reqs = mmc_blk_chk_packable(mq, rqc);
-> >> >>>
-> >> >>> It would be best to keep all the calls to blk_fetch_request in the
-> >> same
-> >> >>> location. Therefore, I suggest to move the call to
-> >> mmc_blk_chk_packable
-> >> >>> to
-> >> >>> mmc/card/queue.c after the first request is fetched.
-> >> >>
-> >> >> At the first time, I considered that way.
-> >> >> I'll do more, if possible.
-> > I considered more.
-> > I think that mmc_blk_chk_packable would rather be called only for r/w type
-> > than all request type(e.g. discard, flush).
-> >
-> mmc_blk_chk_packable can check the cmd_flags of the request to verify it's
-> not a flush/disacrad etc. In such cases will not pack.
-Yes. It must be checked, but omitted.
-I already have added this check. It will be applied next.
+On Wed, Nov 16, 2011 at 09:12:38AM -0500, Steven Rostedt wrote:
+> On Wed, 2011-11-16 at 17:16 +0800, Yong Zhang wrote:
+> > Looking at commit 4799401f [memcg: Fix race condition in
+> > memcg_check_events() with this_cpu usage], we just want
+> > to disable migration. So use the right API in -rt. This
+> > will cure below warning.
+> > 
+> 
+> >  mm/memcontrol.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 6aff93c..afa1954 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -722,7 +722,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
+> >   */
+> >  static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+> >  {
+> > -	preempt_disable();
+> > +	migrate_disable();
+> 
+> No this won't work. Not even for -rt. If we disable migration but not
+> preemption, then two tasks can take this path. And the checks in
+> __memcg_event_check() will be corrupted because nothing is protecting
+> the updates from two tasks going into the same path.
+
+I assumed that we only care about migration, but obviously I'm wrong.
+
+> 
+> Perhaps a local_lock would work.
+
+Yeah, will try tglx's patch later.
 
 Thanks,
-Seungwon Jeon.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Yong
