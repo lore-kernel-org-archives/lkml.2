@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab1KQGhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 01:37:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54139 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab1KQGhw (ORCPT
+	id S1754098Ab1KQGkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 01:40:13 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:43892 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751347Ab1KQGkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 01:37:52 -0500
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH] spi-topcliff-pch: Fix count calculation issue
-Date: Thu, 17 Nov 2011 15:37:21 +0900
-Message-Id: <1321511841-12824-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 17 Nov 2011 01:40:12 -0500
+Date: Thu, 17 Nov 2011 12:10:02 +0530
+From: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+Subject: Re: [PATCH] dmaengine/ste_dma40: support pm in dma40
+Message-ID: <20111117064001.GA17619@bnru01>
+References: <1321425003-12062-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
+ <1321441623.1516.168.camel@vkoul-udesk3>
+ <20111117050443.GA6256@bnru01>
+ <1321507432.1516.176.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1321507432.1516.176.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, count value is not correct more than len=8193 like below.
+On Thu, Nov 17, 2011 at 06:23:52 +0100, Vinod Koul wrote:
+> runtime pm manages the device power management. It will call your
+> suspend/resume callbacks when your device is idle/active and manages the
+> device usage for you.
+> Within your device you need to do your own management, which should be
+> linked to channel being active. You should not club the two.
+> 
+> I am not sure if the clock framework can help you on this
 
-len	Current-cnt	New-cnt		Anticipated-cnt
-4095	1		1		1
-4096	1		1		1
-4097	2		2		2
+Instead of switching on and off eventlines very frequently, I'll
+do it in the runtime_suspend() and runtime_resume(), so that it
+looks more neat and can get away with these usage counters.
+I will re-work and submit a new version of this patch.
 
-8191	2		2		2
-8192	2		2		2
-8193	2(NG)		3		3
-
-12287	3		3		3
-12288	3		3		3
-12289	3(NG)		4		4
-
-This patch fixes the issue.
-
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
- drivers/spi/spi-topcliff-pch.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 9fb0541..08b5f31 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -1247,7 +1247,9 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 		}
- 		spin_unlock(&data->lock);
- 
--		cnt = data->cur_trans->len / (PCH_BUF_SIZE + 1) + 1;
-+		if (!data->cur_trans->len)
-+			goto out;
-+		cnt = (data->cur_trans->len - 1) / PCH_BUF_SIZE + 1;
- 		data->save_total_len = data->cur_trans->len;
- 		if (data->use_dma) {
- 			int i;
--- 
-1.7.4.4
-
+~Narayanan
