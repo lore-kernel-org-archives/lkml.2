@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1KQVe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:34:56 -0500
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:50683 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab1KQVey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:34:54 -0500
-Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
-In-Reply-To: <CAMuHMdW73Nf+bP2u6NRZFMW5c0-PnqYCDtEbZ+weGLs_mzZ1_g@mail.gmail.com>
-References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
-	 <1321182176.20271.43.camel@x61.thuisdomein>
-	 <CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
-	 <1321559636.20271.287.camel@x61.thuisdomein>
-	 <CAMuHMdW73Nf+bP2u6NRZFMW5c0-PnqYCDtEbZ+weGLs_mzZ1_g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 22:34:47 +0100
-Message-ID: <1321565687.20271.309.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752907Ab1KQVev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:34:51 -0500
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:54844 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752554Ab1KQVeu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 16:34:50 -0500
+X-AuditID: 12074423-b7f266d0000008b8-21-4ec57df987ea
+Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
+Date: Thu, 17 Nov 2011 16:34:52 -0500
+Cc: Theodore Tso <tytso@MIT.EDU>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A5A56693-9C4C-4957-AAA5-3D1BD8AA7DCE@mit.edu>
+References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com> <47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu> <alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com> <CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com> <CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com> <8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
+To: NamJae Jeon <linkinjeon@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsUixG6nrvuz9qifwcWNghbNqx8wWVy/e4vZ
+	Yua8O2wWl3fNYbNoW7KRyYHVY+esu+weCzaVenzeJBfAHMVlk5Kak1mWWqRvl8CV8XTlb6aC
+	l0wVfeuPsjYwTmXqYuTkkBAwkWh4/gzKFpO4cG89WxcjF4eQwD5GiUXL3rODJIQENjBK/H7N
+	C2GvYpLY32MBYgsLuEg8+vaaEcTmFTCWWHPrHQuIzSygJXHj30uwoWwCShJ3Pu0Hi3MKWEs0
+	vFnGCmKzCKhKnDl+hAVkGbPAXkaJo7uOMkE0a0ssW/iaGWKolcS6pkvMEBe9ZpJ42twANklE
+	QE1i35aJzBBny0u0fL3DNoFRcBaSQ2YhOWQWkrkLGJlXMcqm5Fbp5iZm5hSnJusWJyfm5aUW
+	6Zrp5WaW6KWmlG5iBIe5i/IOxj8HlQ4xCnAwKvHwTrY96ifEmlhWXJl7iFGSg0lJlLcRGCVC
+	fEn5KZUZicUZ8UWlOanFhxglOJiVRHhfeQDleFMSK6tSi/JhUtIcLErivDI7HfyEBNITS1Kz
+	U1MLUotgsjIcHEoSvH4gQwWLUtNTK9Iyc0oQ0kwcnCDDeYCGV2eDDC8uSMwtzkyHyJ9i1OV4
+	9GHTaUYhlrz8vFQpcd5EkEECIEUZpXlwc2Dp6RWjONBbwrzuIFU8wNQGN+kV0BImoCW5e46A
+	LClJREhJNTC2T/qoLbDAw8tXvG/KHY+v8xSe9Bh/6t5Zan+7znvb0c2fOcyCg1J8L+o8PnAs
+	6vAmc/H9+037Iyx4Co8tWfj9tdNS5VQ9NYusxscTEw9XfZz8bPa09EP/mZhSrH4a7Zt/51y/
+	t8jHxE1TnVekPDzD5lt1ccPRqAbnY5trXcTXdj8+t/bvt/dvlViKMxINtZiLihMBPN7zuioD
+	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 22:05 +0100, Geert Uytterhoeven wrote:
-> > Why do you care about SERIAL_CONSOLE? If it's only really used by
-> > AMIGA_BUILTIN_SERIAL why shouldn't we rename it to
-> > AMIGA_BUILTIN_SERIAL_CONSOLE?
+
+On Nov 17, 2011, at 10:11 AM, Theodore Tso wrote:
 > 
-> Because SERIAL_CONSOLE is a universal platform-independent symbol.
-> Other arches have it as well (but less than in the past).
-> 
-> As soon as m68k gets a new serial driver, it will be used by 2 drivers again.
+> So accessing non-local memory can be a really, really big deal.  And this
+> isn't just theoretical, but have you considered what might happen on a 8
+> core AMD machine?
 
-If one does
-    $ git grep -n  "\<\(CONFIG_\)\?SERIAL_CONSOLE\>" | grep -v defconfig
+Sorry, typo.  This should have read, "have you considered what might happen on a 8 _socket_ AMD machine"?
 
-one gets a few hits (summarized):
-- arch/m68k/Kconfig.devices: discussed here;
-- arch/sparc/Kconfig: apparently unused, and can be dropped;
-- arch/xtensa/Kconfig and arch/xtensa/platforms/iss/console.c: the only
-  other current usage (note that the "S6105" platform, mentioned in the
-  Kconfig file, seems not to use it);
-- drivers/staging/serial/68360serial.c: uses CONFIG_SERIAL_CONSOLE, but
-  I don't see how it can actually be set for that driver;
-- drivers/tty/amiserial.c: discussed here.
-
-I see nothing universal about it: two independent usages, one in
-*/iss/console.c and one in */amiserial.c. So I'd say these can be
-renamed to (say) ISS_SERIAL_CONSOLE and AMIGA_BUILTIN_SERIAL_CONSOLE.
-
-
-Paul Bolle
+-- Ted
 
