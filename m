@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1KSL3p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 06:29:45 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41066 "EHLO
+	id S1754648Ab1KSL3o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 06:29:44 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41061 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab1KSL3i (ORCPT
+	with ESMTP id S1753613Ab1KSL3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 06:29:38 -0500
-Subject: [PATCH] [SCSI] mpt2sas: Use kmemdup rather than duplicating its
+	Sat, 19 Nov 2011 06:29:37 -0500
+Subject: [PATCH] sparc: Use kmemdup rather than duplicating its
  implementation
 From: Thomas Meyer <thomas@m3y3r.de>
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+To: davem@davemloft.net, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Thu, 17 Nov 2011 23:43:40 +0100
-Message-ID: <1321569820.1624.291.camel@localhost.localdomain>
+Message-ID: <1321569820.1624.274.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -29,24 +29,39 @@ in scripts/coccinelle/api/memdup.cocci.
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c 2011-11-07 19:38:07.896921497 +0100
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c 2011-11-08 10:55:07.719539347 +0100
-@@ -7372,7 +7372,7 @@ mpt2sas_scsih_event_callback(struct MPT2
- 		return 1;
- 	}
- 	sz = le16_to_cpu(mpi_reply->EventDataLength) * 4;
--	fw_event->event_data = kzalloc(sz, GFP_ATOMIC);
-+	fw_event->event_data = kmemdup(mpi_reply->EventData, sz, GFP_ATOMIC);
- 	if (!fw_event->event_data) {
- 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
-@@ -7380,8 +7380,6 @@ mpt2sas_scsih_event_callback(struct MPT2
- 		return 1;
- 	}
+diff -u -p a/arch/sparc/kernel/ds.c b/arch/sparc/kernel/ds.c
+--- a/arch/sparc/kernel/ds.c 2011-11-07 19:37:36.613113011 +0100
++++ b/arch/sparc/kernel/ds.c 2011-11-08 11:00:49.874125928 +0100
+@@ -1181,13 +1181,11 @@ static int __devinit ds_probe(struct vio
  
--	memcpy(fw_event->event_data, mpi_reply->EventData,
--	    sz);
- 	fw_event->ioc = ioc;
- 	fw_event->VF_ID = mpi_reply->VF_ID;
- 	fw_event->VP_ID = mpi_reply->VP_ID;
+ 	dp->rcv_buf_len = 4096;
+ 
+-	dp->ds_states = kzalloc(sizeof(ds_states_template),
+-				GFP_KERNEL);
++	dp->ds_states = kmemdup(ds_states_template,
++				sizeof(ds_states_template), GFP_KERNEL);
+ 	if (!dp->ds_states)
+ 		goto out_free_rcv_buf;
+ 
+-	memcpy(dp->ds_states, ds_states_template,
+-	       sizeof(ds_states_template));
+ 	dp->num_ds_states = ARRAY_SIZE(ds_states_template);
+ 
+ 	for (i = 0; i < dp->num_ds_states; i++)
+diff -u -p a/arch/sparc/kernel/prom_common.c b/arch/sparc/kernel/prom_common.c
+--- a/arch/sparc/kernel/prom_common.c 2011-11-07 19:39:05.191125118 +0100
++++ b/arch/sparc/kernel/prom_common.c 2011-11-08 11:00:52.007487860 +0100
+@@ -58,12 +58,10 @@ int of_set_property(struct device_node *
+ 	void *new_val;
+ 	int err;
+ 
+-	new_val = kmalloc(len, GFP_KERNEL);
++	new_val = kmemdup(val, len, GFP_KERNEL);
+ 	if (!new_val)
+ 		return -ENOMEM;
+ 
+-	memcpy(new_val, val, len);
+-
+ 	err = -ENODEV;
+ 
+ 	mutex_lock(&of_set_property_mutex);
