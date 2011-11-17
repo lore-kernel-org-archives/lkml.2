@@ -1,45 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1KQUuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 15:50:40 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:48257 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab1KQUuj (ORCPT
+	id S1753498Ab1KQUu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 15:50:57 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:52394 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751907Ab1KQUu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 15:50:39 -0500
-Message-ID: <4EC5739D.9010008@intra2net.com>
-Date: Thu, 17 Nov 2011 21:50:37 +0100
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: AVR32 code: Mismatching comparison
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Nov 2011 15:50:56 -0500
+Date: Thu, 17 Nov 2011 15:50:53 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        rostedt <rostedt@goodmis.org>
+Subject: [RFC PATCH] Tracepoint: introduce tracepoint() API
+Message-ID: <20111117205053.GA26484@Krystal>
+References: <1321502104.3274.22.camel@edumazet-laptop> <1321543520.27735.67.camel@twins> <20111117155617.GA12665@Krystal>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20111117155617.GA12665@Krystal>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 15:41:08 up 589 days,  6:30,  4 users,  load average: 0.40, 0.18,
+	0.11
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Haavard,
+Introduce:
 
-consider this piece of code from
-arch/avr32/kernel/module.c:
+  tracepoint(event_name, arg1, arg2, ...)
 
-....
-case R_AVR32_GOT18SW:
-    if ((relocation & 0xfffe0003) != 0
-        && (relocation & 0xfffc0003) != 0xffff0000)
-        return reloc_overflow(module, "R_AVR32_GOT18SW",
-                    relocation);
-    relocation >>= 2;
-    /* fall through */
-...
+while keeping the old tracepoint API in place, e.g.:
 
-cppcheck reports for line 267:
-"Mismatching comparison, the result is always true"
+  trace_event_name(arg1, arg2, ...)
 
-This probably needs a fix.
+This allows skipping parameter side-effects (pointer dereference,
+function calls, ...) when the tracepoint is not dynamically activated.
 
-Cheers,
-Thomas
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index d530a44..c9c73f7 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -107,6 +107,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+ 
+ #ifdef CONFIG_TRACEPOINTS
+ 
++#define tracepoint(name, args...)					\
++	do {								\
++		if (static_branch(&__tracepoint_##name.key))		\
++			__trace_##name(args);				\
++	} while (0)
++
+ /*
+  * it_func[0] is never NULL because there is at least one element in the array
+  * when the array itself is non NULL.
+@@ -144,13 +150,17 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+  */
+ #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
+ 	extern struct tracepoint __tracepoint_##name;			\
++	static inline void __trace_##name(proto)			\
++	{								\
++		__DO_TRACE(&__tracepoint_##name,			\
++			TP_PROTO(data_proto),				\
++			TP_ARGS(data_args),				\
++			TP_CONDITION(cond));				\
++	}								\
+ 	static inline void trace_##name(proto)				\
+ 	{								\
+ 		if (static_branch(&__tracepoint_##name.key))		\
+-			__DO_TRACE(&__tracepoint_##name,		\
+-				TP_PROTO(data_proto),			\
+-				TP_ARGS(data_args),			\
+-				TP_CONDITION(cond));			\
++			__trace_##name(args);				\
+ 	}								\
+ 	static inline int						\
+ 	register_trace_##name(void (*probe)(data_proto), void *data)	\
+@@ -193,7 +203,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+ 	EXPORT_SYMBOL(__tracepoint_##name)
+ 
+ #else /* !CONFIG_TRACEPOINTS */
++
++#define tracepoint(name, args...)	__trace_##name(args)
++
+ #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
++	static inline void __trace_##name(proto)			\
++	{ }								\
+ 	static inline void trace_##name(proto)				\
+ 	{ }								\
+ 	static inline int						\
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
