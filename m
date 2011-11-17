@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab1KQORJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 09:17:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60609 "EHLO
+	id S1757682Ab1KQO2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 09:28:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48211 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab1KQORH (ORCPT
+	with ESMTP id S1757480Ab1KQO2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 09:17:07 -0500
+	Thu, 17 Nov 2011 09:28:34 -0500
 From: Zac Storer <zac.3.14159@gmail.com>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, Zac Storer <zac.3.14159@gmail.com>
-Subject: [PATCH] Kernel: time: fixed a brace coding style issue
-Date: Thu, 17 Nov 2011 07:16:50 -0700
-Message-Id: <1321539410-3982-1-git-send-email-zac.3.14159@gmail.com>
+To: tytso@mit.edu
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zac Storer <zac.3.14159@gmail.com>
+Subject: [PATCH 2/2] Fs: ext4: extents: fixed a brace coding style issue
+Date: Thu, 17 Nov 2011 07:28:26 -0700
+Message-Id: <1321540106-4321-1-git-send-email-zac.3.14159@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,22 +23,22 @@ Fixed a brace coding style issue.
 
 Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
 ---
- kernel/time.c |    2 +-
+ fs/ext4/extents.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/time.c b/kernel/time.c
-index 73e416d..7084be0 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -505,7 +505,7 @@ timespec_to_jiffies(const struct timespec *value)
- 	unsigned long sec = value->tv_sec;
- 	long nsec = value->tv_nsec + TICK_NSEC - 1;
- 
--	if (sec >= MAX_SEC_IN_JIFFIES){
-+	if (sec >= MAX_SEC_IN_JIFFIES) {
- 		sec = MAX_SEC_IN_JIFFIES;
- 		nsec = 0;
- 	}
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 61fa9e1..6544208 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4017,7 +4017,7 @@ got_allocated_blocks:
+ 	ext4_ext_store_pblock(&newex, newblock + offset);
+ 	newex.ee_len = cpu_to_le16(ar.len);
+ 	/* Mark uninitialized */
+-	if (flags & EXT4_GET_BLOCKS_UNINIT_EXT){
++	if (flags & EXT4_GET_BLOCKS_UNINIT_EXT) {
+ 		ext4_ext_mark_uninitialized(&newex);
+ 		/*
+ 		 * io_end structure was created for every IO write to an
 -- 
 1.7.7.3
 
