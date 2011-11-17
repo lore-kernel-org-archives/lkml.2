@@ -1,179 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab1KQInv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:43:51 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39838 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab1KQIns (ORCPT
+	id S1756055Ab1KQInn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:43:43 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49381 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab1KQInl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:43:48 -0500
-Date: Thu, 17 Nov 2011 00:43:38 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: Sunil Mushran <sunil.mushran@oracle.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Fasheh <mfasheh@suse.com>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia@diku.dk>,
-        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: Re: [Ocfs2-devel] [PATCH 1/2] fs/ocfs2/dlm: Eliminate update of
- list_for_each_entry loop cursor
-Message-ID: <20111117084338.GB7319@noexit.corp.google.com>
-Mail-Followup-To: Sunil Mushran <sunil.mushran@oracle.com>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	Mark Fasheh <mfasheh@suse.com>, kernel-janitors@vger.kernel.org,
-	Julia Lawall <julia@diku.dk>, linux-kernel@vger.kernel.org,
-	ocfs2-devel@oss.oracle.com
-References: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
- <20100812000355.GA7195@mail.oracle.com>
- <20111102073928.GA23750@mwanda>
- <4EB1784C.4090903@oracle.com>
+	Thu, 17 Nov 2011 03:43:41 -0500
+Message-ID: <4EC4C939.9080401@evidence.eu.com>
+Date: Thu, 17 Nov 2011 09:43:37 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB1784C.4090903@oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] /fs/proc/meminfo.c: fix compilation error
+References: <4EB2C0DF.9050301@evidence.eu.com> <alpine.DEB.2.00.1111162105400.13603@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1111162105400.13603@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 10:05:16AM -0700, Sunil Mushran wrote:
-> I think it got lost in the shuffle. We had decided to use the list_for_each().
-> The code is simpler to understand than the other proposed fix.
+Il 17/11/2011 06:06, David Rientjes ha scritto:
+> On Thu, 3 Nov 2011, Claudio Scordino wrote:
 > 
-> Joel, do you want me to send a patch?
-
-Please do.
-
+>> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+>> index 5861741..80e4645 100644
+>> --- a/fs/proc/meminfo.c
+>> +++ b/fs/proc/meminfo.c
+>> @@ -131,12 +131,13 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>>   		K(i.freeswap),
+>>   		K(global_page_state(NR_FILE_DIRTY)),
+>>   		K(global_page_state(NR_WRITEBACK)),
+>> -		K(global_page_state(NR_ANON_PAGES)
+>>   #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>> +		K(global_page_state(NR_ANON_PAGES)
+>>   		  + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>> -		  HPAGE_PMD_NR
+>> +		  HPAGE_PMD_NR),
+>> +#else
+>> +		K(global_page_state(NR_ANON_PAGES)),
+>>   #endif
+>> -		  ),
+>>   		K(global_page_state(NR_FILE_MAPPED)),
+>>   		K(global_page_state(NR_SHMEM)),
+>>   		K(global_page_state(NR_SLAB_RECLAIMABLE) +
 > 
-> On 11/02/2011 12:39 AM, Dan Carpenter wrote:
-> > What ever happened with this?  The bug is still there in the latest
-> > kernel.
-> >
-> > I think from previous discussion about this that we only ever have
-> > one lock so lock->ml.cookie is always equal to ml->cookie and we
-> > never set lock to NULL.  So we never actually hit the NULL deref.
-> > But it should probably still be cleaned up.
-> >
-> > regards,
-> > dan carpenter
-> >
-> > On Wed, Aug 11, 2010 at 05:03:56PM -0700, Joel Becker wrote:
-> >> On Sat, Aug 07, 2010 at 11:09:13AM +0200, Julia Lawall wrote:
-> >>> From: Julia Lawall<julia@diku.dk>
-> >>>
-> >>> list_for_each_entry uses its first argument to move from one element to the
-> >>> next, so modifying it can break the iteration.
-> >> 	Thanks for catching the bug.  It was introduced by 800deef3
-> >> [ocfs2: use list_for_each_entry where benefical].  I blame Christoph.
-> >>
-> >>> diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
-> >>> index 9dfaac7..7084a11 100644
-> >>> --- a/fs/ocfs2/dlm/dlmrecovery.c
-> >>> +++ b/fs/ocfs2/dlm/dlmrecovery.c
-> >>> @@ -1792,10 +1792,10 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
-> >>>   			for (j = DLM_GRANTED_LIST; j<= DLM_BLOCKED_LIST; j++) {
-> >>>   				tmpq = dlm_list_idx_to_ptr(res, j);
-> >>>   				list_for_each_entry(lock, tmpq, list) {
-> >>> -					if (lock->ml.cookie != ml->cookie)
-> >>> +					if (lock->ml.cookie != ml->cookie) {
-> >>>   						lock = NULL;
-> >>> -					else
-> >>>   						break;
-> >>> +					}
-> >>>   				}
-> >>>   				if (lock)
-> >>>   					break;
-> >> 	However, this is not the correct solution.  The goal of the
-> >> original code, which used to use list_for_each(), was to leave lock
-> >> non-NULL if the cookie was found.  Your version merely exits the loop on
-> >> the first non-matching entry, always leaving lock==NULL if there is a
-> >> non-matching entry.
-> >> 	One possible solution is to return the original code:
-> >>
-> >> --8<-----------------------------------------------------------------
-> >> @@ -1747,7 +1747,7 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
-> >>   				     struct dlm_migratable_lockres *mres)
-> >>   {
-> >>   	struct dlm_migratable_lock *ml;
-> >> -	struct list_head *queue;
-> >> +	struct list_head *queue, *iter;
-> >>   	struct list_head *tmpq = NULL;
-> >>   	struct dlm_lock *newlock = NULL;
-> >>   	struct dlm_lockstatus *lksb = NULL;
-> >> @@ -1791,11 +1791,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
-> >>   			spin_lock(&res->spinlock);
-> >>   			for (j = DLM_GRANTED_LIST; j<= DLM_BLOCKED_LIST; j++) {
-> >>   				tmpq = dlm_list_idx_to_ptr(res, j);
-> >> -				list_for_each_entry(lock, tmpq, list) {
-> >> -					if (lock->ml.cookie != ml->cookie)
-> >> -						lock = NULL;
-> >> -					else
-> >> +				list_for_each(iter, tmpq) {
-> >> +					lock = list_entry(iter, struct dlm_lock, list);
-> >> +
-> >> +					if (lock->ml.cookie == ml->cookie)
-> >>   						break;
-> >> +					lock = NULL;
-> >>   				}
-> >>   				if (lock)
-> >>   					break;
-> >> -->8-----------------------------------------------------------------
-> >>
-> >> 	Another approach would be to keep list_for_each_entry() around,
-> >> but use a better check for entry existence:
-> >>
-> >> --8<-----------------------------------------------------------------
-> >> @@ -1792,13 +1792,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
-> >>   			for (j = DLM_GRANTED_LIST; j<= DLM_BLOCKED_LIST; j++) {
-> >>   				tmpq = dlm_list_idx_to_ptr(res, j);
-> >>   				list_for_each_entry(lock, tmpq, list) {
-> >> -					if (lock->ml.cookie != ml->cookie)
-> >> -						lock = NULL;
-> >> -					else
-> >> +					if (lock->ml.cookie == ml->cookie)
-> >>   						break;
-> >>   				}
-> >> -				if (lock)
-> >> +				if (&lock->list != tmpq)
-> >>   					break;
-> >> +				lock = NULL;
-> >>   			}
-> >>
-> >>   			/* lock is always created locally first, and
-> >> -->8-----------------------------------------------------------------
-> >>
-> >> 	I think I like the second one better.  Sunil, what do you think?
-> >>
-> >> Joel
-> >>
-> >> -- 
-> >>
-> >> Life's Little Instruction Book #335
-> >>
-> >> 	"Every so often, push your luck."
-> >>
-> >> Joel Becker
-> >> Consulting Software Developer
-> >> Oracle
-> >> E-mail: joel.becker@oracle.com
-> >> Phone: (650) 506-8127
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> _______________________________________________
-> Ocfs2-devel mailing list
-> Ocfs2-devel@oss.oracle.com
-> http://oss.oracle.com/mailman/listinfo/ocfs2-devel
+> Looks like this needs to be fixed for the per-node sysfs meminfo files as
+> well?  See node_read_meminfo() in drivers/base/node.c.
 
--- 
+Hi David,
 
-Life's Little Instruction Book #43
+	that file cannot be compiled for the cris architecture
+(therefore, with the compiler that gave me the error) because
+CONFIG_NUMA cannot be defined for the cris architecture.
 
-	"Never give up on somebody.  Miracles happen every day."
+However, I forced make to build also that file, and actually I got the
+same error (i.e., "directives may not be used inside a macro argument").
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+Since Andrew already took the patch for the meminfo.c file, I'm going to
+send a further patch for this specific file.
+
+Let me know if instead you prefer to have a single patch for both files.
+
+Best regards,
+
+	Claudio
