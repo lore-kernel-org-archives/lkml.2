@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab1KQQGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 11:06:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40161 "EHLO mail.zytor.com"
+	id S932478Ab1KQQHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 11:07:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab1KQQGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 11:06:47 -0500
-Message-ID: <4EC53105.4050301@zytor.com>
-Date: Thu, 17 Nov 2011 08:06:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754415Ab1KQQHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 11:07:33 -0500
+Date: Thu, 17 Nov 2011 17:02:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
+	given pids
+Message-ID: <20111117160249.GA14002@redhat.com>
+References: <4EC4F2FB.408@parallels.com> <20111117154936.GB12325@redhat.com> <4EC52FBF.1010407@parallels.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 3/5] x86: add a sysctl parameter to panic on stack
- overflow
-References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp> <20111107055301.7928.91628.stgit@ltc219.sdl.hitachi.co.jp> <20111110195538.GB22646@phenom.dumpdata.com> <4EC4B38B.2010301@hitachi.com> <20111117160021.GC6008@phenom.dumpdata.com>
-In-Reply-To: <20111117160021.GC6008@phenom.dumpdata.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC52FBF.1010407@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 08:00 AM, Konrad Rzeszutek Wilk wrote:
->>
->> I don't mind if I add __read_mostly here, but I think it's not
->> necessary because this variable is seldom read as well.
-> 
-> The definition of __read_mostly is that it moves this variable to a cold cache area.
-> Which is what you want.
-> 
+On 11/17, Pavel Emelyanov wrote:
+>
+> On 11/17/2011 07:49 PM, Oleg Nesterov wrote:
+> >
+> > But. Speaking of API, it differs a bit compared to the previous version...
+> >
+> >> The API will be used like in the code below
+> >>
+> >> 	/* restore new pid namespace with an init in it */
+> >> 	pid = clone(CLONE_NEWPID);
+> >
+> > Yes, CLONE_NEWPID | CLONE_CHILD_USEPIDS is not possible.
+>
+> It should be.
 
-Not really.  __read_mostly moves a variable to an area that is expected
-to spent most its time in the cache-shared state and rarely be
-invalidated.  It does NOT mean that it is cold.
+Yes, I was wrong, sorry. I misread the ->child_reaper == NULL in 3/3.
 
-	-hpa
+We simply ignore child_tidptr[0] in this case. This should work.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Oleg.
 
