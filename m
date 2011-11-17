@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab1KQPgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 10:36:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757648Ab1KQPgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 10:36:49 -0500
-Date: Thu, 17 Nov 2011 16:32:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
-	pids
-Message-ID: <20111117153200.GA12325@redhat.com>
-References: <4EC4F2FB.408@parallels.com> <4EC4F348.6020101@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC4F348.6020101@parallels.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932306Ab1KQPii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 10:38:38 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:39927 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932198Ab1KQPih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 10:38:37 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+seWgw1oSsYWOix7fW0lu2kyHHyhyhnq12IPub5F
+	WqjJX/PzoOufJ1
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Mike Galbraith <efault@gmx.de>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+In-Reply-To: <1321495153.5100.7.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 16:38:33 +0100
+Message-ID: <1321544313.6308.25.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17, Pavel Emelyanov wrote:
->
-> +static int set_pidmap(struct pid_namespace *pid_ns, int pid)
-> +{
-> +	int offset;
-> +	struct pidmap *map;
-> +
-> +	/*
-> +	 * When creating a new pid namespace we must make its init
-> +	 * have pid == 1 in it.
-> +	 */
-> +	if (pid_ns->child_reaper == NULL)
-> +		return 0;
+On Thu, 2011-11-17 at 02:59 +0100, Mike Galbraith wrote:
+> On Wed, 2011-11-16 at 10:37 -0800, Suresh Siddha wrote:
 
-Do we really need this check? please see below...
+> > It should be ok. Isn't it?
+> 
+> Nope, wasn't ok.
 
-> +	/*
-> +	 * Don't allow to create a task with a pid which has recently
-> +	 * belonged to some other (dead already) task. Only init (of
-> +	 * a freshly created namespace) and his clones can do this.
-> +	 */
-> +	if (pid_ns->last_pid != 1)
-> +		return -EPERM;
+Because you can't get to again: with a single E5620 package, it having
+only SIBLING and MC domains.
+ 
+again:
+        for_each_domain(target, sd) {
+                if (!smt && (sd->flags & SD_SHARE_CPUPOWER))
+                        continue;
 
-->last_pid == 1. This means that pid_nr == 1 was already created
-in this namespace via CLONE_NEWPID, and the child with this pid
-must be ->child_reaper, no?
-
-IOW. if copy_process() allocs the first pid in the new pid_ns, it
-always sets ->child_reaper.
-
-
-Cough. I really think 45a68628 should be reverted ;) IMHO it
-complicates the understanding of CLONE_NEWPID logic.
-
-Oleg.
+                if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
+                        if (!smt) {
+                                smt = 1;
+                                goto again;
 
