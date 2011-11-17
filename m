@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab1KQCgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 21:36:05 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:52707 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755281Ab1KQCgD (ORCPT
+	id S1755437Ab1KQCjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 21:39:25 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:62195 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab1KQCjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 21:36:03 -0500
-Message-ID: <4EC472A1.6000407@xenotime.net>
-Date: Wed, 16 Nov 2011 18:34:09 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux RDMA <linux-rdma@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>
-Subject: Re: linux-next: Tree for Nov 16 (infiniband: ib_srpt.c)
-References: <20111116133342.3eb15cac16f4c081dc6ed009@canb.auug.org.au>
-In-Reply-To: <20111116133342.3eb15cac16f4c081dc6ed009@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 16 Nov 2011 21:39:24 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>, Richard Jones <rick.jones2@hp.com>,
+        Ayaz Abdulla <AAbdulla@nvidia.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v6 3/9] kbuild: document RPS/XPS network Kconfig options
+Date: Wed, 16 Nov 2011 18:39:05 -0800
+Message-Id: <e0bb736123d687a921f15e4bb0254eeeabe22dcb.1321496595.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1321496595.git.david.decotigny@google.com>
+References: <cover.1321496595.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2011 06:33 PM, Stephen Rothwell wrote:
-> Hi all,
+This adds a description of RPS/XPS options and allow them to be
+changed at make menuconfig time.
+
+It also fixes following checkpatch syntax warnings:
+ERROR: trailing whitespace
++^I  $
+
+ERROR: trailing whitespace
++^I$
 
 
-When CONFIG_BUG is not enabled:
 
-next-2011-1116/drivers/infiniband/ulp/srpt/ib_srpt.c: In function 'srpt_cm_dreq_recv':
-next-2011-1116/drivers/infiniband/ulp/srpt/ib_srpt.c:2761:3: error: implicit declaration of function '__WARN'
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ net/Kconfig |   21 ++++++++++++++++-----
+ 1 files changed, 16 insertions(+), 5 deletions(-)
 
-
-jbd2 has a similar issue (still unpatched).  One of the comments in that thread
-was that ext4 probably should use WARN_ON() instead of __WARN().
-
-Or (Arnd said):
-Hmm, my feeling is that we shouldn't do that either, and that jbd2 should
-be changed. If we want a function that does what __WARN() does today, we
-should probably make a conscious decision about what we want it to be called
-and not have it start with "__". <end Arnd>
-
-
+diff --git a/net/Kconfig b/net/Kconfig
+index a073148..991379e 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -10,7 +10,7 @@ menuconfig NET
+ 	  The reason is that some programs need kernel networking support even
+ 	  when running on a stand-alone machine that isn't connected to any
+ 	  other computer.
+-	  
++
+ 	  If you are upgrading from an older kernel, you
+ 	  should consider updating your networking tools too because changes
+ 	  in the kernel and the tools often go hand in hand. The tools are
+@@ -217,20 +217,32 @@ source "net/dns_resolver/Kconfig"
+ source "net/batman-adv/Kconfig"
+ 
+ config RPS
+-	boolean
++	boolean "Enable Receive Packet Steering"
+ 	depends on SMP && SYSFS && USE_GENERIC_SMP_HELPERS
+ 	default y
++	help
++	  RPS distributes the load of received packet processing
++	  across multiple CPUs. If unsure, say Y.
+ 
+ config RFS_ACCEL
+-	boolean
++	boolean "Enable Hardware Acceleration of RFS"
+ 	depends on RPS && GENERIC_HARDIRQS
+ 	select CPU_RMAP
+ 	default y
++	help
++	  Allow drivers for multiqueue hardware with flow filter
++	  tables to accelerate RFS. If unsure, say Y.
+ 
+ config XPS
+-	boolean
++	boolean "Enable Transmit Packet Steering"
+ 	depends on SMP && SYSFS && USE_GENERIC_SMP_HELPERS
+ 	default y
++	help
++	  For multiqueue devices, XPS selects a transmit queue during
++	  packet transmission based on configuration. This is done by
++	  mapping the CPU transmitting the packet to a queue. XPS can
++	  reduce transmit network latency on SMP systems. If unsure,
++	  say Y.
+ 
+ config HAVE_BPF_JIT
+ 	bool
+@@ -274,7 +286,6 @@ config NET_TCPPROBE
+ 
+ 	Documentation on how to use TCP connection probing can be found
+ 	at:
+-	
+ 	  http://www.linuxfoundation.org/collaborate/workgroups/networking/tcpprobe
+ 
+ 	To compile this code as a module, choose M here: the
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.3.1
+
