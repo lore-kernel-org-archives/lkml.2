@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab1KQNsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 08:48:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56258 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757428Ab1KQNsQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 08:48:16 -0500
+	id S1757611Ab1KQNsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 08:48:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757594Ab1KQNsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 08:48:30 -0500
+Date: Thu, 17 Nov 2011 15:47:19 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu,
+        Jason Baron <jbaron@redhat.com>, rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
 Subject: Re: [PATCH RFC] remove jump_label optimization for perf sched events
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, Jason Baron <jbaron@redhat.com>,
-        rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 17 Nov 2011 14:47:48 +0100
-In-Reply-To: <4EC50B02.1060307@redhat.com>
+Message-ID: <20111117134719.GE16853@redhat.com>
 References: <20111117123029.GB16853@redhat.com>
-	  <1321534159.27735.33.camel@twins> <20111117130032.GC16853@redhat.com>
-	 <1321535413.27735.35.camel@twins> <4EC50B02.1060307@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321537668.27735.38.camel@twins>
-Mime-Version: 1.0
+ <1321534159.27735.33.camel@twins>
+ <20111117132939.GB2215@x1.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111117132939.GB2215@x1.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 15:24 +0200, Avi Kivity wrote:
-> On 11/17/2011 03:10 PM, Peter Zijlstra wrote:
-> > On Thu, 2011-11-17 at 15:00 +0200, Gleb Natapov wrote:
-> >
-> > > > That said, I'd much rather throttle this particular jump label than
-> > > > remove it altogether, some people really don't like all this scheduler
-> > > > hot path crap.
-> > > What about moving perf_event_task_sched() to sched_(in|out)_preempt_notifiers?
-> > > preempt notifiers checking is already on the scheduler hot path, so no
-> > > additional overhead for perf case.
-> >
-> > Same problem really, some people complain about the overhead of preempt
-> > notifiers, also not all kernels have those in. 
+On Thu, Nov 17, 2011 at 02:29:39PM +0100, Borislav Petkov wrote:
+> On Thu, Nov 17, 2011 at 01:49:19PM +0100, Peter Zijlstra wrote:
+> > Ideally we'd fix text_poke to not use stop_machine() we know how to,
+> > but we haven't had the green light from Intel/AMD yet.
 > 
-> We could combine the two, sort-circuit preempt notifiers with jump
-> labels if empty && not much activity on them.
-
-Jump-labels are still more efficient, also I don't much like preempt
-notifiers.
-
-> > Futhermore I loathe notifier lists because they obscure wtf is done.
+> We talked about it briefly with hpa and tglx at KS. AFAICR, there's a
+> patchset in the works...
 > 
-> That's life in a general purpose kernel, if everyone gets their hook in
-> to keep their code clean, the scheduler will bloat.
+I am eager to test it. If someone has something testable send it my way :)
 
-Uhm, no. The bloat isn't different, the only difference is you can
-actually see it. So I very much prefer direct hooks.
-
-> An advantage of preempt notifiers is that you can make the perf code
-> modular.
-
-Yeah, and you know I loathe modules even more.
+--
+			Gleb.
