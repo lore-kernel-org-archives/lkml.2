@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab1KQVAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:00:41 -0500
-Received: from home.keithp.com ([63.227.221.253]:43641 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab1KQVAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:00:40 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Alex Davis <alex14641@yahoo.com>, Kamal Mostafa <kamal@canonical.com>,
-        mjg@redhat.com
-Subject: Re: [PATCH] drm/i915: Fix inconsistent backlight level during disabled
-In-Reply-To: <s5hboscpexg.wl%tiwai@suse.de>
-References: <s5hboscpexg.wl%tiwai@suse.de>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 17 Nov 2011 13:00:35 -0800
-Message-ID: <yund3cqcvm4.fsf@aiko.keithp.com>
+	id S1751892Ab1KQVFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:05:44 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54069 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1KQVFm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 16:05:42 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+In-Reply-To: <1321559636.20271.287.camel@x61.thuisdomein>
+References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
+	<1321182176.20271.43.camel@x61.thuisdomein>
+	<CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
+	<1321559636.20271.287.camel@x61.thuisdomein>
+Date: Thu, 17 Nov 2011 22:05:41 +0100
+X-Google-Sender-Auth: AEzZP7A0j7-yLBGifjggHG23WqI
+Message-ID: <CAMuHMdW73Nf+bP2u6NRZFMW5c0-PnqYCDtEbZ+weGLs_mzZ1_g@mail.gmail.com>
+Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 17, 2011 at 20:53, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > But please keep SERIAL_CONSOLE.
+>
+> Why do you care about SERIAL_CONSOLE? If it's only really used by
+> AMIGA_BUILTIN_SERIAL why shouldn't we rename it to
+> AMIGA_BUILTIN_SERIAL_CONSOLE?
 
-On Wed, 16 Nov 2011 10:58:03 +0100, Takashi Iwai <tiwai@suse.de> wrote:
+Because SERIAL_CONSOLE is a universal platform-independent symbol.
+Other arches have it as well (but less than in the past).
 
-> When the brightness property is inquired while the backlight is disabled,
-> the driver returns a wrong value (zero) because it probes the value after
-> the backlight was turned off.  This caused a black screen even after the
-> backlight is enabled again.  It should return the internal backlight_level
-> instead, so that it won't be influenced by the backlight-enable state.
+As soon as m68k gets a new serial driver, it will be used by 2 drivers again.
 
-Yes, this looks correct by inspection to me. I'll stick it into
-drm-intel-fixes.
+Gr{oetje,eeting}s,
 
-=2D-=20
-keith.packard@intel.com
+                        Geert
 
---=-=-=
-Content-Type: application/pgp-signature
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTsV18zYtFsjWk68qAQh1NQ//b3ismcOe+N0TO/bgpa+XwFXnGxrMvbGh
-ps65xMaMoyQwTT84cn+lr065Bp9rGTzVStnpT0wXHEcRCyPmDJ4cHXiOcFTvt8bF
-JBMgn9ffi9f/3P5MW162J1NfcFGWhYtEL0KFvDrAzr8VtrrTH9suGhqXJF2ciYjA
-X0liAXlJQCX2cArwh0nH15PkCKQIh1iNwfBGKAbyUPf3pqdko0Qr39I7lwiCmcLe
-wuChDY8ueioMP7aCrwKAyDvEgbTTlMCKd6/RSRdylzO4A3BlEvHxTMwFmh0i1810
-mTE96cQZyQuCPQDtpwaghgRb2ARCYtrnnhs5i5LYj7CZr6Oeo/UUzKz7jQrwmoOT
-zJdjqt5i9b+E2Q48JtCjfgeg4AKbtyp4wSiD7hrMlAmngAh52Yl8d81y+kwpPpaf
-fc4hL4f6u6kqwNlAyU0iDWv3I4lXfHyzqC4S87+0e2/sS2nGtB1pmbKy+qym2xt8
-fplDVm63zNwbp0AHV1wHE/m5VVEv89HOPcWbfBDIPuPwqicoiMJ4HzkbNWqsci99
-HRiEM3PeNifK7BJxV5Jr8IZ643ZdXaAgWyyxWlk3RDUPzki3Au0Dw0TocVrLYjvH
-/vRh/310BzoxCfewuMuFHMmJ+EeNRbY5ivtpJrjixob/oGcou+yc5zoRHiyyueAd
-iILGMuQNNDA=
-=vinB
------END PGP SIGNATURE-----
---=-=-=--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
