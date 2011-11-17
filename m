@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab1KQJbM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 04:31:12 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45567 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756258Ab1KQJbK (ORCPT
+	id S1756216Ab1KQJhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:37:15 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:43519 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755461Ab1KQJhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 04:31:10 -0500
-Date: Thu, 17 Nov 2011 10:31:02 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Denis Kuzmenko <linux@solonet.org.ua>, Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: add flags to export GPIOs when requesting
-Message-ID: <20111117093102.GB2535@pengutronix.de>
-References: <1321397074-6526-1-git-send-email-w.sang@pengutronix.de>
- <4EC2F035.3060705@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740805F1A@HQMAIL01.nvidia.com>
- <4EC371FE.5010402@solonet.org.ua>
- <20111116091027.GB2596@pengutronix.de>
- <CACRpkdYEbn3JwvGNfi_Xm86yf=8x4BFqkNkoppTT=452NC=UMw@mail.gmail.com>
+	Thu, 17 Nov 2011 04:37:13 -0500
+Message-ID: <4EC4D5BE.2030906@Calva.COM>
+Date: Thu, 17 Nov 2011 10:37:02 +0100
+From: John Hughes <john@Calva.COM>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uQr8t48UFsdbeI+V"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYEbn3JwvGNfi_Xm86yf=8x4BFqkNkoppTT=452NC=UMw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Jeff Layton <jlayton@redhat.com>
+CC: Trond Myklebust <trond.myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
+ mount expires
+References: <4EC3FD8B.6000705@calvaedi.com> <20111116144718.78b2e288@corrin.poochiereds.net>
+In-Reply-To: <20111116144718.78b2e288@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16/11/11 20:47, Jeff Layton wrote:
+> On Wed, 16 Nov 2011 19:14:35 +0100
+> John Hughes<john@calvaedi.com>  wrote:
+>
+>> With recent kernels if the Kerberos ticket for a nfs4 mount expires any
+>> user process trying to access the mount hangs until a new ticket is
+>> obtained.  Simultaneously a (luckily rate-limited, but still seemingly
+>> endless) stream of "Error: state manager encountered RPCSEC_GSS session
+>> expired against NFSv4 server" messages is written to the kernel log.
+[...]
+>> This patch restores the old behavior, which makes nfs4 mounted home
+>> directories usable for me.
+>>
+> Uhhh, no...EKEYEXPIRED was never passed to userland. The patchset that
+> added EKEYEXPIRED returns in this codepath also added the code to make
+> it hang.
 
---uQr8t48UFsdbeI+V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You are, of course, right.  userland used to get EPERM.
 
+> This not a bug, or at least it's intentional behavior. When a krb5
+> ticket expires, we *want* the process to hang. Otherwise, people with
+> long running jobs will often find that their jobs error out
+> inexplicably when their ticket expires.
+I thought that was what kstart/krenew were for.
+> The patches that introduced this behavior went into 2.6.34. See the
+> commits around 2c64348 (and some preceding ones in the rpc layer).
 
-> I'm taking care of prepping GPIO patches for the -rc series for some
-> two weeks. I think this patch is for-next so I won't be merging it
-> anyplace. Grant wanted new and reviewed stuff as pull
-> requests when he gets back.
+Ah, I'm a Debian user - 2.6.32 for the moment, soon to be 3.?
 
-So anyone got tags to donate? I can set up my own branch then...
+> If you want to fix this use case, you'll need to come up with a scheme
+> that doesn't regress this behavior. I think that you'll really need to
+> ensure that whatever process you expect to re-fetch your TGT is not
+> dependent on accessing kerberized nfs mounts. That really seems like an
+> untenable chicken and egg situation.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Ow.  "Fixing" (at least) Gnome-3 and Gnome-2 screen-lock/screensavers.
 
---uQr8t48UFsdbeI+V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+How about a mount option to chose between the two behaviours?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk7E1FYACgkQD27XaX1/VRuW/ACaAneOKUNmfElIdynFJy93xOQw
-aokAoKfjb154BMRBoQJp0VtAA9XpG/VR
-=M8VI
------END PGP SIGNATURE-----
-
---uQr8t48UFsdbeI+V--
