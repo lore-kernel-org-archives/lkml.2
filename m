@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab1KQM32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 07:29:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58279 "EHLO mx1.redhat.com"
+	id S1757298Ab1KQMaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 07:30:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757094Ab1KQM30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 07:29:26 -0500
-Date: Thu, 17 Nov 2011 17:59:20 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        levinsasha928@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 11/11] virtio: balloon: Add freeze, restore handlers
- to support S4
-Message-ID: <20111117122920.GB2873@amit-x200.redhat.com>
-References: <cover.1321530505.git.amit.shah@redhat.com>
- <1147d4f726e51f2e03a84f3732d60ccd0d8e480c.1321530505.git.amit.shah@redhat.com>
- <20111117122508.GB19682@redhat.com>
+	id S1756975Ab1KQMay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 07:30:54 -0500
+Date: Thu, 17 Nov 2011 14:30:29 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: [PATCH RFC] remove jump_label optimization for perf sched events
+Message-ID: <20111117123029.GB16853@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111117122508.GB19682@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) 17 Nov 2011 [14:25:08], Michael S. Tsirkin wrote:
-> On Thu, Nov 17, 2011 at 05:27:42PM +0530, Amit Shah wrote:
-> > Delete the vqs on the freeze callback to prepare for hibernation.
-> > Re-create the vqs in the restore callback to resume normal function.
-> > 
-> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > ---
-> >  drivers/virtio/virtio_balloon.c |   20 ++++++++++++++++++++
-> >  1 files changed, 20 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> > index 1ff3cf4..90149d1 100644
-> > --- a/drivers/virtio/virtio_balloon.c
-> > +++ b/drivers/virtio/virtio_balloon.c
-> > @@ -363,6 +363,22 @@ static void __devexit virtballoon_remove(struct virtio_device *vdev)
-> >  	kfree(vb);
-> >  }
-> >  
-> > +#ifdef CONFIG_PM
-> > +static int virtballoon_freeze(struct virtio_device *vdev)
-> > +{
-> > +	/* Now we reset the device so we can clean up the queues. */
-> > +	vdev->config->reset(vdev);
-> > +
-> 
-> This is a weird thing to do. We normally delete vqs then reset.
+jump_lable patching is very expensive operation that involves pausing all
+cpus. The patching of perf_sched_events jump_label is easily controllable
+from userspace by unprivileged user. When user runs loop like this
+"while true; do perf stat -e cycles true; done" the performance of my
+test application that just increments a counter for one second drops by
+4%. This is on a 16 cpu box with my test application using only one of
+them. An impact on a real server doing real work will be much worse.
+Performance of KVM PMU drops nearly 50% due to jump_lable for "perf
+record" since KVM PMU implementation creates and destroys perf event
+frequently.
 
-No, all the drivers first reset, then delete.
-
-> For example, I don't know whether we guarantee what happens
-> to MSI-X vectors assigned meanwhile if you reset.
-> IIRC qemu doesn't use MSI-X for the balloon, but nothing
-> prevents it.
-> 
-> > +	vdev->config->del_vqs(vdev);
-> 
-> What prevents requests being submitted at this point?
-> I see all kind of handling of freezing in the balloon thread ...
-> maybe that gives us some guarantees, but if yes
-> it makes sense to add a comment to point this out.
-
-Once reset, the host won't write anything to the vqs anyway..
-
-		Amit
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1e9ebe5..afac189 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1062,12 +1063,12 @@ perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
+ 	}
+ }
+ 
+-extern struct jump_label_key perf_sched_events;
++extern atomic_t perf_sched_events;
+ 
+ static inline void perf_event_task_sched_in(struct task_struct *prev,
+ 					    struct task_struct *task)
+ {
+-	if (static_branch(&perf_sched_events))
++	if (atomic_read(&perf_sched_events))
+ 		__perf_event_task_sched_in(prev, task);
+ }
+ 
+@@ -1076,7 +1077,7 @@ static inline void perf_event_task_sched_out(struct task_struct *prev,
+ {
+ 	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, NULL, 0);
+ 
+-	if (static_branch(&perf_sched_events))
++	if (atomic_read(&perf_sched_events))
+ 		__perf_event_task_sched_out(prev, next);
+ }
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index bdcd413..8033600 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -128,7 +128,7 @@ enum event_type_t {
+  * perf_sched_events : >0 events exist
+  * perf_cgroup_events: >0 per-cpu cgroup events exist on this cpu
+  */
+-struct jump_label_key perf_sched_events __read_mostly;
++atomic_t perf_sched_events;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+@@ -2943,7 +2963,7 @@ static void free_event(struct perf_event *event)
+ 
+ 	if (!event->parent) {
+ 		if (event->attach_state & PERF_ATTACH_TASK)
+-			jump_label_dec(&perf_sched_events);
++			atomic_dec(&perf_sched_events);
+ 		if (event->attr.mmap || event->attr.mmap_data)
+ 			atomic_dec(&nr_mmap_events);
+ 		if (event->attr.comm)
+@@ -2954,7 +2974,7 @@ static void free_event(struct perf_event *event)
+ 			put_callchain_buffers();
+ 		if (is_cgroup_event(event)) {
+ 			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
+-			jump_label_dec(&perf_sched_events);
++			atomic_dec(&perf_sched_events);
+ 		}
+ 	}
+ 
+@@ -5897,7 +5917,7 @@ done:
+ 
+ 	if (!event->parent) {
+ 		if (event->attach_state & PERF_ATTACH_TASK)
+-			jump_label_inc(&perf_sched_events);
++			atomic_inc(&perf_sched_events);
+ 		if (event->attr.mmap || event->attr.mmap_data)
+ 			atomic_inc(&nr_mmap_events);
+ 		if (event->attr.comm)
+@@ -6133,7 +6153,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		 * - that may need work on context switch
+ 		 */
+ 		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
+-		jump_label_inc(&perf_sched_events);
++		atomic_inc(&perf_sched_events);
+ 	}
+ 
+ 	/*
+--
+			Gleb.
