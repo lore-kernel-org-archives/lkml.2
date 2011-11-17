@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab1KQXwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 18:52:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44843 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab1KQXwb (ORCPT
+	id S1754703Ab1KQXy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 18:54:28 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58503 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab1KQXy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 18:52:31 -0500
-Message-ID: <4EC59E3C.5070204@gmail.com>
-Date: Thu, 17 Nov 2011 15:52:28 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Daney <ddaney.cavm@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Robin Holt <holt@sgi.com>
-Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and HPAGE_SIZE
-References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com> <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com> <20111117153526.f90ee248.akpm@linux-foundation.org> <alpine.DEB.2.00.1111171538540.13555@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1111171538540.13555@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 17 Nov 2011 18:54:27 -0500
+Message-ID: <1321574019.25715.52.camel@work-vm>
+Subject: Re: CPU hyperthreading turned on after soft power-cycle
+From: John Stultz <john.stultz@linaro.org>
+To: Jiri Polach <clarinet@atlas.cz>
+Cc: 647095@bugs.debian.org, Jonathan Nieder <jrnieder@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Date: Thu, 17 Nov 2011 15:53:39 -0800
+In-Reply-To: <4EC59BCE.6050902@atlas.cz>
+References: <20111030110543.5872.61279.reportbug@supermicro.uochb.cas.cz>
+	 <1319988329.6759.88.camel@deadeye> <4EAE9D3A.7000108@atlas.cz>
+	 <4EB92181.5030500@seznam.cz> <20111110015212.GB2399@elie.gateway.2wire.net>
+	 <4EBD2825.6050806@atlas.cz> <4EC43DF7.4010902@atlas.cz>
+	 <1321561946.25715.16.camel@work-vm> <4EC59BCE.6050902@atlas.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11111723-7282-0000-0000-000003E4627B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 03:44 PM, David Rientjes wrote:
-> On Thu, 17 Nov 2011, Andrew Morton wrote:
->
->>> So, just remove the dummy and dangerous definitions since they are no
->>> longer needed and reveals the correct dependencies.  Tested on
->>> architectures using the definitions with allyesconfig: x86 (even with
->>> thp), hppa, mips, powerpc, s390, sh3, sh4, sparc, and sparc64, and
->>> with defconfig on ia64.
->>
->> How could arch/mips/mm/tlb-r4k.c:local_flush_tlb_range() compile OK
->> with this change?
->>
->
-> This was tested on Linus' tree, not on Ralf's linux-next tree.  All uses
-> of HPAGE_* are protected by CONFIG_HUGETLB_PAGE as it appropriately should
-> be in Linus' tree in that file.
->
->> What that function is doing looks reasonable to me.  Why fill the poor
->> thing with an ifdef mess?
->>
->> otoh, catching mistakes is good too.  Doing it at runtime as David
->> proposes is OK.
->>
->
-> Nobody else needs it other than Ralf's pending change, and you're
-> suggesting we need them in a generic header file when any sane arch that
-> uses hugepages (all of them, in the current tree) declares these
-> themselves in arch/*/include/asm/page.h where it's supposed to be done?
->
-> Why on earth do we have CONFIG_HUGETLB_PAGE for at all, then?  To catch
-> code that's operating on hugepages when our kernel doesn't support it.
-> I'd much rather break the build than get a runtime BUG() because we want
-> to avoid an #ifdef or actually write well-written code like every other
-> arch has!  Panicking the code to find errors like this is just insanity.
->
+On Fri, 2011-11-18 at 00:42 +0100, Jiri Polach wrote:
+> On 11/17/2011 9:32 PM, John Stultz wrote:
+> > On Wed, 2011-11-16 at 23:49 +0100, Clarinet wrote:
+> >> Hi all,
+> >>
+> >>>> Result of bisecting: v2.6.38-rc1 exhibits the problem. v2.6.37 and
+> >>>> many of the topic branches merged in the 2.6.38 merge window work ok.
+> >>>> Some other topic branches do not boot at all.
+> >>>>
+> >>>> Jiri: if you have gitk installed, then "git bisect visualize" can help
+> >>>> get a sense of what's in the middle of the regression range.
+> >>>> "gitk --bisect --first-parent v2.6.37..v2.6.38-rc1" might be a good way
+> >>>> to find mainline commits to test before finding a topic branch to delve
+> >>>> into.
+> >>>
+> >>> I have been able to narrow the interval manually a little bit from the
+> >>> "top" (the bad side) and I will go on from the bottom now. However,
+> >>> there seems to be a large area where kernels are unbootable for me -
+> >>> they mostly stop when init is called and I do not know why.
+> >>
+> >> Finally! After another 50+ compilations a have it! It took some time as
+> >> first I had to find a reason why some revisions did not boot (almost 2/3
+> >> were unbootable and the first bad commit was among them). Having this
+> >> solved I have been able to bisect without "skipping". The result is
+> >> surprising (at least for me) - believe it or not, the first bad commit
+> >> is 6610e089 "RTC: Rework RTC code to use timerqueue for events" from
+> >> John Stultz (I am sending him a copy of this message).
+> >>
+> >> I would never expect this would be a problem, but my understanding of
+> >> this commit is very limited, so I am certainly missing the point.
+> >> However, I have tried to compile 2.6.38 (which was "bad") with "Real
+> >> Time Clock" configuration option turned off and it behaves "normally"
+> >> then (= is "good").
+> >
+> > Huh. That's *very* odd.  Is your system doing anything in-particular
+> > with the RTC?  I don't have a clue right off, so probably the next step
+> 
+> Yes, it is very odd. The system does not do anything special with RTC. 
+> It is a diskless computational workstation.
+> 
+> > is doing a bit of instrumentation to try to figure out where exactly we
+> > trigger the behavior. Could you checkout commit 6610e089 and apply the
+> > patch below to see if we can't narrow it down?
+> 
+> With the patch applied the system does not show the strange behavior (= 
+> is "good").
+> 
+> > Could you also send your .config to me?
+> 
+> Sure. It is attached. I have found that if I turn CONFIG_RTC_DRV_CMOS 
+> off, the system behaves normally (= is "good") too.
 
-A counter argument would be:
+Yea. My rough guess is that the BIOS is somehow sensitive to how the
+CMOS RTC is touched.
 
-There are hundreds of places in the kernel where dummy definitions are 
-selected by !CONFIG_* so that we can do:
+Does disabling CONFIG_HPET_EMULATE_RTC change the behavior?
 
-    if (test_something()) {
-       do_one_thing();
-    } else {
-       do_the_other_thing();
-    }
-
-
-Rather than:
-
-#ifdef CONFIG_SOMETHING
-    if (test_something()) {
-       do_one_thing();
-    } else
-#else
-    {
-       do_the_other_thing();
-    }
+thanks
+-john
 
 
 
-We even do this all over the place with dummy definitions selected by 
-CONFIG_HUGETLB_PAGE, What exactly makes HPAGE_MASK special and not the 
-hundreds of other similar situations?
-
-David Daney
 
