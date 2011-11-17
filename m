@@ -1,167 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab1KQLhD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:37:03 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62358 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756581Ab1KQLhA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:37:00 -0500
-Subject: [PATCH][RESEND] usb : gadget : usbstring : fix style problems
-From: Tonylijo <mail@tonylijo.in>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 16:29:04 +0530
-Message-ID: <1321527544.2367.29.camel@debian1.ic>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756822Ab1KQLl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:41:58 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:29934 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756760Ab1KQLl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 06:41:57 -0500
+Message-ID: <4EC4F2FB.408@parallels.com>
+Date: Thu, 17 Nov 2011 15:41:47 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given
+ pids
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor fixes for problems found by checkpatch.pl in usbstring.c.
-
-checkpatch.pl -f --terse drivers/usb/gadget/usbstring.c
-
-drivers/usb/gadget/usbstring.c:35: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:36: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:46: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:47: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:67: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:68: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:69: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:70: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:71: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:88: ERROR: trailing whitespace
-drivers/usb/gadget/usbstring.c:105: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:112: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:113: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:114: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:115: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:127: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:127: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:128: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:132: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:133: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:134: ERROR: space prohibited before open square bracket '['
-total: 17 errors, 4 warnings, 136 lines checked
-
-Signed-off-by: Tonylijo Jose <mail@tonylijo.in>
----
-
-diff --git a/drivers/usb/gadget/usbstring.c b/drivers/usb/gadget/usbstring.c
-index 58c4d37..7ba2a58 100644
---- a/drivers/usb/gadget/usbstring.c
-+++ b/drivers/usb/gadget/usbstring.c
-@@ -26,14 +26,17 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
- 	u8	c;
- 	u16	uchar;
- 
--	/* this insists on correct encodings, though not minimal ones.
-+	/*
-+	 * this insists on correct encodings, though not minimal ones.
- 	 * BUT it currently rejects legit 4-byte UTF-8 code points,
- 	 * which need surrogate pairs.  (Unicode 3.1 can use them.)
- 	 */
- 	while (len != 0 && (c = (u8) *s++) != 0) {
- 		if (unlikely(c & 0x80)) {
--			// 2-byte sequence:
--			// 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
-+			/*
-+			 * 2-byte sequence:
-+			 * 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
-+			 */
- 			if ((c & 0xe0) == 0xc0) {
- 				uchar = (c & 0x1f) << 6;
- 
-@@ -43,8 +46,10 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
- 				c &= 0x3f;
- 				uchar |= c;
- 
--			// 3-byte sequence (most CJKV characters):
--			// zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
-+			/*
-+			 * 3-byte sequence (most CJKV characters):
-+			 * zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
-+			 */
- 			} else if ((c & 0xf0) == 0xe0) {
- 				uchar = (c & 0x0f) << 12;
- 
-@@ -64,12 +69,13 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
- 				if (0xd800 <= uchar && uchar <= 0xdfff)
- 					goto fail;
- 
--			// 4-byte sequence (surrogate pairs, currently rare):
--			// 11101110wwwwzzzzyy + 110111yyyyxxxxxx
--			//     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
--			// (uuuuu = wwww + 1)
--			// FIXME accept the surrogate code points (only)
--
-+			/*
-+			 * 4-byte sequence (surrogate pairs, currently rare):
-+			 * 11101110wwwwzzzzyy + 110111yyyyxxxxxx
-+			 *     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
-+			 * (uuuuu = wwww + 1)
-+			 * FIXME accept the surrogate code points (only)
-+			 */
- 			} else
- 				goto fail;
- 		} else
-@@ -84,8 +90,8 @@ fail:
- }
- 
- 
--/**
-- * usb_gadget_get_string - fill out a string descriptor 
-+/*
-+ * usb_gadget_get_string - fill out a string descriptor
-  * @table: of c strings encoded using UTF-8
-  * @id: string id, from low byte of wValue in get string descriptor
-  * @buf: at least 256 bytes
-@@ -102,17 +108,17 @@ fail:
-  * characters (which are also widely used in C strings).
-  */
- int
--usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
-+usb_gadget_get_string(struct usb_gadget_strings *table, int id, u8 *buf)
- {
- 	struct usb_string	*s;
- 	int			len;
- 
- 	/* descriptor 0 has the language id */
- 	if (id == 0) {
--		buf [0] = 4;
--		buf [1] = USB_DT_STRING;
--		buf [2] = (u8) table->language;
--		buf [3] = (u8) (table->language >> 8);
-+		buf[0] = 4;
-+		buf[1] = USB_DT_STRING;
-+		buf[2] = (u8) table->language;
-+		buf[3] = (u8) (table->language >> 8);
- 		return 4;
- 	}
- 	for (s = table->strings; s && s->s; s++)
-@@ -124,13 +130,13 @@ usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
- 		return -EINVAL;
- 
- 	/* string descriptors have length, tag, then UTF16-LE text */
--	len = min ((size_t) 126, strlen (s->s));
--	memset (buf + 2, 0, 2 * len);	/* zero all the bytes */
-+	len = min((size_t) 126, strlen(s->s));
-+	memset(buf + 2, 0, 2 * len);	/* zero all the bytes */
- 	len = utf8_to_utf16le(s->s, (__le16 *)&buf[2], len);
- 	if (len < 0)
- 		return -EINVAL;
--	buf [0] = (len + 1) * 2;
--	buf [1] = USB_DT_STRING;
--	return buf [0];
-+	buf[0] = (len + 1) * 2;
-+	buf[1] = USB_DT_STRING;
-+	return buf[0];
- }
- 
+Gentlemen, please, find some time for this, your ACK/NACK on the API proposal
+is required badly.
 
 
+There's currently a work in progress with checkpoint-restore functionality
+in the userspace. Most of the API for doing this kernel already provides, but
+sometimes it's not enough. One of the required things is the ability to
+create a process with its pids (in different pid namespaces) set to some
+given values, rather than generated. Currently kernel doesn't allow for this,
+so an API extension is required.
+
+The proposal is to introduce the CLONE_CHILD_USEPIDS flag for clone() syscall
+and pass the pids values in the child_tidptr. In order not to introduce the
+hole for the pid-reuse attack, using this flag will result in EPERM in case
+the pid namespace we're trying to create pid in has at least one pid (except
+for the init's one) generated with regular fork()/clone().
+
+Currently Tejun and Oleg are worrying only about the intrusiveness of this
+approach, although Oleg agrees, that it solves all the problems it should. The
+previous attempts to implement the similar stuff stopped, but no objections
+against this were expressed. So the decision of whether it's OK to go this
+way or not is required.
+
+
+The API will be used like in the code below
+
+	/* restore new pid namespace with an init in it */
+	pid = clone(CLONE_NEWPID);
+	if (pid)
+		return 0;
+
+	/*
+	 * init of a new pid namespace.
+	 * recreate the process tree
+	 */
+
+restore_children:
+	while (1) {
+		pid = next_pid_from_image();
+		if (!pid)
+			/* no more children */
+			break;
+
+		pid = clone(CLONE_CHILD_USEPIDS, &pid);
+		if (pid == 0)
+			goto restore_children;
+	}
+
+	/*
+	 * the process tree is recreated, can proceed with restoring
+	 * other stuff
+	 */
+
+
+Thanks,
+Pavel
