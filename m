@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab1KQRPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 12:15:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63443 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346Ab1KQRPd (ORCPT
+	id S1756801Ab1KQRRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 12:17:17 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14506 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab1KQRRQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 12:15:33 -0500
-Message-ID: <4EC54132.5070908@gmail.com>
-Date: Thu, 17 Nov 2011 11:15:30 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Thu, 17 Nov 2011 12:17:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 17 Nov 2011 09:17:12 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Thu, 17 Nov 2011 09:17:11 -0800
+Subject: RE: [PATCH v2] pinctrl: indicate GPIO direction on single GPIO
+ request
+Thread-Topic: [PATCH v2] pinctrl: indicate GPIO direction on single GPIO
+ request
+Thread-Index: AcylL1YVe90bPW6QRniHIM6GxSKbJwAHSbFg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74BC4@HQMAIL01.nvidia.com>
+References: <1321537582-8624-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1321537582-8624-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Marc Dietrich <marvin24@gmx.de>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com> <4EC52BCF.7020609@gmail.com> <20111117155428.GS19069@tbergstrom-lnx.Nvidia.com> <CACxGe6ub2QBO0ZLwNdSvMxP1U087pqL-qL+dfWAbn-08gBQyvg@mail.gmail.com>
-In-Reply-To: <CACxGe6ub2QBO0ZLwNdSvMxP1U087pqL-qL+dfWAbn-08gBQyvg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 10:53 AM, Grant Likely wrote:
-> 
-> On Nov 17, 2011 8:54 AM, "Peter De Schrijver" <pdeschrijver@nvidia.com
-> <mailto:pdeschrijver@nvidia.com>> wrote:
->>
->> On Thu, Nov 17, 2011 at 04:44:15PM +0100, Rob Herring wrote:
->> > On 11/17/2011 09:07 AM, Peter De Schrijver wrote:
->> > > Convert tegra20 IRQ intialization to the GIC devicetree binding.
-> Modify the
->> > > interrupt definitions in the dts files according to
->> > > Documentation/devicetree/bindings/arm/gic.txt
->> > >
->> > > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com
-> <mailto:pdeschrijver@nvidia.com>>
->> >
->> > One minor comment below, but otherwise:
->> >
->> > Acked-by: Rob Herring <rob.herring@calxeda.com
-> <mailto:rob.herring@calxeda.com>>
->> >
->> > > ---
->> > >  arch/arm/boot/dts/tegra-paz00.dts |    2 +-
->> > >  arch/arm/boot/dts/tegra20.dtsi    |   52
-> ++++++++++++++++++------------------
->> > >  arch/arm/mach-tegra/irq.c         |   18 +++++++++++-
->> > >  3 files changed, 43 insertions(+), 29 deletions(-)
->> > >
->> > > diff --git a/arch/arm/boot/dts/tegra-paz00.dts
-> b/arch/arm/boot/dts/tegra-paz00.dts
->> > > index 15a949f..7ff8f6f 100644
->> > > --- a/arch/arm/boot/dts/tegra-paz00.dts
->> > > +++ b/arch/arm/boot/dts/tegra-paz00.dts
->> > > @@ -32,7 +32,7 @@
->> > >             #size-cells = <0>;
->> > >             compatible = "nvidia,nvec";
->> > >             reg = <0x7000C500 0x100>;
->> > > -           interrupts = <124>;
->> > > +           interrupts = <0 92 0x04>;
->> > >             clock-frequency = <80000>;
->> > >             request-gpios = <&gpio 170 0>;
->> > >             slave-addr = <138>;
->> > > diff --git a/arch/arm/boot/dts/tegra20.dtsi
-> b/arch/arm/boot/dts/tegra20.dtsi
->> > > index 795b921..cd01b01 100644
->> > > --- a/arch/arm/boot/dts/tegra20.dtsi
->> > > +++ b/arch/arm/boot/dts/tegra20.dtsi
->> > > @@ -5,9 +5,9 @@
->> > >     interrupt-parent = <&intc>;
->> > >
->> > >     intc: interrupt-controller@50041000 {
->> > > -           compatible = "nvidia,tegra20-gic";
->> > > +           compatible = "arm,cortex-a9-gic";
->> > >             interrupt-controller;
->> >
->> > You should add an "interrupt-parent;" here so the gic's parent is null
->> > and not the gic.
->>
->> Ok. I will add that in the next version.
-> 
-> No, there is no need to do that, nor is it convention. The gic node
-> doesn't have an interrupts property, so the interrupt-parent is irrelevant.
-> 
-Can't resist the inbox? Go back to your sabbatical.. :) We discussed
-this before and I though agreed this was the correct approach.
+Linus Walleij wrote at Thursday, November 17, 2011 6:46 AM:
+> When requesting a single GPIO pin to be muxed in, some controllers
+> will need to poke a different value into the control register
+> depending on whether the pin will be used for GPIO output or GPIO
+> input. So pass this info along for the gpio_request_enable()
+> function, we assume this is not needed for the gpio_free_disable()
+> function for the time being.
 
-It inherits the interrupt-parent from the parent node. Originally
-of_irq_find_parent would return that node, but this was fixed. So it
-doesn't really matter from a functional standpoint.
+My most recent comments in the thread following the previous patch re:
+the need to expand the set of required pinctrl GPIO-related functions
+apply to this patch.
 
-So is no interrupt parent defined as no interrupts property or
-interrupt-parent being null phandle?
+-- 
+nvpublic
 
-> Rob, perhaps we should adjust of_init_irq() to only set the parent
-> pointer if interrupts is present.
-> 
-
-It works correctly already either way.
-
-Rob
