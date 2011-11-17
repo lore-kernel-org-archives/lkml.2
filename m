@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab1KQFev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 00:34:51 -0500
+	id S1755680Ab1KQFfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 00:35:07 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:41674 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1KQFeu (ORCPT
+	with ESMTP id S1755397Ab1KQFfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 00:34:50 -0500
+	Thu, 17 Nov 2011 00:35:05 -0500
 From: tom.leiming@gmail.com
 To: mingo@elte.hu, a.p.zijlstra@chello.nl
 Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH 1/2] init/main.c: execute lockdep_init as early as possible
-Date: Thu, 17 Nov 2011 13:34:31 +0800
-Message-Id: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+Subject: [PATCH 2/2] lockdep: print lock name for lockdep_init_error
+Date: Thu, 17 Nov 2011 13:34:32 +0800
+Message-Id: <1321508072-23853-2-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+References: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ming Lei <tom.leiming@gmail.com>
 
-This patch removes the lockdep warning[1] on ARM platform.
-The warning is caused by printk inside smp_setup_processor_id.
+This patch prints the name of the lock which is acquired
+before lockdep_init is called, so that user can easily find
+which lock trigged the lockdep init error warning.
 
-It is safe to do this because lockdep_init doesn't depend on
-smp_setup_processor_id, so make printk can be called as early
-as possible without lockdep complainment.
-
-[1], lockdep warning
-[    0.000000] WARNING: lockdep init error! Arch code didn't call
-lockdep_init() early enough?
-[    0.000000] Call stack leading to lockdep invocation was:
-[    0.000000]  [<c00164bc>] save_stack_trace_tsk+0x0/0x90
-[    0.000000]  [<ffffffff>] 0xffffffff
+This patch also removes the lockdep_init_error message
+of "Arch code didn't call lockdep_init() early enough?" since
+lockdep_init is called in arch independent code now.
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- init/main.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ kernel/lockdep.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index 217ed23..2c76efb 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -469,13 +469,12 @@ asmlinkage void __init start_kernel(void)
- 	char * command_line;
- 	extern const struct kernel_param __start___param[], __stop___param[];
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 4e7e672..8141317 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -430,6 +430,7 @@ unsigned int max_lockdep_depth;
+  * about it later on, in lockdep_info().
+  */
+ static int lockdep_init_error;
++static const char *lock_init_error;
+ static unsigned long lockdep_init_trace_data[20];
+ static struct stack_trace lockdep_init_trace = {
+ 	.max_entries = ARRAY_SIZE(lockdep_init_trace_data),
+@@ -651,6 +652,7 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
+ 	if (unlikely(!lockdep_initialized)) {
+ 		lockdep_init();
+ 		lockdep_init_error = 1;
++		lock_init_error = lock->name;
+ 		save_stack_trace(&lockdep_init_trace);
+ 	}
+ #endif
+@@ -3965,7 +3967,8 @@ void __init lockdep_info(void)
  
--	smp_setup_processor_id();
--
- 	/*
- 	 * Need to run as early as possible, to initialize the
- 	 * lockdep hash:
- 	 */
- 	lockdep_init();
-+	smp_setup_processor_id();
- 	debug_objects_early_init();
- 
- 	/*
+ #ifdef CONFIG_DEBUG_LOCKDEP
+ 	if (lockdep_init_error) {
+-		printk("WARNING: lockdep init error! Arch code didn't call lockdep_init() early enough?\n");
++		printk("WARNING: lockdep init error! lock-%s was acquired"
++			"before lockdep_init\n", lock_init_error);
+ 		printk("Call stack leading to lockdep invocation was:\n");
+ 		print_stack_trace(&lockdep_init_trace, 0);
+ 	}
 -- 
 1.7.5.4
 
