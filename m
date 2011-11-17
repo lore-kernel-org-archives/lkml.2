@@ -1,47 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab1KQLGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 06:06:34 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:44326 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189Ab1KQLGd (ORCPT
+	id S932066Ab1KQLP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 06:15:58 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58355 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753225Ab1KQLP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 06:06:33 -0500
-Message-ID: <4EC4EA91.5070607@Calva.COM>
-Date: Thu, 17 Nov 2011 12:05:53 +0100
-From: John Hughes <john@Calva.COM>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	Thu, 17 Nov 2011 06:15:57 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <baruch@tkos.co.il>, <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
+        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
+Subject: [PATCH] GPIO/pl061: Add suspend resume capability
+Date: Thu, 17 Nov 2011 16:45:35 +0530
+Message-ID: <6c6957c60969ac5df8bfe59a2502a4077284d2e1.1321528179.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Jim Rees <rees@umich.edu>, Trond Myklebust <trond.myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
- mount expires
-References: <4EC3FD8B.6000705@calvaedi.com>	<20111116144718.78b2e288@corrin.poochiereds.net>	<20111116234434.GA12882@umich.edu>	<20111116203119.1d9c0dd6@corrin.poochiereds.net> <20111116203810.4e1b9d28@corrin.poochiereds.net>
-In-Reply-To: <20111116203810.4e1b9d28@corrin.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/11/11 02:38, Jeff Layton wrote:
-> Note too that the gssd code distinguishes between an expired TGT and a
-> non-existent credcache. The latter will give you the error you desire
-> here. So one possibility is just to remove the credcache from /tmp in
-> this situation.
+From: Deepak Sikri <deepak.sikri@st.com>
 
-Something to scan /tmp for expired credentials and zap em?  rpc.gssd 
-would communicate that to the kernel?
+This patch adds the suspend and resume operations in the driver. The patch
+ensures the data save and restore for the device registers during the
+suspend and resume operations respectively.
 
-Whadaya know, that works.
+Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+---
+ drivers/gpio/gpio-pl061.c |   73 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 73 insertions(+), 0 deletions(-)
 
-With the 3.1-rc10 kernel I let my ticket expire, did a ls - it hangs.
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index 093c90b..d64dc1c 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -23,6 +23,7 @@
+ #include <linux/amba/bus.h>
+ #include <linux/amba/pl061.h>
+ #include <linux/slab.h>
++#include <linux/pm.h>
+ 
+ #define GPIODIR 0x400
+ #define GPIOIS  0x404
+@@ -35,6 +36,17 @@
+ 
+ #define PL061_GPIO_NR	8
+ 
++#ifdef CONFIG_PM
++struct gpio_context_save_regs {
++	u8 gpio_data;
++	u8 gpio_dir;
++	u8 gpio_is;
++	u8 gpio_ibe;
++	u8 gpio_iev;
++	u8 gpio_ie;
++};
++#endif
++
+ struct pl061_gpio {
+ 	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
+ 	 * interrupts controller of the system. We need this to support systems
+@@ -54,6 +66,10 @@ struct pl061_gpio {
+ 	void __iomem		*base;
+ 	unsigned		irq_base;
+ 	struct gpio_chip	gc;
++
++#ifdef CONFIG_PM
++	struct gpio_context_save_regs	csave_regs;
++#endif
+ };
+ 
+ static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
+@@ -330,6 +346,8 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
+ 		irq_set_chip_data(i + chip->irq_base, chip);
+ 	}
+ 
++	amba_set_drvdata(dev, chip);
++
+ 	return 0;
+ 
+ iounmap:
+@@ -342,6 +360,60 @@ free_mem:
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_PM
++static int pl061_suspend(struct device *dev)
++{
++	struct pl061_gpio *chip = dev_get_drvdata(dev);
++	int offset;
++
++	chip->csave_regs.gpio_data = 0;
++	chip->csave_regs.gpio_dir = readb(chip->base + GPIODIR);
++	chip->csave_regs.gpio_is = readb(chip->base + GPIOIS);
++	chip->csave_regs.gpio_ibe = readb(chip->base + GPIOIBE);
++	chip->csave_regs.gpio_iev = readb(chip->base + GPIOIEV);
++	chip->csave_regs.gpio_ie = readb(chip->base + GPIOIE);
++
++	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
++		if (chip->csave_regs.gpio_dir & (1 << offset))
++			chip->csave_regs.gpio_data |=
++				pl061_get_value(&chip->gc, offset) << offset;
++	}
++
++	return 0;
++}
++
++static int pl061_resume(struct device *dev)
++{
++	struct pl061_gpio *chip = dev_get_drvdata(dev);
++	int offset;
++
++	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
++		if (chip->csave_regs.gpio_dir & (1 << offset))
++			pl061_direction_output(&chip->gc, offset,
++					chip->csave_regs.gpio_data &
++					(1 << offset));
++		else
++			pl061_direction_input(&chip->gc, offset);
++	}
++
++	writeb(chip->csave_regs.gpio_is, chip->base + GPIOIS);
++	writeb(chip->csave_regs.gpio_ibe, chip->base + GPIOIBE);
++	writeb(chip->csave_regs.gpio_iev, chip->base + GPIOIEV);
++	writeb(chip->csave_regs.gpio_ie, chip->base + GPIOIE);
++
++	return 0;
++}
++
++static const struct dev_pm_ops pl061_dev_pm_ops = {
++	.suspend = pl061_suspend,
++	.resume = pl061_resume,
++};
++
++#define PL061_DEV_PM_OPS (&pl061_dev_pm_ops)
++#else
++#define PL061_DEV_PM_OPS NULL
++#endif
++
+ static struct amba_id pl061_ids[] = {
+ 	{
+ 		.id	= 0x00041061,
+@@ -353,6 +425,7 @@ static struct amba_id pl061_ids[] = {
+ static struct amba_driver pl061_gpio_driver = {
+ 	.drv = {
+ 		.name	= "pl061_gpio",
++		.pm	= PL061_DEV_PM_OPS,
+ 	},
+ 	.id_table	= pl061_ids,
+ 	.probe		= pl061_probe,
+-- 
+1.7.2.2
 
-Now, from another terminal I do a kdestroy on my ticket cache, and (a 
-second or so later) the ls gets an EPERM.
-
-So this behaviour can be changed from userland with no changes to the 
-kernel, rpc.gssd or anything else.
-
-Some fun racing possibilities.
