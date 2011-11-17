@@ -1,184 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab1KQEv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 23:51:29 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:49929 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520Ab1KQEv2 (ORCPT
+	id S1755741Ab1KQE4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 23:56:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58078 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754687Ab1KQE4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 23:51:28 -0500
-Date: Thu, 17 Nov 2011 04:52:30 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Matt Helsley <matthltc@us.ibm.com>, richard@nod.at,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        oleg@redhat.com, dhowells@redhat.com, ebiederm@xmission.com
-Subject: user namespace: make signal.c respect user namespaces (v5)
-Message-ID: <20111117045230.GA26345@hallyn.com>
+	Wed, 16 Nov 2011 23:56:07 -0500
+Date: Wed, 16 Nov 2011 20:56:03 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: David Daney <ddaney.cavm@gmail.com>
+cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] hugetlb: Provide a default HPAGE_SHIFT if
+ !CONFIG_HUGETLB_PAGE
+In-Reply-To: <4EC45CAE.1000704@gmail.com>
+Message-ID: <alpine.DEB.2.00.1111162047170.13603@chino.kir.corp.google.com>
+References: <1321472611-13283-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111161327180.16596@chino.kir.corp.google.com> <4EC43488.3070400@gmail.com> <alpine.DEB.2.00.1111161512371.16596@chino.kir.corp.google.com> <4EC44AD0.5070800@gmail.com>
+ <alpine.DEB.2.00.1111161552450.25089@chino.kir.corp.google.com> <4EC45CAE.1000704@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ipc/mqueue.c: for __SI_MESQ, convert the uid being sent to recipient's
-user namespace. (new, thanks Oleg)
+On Wed, 16 Nov 2011, David Daney wrote:
 
-__send_signal: convert current's uid to the recipient's user namespace
-for any siginfo which is not SI_FROMKERNEL (patch from Oleg, thanks
-again :)
+> > > It is a well established kernel idiom to supply dummy values for symbols
+> > > that
+> > > are required to be defined in order to form a syntactically correct C
+> > > program,
+> > > but that are known by the programmer to be used only on dead code paths.
+> > > 
+> > > This is exactly what we are doing here.
+> > > 
+> > > To do otherwise requires that code be cluttered with #ifdefery.
+> > > 
+> > 
+> > You're wrong,
+> 
+> Ok, then please tell me why:
+> 
+> 1) the dummy version of is_vm_hugetlb_page() exists in hugetlb_inline.h?
+> 2) the dummy version of PageHuge() exists in hugetlb.h
+> 3) the dummy version of reset_vma_resv_huge_pages()
+> 4) the dummy version of hugetlb_total_pages() exists in hugetlb.h
+> 5) the dummy version of follow_hugetlb_page() exists in hugetlb.h
+> 6) the dummy version of follow_huge_addr() exists in hugetlb.h
+> 7) the dummy version of copy_hugetlb_page_range() exists in hugetlb.h
+> 8) the dummy version of hugetlb_prefault() exists in hugetlb.h
+> 9) the dummy version of unmap_hugepage_range() exists in hugetlb.h
+> 10) the dummy version of hugetlb_report_meminfo() exists in hugetlb.h
+> 11) the dummy version of hugetlb_report_node_meminfo() exists in hugetlb.h
+> 12) the dummy version of follow_huge_pmd() exists in hugetlb.h
+> 13) the dummy version of follow_huge_pud() exists in hugetlb.h
+> 14) the dummy version of prepare_hugepage_range() exists in hugetlb.h
+> 15) the dummy version of pmd_huge() exists in hugetlb.h
+> 16) the dummy version of pud_huge() exists in hugetlb.h
+> 17) the dummy version of is_hugepage_only_range() exists in hugetlb.h
+> 17) the dummy version of hugetlb_free_pgd_range() exists in hugetlb.h
+> 18) the dummy version of hugetlb_fault() exists in hugetlb.h
+> 19) the dummy version of huge_pte_offset() exists in hugetlb.h
+> 20) the dummy version of dequeue_hwpoisoned_huge_page() exists in hugetlb.h
+> 21) the dummy version of copy_huge_page() exists in hugetlb.h
+> 22) the dummy version of hugetlb_change_protection() exists in hugetlb.h
+> .
+> .
+> .
+> [Other non HUGETLB_PAGE examples omitted for conciseness]
+> 
 
-do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
-user namespace
+To avoid the #ifdef's, but you'll notice that they return either NULL, 0, 
+or are a no-op.  We don't substitute real values in dummy functions where 
+they could be used in generic code as though they were valid.  That's the 
+problem with defining HPAGE_SHIFT to be PAGE_SHIFT and, yes, defining 
+HPAGE_MASK and HPAGE_SIZE as well shouldn't be done and should be removed.  
 
-ptrace_signal maps parent's uid into current's user namespace before
-including in signal to current.  IIUC Oleg has argued that this shouldn't
-matter as the debugger will play with it, but it seems like not converting
-the value currently being set is misleading.
+We expect HPAGE_* to represent hugepages, not the native page size of the 
+bare metal.  This is why we do things like
 
-Changelog:
-Sep 20: Inspired by Oleg's suggestion, define map_cred_ns() helper to
-	simplify callers and help make clear what we are translating
-        (which uid into which namespace).  Passing the target task would
-	make callers even easier to read, but we pass in user_ns because
-	current_user_ns() != task_cred_xxx(current, user_ns).
-Sep 20: As recommended by Oleg, also put task_pid_vnr() under rcu_read_lock
-	in ptrace_signal().
-Sep 23: In send_signal(), detect when (user) signal is coming from an
-	ancestor or unrelated user namespace.  Pass that on to __send_signal,
-	which sets si_uid to 0 or overflowuid if needed.
-Oct 12: Base on Oleg's fixup_uid() patch.  On top of that, handle all
-	SI_FROMKERNEL cases at callers, because we can't assume sender is
-	current in those cases.
-Nov 10: (mhelsley) rename fixup_uid to more meaningful usern_fixup_signal_uid
-Nov 10: (akpm) make the !CONFIG_USER_NS case clearer
+	#define HPAGE_PMD_SHIFT ({ BUG(); 0; })
+	#define HPAGE_PMD_MASK ({ BUG(); 0; })
+	#define HPAGE_PMD_SIZE ({ BUG(); 0; })
 
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
----
- ipc/mqueue.c    |    7 ++++++-
- kernel/signal.c |   43 ++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 46 insertions(+), 4 deletions(-)
+for CONFIG_TRANSPARENT_HUGEPAGE=n.  We don't want to pretend that they're 
+valid outside the context of hugepages.
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 2e0ecfc..4dbf3cb 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -32,6 +32,7 @@
- #include <linux/nsproxy.h>
- #include <linux/pid.h>
- #include <linux/ipc_namespace.h>
-+#include <linux/user_namespace.h>
- #include <linux/slab.h>
- 
- #include <net/sock.h>
-@@ -543,9 +544,13 @@ static void __do_notify(struct mqueue_inode_info *info)
- 			sig_i.si_errno = 0;
- 			sig_i.si_code = SI_MESGQ;
- 			sig_i.si_value = info->notify.sigev_value;
-+			/* map current pid/uid into info->owner's namespaces */
-+			rcu_read_lock();
- 			sig_i.si_pid = task_tgid_nr_ns(current,
- 						ns_of_pid(info->notify_owner));
--			sig_i.si_uid = current_uid();
-+			sig_i.si_uid = user_ns_map_uid(info->user->user_ns,
-+						current_cred(), current_uid());
-+			rcu_read_lock();
- 
- 			kill_pid_info(info->notify.sigev_signo,
- 				      &sig_i, info->notify_owner);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index b3f78d0..c0f0782 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -28,6 +28,7 @@
- #include <linux/freezer.h>
- #include <linux/pid_namespace.h>
- #include <linux/nsproxy.h>
-+#include <linux/user_namespace.h>
- #define CREATE_TRACE_POINTS
- #include <trace/events/signal.h>
- 
-@@ -1019,6 +1020,34 @@ static inline int legacy_queue(struct sigpending *signals, int sig)
- 	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
- }
- 
-+/*
-+ * map the uid in struct cred into user namespace *ns
-+ */
-+static inline uid_t map_cred_ns(const struct cred *cred,
-+				struct user_namespace *ns)
-+{
-+	return user_ns_map_uid(ns, cred, cred->uid);
-+}
-+
-+#ifdef CONFIG_USER_NS
-+static inline void userns_fixup_signal_uid(struct siginfo *info, struct task_struct *t)
-+{
-+	if (current_user_ns() == task_cred_xxx(t, user_ns))
-+		return;
-+
-+	if (SI_FROMKERNEL(info))
-+		return;
-+
-+	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
-+					current_cred(), info->si_uid);
-+}
-+#else
-+static inline void userns_fixup_signal_uid(struct siginfo *info, struct task_struct *t)
-+{
-+	return;
-+}
-+#endif
-+
- static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
- 			int group, int from_ancestor_ns)
- {
-@@ -1088,6 +1117,9 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
- 				q->info.si_pid = 0;
- 			break;
- 		}
-+
-+		userns_fixup_signal_uid(info, t);
-+
- 	} else if (!is_si_special(info)) {
- 		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
- 			/*
-@@ -1626,7 +1658,8 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
- 	 */
- 	rcu_read_lock();
- 	info.si_pid = task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
--	info.si_uid = __task_cred(tsk)->uid;
-+	info.si_uid = map_cred_ns(__task_cred(tsk),
-+			task_cred_xxx(tsk->parent, user_ns));
- 	rcu_read_unlock();
- 
- 	info.si_utime = cputime_to_clock_t(cputime_add(tsk->utime,
-@@ -1711,7 +1744,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
- 	 */
- 	rcu_read_lock();
- 	info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
--	info.si_uid = __task_cred(tsk)->uid;
-+	info.si_uid = map_cred_ns(__task_cred(tsk),
-+			task_cred_xxx(parent, user_ns));
- 	rcu_read_unlock();
- 
- 	info.si_utime = cputime_to_clock_t(tsk->utime);
-@@ -2129,8 +2163,11 @@ static int ptrace_signal(int signr, siginfo_t *info,
- 		info->si_signo = signr;
- 		info->si_errno = 0;
- 		info->si_code = SI_USER;
-+		rcu_read_lock();
- 		info->si_pid = task_pid_vnr(current->parent);
--		info->si_uid = task_uid(current->parent);
-+		info->si_uid = map_cred_ns(__task_cred(current->parent),
-+				current_user_ns());
-+		rcu_read_unlock();
- 	}
- 
- 	/* If the (new) signal is now blocked, requeue it.  */
--- 
-1.7.5.4
-
+We also never use HPAGE_SHIFT, HPAGE_MASK, or HPAGE_SIZE in generic code 
+that isn't dependent on CONFIG_HUGETLB_PAGE.  If you'd like to submit a 
+patch to fix this in the mips tree, then that would be good, and if you'd 
+like to submit a patch to remove these dummy definitions all together by 
+auditing other arch code, then that would be great.
