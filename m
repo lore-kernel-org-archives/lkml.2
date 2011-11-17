@@ -1,71 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab1KQDzL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 22:55:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58576 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754460Ab1KQDzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 22:55:09 -0500
-Message-ID: <1321502104.3274.22.camel@edumazet-laptop>
-Subject: [RFC] tracepoint/jump_label overhead
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>
-Date: Thu, 17 Nov 2011 04:55:04 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1755186Ab1KQECQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 23:02:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52947 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752971Ab1KQECO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 23:02:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="76529365"
+Subject: Re: [PATCH FIX net v2] net-e1000(e): Fix default interrupt throttle
+ rate not set in NIC HW
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: David Decotigny <david.decotigny@google.com>
+Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ying Cai <ycai@google.com>
+Date: Wed, 16 Nov 2011 20:02:12 -0800
+In-Reply-To: <75e944ced8ad7c58a0b838c0fe2a9e315f9e0c37.1321494268.git.david.decotigny@google.com>
+References: <cover.1321494268.git.david.decotigny@google.com>
+	 <75e944ced8ad7c58a0b838c0fe2a9e315f9e0c37.1321494268.git.david.decotigny@google.com>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ClrCnE4q7mSk5TK9Aekk"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1321502533.2304.24.camel@jtkirshe-mobl>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The general admitted claim of a tracepoint being on x86 a single
-instruction :
 
-jmp +0
+--=-ClrCnE4q7mSk5TK9Aekk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Is not always true.
+On Wed, 2011-11-16 at 17:46 -0800, David Decotigny wrote:
+> From: Ying Cai <ycai@google.com>
+>=20
+> This change ensures that the itr/itr_setting adjustment logic is used,
+> even for the default/compiled-in value.
+>=20
+> Context:
+>   When we changed the default InterruptThrottleRate value from default
+>   (3 =3D dynamic mode) to 8000 for example, only adapter->itr_setting
+>   (which controls interrupt coalescing mode) was set to 8000, but
+>   adapter->itr (which controls the value set in NIC register) was not
+>   updated accordingly. So from ethtool, it seemed the interrupt
+>   throttling is enabled at 8000 intr/s, but the NIC actually was
+>   running in dynamic mode which has lower CPU efficiency especially
+>   when throughput is not high.
+>=20
+>=20
+>=20
+> Signed-off-by: David Decotigny <david.decotigny@google.com>
+> ---
+>  drivers/net/ethernet/intel/e1000/e1000_param.c |   81 +++++++++++-------=
+-
+>  drivers/net/ethernet/intel/e1000e/param.c      |   98 +++++++++++++-----=
+------
+>  2 files changed, 99 insertions(+), 80 deletions(-)
+>=20
+> diff --git a/drivers/net/ethernet/intel/e1000/e1000_param.c b/drivers/net=
+/ethernet/intel/e1000/e1000_param.c
+> index 1301eba..595e462 100644
+> --- a/drivers/net/ethernet/intel/e1000/e1000_param.c
+> +++ b/drivers/net/ethernet/intel/e1000/e1000_param.c
+> @@ -173,7 +173,7 @@ E1000_PARAM(RxAbsIntDelay, "Receive Absolute Interrup=
+t Delay");
+> =20
+>  /* Interrupt Throttle Rate (interrupts/sec)
+>   *
+> - * Valid Range: 100-100000 (0=3Doff, 1=3Ddynamic, 3=3Ddynamic conservati=
+ve)
+> + * Valid Range: 100-100000 or one of: 0=3Doff, 1=3Ddynamic, 3=3Ddynamic =
+conservative
+>   */
+>  E1000_PARAM(InterruptThrottleRate, "Interrupt Throttling Rate");
+>  #define DEFAULT_ITR                    3
+> @@ -460,41 +460,54 @@ void __devinit e1000_check_options(struct e1000_ada=
+pter *adapter)
+>  		};
+> =20
+>  		if (num_InterruptThrottleRate > bd) {
+> -			adapter->itr =3D InterruptThrottleRate[bd];
+> -			switch (adapter->itr) {
+> -			case 0:
+> -				e_dev_info("%s turned off\n", opt.name);
+> -				break;
+> -			case 1:
+> -				e_dev_info("%s set to dynamic mode\n",
+> -					   opt.name);
+> -				adapter->itr_setting =3D adapter->itr;
+> -				adapter->itr =3D 20000;
+> -				break;
+> -			case 3:
+> -				e_dev_info("%s set to dynamic conservative "
+> -					   "mode\n", opt.name);
+> -				adapter->itr_setting =3D adapter->itr;
+> -				adapter->itr =3D 20000;
+> -				break;
+> -			case 4:
+> -				e_dev_info("%s set to simplified "
+> -				           "(2000-8000) ints mode\n", opt.name);
+> -				adapter->itr_setting =3D adapter->itr;
+> -				break;
+> -			default:
+> -				e1000_validate_option(&adapter->itr, &opt,
+> -				        adapter);
+> -				/* save the setting, because the dynamic bits
+> -				 * change itr.
+> -				 * clear the lower two bits because they are
+> -				 * used as control */
+> -				adapter->itr_setting =3D adapter->itr & ~3;
+> -				break;
+> -			}
+> +			/* Make sure a message is printed for
+> +			 * non-special values. And in case of an
+> +			 * invalid option, display warning, use
+> +			 * default and go through itr/itr_setting
+> +			 * adjustment logic below */
+> +			if ((adapter->itr < 0 || adapter->itr > 4)
+> +			    && e1000_validate_option(&adapter->itr, &opt,
+> +						     adapter))
+> +				adapter->itr =3D opt.def;
+>  		} else {
+> -			adapter->itr_setting =3D opt.def;
+> +			/* if no option specified, use default value
+> +			   and go through the logic below to adjust
+> +			   itr/itr_setting */
+> +			adapter->itr =3D opt.def;
+> +
+> +			/* Make sure a message is printed for
+> +			 * non-special default values */
+> +			if (adapter->itr < 0 || adapter->itr > 4)
+> +				e_dev_info("%s set to default %d\n",
+> +					   opt.name, adapter->itr);
+> +		}
+> +
+> +		adapter->itr_setting =3D adapter->itr;
+> +		switch (adapter->itr) {
+> +		case 0:
+> +			e_dev_info("%s turned off\n", opt.name);
+> +			break;
+> +		case 1:
+> +			e_dev_info("%s set to dynamic mode\n",
+> +				   opt.name);
+> +			adapter->itr =3D 20000;
+> +			break;
+> +		case 3:
+> +			e_dev_info("%s set to dynamic conservative "
+> +				   "mode\n", opt.name);
+>  			adapter->itr =3D 20000;
+> +			break;
+> +		case 4:
+> +			e_dev_info("%s set to simplified "
+> +				   "(2000-8000) ints mode\n", opt.name);
+> +			break;
+> +		default:
+> +			/* save the setting, because the dynamic bits
+> +			 * change itr.
+> +			 * clear the lower two bits because they are
+> +			 * used as control */
+> +			adapter->itr_setting &=3D ~3;
+> +			break;
+>  		}
+>  	}
+>  	{ /* Smart Power Down */
+> diff --git a/drivers/net/ethernet/intel/e1000e/param.c b/drivers/net/ethe=
+rnet/intel/e1000e/param.c
+> index 20e93b0..41937e5 100644
+> --- a/drivers/net/ethernet/intel/e1000e/param.c
+> +++ b/drivers/net/ethernet/intel/e1000e/param.c
+> @@ -106,7 +106,7 @@ E1000_PARAM(RxAbsIntDelay, "Receive Absolute Interrup=
+t Delay");
+>  /*
+>   * Interrupt Throttle Rate (interrupts/sec)
+>   *
+> - * Valid Range: 100-100000 (0=3Doff, 1=3Ddynamic, 3=3Ddynamic conservati=
+ve)
+> + * Valid Range: 100-100000 or one of: 0=3Doff, 1=3Ddynamic, 3=3Ddynamic =
+conservative
+>   */
+>  E1000_PARAM(InterruptThrottleRate, "Interrupt Throttling Rate");
+>  #define DEFAULT_ITR 3
+> @@ -335,53 +335,59 @@ void __devinit e1000e_check_options(struct e1000_ad=
+apter *adapter)
+> =20
+>  		if (num_InterruptThrottleRate > bd) {
+>  			adapter->itr =3D InterruptThrottleRate[bd];
+> -			switch (adapter->itr) {
+> -			case 0:
+> -				e_info("%s turned off\n", opt.name);
+> -				break;
+> -			case 1:
+> -				e_info("%s set to dynamic mode\n", opt.name);
+> -				adapter->itr_setting =3D adapter->itr;
+> -				adapter->itr =3D 20000;
+> -				break;
+> -			case 3:
+> -				e_info("%s set to dynamic conservative mode\n",
+> -					opt.name);
+> -				adapter->itr_setting =3D adapter->itr;
+> -				adapter->itr =3D 20000;
+> -				break;
+> -			case 4:
+> -				e_info("%s set to simplified (2000-8000 ints) "
+> -				       "mode\n", opt.name);
+> -				adapter->itr_setting =3D 4;
+> -				break;
+> -			default:
+> -				/*
+> -				 * Save the setting, because the dynamic bits
+> -				 * change itr.
+> -				 */
+> -				if (e1000_validate_option(&adapter->itr, &opt,
+> -							  adapter) &&
+> -				    (adapter->itr =3D=3D 3)) {
+> -					/*
+> -					 * In case of invalid user value,
+> -					 * default to conservative mode.
+> -					 */
+> -					adapter->itr_setting =3D adapter->itr;
+> -					adapter->itr =3D 20000;
+> -				} else {
+> -					/*
+> -					 * Clear the lower two bits because
+> -					 * they are used as control.
+> -					 */
+> -					adapter->itr_setting =3D
+> -						adapter->itr & ~3;
+> -				}
+> -				break;
+> -			}
+> +
+> +			/* Make sure a message is printed for
+> +			 * non-special values. And in case of an
+> +			 * invalid option, display warning, use
+> +			 * default and go through itr/itr_setting
+> +			 * adjustment logic below */
+> +			if ((adapter->itr < 0 || adapter->itr > 4)
+> +			    && e1000_validate_option(&adapter->itr, &opt,
+> +						     adapter))
+> +				adapter->itr =3D opt.def;
+>  		} else {
+> -			adapter->itr_setting =3D opt.def;
+> +			/* if no option specified, use default value
+> +			   and go through the logic below to adjust
+> +			   itr/itr_setting */
+> +			adapter->itr =3D opt.def;
+> +
+> +			/* Make sure a message is printed for
+> +			 * non-special default values */
+> +			if (adapter->itr < 0 || adapter->itr > 4)
+> +				e_info("%s set to default %d\n",
+> +				       opt.name, adapter->itr);
+> +		}
+> +
+> +
+> +
+> +		adapter->itr_setting =3D adapter->itr;
+> +		switch (adapter->itr) {
+> +		case 0:
+> +			e_info("%s turned off\n", opt.name);
+> +			break;
+> +		case 1:
+> +			e_info("%s set to dynamic mode\n", opt.name);
+> +			adapter->itr =3D 20000;
+> +			break;
+> +		case 3:
+> +			e_info("%s set to dynamic conservative mode\n",
+> +			       opt.name);
+>  			adapter->itr =3D 20000;
+> +			break;
+> +		case 4:
+> +			e_info("%s set to simplified (2000-8000 ints) "
+> +			       "mode\n", opt.name);
+> +			break;
+> +		default:
+> +			/*
+> +			 * Save the setting, because the dynamic bits
+> +			 * change itr.
+> +			 *
+> +			 * Clear the lower two bits because
+> +			 * they are used as control.
+> +			 */
+> +			adapter->itr_setting &=3D ~3;
+> +			break;
+>  		}
+>  	}
+>  	{ /* Interrupt Mode */
 
-For example in mm/slub.c, kmem_cache_alloc()
+Thanks David, I have added this to my e1000e queue of patches.
 
-void *ret = slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_); 
-trace_kmem_cache_alloc(_RET_IP_, ret, s->objsize, s->size, gfpflags);
-return ret;
+--=-ClrCnE4q7mSk5TK9Aekk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-We can check compiler output and see that 4 extra instructions were
-added because s->objsize & s->size are evaluated.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I noticed this in a perf session, because these 4 extra instructions
-added some noticeable latency/cost.
+iQIcBAABCgAGBQJOxIdEAAoJEOVv75VaS+3OXeQQAJFt3rIPLTaWNv2Yi918A68b
+K5byA89RU62ftKJO4rYjDVA8oy/UooBYpU8MkMhRtD3Mq2OVEtoALFOscVvD6ZSh
+Rjun+o7HoVSbGqfjDZkPoeDFyDtB8kJidf+/Nlq4jEDk+2568a5KdB6jwOXcqVDq
+au5WimBipWgzKDR+EV8mKvUgze1G15tMdf3kEGkpzdYSMKJidGGirDHq1otxJait
+Twi5o2ruoTrHbbT7i1/irW8PrqYl9l1aPOORpen2XYctsxaR/UjqB8BNKQ/FttAH
+cNeJLWzNOSOOA/DV0DJE3JpaLPxt7SXCPbDrhcCGQnwmCcZO3jicc0taJMxegPJo
+lNy7W11SOjIhckpzQLgacIOs5LiwGlIczbBoG7j6yXtccztUMOpXRoE8wD6woD/0
+pZNI7wwjFE/JcnJasJ9X2XsN2zFosg3RPWxNmNRSayHffgbhu82k8JljBr8N3jbh
+8fMHuw1dC68eqXdygSBPyChQoJnVl7biQSE/qSGWADyI6fkmLoIc1HjXfADHcR8A
+sPJpkNzDvfRfdAriaOq3bWV3I6cyhSGZOBqCeN7m/W70Qd3VrR+o/KXMuvM0oGfn
+9xy7i23gfBEQpgeUDewfA/qHrHNNyajebW8q4FmFDIikDPpXJtAj8udKK9gYl8qV
+mPFz6YBpwhcktIYzHjjJ
+=NmX0
+-----END PGP SIGNATURE-----
 
-c10e26a4:       8b 5d d8                mov    -0x28(%ebp),%ebx
-c10e26a7:       85 db                   test   %ebx,%ebx
-c10e26a9:       75 6d                   jne    c10e2718   (doing the memset())
-c10e26ab:       8b 76 0c                mov    0xc(%esi),%esi   // extra 1
-c10e26ae:       8b 5d 04                mov    0x4(%ebp),%ebx   // extra 2
-c10e26b1:       89 75 f0                mov    %esi,-0x10(%ebp) // extra 3
-c10e26b4:       89 5d ec                mov    %ebx,-0x14(%ebp) // extra 4
-c10e26b7:       e9 00 00 00 00          jmp    c10e26bc 
-c10e26bc:       8b 45 d8                mov    -0x28(%ebp),%eax
-c10e26bf:       83 c4 28                add    $0x28,%esp
-c10e26c2:       5b                      pop    %ebx
-c10e26c3:       5e                      pop    %esi
-c10e26c4:       5f                      pop    %edi
-c10e26c5:       c9                      leave
-
-
-A fix would be to not declare an inline function but a macro...
-
-#define trace_kmem_cache_alloc(...) \
-	if (static_branch(&__tracepoint_kmem_cache_alloc.key)) \
-		__DO_TRACE(&__tracepoint_kmem_cache_alloc,	\
-			...
-
-Anyone has some clever idea how to make this possible ?
-
-Thanks
-
+--=-ClrCnE4q7mSk5TK9Aekk--
 
