@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1KQBac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 20:30:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754630Ab1KQBab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 20:30:31 -0500
-Date: Wed, 16 Nov 2011 20:31:19 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Jim Rees <rees@umich.edu>
-Cc: John Hughes <john@calvaedi.com>,
-        Trond Myklebust <trond.myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
- mount expires
-Message-ID: <20111116203119.1d9c0dd6@corrin.poochiereds.net>
-In-Reply-To: <20111116234434.GA12882@umich.edu>
-References: <4EC3FD8B.6000705@calvaedi.com>
-	<20111116144718.78b2e288@corrin.poochiereds.net>
-	<20111116234434.GA12882@umich.edu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755246Ab1KQBbv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 20:31:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57272 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab1KQBbu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 20:31:50 -0500
+Date: Wed, 16 Nov 2011 17:31:36 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Cong Wang <amwang@redhat.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-mm@kvack.org, kay.sievers@vrfy.org
+Subject: Re: [Patch] tmpfs: add fallocate support
+In-Reply-To: <4EC3633D.6090900@redhat.com>
+Message-ID: <alpine.LSU.2.00.1111161634360.1957@sister.anvils>
+References: <1321346525-10187-1-git-send-email-amwang@redhat.com> <CAOJsxLEXbWbEhqX2YfzcQhyLJrY0H2ifCJCvGkoFHZsYAZEMPA@mail.gmail.com> <4EC361C0.7040309@redhat.com> <alpine.LFD.2.02.1111160911320.2446@tux.localdomain> <4EC3633D.6090900@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-434404406-1321493505=:1957"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 18:44:34 -0500
-Jim Rees <rees@umich.edu> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Jeff Layton wrote:
-> 
->   Uhhh, no...EKEYEXPIRED was never passed to userland. The patchset that
->   added EKEYEXPIRED returns in this codepath also added the code to make
->   it hang. 
->   
->   This not a bug, or at least it's intentional behavior. When a krb5
->   ticket expires, we *want* the process to hang. Otherwise, people with
->   long running jobs will often find that their jobs error out
->   inexplicably when their ticket expires.
-> 
-> Who decided that?  This seems completely wrong to me.  If my credentials
-> expire, I want to get permission denied, not a client hang.  In 20 years of
-> using authenticated file systems I never once wished my process had hung
-> when my ticket expired.
-> 
+--8323584-434404406-1321493505=:1957
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-I proposed it, we discussed it on the list, and Trond and Steve
-committed the patches necessary to make it happen. This was back in
-late 2009/early 2010 though, so my memory is a bit fuzzy...
+On Wed, 16 Nov 2011, Cong Wang wrote:
+> =E4=BA=8E 2011=E5=B9=B411=E6=9C=8816=E6=97=A5 15:12, Pekka Enberg =E5=86=
+=99=E9=81=93:
+> > On Wed, 16 Nov 2011, Cong Wang wrote:
+> > > > What's the use case for this?
+> > >=20
+> > > Systemd needs it, see http://lkml.org/lkml/2011/10/20/275.
+> > > I am adding Kay into Cc.
+> >=20
+> > The post doesn't mention why it needs it, though.
+> >=20
+>=20
+> Right, I should mention this in the changelog. :-/
 
-> Why should this be any different from any other failure condition?  If you
-> try to open a file that doesn't exist, do you want your process to hang
-> instead of getting ENOENT, just in case the file magically appears at some
-> point in the future?
->
+Yes, but I think Pekka's point is that the page which you link to does not
+explain why Plumbers would want tmpfs to support fallocate() properly.
 
-That's different. Not renewing your credentials is often a temporary
-situation. Kerberos is different than other authentication methods in
-that you get a ticket only for a period of time, so expired credentials
-are not a situation that's common with other authentication methods.
+What good is it going to do for them?  Why not just do it in userspace,
+either by dd if=3D/dev/zero of=3Dtmpfsfile, or by mmap() and touch if very
+anxious to avoid the triple memset/memcpy (once reading from /dev/zero,
+once allocating tmpfs pages, once copying to tmpfs pages)?  Or splice().
 
-> This seems a recipe for disaster.  Suppose I have a cron job that fires once
-> a minute, and all those jobs hang waiting for a ticket.  I come to work in
-> the morning and discover I've got 10,000 hung processes.  Or not, because my
-> computer has crashed from resource exhaustion.
+I don't want to stand in the way of progress, but there's a lot of
+things tmpfs does not support (a persistent filesystem would be top
+of the list; but readahead, direct I/O, AIO, ....), and it may be
+better to continue not to support them unless there's good reason.
+tmpfs does not have a disk layout that we need to optimize.
 
-The previous situation was also a recipe for disaster, and was often
-cited as a primary reason why people didn't want to deploy kerberized
-NFS. Having everything fall down and go boom when your ticket expires
-is not desirable either.
+I did not study your implementation in detail, but agree with Dave
+and Kame that (if it needs to be in kernel at all) you should reuse
+the existing code rather than repeating extracts: shmem_getpage_gfp()
+is the one place which looks after all of shmem page allocation, so
+I'd prefer you just make a loop of calls to that (with a new sgp_type
+if there's particular reason to do something differently in there).
 
-I suppose we'll have to agree to disagree on this point. That said, I'm
-open to sane suggestions however that don't regress the behavior for
-those users who need to be able to cope with expired tickets.
+I've not yet looked up the specification of fallocate(), but it
+looked surprising to be allocating pages up to the point where a
+page already exists (when shmem_add_to_page_cache will fail) and
+then giving up with -EEXIST.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Seeing your Subject, I imagined at first that you would be implementing
+FALLOC_FL_PUNCH_HOLE support. That is on my list to do: tmpfs has its
+own peculiar madvise(MADV_REMOVE) support (and yes, you may question
+whether we were right to add that in) - we should be converting
+MADV_REMOVE to use FALLOC_FL_PUNCH_HOLE, and tmpfs to support that.
+
+Thanks,
+Hugh
+--8323584-434404406-1321493505=:1957--
