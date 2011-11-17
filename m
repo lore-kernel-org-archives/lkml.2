@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab1KQIbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:31:14 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56917 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab1KQIbL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:31:11 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Thu, 17 Nov 2011 14:00:50 +0530
-Message-ID: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755661Ab1KQIgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:36:22 -0500
+Received: from mga14.intel.com ([143.182.124.37]:28449 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263Ab1KQIgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 03:36:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,524,1315206000"; 
+   d="scan'208";a="76082976"
+Subject: Re: [PATCH] dmaengine/ste_dma40: support pm in dma40
+From: Vinod Koul <vinod.koul@intel.com>
+To: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+In-Reply-To: <20111117064001.GA17619@bnru01>
+References: <1321425003-12062-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
+	 <1321441623.1516.168.camel@vkoul-udesk3> <20111117050443.GA6256@bnru01>
+	 <1321507432.1516.176.camel@vkoul-udesk3>  <20111117064001.GA17619@bnru01>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 14:01:51 +0530
+Message-ID: <1321518712.1516.181.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11111622-9264-0000-0000-0000003812C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lock_system_sleep() function is used in the memory hotplug code at
-several places in order to implement mutual exclusion with hibernation.
-However, this function tries to acquire the 'pm_mutex' lock using
-mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
-get the lock. This would lead to task freezing failures and hence
-hibernation failure as a consequence, even though the hibernation call path
-successfully acquired the lock.
+On Thu, 2011-11-17 at 12:10 +0530, Narayanan G wrote:
+> On Thu, Nov 17, 2011 at 06:23:52 +0100, Vinod Koul wrote:
+> > runtime pm manages the device power management. It will call your
+> > suspend/resume callbacks when your device is idle/active and manages the
+> > device usage for you.
+> > Within your device you need to do your own management, which should be
+> > linked to channel being active. You should not club the two.
+> > 
+> > I am not sure if the clock framework can help you on this
+> 
+> Instead of switching on and off eventlines very frequently, I'll
+> do it in the runtime_suspend() and runtime_resume(), so that it
+> looks more neat and can get away with these usage counters.
+> I will re-work and submit a new version of this patch.
+if you want to do your clock switching per channel based then you cant
+do in runtime_resume/suspned code which seems to be approach. As I said
+its device specific, so if you move all to these callbacks then you can
+easily eliminate the mess in patch right now and make it cleaner.
 
-This patch fixes this issue by modifying lock_system_sleep() to use
-mutex_trylock() in a loop until the lock is acquired, instead of using
-mutex_lock(), in order to avoid going to uninterruptible sleep.
-Also, we use msleep() to avoid busy looping and breaking expectations
-that we go to sleep when we fail to acquire the lock.
-And we also call try_to_freeze() in order to cooperate with the freezer,
-without which we would end up in almost the same situation as mutex_lock(),
-due to uninterruptible sleep caused by msleep().
 
-v3: Tejun suggested avoiding busy-looping by adding an msleep() since
-    it is not guaranteed that we will get frozen immediately.
-
-v2: Tejun pointed problems with using mutex_lock_interruptible() in a
-    while loop, when signals not related to freezing are involved.
-    So, replaced it with mutex_trylock().
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/suspend.h |   37 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 36 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 57a6924..0af3048 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -5,6 +5,8 @@
- #include <linux/notifier.h>
- #include <linux/init.h>
- #include <linux/pm.h>
-+#include <linux/freezer.h>
-+#include <linux/delay.h>
- #include <linux/mm.h>
- #include <asm/errno.h>
- 
-@@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
- 
- static inline void lock_system_sleep(void)
- {
--	mutex_lock(&pm_mutex);
-+	/*
-+	 * "To sleep, or not to sleep, that is the question!"
-+	 *
-+	 * We should not use mutex_lock() here because, in case we fail to
-+	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
-+	 * state, which would lead to task freezing failures. As a
-+	 * consequence, hibernation would fail (even though it had acquired
-+	 * the 'pm_mutex' lock).
-+	 * Using mutex_lock_interruptible() in a loop is not a good idea,
-+	 * because we could end up treating non-freezing signals badly.
-+	 * So we use mutex_trylock() in a loop instead.
-+	 *
-+	 * Also, we add try_to_freeze() to the loop, to co-operate with the
-+	 * freezer, to avoid task freezing failures due to busy-looping.
-+	 *
-+	 * But then, since it is not guaranteed that we will get frozen
-+	 * rightaway, we could keep spinning for some time, breaking the
-+	 * expectation that we go to sleep when we fail to acquire the lock.
-+	 * So we add an msleep() to the loop, to dampen the spin (but we are
-+	 * careful enough not to sleep for too long at a stretch, lest the
-+	 * freezer whine and give up again!).
-+	 *
-+	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
-+	 * more important, due to a subtle reason: if we don't cooperate with
-+	 * the freezer at this point, we could end up in a situation very
-+	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
-+	 * uninterruptibly).
-+	 *
-+	 * Phew! What a delicate balance!
-+	 */
-+	while (!mutex_trylock(&pm_mutex)) {
-+		try_to_freeze();
-+		msleep(10);
-+	}
- }
- 
- static inline void unlock_system_sleep(void)
+-- 
+~Vinod
 
