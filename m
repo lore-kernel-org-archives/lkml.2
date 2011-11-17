@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab1KQIWr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:22:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50386 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982Ab1KQIWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:22:46 -0500
-Date: Thu, 17 Nov 2011 09:22:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] mm: cleanup the comment for head/tail pages of compound
- pages in mm/page_alloc.c
-Message-ID: <20111117082148.GA30544@tiehlicka.suse.cz>
-References: <4EC21D78.4080508@gmail.com>
- <20111115132409.GA7551@tiehlicka.suse.cz>
- <4EC2FE33.7030905@gmail.com>
+	id S1755357Ab1KQI2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:28:00 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35952 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1KQI17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 03:27:59 -0500
+Date: Thu, 17 Nov 2011 16:26:24 +0800
+From: wangyanqing <udknight@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: castet.matthieu@free.fr, akpm@linux-foundation.org, hpa@zytor.com,
+        x86@kernel.org, spock@gentoo.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] x86: remove NX from video bios area
+Message-ID: <20111117082624.GA4136@udknight.homenetwork>
+Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
+	torvalds@linux-foundation.org, castet.matthieu@free.fr,
+	akpm@linux-foundation.org, hpa@zytor.com, x86@kernel.org,
+	spock@gentoo.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EC2FE33.7030905@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing trivial tree]
+5bd5a452662bc37c54fb6828db1a3faf87e6511c make area
+between BIOS_BEGIN and BIOS_END NX when boot machine
+with ACPI enable.
 
-Unquoted patch at https://lkml.org/lkml/2011/11/15/402
+It make my machine can't boot, system hang with black
+screen very early.
 
-On Wed 16-11-11 08:05:07, Wang Sheng-Hui wrote:
-[...]
-> Thanks, Michal.
-> 
-> New patch generated.
-> 
-> 
-> [PATCH] mm: cleanup the comment for head/tail pages of compound pages in mm/page_alloc.c
-> 
-> Only tail pages point at the head page using their ->first_page fields.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+The more detail, please see:
+https://lkml.org/lkml/2011/11/16/84
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+This patch try to resolve it. Any comment is welcome.
+Signed-off-by: Wang YanQing <Udknight@gmail.com>
+---
+ arch/x86/include/asm/e820.h |    4 ++++
+ arch/x86/mm/pageattr.c      |    6 ++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-> ---
->  mm/page_alloc.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 6e8ecb6..e7dd848 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -332,8 +332,8 @@ out:
->   *
->   * The remaining PAGE_SIZE pages are called "tail pages".
->   *
-> - * All pages have PG_compound set.  All pages have their ->private pointing at
-> - * the head page (even the head page has this).
-> + * All pages have PG_compound set.  All tail pages have their ->first_page
-> + * pointing at the head page.
->   *
->   * The first tail page's ->lru.next holds the address of the compound page's
->   * put_page() function.  Its ->lru.prev holds the order of allocation.
-> -- 
-> 1.7.1
-
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 908b969..1adc26e 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -72,6 +72,10 @@ struct e820map {
+ #define BIOS_BEGIN		0x000a0000
+ #define BIOS_END		0x00100000
+ 
++/*we hope this the right video bios range*/
++#define VIDEO_BIOS_BEGIN	0x000c0000
++#define VIDEO_BIOS_END		0x000c7fff
++
+ #define BIOS_ROM_BASE		0xffe00000
+ #define BIOS_ROM_END		0xffffffff
+ 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..c4e5100 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -263,6 +263,12 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	if (pcibios_enabled && within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_NX;
+ #endif
++	/*The video bios area needs to be executable for
++	 *some programs(like v86d for uvesafb) to execute
++	 *video bios functions
++	 */
++	if (!pcibios_enable && within(pfn, VIDEO_BIOS_BEGIN >> PAGE_SHIFT, VIDEO_BIOS_END >> PAGE_SHIFT))
++		pgprot_val(forbidden) |= _PAGE_NX;
+ 
+ 	/*
+ 	 * The kernel text needs to be executable for obvious reasons
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.3.4
+
