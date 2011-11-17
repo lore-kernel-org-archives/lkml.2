@@ -1,138 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1KQVPz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:15:55 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:32995 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab1KQVPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:15:53 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Hibernation: Fix the early termination of test modes
-To: rjw@sisk.pl
-Cc: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Fri, 18 Nov 2011 02:45:44 +0530
-Message-ID: <20111117211537.31044.80826.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1752469Ab1KQVSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:18:38 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37116 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751533Ab1KQVSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 16:18:37 -0500
+Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jmorris@namei.org
+Date: Thu, 17 Nov 2011 16:15:17 -0500
+In-Reply-To: <4EC4E89F.2060608@polito.it>
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
+	 <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
+	 <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11111711-1618-0000-0000-0000001BC1D4
+Message-ID: <1321564518.21708.63.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 11111721-5806-0000-0000-000008921173
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2aede851ddf08666f68ffc17be446420e9d2a056
-(PM / Hibernate: Freeze kernel threads after preallocating memory)
-postponed the freezing of kernel threads to after preallocating memory
-for hibernation. But while doing that, the hibernation test TEST_FREEZER
-and the test mode HIBERNATION_TESTPROC were not moved accordingly.
+On Thu, 2011-11-17 at 11:57 +0100, Roberto Sassu wrote:
+> On 11/16/2011 07:52 PM, Rajiv Andrade wrote:
+> >
+> > Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
+> >
+> > On 16-11-2011 12:37, Roberto Sassu wrote:
+> >> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
+> >>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
+> >>>> The ima_add_digest_entry() function has been split in order to avoid
+> >>>> adding an entry in the measurements list for which the PCR extend
+> >>>> operation subsequently fails. Required memory is allocated earlier
+> >>>> in the
+> >>>> new function ima_prepare_template_entry() and the template entry is
+> >>>> added
+> >>>> after ima_pcr_extend().
+> >>>>
+> >>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+> >>>
+> >>
+> >> Hi Mimi
+> >>
+> >> i don't know if this condition can happen, but suppose that
+> >> for whatever reason the PCR extend fails. In this case, since
+> >> the PCR is not extended, the measurements list can be modified,
+> >> by removing the non-measured entry, without this fact being
+> >> detected by the verifier. So, probably we can avoid to display
+> >> the entry.
+> >>
+> >>
+> > Hi Roberto,
+> >
+> > IMA's trustworthiness is built on the assumption that the TPM underneath
+> > can
+> > be trusted. If that can't be, the eventlog alone doesn't provide us any
+> > security.
+> > It's the TPM device driver's job though to workaround any HW bug so that
+> > in the
+> > end all its stakeholders have their commands processed successfully, as
+> > we've
+> > pursued in some changes here:
+> >
+> 
+> Hi Rajiv
+> 
+> thanks for your comments.
+> 
+> I absolutely agree that we have to trust the TPM for the correct
+> execution of IMA.
+> 
+> I think the principle that has been used to build IMA (according
+> to the TGC specifications) is that we can trust the eventlog
+> as long as the measurement infrastructure is reliable or it is
+> possible to detect a threat from previous measurements.
+> 
+> For this reason, a system call is never executed before the
+> inode measurement is inserted in the eventlog and the PCR
+> is extended. Since these operations must be considered as
+> atomic, their execution is protected by a mutex, that is
+> released only after all tasks have been performed. This
+> ensures that we begin with a measured kernel and we can
+> reliably measure all further interactions. This also explains,
+> in my view, why delaying the PCR extend operation may lead
+> to security risks.
+> 
+> About my patch, i did not move out the protected region any
+> of the above described operations. Instead, i'm preventing
+> measurements for which the PCR extend failed to be added to
+> the measurements list, because in any case it is impossible
+> for a verifier to detect their removal from the list.
+> 
+> As i mentioned in the previous mail, one solution to overcome
+> this issue is to deny, on the platform running IMA, the execution
+> of those system calls for which the measurement process ended
+> with an error.
+> 
+> Regards
+> 
+> Roberto Sassu
 
-As a result, when using these test modes, it only goes upto the freezing of
-userspace and exits, when in fact it should go till the complete end of task
-freezing stage, namely the freezing of kernel threads as well.
+True, if the TPM failed to extend the PCR, a malicious user would be
+able to remove the measurement from the measurement list without it
+being detected.  However, according to the TPM specs, the PCR extend
+operation is always suppose to succeed, even in the case when the TPM is
+not enabled.
 
-So, move these points of exit to appropriate places so that freezing of
-kernel threads is also tested while using these test harnesses. And while at
-it, add some documentation about these test modes.
+More importantly we need to be able to detect when the PCR has not been
+extended appropriately in order to address it.  Otherwise we're just
+covering it up.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+thanks,
 
- Documentation/power/basic-pm-debugging.txt |   16 ++++++++++++----
- kernel/power/hibernate.c                   |   28 ++++++++++++++++++++++------
- 2 files changed, 34 insertions(+), 10 deletions(-)
-
-diff --git a/Documentation/power/basic-pm-debugging.txt b/Documentation/power/basic-pm-debugging.txt
-index 40a4c65..ba6c879 100644
---- a/Documentation/power/basic-pm-debugging.txt
-+++ b/Documentation/power/basic-pm-debugging.txt
-@@ -38,10 +38,18 @@ identify what goes wrong.
- 
- a) Test modes of hibernation
- 
--To find out why hibernation fails on your system, you can use a special testing
--facility available if the kernel is compiled with CONFIG_PM_DEBUG set.  Then,
--there is the file /sys/power/pm_test that can be used to make the hibernation
--core run in a test mode.  There are 5 test modes available:
-+To find out why hibernation fails on your system, you can use some special
-+testing facilities available if the kernel is compiled with CONFIG_PM_DEBUG set.
-+Hibernation will then have 2 more modes that can be used, namely "testproc" and
-+"test". When the "testproc" mode is used, it executes everything upto the task
-+freezing phase and reverts back. When the "test" mode is used, it goes much
-+deeper down, stopping just short of actually hibernating the machine, and then
-+reverts back to normal state.
-+
-+However, there is an even more fine-grained debugging tool, also enabled by
-+setting CONFIG_PM_DEBUG: there appears a file /sys/power/pm_test that can be
-+used to make the hibernation core run in a test mode.
-+There are 5 test modes available:
- 
- freezer
- - test the freezing of processes
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index b4511b6..3725d68 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -55,6 +55,8 @@ enum {
- 
- static int hibernation_mode = HIBERNATION_SHUTDOWN;
- 
-+static int freezer_test_done;
-+
- static const struct platform_hibernation_ops *hibernation_ops;
- 
- /**
-@@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
- 	if (error)
- 		goto Close;
- 
-+	if (hibernation_test(TEST_FREEZER) ||
-+		hibernation_testmode(HIBERNATION_TESTPROC)) {
-+
-+		/*
-+		 * Indicate to the caller that we are returning due to a
-+		 * successful freezer test.
-+		 */
-+		freezer_test_done = 1;
-+		goto Close;
-+	}
-+
- 	error = dpm_prepare(PMSG_FREEZE);
- 	if (error)
- 		goto Complete_devices;
-@@ -641,15 +654,13 @@ int hibernate(void)
- 	if (error)
- 		goto Finish;
- 
--	if (hibernation_test(TEST_FREEZER))
--		goto Thaw;
--
--	if (hibernation_testmode(HIBERNATION_TESTPROC))
--		goto Thaw;
--
- 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
- 	if (error)
- 		goto Thaw;
-+	if (freezer_test_done) {
-+		freezer_test_done = 0;
-+		goto Thaw;
-+	}
- 
- 	if (in_suspend) {
- 		unsigned int flags = 0;
-@@ -864,6 +875,11 @@ static const char * const hibernation_modes[] = {
-  *
-  * If a platform hibernation driver is in use, 'platform' will be supported
-  * and will be used by default.  Otherwise, 'shutdown' will be used by default.
-+ * The 2 test modes are useful only when CONFIG_PM_DEBUG is set. In that case,
-+ * using the 'testproc' mode will do everything upto the freezing of tasks
-+ * and exits after undoing all that it did. The 'test' mode is deeper, in that,
-+ * it does everything except actually hibernating the machine and exits after
-+ * restoring the machine back to its original state.
-  * The selected option (i.e. the one corresponding to the current value of
-  * hibernation_mode) is enclosed by a square bracket.
-  *
+Mimi
 
