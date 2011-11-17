@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab1KQFf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 00:35:56 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56962 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab1KQFfy convert rfc822-to-8bit (ORCPT
+	id S1753146Ab1KQF6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 00:58:04 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55095 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab1KQF6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 00:35:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
-References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com>
-	<47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu>
-	<alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com>
-	<CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
-Date: Thu, 17 Nov 2011 14:35:52 +0900
-Message-ID: <CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com>
-Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Theodore Tso <tytso@mit.edu>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Nov 2011 00:58:01 -0500
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH 1/6] pch_uart: change type to u8
+Date: Thu, 17 Nov 2011 14:57:28 +0900
+Message-Id: <1321509453-12008-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/17 Amit Sahrawat <amit.sahrawat83@gmail.com>:
-> Hi All,
->
-> To share with you all, this was picked as part of some review process.
-> We looked for the details regarding the introduction of
-> SLAB_MEM_SHARED(http://linux.derkeiler.com/Mailing-Lists/Kernel/2006-02/msg01409.html
-> - provide the slab cache infrastructure to support cpuset memory
-> spreading), and further the changes were introduced across all
-> filesystems - http://lwn.net/Articles/173654/.
-> Since, we do not have direct access to NUMA architecture machine, so
-> could not think of verifying the changes - but looking at the
-> respective changes - the changes in this patch does seems relevant
-> keeping in sync with all changes.
-> And, Yes David - these changes will make sense in case of CONFIG_SLAB.
->
-> Please share your opinion on the above introductions irrespective of
-> the code changes done in this patch.
->
-> Thanks & Regards,
-> Amit Sahrawat
->
-> On Thu, Nov 17, 2011 at 3:22 AM, David Rientjes <rientjes@google.com> wrote:
->> On Wed, 16 Nov 2011, Theodore Tso wrote:
->>
->>> On Nov 16, 2011, at 10:04 AM, Namjae Jeon wrote:
->>>
->>> > If slab caches set to SLAB_MEM_SPREAD flags, The allocation is spread
->>> > evenly over all the memory nodes instead of favoring allocation on the
->>> > node local to current cpu.
->>>
->>> And why do you think this is a good thing?   For mballoc in particular,
->>> the data structures are used immediately and then freed immediately ---
->>> on the local node, so using a non-local memory just makes things worse
->>> in a NUMA system.
->>>
->>
->> I don't think this has the effect that Namjae thinks it does: this is only
->> useful for CONFIG_SLAB and when you have cpusets enabled with
->> cpuset.memory_spread_slab set.
->>
->> To test how useful it is, you should enable CONFIG_SLAB and then mount
->> cpusets, set cpuset.memory_spread_slab, and create an MPOL_INTERLEAVE
->> mempolicy over all online nodes.  This will have the same effect as adding
->> SLAB_MEM_SPREAD to these slab caches (it just doesn't require the
->> mempolicy) and will be able to quantify the effects without any changes to
->> the kernel at all.
-Regarding ted's question,
-We prevent one node being concentrating workload from redundant
-alloc/free by balancing workload to other nodes in performance side.
-and we can avoid reclaim probability a little by allocation from only
-local node also.
-slab caches for extents io of btrfs is set to SLAB_MEM_SPREAD flags
-with recliam flags.
->>
->
+Target uart register access size is 8bit.
+However, 32bit is used at 2 points.
+
+This patch modifies type "unsigned int" to "unsigned char".
+
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/tty/serial/pch_uart.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 284fa48..797fad2 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -460,14 +460,10 @@ static int pch_uart_hal_read(struct eg20t_port *priv, unsigned char *buf,
+ 	return i;
+ }
+ 
+-static unsigned int pch_uart_hal_get_iid(struct eg20t_port *priv)
++static unsigned char pch_uart_hal_get_iid(struct eg20t_port *priv)
+ {
+-	unsigned int iir;
+-	int ret;
+-
+-	iir = ioread8(priv->membase + UART_IIR);
+-	ret = (iir & (PCH_UART_IIR_IID | PCH_UART_IIR_TOI | PCH_UART_IIR_IP));
+-	return ret;
++	return ioread8(priv->membase + UART_IIR) &\
++		      (PCH_UART_IIR_IID | PCH_UART_IIR_TOI | PCH_UART_IIR_IP);
+ }
+ 
+ static u8 pch_uart_hal_get_line_status(struct eg20t_port *priv)
+@@ -955,7 +951,7 @@ static irqreturn_t pch_uart_interrupt(int irq, void *dev_id)
+ 	unsigned int handled;
+ 	u8 lsr;
+ 	int ret = 0;
+-	unsigned int iid;
++	unsigned char iid;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&priv->port.lock, flags);
+-- 
+1.7.4.4
+
