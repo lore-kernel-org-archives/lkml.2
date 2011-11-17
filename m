@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab1KQRDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 12:03:49 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:64102 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757857Ab1KQRDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 12:03:48 -0500
-X-IronPort-AV: E=Sophos;i="4.69,528,1315173600"; 
-   d="scan'208";a="131205993"
-Message-ID: <4EC53E72.5040408@inria.fr>
-Date: Thu, 17 Nov 2011 18:03:46 +0100
-From: Tomasz Buchert <tomasz.buchert@inria.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Icedove/3.1.15
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+	id S932516Ab1KQRFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 12:05:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757882Ab1KQRFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 12:05:24 -0500
+Date: Thu, 17 Nov 2011 17:00:11 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
-References: <1321480234-29241-1-git-send-email-mhocko@suse.cz> <4EC4DE9D.3040703@inria.fr> <20111117161318.GA1233@tiehlicka.suse.cz>
-In-Reply-To: <20111117161318.GA1233@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
+	pids
+Message-ID: <20111117160011.GC12325@redhat.com>
+References: <4EC4F2FB.408@parallels.com> <4EC4F348.6020101@parallels.com> <20111117153200.GA12325@redhat.com> <4EC52D14.8090701@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC52D14.8090701@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 17/11/2011 17:13, Michal Hocko a écrit :
-> On Thu 17-11-11 11:14:53, Tomasz Buchert wrote:
->> Hi,
->> I'm trying to understand now why I did that change in
->>
->> 2d3cbf8bc (the bug itself was in the if-the-else clause in
->> update_if_frozen , anyway).
->> Well, when I look at this now I think that there is nothing wrong
->> with your patch.
->> You can try my testcases from 2d3cbf8bc and 0bdba580, but it should be ok.
-> Yes, I have tried it before sending the patch.
+On 11/17, Pavel Emelyanov wrote:
 >
->> One thing I am not sure completely of is the following situation. So
->> the group is frozen
->> with the STOPPED task inside. There are few questions:
->> * if you send SIGCONT to the task now, will it wake up?
-> No, it will enter refrigerator and wake up on thawing the group. Check
-> out `goto relock' after do_signal_stop returns.
+> On 11/17/2011 07:32 PM, Oleg Nesterov wrote:
+> > On 11/17, Pavel Emelyanov wrote:
+> >>
+> >> +static int set_pidmap(struct pid_namespace *pid_ns, int pid)
+> >> +{
+> >> +	int offset;
+> >> +	struct pidmap *map;
+> >> +
+> >> +	/*
+> >> +	 * When creating a new pid namespace we must make its init
+> >> +	 * have pid == 1 in it.
+> >> +	 */
+> >> +	if (pid_ns->child_reaper == NULL)
+> >> +		return 0;
+> >
+> > Do we really need this check? please see below...
+> >
+> >> +	/*
+> >> +	 * Don't allow to create a task with a pid which has recently
+> >> +	 * belonged to some other (dead already) task. Only init (of
+> >> +	 * a freshly created namespace) and his clones can do this.
+> >> +	 */
+> >> +	if (pid_ns->last_pid != 1)
+> >> +		return -EPERM;
+> >
+> > ->last_pid == 1. This means that pid_nr == 1 was already created
+> > in this namespace via CLONE_NEWPID, and the child with this pid
+> > must be ->child_reaper, no?
 >
-I've checked your patch empirically few hours before :).
-Also I've read get_signal_to_deliver() and you are right - it's gonna be 
-fine.
-The decision is not mine, of course, but I suggest to merge it.
-Good work!
+> If you use the CLONE_NEWPID | CLONE_CHILD_USEPIDS
 
-Tomek
+Ah wait... I misread the check above as if it returns the error if
+->child_reaper == NULL.
+
+So, CLONE_NEWPID simply ignores child_tidptr[0], alloc_pid()
+fallbacks to alloc_pidmap() after set_pidmap() returns 0.
+
+> > Cough. I really think 45a68628 should be reverted ;) IMHO it
+> > complicates the understanding of CLONE_NEWPID logic.
+>
+> If we remove it, then it's OK to remove the check above, but in this case we
+> make it possible to have an init with pid != 1. This is flexible, but ... strange.
+
+No, I didn't mean we should allow ->child_reaper with pid != 1, sorry
+for confusion.
+
+Oleg.
+
