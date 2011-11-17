@@ -1,167 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757420Ab1KQR37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 12:29:59 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46962 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756830Ab1KQR36 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 12:29:58 -0500
-Subject: [PATCH v2] usb : gadget : usbstring : fix style problems
-From: tonylijo <mail@tonylijo.in>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+	id S1752706Ab1KQRfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 12:35:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:63826 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab1KQRfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 12:35:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,528,1315206000"; 
+   d="scan'208";a="91970844"
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Date: Thu, 17 Nov 2011 09:36:21 -0800
+In-Reply-To: <1321547917.6308.48.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+Organization: Intel Corp
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 22:58:57 +0530
-Message-ID: <1321550937.2727.9.camel@tonylijo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor fixes for problems found by checkpatch.pl in usbstring.c.
+On Thu, 2011-11-17 at 08:38 -0800, Mike Galbraith wrote:
+> On Thu, 2011-11-17 at 16:56 +0100, Peter Zijlstra wrote:
+> > Something like the below maybe, although I'm certain it all can be
+> > written much nicer indeed.
+> 
+> I'll give it a go.
+> 
+> Squabbling with bouncing buddies in an isolated and otherwise idle
+> cpuset ate my day.
+>  
 
-checkpatch.pl -f --terse drivers/usb/gadget/usbstring.c
-
-drivers/usb/gadget/usbstring.c:35: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:36: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:46: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:47: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:67: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:68: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:69: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:70: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:71: ERROR: do not use C99 // comments
-drivers/usb/gadget/usbstring.c:88: ERROR: trailing whitespace
-drivers/usb/gadget/usbstring.c:105: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:112: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:113: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:114: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:115: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:127: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:127: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:128: WARNING: space prohibited between function name and open parenthesis '('
-drivers/usb/gadget/usbstring.c:132: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:133: ERROR: space prohibited before open square bracket '['
-drivers/usb/gadget/usbstring.c:134: ERROR: space prohibited before open square bracket '['
-total: 17 errors, 4 warnings, 136 lines checked
-
-Signed-off-by: Tonylijo Jose <mail@tonylijo.in>
+Well looks like I managed to have the similar issue in my patch too.
+Anyways here is the updated cleaned up version of the patch ;)
 ---
 
-diff --git a/drivers/usb/gadget/usbstring.c b/drivers/usb/gadget/usbstring.c
-index 58c4d37..d9faf8d 100644
---- a/drivers/usb/gadget/usbstring.c
-+++ b/drivers/usb/gadget/usbstring.c
-@@ -26,14 +26,17 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
- 	u8	c;
- 	u16	uchar;
+Avoid select_idle_sibling() from picking a sibling thread if there's
+an idle core that shares cache.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ kernel/sched.c      |    2 +
+ kernel/sched_fair.c |   57 ++++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 43 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 0e9344a..4b0bc6a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -734,6 +734,8 @@ static inline int cpu_of(struct rq *rq)
+ #define for_each_domain(cpu, __sd) \
+ 	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); __sd; __sd = __sd->parent)
  
--	/* this insists on correct encodings, though not minimal ones.
-+	/*
-+	 * this insists on correct encodings, though not minimal ones.
- 	 * BUT it currently rejects legit 4-byte UTF-8 code points,
- 	 * which need surrogate pairs.  (Unicode 3.1 can use them.)
- 	 */
- 	while (len != 0 && (c = (u8) *s++) != 0) {
- 		if (unlikely(c & 0x80)) {
--			// 2-byte sequence:
--			// 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
-+			/*
-+			 * 2-byte sequence:
-+			 * 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
-+			 */
- 			if ((c & 0xe0) == 0xc0) {
- 				uchar = (c & 0x1f) << 6;
- 
-@@ -42,9 +45,10 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
- 					goto fail;
- 				c &= 0x3f;
- 				uchar |= c;
--
--			// 3-byte sequence (most CJKV characters):
--			// zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
-+			/*
-+			 * 3-byte sequence (most CJKV characters):
-+			 * zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
-+			 */
- 			} else if ((c & 0xf0) == 0xe0) {
- 				uchar = (c & 0x0f) << 12;
- 
-@@ -63,12 +67,13 @@ static int utf8_to_utf16le(const char *s, __le16 *cp, unsigned len)
- 				/* no bogus surrogates */
- 				if (0xd800 <= uchar && uchar <= 0xdfff)
- 					goto fail;
--
--			// 4-byte sequence (surrogate pairs, currently rare):
--			// 11101110wwwwzzzzyy + 110111yyyyxxxxxx
--			//     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
--			// (uuuuu = wwww + 1)
--			// FIXME accept the surrogate code points (only)
-+			/*
-+			 * 4-byte sequence (surrogate pairs, currently rare):
-+			 * 11101110wwwwzzzzyy + 110111yyyyxxxxxx
-+			 *     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
-+			 * (uuuuu = wwww + 1)
-+			 * FIXME accept the surrogate code points (only)
-+			 */
- 
- 			} else
- 				goto fail;
-@@ -85,7 +90,7 @@ fail:
- 
- 
- /**
-- * usb_gadget_get_string - fill out a string descriptor 
-+ * usb_gadget_get_string() - fill out a string descriptor
-  * @table: of c strings encoded using UTF-8
-  * @id: string id, from low byte of wValue in get string descriptor
-  * @buf: at least 256 bytes
-@@ -102,17 +107,17 @@ fail:
-  * characters (which are also widely used in C strings).
-  */
- int
--usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
-+usb_gadget_get_string(struct usb_gadget_strings *table, int id, u8 *buf)
- {
- 	struct usb_string	*s;
- 	int			len;
- 
- 	/* descriptor 0 has the language id */
- 	if (id == 0) {
--		buf [0] = 4;
--		buf [1] = USB_DT_STRING;
--		buf [2] = (u8) table->language;
--		buf [3] = (u8) (table->language >> 8);
-+		buf[0] = 4;
-+		buf[1] = USB_DT_STRING;
-+		buf[2] = (u8) table->language;
-+		buf[3] = (u8) (table->language >> 8);
- 		return 4;
- 	}
- 	for (s = table->strings; s && s->s; s++)
-@@ -124,13 +129,13 @@ usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
- 		return -EINVAL;
- 
- 	/* string descriptors have length, tag, then UTF16-LE text */
--	len = min ((size_t) 126, strlen (s->s));
--	memset (buf + 2, 0, 2 * len);	/* zero all the bytes */
-+	len = min((size_t) 126, strlen(s->s));
-+	memset(buf + 2, 0, 2 * len);	/* zero all the bytes */
- 	len = utf8_to_utf16le(s->s, (__le16 *)&buf[2], len);
- 	if (len < 0)
- 		return -EINVAL;
--	buf [0] = (len + 1) * 2;
--	buf [1] = USB_DT_STRING;
--	return buf [0];
-+	buf[0] = (len + 1) * 2;
-+	buf[1] = USB_DT_STRING;
-+	return buf[0];
++#define for_each_lower_domain(sd) for (; sd; sd = sd->child)
++
+ #define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
+ #define this_rq()		(&__get_cpu_var(runqueues))
+ #define task_rq(p)		cpu_rq(task_cpu(p))
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 5c9e679..020483a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2241,6 +2241,28 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+ 	return idlest;
  }
  
-
++/**
++ * highest_flag_domain - Return highest sched_domain containing flag.
++ * @cpu:	The cpu whose highest level of sched domain is to
++ *		be returned.
++ * @flag:	The flag to check for the highest sched_domain
++ *		for the given cpu.
++ *
++ * Returns the highest sched_domain of a cpu which contains the given flag.
++ */
++static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
++{
++	struct sched_domain *sd, *hsd = NULL;
++
++	for_each_domain(cpu, sd) {
++		if (!(sd->flags & flag))
++			break;
++		hsd = sd;
++	}
++
++	return hsd;
++}
++
+ /*
+  * Try and locate an idle CPU in the sched_domain.
+  */
+@@ -2249,6 +2271,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
+ 	struct sched_domain *sd;
++	struct sched_group *sg;
+ 	int i;
+ 
+ 	/*
+@@ -2269,25 +2292,27 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 	 * Otherwise, iterate the domains and find an elegible idle cpu.
+ 	 */
+ 	rcu_read_lock();
+-	for_each_domain(target, sd) {
+-		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
+-			break;
++	sd = highest_flag_domain(target, SD_SHARE_PKG_RESOURCES);
++	for_each_lower_domain(sd) {
++		sg = sd->groups;
++		do {
++			if (!cpumask_intersects(sched_group_cpus(sg),
++						tsk_cpus_allowed(p)))
++				goto next;
+ 
+-		for_each_cpu_and(i, sched_domain_span(sd), tsk_cpus_allowed(p)) {
+-			if (idle_cpu(i)) {
+-				target = i;
+-				break;
++			for_each_cpu(i, sched_group_cpus(sg)) {
++				if (!idle_cpu(i))
++					goto next;
+ 			}
+-		}
+ 
+-		/*
+-		 * Lets stop looking for an idle sibling when we reached
+-		 * the domain that spans the current cpu and prev_cpu.
+-		 */
+-		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
+-		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
+-			break;
++			target = cpumask_first_and(sched_group_cpus(sg),
++					tsk_cpus_allowed(p));
++			goto done;
++next:
++			sg = sg->next;
++		} while (sg != sd->groups);
+ 	}
++done:
+ 	rcu_read_unlock();
+ 
+ 	return target;
 
 
