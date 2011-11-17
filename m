@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab1KQKlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:41:37 -0500
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:34204 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab1KQKlg (ORCPT
+	id S1756659Ab1KQKnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:43:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54365 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531Ab1KQKnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:41:36 -0500
-Subject: [PATCH] [TRIVIAL] x86: Kconfig: drop unknown symbol 'APM_MODULE'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 11:41:31 +0100
-Message-ID: <1321526491.20271.275.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Nov 2011 05:43:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJuYYwSHoMFWkuL4+aEzOBt0XUaQwTUzob+cowvigPvYTRXS5Q@mail.gmail.com>
+References: <1321519821-25022-1-git-send-email-linus.walleij@stericsson.com>
+	<CAJuYYwSHoMFWkuL4+aEzOBt0XUaQwTUzob+cowvigPvYTRXS5Q@mail.gmail.com>
+Date: Thu, 17 Nov 2011 11:43:05 +0100
+Message-ID: <CACRpkdYWcP3H4g8RKnn9_x1F1xxRi=6gWT5=nie5Vq1tRSJAFg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: misc documentation fixups
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no Kconfig symbol APM_MODULE, so the check for it will always
-fail. There's no need to append _MODULE to tristate symbols anyhow,
-because the config tools will do the right thing automagically.
+On Thu, Nov 17, 2011 at 11:20 AM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Added in commit a6b68076fd ("x86: compile apm and voyager module only
-when selected in Kconfig"). The reason for appending _MODULE can be
-found at https://lkml.org/lkml/2008/1/3/422 .
+> There are few other minor fixes in the documentation, if possible can
+> these also be included in this patch.
 
- arch/x86/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+OK folded them in as well!
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cb9a104..e4d218e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1726,7 +1726,7 @@ source "drivers/sfi/Kconfig"
- 
- config X86_APM_BOOT
- 	def_bool y
--	depends on APM || APM_MODULE
-+	depends on APM
- 
- menuconfig APM
- 	tristate "APM (Advanced Power Management) BIOS support"
--- 
-1.7.4.4
-
+Thanks,
+Linus Walleij
