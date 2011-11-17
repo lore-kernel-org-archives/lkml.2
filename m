@@ -1,179 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab1KQKZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:25:59 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35091 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab1KQKZ6 (ORCPT
+	id S1756609Ab1KQKbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:31:46 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44556 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab1KQKbo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:25:58 -0500
-Date: Thu, 17 Nov 2011 11:25:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
- memcg_check_events()
-In-Reply-To: <20111117030332.GA14492@zhy>
-Message-ID: <alpine.LFD.2.02.1111171125020.4902@ionos>
-References: <alpine.LFD.2.02.1111150050590.4902@ionos> <20111115084059.GA23250@zhy> <20111116091653.GA8692@zhy> <1321452758.4181.18.camel@frodo> <alpine.LFD.2.02.1111161801270.4902@ionos> <20111117030332.GA14492@zhy>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 17 Nov 2011 05:31:44 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CAEWqx58YQAKQ=D=qteipHQq5Q==+aEiKMYP4FczMZ9kReogMDQ@mail.gmail.com>
+References: <1321440940-20246-1-git-send-email-xsecute@googlemail.com>
+	<1321440940-20246-3-git-send-email-xsecute@googlemail.com>
+	<4EC416CF.3050707@openwrt.org>
+	<CAEWqx58YQAKQ=D=qteipHQq5Q==+aEiKMYP4FczMZ9kReogMDQ@mail.gmail.com>
+Date: Thu, 17 Nov 2011 11:31:42 +0100
+Message-ID: <CAEWqx59k97AMU6hH0NCC2TMEY2mu8d5ytxO68oEsa=7uvLBA4A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Initial support for the Ubiquiti Networks XM board.
+From: =?UTF-8?Q?Ren=C3=A9_Bolldorf?= <xsecute@googlemail.com>
+To: Gabor Juhos <juhosg@openwrt.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011, Yong Zhang wrote:
+Did not reply to all.....
 
-> On Wed, Nov 16, 2011 at 06:02:42PM +0100, Thomas Gleixner wrote:
-> > On Wed, 16 Nov 2011, Steven Rostedt wrote:
-> > > On Wed, 2011-11-16 at 17:16 +0800, Yong Zhang wrote:
-> > > > Looking at commit 4799401f [memcg: Fix race condition in
-> > > > memcg_check_events() with this_cpu usage], we just want
-> > > > to disable migration. So use the right API in -rt. This
-> > > > will cure below warning.
-> > > No this won't work. Not even for -rt. If we disable migration but not
-> > > preemption, then two tasks can take this path. And the checks in
-> > > __memcg_event_check() will be corrupted because nothing is protecting
-> > > the updates from two tasks going into the same path.
-> > > 
-> > > Perhaps a local_lock would work.
-> > 
-> > Yes, that's the only sensible option for now. Untested patch below.
-> 
-> Works for me.
-
-Johannes came up with a different solution. Could you please give it a try?
-
-Thanks,
-
-	tglx
-
-------------->
-Subject: [patch] mm: memcg: shorten preempt-disabled section around event checks
-
-Only the ratelimit checks themselves have to run with preemption
-disabled, the resulting actions - checking for usage thresholds,
-updating the soft limit tree - can and should run with preemption
-enabled.
-
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
- mm/memcontrol.c |   73 ++++++++++++++++++++++++++----------------------------
- 1 files changed, 35 insertions(+), 38 deletions(-)
-
-Thomas, HTH and it is probably interesting for upstream as well.
-Unfortunately, I'm in the middle of moving right now, so this is
-untested except for compiling.
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..8e62d3e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -683,37 +683,32 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
- 	return total;
- }
- 
--static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
-+static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
-+				       enum mem_cgroup_events_target target)
- {
- 	unsigned long val, next;
- 
- 	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
- 	next = __this_cpu_read(memcg->stat->targets[target]);
- 	/* from time_after() in jiffies.h */
--	return ((long)next - (long)val < 0);
--}
--
--static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
--{
--	unsigned long val, next;
--
--	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
--
--	switch (target) {
--	case MEM_CGROUP_TARGET_THRESH:
--		next = val + THRESHOLDS_EVENTS_TARGET;
--		break;
--	case MEM_CGROUP_TARGET_SOFTLIMIT:
--		next = val + SOFTLIMIT_EVENTS_TARGET;
--		break;
--	case MEM_CGROUP_TARGET_NUMAINFO:
--		next = val + NUMAINFO_EVENTS_TARGET;
--		break;
--	default:
--		return;
-+	if ((long)next - (long)val < 0) {
-+		switch (target) {
-+		case MEM_CGROUP_TARGET_THRESH:
-+			next = val + THRESHOLDS_EVENTS_TARGET;
-+			break;
-+		case MEM_CGROUP_TARGET_SOFTLIMIT:
-+			next = val + SOFTLIMIT_EVENTS_TARGET;
-+			break;
-+		case MEM_CGROUP_TARGET_NUMAINFO:
-+			next = val + NUMAINFO_EVENTS_TARGET;
-+			break;
-+		default:
-+			break;
-+		}
-+		__this_cpu_write(memcg->stat->targets[target], next);
-+		return true;
- 	}
--
--	__this_cpu_write(memcg->stat->targets[target], next);
-+	return false;
- }
- 
- /*
-@@ -724,25 +719,27 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
- {
- 	preempt_disable();
- 	/* threshold event is triggered in finer grain than soft limit */
--	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
-+	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_THRESH))) {
-+		bool do_softlimit, do_numainfo;
-+
-+		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_SOFTLIMIT);
-+#if MAX_NUMNODES > 1
-+		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_NUMAINFO);
-+#endif
-+		preempt_enable();
-+
- 		mem_cgroup_threshold(memcg);
--		__mem_cgroup_target_update(memcg, MEM_CGROUP_TARGET_THRESH);
--		if (unlikely(__memcg_event_check(memcg,
--			     MEM_CGROUP_TARGET_SOFTLIMIT))) {
-+		if (unlikely(do_softlimit))
- 			mem_cgroup_update_tree(memcg, page);
--			__mem_cgroup_target_update(memcg,
--						   MEM_CGROUP_TARGET_SOFTLIMIT);
--		}
- #if MAX_NUMNODES > 1
--		if (unlikely(__memcg_event_check(memcg,
--			MEM_CGROUP_TARGET_NUMAINFO))) {
-+		if (unlikely(do_numainfo))
- 			atomic_inc(&memcg->numainfo_events);
--			__mem_cgroup_target_update(memcg,
--				MEM_CGROUP_TARGET_NUMAINFO);
--		}
- #endif
--	}
--	preempt_enable();
-+	} else
-+		preempt_enable();
- }
- 
- static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
--- 
-1.7.6.4
-
+2011/11/16 René Bolldorf <xsecute@googlemail.com>:
+> On Wed, Nov 16, 2011 at 9:02 PM, Gabor Juhos <juhosg@openwrt.org> wrote:
+>> Hi Rene,
+>>
+>>> Signed-off-by: Rene Bolldorf <xsecute@googlemail.com>
+>>> ---
+>>>  arch/mips/ath79/Kconfig        |   12 ++++
+>>>  arch/mips/ath79/Makefile       |    1 +
+>>>  arch/mips/ath79/Platform       |    7 ++-
+>>>  arch/mips/ath79/mach-ubnt-xm.c |  110 ++++++++++++++++++++++++++++++++++++++++
+>>>  arch/mips/ath79/machtypes.h    |    1 +
+>>>  5 files changed, 128 insertions(+), 3 deletions(-)
+>>>  create mode 100644 arch/mips/ath79/mach-ubnt-xm.c
+>>>
+>>> diff --git a/arch/mips/ath79/Kconfig b/arch/mips/ath79/Kconfig
+>>> index 4770741..fa74e73 100644
+>>> --- a/arch/mips/ath79/Kconfig
+>>> +++ b/arch/mips/ath79/Kconfig
+>>> @@ -23,6 +23,16 @@ config ATH79_MACH_PB44
+>>>         Say 'Y' here if you want your kernel to support the
+>>>         Atheros PB44 reference board.
+>>>
+>>> +config ATH79_MACH_UBNT_XM
+>>> +     bool "Ubiquiti Networks XM board"
+>>> +     select SOC_AR724X
+>>> +     select ATH79_DEV_GPIO_BUTTONS
+>>> +     select ATH79_DEV_LEDS_GPIO
+>>> +     select ATH79_DEV_SPI
+>>> +     help
+>>> +       Say 'Y' here if you want your kernel to support the
+>>> +       Ubiquiti Networks XM board.
+>>> +
+>>>  endmenu
+>>>
+>>>  config SOC_AR71XX
+>>> @@ -33,6 +43,8 @@ config SOC_AR71XX
+>>>  config SOC_AR724X
+>>>       select USB_ARCH_HAS_EHCI
+>>>       select USB_ARCH_HAS_OHCI
+>>> +     select HW_HAS_PCI
+>>> +     select PCI
+>>
+>> Please don't select the whole PCI subsystem. Even if the hardware has PCI
+>> support, not everyone wants to build a kernel with PCI support.
+>>
+>>>       def_bool n
+>>>
+>>>  config SOC_AR913X
+>>> diff --git a/arch/mips/ath79/Makefile b/arch/mips/ath79/Makefile
+>>> index c33d465..ac9f375 100644
+>>> --- a/arch/mips/ath79/Makefile
+>>> +++ b/arch/mips/ath79/Makefile
+>>> @@ -26,3 +26,4 @@ obj-$(CONFIG_ATH79_DEV_SPI)         += dev-spi.o
+>>>  #
+>>>  obj-$(CONFIG_ATH79_MACH_AP81)                += mach-ap81.o
+>>>  obj-$(CONFIG_ATH79_MACH_PB44)                += mach-pb44.o
+>>> +obj-$(CONFIG_ATH79_MACH_UBNT_XM)     += mach-ubnt-xm.o
+>>> diff --git a/arch/mips/ath79/Platform b/arch/mips/ath79/Platform
+>>> index 2bd6636..aca7ab1 100644
+>>> --- a/arch/mips/ath79/Platform
+>>> +++ b/arch/mips/ath79/Platform
+>>> @@ -2,6 +2,7 @@
+>>>  # Atheros AR71xx/AR724x/AR913x
+>>>  #
+>>>
+>>> -platform-$(CONFIG_ATH79)     += ath79/
+>>> -cflags-$(CONFIG_ATH79)               += -I$(srctree)/arch/mips/include/asm/mach-ath79
+>>> -load-$(CONFIG_ATH79)         = 0xffffffff80060000
+>>> +platform-$(CONFIG_ATH79)             += ath79/
+>>> +cflags-$(CONFIG_ATH79)                       += -I$(srctree)/arch/mips/include/asm/mach-ath79
+>>> +load-$(CONFIG_ATH79)                 = 0xffffffff80060000
+>>> +load-$(CONFIG_ATH79_MACH_UBNT_XM)    = 0xffffffff80002000
+>>
+>> Please don't add another load address here.The ath79 platform code has been
+>> designed in a way which allows a single kernel image to run on all
+>> AR71xx/AR724x/AR913X/AR933x based boards, and the 0x80060000 load address has
+>> been chosen due to compatibility reasons. It allows to boot the kernel on older
+>> boards which are using RedBoot as the bootloader. The U-Boot on the
+>> AR724x/AR933x based boards can load the kernel to 0x8006000.
+>>
+>>> diff --git a/arch/mips/ath79/mach-ubnt-xm.c b/arch/mips/ath79/mach-ubnt-xm.c
+>>> new file mode 100644
+>>> index 0000000..150a0a0
+>>> --- /dev/null
+>>> +++ b/arch/mips/ath79/mach-ubnt-xm.c
+>>> @@ -0,0 +1,110 @@
+>>> +/*
+>>> + *  Ubiquiti Networks XM board support
+>>> + *
+>>> + *  Copyright (C) 2011 René Bolldorf <xsecute@googlemail.com>
+>>> + *
+>>> + *  Derived from: mach-pb44.c
+>>> + *
+>>> + *  This program is free software; you can redistribute it and/or modify it
+>>> + *  under the terms of the GNU General Public License version 2 as published
+>>> + *  by the Free Software Foundation.
+>>> + */
+>>> +
+>>> +#include <linux/init.h>
+>>> +#include <linux/pci.h>
+>>> +#include <linux/ath9k_platform.h>
+>>> +
+>>> +#include "machtypes.h"
+>>> +#include "dev-gpio-buttons.h"
+>>> +#include "dev-leds-gpio.h"
+>>> +#include "dev-spi.h"
+>>> +
+>>> +#define UBNT_XM_GPIO_LED_L1          0
+>>> +#define UBNT_XM_GPIO_LED_L2          1
+>>> +#define UBNT_XM_GPIO_LED_L3          11
+>>> +#define UBNT_XM_GPIO_LED_L4          7
+>>> +
+>>> +#define UBNT_XM_GPIO_BTN_RESET               12
+>>> +
+>>> +#define UBNT_XM_KEYS_POLL_INTERVAL   20
+>>> +#define UBNT_XM_KEYS_DEBOUNCE_INTERVAL       (3 * UBNT_XM_KEYS_POLL_INTERVAL)
+>>> +
+>>> +#define UBNT_XM_PCI_IRQ                      48
+>>> +#define UBNT_XM_EEPROM_ADDR          (u8 *) KSEG1ADDR(0x1fff1000)
+>>> +
+>>> +static struct gpio_led ubnt_xm_leds_gpio[] __initdata = {
+>>> +     {
+>>> +             .name           = "signal:poor",
+>>> +             .gpio           = UBNT_XM_GPIO_LED_L1,
+>>> +             .active_low     = 0,
+>>> +     }, {
+>>> +             .name           = "signal:bad",
+>>> +             .gpio           = UBNT_XM_GPIO_LED_L2,
+>>> +             .active_low     = 0,
+>>> +     }, {
+>>> +             .name           = "signal:good",
+>>> +             .gpio           = UBNT_XM_GPIO_LED_L3,
+>>> +             .active_low     = 0,
+>>> +     }, {
+>>> +             .name           = "signal:excellent",
+>>> +             .gpio           = UBNT_XM_GPIO_LED_L4,
+>>> +             .active_low     = 0,
+>>> +     },
+>>
+>> The LED names should follow the Linux LED Device Naming convention.
+>> See Documentation/leds/leds-class.txt.
+>>
+>>> +};
+>>> +
+>>> +static struct gpio_keys_button ubnt_xm_gpio_keys[] __initdata = {
+>>> +     {
+>>> +             .desc           = "reset",
+>>> +             .type           = EV_KEY,
+>>> +             .code           = KEY_RESTART,
+>>> +             .debounce_interval = UBNT_XM_KEYS_DEBOUNCE_INTERVAL,
+>>> +             .gpio           = UBNT_XM_GPIO_BTN_RESET,
+>>> +             .active_low     = 1,
+>>> +     }
+>>> +};
+>>> +
+>>> +static struct spi_board_info ubnt_xm_spi_info[] = {
+>>> +     {
+>>> +             .bus_num        = 0,
+>>> +             .chip_select    = 0,
+>>> +             .max_speed_hz   = 25000000,
+>>> +             .modalias       = "mx25l6405d",
+>>> +     }
+>>> +};
+>>> +
+>>> +static struct ath79_spi_platform_data ubnt_xm_spi_data = {
+>>> +     .bus_num                = 0,
+>>> +     .num_chipselect         = 1,
+>>> +};
+>>> +
+>>> +static struct ath9k_platform_data ubnt_xm_eeprom_data;
+>>> +
+>>> +int __init pcibios_map_irq(const struct pci_dev *dev, uint8_t slot, uint8_t pin)
+>>> +{
+>>> +     return UBNT_XM_PCI_IRQ;
+>>> +}
+>>> +
+>>> +int pcibios_plat_dev_init(struct pci_dev *dev)
+>>> +{
+>>> +     dev->dev.platform_data = &ubnt_xm_eeprom_data;
+>>> +
+>>> +     return 0;
+>>> +}
+>>
+>> The 'pci_bios_map_irq' and 'pcibios_plat_dev_init' functions are global, so you
+>> can have only one instance of them within the kernel. Adding these functions
+>> into a machine specific file would prevent to build a kernel which supports
+>> multiple different boards.
+>>
+>>> +
+>>> +static void __init ubnt_xm_init(void)
+>>> +{
+>>> +     ath79_register_leds_gpio(-1, ARRAY_SIZE(ubnt_xm_leds_gpio),
+>>> +                              ubnt_xm_leds_gpio);
+>>
+>> The Ubiquiti xM family has several different models. Registering all of the assigned
+>> GPIO lines varies between the different boards.
+>>
+> I know that the GPIO lines from NanoBridge, Picostation and Rocket
+> with board revision v1 are the same.
+> I note this in the kconf help text.
+>
+> I improve the code and send a V2.
+>
+> Thank you for the hints.
+>>> +
+>>> +     ath79_register_gpio_keys_polled(-1, UBNT_XM_KEYS_POLL_INTERVAL,
+>>> +                                     ARRAY_SIZE(ubnt_xm_gpio_keys),
+>>> +                                     ubnt_xm_gpio_keys);
+>>> +
+>>> +     ath79_register_spi(&ubnt_xm_spi_data, ubnt_xm_spi_info,
+>>> +                        ARRAY_SIZE(ubnt_xm_spi_info));
+>>> +
+>>> +     memcpy(ubnt_xm_eeprom_data.eeprom_data, UBNT_XM_EEPROM_ADDR,
+>>> +            sizeof(ubnt_xm_eeprom_data.eeprom_data));
+>>> +}
+>>> +
+>>> +MIPS_MACHINE(ATH79_MACH_UBNT_XM, "UBNT-XM", "Ubiquiti Networks XM board", ubnt_xm_init);
+>>> diff --git a/arch/mips/ath79/machtypes.h b/arch/mips/ath79/machtypes.h
+>>> index 3940fe4..1bb0747 100644
+>>> --- a/arch/mips/ath79/machtypes.h
+>>> +++ b/arch/mips/ath79/machtypes.h
+>>> @@ -18,6 +18,7 @@ enum ath79_mach_type {
+>>>       ATH79_MACH_GENERIC = 0,
+>>>       ATH79_MACH_AP81,                /* Atheros AP81 reference board */
+>>>       ATH79_MACH_PB44,                /* Atheros PB44 reference board */
+>>> +     ATH79_MACH_UBNT_XM,             /* Ubiquiti Networks XM board */
+>>>  };
+>>>
+>>>  #endif /* _ATH79_MACHTYPE_H */
+>>
+>>
+>
