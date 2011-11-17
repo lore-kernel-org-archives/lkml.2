@@ -1,76 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1KQKKD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:10:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49035 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756478Ab1KQKKB (ORCPT
+	id S1756600Ab1KQKN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:13:56 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:36004 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756572Ab1KQKNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:10:01 -0500
-Date: Thu, 17 Nov 2011 11:09:57 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Claudio Scordino <claudio@evidence.eu.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Juergen Beisert <jbe@pengutronix.de>,
-        Matthias Fuchs <mfuchs@ma-fu.de>
-Subject: Re: [PATCH 2/8] serial: 8250: Add ioctl to enable auto rs485 mode
- with some Exar UARTs
-Message-ID: <20111117100957.GC2535@pengutronix.de>
-References: <1321460685-15753-1-git-send-email-w.sang@pengutronix.de>
- <1321460685-15753-3-git-send-email-w.sang@pengutronix.de>
- <4EC4D67E.1050102@evidence.eu.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
-Content-Disposition: inline
-In-Reply-To: <4EC4D67E.1050102@evidence.eu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 17 Nov 2011 05:13:55 -0500
+X-AuditID: cbfee61b-b7b7fae000005864-8e-4ec4de5e02b0
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, rdunlap@xenotime.net,
+        cbouatmailru@gmail.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, dg77.kim@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 2/2] power: Charger-Manager: add properties for
+ power-supply-class
+Date: Thu, 17 Nov 2011 19:13:13 +0900
+Message-id: <1321524793-25117-3-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1321524793-25117-1-git-send-email-dg77.kim@samsung.com>
+References: <1321524793-25117-1-git-send-email-dg77.kim@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Charger Manager provides power-supply-class aggregating
+information from multiple chargers and a fuel-gauge.
 
---mvpLiMfbWzRoNl4x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Documentation/power/charger-manager.txt |   14 ++
+ drivers/power/charger-manager.c         |  295 ++++++++++++++++++++++++++++++-
+ include/linux/power/charger-manager.h   |   17 ++
+ 3 files changed, 325 insertions(+), 1 deletions(-)
 
+diff --git a/Documentation/power/charger-manager.txt b/Documentation/power/charger-manager.txt
+index 99630e5..3a55c79 100644
+--- a/Documentation/power/charger-manager.txt
++++ b/Documentation/power/charger-manager.txt
+@@ -98,6 +98,11 @@ battery), an instance of Charger Manager is attached to it.
+ 
+ struct charger_desc {
+ 
++char *psy_name;
++	: The power-supply-class name of the battery. Default is
++	"battery" if psy_name is NULL. Users can access the psy entries
++	at "/sys/class/power_supply/[psy_name]/".
++
+ enum polling_modes polling_mode;
+ 	: CM_POLL_DISABLE: do not poll this battery.
+ 	  CM_POLL_ALWAYS: always poll this battery.
+@@ -106,6 +111,12 @@ enum polling_modes polling_mode;
+ 	  CM_POLL_CHARGING_ONLY: poll this battery if and only if the
+ 				 battery is being charged.
+ 
++unsigned int fullbatt_uV;
++	: If specified with a non-zero value, Charger Manager assumes
++	that the battery is full (capacity = 100) if the battery is not being
++	charged and the battery voltage is equal to or greater than
++	fullbatt_uV.
++
+ unsigned int polling_interval_ms;
+ 	: Required polling interval in ms. Charger Manager will poll
+ 	this battery every polling_interval_ms or more frequently.
+@@ -131,10 +142,13 @@ char *psy_fuel_gauge;
+ 	: Power-supply-class name of the fuel gauge.
+ 
+ int (*is_temperature_error)(int *mC);
++bool measure_battery_temp;
+ 	: This callback returns 0 if the temperature is safe for charging,
+ 	a positive number if it is too hot to charge, and a negative number
+ 	if it is too cold to charge. With the variable mC, the callback returns
+ 	the temperature in 1/1000 of centigrade.
++	The source of temperature can be battery or ambient one according to
++	the value of measure_battery_temp.
+ };
+ 
+ 5. Other Considerations
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 5006756..818f890 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -118,6 +118,32 @@ static bool is_ext_pwr_online(struct charger_manager *cm)
+ }
+ 
+ /**
++ * get_batt_uV - Get the voltage level of the battery
++ * @cm: the Charger Manager representing the battery.
++ * @uV: the voltage level returned.
++ *
++ * Returns 0 if there is no error.
++ * Returns a negative value on error.
++ */
++static int get_batt_uV(struct charger_manager *cm, int *uV)
++{
++	union power_supply_propval val;
++	int ret;
++
++	if (cm->fuel_gauge)
++		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++				POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
++	else
++		return -ENODEV;
++
++	if (ret)
++		return ret;
++
++	*uV = val.intval;
++	return 0;
++}
++
++/**
+  * is_charging - Returns true if the battery is being charged.
+  * @cm: the Charger Manager representing the battery.
+  */
+@@ -369,6 +395,208 @@ static bool cm_monitor(void)
+ 	return stop;
+ }
+ 
++static int charger_get_property(struct power_supply *psy,
++		enum power_supply_property psp,
++		union power_supply_propval *val)
++{
++	struct charger_manager *cm = container_of(psy,
++			struct charger_manager, charger_psy);
++	struct charger_desc *desc = cm->desc;
++	int i, ret = 0, uV;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		if (is_charging(cm))
++			val->intval = POWER_SUPPLY_STATUS_CHARGING;
++		else if (is_ext_pwr_online(cm))
++			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		else
++			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		if (cm->emergency_stop > 0)
++			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
++		else if (cm->emergency_stop < 0)
++			val->intval = POWER_SUPPLY_HEALTH_COLD;
++		else
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		if (is_batt_present(cm))
++			val->intval = 1;
++		else
++			val->intval = 0;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		ret = get_batt_uV(cm, &i);
++		val->intval = i;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++				POWER_SUPPLY_PROP_CURRENT_NOW, val);
++		break;
++	case POWER_SUPPLY_PROP_TEMP:
++		/* in thenth of centigrade */
++		if (cm->last_temp_mC == INT_MIN)
++			desc->is_temperature_error(&cm->last_temp_mC);
++		val->intval = cm->last_temp_mC / 100;
++		if (!desc->measure_battery_temp)
++			ret = -ENODEV;
++		break;
++	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
++		/* in thenth of centigrade */
++		if (cm->last_temp_mC == INT_MIN)
++			desc->is_temperature_error(&cm->last_temp_mC);
++		val->intval = cm->last_temp_mC / 100;
++		if (desc->measure_battery_temp)
++			ret = -ENODEV;
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		if (!cm->fuel_gauge) {
++			ret = -ENODEV;
++			break;
++		}
++
++		if (!is_batt_present(cm)) {
++			/* There is no battery. Assume 100% */
++			val->intval = 100;
++			break;
++		}
++
++		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++					POWER_SUPPLY_PROP_CAPACITY, val);
++		if (ret)
++			break;
++
++		if (val->intval > 100) {
++			val->intval = 100;
++			break;
++		}
++		if (val->intval < 0)
++			val->intval = 0;
++
++		/* Do not adjust SOC when charging: voltage is overrated */
++		if (is_charging(cm))
++			break;
++
++		/*
++		 * If the capacity value is inconsistent, calibrate it base on
++		 * the battery voltage values and the thresholds given as desc
++		 */
++		ret = get_batt_uV(cm, &uV);
++		if (ret) {
++			/* Voltage information not available. No calibration */
++			ret = 0;
++			break;
++		}
++
++		if (desc->fullbatt_uV > 0 && uV >= desc->fullbatt_uV &&
++		    !is_charging(cm)) {
++			val->intval = 100;
++			break;
++		}
++
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		if (is_ext_pwr_online(cm))
++			val->intval = 1;
++		else
++			val->intval = 0;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_FULL:
++		if (cm->fuel_gauge) {
++			if (cm->fuel_gauge->get_property(cm->fuel_gauge,
++			    POWER_SUPPLY_PROP_CHARGE_FULL, val) == 0)
++				break;
++		}
++
++		if (is_ext_pwr_online(cm)) {
++			/* Not full if it's charging. */
++			if (is_charging(cm)) {
++				val->intval = 0;
++				break;
++			}
++			/*
++			 * Full if it's powered but not charging andi
++			 * not forced stop by emergency
++			 */
++			if (!cm->emergency_stop) {
++				val->intval = 1;
++				break;
++			}
++		}
++
++		/* Full if it's over the fullbatt voltage */
++		ret = get_batt_uV(cm, &uV);
++		if (!ret && desc->fullbatt_uV > 0 && uV >= desc->fullbatt_uV &&
++		    !is_charging(cm)) {
++			val->intval = 1;
++			break;
++		}
++
++		/* Full if the cap is 100 */
++		if (cm->fuel_gauge) {
++			ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++					POWER_SUPPLY_PROP_CAPACITY, val);
++			if (!ret && val->intval >= 100 && !is_charging(cm)) {
++				val->intval = 1;
++				break;
++			}
++		}
++
++		val->intval = 0;
++		ret = 0;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++		if (is_charging(cm)) {
++			ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++						POWER_SUPPLY_PROP_CHARGE_NOW,
++						val);
++			if (ret) {
++				val->intval = 1;
++				ret = 0;
++			} else {
++				/* If CHARGE_NOW is supplied, use it */
++				val->intval = (val->intval > 0) ?
++						val->intval : 1;
++			}
++		} else {
++			val->intval = 0;
++		}
++		break;
++	default:
++		return -EINVAL;
++	}
++	return ret;
++}
++
++#define NUM_CHARGER_PSY_OPTIONAL	(4)
++static enum power_supply_property default_charger_props[] = {
++	/* Guaranteed to provide */
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_CHARGE_FULL,
++	/*
++	 * Optional properties are:
++	 * POWER_SUPPLY_PROP_CHARGE_NOW,
++	 * POWER_SUPPLY_PROP_CURRENT_NOW,
++	 * POWER_SUPPLY_PROP_TEMP, and
++	 * POWER_SUPPLY_PROP_TEMP_AMBIENT,
++	 */
++};
++
++static struct power_supply psy_default = {
++	.name = "battery",
++	.type = POWER_SUPPLY_TYPE_BATTERY,
++	.properties = default_charger_props,
++	.num_properties = ARRAY_SIZE(default_charger_props),
++	.get_property = charger_get_property,
++};
++
+ /**
+  * cm_setup_timer - For in-suspend monitoring setup wakeup alarm
+  *		    for suspend_again.
+@@ -536,6 +764,7 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 	struct charger_desc *desc = dev_get_platdata(&pdev->dev);
+ 	struct charger_manager *cm;
+ 	int ret = 0, i;
++	union power_supply_propval val;
+ 
+ 	if (g_desc && !rtc_dev && g_desc->rtc) {
+ 		rtc_dev = rtc_class_open(g_desc->rtc);
+@@ -630,10 +859,67 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, cm);
+ 
++	memcpy(&cm->charger_psy, &psy_default,
++				sizeof(psy_default));
++	if (!desc->psy_name) {
++		strncpy(cm->psy_name_buf, psy_default.name,
++				PSY_NAME_MAX);
++	} else {
++		strncpy(cm->psy_name_buf, desc->psy_name, PSY_NAME_MAX);
++	}
++	cm->charger_psy.name = cm->psy_name_buf;
++
++	/* Allocate for psy properties because they may vary */
++	cm->charger_psy.properties = kzalloc(sizeof(enum power_supply_property)
++				* (ARRAY_SIZE(default_charger_props) +
++				NUM_CHARGER_PSY_OPTIONAL),
++				GFP_KERNEL);
++	if (!cm->charger_psy.properties) {
++		dev_err(&pdev->dev, "Cannot allocate for psy properties.\n");
++		ret = -ENOMEM;
++		goto err_chg_stat;
++	}
++	memcpy(cm->charger_psy.properties, default_charger_props,
++		sizeof(enum power_supply_property) *
++		ARRAY_SIZE(default_charger_props));
++	cm->charger_psy.num_properties = psy_default.num_properties;
++
++	/* Find which optional psy-properties are available */
++	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
++					  POWER_SUPPLY_PROP_CHARGE_NOW, &val)) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_CHARGE_NOW;
++		cm->charger_psy.num_properties++;
++	}
++	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
++					  POWER_SUPPLY_PROP_CURRENT_NOW,
++					  &val)) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_CURRENT_NOW;
++		cm->charger_psy.num_properties++;
++	}
++	if (!desc->measure_battery_temp) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_TEMP_AMBIENT;
++		cm->charger_psy.num_properties++;
++	}
++	if (desc->measure_battery_temp) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_TEMP;
++		cm->charger_psy.num_properties++;
++	}
++
++	ret = power_supply_register(NULL, &cm->charger_psy);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot register charger-manager with"
++				" name \"%s\".\n", cm->charger_psy.name);
++		goto err_register;
++	}
++
+ 	ret = try_charger_enable(cm, true);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Cannot enable charger regulators\n");
+-		goto err_chg_stat;
++		goto err_enable;
+ 	}
+ 
+ 	/* Add to the list */
+@@ -643,6 +929,10 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
++err_enable:
++	power_supply_unregister(&cm->charger_psy);
++err_register:
++	kfree(cm->charger_psy.properties);
+ err_chg_stat:
+ 	kfree(cm->charger_stat);
+ err_no_charger_stat:
+@@ -665,6 +955,9 @@ static int __devexit charger_manager_remove(struct platform_device *pdev)
+ 	list_del(&cm->entry);
+ 	mutex_unlock(&cm_list_mtx);
+ 
++	power_supply_unregister(&cm->charger_psy);
++
++	kfree(cm->charger_psy.properties);
+ 	kfree(cm->charger_stat);
+ 	if (desc->charger_regulators)
+ 		regulator_bulk_free(desc->num_charger_regulators,
+diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
+index c91e208..3bc0e34 100644
+--- a/include/linux/power/charger-manager.h
++++ b/include/linux/power/charger-manager.h
+@@ -48,8 +48,12 @@ struct charger_global_desc {
+ 
+ /**
+  * struct charger_desc
++ * @psy_name: the name of power-supply-class for charger manager
+  * @polling_mode:
+  *	Determine which polling mode will be used
++ * @fullbatt_uV: voltage in microvolt
++ *	If it is not being charged and VBATT >= fullbatt_uV,
++ *	it is assumed to be full.
+  * @polling_interval_ms: interval in millisecond at which
+  *	charger manager will monitor battery health
+  * @battery_present:
+@@ -63,11 +67,18 @@ struct charger_global_desc {
+  *	return_value > 0: overheat
+  *	return_value == 0: normal
+  *	return_value < 0: cold
++ * @measure_battery_temp:
++ *	true: measure battery temperature
++ *	false: measure ambient temperature
+  */
+ struct charger_desc {
++	char *psy_name;
++
+ 	enum polling_modes polling_mode;
+ 	unsigned int polling_interval_ms;
+ 
++	unsigned int fullbatt_uV;
++
+ 	enum data_source battery_present;
+ 
+ 	char **psy_charger_stat;
+@@ -78,6 +89,7 @@ struct charger_desc {
+ 	char *psy_fuel_gauge;
+ 
+ 	int (*is_temperature_error)(int *mC);
++	bool measure_battery_temp;
+ };
+ 
+ #define PSY_NAME_MAX	30
+@@ -93,6 +105,8 @@ struct charger_desc {
+  * @emergency_stop:
+  *	When setting true, stop charging
+  * @last_temp_mC: the measured temperature in milli-Celsius
++ * @psy_name_buf: the name of power-supply-class for charger manager
++ * @charger_psy: power_supply for charger manager
+  * @status_save_ext_pwr_inserted:
+  *	saved status of external power before entering suspend-to-RAM
+  * @status_save_batt:
+@@ -111,6 +125,9 @@ struct charger_manager {
+ 	int emergency_stop;
+ 	int last_temp_mC;
+ 
++	char psy_name_buf[PSY_NAME_MAX + 1];
++	struct power_supply charger_psy;
++
+ 	bool status_save_ext_pwr_inserted;
+ 	bool status_save_batt;
+ };
+-- 
+1.7.4.1
 
-> > +		if (serial_inp(up, UART_FCTR)&  UART_FCTR_RS485)
-> > +			rs485ctrl.flags =3D SER_RS485_ENABLED;
-> > +		else
-> > +			rs485ctrl.flags =3D 0;
->=20
-> This else branch may be removed, since the structure has been already mem=
-setted to 0.
-
-Correct, yet I didn't want to change Matthias' code, so reviewers can
-skip this patch if they reviewed his old code already. Flag handling
-will be handled different with the next patch anyway.
-
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---mvpLiMfbWzRoNl4x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk7E3XUACgkQD27XaX1/VRvK1ACeOCUbtz7ToYJRme43QLSlEBX7
-FBMAoKMsRe/OJ/4j57Q68dcZbHkpYYod
-=QyTP
------END PGP SIGNATURE-----
-
---mvpLiMfbWzRoNl4x--
