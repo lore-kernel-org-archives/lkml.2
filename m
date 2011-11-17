@@ -1,167 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1KQBeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Nov 2011 20:34:16 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54286 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab1KQBeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Nov 2011 20:34:15 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 17 Nov 2011 10:33:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>, mhocko@suse.cz,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
-Message-Id: <20111117103308.063f78df.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1755333Ab1KQBhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Nov 2011 20:37:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2348 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755028Ab1KQBhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Nov 2011 20:37:21 -0500
+Date: Wed, 16 Nov 2011 20:38:10 -0500
+From: Jeff Layton <jlayton@redhat.com>
+Cc: Jim Rees <rees@umich.edu>, John Hughes <john@calvaedi.com>,
+        Trond Myklebust <trond.myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
+ mount expires
+Message-ID: <20111116203810.4e1b9d28@corrin.poochiereds.net>
+In-Reply-To: <20111116203119.1d9c0dd6@corrin.poochiereds.net>
+References: <4EC3FD8B.6000705@calvaedi.com>
+	<20111116144718.78b2e288@corrin.poochiereds.net>
+	<20111116234434.GA12882@umich.edu>
+	<20111116203119.1d9c0dd6@corrin.poochiereds.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 16 Nov 2011 20:31:19 -0500
+Jeff Layton <jlayton@redhat.com> wrote:
 
-I'll send this again when mm is shipped.
-I sometimes see mem_cgroup_split_huge_fixup() in perf report and noticed
-it's very slow. This fixes it. Any comments are welcome.
+> On Wed, 16 Nov 2011 18:44:34 -0500
+> Jim Rees <rees@umich.edu> wrote:
+> 
+> > Jeff Layton wrote:
+> > 
+> >   Uhhh, no...EKEYEXPIRED was never passed to userland. The patchset that
+> >   added EKEYEXPIRED returns in this codepath also added the code to make
+> >   it hang. 
+> >   
+> >   This not a bug, or at least it's intentional behavior. When a krb5
+> >   ticket expires, we *want* the process to hang. Otherwise, people with
+> >   long running jobs will often find that their jobs error out
+> >   inexplicably when their ticket expires.
+> > 
+> > Who decided that?  This seems completely wrong to me.  If my credentials
+> > expire, I want to get permission denied, not a client hang.  In 20 years of
+> > using authenticated file systems I never once wished my process had hung
+> > when my ticket expired.
+> > 
+> 
+> I proposed it, we discussed it on the list, and Trond and Steve
+> committed the patches necessary to make it happen. This was back in
+> late 2009/early 2010 though, so my memory is a bit fuzzy...
+> 
+> > Why should this be any different from any other failure condition?  If you
+> > try to open a file that doesn't exist, do you want your process to hang
+> > instead of getting ENOENT, just in case the file magically appears at some
+> > point in the future?
+> >
+> 
+> That's different. Not renewing your credentials is often a temporary
+> situation. Kerberos is different than other authentication methods in
+> that you get a ticket only for a period of time, so expired credentials
+> are not a situation that's common with other authentication methods.
+> 
+> > This seems a recipe for disaster.  Suppose I have a cron job that fires once
+> > a minute, and all those jobs hang waiting for a ticket.  I come to work in
+> > the morning and discover I've got 10,000 hung processes.  Or not, because my
+> > computer has crashed from resource exhaustion.
+> 
+> The previous situation was also a recipe for disaster, and was often
+> cited as a primary reason why people didn't want to deploy kerberized
+> NFS. Having everything fall down and go boom when your ticket expires
+> is not desirable either.
+> 
+> I suppose we'll have to agree to disagree on this point. That said, I'm
+> open to sane suggestions however that don't regress the behavior for
+> those users who need to be able to cope with expired tickets.
+> 
 
-==
-Subject: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
+Note too that the gssd code distinguishes between an expired TGT and a
+non-existent credcache. The latter will give you the error you desire
+here. So one possibility is just to remove the credcache from /tmp in
+this situation.
 
-at split_huge_page(), mem_cgroup_split_huge_fixup() is called to
-handle page_cgroup modifcations. It takes move_lock_page_cgroup()
-and modify page_cgroup and LRU accounting jobs and called
-HPAGE_PMD_SIZE - 1 times.
+Another possibility might be a new option to rpc.gssd that allows the
+user to select the error that it passes back to the kernel on an
+expired ticket.
 
-But thinking again,
-  - compound_lock() is held at move_accout...then, it's not necessary
-    to take move_lock_page_cgroup().
-  - LRU is locked and all tail pages will go into the same LRU as
-    head is now on.
-  - page_cgroup is contiguous in huge page range.
-
-This patch fixes mem_cgroup_split_huge_fixup() as to be called once per
-hugepage and reduce costs for spliting.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    5 ++---
- mm/huge_memory.c           |    3 ++-
- mm/memcontrol.c            |   32 ++++++++++++++++----------------
- 3 files changed, 20 insertions(+), 20 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index b87068a..0a22a19 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -154,7 +154,7 @@ u64 mem_cgroup_get_limit(struct mem_cgroup *memcg);
- 
- void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
--void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail);
-+void mem_cgroup_split_huge_fixup(struct page *head);
- #endif
- 
- #ifdef CONFIG_DEBUG_VM
-@@ -357,8 +357,7 @@ u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
- 	return 0;
- }
- 
--static inline void mem_cgroup_split_huge_fixup(struct page *head,
--						struct page *tail)
-+static inline void mem_cgroup_split_huge_fixup(struct page *head)
- {
- }
- 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 4298aba..aa6cdae 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1207,6 +1207,8 @@ static void __split_huge_page_refcount(struct page *page)
- 	/* prevent PageLRU to go away from under us, and freeze lru stats */
- 	spin_lock_irq(&zone->lru_lock);
- 	compound_lock(page);
-+	/* complete memcg works before add pages to LRU */
-+	mem_cgroup_split_huge_fixup(page);
- 
- 	for (i = 1; i < HPAGE_PMD_NR; i++) {
- 		struct page *page_tail = page + i;
-@@ -1278,7 +1280,6 @@ static void __split_huge_page_refcount(struct page *page)
- 		BUG_ON(!PageDirty(page_tail));
- 		BUG_ON(!PageSwapBacked(page_tail));
- 
--		mem_cgroup_split_huge_fixup(page, page_tail);
- 
- 		lru_add_page_tail(zone, page, page_tail);
- 	}
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..99101f1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2523,38 +2523,38 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- /*
-  * Because tail pages are not marked as "used", set it. We're under
-  * zone->lru_lock, 'splitting on pmd' and compund_lock.
-+ * charge/uncharge will be never happen and move_account() is done under
-+ * compound_lock(), so we don't have to take care of races.
-  */
--void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
-+void mem_cgroup_split_huge_fixup(struct page *head)
- {
- 	struct page_cgroup *head_pc = lookup_page_cgroup(head);
--	struct page_cgroup *tail_pc = lookup_page_cgroup(tail);
--	unsigned long flags;
-+	struct page_cgroup *pc;
-+	int i;
- 
- 	if (mem_cgroup_disabled())
- 		return;
--	/*
--	 * We have no races with charge/uncharge but will have races with
--	 * page state accounting.
--	 */
--	move_lock_page_cgroup(head_pc, &flags);
-+	for (i = 1; i < HPAGE_PMD_NR; i++) {
-+		pc = head_pc + i;
-+		pc->mem_cgroup = head_pc->mem_cgroup;
-+		smp_wmb();/* see __commit_charge() */
-+		/*
-+		 * LRU flags cannot be copied because we need to add tail
-+		 * page to LRU by generic call and our hooks will be called.
-+		 */
-+		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
-+	}
- 
--	tail_pc->mem_cgroup = head_pc->mem_cgroup;
--	smp_wmb(); /* see __commit_charge() */
- 	if (PageCgroupAcctLRU(head_pc)) {
- 		enum lru_list lru;
- 		struct mem_cgroup_per_zone *mz;
--
- 		/*
--		 * LRU flags cannot be copied because we need to add tail
--		 *.page to LRU by generic call and our hook will be called.
- 		 * We hold lru_lock, then, reduce counter directly.
- 		 */
- 		lru = page_lru(head);
- 		mz = page_cgroup_zoneinfo(head_pc->mem_cgroup, head);
--		MEM_CGROUP_ZSTAT(mz, lru) -= 1;
-+		MEM_CGROUP_ZSTAT(mz, lru) -= HPAGE_PMD_NR - 1;
- 	}
--	tail_pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
--	move_unlock_page_cgroup(head_pc, &flags);
- }
- #endif
- 
 -- 
-1.7.4.1
-
-
+Jeff Layton <jlayton@redhat.com>
