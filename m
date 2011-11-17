@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab1KQTyI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 14:54:08 -0500
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:49518 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab1KQTyF (ORCPT
+	id S1756146Ab1KQUCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 15:02:33 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:49219 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590Ab1KQUCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 14:54:05 -0500
-Subject: Re: [PATCH] m68k: Remove references to obsolete CONFIG_SERIAL167
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
-In-Reply-To: <CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
-References: <1321180296-22543-1-git-send-email-geert@linux-m68k.org>
-	 <1321182176.20271.43.camel@x61.thuisdomein>
-	 <CAMuHMdXsHgUd_oggpKoS2t6Tm8MnEjLnWmi4Hswz_nQjSWsozA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 20:53:56 +0100
-Message-ID: <1321559636.20271.287.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Nov 2011 15:02:32 -0500
+Date: Thu, 17 Nov 2011 15:01:36 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix comparison using wrong pointer variable in dma debug
+ code
+Message-ID: <20111117200136.GC26847@hmsreliant.think-freely.org>
+References: <4EC560F6.9050906@intra2net.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC560F6.9050906@intra2net.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 20:33 +0100, Geert Uytterhoeven wrote:
-> On Sun, Nov 13, 2011 at 12:02, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > 1) I've been looking at this impressive dependency list a few days back.
-> > My impression was that it can be reduced to only AMIGA_BUILTIN_SERIAL=y.
-> > (After that this Kconfig symbol might better be renamed to
-> > AMIGA_BUILTIN_SERIAL_CONSOLE.)
-> >
-> > I might have a draft patch to drop the dependencies somewhere. I need to
-> > have another look at that (draft) patch before I can submit it.
+On Thu, Nov 17, 2011 at 08:31:02PM +0100, Thomas Jarosch wrote:
+> cppcheck reported:
+> [lib/dma-debug.c:248] -> [lib/dma-debug.c:248]: (style) Same expression on both sides of '=='.
 > 
-> You are right: all drivers (except for AMIGA_BUILTIN_SERIAL) got lost due to
-> bitrot, or never made it to mainline. Will fix.
+> Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+> ---
+>  lib/dma-debug.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> index 74c6c7f..fea790a 100644
+> --- a/lib/dma-debug.c
+> +++ b/lib/dma-debug.c
+> @@ -245,7 +245,7 @@ static void put_hash_bucket(struct hash_bucket *bucket,
+>  
+>  static bool exact_match(struct dma_debug_entry *a, struct dma_debug_entry *b)
+>  {
+> -	return ((a->dev_addr == a->dev_addr) &&
+> +	return ((a->dev_addr == b->dev_addr) &&
+>  		(a->dev == b->dev)) ? true : false;
+>  }
+>  
+> -- 
+> 1.7.6.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+Thanks for the catch!  Viro just pointed out you can also remove the ?
+true/false changes and extraneous parens, reducing it to:
 
-Nice.
+(a->dev_addr == b->dev_addr) && (a->dev == b->dev)
+But its not strictly necessecary
 
-> But please keep SERIAL_CONSOLE.
-
-Why do you care about SERIAL_CONSOLE? If it's only really used by
-AMIGA_BUILTIN_SERIAL why shouldn't we rename it to
-AMIGA_BUILTIN_SERIAL_CONSOLE?
-
-> BTW, updating the m68k defconfigs is also on my list.
-
-Nice too. Jiri Kosina already claimed to be able to handle any problems
-caused by my cleaning efforts (which I haven't made public, since I'm
-still pondering on a way to publish a 400K+ patch).
-
-
-Paul Bolle
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
