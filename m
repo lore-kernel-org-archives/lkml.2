@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab1KQKOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 05:14:23 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:36004 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756471Ab1KQKNy (ORCPT
+	id S1756636Ab1KQKOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 05:14:30 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33695 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494Ab1KQKO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 05:13:54 -0500
-X-AuditID: cbfee61b-b7b7fae000005864-85-4ec4de5eea0e
-From: Donggeun Kim <dg77.kim@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, rdunlap@xenotime.net,
-        cbouatmailru@gmail.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 0/2] power: introduce Charger-Manager
-Date: Thu, 17 Nov 2011 19:13:11 +0900
-Message-id: <1321524793-25117-1-git-send-email-dg77.kim@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 17 Nov 2011 05:14:28 -0500
+Date: Thu, 17 Nov 2011 11:14:26 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Juergen Beisert <jbe@pengutronix.de>,
+        Matthias Fuchs <mfuchs@ma-fu.de>
+Subject: Re: [PATCH 5/8] serial: 8250: reject delaying RTS with RS485
+Message-ID: <20111117101426.GD2535@pengutronix.de>
+References: <1321460685-15753-1-git-send-email-w.sang@pengutronix.de>
+ <1321460685-15753-6-git-send-email-w.sang@pengutronix.de>
+ <4EC4D72F.8030702@evidence.eu.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GyRA7555PLgSTuth"
+Content-Disposition: inline
+In-Reply-To: <4EC4D72F.8030702@evidence.eu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Charger Manager provides in-kernel battery charger management that
-requires temperature monitoring during both normal and suspend-to-RAM states
-and where each battery may have multiple chargers attached and the userland
-wants to look at the aggregated information of the multiple chargers.
 
-Charger Manager is a platform_driver with power-supply-class entries.
-An instance of Charger Manager (a platform-device created with
-Charger-Manager) represents a battery with chargers. If there are multiple
-batteries with their own chargers acting independently in a system,
-the system may need multiple instances of Charger Manager.
-Multiple chargers (e.g., USB, wireless, and solar panels) may be included
-as pairs of a regulator and a power-supply-class
-per charger.
+--GyRA7555PLgSTuth
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Charger Manager glues multiple charger-related frameworks (regulators of
-chargers, power-supply-class from chargers and fuel-gauge, RTC,
-suspend-again, ...) together to provide aggregated information and
-transparent battery monitoring to userspace.
 
-For the discussions about the need for in-suspend monitoring, please
-refer to the discussions of suspend-again in PM:
-v1 https://lists.linux-foundation.org/pipermail/linux-pm/2011-April/031052.html
-v2 https://lists.linux-foundation.org/pipermail/linux-pm/2011-April/031111.html
-v3 https://lists.linux-foundation.org/pipermail/linux-pm/2011-May/031267.html
-v4 https://lists.linux-foundation.org/pipermail/linux-pm/2011-May/031357.html
-v5 (last, applied) https://lists.linux-foundation.org/pipermail/linux-pm/2011-June/031561.html
+> The delay must not necessarily be done by hardware. The drivers/tty/seria=
+l/crisv10.c=20
+> driver, for example, delays through a msleep.
+>=20
+> I don't know if having a software delay in this driver can make sense in =
+some particular=20
+> circumstance.
 
-To see the usage example, please refer to:
-http://git.infradead.org/users/kmpark/linux-2.6-samsung/shortlog/refs/heads/charger-manager
-In this git branch, a test code for Exynos4-NURI is shown.
+Uuuh, I would be against software delays for the same reason why we
+don't accept software based direction switching: No guarantees. msleep()
+might easily delay longer than what was requested. Or are delay_rts
+values to be interpreted as "delay at least"?
 
-This patch set supports initial Charger Manager driver.
+Regards,
 
-Donggeun Kim (2):
-  power: Charger-Manager: add initial Charger-Manager driver
-  power: Charger-Manager: add properties for power-supply-class
+   Wolfram
 
- Documentation/power/charger-manager.txt |  164 +++++
- drivers/power/Kconfig                   |    9 +
- drivers/power/Makefile                  |    1 +
- drivers/power/charger-manager.c         | 1064 +++++++++++++++++++++++++++++++
- include/linux/power/charger-manager.h   |  148 +++++
- 5 files changed, 1386 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/power/charger-manager.txt
- create mode 100644 drivers/power/charger-manager.c
- create mode 100644 include/linux/power/charger-manager.h
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
--- 
-1.7.4.1
+--GyRA7555PLgSTuth
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7E3oIACgkQD27XaX1/VRvfuwCgrAyHc88uIh2OcnAZD2wRucfs
+stMAn0rE9s0VfJ/cABtCypX3P/l35XPz
+=bl6p
+-----END PGP SIGNATURE-----
+
+--GyRA7555PLgSTuth--
