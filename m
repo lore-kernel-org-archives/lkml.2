@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1KQSKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 13:10:02 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54615 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab1KQSKA convert rfc822-to-8bit (ORCPT
+	id S1754232Ab1KQSTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 13:19:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51936 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab1KQSTM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 13:10:00 -0500
+	Thu, 17 Nov 2011 13:19:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <4EC49D13.2010206@linux.intel.com>
+In-Reply-To: <201111171507.00699.arnd@arndb.de>
 References: <1321478739-8978-1-git-send-email-keescook@chromium.org>
 	<1321478739-8978-2-git-send-email-keescook@chromium.org>
-	<4EC49D13.2010206@linux.intel.com>
-Date: Thu, 17 Nov 2011 10:10:00 -0800
-X-Google-Sender-Auth: XLzdjnizhHOujSMejxw31nfiKHY
-Message-ID: <CAGXu5jJfhLjBN4hEUNv5DaivJJaX5=15+JaC0VEON+mfDSeF+A@mail.gmail.com>
+	<201111171507.00699.arnd@arndb.de>
+Date: Thu, 17 Nov 2011 10:19:11 -0800
+X-Google-Sender-Auth: gQ7bbeDw6u1bdQjIKqmRswjbPrU
+Message-ID: <CAGXu5jKb1csho4q2-1o8sXhFoqyVfRVOyjWH-F7n86fObHQkxQ@mail.gmail.com>
 Subject: Re: [PATCH 1/2] ramoops: use pstore interface
 From: Kees Cook <keescook@chromium.org>
-To: Chen Gong <gong.chen@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ben Gardner <bgardner@wabtec.com>,
         Marco Stornelli <marco.stornelli@gmail.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 9:35 PM, Chen Gong <gong.chen@linux.intel.com> wrote:
-> ‰∫é 2011/11/17 5:25, Kees Cook ÂÜôÈÅì:
+On Thu, Nov 17, 2011 at 7:07 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 16 November 2011, Kees Cook wrote:
 >> Instead of using /dev/mem directly, use the common pstore infrastructure
 >> to handle Oops gathering and extraction.
->> [...]
->> + ¬† ¬† ¬† /* Explicitly only take the first part of any new crash.
->> + ¬† ¬† ¬† ¬†* If our buffer is larger than kmsg_bytes, this can never happen,
->> + ¬† ¬† ¬† ¬†* and if our buffer is smaller than kmsg_bytes, we don't want the
->> + ¬† ¬† ¬† ¬†* report split across multiple records. */
->> + ¬† ¬† ¬† if (part != 1)
->> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† return -ENOSPC;
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
 >
-> why only one part is accepted? You are afraid about your filename style?
-
-The logic in ramoops doesn't expect to have a split-up report. Since
-pstore doesn't limit reports to kmsg_bytes in size (it actually splits
-reports on pstore_info.bufsize) this is a non-issue, but in the case
-that a platform defines very small ramoops record sizes, I didn't want
-the extra stuff written to additional records. If ramoops gains real
-record headers ever, this can change, of course. In the meantime, it
-should be defensive.
-
->> + ¬† ¬† ¬† /* Only a single ramoops area allowed at a time, so fail extra
->> + ¬† ¬† ¬† ¬†* probes.
->> + ¬† ¬† ¬† ¬†*/
->> + ¬† ¬† ¬† if (cxt->max_count)
->> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† goto fail3;
+> Sounds like a very good plan to me. It probably makes sense to move the
+> entire driver into fs/pstore after this. Otherwise, I have only trivial
+> style comments:
 >
-> Should be fail4
-> [...]
-> In some situations fail4 maybe hits max_count != 0, so here max_count should
-> be cleared. I think you should rearrange the logic in this function
-> carefully.
-
-Ah, thanks for the catch. All the error targets got messed up. I'll
-fix them and name them instead of using numbers.
-
->> + ¬† ¬† ¬† /* TODO(kees): It shouldn't be possible to remove ramoops since
->> + ¬† ¬† ¬† ¬†* pstore doesn't support unregistering yet. When it does, remove
->> + ¬† ¬† ¬† ¬†* this early return and add the unregister where noted below.
->> + ¬† ¬† ¬† ¬†*/
->> + ¬† ¬† ¬† return -EBUSY;
+>> +static int ramoops_pstore_open(struct pstore_info *psi);
+>> +static int ramoops_pstore_close(struct pstore_info *psi);
+>> +static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>> + † † † † † † † † † † † † † † † †struct timespec *time,
+>> + † † † † † † † † † † † † † † † †char **buf,
+>> + † † † † † † † † † † † † † † † †struct pstore_info *psi);
+>> +static int ramoops_pstore_write(enum pstore_type_id type,
+>> + † † † † † † † † † † † † † † enum kmsg_dump_reason reason, u64 *id,
+>> + † † † † † † † † † † † † † † unsigned int part,
+>> + † † † † † † † † † † † † † † size_t size, struct pstore_info *psi);
+>> +static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
+>> + † † † † † † † † † † † † † † struct pstore_info *psi);
 >
-> This style is not reasonable. Maybe it should have a better wrap.
+> Can you do it without forward declarations? Many people find code
+> more readable if it is structure in the natural order that avoids
+> these.
 
-I'm not sure I understand what you mean. It's wrapped roughly to
-column 75 already. What would be better for this comment? Or did you
-mean I shouldn't have unreachable code?
+Actually, now that I look at it again, yeah, I can. When I did this
+originally I hadn't noticed pstore_info.data. I'll use that to pass
+cxt so I can avoid the forward declarations. Thanks!
 
-> BTW, you need to update Documentation/ramoops.txt
+>> +static int ramoops_pstore_close(struct pstore_info *psi)
+>> +{
+>> + † † return 0;
+>> +}
+>
+> Do you actually have to provide this if it's empty?
 
-Ah! Yes, thanks for the reminder.
+Yeah, though I suppose we could change pstore to DTRT in fs/pstore/platform.c:
+
+        if (psi->close) psi->close(psi);
+
+instead of the current:
+
+        psi->close(psi);
+
+> If yes, it might make sense to change the pstore code so that
+> it works without a close function.
+
+Yeah, I'll do that and send more patches. :)
+
+Thanks!
 
 -Kees
 
