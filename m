@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab1KQPLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 10:11:08 -0500
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:60902 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757785Ab1KQPLG (ORCPT
+	id S932213Ab1KQPRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 10:17:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45994 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757785Ab1KQPRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 10:11:06 -0500
-X-AuditID: 12074423-b7f266d0000008b8-cd-4ec52408c9e9
-Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com>
-Date: Thu, 17 Nov 2011 10:11:07 -0500
-Cc: Theodore Tso <tytso@MIT.EDU>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
+	Thu, 17 Nov 2011 10:17:33 -0500
+X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=PQ8x_VTtLv8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=QyXUC8HyAAAA:8 a=e7DW1LSZoeMWQMrq26QA:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH] printk: add console output tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20111117150040.GB18437@somewhere>
+References: <20111116151037.GA26166@infradead.org>
+	 <1321456652.4502.12.camel@jlt3.sipsolutions.net>
+	 <1321461693.4181.26.camel@frodo>
+	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
+	 <1321462856.4181.28.camel@frodo>
+	 <1321468380.4502.16.camel@jlt3.sipsolutions.net>
+	 <1321473443.4181.38.camel@frodo>
+	 <1321478719.4502.20.camel@jlt3.sipsolutions.net>
+	 <20111117145502.GA18437@somewhere>
+	 <1321541877.3997.31.camel@jlt3.sipsolutions.net>
+	 <20111117150040.GB18437@somewhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 10:17:30 -0500
+Message-ID: <1321543050.3533.8.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
-References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com> <47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu> <alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com> <CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com> <CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com>
-To: NamJae Jeon <linkinjeon@gmail.com>
-X-Mailer: Apple Mail (2.1251.1)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsUixCmqrcuhctTPYNp0MYvm1Q+YLK7fvcVs
-	MXPeHTaLy7vmsFm0LdnI5MDqsXPWXXaPBZtKPT5vkgtgjuKySUnNySxLLdK3S+DK+DB5BlvB
-	Q7aKzvtLmRoYl7J2MXJwSAiYSLxr1uti5AQyxSQu3FvP1sXIxSEksI9R4te9pUwQzgZGiRVz
-	7rOCVAkJrGSSmP6fCcQWFnCRePTtNSOIzStgLLHm1jsWEJtZQEvixr+XYDVsAkoSdz7tB4tz
-	CgRK9D9oZAaxWQRUJRacO8YIsoBZYC+jxNFdR5kgmuUltr+dwwwx1Epixr4JjBBX7GGS6Dr2
-	FmySiICaxL4tE5kh7paXaPl6h20Co+AsJIfMQnLILCRzFzAyr2KUTcmt0s1NzMwpTk3WLU5O
-	zMtLLdI108vNLNFLTSndxAgKc3YX5R2Mfw4qHWIU4GBU4uG9yXrET4g1say4MvcQoyQHk5Io
-	7x6lo35CfEn5KZUZicUZ8UWlOanFhxglOJiVRHh5nwOV86YkVlalFuXDpKQ5WJTEeWV2OvgJ
-	CaQnlqRmp6YWpBbBZGU4OJQkeE2VgYYKFqWmp1akZeaUIKSZODhBhvMADdcBqeEtLkjMLc5M
-	h8ifYjTm2DZ9w2lGjkcfNp1mFGLJy89LlRLndQMpFQApzSjNg5sGS1WvGMWBnhPm1QKp4gGm
-	Obh5r4BWMQGtyt0D8kdxSSJCSqqBccrVfxsPcsTkvDzPcpjlz6bHkfeTTeS+Vb7nEU+QU1r6
-	sv/9rknK9d/MFzRrnJfh8fA86S0vd9JSIEzdlPfbPd/FX7ffDuiLUeuYxjg3Si28SfLaiku7
-	vjQfc9spk5WSLNKfvKToZd2B2fMbOvc9nBpjkpWzfd89WzdLjxcdlm+0H84tL1rxXYmlOCPR
-	UIu5qDgRAAin6dswAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-11-17 at 16:00 +0100, Frederic Weisbecker wrote:
+> On Thu, Nov 17, 2011 at 03:57:57PM +0100, Johannes Berg wrote:
+> > On Thu, 2011-11-17 at 15:55 +0100, Frederic Weisbecker wrote:
+> > 
+> > > > +++ b/kernel/trace/printk-trace.c	2011-11-16 21:22:20.000000000 +0100
+> > > > @@ -0,0 +1,14 @@
+> > > > +/*
+> > > > + * printk trace points
+> > > > + *
+> > > > + * Copyright (C) 2011 Johannes Berg <johannes.berg@intel.com>
+> > > > + */
+> > > > +
+> > > > +#include <linux/string.h>
+> > > > +#include <linux/types.h>
+> > > > +#include <linux/workqueue.h>
+> > > > +#include <linux/sched.h>
+> > > > +#include <linux/module.h>
+> > > > +
+> > > > +#define CREATE_TRACE_POINTS
+> > > > +#include <trace/events/printk.h>
+> > > 
+> > > Why not defining the tracepoint in kernel/printk.c ?
 
-On Nov 17, 2011, at 12:35 AM, NamJae Jeon wrote:
+Right, there's no reason to add another file, except to get Johannes's
+copyright in the kernel ;-)
 
-> We prevent one node being concentrating workload from redundant
-> alloc/free by balancing workload to other nodes in performance side.
-> and we can avoid reclaim probability a little by allocation from only
-> local node also.
+> > 
+> > Is that even possible? Do you then have to do something like
+> > 
+> > #include <.../printk.h>
+> > #define CREATE_TRACE_POINTS
+> > #include <.../printk.h>
+> > 
+> > or how else? In any case it seemed more common to not do that.
+> 
+> You can just do what you did:
+> 
+> #define CREATE_TRACE_POINTS
+> #include <trace/events/printk.h>
+> 
+> but in kernel/printk.c
+> 
+> We typically define the tracepoint from the file where an unconditional user
+> resides.
 
-Can you say more about this?   I'm afraid I don't understand what you
-are trying to do here.
+The above *is* the correct way to do this.
 
-What I'm worried about is systems where the memory latency time for
-local versus remote nodes might be 2-3 to 1.  That is, it takes 2-3 times
-as much time to access memory on a remote node.   (On older machines,
-the memory access time ratio's could have been as bad as 12:1 or 15:1.)
+Thanks Frederic for pointing that out. I should have spotted it, but I
+blame my meds ;)
 
-So accessing non-local memory can be a really, really big deal.  And this
-isn't just theoretical, but have you considered what might happen on a 8
-core AMD machine?
+-- Steve
 
-Regards,
-
--- Ted
 
