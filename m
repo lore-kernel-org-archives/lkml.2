@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab1KQTrt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 14:47:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412Ab1KQTrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 14:47:48 -0500
-Date: Thu, 17 Nov 2011 14:47:20 -0500
-From: Dave Jones <davej@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: long sleep_on_page delays writing to slow storage
-Message-ID: <20111117194719.GA23213@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
-	Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
-	Andy Isaacson <adi@hexapodia.org>, linux-kernel@vger.kernel.org,
-	linux-mm@vger.kernel.org, kernel-team@fedoraproject.org
-References: <20111107045928.GK8927@hexapodia.org>
- <20111109170027.GB7495@quack.suse.cz>
- <20111109175201.GB3083@suse.de>
- <20111109180646.GM5075@redhat.com>
- <20111110093442.GG3153@redhat.com>
- <20111114184717.GA7006@redhat.com>
- <20111115101313.GA28350@suse.de>
+	id S1756138Ab1KQTvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 14:51:01 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6848 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab1KQTu7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 14:50:59 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 17 Nov 2011 11:50:42 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Thu, 17 Nov 2011 11:50:40 -0800
+Subject: RE: [PATCH 09/10] arm/tegra: implement support for tegra30
+Thread-Topic: [PATCH 09/10] arm/tegra: implement support for tegra30
+Thread-Index: AcylRVKsjgPnVLrDS8O6G5XBqxGKSQAHH63w
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74C51@HQMAIL01.nvidia.com>
+References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com>
+ <1321546766-26770-10-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1321546766-26770-10-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115101313.GA28350@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 10:13:13AM +0000, Mel Gorman wrote:
- 
- > If they are still experiencing major stalls, I have an experimental
- > script that may be able to capture stack traces of processes stalled
- > for more than 1 second. I've had some success with it locally so
- > maybe they could try it out to identify if it's THP or something else.
- 
-I'm not sure if it's the same problem, but I'd be interested in trying
-that script.
+Peter De Schrijver wrote at Thursday, November 17, 2011 9:19 AM:
+> Add support for tegra30 SoC. This includes a device tree compatible type for
+> this SoC ("nvidia,tegra30") and adds L2 cache initialization for this new SoC.
+> The clock framework is still missing, which prevents most drivers from working.
+> The basic IRQs are the same, so remove the dependency on
+> CONFIG_ARCH_TEGRA_2x_SOC.
 
-When I build a kernel on my laptop, when it gets to the final link stage,
-and there's a ton of IO, my entire X session wedges for a few seconds.
-This may be unrelated, because this is on an SSD, which shouldn't suffer
-from the slow IO of the USB devices mentioned in this thread.
+> diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
+> index 416446b..0b9d184 100644
+> --- a/arch/arm/mach-tegra/board-dt.c
+> +++ b/arch/arm/mach-tegra/board-dt.c
+> @@ -149,3 +149,11 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
+>  	.init_machine	= tegra_dt_init,
+>  	.dt_compat	= tegra20_dt_board_compat,
+>  MACHINE_END
 
-(This is even with that patch applied btw, perhaps adding further fuel to
-the idea that it's unrelated).
+Since you're reving the patch, a blank line between the two machines would
+be nice.
 
-	Dave
+> +DT_MACHINE_START(TEGRA30_DT, "nVidia Tegra30 (Flattened Device Tree)")
+> +	.map_io		= tegra_map_common_io,
+> +	.init_early	= tegra30_init_early,
+> +	.init_irq	= tegra_init_irq,
+> +	.timer		= &tegra_timer,
+> +	.init_machine	= tegra_dt_init,
+> +	.dt_compat	= tegra30_dt_board_compat,
+
+That variable doesn't exist until the next patch; that'll break git bisect.
+
+Do the two DT_MACHINE_START's need if be ifdef'd based on CONFIG variables too?
+If not, I'm not sure how a Tegra20- or Tegra30-only kernel builds, since aren't
+some of those init functions ifdef'd out but referenced here?
+
+> +MACHINE_END
+
+-- 
+nvpublic
 
