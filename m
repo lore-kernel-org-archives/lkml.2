@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1KQXTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 18:19:14 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48006 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab1KQXTM (ORCPT
+	id S1754086Ab1KQXWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 18:22:07 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56745 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab1KQXWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 18:19:12 -0500
-Message-ID: <4EC5966A.4000106@opensuse.org>
-Date: Thu, 17 Nov 2011 20:19:06 -0300
-From: =?UTF-8?B?Q3Jpc3RpYW4gUm9kcsOtZ3Vleg==?= <crrodriguez@opensuse.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Thu, 17 Nov 2011 18:22:06 -0500
+Date: Thu, 17 Nov 2011 15:22:02 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: David Daney <ddaney.cavm@gmail.com>
+cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v2 0/2] Dummy HPAGE_* constants for
+ !CONFIG_HUGETLB_PAGE
+In-Reply-To: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
+Message-ID: <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Andrei Warkentin <andreiw@vmware.com>, linux-kernel@vger.kernel.org,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>, opensuse-kernel@opensuse.org,
-        Sergiu Iordache <sergiu@chromium.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [opensuse-kernel] Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
-References: <1321473366-31053-1-git-send-email-andreiw@vmware.com> <20111117150549.15528e81.akpm@linux-foundation.org>
-In-Reply-To: <20111117150549.15528e81.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/11/11 20:05, Andrew Morton wrote:
+On Thu, 17 Nov 2011, David Daney wrote:
 
-> I assume that nobody has gone off and checked whether all current
-> callers will survive this change.  If they had, they'd have looked in
-> drivers/char/ramoops.c and seen:
+> From: David Daney <david.daney@cavium.com>
 > 
-> 	rounddown_pow_of_two(pdata->mem_size);
-> 	rounddown_pow_of_two(pdata->record_size);
+> After a, somewhat heated, discussion with David Rientjes, I think the
+> following approach will work.
 > 
-> These operations are no-ops.  It should be
+> The first patch adds HPAGE_SHIFT, needed by MIPS.
 > 
-> 	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
-> 	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
+> The second cleans up the exiting HPAGE_MASK and HPAGE_SIZE
 > 
-> That we have this many warts using these interfaces is an indication
-> that the interfaces aren't very good.  Poorly documented, at least.
+> David Daney (2):
+>   hugetlb: Provide a default HPAGE_SHIFT if !CONFIG_HUGETLB_PAGE
+>   hugetlb: Provide safer dummy values for HPAGE_MASK and HPAGE_SIZE
 > 
+>  include/linux/hugetlb.h |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> Cc: David Rientjes <rientjes@google.com>
 
-making that macro an inline function and annotating with
-__attribute__((warn_unused_result)) looks like a good start for me.
+Nack on both, we already discussed this in the other thread (and I 
+wouldn't call it "somewhat heated").
 
+We don't need these dummy definitions at all for any current architectures 
+that use them and they should be removed so that any future code using 
+them will have the proper dependency on CONFIG_HUGETLB_PAGE.
