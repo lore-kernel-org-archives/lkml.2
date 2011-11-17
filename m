@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab1KQJyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 04:54:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54418 "EHLO mx2.suse.de"
+	id S1756435Ab1KQJzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 04:55:46 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:30369 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab1KQJyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 04:54:20 -0500
-Date: Thu, 17 Nov 2011 10:54:16 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Wang Sheng-Hui <shhuiw@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: cleanup the comment for head/tail pages of compound
- pages in mm/page_alloc.c
-In-Reply-To: <20111117082148.GA30544@tiehlicka.suse.cz>
-Message-ID: <alpine.LNX.2.00.1111171054050.15187@pobox.suse.cz>
-References: <4EC21D78.4080508@gmail.com> <20111115132409.GA7551@tiehlicka.suse.cz> <4EC2FE33.7030905@gmail.com> <20111117082148.GA30544@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756215Ab1KQJzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 04:55:45 -0500
+Message-ID: <4EC4DA15.7090106@parallels.com>
+Date: Thu, 17 Nov 2011 13:55:33 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects that
+ can be shared between tasks
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011, Michal Hocko wrote:
+While doing the checkpoint-restore in the userspace one need to determine
+whether various kernel objects (like mm_struct-s of file_struct-s) are shared
+between tasks and restore this state.
 
-> [CCing trivial tree]
-> 
-> Unquoted patch at https://lkml.org/lkml/2011/11/15/402
-> 
-> On Wed 16-11-11 08:05:07, Wang Sheng-Hui wrote:
-> [...]
-> > Thanks, Michal.
-> > 
-> > New patch generated.
-> > 
-> > 
-> > [PATCH] mm: cleanup the comment for head/tail pages of compound pages in mm/page_alloc.c
-> > 
-> > Only tail pages point at the head page using their ->first_page fields.
-> > 
-> > Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> 
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+The 2nd step can for now be solved by using respective CLONE_XXX flags and
+the unshare syscall, while there's currently no ways for solving the 1st one.
 
-Applied, thanks.
+One of the ways for checking whether two tasks share e.g. an mm_struct is to
+provide some mm_struct ID of a task to its proc file. The best from the
+performance point of view ID is the object address in the kernel, but showing
+them to the userspace is not good for security reasons.
 
--- 
-Jiri Kosina
-SUSE Labs
+Thus the object address is XOR-ed with a "random" value of the same size and 
+then shown in proc. Providing this poison is not leaked into the userspace then
+ID seem to be safe. The objects for which the IDs are shown are:
+
+* all namespaces living in /proc/pid/ns/
+* open files (shown in /proc/pid/fdinfo/)
+* objects, that can be shared with CLONE_XXX flags (except for namespaces)
+
+Changes since
+v1: * Tejun worried about the single poison value was a weak side - leaking one
+      makes all the IDs vulnerable. To address this several poison values - one
+      per object type - are introduced. They are stored in a plain array. Tejun, 
+      is this enough from your POV, or you'd like to see them widely scattered 
+      over the memory?
+    * Pekka proposed to initialized poison values in the late_initcall callback
+    * ... and move the code to mm/util.c
+
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+
