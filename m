@@ -1,121 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1KQIbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:31:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58271 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab1KQIbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:31:08 -0500
-Message-ID: <4EC4C603.8050704@cn.fujitsu.com>
-Date: Thu, 17 Nov 2011 16:29:55 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+	id S1756081Ab1KQIbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:31:14 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56917 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab1KQIbL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 03:31:11 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-17 16:30:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-17 16:30:48,
-	Serialize complete at 2011-11-17 16:30:48
+Date: Thu, 17 Nov 2011 14:00:50 +0530
+Message-ID: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+x-cbid: 11111622-9264-0000-0000-0000003812C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 13:08:33 -0800 (pst), David Rientjes wrote:
-> c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
-> cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
-> nodes from changing for a thread.  This causes any update to a set of
-> allowed nodes to stall until put_mems_allowed() is called.
-> 
-> This stall is unncessary, however, if at least one node remains unchanged
-> in the update to the set of allowed nodes.  This was addressed by
-> 89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
-> node remains set"), but it's still possible that an empty nodemask may be
-> read from a mempolicy because the old nodemask may be remapped to the new
-> nodemask during rebind.  To prevent this, only avoid the stall if there
-> is no mempolicy for the thread being changed.
-> 
-> This is a temporary solution until all reads from mempolicy nodemasks can
-> be guaranteed to not be empty without the get_mems_allowed()
-> synchronization.
-> 
-> Also moves the check for nodemask intersection inside task_lock() so that
-> tsk->mems_allowed cannot change.
-> 
-> Reported-by: Miao Xie <miaox@cn.fujitsu.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+The lock_system_sleep() function is used in the memory hotplug code at
+several places in order to implement mutual exclusion with hibernation.
+However, this function tries to acquire the 'pm_mutex' lock using
+mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
+get the lock. This would lead to task freezing failures and hence
+hibernation failure as a consequence, even though the hibernation call path
+successfully acquired the lock.
 
-Oh~, David
+This patch fixes this issue by modifying lock_system_sleep() to use
+mutex_trylock() in a loop until the lock is acquired, instead of using
+mutex_lock(), in order to avoid going to uninterruptible sleep.
+Also, we use msleep() to avoid busy looping and breaking expectations
+that we go to sleep when we fail to acquire the lock.
+And we also call try_to_freeze() in order to cooperate with the freezer,
+without which we would end up in almost the same situation as mutex_lock(),
+due to uninterruptible sleep caused by msleep().
 
-I find these is another problem, please take account of the following case:
+v3: Tejun suggested avoiding busy-looping by adding an msleep() since
+    it is not guaranteed that we will get frozen immediately.
 
-  2-3 -> 1-2 -> 0-1
+v2: Tejun pointed problems with using mutex_lock_interruptible() in a
+    while loop, when signals not related to freezing are involved.
+    So, replaced it with mutex_trylock().
 
-the user change mems_allowed twice continuously, the task may see the empty
-mems_allowed.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-So, it is still dangerous.
+ include/linux/suspend.h |   37 ++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 36 insertions(+), 1 deletions(-)
 
-Thanks
-Miao
-
-> ---
->  kernel/cpuset.c |   17 +++++++++++------
->  1 files changed, 11 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -949,7 +949,7 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
->  static void cpuset_change_task_nodemask(struct task_struct *tsk,
->  					nodemask_t *newmems)
->  {
-> -	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
-> +	bool need_loop;
->  
->  repeat:
->  	/*
-> @@ -962,6 +962,14 @@ repeat:
->  		return;
->  
->  	task_lock(tsk);
-> +	/*
-> +	 * Determine if a loop is necessary if another thread is doing
-> +	 * get_mems_allowed().  If at least one node remains unchanged and
-> +	 * tsk does not have a mempolicy, then an empty nodemask will not be
-> +	 * possible when mems_allowed is larger than a word.
-> +	 */
-> +	need_loop = tsk->mempolicy ||
-> +			!nodes_intersects(*newmems, tsk->mems_allowed);
->  	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
->  	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
->  
-> @@ -981,12 +989,9 @@ repeat:
->  
->  	/*
->  	 * Allocation of memory is very fast, we needn't sleep when waiting
-> -	 * for the read-side.  No wait is necessary, however, if at least one
-> -	 * node remains unchanged and tsk has a mempolicy that could store an
-> -	 * empty nodemask.
-> +	 * for the read-side.
->  	 */
-> -	while (masks_disjoint && tsk->mempolicy &&
-> -			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
-> +	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
->  		task_unlock(tsk);
->  		if (!task_curr(tsk))
->  			yield();
-> 
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 57a6924..0af3048 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -5,6 +5,8 @@
+ #include <linux/notifier.h>
+ #include <linux/init.h>
+ #include <linux/pm.h>
++#include <linux/freezer.h>
++#include <linux/delay.h>
+ #include <linux/mm.h>
+ #include <asm/errno.h>
+ 
+@@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
+ 
+ static inline void lock_system_sleep(void)
+ {
+-	mutex_lock(&pm_mutex);
++	/*
++	 * "To sleep, or not to sleep, that is the question!"
++	 *
++	 * We should not use mutex_lock() here because, in case we fail to
++	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
++	 * state, which would lead to task freezing failures. As a
++	 * consequence, hibernation would fail (even though it had acquired
++	 * the 'pm_mutex' lock).
++	 * Using mutex_lock_interruptible() in a loop is not a good idea,
++	 * because we could end up treating non-freezing signals badly.
++	 * So we use mutex_trylock() in a loop instead.
++	 *
++	 * Also, we add try_to_freeze() to the loop, to co-operate with the
++	 * freezer, to avoid task freezing failures due to busy-looping.
++	 *
++	 * But then, since it is not guaranteed that we will get frozen
++	 * rightaway, we could keep spinning for some time, breaking the
++	 * expectation that we go to sleep when we fail to acquire the lock.
++	 * So we add an msleep() to the loop, to dampen the spin (but we are
++	 * careful enough not to sleep for too long at a stretch, lest the
++	 * freezer whine and give up again!).
++	 *
++	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
++	 * more important, due to a subtle reason: if we don't cooperate with
++	 * the freezer at this point, we could end up in a situation very
++	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
++	 * uninterruptibly).
++	 *
++	 * Phew! What a delicate balance!
++	 */
++	while (!mutex_trylock(&pm_mutex)) {
++		try_to_freeze();
++		msleep(10);
++	}
+ }
+ 
+ static inline void unlock_system_sleep(void)
 
