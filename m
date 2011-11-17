@@ -1,113 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1KQIqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 03:46:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35815 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab1KQIqL convert rfc822-to-8bit (ORCPT
+	id S1756099Ab1KQItH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 03:49:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52382 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709Ab1KQItF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 03:46:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321335378-29064-1-git-send-email-rnayak@ti.com>
-References: <1321335378-29064-1-git-send-email-rnayak@ti.com>
-Date: Thu, 17 Nov 2011 09:46:10 +0100
-Message-ID: <CACRpkdadf9qqSy7sVk7w7zKZesNiefCWgag84NtjN=7bMuXSbg@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: Fix minor typos in pinctrl.txt
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: linus.walleij@stericsson.com, rdunlap@xenotime.net,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Nov 2011 03:49:05 -0500
+Subject: Re: [PATCH 1/2] lockdep,rtmutex,bug: Show taint flags on error
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Ingo Molnar <mingo@redhat.com>, Nick Bowler <nbowler@elliptictech.com>,
+        Greg KH <greg@kroah.com>, Dave Jones <davej@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Date: Thu, 17 Nov 2011 09:48:29 +0100
+In-Reply-To: <20111116215236.GD3366@decadent.org.uk>
+References: <1319773015.6759.30.camel@deadeye>
+	 <20111116215236.GD3366@decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321519709.27735.13.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 6:36 AM, Rajendra Nayak <rnayak@ti.com> wrote:
-
-> Fix some minor typos in the pinctrl documentation.
-(...)
-> -the pins from 0 in the upper left corner to 63 in the lower right corner,
-> +the pins from 0 in the lower left corner to 63 in the upper right corner,
-
-It's the PINCTRL_PIN() defintions that are wrong, this text is correct.
-
-So it should be:
-
-const struct pinctrl_pin_desc foo_pins[] = {
-      PINCTRL_PIN(0, "A8"),
-      PINCTRL_PIN(1, "B8"),
-      PINCTRL_PIN(2, "C8"),
-      ...
-      PINCTRL_PIN(61, "F1"),
-      PINCTRL_PIN(62, "G1"),
-      PINCTRL_PIN(63, "H1"),
-};
-
-Fixed this, will send another patch.
-
-> -static struct pinctrl_gpio_range gpio_range_a = {
-> +static struct pinctrl_gpio_range gpio_range_b = {
-
-OK fixed this.
-
->        .name = "chip b",
->        .id = 0,
->        .base = 48,
-> @@ -762,42 +762,42 @@ case), we define a mapping like this:
->        .name "2bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_0_grp",
-> +       .group = "mmc0_1_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "4bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_0_grp",
-> +       .group = "mmc0_1_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "4bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_1_grp",
-> +       .group = "mmc0_2_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "8bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_0_grp",
-> +       .group = "mmc0_1_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "8bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_1_grp",
-> +       .group = "mmc0_2_grp",
->        .dev_name = "foo-mmc.0",
->  },
->  {
->        .name "8bit"
->        .ctrl_dev_name = "pinctrl.0",
->        .function = "mmc0",
-> -       .group = "mmc0_2_grp",
-> +       .group = "mmc0_3_grp",
->        .dev_name = "foo-mmc.0",
->  },
+On Wed, 2011-11-16 at 21:52 +0000, Ben Hutchings wrote:
+> On Fri, Oct 28, 2011 at 04:36:55AM +0100, Ben Hutchings wrote:
+> > Currently lock debugging is disabled when the kernel is tainted, with
+> > a few exceptions.  It is already recognised that this can be useful
+> > for staging modules (TAINT_CRAP), but that also goes for out-of-tree
+> > modules (TAINT_OOT_MODULE) so long as core kernel developers don't
+> > have to spend time debugging them.  Also, there are several reasons
+> > for tainting that are unlikely to introduce false locking bug reports
+> > (e.g. TAINT_FIRMWARE_WORKAROUND).
 
 
-OK fixed this...
 
-I'll submit a separate patch with your
-Reported-by: and Randy's fixes folded in.
+> > Instead of disabling lock debugging, show the taint flags in all
+> > lockdep and rtmutex-debug error messages.
 
-Thanks,
-Linus Walleij
+
+So this is two patches in one. I took the last part, the printing of the
+taint flags thing, not the first part.
+
+I did a small patch adding TAINT_FIRMWARE_WORKAROUND to the list of
+TAINTS that shouldn't disable lockdep.
+
+As for OOT_MODULE, with staging the only reason not to merge a module is
+it being the wrong license and I really can't be arsed about OOT stuff
+anyway, so no.
