@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1KQVuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 16:50:16 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55430 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab1KQVuP (ORCPT
+	id S1752846Ab1KQV5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 16:57:38 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37228 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab1KQV5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 16:50:15 -0500
-Message-ID: <4EC58191.2070000@gmail.com>
-Date: Fri, 18 Nov 2011 08:50:09 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: tom.leiming@gmail.com
-CC: mingo@elte.hu, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] lockdep: print lock name for lockdep_init_error
-References: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com> <1321508072-23853-2-git-send-email-tom.leiming@gmail.com>
-In-Reply-To: <1321508072-23853-2-git-send-email-tom.leiming@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Nov 2011 16:57:37 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: David Daney <david.daney@cavium.com>, David Rientjes <rientjes@google.com>
+Subject: [PATCH v2 2/2] hugetlb: Provide safer dummy values for HPAGE_MASK and HPAGE_SIZE
+Date: Thu, 17 Nov 2011 13:57:30 -0800
+Message-Id: <1321567050-13197-3-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/11/11 16:34, tom.leiming@gmail.com wrote:
+From: David Daney <david.daney@cavium.com>
 
-> From: Ming Lei <tom.leiming@gmail.com>
-> 
-> This patch prints the name of the lock which is acquired
-> before lockdep_init is called, so that user can easily find
-> which lock trigged the lockdep init error warning.
-> 
-> This patch also removes the lockdep_init_error message
-> of "Arch code didn't call lockdep_init() early enough?" since
-> lockdep_init is called in arch independent code now.
-> 
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
->  kernel/lockdep.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 4e7e672..8141317 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -430,6 +430,7 @@ unsigned int max_lockdep_depth;
->   * about it later on, in lockdep_info().
->   */
->  static int lockdep_init_error;
-> +static const char *lock_init_error;
+It was pointed out by David Rientjes that the dummy values for
+HPAGE_MASK and HPAGE_SIZE are quite unsafe.  It they are inadvertently
+used with !CONFIG_HUGETLB_PAGE, compilation would succeed, but the
+resulting code would surly not do anything sensible.
 
+Place BUG() in the these dummy definitions, as we do in similar
+circumstances in other places, so any abuse can be easily detected.
 
-You can now remove lockdep_init_error and just test against
-lock_init_error below instead.
+Since the only sane place to use these symbols when
+!CONFIG_HUGETLB_PAGE is on dead code paths, the BUG() cause any actual
+code to be emitted by the compiler.
 
-~Ryan
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ include/linux/hugetlb.h |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
->  static unsigned long lockdep_init_trace_data[20];
->  static struct stack_trace lockdep_init_trace = {
->  	.max_entries = ARRAY_SIZE(lockdep_init_trace_data),
-> @@ -651,6 +652,7 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
->  	if (unlikely(!lockdep_initialized)) {
->  		lockdep_init();
->  		lockdep_init_error = 1;
-> +		lock_init_error = lock->name;
->  		save_stack_trace(&lockdep_init_trace);
->  	}
->  #endif
-> @@ -3965,7 +3967,8 @@ void __init lockdep_info(void)
->  
->  #ifdef CONFIG_DEBUG_LOCKDEP
->  	if (lockdep_init_error) {
-> -		printk("WARNING: lockdep init error! Arch code didn't call lockdep_init() early enough?\n");
-> +		printk("WARNING: lockdep init error! lock-%s was acquired"
-> +			"before lockdep_init\n", lock_init_error);
->  		printk("Call stack leading to lockdep invocation was:\n");
->  		print_stack_trace(&lockdep_init_trace, 0);
->  	}
-
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 380451c..3ed6dbd 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -111,8 +111,9 @@ static inline void copy_huge_page(struct page *dst, struct page *src)
+ #define hugetlb_change_protection(vma, address, end, newprot)
+ 
+ #ifndef HPAGE_MASK
+-#define HPAGE_MASK	PAGE_MASK		/* Keep the compiler happy */
+-#define HPAGE_SIZE	PAGE_SIZE
++/* Keep the compiler happy with some dummy (but BUGgy) values */
++#define HPAGE_MASK	({BUG(); 0; })
++#define HPAGE_SIZE	({BUG(); 0; })
+ #define HPAGE_SHIFT	({BUG(); 0; })
+ #endif
+ 
+-- 
+1.7.2.3
 
