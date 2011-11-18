@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1KRWow (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:44:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16878 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab1KRWou convert rfc822-to-8bit (ORCPT
+	id S1757461Ab1KRWqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:46:16 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:59248 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1KRWqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:44:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 18 Nov 2011 14:44:49 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Denis Kuzmenko <linux@solonet.org.ua>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Date: Fri, 18 Nov 2011 14:44:48 -0800
-Subject: RE: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Topic: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Index: AcymQhdAtp97koDlS2SdEKPXxcb3kgAAE1Iw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com>
-References: <4EC572E1.1020209@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com>
- <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com>
- <4EC6DD8F.9070904@solonet.org.ua>
-In-Reply-To: <4EC6DD8F.9070904@solonet.org.ua>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Nov 2011 17:46:15 -0500
+Message-ID: <4EC6E047.20800@calvaedi.com>
+Date: Fri, 18 Nov 2011 23:46:31 +0100
+From: John Hughes <john@calvaedi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: John Hughes <john@calva.com>, Jim Rees <rees@umich.edu>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry. Try 2 with added man pages.
+References: <4EC66D12.2090505@Calva.COM>		 <1321641333.2653.15.camel@lade.trondhjem.org>		 <4EC6AFA9.9000705@calvaedi.com>		 <1321648435.2653.53.camel@lade.trondhjem.org>		 <20111118205749.GA1680@umich.edu>	 <1321650239.2653.68.camel@lade.trondhjem.org>	 <4EC6DD4D.1010008@calvaedi.com> <1321655828.10541.23.camel@lade.trondhjem.org>
+In-Reply-To: <1321655828.10541.23.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote at Friday, November 18, 2011 3:35 PM:
-> On 11/18/2011 11:59 PM, Stephen Warren wrote:
-> > Denis Kuzmenko wrote at Friday, November 18, 2011 2:45 PM:
-> >> Make s3c24xx LEDS driver use gpiolib. Disable using pull-resistor when not
-> >> using S3C24XX_LEDF_TRISTATE and enble it when in opposite case.
-> >>
-> >> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
-> >
-> >>  	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
-> >> -		s3c2410_gpio_setpin(pdata->gpio, 0);
-> >> -		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
-> >> +		/*
-> >> +		 * pull is needed here to protect pin from being left
-> >> +		 * floating
-> >> +		 */
-> >> +		ret = s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_UP);
-> >> +		if (ret)
-> >> +			s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_DOWN);
-> >
-> > Sorry, could you explain why it's appropriate to configure a pull here
-> > at all, let alone why it's OK to have a random pull on the line?
-> >
-> 
-> Of course I'll explain.
-> Imagine you are working with generic GPIO lines on your board connecting
-> and disconnecting LEDs and other stuff. In this case there can be
-> situation where GPIO line is configured as TRISTATE LED but have nothing
-> connected physically to pin. This configuration is dangerous because
-> input pin without _any_ pull-resistor is _much_ more sensitive to
-> statical electricity (ESD) so you can *burn* (unsure this is correct
-> word) your pin much easily (especially is you are using soldering iron
-> as much as I do). Most of GPIO modules I worked with have "input with
-> pull-up" as default and most safe initial state (and s3c2440's one is
-> not an exception).
-> Maybe, I need to write more wide exlanation in comment above?
+On 11/18/2011 11:37 PM, Trond Myklebust wrote:
+> On Fri, 2011-11-18 at 23:33 +0100, John Hughes wrote:
+>    
+>> On 11/18/2011 10:03 PM, Trond Myklebust wrote:
+>>      
+>>> On Fri, 2011-11-18 at 15:57 -0500, Jim Rees wrote:
+>>>
+>>>        
+>>>> The write() syscall doesn't indicate whether the data is safe or not.  That
+>>>> would be the close() syscall.
+>>>>
+>>>>          
+>>> fsync(). Which may succeed if the user renews their ticket first.
+>>> However you may still have data loss if dirty data has been lost because
+>>> of EKEYEXPIRED returns on the WRITE RPC call...
+>>>
+>>>        
+>> Only if the write(2) returned EKEYEXPIRED, surely,
+>>      
+> What part of "write is asynchronous" is so hard to understand?
+>    
 
-OK, I see the need for a pull of some kind (although aren't there meant
-to be ESD protection diodes for this purpose; relying on what are probably
-pretty weak pullup/down resistors doesn't seem like it will provide much
-protection at all).
+If write succeeds,
+and the write rpc fails
+and data is lost
+and fsync succeeds
+then the nfs client is broken.
 
-I have a slight feeling this detail should be hidden inside the gpiolib
-driver.
+d'accord?
 
-Presumably the pull is pretty weak, so that if/when the pin is actively
-driven later, the drive completely overrides this pull?
+>    
+>> I would want to know if data was lost.
+>> Intuition means nothing if I get an error.
+>>
+>> If it were possible I'd like:
+>>
+>> 1. write works
+>> 1a. WRITE RPC fails, data stays in cache
+>> 2. ticket renewed
+>> 3. fsync works, data written
+>>      
+> Which is _exactly_ how it works today, so what is the problem?
+>
+>    
+Well, the hang after step 1a.
 
-Is this pull strong enough to light the LED? Judging by what
-s3c24xx_led_set() does, when the LED is off, the pin is tri-stated, and
-when the LED is on, it's driven (high/low depending on the active high/low
-flag). When tri-stated, if the pull happens to pull the same direction as
-the on state would drive it, won't the LED light? It seems like you need
-to pick a suitable pull direction based on flags & S3C24XX_LEDF_ACTLOW,
-and if that can't be set, it's an error.
+If there is to be a hang I'd like it when the fsync is done.
 
-(BTW, when posting a new version, starting a new thread with just the
-patch, rather than pasting it into a reply and prefixing it with other
-text will make is easiest for people to take the patch and apply it)
+(And no hang if no fsync).
 
--- 
-nvpublic
 
