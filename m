@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002Ab1KRXsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:48:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53585 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab1KRXsq (ORCPT
+	id S1757210Ab1KRXt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:49:27 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56254 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab1KRXt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:48:46 -0500
-Date: Fri, 18 Nov 2011 15:48:28 -0800
-From: tip-bot for Marc Zyngier <marc.zyngier@arm.com>
-Message-ID: <tip-2ed0e645f358c26f4f4a7aed56a9488db0020ad1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        santosh.shilimkar@ti.com, marc.zyngier@arm.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        marc.zyngier@arm.com, santosh.shilimkar@ti.com, tglx@linutronix.de
-In-Reply-To: <1321446459-31409-1-git-send-email-marc.zyngier@arm.com>
-References: <1321446459-31409-1-git-send-email-marc.zyngier@arm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] genirq: Don't allow per cpu interrupts to be suspended
-Git-Commit-ID: 2ed0e645f358c26f4f4a7aed56a9488db0020ad1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Fri, 18 Nov 2011 18:49:26 -0500
+Date: Fri, 18 Nov 2011 15:49:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
+ for mempolicy or disjoint nodemask
+In-Reply-To: <4EC62AEA.2030602@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:48:34 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2ed0e645f358c26f4f4a7aed56a9488db0020ad1
-Gitweb:     http://git.kernel.org/tip/2ed0e645f358c26f4f4a7aed56a9488db0020ad1
-Author:     Marc Zyngier <marc.zyngier@arm.com>
-AuthorDate: Wed, 16 Nov 2011 12:27:39 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 17 Nov 2011 17:44:04 +0100
+On Fri, 18 Nov 2011, Miao Xie wrote:
 
-genirq: Don't allow per cpu interrupts to be suspended
+> >> I find these is another problem, please take account of the following case:
+> >>
+> >>   2-3 -> 1-2 -> 0-1
+> >>
+> >> the user change mems_allowed twice continuously, the task may see the empty
+> >> mems_allowed.
+> >>
+> >> So, it is still dangerous.
+> >>
+> > 
+> > With this patch, we're protected by task_lock(tsk) to determine whether we 
+> > want to take the exception, i.e. whether need_loop is false, and the 
+> > setting of tsk->mems_allowed.  So this would see the nodemask change at 
+> > the individual steps from 2-3 -> 1-2 -> 0-1, not some inconsistent state 
+> > in between or directly from 2-3 -> 0-1.  The only time we don't hold 
+> > task_lock(tsk) to change tsk->mems_allowed is when tsk == current and in 
+> > that case we're not concerned about intermediate reads to its own nodemask 
+> > while storing to a mask where MAX_NUMNODES > BITS_PER_LONG.
+> > 
+> > Thus, there's no problem here with regard to such behavior if we exclude 
+> > mempolicies, which this patch does.
+> > 
+> 
+> No.
+> When the task does memory allocation, it access its mems_allowed without
+> task_lock(tsk), and it may be blocked after it check 0-1 bits. And then, the
+> user changes mems_allowed twice continuously(2-3(initial state) -> 1-2 -> 0-1),
+> After that, the task is woke up and it see the empty mems_allowed.
+> 
 
-The power management functions related to interrupts do not know
-(yet) about per-cpu interrupts and end up calling the wrong
-low-level methods to enable/disable interrupts.
-
-This leads to all kind of interesting issues (action taken on one
-CPU only, updating a refcount which is not used otherwise...).
-
-The workaround for the time being is simply to flag these interrupts
-with IRQF_NO_SUSPEND. At least on ARM, these interrupts are actually
-dealt with at the architecture level.
-
-Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Link: http://lkml.kernel.org/r/1321446459-31409-1-git-send-email-marc.zyngier@arm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 67ce837..0e2b179 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1596,7 +1596,7 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 		return -ENOMEM;
- 
- 	action->handler = handler;
--	action->flags = IRQF_PERCPU;
-+	action->flags = IRQF_PERCPU | IRQF_NO_SUSPEND;
- 	action->name = devname;
- 	action->percpu_dev_id = dev_id;
- 
+I'm confused, you're concerned on a kernel where 
+MAX_NUMNODES > BITS_PER_LONG about thread A reading a partial 
+tsk->mems_allowed, being preempted, meanwhile thread B changes 
+tsk->mems_allowed by taking cgroup_mutex, taking task_lock(tsk), setting 
+the intersecting nodemask, releasing both, taking them again, changing the 
+nodemask again to be disjoint, then the thread A waking up and finishing 
+its read and seeing an intersecting nodemask because it is now disjoint 
+from the first read?
