@@ -1,170 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab1KRJ3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:29:16 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45374 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757116Ab1KRJ3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:29:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@st.com>
-Subject: Re: [PATCH V2] GPIO/pl061: Add suspend resume capability
-Date: Fri, 18 Nov 2011 10:31:53 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: baruch@tkos.co.il, grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
-        mirko.gardi@st.com
-References: <7edd51181a5c9ee7da0dc5115ec5c2dc336af1fc.1321588277.git.viresh.kumar@st.com>
-In-Reply-To: <7edd51181a5c9ee7da0dc5115ec5c2dc336af1fc.1321588277.git.viresh.kumar@st.com>
+	id S1757245Ab1KRJ2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:28:41 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:53939 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114Ab1KRJ1y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 04:27:54 -0500
+Message-ID: <4EC6250F.4010501@linux.vnet.ibm.com>
+Date: Fri, 18 Nov 2011 14:57:43 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] PM/Hibernation: Fix the early termination of test
+ modes
+References: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com> <201111181020.44167.rjw@sisk.pl>
+In-Reply-To: <201111181020.44167.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111181031.53381.rjw@sisk.pl>
+x-cbid: 11111809-5816-0000-0000-000000186123
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 18, 2011, Viresh Kumar wrote:
-> From: Deepak Sikri <deepak.sikri@st.com>
+On 11/18/2011 02:50 PM, Rafael J. Wysocki wrote:
+> On Friday, November 18, 2011, Srivatsa S. Bhat wrote:
+>> Commit 2aede851ddf08666f68ffc17be446420e9d2a056
+>> (PM / Hibernate: Freeze kernel threads after preallocating memory)
+>> postponed the freezing of kernel threads to after preallocating memory
+>> for hibernation. But while doing that, the hibernation test TEST_FREEZER
+>> and the test mode HIBERNATION_TESTPROC were not moved accordingly.
+>>
+>> As a result, when using these test modes, it only goes upto the freezing of
+>> userspace and exits, when in fact it should go till the complete end of task
+>> freezing stage, namely the freezing of kernel threads as well.
+>>
+>> So, move these points of exit to appropriate places so that freezing of
+>> kernel threads is also tested while using these test harnesses. And while at
+>> it, add some documentation about these test modes.
+>>
+>> v2: Changed 'freezer_test_done' flag from int to bool.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > 
-> This patch adds the suspend and resume operations in the driver. The patch
-> ensures the data save and restore for the device registers during the
-> suspend and resume operations respectively.
+> On a second thought I'm not sure about the documentation changes.
+> In fact, the "test" and "testproc" modes are deprecated and I was going to
+> remove them some time this year.  That's why they weren't documented
+> (i.e. intentionally) and it's better to keep it that way IMO.
 > 
-> Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> Acked-by: Baruch Siach <baruch@tkos.co.il>
-> ---
-> 
-> Changes since V1:
-> - gpio_context_save_regs renamed to pl061_context_save_regs
-> - Hibernation callbacks added with help of SIMPLE_DEV_PM_OPS macro
-> 
->  drivers/gpio/gpio-pl061.c |   68 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 68 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-> index 093c90b..5a54035 100644
-> --- a/drivers/gpio/gpio-pl061.c
-> +++ b/drivers/gpio/gpio-pl061.c
-> @@ -23,6 +23,7 @@
->  #include <linux/amba/bus.h>
->  #include <linux/amba/pl061.h>
->  #include <linux/slab.h>
-> +#include <linux/pm.h>
->  
->  #define GPIODIR 0x400
->  #define GPIOIS  0x404
-> @@ -35,6 +36,17 @@
->  
->  #define PL061_GPIO_NR	8
->  
-> +#ifdef CONFIG_PM
-> +struct pl061_context_save_regs {
-> +	u8 gpio_data;
-> +	u8 gpio_dir;
-> +	u8 gpio_is;
-> +	u8 gpio_ibe;
-> +	u8 gpio_iev;
-> +	u8 gpio_ie;
-> +};
-> +#endif
-> +
->  struct pl061_gpio {
->  	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
->  	 * interrupts controller of the system. We need this to support systems
-> @@ -54,6 +66,10 @@ struct pl061_gpio {
->  	void __iomem		*base;
->  	unsigned		irq_base;
->  	struct gpio_chip	gc;
-> +
-> +#ifdef CONFIG_PM
-> +	struct pl061_context_save_regs csave_regs;
-> +#endif
->  };
->  
->  static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
-> @@ -330,6 +346,8 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
->  		irq_set_chip_data(i + chip->irq_base, chip);
->  	}
->  
-> +	amba_set_drvdata(dev, chip);
-> +
->  	return 0;
->  
->  iounmap:
-> @@ -342,6 +360,53 @@ free_mem:
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_PM
-> +static int pl061_suspend(struct device *dev)
-> +{
-> +	struct pl061_gpio *chip = dev_get_drvdata(dev);
-> +	int offset;
-> +
-> +	chip->csave_regs.gpio_data = 0;
-> +	chip->csave_regs.gpio_dir = readb(chip->base + GPIODIR);
-> +	chip->csave_regs.gpio_is = readb(chip->base + GPIOIS);
-> +	chip->csave_regs.gpio_ibe = readb(chip->base + GPIOIBE);
-> +	chip->csave_regs.gpio_iev = readb(chip->base + GPIOIEV);
-> +	chip->csave_regs.gpio_ie = readb(chip->base + GPIOIE);
-> +
-> +	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
-> +		if (chip->csave_regs.gpio_dir & (1 << offset))
-> +			chip->csave_regs.gpio_data |=
-> +				pl061_get_value(&chip->gc, offset) << offset;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int pl061_resume(struct device *dev)
-> +{
-> +	struct pl061_gpio *chip = dev_get_drvdata(dev);
-> +	int offset;
-> +
-> +	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
-> +		if (chip->csave_regs.gpio_dir & (1 << offset))
-> +			pl061_direction_output(&chip->gc, offset,
-> +					chip->csave_regs.gpio_data &
-> +					(1 << offset));
-> +		else
-> +			pl061_direction_input(&chip->gc, offset);
-> +	}
-> +
-> +	writeb(chip->csave_regs.gpio_is, chip->base + GPIOIS);
-> +	writeb(chip->csave_regs.gpio_ibe, chip->base + GPIOIBE);
-> +	writeb(chip->csave_regs.gpio_iev, chip->base + GPIOIEV);
-> +	writeb(chip->csave_regs.gpio_ie, chip->base + GPIOIE);
-> +
-> +	return 0;
-> +}
-> +
-> +SIMPLE_DEV_PM_OPS(pl061_dev_pm_ops, pl061_suspend, pl061_resume);
 
-"static" perhaps?
+I was actually wondering about the same thing (why are test and testproc
+both still there, when pm_test is also there)..
 
-> +#endif
-> +
->  static struct amba_id pl061_ids[] = {
->  	{
->  		.id	= 0x00041061,
-> @@ -353,6 +418,9 @@ static struct amba_id pl061_ids[] = {
->  static struct amba_driver pl061_gpio_driver = {
->  	.drv = {
->  		.name	= "pl061_gpio",
-> +#ifdef CONFIG_PM
-> +		.pm	= &pl061_dev_pm_ops,
-> +#endif
->  	},
->  	.id_table	= pl061_ids,
->  	.probe		= pl061_probe,
+So I'll drop the documentation changes in this patch, and maybe send a
+separate patch that will remove the 2? Will that be good?
+
+>> ---
+>>
+>>  Documentation/power/basic-pm-debugging.txt |   16 ++++++++++++----
+>>  kernel/power/hibernate.c                   |   28 ++++++++++++++++++++++------
+>>  2 files changed, 34 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/Documentation/power/basic-pm-debugging.txt b/Documentation/power/basic-pm-debugging.txt
+>> index 40a4c65..ba6c879 100644
+>> --- a/Documentation/power/basic-pm-debugging.txt
+>> +++ b/Documentation/power/basic-pm-debugging.txt
+>> @@ -38,10 +38,18 @@ identify what goes wrong.
+>>  
+>>  a) Test modes of hibernation
+>>  
+>> -To find out why hibernation fails on your system, you can use a special testing
+>> -facility available if the kernel is compiled with CONFIG_PM_DEBUG set.  Then,
+>> -there is the file /sys/power/pm_test that can be used to make the hibernation
+>> -core run in a test mode.  There are 5 test modes available:
+>> +To find out why hibernation fails on your system, you can use some special
+>> +testing facilities available if the kernel is compiled with CONFIG_PM_DEBUG set.
+>> +Hibernation will then have 2 more modes that can be used, namely "testproc" and
+>> +"test". When the "testproc" mode is used, it executes everything upto the task
+>> +freezing phase and reverts back. When the "test" mode is used, it goes much
+>> +deeper down, stopping just short of actually hibernating the machine, and then
+>> +reverts back to normal state.
+>> +
+>> +However, there is an even more fine-grained debugging tool, also enabled by
+>> +setting CONFIG_PM_DEBUG: there appears a file /sys/power/pm_test that can be
+>> +used to make the hibernation core run in a test mode.
+>> +There are 5 test modes available:
+>>  
+>>  freezer
+>>  - test the freezing of processes
+>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+>> index b4511b6..257e8e7 100644
+>> --- a/kernel/power/hibernate.c
+>> +++ b/kernel/power/hibernate.c
+>> @@ -55,6 +55,8 @@ enum {
+>>  
+>>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
+>>  
+>> +static bool freezer_test_done;
+>> +
+>>  static const struct platform_hibernation_ops *hibernation_ops;
+>>  
+>>  /**
+>> @@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
+>>  	if (error)
+>>  		goto Close;
+>>  
+>> +	if (hibernation_test(TEST_FREEZER) ||
+>> +		hibernation_testmode(HIBERNATION_TESTPROC)) {
+>> +
+>> +		/*
+>> +		 * Indicate to the caller that we are returning due to a
+>> +		 * successful freezer test.
+>> +		 */
+>> +		freezer_test_done = true;
+>> +		goto Close;
+>> +	}
+>> +
+>>  	error = dpm_prepare(PMSG_FREEZE);
+>>  	if (error)
+>>  		goto Complete_devices;
+>> @@ -641,15 +654,13 @@ int hibernate(void)
+>>  	if (error)
+>>  		goto Finish;
+>>  
+>> -	if (hibernation_test(TEST_FREEZER))
+>> -		goto Thaw;
+>> -
+>> -	if (hibernation_testmode(HIBERNATION_TESTPROC))
+>> -		goto Thaw;
+>> -
+>>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+>>  	if (error)
+>>  		goto Thaw;
+>> +	if (freezer_test_done) {
+>> +		freezer_test_done = false;
+>> +		goto Thaw;
+>> +	}
+> 
+> What happens if hibernation_snapshot() and freezer_test_done is 'true'?
+> Won't that leek freezer_test_done to the next hibernation cycle?
+> 
+
+Oh yes, thanks for catching that! I'll fix that and send an updated patch.
+
+>>  
+>>  	if (in_suspend) {
+>>  		unsigned int flags = 0;
+>> @@ -864,6 +875,11 @@ static const char * const hibernation_modes[] = {
+>>   *
+>>   * If a platform hibernation driver is in use, 'platform' will be supported
+>>   * and will be used by default.  Otherwise, 'shutdown' will be used by default.
+>> + * The 2 test modes are useful only when CONFIG_PM_DEBUG is set. In that case,
+>> + * using the 'testproc' mode will do everything upto the freezing of tasks
+>> + * and exits after undoing all that it did. The 'test' mode is deeper, in that,
+>> + * it does everything except actually hibernating the machine and exits after
+>> + * restoring the machine back to its original state.
+>>   * The selected option (i.e. the one corresponding to the current value of
+>>   * hibernation_mode) is enclosed by a square bracket.
+>>   *
 > 
 
 Thanks,
-Rafael
+Srivatsa S. Bhat
+
