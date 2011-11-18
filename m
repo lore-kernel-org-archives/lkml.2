@@ -1,143 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab1KRTGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:06:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33389 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab1KRTGs (ORCPT
+	id S1755885Ab1KRTHS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:07:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44742 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab1KRTHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:06:48 -0500
-Date: Fri, 18 Nov 2011 11:06:49 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 03/10] arm/tegra: prepare clock code for multiple tegra
- variants
-Message-ID: <20111118190649.GB31678@quad.lixom.net>
-References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com>
- <1321546766-26770-4-git-send-email-pdeschrijver@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321546766-26770-4-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Nov 2011 14:07:17 -0500
+Date: Fri, 18 Nov 2011 11:07:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
+ that can be shared between tasks
+Message-Id: <20111118110716.c854b4bd.akpm@linux-foundation.org>
+In-Reply-To: <4EC6246A.6020807@parallels.com>
+References: <4EC4DA15.7090106@parallels.com>
+	<20111117124831.688adbeb.akpm@linux-foundation.org>
+	<4EC6246A.6020807@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 18 Nov 2011 13:24:58 +0400
+Pavel Emelyanov <xemul@parallels.com> wrote:
 
-A nit and two comments below.
-
-On Thu, Nov 17, 2011 at 06:19:17PM +0200, Peter De Schrijver wrote:
-> Rework the tegra20 clock code to support multiple tegra variants :
+> >> One of the ways for checking whether two tasks share e.g. an mm_struct is to
+> >> provide some mm_struct ID of a task to its proc file. The best from the
+> >> performance point of view ID is the object address in the kernel, but showing
+> >> them to the userspace is not good for security reasons.
+> >>
+> >> Thus the object address is XOR-ed with a "random" value of the same size and 
+> >> then shown in proc. Providing this poison is not leaked into the userspace then
+> >> ID seem to be safe. The objects for which the IDs are shown are:
+> >>
+> >> * all namespaces living in /proc/pid/ns/
+> >> * open files (shown in /proc/pid/fdinfo/)
+> >> * objects, that can be shared with CLONE_XXX flags (except for namespaces)
+> >> 
+> >> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> > 
+> > It doesn't *sound* terribly secure.  There might be clever ways in
+> > which userspace can determine the secret mask, dunno.  We should ask
+> > evil-minded security people to review this proposal.
 > 
->  * remove tegra2_periph_reset_assert/tegra2_periph_reset_deassert. This
->    functionality should be in clock.c.
->  * compile tegra_sdmmc_tap_delay only on tegra20 as this feature will not
->    be available in future variants.
->  * don't export clk_measure_input_freq as its functionality is also available
->    using clk_get_rate().
+> Can you please propose some particular persons we should put in Cc for this thread?
+
+Perhaps Vasily could review this proposal for us?
+
+> > Why not simply use a sequence number, increment it each time we create
+> > an mm_struct?  On could use an idr tree to prevent duplicates but it
+> > would be simpler and sufficient to make it 64-bit and we never have to
+> > worry about wraparound causing duplicates.
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  arch/arm/mach-tegra/clock.c         |   14 +++++++++-----
->  arch/arm/mach-tegra/clock.h         |    3 ---
->  arch/arm/mach-tegra/tegra2_clocks.c |   14 +-------------
->  arch/arm/mach-tegra/timer.c         |   12 ++++++++----
->  4 files changed, 18 insertions(+), 25 deletions(-)
+> IDR is not OK for me, since we'll have to call it on every fork() thus penalizing
+> its performance.
+
+fork() is a pretty heavyweight operation so that won't hurt noticeably.
+However it sounds like you're presented with the same issue for more
+frequently-created objects.
+
+> 64bit increasing numbers are perfectly fine with me (I did this
+> in the 1st proposal, but put the ID on slub to save space - 64bits per page, not per
+> object).
 > 
-> diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
-> index f8d41ff..47f6366 100644
-> --- a/arch/arm/mach-tegra/clock.c
-> +++ b/arch/arm/mach-tegra/clock.c
-> @@ -387,13 +387,15 @@ EXPORT_SYMBOL(tegra_clk_init_from_table);
->  
->  void tegra_periph_reset_deassert(struct clk *c)
->  {
-> -	tegra2_periph_reset_deassert(c);
-> +	BUG_ON(!c->ops->reset);
-> +	c->ops->reset(c, false);
->  }
->  EXPORT_SYMBOL(tegra_periph_reset_deassert);
->  
->  void tegra_periph_reset_assert(struct clk *c)
->  {
-> -	tegra2_periph_reset_assert(c);
-> +	BUG_ON(!c->ops->reset);
-> +	c->ops->reset(c, true);
->  }
->  EXPORT_SYMBOL(tegra_periph_reset_assert);
->  
-> @@ -403,10 +405,11 @@ void __init tegra_init_clock(void)
->  }
->  
->  /*
-> - * The SDMMC controllers have extra bits in the clock source register that
-> - * adjust the delay between the clock and data to compenstate for delays
-> - * on the PCB.
-> + * The SDMMC controllers on tegra20 have extra bits in the clock source
-> + * register that adjust the delay between the clock and data to compenstate
-> + * for delays on the PCB.
->   */
-> +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
->  void tegra_sdmmc_tap_delay(struct clk *c, int delay)
->  {
->  	unsigned long flags;
-> @@ -415,6 +418,7 @@ void tegra_sdmmc_tap_delay(struct clk *c, int delay)
->  	tegra2_sdmmc_tap_delay(c, delay);
->  	spin_unlock_irqrestore(&c->spinlock, flags);
->  }
-> +#endif
+> But I have one question regarding storing these long IDs per-object. Are we OK with
+> adding 64-bit field on *all* the structures we need for this? I'm mostly worried 
+> about these small ones like sem_undo_list and fs_struct.
 
-Ifdeffing this out doesn't quite make sense. Better to do a #ifdef in the
-include file with an #else case that fills in an empty function. This
-needs to be abstracted differently for the two platforms anyway but
-that can be done separately from this. Does tegra3 have tap delay setup
-as well? (I don't have the TRM handy right now).
+OK.  Using the object's kernel virtual address is certainly very
+attractive.
 
->  
-> diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
-> index 688316a..18df129 100644
-> --- a/arch/arm/mach-tegra/clock.h
-> +++ b/arch/arm/mach-tegra/clock.h
-> @@ -146,11 +146,8 @@ struct tegra_clk_init_table {
->  };
->  
->  void tegra2_init_clocks(void);
-> -void tegra2_periph_reset_deassert(struct clk *c);
-> -void tegra2_periph_reset_assert(struct clk *c);
->  void clk_init(struct clk *clk);
->  struct clk *tegra_get_clock_by_name(const char *name);
-> -unsigned long clk_measure_input_freq(void);
+It is the case that we're causing difficulty with this longer-term plan
+to make c/r available to unprivileged processes?  Because it's OK to
+expose kernel addresses to CAP_SYS_ADMIN (or similar) tasks (isn't it?).
 
-This should maybe be done as a separate change, but don't worry about
-it this time around.
-
->  int clk_reparent(struct clk *c, struct clk *parent);
->  void tegra_clk_init_from_table(struct tegra_clk_init_table *table);
->  unsigned long clk_get_rate_locked(struct clk *c);
-> diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
-> index 371869d..2ab18f6 100644
-> --- a/arch/arm/mach-tegra/tegra2_clocks.c
-> +++ b/arch/arm/mach-tegra/tegra2_clocks.c
-> @@ -174,7 +174,7 @@ static int tegra_periph_clk_enable_refcount[3 * 32];
->  #define pmc_readl(reg) \
->  	__raw_readl(reg_pmc_base + (reg))
->  
-> -unsigned long clk_measure_input_freq(void)
-> +static unsigned long clk_measure_input_freq(void)
-
-This has only a single user left, so it can be folded down in that function
-instead, especially since there's just two switch statements. That can be done
-in a separate change.
-
-
--Olof
