@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab1KRWLM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:11:12 -0500
-Received: from edison.jonmasters.org ([173.255.233.168]:47535 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742Ab1KRWLK (ORCPT
+	id S1756895Ab1KRWMq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:12:46 -0500
+Received: from smtp171.dfw.emailsrvr.com ([67.192.241.171]:35185 "EHLO
+	smtp171.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab1KRWMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:11:10 -0500
-X-Greylist: delayed 1718 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Nov 2011 17:11:10 EST
-From: Jon Masters <jonathan@jonmasters.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, rusty@rustcorp.com.au,
-        jcm@jonmasters.org
-In-Reply-To: <20111118203548.GA17761@redhat.com>
-References: <20111118203548.GA17761@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation Of Broken Dreams
-Date: Fri, 18 Nov 2011 16:35:29 -0500
-Message-ID: <1321652129.20568.595.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	Fri, 18 Nov 2011 17:12:45 -0500
+Message-ID: <4EC6D85B.6020005@calxeda.com>
+Date: Fri, 18 Nov 2011 16:12:43 -0600
+From: Rob Herring <rob.herring@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Wojciech Baranowski <baranowski@google.com>
+CC: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of/platform: Allow missing address for dev name lookup
+References: <1321628948.21392.37.camel@zalecze.wat.corp.google.com> <4EC6838F.8020705@calxeda.com> <CAC0oEedK1E4K9mSS_pOKz_xvHtXy576kCe9oG+D3aHz14tW=WA@mail.gmail.com>
+In-Reply-To: <CAC0oEedK1E4K9mSS_pOKz_xvHtXy576kCe9oG+D3aHz14tW=WA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: depmod memory usage.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 15:35 -0500, Dave Jones wrote:
-> I pulled out an older laptop last night to test something, and built
-> a kernel on it.  When I did the make install part, the machine almost
-> ground to a halt.
+On 11/18/2011 10:45 AM, Wojciech Baranowski wrote:
+> On Fri, Nov 18, 2011 at 11:10 AM, Rob Herring <rob.herring@calxeda.com> wrote:
+>> On 11/18/2011 09:09 AM, Wojciech Baranowski wrote:
+>>> While looking up linux name for platform device, check the address only if it
+>>> has been supplied in lookup table.
+>>>
+>> And the reason you want to do this is?
 > 
-> It turned out that depmod used at peak 1.7GB of memory, (the laptop only had 1GB,
-> so it was swapping to the point of locking up interactivity for minutes
-> at a time).  It took an hour to complete.
-> 
-> The config file is pretty pathological (it's a distro build, so tons of
-> modules -- http://codemonkey.org.uk/junk/fedora-config-x86-64)
-> 
-> It's been a while since I built on a machine with this amount of memory,
-> but it seems that depmod has taken a big step backwards as it used to
-> cope with this just fine.
-> 
-> This is with the m-i-t that shipped in Fedora 16 (3.16)
+> Name lookup table is used to provide names for platform devices on the
+> board I'm working on. I'm adding /sound node without address for audio
+> subsystem and don't want to break that convention.
 
-I'll do some digging at the distro specific side of things. It's odd
-because I've got a couple of netbooks and embedded systems with *less*
-memory than 1GB that run depmod just fine. There were some memory leaks
-in older versions that should not be a problem any more.
+auxdata is really meant to be a temporary solution to plug platform_data.
 
-Jon.
+All platform devices do not necessarily go into the DT. The DT should
+describe the h/w. For sound I would expect this to be all the h/w blocks
+like i2s, dma, codec and then information on how they are connected. Can
+you show what your sound binding looks like.
 
+Rob
+
+> 
+>>> Signed-off-by: Wojciech Baranowski <baranowski@chromium.org>
+>>> ---
+>>>  drivers/of/platform.c |    8 +++++---
+>>>  1 files changed, 5 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>>> index cbd5d70..94763c0 100644
+>>> --- a/drivers/of/platform.c
+>>> +++ b/drivers/of/platform.c
+>>> @@ -314,12 +314,14 @@ static const struct of_dev_auxdata *of_dev_lookup(const struct of_dev_auxdata *l
+>>>       if (!lookup)
+>>>               return NULL;
+>>>
+>>> -     for(; lookup->name != NULL; lookup++) {
+>>> +     for (; lookup->name != NULL; lookup++) {
+>>>               if (!of_device_is_compatible(np, lookup->compatible))
+>>>                       continue;
+>>> -             if (of_address_to_resource(np, 0, &res))
+>>> +             if (lookup->phys_addr &&
+>>> +                             of_address_to_resource(np, 0, &res))
+>>>                       continue;
+>>> -             if (res.start != lookup->phys_addr)
+>>> +             if (lookup->phys_addr &&
+>>> +                             res.start != lookup->phys_addr)
+>>>                       continue;
+>>>               pr_debug("%s: devname=%s\n", np->full_name, lookup->name);
+>>>               return lookup;
+>>
+>>
 
