@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab1KSAI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:08:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38368 "EHLO mx2.suse.de"
+	id S1758263Ab1KSAIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:08:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38323 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758187Ab1KSAI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:08:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:04 2011
-Message-Id: <20111119000004.219682139@clark.kroah.org>
+	id S1758187Ab1KSAIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:08:48 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:06 2011
+Message-Id: <20111119000006.052207522@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 15:58:16 -0800
+Date: Fri, 18 Nov 2011 15:58:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [03/26] ASoC: Dont use wm8994->control_data in wm8994_readable_register()
+        alan@lxorguk.ukuu.org.uk, Geoff Levand <geoff@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [23/26] powerpc/ps3: Fix lost SMP IPIs
 In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Geoff Levand <geoff@infradead.org>
 
-commit 8eeea521d9d0fa6afd62df8c6e6566ee946117fa upstream.
+commit 72f3bea075287785ed32b777b6dd2636aa7002e8 upstream.
 
-The field is no longer initialised so this will crash if running on
-wm8958.
+Fixes the PS3 bootup hang introduced in 3.0-rc1 by:
 
-Reported-by: Thomas Abraham <thomas.abraham@linaro.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+  commit 317f394160e9beb97d19a84c39b7e5eb3d7815a
+  sched: Move the second half of ttwu() to the remote cpu
+
+Move the PS3's LV1 EOI call lv1_end_of_interrupt_ext() from ps3_chip_eoi()
+to ps3_get_irq() for IPI messages.
+
+If lv1_send_event_locally() is called between a previous call to
+lv1_send_event_locally() and the coresponding call to
+lv1_end_of_interrupt_ext() the second event will not be delivered to the
+target cpu.
+
+The PS3's SMP IPIs are implemented using lv1_send_event_locally(), so if two
+IPI messages of the same type are sent to the same target in a relatively
+short period of time the second IPI event can become lost when
+lv1_end_of_interrupt_ext() is called from ps3_chip_eoi().
+
+Signed-off-by: Geoff Levand <geoff@infradead.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8994.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/ps3/interrupt.c |   23 ++++++++++++++++++++++-
+ arch/powerpc/platforms/ps3/platform.h  |    1 +
+ arch/powerpc/platforms/ps3/smp.c       |    2 ++
+ 3 files changed, 25 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -56,7 +56,7 @@ static int wm8994_retune_mobile_base[] =
- static int wm8994_readable(struct snd_soc_codec *codec, unsigned int reg)
- {
- 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
--	struct wm8994 *control = wm8994->control_data;
-+	struct wm8994 *control = codec->control_data;
+--- a/arch/powerpc/platforms/ps3/interrupt.c
++++ b/arch/powerpc/platforms/ps3/interrupt.c
+@@ -88,6 +88,7 @@ struct ps3_private {
+ 	struct ps3_bmp bmp __attribute__ ((aligned (PS3_BMP_MINALIGN)));
+ 	u64 ppe_id;
+ 	u64 thread_id;
++	unsigned long ipi_mask;
+ };
  
- 	switch (reg) {
- 	case WM8994_GPIO_1:
+ static DEFINE_PER_CPU(struct ps3_private, ps3_private);
+@@ -144,7 +145,11 @@ static void ps3_chip_unmask(struct irq_d
+ static void ps3_chip_eoi(struct irq_data *d)
+ {
+ 	const struct ps3_private *pd = irq_data_get_irq_chip_data(d);
+-	lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, d->irq);
++
++	/* non-IPIs are EOIed here. */
++
++	if (!test_bit(63 - d->irq, &pd->ipi_mask))
++		lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, d->irq);
+ }
+ 
+ /**
+@@ -691,6 +696,16 @@ void __init ps3_register_ipi_debug_brk(u
+ 		cpu, virq, pd->bmp.ipi_debug_brk_mask);
+ }
+ 
++void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq)
++{
++	struct ps3_private *pd = &per_cpu(ps3_private, cpu);
++
++	set_bit(63 - virq, &pd->ipi_mask);
++
++	DBG("%s:%d: cpu %u, virq %u, ipi_mask %lxh\n", __func__, __LINE__,
++		cpu, virq, pd->ipi_mask);
++}
++
+ static unsigned int ps3_get_irq(void)
+ {
+ 	struct ps3_private *pd = &__get_cpu_var(ps3_private);
+@@ -720,6 +735,12 @@ static unsigned int ps3_get_irq(void)
+ 		BUG();
+ 	}
+ #endif
++
++	/* IPIs are EOIed here. */
++
++	if (test_bit(63 - plug, &pd->ipi_mask))
++		lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, plug);
++
+ 	return plug;
+ }
+ 
+--- a/arch/powerpc/platforms/ps3/platform.h
++++ b/arch/powerpc/platforms/ps3/platform.h
+@@ -43,6 +43,7 @@ void ps3_mm_shutdown(void);
+ void ps3_init_IRQ(void);
+ void ps3_shutdown_IRQ(int cpu);
+ void __init ps3_register_ipi_debug_brk(unsigned int cpu, unsigned int virq);
++void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq);
+ 
+ /* smp */
+ 
+--- a/arch/powerpc/platforms/ps3/smp.c
++++ b/arch/powerpc/platforms/ps3/smp.c
+@@ -94,6 +94,8 @@ static void __init ps3_smp_setup_cpu(int
+ 
+ 		if (result)
+ 			virqs[i] = NO_IRQ;
++		else
++			ps3_register_ipi_irq(cpu, virqs[i]);
+ 	}
+ 
+ 	ps3_register_ipi_debug_brk(cpu, virqs[PPC_MSG_DEBUGGER_BREAK]);
 
 
