@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab1KRKyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:54:51 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:4043 "EHLO
+	id S1753713Ab1KRLCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 06:02:48 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:22973 "EHLO
 	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab1KRKyv (ORCPT
+	with ESMTP id S1752588Ab1KRLCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:54:51 -0500
+	Fri, 18 Nov 2011 06:02:47 -0500
 X-IronPort-AV: E=Sophos;i="4.69,532,1315180800"; 
-   d="scan'208";a="9006394"
-Subject: Re: [Xen-devel] [PATCH 1/3] xen/granttable: Introducing grant table
- V2 stucture
+   d="scan'208";a="9006595"
+Subject: Re: [PATCH 2/3] xen/granttable: Grant tables V2 implementation
 From: Ian Campbell <Ian.Campbell@citrix.com>
 To: ANNIE LI <annie.li@oracle.com>
 CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
         "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
         "jeremy@goop.org" <jeremy@goop.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
         "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Date: Fri, 18 Nov 2011 10:54:49 +0000
-In-Reply-To: <4EC62E77.7090007@oracle.com>
+Date: Fri, 18 Nov 2011 11:02:45 +0000
+In-Reply-To: <4EC62FE5.2080608@oracle.com>
 References: <4EC3B62F.6080702@oracle.com>
-	 <1321451304-13559-1-git-send-email-annie.li@oracle.com>
-	 <4EC62E77.7090007@oracle.com>
+	 <1321451372-13596-1-git-send-email-annie.li@oracle.com>
+	 <4EC62FE5.2080608@oracle.com>
 Organization: Citrix Systems, Inc.
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1321613689.3664.305.camel@zakaz.uk.xensource.com>
+Message-ID: <1321614166.3664.311.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for splitting these up.
-
-On Fri, 2011-11-18 at 10:07 +0000, ANNIE LI wrote:
-> [...]
-
-> return value
-> +        * by bit operations.
-> +        */
-> +       int (*query_foreign_access)(grant_ref_t);
-> +};
+On Fri, 2011-11-18 at 10:13 +0000, ANNIE LI wrote:
+> static void gnttab_request_version(void)
+>  {
+> -       grant_table_version = 1;
+> -       gnttab_interface = &gnttab_v1_ops;
+> +       int rc;
+> +       struct gnttab_set_version gsv;
+> +       const char *str = "we need grant tables version 2, but only version 1 is available\n";
 > +
-> +static struct gnttab_ops gnttab_v1_ops;
+> +       gsv.version = 2;
+> +       rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
+> +       if (rc == 0) {
+> +               grant_table_version = 2;
+> +               gnttab_interface = &gnttab_v2_ops;
+> +       } else {
+> +               if (grant_table_version == 2) {
 
-You don't actually need this forward declaration since the struct
-definition and usage are ordered correctly.
+	  } else if (...) {
+		panic
+	  } else {
+		setup v1
+	  }
 
-> +static struct gnttab_ops gnttab_v1_ops = {
-> +       .map_frames                     = gnttab_map_frames_v1,
-> +       .unmap_frames                   = gnttab_unmap_frames_v1,
-> +       .update_entry                   = update_grant_entry_v1,
+> +                       /*
+> +                        * If we've already used version 2 features,
+> +                        * but then suddenly discover that they're not
+> +                        * available (e.g. migrating to an older
+> +                        * version of Xen), almost unbounded badness
+> +                        * can happen.
+> +                        */
+> +                       xen_raw_printk(str);
+> +                       panic(str);
 
-Any reason this one is not gnttab_foo?
+I expect you've just copied this style from elsewhere but I really
+dislike this duplication of prints. If panic is not useful here we
+really ought to address that at the root instead of going around
+patching things to print every panic message twice. I thought
+earlyprintk was supposed to solve this problem. Perhaps a generic
+early_panic_print could be added to the panic code?
 
-Ian.
+If we stick with this (which is fair enough since it is outside the
+scope of this series) you should move the const char *str into this code
+block so it is near to the use.
 
+> +               }
+> +               grant_table_version = 1;
+> +               gnttab_interface = &gnttab_v1_ops;
+> +       }
+>         printk(KERN_INFO "Grant tables using version %d layout.\n",
+>                 grant_table_version);
+>  } 
 
