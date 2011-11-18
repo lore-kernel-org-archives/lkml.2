@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1KRXxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:53:06 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49650 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab1KRXxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:53:04 -0500
-Date: Fri, 18 Nov 2011 15:53:00 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Miao Xie <miaox@cn.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v2 for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-In-Reply-To: <20111117160019.c8bd45ba.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1111181549460.24487@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <20111117142213.2b34469d.akpm@linux-foundation.org> <alpine.DEB.2.00.1111171507340.9933@chino.kir.corp.google.com> <20111117160019.c8bd45ba.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757584Ab1KRXxb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:53:31 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:44889
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753697Ab1KRXxa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 18:53:30 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz9371K98bK98dKzz1202hzz8275ch8275dhz2dh2a8h668h839h8e2h8e3h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3.1] [resend] Resurrect Intel740 driver: i740fb
+Thread-Topic: [PATCH v3.1] [resend] Resurrect Intel740 driver: i740fb
+Thread-Index: AQHMpk1EjFZLP73++UO0TFFsmlZs7g==
+Date: Fri, 18 Nov 2011 23:53:27 +0000
+Message-ID: <CAOZdJXVx88nEAQkL13n1QXVw=kOe03QsD=pffHoZ8gecL7u8dA@mail.gmail.com>
+References: <201111182154.45139.linux@rainbow-software.org>
+In-Reply-To: <201111182154.45139.linux@rainbow-software.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.17.22.104]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <D75C2FCA821BCF468F5EC5AD3E7E7544@freescale.net>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011, Andrew Morton wrote:
+On Fri, Nov 18, 2011 at 2:54 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+> Hello,
+> this is an v3 attempt to resurrect an old (like 2.4.19) out-of-tree driver for
+> Intel740 graphics cards and modify it for recent kernels. The old driver is
+> located at: http://sourceforge.net/projects/i740fbdev/files/
 
-> Nothing in this changelog makes me understand why you think we need this
-> change in 3.2.  What are the user-visible effects of this change?
-> 
+Would you please run checkpatch.pl on the patch and fix the complaints
+it has?  I get this:
 
-Kernels where MAX_NUMNODES > BITS_PER_LONG may temporarily see an empty 
-nodemask in a tsk's mempolicy if its previous nodemask is remapped onto a 
-new set of allowed cpuset nodes where the two nodemasks, as a result of 
-the remap, are now disjoint.  This fix is a bandaid so that we never 
-optimize the stores to tsk->mems_allowed because they intersect if tsk 
-also has an existing mempolicy, so that prevents the possibility of seeing 
-an empty nodemask during rebind.  For 3.3, I'd like to ensure that 
-remapping any mempolicy's nodemask will never result in an empty nodemask.
+total: 45 errors, 67 warnings, 1619 lines checked
+
+This patch has tons of style problems.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
