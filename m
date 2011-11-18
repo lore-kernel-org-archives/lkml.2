@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab1KRPs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:48:28 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:31693 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab1KRPs1 (ORCPT
+	id S1758106Ab1KRP4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:56:20 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:30233 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757772Ab1KRP4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:48:27 -0500
-Message-ID: <1321631298.2885.119.camel@deadeye>
-Subject: Re: [PATCH] net: Use kmemdup rather than duplicating its
- implementation
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: <samuel@sortiz.org>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Nov 2011 15:48:18 +0000
-In-Reply-To: <1321569820.1624.307.camel@localhost.localdomain>
-References: <1321569820.1624.307.camel@localhost.localdomain>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Nov 2011 10:56:19 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: bZTpZ6oVM1kRPfgeGYt9Ya0cUPL5mIyfIfhYEWL2d_zENbg
+ tGBtBmNnrvCDqVIXtln_aoK1pepmDEyUsWSC_gCJiMbgEHREB89i7yggmNT4
+ 6Dtw71gIIv9w8N8HMVIxqCGvksLINfnrWBC.xDVKaV6KDbQFO35s1.989HJQ
+ m6e6k844h4YOLl7ooBIdx9pBKP4Ci7iSoHKBKBMCf09WjBIjIFaTc8vb8jLl
+ dnoGYxI5nrsEt4jRmgDocBhrYC9z9BAPhyoRgrEfLcu9HU4VcXG73THmAziG
+ 6qTyNHIYlTKrJUVTQ3npjGAEUUAFbq433TB.Ha2FvBoIHRvexvfcOU2pW7rb
+ lejFsrFkFmdcDAu8qKzV9v3C0.V5AwfgbZohWhWO2WIKFgBFwo7dP6_yjkFf
+ hce.jnvlPSSG1PNowR3i5Aw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 18 Nov 2011 09:56:15 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Shaohua Li <shaohua.li@intel.com>
+cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
+        Jens Axboe <axboe@kernel.dk>, lee.schermerhorn@hp.com
+Subject: Re: [RFC]numa: improve I/O performance by optimizing numa interleave
+ allocation
+In-Reply-To: <1321600332.22361.309.camel@sli10-conroe>
+Message-ID: <alpine.DEB.2.00.1111180954200.2242@router.home>
+References: <1321600332.22361.309.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18526.005
-X-TM-AS-Result: No--11.029500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 18 Nov 2011 15:48:27.0068 (UTC) FILETIME=[830FF7C0:01CCA609]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 23:43 +0100, Thomas Meyer wrote:
-> The semantic patch that makes this change is available
-> in scripts/coccinelle/api/memdup.cocci.
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
+On Fri, 18 Nov 2011, Shaohua Li wrote:
 
-Similarly this is for the specific driver 'irttp' and not generally
-'net'.
+> So can we make both interleave fairness and continuous allocation happy?
 
-Ben.
+Maybe.
 
-> diff -u -p a/net/irda/irttp.c b/net/irda/irttp.c
-> --- a/net/irda/irttp.c 2011-11-07 19:39:06.071138486 +0100
-> +++ b/net/irda/irttp.c 2011-11-08 10:59:07.152748948 +0100
-> @@ -1461,14 +1461,13 @@ struct tsap_cb *irttp_dup(struct tsap_cb
->  	}
->  
->  	/* Allocate a new instance */
-> -	new = kmalloc(sizeof(struct tsap_cb), GFP_ATOMIC);
-> +	new = kmemdup(orig, sizeof(struct tsap_cb), GFP_ATOMIC);
->  	if (!new) {
->  		IRDA_DEBUG(0, "%s(), unable to kmalloc\n", __func__);
->  		spin_unlock_irqrestore(&irttp->tsaps->hb_spinlock, flags);
->  		return NULL;
->  	}
->  	/* Dup */
-> -	memcpy(new, orig, sizeof(struct tsap_cb));
->  	spin_lock_init(&new->lock);
->  
->  	/* We don't need the old instance any more */
+> Simplily we can adjust the round robin algorithm. We switch to another node
+> after several (N) allocation happens. If N isn't too big, we can still get
+> fair allocation. And we get N continuous pages. I use N=8 in below patch.
+> I thought 8 isn't too big for modern NUMA machine. Applications which use
+> interleave are unlikely run short time, so I thought fairness still works.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+People are already complaining that the 4k interleaving is too coarse.
+Bioses can often interleave on a cacheline level. A smaller size balances
+the load better over multiple nodes. Large sizes can result in imbalances
+since f.e. a whole array may end up on one node. Maybe make it tunable
+by expanding the numa_policy structure to include a size parameter?
+
 
