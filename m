@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab1KRLhl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 06:37:41 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34056 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757537Ab1KRLhi (ORCPT
+	id S1757724Ab1KRLhz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 06:37:55 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58515 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757663Ab1KRLhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 06:37:38 -0500
+	Fri, 18 Nov 2011 06:37:53 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,197 +23,107 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 18 Nov 2011 16:41:24 +0530
-Message-Id: <20111118111124.10512.86342.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 18 Nov 2011 16:41:39 +0530
+Message-Id: <20111118111139.10512.21445.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
 References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v7 3.2-rc2 24/30] perf: show possible probes in a given executable file or library.
-x-cbid: 11111801-1396-0000-0000-000000438421
+Subject: [PATCH v7 3.2-rc2 25/30] uprobes: call post_xol() unconditionally
+x-cbid: 11111801-0260-0000-0000-0000000EED4E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Enhances -F/--funcs option of "perf probe" to list possible probe points in
-an executable file or library.
+Kill sstep_complete(), change uprobe_notify_resume() to use
+post_xol() unconditionally.
 
-Show last 10 functions in /bin/zsh.
+It is wrong to assume that regs->ip always changes after the step.
+rep or jmp/call to self for example. We know that this task has
+already done the step, we can rely on DIE_DEBUG notification.
 
-# perf probe -F -x /bin/zsh | tail
-zstrtol
-ztrcmp
-ztrdup
-ztrduppfx
-ztrftime
-ztrlen
-ztrncpy
-ztrsub
-zwarn
-zwarnnam
-
-Show first 10 functions in /lib/libc.so.6
-
-# perf probe -F -x /lib/libc.so.6 | head
-_IO_adjust_column
-_IO_adjust_wcolumn
-_IO_default_doallocate
-_IO_default_finish
-_IO_default_pbackfail
-_IO_default_uflow
-_IO_default_xsgetn
-_IO_default_xsputn
-_IO_do_write@@GLIBC_2.2.5
-_IO_doallocbuf
-
+Original-patch-from: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
+ include/linux/uprobes.h |    3 ++-
+ kernel/uprobes.c        |   38 ++++++++++++--------------------------
+ 2 files changed, 14 insertions(+), 27 deletions(-)
 
-(Changelog (since v5)
-- Removed the separate documentation change patch and added the
-  documentation changes as part of this patch.
-
- tools/perf/Documentation/perf-probe.txt |    4 ++
- tools/perf/builtin-probe.c              |    4 +-
- tools/perf/util/probe-event.c           |   55 ++++++++++++++++++++++++-------
- tools/perf/util/probe-event.h           |    4 +-
- 4 files changed, 49 insertions(+), 18 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 469ad6d..be88378 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -78,6 +78,8 @@ OPTIONS
- -F::
- --funcs::
- 	Show available functions in given module or kernel.
-+	With -x/--exec, can also list functions in a user space executable
-+	/ shared library.
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index add5222..70d639c 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -74,7 +74,8 @@ struct uprobe {
+ enum uprobe_task_state {
+ 	UTASK_RUNNING,
+ 	UTASK_BP_HIT,
+-	UTASK_SSTEP
++	UTASK_SSTEP,
++	UTASK_SSTEP_ACK,
+ };
  
- --filter=FILTER::
- 	(Only for --vars and --funcs) Set filter. FILTER is a combination of glob
-@@ -101,7 +103,7 @@ OPTIONS
- -x::
- --exec=PATH::
- 	Specify path to the executable or shared library file for user
--	space tracing.
-+	space tracing. Can also be used with --funcs option.
+ /*
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index b440acd..50cde86 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -1313,24 +1313,6 @@ static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
+ }
  
- PROBE SYNTAX
- ------------
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 43e6321..5e7622c 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -365,8 +365,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		if (!params.filter)
- 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
- 						       NULL);
--		ret = show_available_funcs(params.target,
--					   params.filter);
-+		ret = show_available_funcs(params.target, params.filter,
-+					params.uprobes);
- 		strfilter__delete(params.filter);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show functions."
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index d4f4c2b..2c4ec61 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -47,6 +47,7 @@
- #include "trace-event.h"	/* For __unused */
- #include "probe-event.h"
- #include "probe-finder.h"
-+#include "session.h"
+ /*
+- * Verify from Instruction Pointer if singlestep has indeed occurred.
+- * If Singlestep has occurred, then do post singlestep fix-ups.
+- */
+-static bool sstep_complete(struct uprobe *uprobe, struct pt_regs *regs)
+-{
+-	unsigned long vaddr = instruction_pointer(regs);
+-
+-	/*
+-	 * If we have executed out of line, Instruction pointer
+-	 * cannot be same as virtual address of XOL slot.
+-	 */
+-	if (vaddr == current->utask->xol_vaddr)
+-		return false;
+-	post_xol(uprobe, regs);
+-	return true;
+-}
+-
+-/*
+  * uprobe_notify_resume gets called in task context just before returning
+  * to userspace.
+  *
+@@ -1377,15 +1359,18 @@ void uprobe_notify_resume(struct pt_regs *regs)
+ 		else
+ 			/* Cannot Singlestep; re-execute the instruction. */
+ 			goto cleanup_ret;
+-	} else if (utask->state == UTASK_SSTEP) {
++	} else {
+ 		u = utask->active_uprobe;
+-		if (sstep_complete(u, regs)) {
+-			put_uprobe(u);
+-			utask->active_uprobe = NULL;
+-			utask->state = UTASK_RUNNING;
+-			user_disable_single_step(current);
+-			xol_free_insn_slot(current);
+-		}
++		if (utask->state == UTASK_SSTEP_ACK)
++			post_xol(u, regs);
++		else
++			WARN_ON_ONCE(1);
++
++		put_uprobe(u);
++		utask->active_uprobe = NULL;
++		utask->state = UTASK_RUNNING;
++		user_disable_single_step(current);
++		xol_free_insn_slot(current);
+ 	}
+ 	return;
  
- #define MAX_CMDLEN 256
- #define MAX_PROBE_ARGS 128
-@@ -2179,32 +2180,60 @@ static int filter_available_functions(struct map *map __unused,
+@@ -1435,6 +1420,7 @@ int uprobe_post_notifier(struct pt_regs *regs)
+ 		/* task is currently not uprobed */
+ 		return 0;
+ 
++	utask->state = UTASK_SSTEP_ACK;
+ 	set_thread_flag(TIF_UPROBE);
  	return 1;
  }
- 
--int show_available_funcs(const char *target, struct strfilter *_filter)
-+static int __show_available_funcs(struct map *map)
-+{
-+	if (map__load(map, filter_available_functions)) {
-+		pr_err("Failed to load map.\n");
-+		return -EINVAL;
-+	}
-+	if (!dso__sorted_by_name(map->dso, map->type))
-+		dso__sort_by_name(map->dso, map->type);
-+
-+	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
-+	return 0;
-+}
-+
-+static int available_kernel_funcs(const char *module)
- {
- 	struct map *map;
- 	int ret;
- 
--	setup_pager();
--
- 	ret = init_vmlinux();
- 	if (ret < 0)
- 		return ret;
- 
--	map = kernel_get_module_map(target);
-+	map = kernel_get_module_map(module);
- 	if (!map) {
--		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
-+		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
- 		return -EINVAL;
- 	}
-+	return __show_available_funcs(map);
-+}
-+
-+int show_available_funcs(const char *target, struct strfilter *_filter,
-+					bool user)
-+{
-+	struct map *map;
-+	int ret;
-+
-+	setup_pager();
- 	available_func_filter = _filter;
--	if (map__load(map, filter_available_functions)) {
--		pr_err("Failed to load map.\n");
--		return -EINVAL;
--	}
--	if (!dso__sorted_by_name(map->dso, map->type))
--		dso__sort_by_name(map->dso, map->type);
- 
--	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
--	return 0;
-+	if (!user)
-+		return available_kernel_funcs(target);
-+
-+	symbol_conf.try_vmlinux_path = false;
-+	symbol_conf.sort_by_name = true;
-+	ret = symbol__init();
-+	if (ret < 0) {
-+		pr_err("Failed to init symbol map.\n");
-+		return ret;
-+	}
-+	map = dso__new_map(target);
-+	ret = __show_available_funcs(map);
-+	dso__delete(map->dso);
-+	map__delete(map);
-+	return ret;
- }
- 
- #define DEFAULT_FUNC_FILTER "!_*"
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 9e8c846..f9f3de8 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -131,8 +131,8 @@ extern int show_line_range(struct line_range *lr, const char *module);
- extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 			       int max_probe_points, const char *module,
- 			       struct strfilter *filter, bool externs);
--extern int show_available_funcs(const char *module, struct strfilter *filter);
--
-+extern int show_available_funcs(const char *module, struct strfilter *filter,
-+				bool user);
- 
- /* Maximum index number of event-name postfix */
- #define MAX_EVENT_INDEX	1024
 
