@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab1KRXkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:40:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53451 "EHLO
+	id S1754846Ab1KRXlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:41:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53472 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab1KRXkW (ORCPT
+	with ESMTP id S1751749Ab1KRXlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:40:22 -0500
-Date: Fri, 18 Nov 2011 15:39:55 -0800
-From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
-Message-ID: <tip-87cdee71166fa107c5dc8e43060eeefa533c6a3b@git.kernel.org>
+	Fri, 18 Nov 2011 18:41:44 -0500
+Date: Fri, 18 Nov 2011 15:41:27 -0800
+From: tip-bot for Paul Turner <pjt@google.com>
+Message-ID: <tip-fccfdc6f0d8c83c854eeb6d93aa158f0e551bd49@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, mitake@dcl.info.waseda.ac.jp,
-        yong.zhang0@gmail.com, tglx@linutronix.de, mingo@elte.hu
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, mitake@dcl.info.waseda.ac.jp,
-        tglx@linutronix.de, yong.zhang0@gmail.com, mingo@elte.hu
-In-Reply-To: <20111109080714.GC8124@zhy>
-References: <20111109080714.GC8124@zhy>
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20111108042736.623812423@google.com>
+References: <20111108042736.623812423@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Always try to set ->class_cache in register_lock_class() lockdep_init_map()
-Git-Commit-ID: 87cdee71166fa107c5dc8e43060eeefa533c6a3b
+Subject: [tip:sched/core] sched: Fix buglet in return_cfs_rq_runtime()
+Git-Commit-ID: fccfdc6f0d8c83c854eeb6d93aa158f0e551bd49
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:40:05 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:41:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  87cdee71166fa107c5dc8e43060eeefa533c6a3b
-Gitweb:     http://git.kernel.org/tip/87cdee71166fa107c5dc8e43060eeefa533c6a3b
-Author:     Yong Zhang <yong.zhang0@gmail.com>
-AuthorDate: Wed, 9 Nov 2011 16:07:14 +0800
+Commit-ID:  fccfdc6f0d8c83c854eeb6d93aa158f0e551bd49
+Gitweb:     http://git.kernel.org/tip/fccfdc6f0d8c83c854eeb6d93aa158f0e551bd49
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Mon, 7 Nov 2011 20:26:34 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 14 Nov 2011 13:54:11 +0100
+CommitDate: Wed, 16 Nov 2011 08:43:45 +0100
 
-lockdep: Always try to set ->class_cache in register_lock_class() lockdep_init_map()
+sched: Fix buglet in return_cfs_rq_runtime()
 
-Commit ["62016250 lockdep: Add improved subclass caching"] tries to
-improve performance (expecially to reduce the cost of rq->lock)
-when using lockdep, but it fails due to lockdep_init_map() in
-which ->class_cache is cleared. The typical caller is
-lock_set_subclass(), after that class will not be cached anymore.
+In return_cfs_rq_runtime() we want to return bandwidth when there are no
+remaining tasks, not "return" when this is the case.
 
-This patch tries to achive the goal of commit 62016250 by always
-setting ->class_cache in register_lock_class().
-
-=== Score comparison of benchmarks ===
-
-for i in `seq 1 10`; do ./perf bench -f simple sched messaging; done
-
-before:  min: 0.604, max: 0.660, avg: 0.622
-after:   min: 0.414, max: 0.473, avg: 0.427
-
-for i in `seq 1 10`; do ./perf bench -f simple sched messaging -g 40; done
-
-before:  min: 2.347, max: 2.421, avg: 2.391
-after:   min: 1.652, max: 1.699, avg: 1.671
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Signed-off-by: Paul Turner <pjt@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20111109080714.GC8124@zhy
+Link: http://lkml.kernel.org/r/20111108042736.623812423@google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/lockdep.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ kernel/sched_fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index e69434b..103bed8 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -722,7 +722,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index ba0e1f4..a78ed27 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1756,7 +1756,7 @@ static void __return_cfs_rq_runtime(struct cfs_rq *cfs_rq)
  
- 	class = look_up_lock_class(lock, subclass);
- 	if (likely(class))
--		return class;
-+		goto out_set_class_cache;
+ static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ {
+-	if (!cfs_rq->runtime_enabled || !cfs_rq->nr_running)
++	if (!cfs_rq->runtime_enabled || cfs_rq->nr_running)
+ 		return;
  
- 	/*
- 	 * Debug-check: all keys must be persistent!
-@@ -807,6 +807,7 @@ out_unlock_set:
- 	graph_unlock();
- 	raw_local_irq_restore(flags);
- 
-+out_set_class_cache:
- 	if (!subclass || force)
- 		lock->class_cache[0] = class;
- 	else if (subclass < NR_LOCKDEP_CACHING_CLASSES)
+ 	__return_cfs_rq_runtime(cfs_rq);
