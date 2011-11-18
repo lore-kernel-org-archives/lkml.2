@@ -1,131 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab1KRHv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 02:51:57 -0500
-Received: from ganondorf.loclhst.com ([216.145.224.138]:37278 "EHLO
-	ganondorf.loclhst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab1KRHv4 (ORCPT
+	id S1753594Ab1KRHzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 02:55:25 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:40640 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab1KRHzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 02:51:56 -0500
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Nov 2011 02:51:56 EST
-Message-ID: <4EC60E9D.6070606@loclhst.com>
-Date: Fri, 18 Nov 2011 01:51:57 -0600
-From: Dan Delaney <drdelaney@loclhst.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
+	Fri, 18 Nov 2011 02:55:24 -0500
+Date: Fri, 18 Nov 2011 08:55:21 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
 To: linux-kernel@vger.kernel.org
-CC: jkosina@suse.cz
-Subject: [PATCH] usbled: add support for Dream Cheeky DL100B Mailbox Friends
- Alert (1d34:000a)
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Alex Shi <alex.shi@intel.com>, netdev@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111118075521.GB1615@x4.trippels.de>
+References: <20111118072519.GA1615@x4.trippels.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111118072519.GA1615@x4.trippels.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will add support for the Dream Cheeky Mailbox Friends Alert (http://www.dreamcheeky.com/mailbox-friends-alert) usb led dongle.
-The drivers for the webmail notifier (1d34:0004) work perfectly fine, so I just would like to add support for the new device.
-I have tested the patch on gentoo sources of 2.6.39 and 3.0.6, as well as vanilla 3.1.1 and 3.2-rc2.
+On 2011.11.18 at 08:25 +0100, Markus Trippelsdorf wrote:
+> This happend during boot this morning:
+> 
+> Nov 18 07:57:12 x4 kernel: XFS (sdb2): Ending clean mount
+> Nov 18 07:57:12 x4 kernel: VFS: Mounted root (xfs filesystem) readonly on device 8:18.
+> Nov 18 07:57:12 x4 kernel: devtmpfs: mounted
+> Nov 18 07:57:12 x4 kernel: Freeing unused kernel memory: 436k freed
+> Nov 18 07:57:12 x4 kernel: Write protecting the kernel read-only data: 8192k
+> Nov 18 07:57:12 x4 kernel: Freeing unused kernel memory: 1220k freed
+> Nov 18 07:57:12 x4 kernel: Freeing unused kernel memory: 132k freed
+> Nov 18 07:57:12 x4 kernel: XFS (sda): Mounting Filesystem
+> Nov 18 07:57:12 x4 kernel: XFS (sda): Ending clean mount
+> Nov 18 07:57:12 x4 kernel: ATL1E 0000:02:00.0: irq 40 for MSI/MSI-X
+> Nov 18 07:57:12 x4 kernel: ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+> Nov 18 07:57:12 x4 kernel: ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+> Nov 18 07:57:13 x4 kernel: Adding 2097148k swap on /var/tmp/swap/swapfile.  Priority:-1 extents:2 across:2634672k
+> Nov 18 07:57:16 x4 kernel: ------------[ cut here ]------------
+> Nov 18 07:57:16 x4 kernel: WARNING: at mm/slub.c:3357 ksize+0xa5/0xb0()
+> Nov 18 07:57:16 x4 kernel: Hardware name: System Product Name
+> Nov 18 07:57:16 x4 kernel: Pid: 1539, comm: wmii Not tainted 3.2.0-rc2-00057-ga9098b3-dirty #60
+> Nov 18 07:57:16 x4 kernel: Call Trace:                                                                                                               Nov 18 07:57:16 x4 kernel: [<ffffffff8106cb75>] warn_slowpath_common+0x75/0xb0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8106cc75>] warn_slowpath_null+0x15/0x20
+> Nov 18 07:57:16 x4 kernel: [<ffffffff81103985>] ksize+0xa5/0xb0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141e3ee>] __alloc_skb+0x7e/0x210
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141b75e>] sock_alloc_send_pskb+0x1be/0x300
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141a5d2>] ? sock_wfree+0x52/0x60                                                                               Nov 18 07:57:16 x4 kernel: [<ffffffff8141b8b0>] sock_alloc_send_skb+0x10/0x20                                                                        Nov 18 07:57:16 x4 kernel: [<ffffffff814a3c61>] unix_stream_sendmsg+0x261/0x420
+> Nov 18 07:57:16 x4 kernel: [<ffffffff814176ff>] sock_aio_write+0xdf/0x100                                                                            Nov 18 07:57:16 x4 kernel: [<ffffffff81417620>] ? sock_aio_read+0x110/0x110
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110b6ca>] do_sync_readv_writev+0xca/0x110
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110b7fb>] ? rw_copy_check_uvector+0x6b/0x130
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110a8a6>] ? do_sync_read+0xd6/0x110                                                                            Nov 18 07:57:16 x4 kernel: [<ffffffff8110b996>] do_readv_writev+0xd6/0x1e0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110bb20>] vfs_writev+0x30/0x60                                                                                 Nov 18 07:57:16 x4 kernel: [<ffffffff8110bc25>] sys_writev+0x45/0x90
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8111d8d1>] ? sys_poll+0x71/0x110
+> Nov 18 07:57:16 x4 kernel: [<ffffffff814ca5fb>] system_call_fastpath+0x16/0x1b
+> Nov 18 07:57:16 x4 kernel: ---[ end trace 320a3cfbcb373e9a ]---
+> Nov 18 07:57:16 x4 kernel: ------------[ cut here ]------------
+> Nov 18 07:57:16 x4 kernel: kernel BUG at mm/slub.c:3413!
+> Nov 18 07:57:16 x4 kernel: invalid opcode: 0000 [#1] PREEMPT SMP
+> Nov 18 07:57:16 x4 kernel: CPU 1
+> Nov 18 07:57:16 x4 kernel: Pid: 1500, comm: X Tainted: G        W    3.2.0-rc2-00057-ga9098b3-dirty #60 System manufacturer System Product Name/M4A78T-E
+> Nov 18 07:57:16 x4 kernel: RIP: 0010:[<ffffffff81103ac1>]  [<ffffffff81103ac1>] kfree+0x131/0x140
+> Nov 18 07:57:16 x4 kernel: RSP: 0018:ffff88020fbc1b88  EFLAGS: 00010246
+> Nov 18 07:57:16 x4 kernel: RAX: 4000000000000000 RBX: ffff880200000000 RCX: 0000000000000304
+> Nov 18 07:57:16 x4 kernel: RDX: ffffffff7fffffff RSI: 0000000000000282 RDI: ffff880200000000
+> Nov 18 07:57:16 x4 kernel: RBP: ffff88020fbc1ba8 R08: 0000000000000304 R09: ffffea0008000000
+> Nov 18 07:57:16 x4 kernel: R10: 00000000005d6ba0 R11: 0000000000003246 R12: ffff880213570700
+> Nov 18 07:57:16 x4 kernel: R13: ffffffff8141e8c0 R14: ffff880213570700 R15: ffff880216bba3a0
+> Nov 18 07:57:16 x4 kernel: FS:  00007fdc1da79880(0000) GS:ffff88021fc80000(0000) knlGS:0000000000000000
+> Nov 18 07:57:16 x4 kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> Nov 18 07:57:16 x4 kernel: CR2: 0000000001b39a98 CR3: 000000020fbfc000 CR4: 00000000000006e0
+> Nov 18 07:57:16 x4 kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Nov 18 07:57:16 x4 kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Nov 18 07:57:16 x4 kernel: Process X (pid: 1500, threadinfo ffff88020fbc0000, task ffff880216bba3a0)
+> Nov 18 07:57:16 x4 kernel: Stack:
+> Nov 18 07:57:16 x4 kernel: 0000000000000000 ffff880213570700 ffff880213570700 0000000000000000
+> Nov 18 07:57:16 x4 kernel: ffff88020fbc1bc8 ffffffff8141e8c0 ffff880213570700 ffff880213570700
+> Nov 18 07:57:16 x4 kernel: ffff88020fbc1be8 ffffffff8141e8e9 ffff880200000000 ffff880213570700
+> Nov 18 07:57:16 x4 kernel: Call Trace:
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141e8c0>] skb_release_data+0xf0/0x100
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141e8e9>] skb_release_all+0x19/0x20
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141e901>] __kfree_skb+0x11/0xa0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8141e9b6>] consume_skb+0x26/0xa0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff814a5614>] unix_stream_recvmsg+0x2c4/0x790
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8111c1c0>] ? __pollwait+0xf0/0xf0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff814175f4>] sock_aio_read+0xe4/0x110
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110a8a6>] do_sync_read+0xd6/0x110
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8108fa64>] ? enqueue_hrtimer+0x24/0xc0
+> Nov 18 07:57:16 x4 kernel: [<ffffffff81090303>] ? hrtimer_start+0x13/0x20
+> Nov 18 07:57:16 x4 kernel: [<ffffffff810714ac>] ? do_setitimer+0x1bc/0x240
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110b095>] vfs_read+0x135/0x160
+> Nov 18 07:57:16 x4 kernel: [<ffffffff8110b375>] sys_read+0x45/0x90
+> Nov 18 07:57:16 x4 kernel: [<ffffffff814ca5fb>] system_call_fastpath+0x16/0x1b
+> Nov 18 07:57:16 x4 kernel: Code: e9 3d ff ff ff 48 89 da 4c 89 ce e8 51 fe 3b 00 e9 77 ff ff ff 49 f7 01 00 c0 00 00 74 0d 4c 89 cf e8 64 24 fd ff e9 61 ff ff ff <0f> 0b 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48
+> Nov 18 07:57:16 x4 kernel: RIP  [<ffffffff81103ac1>] kfree+0x131/0x140
+> Nov 18 07:57:16 x4 kernel: RSP <ffff88020fbc1b88>
+> Nov 18 07:57:16 x4 kernel: ---[ end trace 320a3cfbcb373e9b ]---
+> Nov 18 08:01:30 x4 kernel: SysRq : Emergency Sync
+> Nov 18 08:01:30 x4 kernel: Emergency Sync complete
+> 
+> The dirty flag comes from a bunch of unrelated xfs patches from Christoph, that
+> I'm testing right now.
+> 
+> Please also see my previous post: http://thread.gmane.org/gmane.linux.kernel/1215023
+> It looks like something is scribbling over memory.
+> 
+> This machine uses ECC, so bit-flips should be impossible.
 
-This is my first attempt at making a change to the kernel, so let me know if I need to change something (formatting, where to post, etc)
-
-I am not sure who else I may need to CC on this.
-
-Device data:
-[169976.524055] usb 6-1: new low speed USB device number 3 using ohci_hcd
-[169976.685943] usb 6-1: New USB device found, idVendor=1d34, idProduct=000a
-[169976.685947] usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-[169976.685950] usb 6-1: Product: DL100B Dream Cheeky Generic Controller
-[169976.685951] usb 6-1: Manufacturer: Dream Link
-[169976.689931] usbled 6-1:1.0: USB LED device now attached
-
-Bus 006 Device 003: ID 1d34:000a
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0         8
-  idVendor           0x1d34
-  idProduct          0x000a
-  bcdDevice            0.02
-  iManufacturer           1 Dream Link
-  iProduct                2 DL100B Dream Cheeky Generic Controller
-  iSerial                 0
-  bNumConfigurations      1
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength           34
-    bNumInterfaces          1
-    bConfigurationValue     1
-    iConfiguration          0
-    bmAttributes         0x80
-      (Bus Powered)
-    MaxPower              500mA
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      bNumEndpoints           1
-      bInterfaceClass         3 Human Interface Device
-      bInterfaceSubClass      0 No Subclass
-      bInterfaceProtocol      0 None
-      iInterface              0
-        HID Device Descriptor:
-          bLength                 9
-          bDescriptorType        33
-          bcdHID               1.10
-          bCountryCode            0 Not supported
-          bNumDescriptors         1
-          bDescriptorType        34 Report
-          wDescriptorLength      37
-         Report Descriptors:
-           ** UNAVAILABLE **
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x81  EP 1 IN
-        bmAttributes            3
-          Transfer Type            Interrupt
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0008  1x 8 bytes
-        bInterval              10
-Device Status:     0x0000
-  (Bus Powered)
-
-
-And the patch:
-
---- a/drivers/hid/hid-core.c    2011-11-16 02:06:51.000000000 -0600
-+++ b/drivers/hid/hid-core.c    2011-11-16 02:01:06.000000000 -0600
-@@ -1687,6 +1687,7 @@
-        { HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EARTHMATE) },
-        { HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
-        { HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
-+       { HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x000a) },
-        { HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
-        { HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
-        { HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
-diff -ur a/drivers/usb/misc/usbled.c b/drivers/usb/misc/usbled.c
---- a/drivers/usb/misc/usbled.c 2011-11-16 02:05:43.000000000 -0600
-+++ b/drivers/usb/misc/usbled.c 2011-11-16 02:01:40.000000000 -0600
-@@ -31,6 +31,8 @@
-                        .driver_info = DELCOM_VISUAL_SIGNAL_INDICATOR },
-        { USB_DEVICE(0x1d34, 0x0004),
-                        .driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
-+       { USB_DEVICE(0x1d34, 0x000a),
-+                       .driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
-        { },
- };
- MODULE_DEVICE_TABLE (usb, id_table);
-
+CC'ing netdev@vger.kernel.org and Eric Dumazet.
 
 -- 
-Dan Delaney
-drdelaney@loclhst.com
+Markus
