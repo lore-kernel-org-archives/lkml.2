@@ -1,121 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab1KRPgp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:36:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46311 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126Ab1KRPgo (ORCPT
+	id S1758078Ab1KRPhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:37:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44455 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758029Ab1KRPhK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:36:44 -0500
-X-Authority-Analysis: v=2.0 cv=NJxXCjGg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=yV41G_FBfBoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=L5qsA8XTgh3iIs4-FGkA:9 a=QEXdDO2ut3YA:10 a=WkQjhlJjcU7LmvZI:21 a=YMxjHyzRDPrKLjje:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH 1/3] ktest: save test output
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1321616131-21352-1-git-send-email-rabin@rab.in>
-References: <1321616131-21352-1-git-send-email-rabin@rab.in>
+	Fri, 18 Nov 2011 10:37:10 -0500
+Subject: Re: [patch 3/6] sched: use rq->avg_event to resurrect nohz
+ ratelimiting
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
+Date: Fri, 18 Nov 2011 16:36:59 +0100
+In-Reply-To: <1321629562.7080.17.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629562.7080.17.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 10:36:41 -0500
-Message-ID: <1321630601.3533.47.camel@frodo>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1321630619.2197.16.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 17:05 +0530, Rabin Vincent wrote:
-> The test output may contain useful information; save it along with the
-> already-saved buildlog, dmesg, and .config.
-
-Makes sense.
-
+On Fri, 2011-11-18 at 16:19 +0100, Mike Galbraith wrote:
+> Entering nohz at high frequency eats cycles, ratelimit it
+> just as we do idle_balance(), and for the same reason.
 > 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+Arjan, can we do something smart with the idle governor which already
+guestimates the idle duration for us?
+
 > ---
->  tools/testing/ktest/ktest.pl |   30 +++++++++++++++++++-----------
->  1 files changed, 19 insertions(+), 11 deletions(-)
+>  include/linux/sched.h    |    2 ++
+>  kernel/sched.c           |    7 +++++++
+>  kernel/time/tick-sched.c |    2 +-
+>  3 files changed, 10 insertions(+), 1 deletion(-)
 > 
-> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> index 30e2bef..3185e0a 100755
-> --- a/tools/testing/ktest/ktest.pl
-> +++ b/tools/testing/ktest/ktest.pl
-> @@ -103,6 +103,7 @@ my $in_patchcheck = 0;
->  my $run_test;
->  my $redirect;
->  my $buildlog;
-> +my $testlog;
->  my $dmesg;
->  my $monitor_fp;
->  my $monitor_pid;
-> @@ -1005,17 +1006,19 @@ sub fail {
->  	    mkpath($faildir) or
->  		die "can't create $faildir";
->  	}
-> -	if (-f "$output_config") {
-> -	    cp "$output_config", "$faildir/config" or
-> -		die "failed to copy .config";
-> -	}
-> -	if (-f $buildlog) {
-> -	    cp $buildlog, "$faildir/buildlog" or
-> -		die "failed to move $buildlog";
-> -	}
-> -	if (-f $dmesg) {
-> -	    cp $dmesg, "$faildir/dmesg" or
-> -		die "failed to move $dmesg";
-> +
-> +	my %files = (
-> +		"config" => $output_config,
-> +		"buildlog" => $buildlog,
-> +		"dmesg" => $dmesg,
-> +		"testlog" => $testlog,
-> +	);
-> +
-> +	while (my ($name, $source) = each(%files)) {
-> +		if (-f "$source") {
-> +			cp "$source", "$faildir/$name" or
-> +				die "failed to copy $source";
-> +		}
-
-Nice little clean up. You can see that I think more C like than Perl. I
-usually don't like "perlisms" but this is a clean perl fix that isn't
-too complex to understand by non perl folks.
-
->  	}
+> Index: linux-3.2.git/include/linux/sched.h
+> ===================================================================
+> --- linux-3.2.git.orig/include/linux/sched.h
+> +++ linux-3.2.git/include/linux/sched.h
+> @@ -1979,8 +1979,10 @@ static inline void idle_task_exit(void)
 >  
->  	doprint "*** Saved info to $faildir ***\n";
-> @@ -1653,7 +1656,10 @@ sub child_run_test {
->      $poweroff_on_error = 0;
->      $die_on_failure = 1;
+>  #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
+>  extern void wake_up_idle_cpu(int cpu);
+> +extern int sched_needs_cpu(int cpu);
+>  #else
+>  static inline void wake_up_idle_cpu(int cpu) { }
+> +static inline void sched_needs_cpu(int cpu) { }
+>  #endif
 >  
-> +    $redirect = "$testlog";
->      run_command $run_test or $failed = 1;
-> +    undef $redirect;
-> +
->      exit $failed;
+>  extern unsigned int sysctl_sched_latency;
+> Index: linux-3.2.git/kernel/sched.c
+> ===================================================================
+> --- linux-3.2.git.orig/kernel/sched.c
+> +++ linux-3.2.git/kernel/sched.c
+> @@ -1419,6 +1419,13 @@ static inline bool got_nohz_idle_kick(vo
+>  	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
 >  }
 >  
-> @@ -3153,6 +3159,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
->      $target = "$ssh_user\@$machine";
+> +#ifdef CONFIG_SMP
+> +int sched_needs_cpu(int cpu)
+> +{
+> +	return cpu_rq(cpu)->avg_event < sysctl_sched_migration_cost;
+> +}
+> +#endif
+> +
+>  #else /* CONFIG_NO_HZ */
 >  
->      $buildlog = "$tmpdir/buildlog-$machine";
-> +    $testlog = "$tmpdir/testlog-$machine";
->      $dmesg = "$tmpdir/dmesg-$machine";
->      $make = "$makecmd O=$outputdir";
->      $output_config = "$outputdir/.config";
-> @@ -3189,6 +3196,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+>  static inline bool got_nohz_idle_kick(void)
+> Index: linux-3.2.git/kernel/time/tick-sched.c
+> ===================================================================
+> --- linux-3.2.git.orig/kernel/time/tick-sched.c
+> +++ linux-3.2.git/kernel/time/tick-sched.c
+> @@ -352,7 +352,7 @@ void tick_nohz_stop_sched_tick(int inidl
+>  	} while (read_seqretry(&xtime_lock, seq));
 >  
->      unlink $dmesg;
->      unlink $buildlog;
-> +    unlink $testlog;
->  
->      if (defined($addconfig)) {
->  	my $min = $minconfig;
-
-I'll pull it in, thanks!
-
--- Steve
-
+>  	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
+> -	    arch_needs_cpu(cpu)) {
+> +	    arch_needs_cpu(cpu) || sched_needs_cpu(cpu)) {
+>  		next_jiffies = last_jiffies + 1;
+>  		delta_jiffies = 1;
+>  	} else {
+> 
+> 
 
