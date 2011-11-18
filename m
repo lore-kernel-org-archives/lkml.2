@@ -1,77 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab1KRLgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 06:36:00 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:28419 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab1KRLf5 (ORCPT
+	id S1757675Ab1KRLlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 06:41:17 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56314 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756711Ab1KRLlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 06:35:57 -0500
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LUUTJS-02-DWY-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH v4 0/2] perf, x86: handle overlapping counters
-Date: Fri, 18 Nov 2011 12:35:20 +0100
-Message-ID: <1321616122-1533-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Fri, 18 Nov 2011 06:41:13 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Date: Fri, 18 Nov 2011 16:39:59 +0530
+Message-Id: <20111118110959.10512.69516.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH v7 3.2-rc2 17/30] x86: arch specific hooks for pre/post singlestep handling.
+x-cbid: 11111802-3568-0000-0000-000000BE021F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know there is an ongoing discussion about the best algorithm to be
-used for this problem. Posting this version with the latest updates
-anyway...
 
-This patch set implements support for overlapping counters (patch #2).
-For this the existing x86 event scheduler is reworked by introducing
-helper functions (patch #1).
+Hooks for handling pre singlestepping and post singlestepping.
 
-Version 4 of the patch set fixes a bug in the event assignment. There was a
-problem if the first event's weight (index 0) is not the minimum weight. In
-this case the event was assigned twice leaving another event uninitialized
-which caused a GP while accessing counter msrs. Fixes this by proper
-initialzing the first event in perf_sched_init().
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ arch/x86/include/asm/uprobes.h |    2 +
+ arch/x86/kernel/uprobes.c      |  135 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 137 insertions(+), 0 deletions(-)
 
-V2:
-changes in patch #2:
-* Renamed redo -> overlap.
-* Reimplementation using perf scheduling helper functions.
-
-V3:
-changes in patch #1:
-* Added macro for_each_set_bit_cont().
-* Changed functions interfaces of perf_sched_find_counter() and
-  perf_sched_next_event() to use bool as return value.
-* Added some comments to make code better understandable.
-changes in patch #2:
-* Added WARN_ON_ONCE() if out of save states.
-* Changed function interface of perf_sched_restore_state() to use bool
-  as return value.
-
-V4:
-changes in patch #1:
-* Fix broken event assignment if weight of the first event is not
-  wmin (perf_sched_init()).
-
-Robert Richter (2):
-  configs: updating misc-x86_64-erda to v3.0.8
-  config: updating misc-x86_64-erda.config for ASUS M4A89GTD PRO
-
- configs/misc-x86_64-erda.config |  517 ++++++++++++++++++++++++++++-----------
- 1 files changed, 379 insertions(+), 138 deletions(-)
-
--- 
-1.7.7
-
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index cf794bf..99d7d4b 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -47,6 +47,8 @@ struct uprobe_task_arch_info {};
+ struct uprobe;
+ extern int analyze_insn(struct mm_struct *mm, struct uprobe *uprobe);
+ extern void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr);
++extern int pre_xol(struct uprobe *uprobe, struct pt_regs *regs);
++extern int post_xol(struct uprobe *uprobe, struct pt_regs *regs);
+ extern int uprobe_exception_notify(struct notifier_block *self,
+ 				       unsigned long val, void *data);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 2ee5ddc..0792fc8 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -25,6 +25,7 @@
+ #include <linux/sched.h>
+ #include <linux/ptrace.h>
+ #include <linux/uprobes.h>
++#include <linux/uaccess.h>
+ 
+ #include <linux/kdebug.h>
+ #include <asm/insn.h>
+@@ -409,6 +410,140 @@ void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr)
+ }
+ 
+ /*
++ * pre_xol - prepare to execute out of line.
++ * @uprobe: the probepoint information.
++ * @regs: reflects the saved user state of @tsk.
++ *
++ * If we're emulating a rip-relative instruction, save the contents
++ * of the scratch register and store the target address in that register.
++ *
++ * Returns true if @uprobe->opcode is @bkpt_insn.
++ */
++#ifdef CONFIG_X86_64
++int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	struct uprobe_task_arch_info *tskinfo = &current->utask->tskinfo;
++
++	regs->ip = current->utask->xol_vaddr;
++	if (uprobe->fixups & UPROBES_FIX_RIP_AX) {
++		tskinfo->saved_scratch_register = regs->ax;
++		regs->ax = current->utask->vaddr;
++		regs->ax += uprobe->arch_info.rip_rela_target_address;
++	} else if (uprobe->fixups & UPROBES_FIX_RIP_CX) {
++		tskinfo->saved_scratch_register = regs->cx;
++		regs->cx = current->utask->vaddr;
++		regs->cx += uprobe->arch_info.rip_rela_target_address;
++	}
++	return 0;
++}
++#else
++int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	regs->ip = current->utask->xol_vaddr;
++	return 0;
++}
++#endif
++
++/*
++ * Called by post_xol() to adjust the return address pushed by a call
++ * instruction executed out of line.
++ */
++static int adjust_ret_addr(unsigned long sp, long correction)
++{
++	int rasize, ncopied;
++	long ra = 0;
++
++	if (is_32bit_app(current))
++		rasize = 4;
++	else
++		rasize = 8;
++
++	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
++	if (unlikely(ncopied))
++		return -EFAULT;
++
++	ra += correction;
++	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
++	if (unlikely(ncopied))
++		return -EFAULT;
++
++	return 0;
++}
++
++#ifdef CONFIG_X86_64
++static bool is_riprel_insn(struct uprobe *uprobe)
++{
++	return ((uprobe->fixups &
++			(UPROBES_FIX_RIP_AX | UPROBES_FIX_RIP_CX)) != 0);
++}
++
++static void handle_riprel_post_xol(struct uprobe *uprobe,
++			struct pt_regs *regs, long *correction)
++{
++	if (is_riprel_insn(uprobe)) {
++		struct uprobe_task_arch_info *tskinfo;
++		tskinfo = &current->utask->tskinfo;
++
++		if (uprobe->fixups & UPROBES_FIX_RIP_AX)
++			regs->ax = tskinfo->saved_scratch_register;
++		else
++			regs->cx = tskinfo->saved_scratch_register;
++		/*
++		 * The original instruction includes a displacement, and so
++		 * is 4 bytes longer than what we've just single-stepped.
++		 * Fall through to handle stuff like "jmpq *...(%rip)" and
++		 * "callq *...(%rip)".
++		 */
++		*correction += 4;
++	}
++}
++#else
++static void handle_riprel_post_xol(struct uprobe *uprobe,
++			struct pt_regs *regs, long *correction)
++{
++}
++#endif
++
++/*
++ * Called after single-stepping. To avoid the SMP problems that can
++ * occur when we temporarily put back the original opcode to
++ * single-step, we single-stepped a copy of the instruction.
++ *
++ * This function prepares to resume execution after the single-step.
++ * We have to fix things up as follows:
++ *
++ * Typically, the new ip is relative to the copied instruction.  We need
++ * to make it relative to the original instruction (FIX_IP).  Exceptions
++ * are return instructions and absolute or indirect jump or call instructions.
++ *
++ * If the single-stepped instruction was a call, the return address that
++ * is atop the stack is the address following the copied instruction.  We
++ * need to make it the address following the original instruction (FIX_CALL).
++ *
++ * If the original instruction was a rip-relative instruction such as
++ * "movl %edx,0xnnnn(%rip)", we have instead executed an equivalent
++ * instruction using a scratch register -- e.g., "movl %edx,(%rax)".
++ * We need to restore the contents of the scratch register and adjust
++ * the ip, keeping in mind that the instruction we executed is 4 bytes
++ * shorter than the original instruction (since we squeezed out the offset
++ * field).  (FIX_RIP_AX or FIX_RIP_CX)
++ */
++int post_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	struct uprobe_task *utask = current->utask;
++	int result = 0;
++	long correction;
++
++	correction = (long)(utask->vaddr - utask->xol_vaddr);
++	handle_riprel_post_xol(uprobe, regs, &correction);
++	if (uprobe->fixups & UPROBES_FIX_IP)
++		regs->ip += correction;
++	if (uprobe->fixups & UPROBES_FIX_CALL)
++		result = adjust_ret_addr(regs->sp, correction);
++	return result;
++}
++
++/*
+  * Wrapper routine for handling exceptions.
+  */
+ int uprobe_exception_notify(struct notifier_block *self,
 
