@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab1KRQIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:08:01 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46035 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752949Ab1KRQIA (ORCPT
+	id S1758116Ab1KRQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:10:57 -0500
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:54505 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab1KRQK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:08:00 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Suppress noop writes in regmap_update_bits()
-Date: Fri, 18 Nov 2011 16:07:56 +0000
-Message-Id: <1321632476-28162-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 18 Nov 2011 11:10:56 -0500
+Message-ID: <4EC6838F.8020705@calxeda.com>
+Date: Fri, 18 Nov 2011 10:10:55 -0600
+From: Rob Herring <rob.herring@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Wojciech Baranowski <baranowski@chromium.org>
+CC: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of/platform: Allow missing address for dev name lookup
+References: <1321628948.21392.37.camel@zalecze.wat.corp.google.com>
+In-Reply-To: <1321628948.21392.37.camel@zalecze.wat.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the new register value is identical to the original one then suppress
-the write to the hardware in regmap_update_bits(), saving some I/O cost.
+On 11/18/2011 09:09 AM, Wojciech Baranowski wrote:
+> While looking up linux name for platform device, check the address only if it
+> has been supplied in lookup table.
+> 
+And the reason you want to do this is?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+Rob
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index e533368..10ecbba3 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -583,18 +583,19 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
- 		       unsigned int mask, unsigned int val)
- {
- 	int ret;
--	unsigned int tmp;
-+	unsigned int tmp, orig;
- 
- 	mutex_lock(&map->lock);
- 
--	ret = _regmap_read(map, reg, &tmp);
-+	ret = _regmap_read(map, reg, &orig);
- 	if (ret != 0)
- 		goto out;
- 
--	tmp &= ~mask;
-+	tmp = orig & ~mask;
- 	tmp |= val & mask;
- 
--	ret = _regmap_write(map, reg, tmp);
-+	if (tmp != orig)
-+		ret = _regmap_write(map, reg, tmp);
- 
- out:
- 	mutex_unlock(&map->lock);
--- 
-1.7.7.3
+> Signed-off-by: Wojciech Baranowski <baranowski@chromium.org>
+> ---
+>  drivers/of/platform.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index cbd5d70..94763c0 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -314,12 +314,14 @@ static const struct of_dev_auxdata *of_dev_lookup(const struct of_dev_auxdata *l
+>  	if (!lookup)
+>  		return NULL;
+>  
+> -	for(; lookup->name != NULL; lookup++) {
+> +	for (; lookup->name != NULL; lookup++) {
+>  		if (!of_device_is_compatible(np, lookup->compatible))
+>  			continue;
+> -		if (of_address_to_resource(np, 0, &res))
+> +		if (lookup->phys_addr &&
+> +				of_address_to_resource(np, 0, &res))
+>  			continue;
+> -		if (res.start != lookup->phys_addr)
+> +		if (lookup->phys_addr &&
+> +				res.start != lookup->phys_addr)
+>  			continue;
+>  		pr_debug("%s: devname=%s\n", np->full_name, lookup->name);
+>  		return lookup;
 
