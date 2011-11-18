@@ -1,87 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab1KRTHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:07:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44742 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab1KRTHR (ORCPT
+	id S1754857Ab1KRTKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:10:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37228 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754225Ab1KRTKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:07:17 -0500
-Date: Fri, 18 Nov 2011 11:07:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
- that can be shared between tasks
-Message-Id: <20111118110716.c854b4bd.akpm@linux-foundation.org>
-In-Reply-To: <4EC6246A.6020807@parallels.com>
-References: <4EC4DA15.7090106@parallels.com>
-	<20111117124831.688adbeb.akpm@linux-foundation.org>
-	<4EC6246A.6020807@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Nov 2011 14:10:37 -0500
+From: Brian Norris <computersforpeace@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: <linux-ide@vger.kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
+        Tejun Heo <tj@kernel.org>, Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>
+Subject: [PATCH v2] ahci: platform support for suspend/resume
+Date: Fri, 18 Nov 2011 11:10:10 -0800
+Message-Id: <1321643410-16102-1-git-send-email-computersforpeace@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011 13:24:58 +0400
-Pavel Emelyanov <xemul@parallels.com> wrote:
+Add platform hooks for custom suspend() and resume() functions. The
+generic suspend/resume code in drivers/ata/ahci_platform.c is adapted
+from the PCI version in drivers/ata/ahci.c.
 
-> >> One of the ways for checking whether two tasks share e.g. an mm_struct is to
-> >> provide some mm_struct ID of a task to its proc file. The best from the
-> >> performance point of view ID is the object address in the kernel, but showing
-> >> them to the userspace is not good for security reasons.
-> >>
-> >> Thus the object address is XOR-ed with a "random" value of the same size and 
-> >> then shown in proc. Providing this poison is not leaked into the userspace then
-> >> ID seem to be safe. The objects for which the IDs are shown are:
-> >>
-> >> * all namespaces living in /proc/pid/ns/
-> >> * open files (shown in /proc/pid/fdinfo/)
-> >> * objects, that can be shared with CLONE_XXX flags (except for namespaces)
-> >> 
-> >> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> > 
-> > It doesn't *sound* terribly secure.  There might be clever ways in
-> > which userspace can determine the secret mask, dunno.  We should ask
-> > evil-minded security people to review this proposal.
-> 
-> Can you please propose some particular persons we should put in Cc for this thread?
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+---
+Based on:
+   git://github.com/jgarzik/libata-dev.git ALL
 
-Perhaps Vasily could review this proposal for us?
+v2: * supports AHCI suspend/resume even when pdata, pdata->suspend, or
+      pdata->resume are not supplied
+    * use dev_get_platdata() consistently
 
-> > Why not simply use a sequence number, increment it each time we create
-> > an mm_struct?  On could use an idr tree to prevent duplicates but it
-> > would be simpler and sufficient to make it 64-bit and we never have to
-> > worry about wraparound causing duplicates.
-> 
-> IDR is not OK for me, since we'll have to call it on every fork() thus penalizing
-> its performance.
+ drivers/ata/ahci_platform.c   |   68 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/ahci_platform.h |    2 +
+ 2 files changed, 70 insertions(+), 0 deletions(-)
 
-fork() is a pretty heavyweight operation so that won't hurt noticeably.
-However it sounds like you're presented with the same issue for more
-frequently-created objects.
-
-> 64bit increasing numbers are perfectly fine with me (I did this
-> in the 1st proposal, but put the ID on slub to save space - 64bits per page, not per
-> object).
-> 
-> But I have one question regarding storing these long IDs per-object. Are we OK with
-> adding 64-bit field on *all* the structures we need for this? I'm mostly worried 
-> about these small ones like sem_undo_list and fs_struct.
-
-OK.  Using the object's kernel virtual address is certainly very
-attractive.
-
-It is the case that we're causing difficulty with this longer-term plan
-to make c/r available to unprivileged processes?  Because it's OK to
-expose kernel addresses to CAP_SYS_ADMIN (or similar) tasks (isn't it?).
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 43b8758..48be4e1 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -202,6 +202,71 @@ static int __devexit ahci_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int ahci_suspend(struct device *dev)
++{
++	struct ahci_platform_data *pdata = dev_get_platdata(dev);
++	struct ata_host *host = dev_get_drvdata(dev);
++	struct ahci_host_priv *hpriv = host->private_data;
++	void __iomem *mmio = hpriv->mmio;
++	u32 ctl;
++	int rc;
++
++	if (hpriv->flags & AHCI_HFLAG_NO_SUSPEND) {
++		dev_err(dev, "firmware update required for suspend/resume\n");
++		return -EIO;
++	}
++
++	/*
++	 * AHCI spec rev1.1 section 8.3.3:
++	 * Software must disable interrupts prior to requesting a
++	 * transition of the HBA to D3 state.
++	 */
++	ctl = readl(mmio + HOST_CTL);
++	ctl &= ~HOST_IRQ_EN;
++	writel(ctl, mmio + HOST_CTL);
++	readl(mmio + HOST_CTL); /* flush */
++
++	rc = ata_host_suspend(host, PMSG_SUSPEND);
++	if (rc)
++		return rc;
++
++	if (pdata && pdata->suspend)
++		return pdata->suspend(dev);
++	return 0;
++}
++
++static int ahci_resume(struct device *dev)
++{
++	struct ahci_platform_data *pdata = dev_get_platdata(dev);
++	struct ata_host *host = dev_get_drvdata(dev);
++	int rc;
++
++	if (pdata && pdata->resume) {
++		rc = pdata->resume(dev);
++		if (rc)
++			return rc;
++	}
++
++	if (dev->power.power_state.event == PM_EVENT_SUSPEND) {
++		rc = ahci_reset_controller(host);
++		if (rc)
++			return rc;
++
++		ahci_init_controller(host);
++	}
++
++	ata_host_resume(host);
++
++	return 0;
++}
++
++static struct dev_pm_ops ahci_pm_ops = {
++	.suspend		= &ahci_suspend,
++	.resume			= &ahci_resume,
++};
++#endif
++
+ static const struct of_device_id ahci_of_match[] = {
+ 	{ .compatible = "calxeda,hb-ahci", },
+ 	{},
+@@ -214,6 +279,9 @@ static struct platform_driver ahci_driver = {
+ 		.name = "ahci",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = ahci_of_match,
++#ifdef CONFIG_PM
++		.pm = &ahci_pm_ops,
++#endif
+ 	},
+ 	.id_table	= ahci_devtype,
+ };
+diff --git a/include/linux/ahci_platform.h b/include/linux/ahci_platform.h
+index be3d9a7..73a2500 100644
+--- a/include/linux/ahci_platform.h
++++ b/include/linux/ahci_platform.h
+@@ -23,6 +23,8 @@ struct ata_port_info;
+ struct ahci_platform_data {
+ 	int (*init)(struct device *dev, void __iomem *addr);
+ 	void (*exit)(struct device *dev);
++	int (*suspend)(struct device *dev);
++	int (*resume)(struct device *dev);
+ 	const struct ata_port_info *ata_port_info;
+ 	unsigned int force_port_map;
+ 	unsigned int mask_port_map;
+-- 
+1.7.5.4
 
