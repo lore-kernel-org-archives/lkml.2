@@ -1,227 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab1KRMUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 07:20:16 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:34429 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab1KRMUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 07:20:11 -0500
-Subject: [PATCH 3/6] net: Remove all uses of LL_ALLOCATED_SPACE
-References: <20111118121832.GA2868@gondor.apana.org.au>
-To: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        evonlanthen@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, timo.teras@iki.fi
-Message-Id: <E1RRNQK-0000lM-Ms@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Fri, 18 Nov 2011 20:20:04 +0800
+	id S1757299Ab1KRMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 07:20:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757152Ab1KRMUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 07:20:21 -0500
+Date: Fri, 18 Nov 2011 07:19:50 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Dave Jones <davej@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>, linux-kernel@vger.kernel.org,
+        linux-mm@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: long sleep_on_page delays writing to slow storage
+Message-ID: <20111118121950.GD4096@zod.bos.redhat.com>
+References: <20111107045928.GK8927@hexapodia.org>
+ <20111109170027.GB7495@quack.suse.cz>
+ <20111109175201.GB3083@suse.de>
+ <20111109180646.GM5075@redhat.com>
+ <20111110093442.GG3153@redhat.com>
+ <20111114184717.GA7006@redhat.com>
+ <20111115101313.GA28350@suse.de>
+ <20111117194719.GA23213@redhat.com>
+ <20111118111140.GA20840@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111118111140.GA20840@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-net: Remove all uses of LL_ALLOCATED_SPACE
+On Fri, Nov 18, 2011 at 11:11:40AM +0000, Mel Gorman wrote:
+> On Thu, Nov 17, 2011 at 02:47:20PM -0500, Dave Jones wrote:
+> > On Tue, Nov 15, 2011 at 10:13:13AM +0000, Mel Gorman wrote:
+> >  
+> >  > If they are still experiencing major stalls, I have an experimental
+> >  > script that may be able to capture stack traces of processes stalled
+> >  > for more than 1 second. I've had some success with it locally so
+> >  > maybe they could try it out to identify if it's THP or something else.
+> >  
+> > I'm not sure if it's the same problem, but I'd be interested in trying
+> > that script.
+> > 
+> 
+> Monitor script is attached as watch-dstate.pl. Run it as
+> 
+> watch-dstate.pl -o logfile
+> 
+> I'm also attaching a post-processing script stap-dstate-frequency.
+> 
+> cat logfile | stap-dstate-frequency
+> 
+> will report on unique stack traces, what got stuck in them and
+> for how long. Unfortunately, this does require a working systemtap
+> installation because it had to work on systems without ftrace. Usually
+> systemtap is a case of installing debugging symbols and its package
+> but milage varies.
+> 
+> I ran this for a few days on my own desktop but found that the worst
+> stalls for firefox and evolution were in futex_wait with the second
+> worst in
+> 
+> [<ffffffffa018e3c5>] ext4_sync_file+0x225/0x290 [ext4]
+> [<ffffffff81178250>] do_fsync+0x50/0x80
+> [<ffffffff8117852e>] sys_fdatasync+0xe/0x20
+> [<ffffffff81448592>] system_call_fastpath+0x16/0x1b
+> 
+> The stall timing is approximate at best. If you find the stall figures
+> are way too high or unrealistic, try running with --accurate-stall. The
+> stall figures will be much more accurate but depending on your
+> kernel version, the stack traces may be one line long ending with
+> kretprobe_trampoline.
+> 
+> > When I build a kernel on my laptop, when it gets to the final link stage,
+> > and there's a ton of IO, my entire X session wedges for a few seconds.
+> > This may be unrelated, because this is on an SSD, which shouldn't suffer
+> > from the slow IO of the USB devices mentioned in this thread.
+> > 
+> 
+> I have a vague suspicion that there are some interactivity issues
+> around SSDs but I don't know why that is. I'm basing this on some
+> complaints of audio skipping with heavy kernel compiles on machines
+> very similar to my own other than mine uses rotary storage. It's on
+> the Christmas list to by myself a SSD to take a closer look.
 
-The macro LL_ALLOCATED_SPACE was ill-conceived.  It applies the
-alignment to the sum of needed_headroom and needed_tailroom.  As
-the amount that is then reserved for head room is needed_headroom
-with alignment, this means that the tail room left may be too small.
+I see similar pauses on my laptop that doesn't have an SSD, so I don't
+think it's drive related.  Certainly could be I/O scheduling or ext4
+sync related, but probably not a specific drive technology.
 
-This patch replaces all uses of LL_ALLOCATED_SPACE with the macro
-LL_RESERVED_SPACE and direct reference to needed_tailroom.
+I also wonder if the dirty_background_ratio and dirty_ratio might be too
+high on this machine, and the flush of the page cache is causing
+excessive I/O.
 
-This also fixes the problem with needed_headroom changing between
-allocating the skb and reserving the head room.
+> > (This is even with that patch applied btw, perhaps adding further fuel to
+> > the idea that it's unrelated).
+> > 
+> 
+> I suspect it's not compaction related in that case but the script may be
+> able to tell for sure. If it does not catch anything, alter this line to
+> have a smaller threshold
+> 
+> global stall_threshold = 1000
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
-
- net/core/netpoll.c     |    6 ++++--
- net/econet/af_econet.c |    7 +++++--
- net/ieee802154/dgram.c |    7 +++++--
- net/ieee802154/raw.c   |    7 +++++--
- net/packet/af_packet.c |   18 +++++++++++-------
- 5 files changed, 30 insertions(+), 15 deletions(-)
-
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index cf64c1f..1a7d8e2 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -422,6 +422,7 @@ static void arp_reply(struct sk_buff *skb)
- 	struct sk_buff *send_skb;
- 	struct netpoll *np, *tmp;
- 	unsigned long flags;
-+	int hlen, tlen;
- 	int hits = 0;
- 
- 	if (list_empty(&npinfo->rx_np))
-@@ -479,8 +480,9 @@ static void arp_reply(struct sk_buff *skb)
- 		if (tip != np->local_ip)
- 			continue;
- 
--		send_skb = find_skb(np, size + LL_ALLOCATED_SPACE(np->dev),
--				    LL_RESERVED_SPACE(np->dev));
-+		hlen = LL_RESERVED_SPACE(np->dev);
-+		tlen = np->dev->needed_tailroom;
-+		send_skb = find_skb(np, size + hlen + tlen, hlen);
- 		if (!send_skb)
- 			continue;
- 
-diff --git a/net/econet/af_econet.c b/net/econet/af_econet.c
-index 1c1f26c..7e717cb 100644
---- a/net/econet/af_econet.c
-+++ b/net/econet/af_econet.c
-@@ -322,6 +322,7 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- 		/* Real hardware Econet.  We're not worthy etc. */
- #ifdef CONFIG_ECONET_NATIVE
- 		unsigned short proto = 0;
-+		int hlen, tlen;
- 		int res;
- 
- 		if (len + 15 > dev->mtu) {
-@@ -331,12 +332,14 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- 
- 		dev_hold(dev);
- 
--		skb = sock_alloc_send_skb(sk, len + LL_ALLOCATED_SPACE(dev),
-+		hlen = LL_RESERVED_SPACE(dev);
-+		tlen = dev->needed_tailroom;
-+		skb = sock_alloc_send_skb(sk, len + hlen + tlen,
- 					  msg->msg_flags & MSG_DONTWAIT, &err);
- 		if (skb == NULL)
- 			goto out_unlock;
- 
--		skb_reserve(skb, LL_RESERVED_SPACE(dev));
-+		skb_reserve(skb, hlen);
- 		skb_reset_network_header(skb);
- 
- 		eb = (struct ec_cb *)&skb->cb;
-diff --git a/net/ieee802154/dgram.c b/net/ieee802154/dgram.c
-index faecf64..1b09eaa 100644
---- a/net/ieee802154/dgram.c
-+++ b/net/ieee802154/dgram.c
-@@ -209,6 +209,7 @@ static int dgram_sendmsg(struct kiocb *iocb, struct sock *sk,
- 	unsigned mtu;
- 	struct sk_buff *skb;
- 	struct dgram_sock *ro = dgram_sk(sk);
-+	int hlen, tlen;
- 	int err;
- 
- 	if (msg->msg_flags & MSG_OOB) {
-@@ -229,13 +230,15 @@ static int dgram_sendmsg(struct kiocb *iocb, struct sock *sk,
- 	mtu = dev->mtu;
- 	pr_debug("name = %s, mtu = %u\n", dev->name, mtu);
- 
--	skb = sock_alloc_send_skb(sk, LL_ALLOCATED_SPACE(dev) + size,
-+	hlen = LL_RESERVED_SPACE(dev);
-+	tlen = dev->needed_tailroom;
-+	skb = sock_alloc_send_skb(sk, hlen + tlen + size,
- 			msg->msg_flags & MSG_DONTWAIT,
- 			&err);
- 	if (!skb)
- 		goto out_dev;
- 
--	skb_reserve(skb, LL_RESERVED_SPACE(dev));
-+	skb_reserve(skb, hlen);
- 
- 	skb_reset_network_header(skb);
- 
-diff --git a/net/ieee802154/raw.c b/net/ieee802154/raw.c
-index 10970ca..f96bae8 100644
---- a/net/ieee802154/raw.c
-+++ b/net/ieee802154/raw.c
-@@ -108,6 +108,7 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	struct net_device *dev;
- 	unsigned mtu;
- 	struct sk_buff *skb;
-+	int hlen, tlen;
- 	int err;
- 
- 	if (msg->msg_flags & MSG_OOB) {
-@@ -137,12 +138,14 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		goto out_dev;
- 	}
- 
--	skb = sock_alloc_send_skb(sk, LL_ALLOCATED_SPACE(dev) + size,
-+	hlen = LL_RESERVED_SPACE(dev);
-+	tlen = dev->needed_tailroom;
-+	skb = sock_alloc_send_skb(sk, hlen + tlen + size,
- 			msg->msg_flags & MSG_DONTWAIT, &err);
- 	if (!skb)
- 		goto out_dev;
- 
--	skb_reserve(skb, LL_RESERVED_SPACE(dev));
-+	skb_reserve(skb, hlen);
- 
- 	skb_reset_mac_header(skb);
- 	skb_reset_network_header(skb);
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 82a6f34..71c1a75 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1944,7 +1944,7 @@ static void tpacket_destruct_skb(struct sk_buff *skb)
- 
- static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 		void *frame, struct net_device *dev, int size_max,
--		__be16 proto, unsigned char *addr)
-+		__be16 proto, unsigned char *addr, int hlen)
- {
- 	union {
- 		struct tpacket_hdr *h1;
-@@ -1978,7 +1978,7 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 		return -EMSGSIZE;
- 	}
- 
--	skb_reserve(skb, LL_RESERVED_SPACE(dev));
-+	skb_reserve(skb, hlen);
- 	skb_reset_network_header(skb);
- 
- 	data = ph.raw + po->tp_hdrlen - sizeof(struct sockaddr_ll);
-@@ -2053,6 +2053,7 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
- 	unsigned char *addr;
- 	int len_sum = 0;
- 	int status = 0;
-+	int hlen, tlen;
- 
- 	mutex_lock(&po->pg_vec_lock);
- 
-@@ -2101,16 +2102,17 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
- 		}
- 
- 		status = TP_STATUS_SEND_REQUEST;
-+		hlen = LL_RESERVED_SPACE(dev);
-+		tlen = dev->needed_tailroom;
- 		skb = sock_alloc_send_skb(&po->sk,
--				LL_ALLOCATED_SPACE(dev)
--				+ sizeof(struct sockaddr_ll),
-+				hlen + tlen + sizeof(struct sockaddr_ll),
- 				0, &err);
- 
- 		if (unlikely(skb == NULL))
- 			goto out_status;
- 
- 		tp_len = tpacket_fill_skb(po, skb, ph, dev, size_max, proto,
--				addr);
-+				addr, hlen);
- 
- 		if (unlikely(tp_len < 0)) {
- 			if (po->tp_loss) {
-@@ -2207,6 +2209,7 @@ static int packet_snd(struct socket *sock,
- 	int vnet_hdr_len;
- 	struct packet_sock *po = pkt_sk(sk);
- 	unsigned short gso_type = 0;
-+	int hlen, tlen;
- 
- 	/*
- 	 *	Get and verify the address.
-@@ -2291,8 +2294,9 @@ static int packet_snd(struct socket *sock,
- 		goto out_unlock;
- 
- 	err = -ENOBUFS;
--	skb = packet_alloc_skb(sk, LL_ALLOCATED_SPACE(dev),
--			       LL_RESERVED_SPACE(dev), len, vnet_hdr.hdr_len,
-+	hlen = LL_RESERVED_SPACE(dev);
-+	tlen = dev->needed_tailroom;
-+	skb = packet_alloc_skb(sk, hlen + tlen, hlen, len, vnet_hdr.hdr_len,
- 			       msg->msg_flags & MSG_DONTWAIT, &err);
- 	if (skb == NULL)
- 		goto out_unlock;
+I'll give this a try as well.
