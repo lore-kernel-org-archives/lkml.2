@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab1KSAIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:08:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38323 "EHLO mx2.suse.de"
+	id S1758364Ab1KSAJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:09:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38510 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758187Ab1KSAIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:08:48 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:06 2011
-Message-Id: <20111119000006.052207522@clark.kroah.org>
+	id S1758268Ab1KSAJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:09:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:04 2011
+Message-Id: <20111119000004.764782316@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 15:58:36 -0800
+Date: Fri, 18 Nov 2011 15:58:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Geoff Levand <geoff@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [23/26] powerpc/ps3: Fix lost SMP IPIs
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [09/26] ALSA: usb-audio - Fix the missing volume quirks at delayed init
 In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,111 +24,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geoff Levand <geoff@infradead.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 72f3bea075287785ed32b777b6dd2636aa7002e8 upstream.
+commit dcaaf9f2c16b56f8bb316881fcd3f15c18fc71e7 upstream.
 
-Fixes the PS3 bootup hang introduced in 3.0-rc1 by:
+In the recent usb-audio driver, the initialization of volume ranges
+may be delayed when the device doesn't respond well at the probing time.
+But the volume quirks for certain devices are applied only in
+mixer_ctl_feature_info() thus only at the very first probe and will be
+missing when the volume range is initialized later.
 
-  commit 317f394160e9beb97d19a84c39b7e5eb3d7815a
-  sched: Move the second half of ttwu() to the remote cpu
+This patch moves the volume quirk code to be always called from the
+volume-range extraction (get_min_max()), so that the quirks are properly
+applied in the later init time.
 
-Move the PS3's LV1 EOI call lv1_end_of_interrupt_ext() from ps3_chip_eoi()
-to ps3_get_irq() for IPI messages.
-
-If lv1_send_event_locally() is called between a previous call to
-lv1_send_event_locally() and the coresponding call to
-lv1_end_of_interrupt_ext() the second event will not be delivered to the
-target cpu.
-
-The PS3's SMP IPIs are implemented using lv1_send_event_locally(), so if two
-IPI messages of the same type are sent to the same target in a relatively
-short period of time the second IPI event can become lost when
-lv1_end_of_interrupt_ext() is called from ps3_chip_eoi().
-
-Signed-off-by: Geoff Levand <geoff@infradead.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-and-tested-by: Alexey Fisher <bug-track@fisher-privat.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/ps3/interrupt.c |   23 ++++++++++++++++++++++-
- arch/powerpc/platforms/ps3/platform.h  |    1 +
- arch/powerpc/platforms/ps3/smp.c       |    2 ++
- 3 files changed, 25 insertions(+), 1 deletion(-)
+ sound/usb/mixer.c |  109 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 59 insertions(+), 50 deletions(-)
 
---- a/arch/powerpc/platforms/ps3/interrupt.c
-+++ b/arch/powerpc/platforms/ps3/interrupt.c
-@@ -88,6 +88,7 @@ struct ps3_private {
- 	struct ps3_bmp bmp __attribute__ ((aligned (PS3_BMP_MINALIGN)));
- 	u64 ppe_id;
- 	u64 thread_id;
-+	unsigned long ipi_mask;
- };
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -765,10 +765,60 @@ static void usb_mixer_elem_free(struct s
+  * interface to ALSA control for feature/mixer units
+  */
  
- static DEFINE_PER_CPU(struct ps3_private, ps3_private);
-@@ -144,7 +145,11 @@ static void ps3_chip_unmask(struct irq_d
- static void ps3_chip_eoi(struct irq_data *d)
- {
- 	const struct ps3_private *pd = irq_data_get_irq_chip_data(d);
--	lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, d->irq);
-+
-+	/* non-IPIs are EOIed here. */
-+
-+	if (!test_bit(63 - d->irq, &pd->ipi_mask))
-+		lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, d->irq);
- }
- 
- /**
-@@ -691,6 +696,16 @@ void __init ps3_register_ipi_debug_brk(u
- 		cpu, virq, pd->bmp.ipi_debug_brk_mask);
- }
- 
-+void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq)
++/* volume control quirks */
++static void volume_control_quirks(struct usb_mixer_elem_info *cval,
++				  struct snd_kcontrol *kctl)
 +{
-+	struct ps3_private *pd = &per_cpu(ps3_private, cpu);
++	switch (cval->mixer->chip->usb_id) {
++	case USB_ID(0x0471, 0x0101):
++	case USB_ID(0x0471, 0x0104):
++	case USB_ID(0x0471, 0x0105):
++	case USB_ID(0x0672, 0x1041):
++	/* quirk for UDA1321/N101.
++	 * note that detection between firmware 2.1.1.7 (N101)
++	 * and later 2.1.1.21 is not very clear from datasheets.
++	 * I hope that the min value is -15360 for newer firmware --jk
++	 */
++		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
++		    cval->min == -15616) {
++			snd_printk(KERN_INFO
++				 "set volume quirk for UDA1321/N101 chip\n");
++			cval->max = -256;
++		}
++		break;
 +
-+	set_bit(63 - virq, &pd->ipi_mask);
++	case USB_ID(0x046d, 0x09a4):
++		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
++			snd_printk(KERN_INFO
++				"set volume quirk for QuickCam E3500\n");
++			cval->min = 6080;
++			cval->max = 8768;
++			cval->res = 192;
++		}
++		break;
 +
-+	DBG("%s:%d: cpu %u, virq %u, ipi_mask %lxh\n", __func__, __LINE__,
-+		cpu, virq, pd->ipi_mask);
++	case USB_ID(0x046d, 0x0808):
++	case USB_ID(0x046d, 0x0809):
++	case USB_ID(0x046d, 0x0991):
++	/* Most audio usb devices lie about volume resolution.
++	 * Most Logitech webcams have res = 384.
++	 * Proboly there is some logitech magic behind this number --fishor
++	 */
++		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
++			snd_printk(KERN_INFO
++				"set resolution quirk: cval->res = 384\n");
++			cval->res = 384;
++		}
++		break;
++
++	}
 +}
 +
- static unsigned int ps3_get_irq(void)
+ /*
+  * retrieve the minimum and maximum values for the specified control
+  */
+-static int get_min_max(struct usb_mixer_elem_info *cval, int default_min)
++static int get_min_max_with_quirks(struct usb_mixer_elem_info *cval,
++				   int default_min, struct snd_kcontrol *kctl)
  {
- 	struct ps3_private *pd = &__get_cpu_var(ps3_private);
-@@ -720,6 +735,12 @@ static unsigned int ps3_get_irq(void)
- 		BUG();
+ 	/* for failsafe */
+ 	cval->min = default_min;
+@@ -844,6 +894,9 @@ static int get_min_max(struct usb_mixer_
+ 		cval->initialized = 1;
  	}
- #endif
+ 
++	if (kctl)
++		volume_control_quirks(cval, kctl);
 +
-+	/* IPIs are EOIed here. */
-+
-+	if (test_bit(63 - plug, &pd->ipi_mask))
-+		lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, plug);
-+
- 	return plug;
+ 	/* USB descriptions contain the dB scale in 1/256 dB unit
+ 	 * while ALSA TLV contains in 1/100 dB unit
+ 	 */
+@@ -864,6 +917,7 @@ static int get_min_max(struct usb_mixer_
+ 	return 0;
  }
  
---- a/arch/powerpc/platforms/ps3/platform.h
-+++ b/arch/powerpc/platforms/ps3/platform.h
-@@ -43,6 +43,7 @@ void ps3_mm_shutdown(void);
- void ps3_init_IRQ(void);
- void ps3_shutdown_IRQ(int cpu);
- void __init ps3_register_ipi_debug_brk(unsigned int cpu, unsigned int virq);
-+void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq);
++#define get_min_max(cval, def)	get_min_max_with_quirks(cval, def, NULL)
  
- /* smp */
- 
---- a/arch/powerpc/platforms/ps3/smp.c
-+++ b/arch/powerpc/platforms/ps3/smp.c
-@@ -94,6 +94,8 @@ static void __init ps3_smp_setup_cpu(int
- 
- 		if (result)
- 			virqs[i] = NO_IRQ;
-+		else
-+			ps3_register_ipi_irq(cpu, virqs[i]);
+ /* get a feature/mixer unit info */
+ static int mixer_ctl_feature_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
+@@ -882,7 +936,7 @@ static int mixer_ctl_feature_info(struct
+ 		uinfo->value.integer.max = 1;
+ 	} else {
+ 		if (!cval->initialized) {
+-			get_min_max(cval, 0);
++			get_min_max_with_quirks(cval, 0, kcontrol);
+ 			if (cval->initialized && cval->dBmin >= cval->dBmax) {
+ 				kcontrol->vd[0].access &=
+ 					~(SNDRV_CTL_ELEM_ACCESS_TLV_READ |
+@@ -1045,9 +1099,6 @@ static void build_feature_ctl(struct mix
+ 		cval->ch_readonly = readonly_mask;
  	}
  
- 	ps3_register_ipi_debug_brk(cpu, virqs[PPC_MSG_DEBUGGER_BREAK]);
+-	/* get min/max values */
+-	get_min_max(cval, 0);
+-
+ 	/* if all channels in the mask are marked read-only, make the control
+ 	 * read-only. set_cur_mix_value() will check the mask again and won't
+ 	 * issue write commands to read-only channels. */
+@@ -1069,6 +1120,9 @@ static void build_feature_ctl(struct mix
+ 		len = snd_usb_copy_string_desc(state, nameid,
+ 				kctl->id.name, sizeof(kctl->id.name));
+ 
++	/* get min/max values */
++	get_min_max_with_quirks(cval, 0, kctl);
++
+ 	switch (control) {
+ 	case UAC_FU_MUTE:
+ 	case UAC_FU_VOLUME:
+@@ -1118,51 +1172,6 @@ static void build_feature_ctl(struct mix
+ 		break;
+ 	}
+ 
+-	/* volume control quirks */
+-	switch (state->chip->usb_id) {
+-	case USB_ID(0x0471, 0x0101):
+-	case USB_ID(0x0471, 0x0104):
+-	case USB_ID(0x0471, 0x0105):
+-	case USB_ID(0x0672, 0x1041):
+-	/* quirk for UDA1321/N101.
+-	 * note that detection between firmware 2.1.1.7 (N101)
+-	 * and later 2.1.1.21 is not very clear from datasheets.
+-	 * I hope that the min value is -15360 for newer firmware --jk
+-	 */
+-		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
+-		    cval->min == -15616) {
+-			snd_printk(KERN_INFO
+-				 "set volume quirk for UDA1321/N101 chip\n");
+-			cval->max = -256;
+-		}
+-		break;
+-
+-	case USB_ID(0x046d, 0x09a4):
+-		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
+-			snd_printk(KERN_INFO
+-				"set volume quirk for QuickCam E3500\n");
+-			cval->min = 6080;
+-			cval->max = 8768;
+-			cval->res = 192;
+-		}
+-		break;
+-
+-	case USB_ID(0x046d, 0x0808):
+-	case USB_ID(0x046d, 0x0809):
+-	case USB_ID(0x046d, 0x0991):
+-	/* Most audio usb devices lie about volume resolution.
+-	 * Most Logitech webcams have res = 384.
+-	 * Proboly there is some logitech magic behind this number --fishor
+-	 */
+-		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
+-			snd_printk(KERN_INFO
+-				"set resolution quirk: cval->res = 384\n");
+-			cval->res = 384;
+-		}
+-		break;
+-
+-	}
+-
+ 	range = (cval->max - cval->min) / cval->res;
+ 	/* Are there devices with volume range more than 255? I use a bit more
+ 	 * to be sure. 384 is a resolution magic number found on Logitech
 
 
