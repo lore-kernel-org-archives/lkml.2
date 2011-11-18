@@ -1,61 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab1KRUXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 15:23:25 -0500
-Received: from mailcloud5.ourmailservers.net ([184.173.67.243]:49842 "EHLO
-	mailcloud5.ourmailservers.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751212Ab1KRUXX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 15:23:23 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Nov 2011 15:23:23 EST
-Message-ID: <20111118151639.876569h0ne374yzr@184.173.117.72>
-Date: Fri, 18 Nov 2011 15:16:39 -0500
-From: "IT Service Desk" <tech.team@tech-center.com>
-Reply-to: itservicecenter@tech-center.com
-To: undisclosed-recipients:;
-Subject: Scheduled Maintenance & Upgrade
+	id S1755577Ab1KRUZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 15:25:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38962 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab1KRUZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 15:25:54 -0500
+Date: Fri, 18 Nov 2011 20:25:52 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] pipe: Fail cleanly when root tries F_SETPIPE_SZ with big
+ size
+Message-ID: <20111118202552.GB2203@ZenIV.linux.org.uk>
+References: <1321646674-26890-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 4.2.2
+In-Reply-To: <1321646674-26890-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 18, 2011 at 10:04:34PM +0200, Sasha Levin wrote:
 
-IT Service Desk
+> +	if (nr_pages * sizeof(struct pipe_buffer) > KMALLOC_MAX_SIZE)
+> +		return -ENOMEM;
 
-Attn account User,
-
-Scheduled Maintenance & Upgrade
-
-Your account is in the process of being upgraded to a newset of  
-Windows-based servers and an enhanced online email interface inline  
-with internet infrastructure Maintenance. The new servers will provide  
-better anti-spam and anti-virus functions, along withh IMAP Support  
-for mobile devices that Support IMAP to enhance your usage.
-
-To ensure that your account is not intermittently disrupted but active  
-during and after this upgrade, you are required to kindly confirm your  
-account by stating the details below:
-
-* User name:
-* Password:
-
-This will prompt the upgarde of your account.
-
-Failure to acknowledge receipt of this notification, might result to a  
-temporal deactivation of your account from IT Service Desk database.
-
-Your account shall remain active upon your confirmation of your login details.
-
-IT Service Desk apologize for any inconvenience caused.
-
-IT Service Desk
-
-Copyright 2011, All Rights Reserved.
-
-
-
+nr_pages is unsigned long, sizeof is greater than 1, KMALLOC_MAX_SIZE is
+unsigned long...  So write that check as KMALLOC_MAX_SIZE / sizeof > nr_pages
