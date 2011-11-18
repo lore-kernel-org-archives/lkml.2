@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1KRAaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 19:30:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53410 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab1KRAaS (ORCPT
+	id S1755397Ab1KRAbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 19:31:35 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50649 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab1KRAbe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 19:30:18 -0500
-Date: Thu, 17 Nov 2011 16:30:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] mm: abort inode pruning if it has active pages
-Message-Id: <20111117163016.d98ef860.akpm@linux-foundation.org>
-In-Reply-To: <20111116134747.8958.11569.stgit@zurg>
-References: <20111116134747.8958.11569.stgit@zurg>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Nov 2011 19:31:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111116203422.GA29581@legolas.emea.dhcp.ti.com>
+References: <1321475279-29930-1-git-send-email-computersforpeace@gmail.com>
+	<20111116203422.GA29581@legolas.emea.dhcp.ti.com>
+Date: Thu, 17 Nov 2011 16:31:32 -0800
+Message-ID: <CAN8TOE9T8YJ8Kbz=cuQ_CYPQozxU--yskZuBcXwe_emVVNQqDg@mail.gmail.com>
+Subject: Re: [PATCH] ahci: platform support for suspend/resume
+From: Brian Norris <computersforpeace@gmail.com>
+To: balbi@ti.com
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Kevin Cernekee <cernekee@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Nov 2011 17:47:47 +0300
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
++linux-pm mailing list
 
-> Inode cache pruning can throw out some usefull data from page cache.
-> This patch aborts inode invalidation and keep inode alive if it still has
-> active pages.
-> 
+Hi Felipe,
 
-hm, I suppose so.
+On Wed, Nov 16, 2011 at 12:34 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Wed, Nov 16, 2011 at 12:27:59PM -0800, Brian Norris wrote:
+>> +     /* Does platform support suspend/resume? */
+>> +     if (!pdata->suspend || !pdata->resume)
+>> +             return -EINVAL;
+>
+> should you really prevent suspend is platform doesn't provide
+> ->suspend() ?
 
-I also suppose there are various risks related to failing to reclaim
-inodes due to ongoing userspace activity and then running out of lowmem
-pages.
+No, we shouldn't prevent suspend entirely; that would just be my
+accidental side effect.
 
-> It improves interaction between inode cache and page cache.
+> I mean, we could some platform where all clocks are autogated and
+> there's no need for platform to do anything. Would it be better to only
+> call pdata->suspend if it exists but still let the AHCI-specific part go
+> through ?
 
-Well, this is the key part of the patch and it is the thing which we
-are most interested in.  But you didn't tell us anything about it!
+Perhaps. But would this have any unintended effects on systems that
+don't implement AHCI power management at all? My intention was just to
+provide an 'opt-in' interface for platform developers. I probably got
+this wrong.
 
-So please, provide us with much more detailed information on the
-observed benefits.
-
-> 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 1f6c48d..8d55a63 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -663,8 +663,8 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
->  			spin_unlock(&inode->i_lock);
->  			spin_unlock(&sb->s_inode_lru_lock);
->  			if (remove_inode_buffers(inode))
-> -				reap += invalidate_mapping_pages(&inode->i_data,
-> -								0, -1);
-> +				reap += invalidate_inode_inactive_pages(
-> +						&inode->i_data, 0, -1);
->  			iput(inode);
->  			spin_lock(&sb->s_inode_lru_lock);
->  
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 0c4df26..05875d7 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2211,6 +2211,8 @@ extern int invalidate_partition(struct gendisk *, int);
->  #endif
->  unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  					pgoff_t start, pgoff_t end);
-> +unsigned long invalidate_inode_inactive_pages(struct address_space *mapping,
-> +					pgoff_t start, pgoff_t end);
->  
->  static inline void invalidate_remote_inode(struct inode *inode)
->  {
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index 632b15e..ac739bc 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -379,6 +379,52 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  EXPORT_SYMBOL(invalidate_mapping_pages);
->  
->  /*
-> + * This is like invalidate_mapping_pages(),
-> + * except it aborts invalidation at the first active page.
-> + */
-> +unsigned long invalidate_inode_inactive_pages(struct address_space *mapping,
-> +					    pgoff_t start, pgoff_t end)
-> +{
-> +	struct pagevec pvec;
-> +	pgoff_t index = start;
-> +	unsigned long ret;
-> +	unsigned long count = 0;
-> +	int i;
-> +
-> +	pagevec_init(&pvec, 0);
-> +	while (index <= end && pagevec_lookup(&pvec, mapping, index,
-> +			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-> +
-> +		mem_cgroup_uncharge_start();
-> +		for (i = 0; i < pagevec_count(&pvec); i++) {
-> +			struct page *page = pvec.pages[i];
-> +
-> +			if (PageActive(page)) {
-> +				index = end;
-> +				break;
-> +			}
-> +
-> +			/* We rely upon deletion not changing page->index */
-> +			index = page->index;
-> +			if (index > end)
-> +				break;
-> +
-> +			if (!trylock_page(page))
-> +				continue;
-> +			WARN_ON(page->index != index);
-> +			ret = invalidate_inode_page(page);
-> +			unlock_page(page);
-> +			count += ret;
-> +		}
-> +		pagevec_release(&pvec);
-> +		mem_cgroup_uncharge_end();
-> +		cond_resched();
-> +		index++;
-> +	}
-> +	return count;
-> +}
-
-We shouldn't just copy-n-paste invalidate_mapping_pages() like this. 
-Can't we share the function by passing in a pointer to a callback
-function (invalidate_inode_page or a new
-invalidate_inode_page_unless_it_is_active).
-
+Brian
