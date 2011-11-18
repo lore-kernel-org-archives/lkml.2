@@ -1,170 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab1KRLhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 06:37:10 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61547 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab1KRLhD (ORCPT
+	id S1757606Ab1KRLhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 06:37:19 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:39743 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756936Ab1KRLhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 06:37:03 -0500
-From: Rabin Vincent <rabin@rab.in>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 3/3] ktest: allow success logs to be stored
-Date: Fri, 18 Nov 2011 17:05:31 +0530
-Message-Id: <1321616131-21352-3-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1321616131-21352-1-git-send-email-rabin@rab.in>
-References: <1321616131-21352-1-git-send-email-rabin@rab.in>
+	Fri, 18 Nov 2011 06:37:08 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Date: Fri, 18 Nov 2011 16:40:59 +0530
+Message-Id: <20111118111059.10512.70839.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH v7 3.2-rc2 22/30] perf: rename target_module to target
+x-cbid: 11111811-5816-0000-0000-00000018FA0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a STORE_SUCCESSES option, to allow success logs to be stored, for
-example to double-check or otherwise post-process the test logs.
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
+This is a precursor patch that modifies names that refer to
+kernel/module to also refer to user space names.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- tools/testing/ktest/ktest.pl    |   80 ++++++++++++++++++++++----------------
- tools/testing/ktest/sample.conf |    6 +++
- 2 files changed, 52 insertions(+), 34 deletions(-)
+ tools/perf/builtin-probe.c    |   12 ++++++------
+ tools/perf/util/probe-event.c |   26 +++++++++++++-------------
+ 2 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index e93c21c..6ef104e 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -113,6 +113,7 @@ my $bisect_sleep_time;
- my $patchcheck_sleep_time;
- my $ignore_warnings;
- my $store_failures;
-+my $store_successes;
- my $test_name;
- my $timeout;
- my $booted_timeout;
-@@ -976,6 +977,43 @@ sub wait_for_monitor {
-     print "** Monitor flushed **\n";
- }
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 710ae3d..93d5171 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -61,7 +61,7 @@ static struct {
+ 	struct perf_probe_event events[MAX_PROBES];
+ 	struct strlist *dellist;
+ 	struct line_range line_range;
+-	const char *target_module;
++	const char *target;
+ 	int max_probe_points;
+ 	struct strfilter *filter;
+ } params;
+@@ -249,7 +249,7 @@ static const struct option options[] = {
+ 		   "file", "vmlinux pathname"),
+ 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
+ 		   "directory", "path to kernel source"),
+-	OPT_STRING('m', "module", &params.target_module,
++	OPT_STRING('m', "module", &params.target,
+ 		   "modname|path",
+ 		   "target module name (for online) or path (for offline)"),
+ #endif
+@@ -336,7 +336,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
+ 						       NULL);
+-		ret = show_available_funcs(params.target_module,
++		ret = show_available_funcs(params.target,
+ 					   params.filter);
+ 		strfilter__delete(params.filter);
+ 		if (ret < 0)
+@@ -357,7 +357,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 			usage_with_options(probe_usage, options);
+ 		}
  
-+sub save_logs {
-+	my ($result, $basedir) = @_;
-+	my @t = localtime;
-+	my $date = sprintf "%04d%02d%02d%02d%02d%02d",
-+		1900+$t[5],$t[4],$t[3],$t[2],$t[1],$t[0];
-+
-+	my $type = $build_type;
-+	if ($type =~ /useconfig/) {
-+	    $type = "useconfig";
-+	}
-+
-+	my $dir = "$machine-$test_type-$type-$result-$date";
-+
-+	$dir = "$basedir/$dir";
-+
-+	if (!-d $dir) {
-+	    mkpath($dir) or
-+		die "can't create $dir";
-+	}
-+
-+	my %files = (
-+		"config" => $output_config,
-+		"buildlog" => $buildlog,
-+		"dmesg" => $dmesg,
-+		"testlog" => $testlog,
-+	);
-+
-+	while (my ($name, $source) = each(%files)) {
-+		if (-f "$source") {
-+			cp "$source", "$dir/$name" or
-+				die "failed to copy $source";
-+		}
-+	}
-+
-+	doprint "*** Saved info to $dir ***\n";
-+}
-+
- sub fail {
+-		ret = show_line_range(&params.line_range, params.target_module);
++		ret = show_line_range(&params.line_range, params.target);
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
+ 		return ret;
+@@ -374,7 +374,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
  
- 	if ($die_on_failure) {
-@@ -1004,40 +1042,9 @@ sub fail {
- 	doprint "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
- 	doprint "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+ 		ret = show_available_vars(params.events, params.nevents,
+ 					  params.max_probe_points,
+-					  params.target_module,
++					  params.target,
+ 					  params.filter,
+ 					  params.show_ext_vars);
+ 		strfilter__delete(params.filter);
+@@ -396,7 +396,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 	if (params.nevents) {
+ 		ret = add_perf_probe_events(params.events, params.nevents,
+ 					    params.max_probe_points,
+-					    params.target_module,
++					    params.target,
+ 					    params.force_add);
+ 		if (ret < 0) {
+ 			pr_err("  Error: Failed to add events. (%d)\n", ret);
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index eb25900..d54eefb 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -275,10 +275,10 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ /* Try to find perf_probe_event with debuginfo */
+ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 					  struct probe_trace_event **tevs,
+-					  int max_tevs, const char *module)
++					  int max_tevs, const char *target)
+ {
+ 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
+-	struct debuginfo *dinfo = open_debuginfo(module);
++	struct debuginfo *dinfo = open_debuginfo(target);
+ 	int ntevs, ret = 0;
  
--	return 1 if (!defined($store_failures));
--
--	my @t = localtime;
--	my $date = sprintf "%04d%02d%02d%02d%02d%02d",
--		1900+$t[5],$t[4],$t[3],$t[2],$t[1],$t[0];
--
--	my $type = $build_type;
--	if ($type =~ /useconfig/) {
--	    $type = "useconfig";
--	}
--
--	my $dir = "$machine-$test_type-$type-fail-$date";
--	my $faildir = "$store_failures/$dir";
--
--	if (!-d $faildir) {
--	    mkpath($faildir) or
--		die "can't create $faildir";
--	}
--
--	my %files = (
--		"config" => $output_config,
--		"buildlog" => $buildlog,
--		"dmesg" => $dmesg,
--		"testlog" => $testlog,
--	);
--
--	while (my ($name, $source) = each(%files)) {
--		if (-f "$source") {
--			cp "$source", "$faildir/$name" or
--				die "failed to copy $source";
--		}
--	}
--
--	doprint "*** Saved info to $faildir ***\n";
-+	if (defined($store_failures)) {
-+	    save_logs "fail", $store_failures;
-+        }
+ 	if (!dinfo) {
+@@ -297,9 +297,9 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
  
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+ 		pr_debug("find %d probe_trace_events.\n", ntevs);
+-		if (module)
++		if (target)
+ 			ret = add_module_to_probe_trace_events(*tevs, ntevs,
+-							       module);
++							       target);
+ 		return ret < 0 ? ret : ntevs;
+ 	}
+ 
+@@ -1798,14 +1798,14 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 
+ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 					  struct probe_trace_event **tevs,
+-					  int max_tevs, const char *module)
++					  int max_tevs, const char *target)
+ {
+ 	struct symbol *sym;
+ 	int ret = 0, i;
+ 	struct probe_trace_event *tev;
+ 
+ 	/* Convert perf_probe_event with debuginfo */
+-	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, module);
++	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+ 	if (ret != 0)
+ 		return ret;	/* Found in debuginfo or got an error */
+ 
+@@ -1821,8 +1821,8 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 		goto error;
+ 	}
+ 
+-	if (module) {
+-		tev->point.module = strdup(module);
++	if (target) {
++		tev->point.module = strdup(target);
+ 		if (tev->point.module == NULL) {
+ 			ret = -ENOMEM;
+ 			goto error;
+@@ -1886,7 +1886,7 @@ struct __event_package {
+ };
+ 
+ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+-			  int max_tevs, const char *module, bool force_add)
++			  int max_tevs, const char *target, bool force_add)
+ {
+ 	int i, j, ret;
+ 	struct __event_package *pkgs;
+@@ -1909,7 +1909,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 		ret  = convert_to_probe_trace_events(pkgs[i].pev,
+ 						     &pkgs[i].tevs,
+ 						     max_tevs,
+-						     module);
++						     target);
+ 		if (ret < 0)
+ 			goto end;
+ 		pkgs[i].ntevs = ret;
+@@ -2065,7 +2065,7 @@ static int filter_available_functions(struct map *map __unused,
  	return 1;
  }
-@@ -1643,6 +1650,10 @@ sub success {
-     doprint     "*******************************************\n";
-     doprint     "*******************************************\n";
  
-+    if (defined($store_successes)) {
-+        save_logs "success", $store_successes;
-+    }
-+
-     if ($i != $opt{"NUM_TESTS"} && !do_not_reboot) {
- 	doprint "Reboot and wait $sleep_time seconds\n";
- 	reboot $sleep_time;
-@@ -3137,6 +3148,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
-     $bisect_skip = set_test_option("BISECT_SKIP", $i);
-     $config_bisect_good = set_test_option("CONFIG_BISECT_GOOD", $i);
-     $store_failures = set_test_option("STORE_FAILURES", $i);
-+    $store_successes = set_test_option("STORE_SUCCESSES", $i);
-     $test_name = set_test_option("TEST_NAME", $i);
-     $timeout = set_test_option("TIMEOUT", $i);
-     $booted_timeout = set_test_option("BOOTED_TIMEOUT", $i);
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
-index dbedfa1..42e0eb9 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -589,6 +589,12 @@
- # (default undefined)
- #STORE_FAILURES = /home/test/failures
+-int show_available_funcs(const char *module, struct strfilter *_filter)
++int show_available_funcs(const char *target, struct strfilter *_filter)
+ {
+ 	struct map *map;
+ 	int ret;
+@@ -2076,9 +2076,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
+ 	if (ret < 0)
+ 		return ret;
  
-+# Directory to store success directories on success. If this is not
-+# set, the .config, dmesg and bootlog will not be saved if a
-+# test succeeds.
-+# (default undefined)
-+#STORE_SUCCESSES = /home/test/successes
-+
- # Build without doing a make mrproper, or removing .config
- # (default 0)
- #BUILD_NOCLEAN = 0
--- 
-1.7.7.3
+-	map = kernel_get_module_map(module);
++	map = kernel_get_module_map(target);
+ 	if (!map) {
+-		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
++		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
+ 		return -EINVAL;
+ 	}
+ 	available_func_filter = _filter;
 
