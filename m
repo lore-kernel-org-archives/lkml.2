@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab1KRPXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:23:31 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:48549 "HELO
+	id S1758020Ab1KRP0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:26:15 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49307 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757856Ab1KRPXa (ORCPT
+	with SMTP id S1752275Ab1KRP0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:23:30 -0500
+	Fri, 18 Nov 2011 10:26:14 -0500
 X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX195WDodD4956P88GGZjcCTagpu5tShB7h+ZXtGKi6
-	7jbpLn1piQo3w5
-Subject: [patch 6/6] sched: set skip_clock_update in yield_task_fair()
+X-Provags-ID: V01U2FsdGVkX18GBdtNA3MGOd/7zPDaFg+nzC06LoBN6AjvFL+lP3
+	sKzr4kLDvkvkTY
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
 From: Mike Galbraith <efault@gmx.de>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-In-Reply-To: <1321629267.7080.13.camel@marge.simson.net>
+In-Reply-To: <1321629141.2197.4.camel@twins>
 References: <1321350377.1421.55.camel@twins>
 	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
 	 <1321435455.5072.64.camel@marge.simson.net>
@@ -24,12 +24,11 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321495153.5100.7.camel@marge.simson.net>
 	 <1321544313.6308.25.camel@marge.simson.net>
 	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321556904.15339.25.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629141.2197.4.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 16:23:26 +0100
-Message-ID: <1321629806.7080.23.camel@marge.simson.net>
+Date: Fri, 18 Nov 2011 16:26:10 +0100
+Message-ID: <1321629970.7080.24.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -38,53 +37,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-11-18 at 16:12 +0100, Peter Zijlstra wrote:
+> On Thu, 2011-11-17 at 11:08 -0800, Suresh Siddha wrote:
+> > 
+> > From: Suresh Siddha <suresh.b.siddha@intel.com>
+> > Subject: sched: cleanup domain traversal in select_idle_sibling
+> > 
+> > Instead of going through the scheduler domain hierarchy multiple times
+> > (for giving priority to an idle core over an idle SMT sibling in a busy
+> > core), start with the highest scheduler domain with the SD_SHARE_PKG_RESOURCES
+> > flag and traverse the domain hierarchy down till we find an idle group.
+> > 
+> > This cleanup also addresses an issue reported by Mike where the recent
+> > changes returned the busy thread even in the presence of an idle SMT
+> > sibling in single socket platforms.
+> > 
+> > Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> > Cc: Mike Galbraith <efault@gmx.de> 
+> 
+> Thanks Suresh!
 
-This is another case where we are on our way to schedule(),
-so can save a useless clock update and resulting microscopic
-vruntime update.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-
----
- kernel/sched.c      |    8 +++++++-
- kernel/sched_fair.c |    6 ++++++
- 2 files changed, 13 insertions(+), 1 deletion(-)
-
-Index: linux-3.2.git/kernel/sched.c
-===================================================================
---- linux-3.2.git.orig/kernel/sched.c
-+++ linux-3.2.git/kernel/sched.c
-@@ -5838,7 +5838,13 @@ again:
- 		 */
- 		if (preempt && rq != p_rq)
- 			resched_task(p_rq->curr);
--	}
-+	} else
-+		/*
-+		 * We might have set it in task_yield_fair(), but are
-+		 * not going to schedule(), so don't want to skip
-+		 * the next update.
-+		 */
-+		rq->skip_clock_update = 0;
- 
- out:
- 	double_rq_unlock(rq, p_rq);
-Index: linux-3.2.git/kernel/sched_fair.c
-===================================================================
---- linux-3.2.git.orig/kernel/sched_fair.c
-+++ linux-3.2.git/kernel/sched_fair.c
-@@ -2688,6 +2688,12 @@ static void yield_task_fair(struct rq *r
- 		 * Update run-time statistics of the 'current'.
- 		 */
- 		update_curr(cfs_rq);
-+		/*
-+		 * Tell update_rq_clock() that we've just updated,
-+		 * so we don't do microscopic update in schedule()
-+		 * and double the fastpath cost.
-+		 */
-+		 rq->skip_clock_update = 1;
- 	}
- 
- 	set_skip_buddy(se);
+Tested-by: Mike Galbraith <efault@gmx.de>
 
 
