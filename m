@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab1KWP60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:58:26 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:40752 "EHLO
+	id S1754419Ab1KWP67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:58:59 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:45872 "EHLO
 	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab1KWP6Y (ORCPT
+	with ESMTP id S1752041Ab1KWP6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:58:24 -0500
+	Wed, 23 Nov 2011 10:58:25 -0500
 X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
 X-RZG-CLASS-ID: mo05
-Message-Id: <cover.1322062555.git.n.voss@weinmann.de>
+Message-Id: <ba2096a3df00fa01fffb8a6a03c5d6422163c659.1322062555.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1322062555.git.n.voss@weinmann.de>
+References: <cover.1322062555.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Wed, 23 Nov 2011 16:35:55 +0100
-Subject: [PATCH v7 0/5] AT91: replace broken TWI driver i2c-at91.c
+Date: Fri, 18 Nov 2011 12:38:00 +0100
+Subject: [PATCH v7 5/5] i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
 To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: ben-linux@fluff.org, carsten.behling@garz-fricke.com
@@ -20,56 +22,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old driver has two main deficencies:
-i)  No repeated start (Sr) condiction is possible, this makes it unusable
-    e.g. for most SMBus transfers.
-ii) I/O was done with polling/busy waiting what caused over-/underruns
-    even at light system loads and clock speeds.
+SMBus emulation uses I2C_M_RECV_LEN flag to indicate a SMBus block
+read operation in which the length of a transfer is inicated by the
+first received byte.
 
-The new driver overcomes these deficencies and in addition allows for
-more than one TWI interface.
+Make better use of clk_prepare()/clk_unprepare().
 
-A remaining limitation is the fact, that only one repeated start is
-possible (two concatenated messages). This limitation is imposed by
-the hardware. However, this should not be a problem as all common
-i2c-client communication does not rely on more than one repeated start.
+More sensible transfer timeout.
 
-v7: Patch 4/5: i)  fix bug if internal address > 1 byte
-               ii) send stop when len == 1
-                   (both reported by Carsten Behling)
-v6: Patch 5/5: support for I2C_SMBUS_BLOCK_DATA transfers.
-    Better use of clk_(un)prepare().
-    More sensible transfer timeout.
-v5: Another round of review comments from Ryan Mallon, Felipe Balbi
-    and Russell King: convert twi clk to use .dev_id, cleanups
-v4: Integrated more review comments from Ryan Mallon and Felipe Balbi:
-    Moved register include file to local include, code cleanups
-v3: Integrated review comments from Ryan Mallon and Felipe Balbi
-v2: Fixed whitespace issue
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ drivers/i2c/busses/i2c-at91.c |   44 +++++++++++++++++++++++++++-------------
+ 1 files changed, 30 insertions(+), 14 deletions(-)
 
-Nikolaus Voss (5):
-  drivers/i2c/busses/i2c-at91.c: remove broken driver
-  Replace clk_lookup.con_id with clk_lookup.dev_id entries for twi clk
-  drivers/i2c/busses/i2c-at91.c: add new driver
-  G45 TWI: remove open drain setting for twi function gpios
-  i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
-
- arch/arm/mach-at91/at91cap9.c              |    1 +
- arch/arm/mach-at91/at91rm9200.c            |    1 +
- arch/arm/mach-at91/at91sam9260.c           |    1 +
- arch/arm/mach-at91/at91sam9261.c           |    1 +
- arch/arm/mach-at91/at91sam9263.c           |    1 +
- arch/arm/mach-at91/at91sam9g45.c           |    2 +
- arch/arm/mach-at91/at91sam9g45_devices.c   |    6 -
- arch/arm/mach-at91/at91sam9rl.c            |    2 +
- arch/arm/mach-at91/include/mach/at91_twi.h |   68 ----
- drivers/i2c/busses/Kconfig                 |   11 +-
- drivers/i2c/busses/i2c-at91.c              |  529 +++++++++++++++++-----------
- drivers/i2c/busses/i2c-at91.h              |   80 +++++
- 12 files changed, 408 insertions(+), 295 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_twi.h
- create mode 100644 drivers/i2c/busses/i2c-at91.h
-
+diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
+index cc9061d..cb34add 100644
+--- a/drivers/i2c/busses/i2c-at91.c
++++ b/drivers/i2c/busses/i2c-at91.c
+@@ -32,7 +32,7 @@
+ #include "i2c-at91.h"
+ 
+ #define TWI_CLK_HZ		100000			/* max 400 Kbits/s */
+-#define AT91_I2C_TIMEOUT	msecs_to_jiffies(10)	/* transfer timeout */
++#define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
+ 
+ struct at91_twi_dev {
+ 	struct device		*dev;
+@@ -41,6 +41,7 @@ struct at91_twi_dev {
+ 	struct clk		*clk;
+ 	u8			*buf;
+ 	size_t			buf_len;
++	struct i2c_msg		*msg;
+ 	int			irq;
+ 	unsigned		transfer_status;
+ 	struct i2c_adapter	adapter;
+@@ -113,9 +114,18 @@ static void at91_twi_write_next_byte(struct at91_twi_dev *dev)
+ static void at91_twi_read_next_byte(struct at91_twi_dev *dev)
+ {
+ 	*dev->buf = at91_twi_read(dev, AT91_TWI_RHR) & 0xff;
++	--dev->buf_len;
++
++	/* handle I2C_SMBUS_BLOCK_DATA */
++	if (unlikely(dev->msg->flags & I2C_M_RECV_LEN)) {
++		dev->msg->flags &= ~I2C_M_RECV_LEN;
++		dev->buf_len += *dev->buf;
++		dev->msg->len = dev->buf_len + 1;
++		dev_dbg(dev->dev, "received block length %d\n", dev->buf_len);
++	}
+ 
+ 	/* send stop if second but last byte has been read */
+-	if (--dev->buf_len == 1)
++	if (dev->buf_len == 1)
+ 		at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
+ 
+ 	dev_dbg(dev->dev, "read 0x%x, to go %d\n", *dev->buf, dev->buf_len);
+@@ -144,17 +154,21 @@ static irqreturn_t atmel_twi_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int at91_do_twi_transfer(struct at91_twi_dev *dev, bool is_read)
++static int at91_do_twi_transfer(struct at91_twi_dev *dev)
+ {
+ 	int ret;
+ 
++	dev_dbg(dev->dev, "transfer: %s %d bytes.\n",
++		(dev->msg->flags & I2C_M_RD) ? "read" : "write", dev->buf_len);
++
+ 	INIT_COMPLETION(dev->cmd_complete);
+-	if (is_read) {
+-		if (dev->buf_len <= 1)
+-			at91_twi_write(dev, AT91_TWI_CR,
+-				       AT91_TWI_START | AT91_TWI_STOP);
+-		else
+-			at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_START);
++	if (dev->msg->flags & I2C_M_RD) {
++		unsigned start_flags = AT91_TWI_START;
++
++		/* if only one byte is to be read, immediately stop transfer */
++		if (dev->buf_len <= 1 && !(dev->msg->flags & I2C_M_RECV_LEN))
++			start_flags |= AT91_TWI_STOP;
++		at91_twi_write(dev, AT91_TWI_CR, start_flags);
+ 		at91_twi_write(dev, AT91_TWI_IER,
+ 			       AT91_TWI_TXCOMP | AT91_TWI_RXRDY);
+ 	} else {
+@@ -229,17 +243,17 @@ static int at91_twi_xfer(struct i2c_adapter *adap, struct i2c_msg *msg, int num)
+ 
+ 	dev->buf_len = m_start->len;
+ 	dev->buf = m_start->buf;
++	dev->msg = m_start;
+ 
+-	ret = at91_do_twi_transfer(dev, m_start->flags & I2C_M_RD);
+-	if (ret < 0)
+-		return ret;
++	ret = at91_do_twi_transfer(dev);
+ 
+-	return num;
++	return (ret < 0) ? ret : num;
+ }
+ 
+ static u32 at91_twi_func(struct i2c_adapter *adapter)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
++		| I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+ }
+ 
+ static struct i2c_algorithm at91_twi_algorithm = {
+@@ -326,6 +340,7 @@ err_unuse_clocks:
+ 	iounmap(dev->base);
+ err_mem_ioremap:
+ 	clk_disable(dev->clk);
++	clk_unprepare(dev->clk);
+ 	clk_put(dev->clk);
+ err_free_mem:
+ 	kfree(dev);
+@@ -343,6 +358,7 @@ static int __devexit at91_twi_remove(struct platform_device *pdev)
+ 
+ 	rc = i2c_del_adapter(&dev->adapter);
+ 	clk_disable(dev->clk);
++	clk_unprepare(dev->clk);
+ 	clk_put(dev->clk);
+ 	free_irq(dev->irq, dev);
+ 	iounmap(dev->base);
 -- 
 1.7.5.4
 
