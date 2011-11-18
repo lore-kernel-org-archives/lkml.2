@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab1KRV7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 16:59:37 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12593 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1KRV7f convert rfc822-to-8bit (ORCPT
+	id S1756642Ab1KRWDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:03:49 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44120 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab1KRWDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 16:59:35 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 18 Nov 2011 13:59:34 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Denis Kuzmenko <linux@solonet.org.ua>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Date: Fri, 18 Nov 2011 13:59:33 -0800
-Subject: RE: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Topic: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Index: AcymOxqt4N28d+4PQCSbQZfBgOW+fQAAfVAA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com>
-References: <4EC572E1.1020209@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com>
- <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua>
-In-Reply-To: <4EC6D1D5.9060808@solonet.org.ua>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Nov 2011 17:03:48 -0500
+Message-ID: <4EC6D63F.8030207@gmail.com>
+Date: Fri, 18 Nov 2011 16:03:43 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 01/10] arm/tegra: initial device tree for tegra30
+References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com> <1321546766-26770-2-git-send-email-pdeschrijver@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF1740D74C46@HQMAIL01.nvidia.com> <20111118184942.GA31678@quad.lixom.net> <4EC6B25D.70708@gmail.com> <CAOesGMhRQN2apJMQz7Fcp4-TnXYS6i30GLXOEckJG6kvPVatvw@mail.gmail.com>
+In-Reply-To: <CAOesGMhRQN2apJMQz7Fcp4-TnXYS6i30GLXOEckJG6kvPVatvw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote at Friday, November 18, 2011 2:45 PM:
-> Make s3c24xx LEDS driver use gpiolib. Disable using pull-resistor when not
-> using S3C24XX_LEDF_TRISTATE and enble it when in opposite case.
+On 11/18/2011 03:48 PM, Olof Johansson wrote:
+> On Fri, Nov 18, 2011 at 11:30 AM, Rob Herring <robherring2@gmail.com> wrote:
+>> On 11/18/2011 12:49 PM, Olof Johansson wrote:
+>>> On Thu, Nov 17, 2011 at 11:39:14AM -0800, Stephen Warren wrote:
+>>>> Peter De Schrijver wrote at Thursday, November 17, 2011 9:19 AM:
+>>>>> This patch adds the initial device tree for tegra30
+>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/arm/tegra.txt
+>>>> ...
+>>>>> +* harmony: tegra20 based development board
+>>>>> +Required root node properties:
+>>>>> + - compatible = "nvidia,harmony", "nvidia,tegra20";
+>>>>> +
+>>>>> +* seaboard: tegra20 based clamshell reference design
+>>>>> +Required root node properties:
+>>>>> + - compatible = "nvidia,seaboard", "nvidia,tegra20";
+>>>>
+>>>> Do we really want to list all the board names here? In the future, there
+>>>> could be tens or hundreds. I would argue that we should just document
+>>>> nvidia,tegra20 and nvidia,tegra30.
+>>>
+>>> Agreed.
+>>
+>> It's not really any different than mach-types which does have every
+>> board in it.
 > 
-> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+> Yeah, and the whole idea of having device trees is to not have to do
+> code changes when introducing a new derivative board. So enumerating
+> all supported boards in the documentation means we're back to an
+> equivalence to having to add machine ids.
+> 
+>> I think if a board requires a new dts, then it needs a unique name.
+> 
+> Sure, that's fine. But the idea is to be able to do it without
+> changing code for many cases, just provide a new dts that configures
+> the devices in question.
 
->  	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
-> -		s3c2410_gpio_setpin(pdata->gpio, 0);
-> -		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
-> +		/*
-> +		 * pull is needed here to protect pin from being left
-> +		 * floating
-> +		 */
-> +		ret = s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_UP);
-> +		if (ret)
-> +			s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_DOWN);
+You can always claim backwards compatibility with any prior board that's
+already supported. You may never need to do any more than that. You
+don't want new kernels to require a new DTB if in fact you do have to
+make code changes.
 
-Sorry, could you explain why it's appropriate to configure a pull here
-at all, let alone why it's OK to have a random pull on the line?
+Rob
 
-> +		/* initially turn off led */
-> +		ret = gpio_direction_input(pdata->gpio);
->  	} else {
-> -		s3c2410_gpio_pullup(pdata->gpio, 0);
-> -		s3c2410_gpio_setpin(pdata->gpio, 0);
-> -		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
-> +		/* no point in having a pull-up as we are always driving */
-> +		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
-> +		ret = gpio_request_one(pdata->gpio, GPIOF_OUT_INIT_LOW,
-> +								pdata->name);
-> +		/* initially turn off led */
-> +		ret = gpio_direction_output(pdata->gpio,
-> +				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
-
-Wouldn't it be better to pass GPIOF_OUT_INIT_HIGH or GPIOF_OUT_INIT_LOW
-to gpio_request_one() based on S3C24XX_LEDF_ACTLOW, and avoid the call to
-gpio_direction_output; that will avoid glitching the line for a short time.
-
-I'm fine with the rest of the code.
-
--- 
-nvpublic
+>>>> At a later point, we should fix board-dt.c to solely look for those
+>>>> compatible values, although this will have to wait until the pinmux DT
+>>>> bindings are present. Then, the kernel won't care about the board names.
+>>>
+>>> Exactly.
+>>
+>> That is perfectly acceptable, but you should still have the option to do
+>> something specific for any given board.
+> 
+> Of course. That's not what we're objecting to here.
+> 
+> 
+> -Olof
 
