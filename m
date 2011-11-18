@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab1KSAIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:08:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38164 "EHLO mx2.suse.de"
+	id S1758160Ab1KSAIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:08:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38238 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757839Ab1KSAIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:08:19 -0500
+	id S1757839Ab1KSAIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:08:32 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:05 2011
-Message-Id: <20111119000005.390501762@clark.kroah.org>
+Message-Id: <20111119000005.755549005@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 15:58:29 -0800
+Date: Fri, 18 Nov 2011 15:58:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [16/26] x86, mrst: use a temporary variable for SFI irq
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [20/26] xen:pvhvm: enable PVHVM VCPU placement when using more than 32 CPUs.
 In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,86 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 
-commit 153b19a3b9fd8b9478495b9ee1f93f6a77c564f9 upstream.
+commit 90d4f5534d14815bd94c10e8ceccc57287657ecc upstream.
 
-SFI tables reside in RAM and should not be modified once they are
-written.  Current code went to set pentry->irq to zero which causes
-subsequent reads to fail with invalid SFI table checksum.  This will
-break kexec as the second kernel fails to validate SFI tables.
+PVHVM running with more than 32 vcpus and pv_irq/pv_time enabled
+need VCPU placement to work, or else it will softlockup.
 
-To fix this we use temporary variable for irq number.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/platform/mrst/mrst.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ arch/x86/xen/enlighten.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -678,38 +678,40 @@ static int __init sfi_parse_devs(struct
- 	pentry = (struct sfi_device_table_entry *)sb->pentry;
- 
- 	for (i = 0; i < num; i++, pentry++) {
--		if (pentry->irq != (u8)0xff) { /* native RTE case */
-+		int irq = pentry->irq;
-+
-+		if (irq != (u8)0xff) { /* native RTE case */
- 			/* these SPI2 devices are not exposed to system as PCI
- 			 * devices, but they have separate RTE entry in IOAPIC
- 			 * so we have to enable them one by one here
- 			 */
--			ioapic = mp_find_ioapic(pentry->irq);
-+			ioapic = mp_find_ioapic(irq);
- 			irq_attr.ioapic = ioapic;
--			irq_attr.ioapic_pin = pentry->irq;
-+			irq_attr.ioapic_pin = irq;
- 			irq_attr.trigger = 1;
- 			irq_attr.polarity = 1;
--			io_apic_set_pci_routing(NULL, pentry->irq, &irq_attr);
-+			io_apic_set_pci_routing(NULL, irq, &irq_attr);
- 		} else
--			pentry->irq = 0; /* No irq */
-+			irq = 0; /* No irq */
- 
- 		switch (pentry->type) {
- 		case SFI_DEV_TYPE_IPC:
- 			/* ID as IRQ is a hack that will go away */
--			pdev = platform_device_alloc(pentry->name, pentry->irq);
-+			pdev = platform_device_alloc(pentry->name, irq);
- 			if (pdev == NULL) {
- 				pr_err("out of memory for SFI platform device '%s'.\n",
- 							pentry->name);
- 				continue;
- 			}
--			install_irq_resource(pdev, pentry->irq);
-+			install_irq_resource(pdev, irq);
- 			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
--				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
-+				"irq = 0x%2x\n", i, pentry->name, irq);
- 			sfi_handle_ipc_dev(pdev);
- 			break;
- 		case SFI_DEV_TYPE_SPI:
- 			memset(&spi_info, 0, sizeof(spi_info));
- 			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
--			spi_info.irq = pentry->irq;
-+			spi_info.irq = irq;
- 			spi_info.bus_num = pentry->host_num;
- 			spi_info.chip_select = pentry->addr;
- 			spi_info.max_speed_hz = pentry->max_freq;
-@@ -726,7 +728,7 @@ static int __init sfi_parse_devs(struct
- 			memset(&i2c_info, 0, sizeof(i2c_info));
- 			bus = pentry->host_num;
- 			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
--			i2c_info.irq = pentry->irq;
-+			i2c_info.irq = irq;
- 			i2c_info.addr = pentry->addr;
- 			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
- 				"irq = 0x%2x, addr = 0x%x\n", i, bus,
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1337,7 +1337,7 @@ static int __cpuinit xen_hvm_cpu_notify(
+ 	int cpu = (long)hcpu;
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+-		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
++		xen_vcpu_setup(cpu);
+ 		if (xen_have_vector_callback)
+ 			xen_init_lock_cpu(cpu);
+ 		break;
+@@ -1367,7 +1367,6 @@ static void __init xen_hvm_guest_init(vo
+ 	xen_hvm_smp_init();
+ 	register_cpu_notifier(&xen_hvm_cpu_notifier);
+ 	xen_unplug_emulated_devices();
+-	have_vcpu_info_placement = 0;
+ 	x86_init.irqs.intr_init = xen_init_IRQ;
+ 	xen_hvm_init_time_ops();
+ 	xen_hvm_init_mmu_ops();
 
 
