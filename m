@@ -1,132 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012Ab1KROfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 09:35:06 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:55324 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756620Ab1KROfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 09:35:04 -0500
-Message-ID: <4EC66D12.2090505@Calva.COM>
-Date: Fri, 18 Nov 2011 15:34:58 +0100
-From: John Hughes <john@Calva.COM>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1758026Ab1KROgy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 09:36:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757937Ab1KROgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 09:36:52 -0500
+Message-ID: <4EC66D7B.7030908@RedHat.com>
+Date: Fri, 18 Nov 2011 09:36:43 -0500
+From: Steve Dickson <SteveD@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Trond Myklebust <trond.myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket expiry.
- Try 2 with added man pages.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: David Howells <dhowells@redhat.com>, jmorris@redhat.com,
+        keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Keyrings] [PATCH] KEYS: Allow special keyrings to be cleared
+References: <20111111160753.5190.36069.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20111111160753.5190.36069.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Description: Add "-e" (ticket expiry is error) option to rpc.gssd
-  In kernels starting around 2.6.34 the nfs4 server will block all I/O
-  when a user ticket expires.  In earlier kernels the I/O would fail
-  with an EACCESS error.  This patch adds a "-e" option to rpc.gssd
-  which allow the earlier behaviour (EKEYEXPIRED is converted to
-  EACCESS).  This behaviour is particularly useful when user home
-  directories are nfs4 mounted with krb5 security - if the user is
-  absent from their workstation for long enough for the ticket to
-  expire a new ticket will be obtained (via pam_krb5) by the screen
-  unlock process.
-Author: John Hughes<john@calva.com>
-Signed-off-by: John Hughes<john@calva.com>
-Bug-Debian: http://bugs.debian.org/648155
-Bug-Ubuntu: https://launchpad.net/bugs/648155
+Hey Trond,
 
---- nfs-utils-1.2.5.orig/utils/gssd/gssd_proc.c
-+++ nfs-utils-1.2.5/utils/gssd/gssd_proc.c
-@@ -1007,7 +1007,7 @@ process_krb5_upcall(struct clnt_info *cl
-  		/* Tell krb5 gss which credentials cache to use */
-  		for (dirname = ccachesearch; *dirname != NULL; dirname++) {
-  			err = gssd_setup_krb5_user_gss_ccache(uid, clp->servername, *dirname);
--			if (err == -EKEYEXPIRED)
-+			if (err == -EKEYEXPIRED&&  !ticket_expiry_is_error)
-  				downcall_err = -EKEYEXPIRED;
-  			else if (!err)
-  				create_resp = create_auth_rpc_client(clp,&rpc_clnt,&auth, uid,
---- nfs-utils-1.2.5.orig/utils/gssd/gssd.c
-+++ nfs-utils-1.2.5/utils/gssd/gssd.c
-@@ -63,6 +63,7 @@ int  use_memcache = 0;
-  int  root_uses_machine_creds = 1;
-  unsigned int  context_timeout = 0;
-  char *preferred_realm = NULL;
-+int ticket_expiry_is_error = 0;
+Could you please add this patch to David's patch set?
 
-  void
-  sig_die(int signal)
-@@ -85,7 +86,7 @@ sig_hup(int signal)
-  static void
-  usage(char *progname)
-  {
--	fprintf(stderr, "usage: %s [-f] [-M] [-n] [-v] [-r] [-p pipefsdir] [-k keytab] [-d ccachedir] [-t timeout] [-R preferred realm]\n",
-+	fprintf(stderr, "usage: %s [-e] [-f] [-M] [-n] [-v] [-r] [-p pipefsdir] [-k keytab] [-d ccachedir] [-t timeout] [-R preferred realm]\n",
-  		progname);
-  	exit(1);
-  }
-@@ -102,8 +103,11 @@ main(int argc, char *argv[])
-  	char *progname;
+tia,
 
-  	memset(ccachesearch, 0, sizeof(ccachesearch));
--	while ((opt = getopt(argc, argv, "fvrmnMp:k:d:t:R:")) != -1) {
-+	while ((opt = getopt(argc, argv, "efvrmnMp:k:d:t:R:")) != -1) {
-  		switch (opt) {
-+			case 'e':
-+				ticket_expiry_is_error = 1;
-+				break;
-  			case 'f':
-  				fg = 1;
-  				break;
---- nfs-utils-1.2.5.orig/utils/gssd/gssd.h
-+++ nfs-utils-1.2.5/utils/gssd/gssd.h
-@@ -66,6 +66,7 @@ extern int			use_memcache;
-  extern int			root_uses_machine_creds;
-  extern unsigned int 		context_timeout;
-  extern char			*preferred_realm;
-+extern int			ticket_expiry_is_error;
+steved.
 
-  TAILQ_HEAD(clnt_list_head, clnt_info) clnt_list;
+Author: Steve Dickson <steved@redhat.com>
+Date:   Fri Nov 18 09:29:17 2011 -0500
 
-diff --git a/utils/gssd/gssd.man b/utils/gssd/gssd.man
-index 073379d..e2b7b7a 100644
---- a/utils/gssd/gssd.man
-+++ b/utils/gssd/gssd.man
-@@ -6,7 +6,7 @@
-  .SH NAME
-  rpc.gssd \- rpcsec_gss daemon
-  .SH SYNOPSIS
--.B "rpc.gssd [-f] [-n] [-k keytab] [-p pipefsdir] [-v] [-r] [-d ccachedir]"
-+.B "rpc.gssd [-e] [-f] [-n] [-k keytab] [-p pipefsdir] [-v] [-r] [-d ccachedir]"
-  .SH DESCRIPTION
-  The rpcsec_gss protocol gives a means of using the gss-api generic security
-  api to provide security for protocols using rpc (in particular, nfs).  Before
-@@ -20,6 +20,25 @@ daemon uses files in the rpc_pipefs filesystem to communicate with the kernel.
+    KEYS: allow keys to be revoked from the keyring
+    
+    To aid in cleaning up invalid id mappings add
+    the write bit to the key permission. Allowing
+    only root will be able to revoke the keys.
+    
+    Signed-off-by: Steve Dickson <steved@redhat.com>
 
-  .SH OPTIONS
-  .TP
-+.TO
-+.B -e
-+Versions of
-+.B rpc.gssd
-+before 1.2.2 reported ticket expiry to the kernel as
-+.B EACCESS
-+(permission denied).  More recent versions return
-+.B EKEYEXPIRED
-+which causes recent kernels to block all I/O to a nfs mount until a new
-+key is obtained.  The
-+.B -e
-+option restores the old behaviour.
-+
-+This is useful in the common case that the user home directories are
-+nfs mounted.  Without the
-+.B -e
-+option the user may have difficulty getting a new ticket as she will
-+only find out about the expiry of the old one when her processes hang.
-+.TP
-  .B -f
-  Runs
-  .B rpc.gssd
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 47d1c6f..652238c 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -185,7 +185,7 @@ static ssize_t nfs_idmap_request_key(const char *name, size_t nam
+        }
+ 
+        rcu_read_lock();
+-       rkey->perm |= KEY_USR_VIEW;
++       rkey->perm |= KEY_USR_VIEW|KEY_USR_WRITE;
+ 
+        ret = key_validate(rkey);
+        if (ret < 0)
 
