@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758190Ab1KRQr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:47:26 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:33024 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975Ab1KRQrX (ORCPT
+	id S1758069Ab1KRQwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:52:01 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:56929 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab1KRQwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:47:23 -0500
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Organization: Intra2net AG
-To: Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH] Fix comparison using wrong pointer variable in dma debug code
-Date: Fri, 18 Nov 2011 17:47:20 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.35.14-103.fc14.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org
-References: <4EC560F6.9050906@intra2net.com> <20111117200136.GC26847@hmsreliant.think-freely.org>
-In-Reply-To: <20111117200136.GC26847@hmsreliant.think-freely.org>
+	Fri, 18 Nov 2011 11:52:00 -0500
+Message-ID: <4EC68D29.7030005@Calva.COM>
+Date: Fri, 18 Nov 2011 17:51:53 +0100
+From: John Hughes <john@Calva.COM>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: peter.staubach@emc.com
+CC: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
+References: <4EC685D1.2000900@Calva.COM> <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
+In-Reply-To: <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111181747.20894.thomas.jarosch@intra2net.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, 17. November 2011 21:01:36 Neil Horman wrote:
-> Thanks for the catch!  Viro just pointed out you can also remove the ?
-> true/false changes and extraneous parens, reducing it to:
-> 
-> (a->dev_addr == b->dev_addr) && (a->dev == b->dev)
-> But its not strictly necessecary
-> 
-> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+On 18/11/11 17:27, peter.staubach@emc.com wrote:
+> Given that the poor user will be sitting, with almost nothing working because of the expired ticket, how does the user figure out what is going on or how does the admin help him?
+>
+> Some guidance seems like a good thing.  Is there really a problem with these messages being printed to the log?
+If you're sat at your console with nothing responding how are you going 
+to see the log messages?
 
-I'd say just commit the fix, that rarely used function
-is not worth the extra effort.
+The "ticket expired" messages are rate limited.
 
-Cheers,
-Thomas
+The "Error: state manager failed on NFSv4 server" messages are not rate 
+limited, but if you use my "rpc.gssd -e" hack they'll be written to the 
+log every 5 seconds all night long.
+
