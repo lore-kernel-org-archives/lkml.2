@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab1KRMEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 07:04:11 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10392 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab1KRMEK (ORCPT
+	id S1756788Ab1KRMEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 07:04:34 -0500
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:55477 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754438Ab1KRMEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 07:04:10 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 18 Nov 2011 04:03:55 -0800
-Date: Fri, 18 Nov 2011 14:03:52 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Marc Dietrich <marvin24@gmx.de>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-Message-ID: <20111118120352.GZ19069@tbergstrom-lnx.Nvidia.com>
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
+	Fri, 18 Nov 2011 07:04:33 -0500
+Date: Fri, 18 Nov 2011 13:04:30 +0100
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Jinxin Zheng <jinxinzheng@gmail.com>
+Cc: gerrit@erg.abdn.ac.uk, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: ipv4 udplite broken in >=linux-3.0 ?
+Message-ID: <20111118120430.GG3317@hell>
+References: <CABPbr_msepemFt4ezGVRk3QS0MU3F47MKimfV4Y+6jqvUrLFeA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABPbr_msepemFt4ezGVRk3QS0MU3F47MKimfV4Y+6jqvUrLFeA@mail.gmail.com>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 07:51:35PM +0100, Stephen Warren wrote:
-> Peter De Schrijver wrote at Thursday, November 17, 2011 8:07 AM:
-> > Convert tegra20 IRQ intialization to the GIC devicetree binding. Modify the
-> > interrupt definitions in the dts files according to
-> > Documentation/devicetree/bindings/arm/gic.txt
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> 
-> tegra-harmony.dts contains an interrupts property that wasn't updated,
-> for the WM8903 codec.
+* Jinxin Zheng | 2011-11-18 12:09:25 [+0800]:
 
-But that's a GPIO interrupt no?
+>I don't know how to debug udplite. Can any one of you give me a tip on
+>how to get more debug info, then I can do further test and provide
+>with it?
 
-> 
-> board-dt.c contains logic to search for a node with compatible of
-> nvidia,tegra20-gic, and then call irq_domain_add_simple. I assume that
-> logic is replaced by the new common GIC code, and so should be removed
-> from board-dt.c entirely?
-> 
+net-next works for me:
 
-Need to check that...
+$ sudo aptitude install netsend
+$ sudo tcpdump -n -ttt -vv -i lo > pcap.trace &
+$ netsend udplite receive &
+$ netsend udplite transmit /etc/fstab 127.0.0.1
 
-Cheers,
+$ cat pcap.trace
+00:00:00.000000 IP (tos 0x0, ttl 64, id 30602, offset 0, flags [DF], proto unknown (136), length 40) 127.0.0.1 > 127.0.0.1:  udplite 20
+00:00:00.000074 IP (tos 0x0, ttl 64, id 30603, offset 0, flags [DF], proto unknown (136), length 1125) 127.0.0.1 > 127.0.0.1:  udplite 1105
 
-Peter.
+
+Kernel version? What is the output of strace?
