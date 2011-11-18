@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab1KRCR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 21:17:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39540 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755489Ab1KRCR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 21:17:56 -0500
-Date: Fri, 18 Nov 2011 03:17:14 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-Message-ID: <20111118021714.GP3306@redhat.com>
-References: <20111105013317.GU18879@redhat.com>
- <CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
- <20111107131413.GA18279@suse.de>
- <20111107154235.GE3249@redhat.com>
- <20111107162808.GA3083@suse.de>
- <20111109012542.GC5075@redhat.com>
- <20111116140042.GD3306@redhat.com>
- <alpine.LSU.2.00.1111161540060.1861@sister.anvils>
- <20111117184252.GK3306@redhat.com>
- <CAPQyPG7MvO8Qw3jrOMShQcG5Z-RwbzpKnu-AheoS6aRYNhW14w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPQyPG7MvO8Qw3jrOMShQcG5Z-RwbzpKnu-AheoS6aRYNhW14w@mail.gmail.com>
+	id S1756019Ab1KRCTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 21:19:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59723 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1KRCTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 21:19:33 -0500
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        James Morris <jmorris@namei.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [RFC] [PATCH] printk: Don't emit console_cpu_notify() for CPU_DYING
+Date: Fri, 18 Nov 2011 10:19:24 +0800
+Message-Id: <1321582764-22218-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 09:42:05AM +0800, Nai Xia wrote:
-> First of all, I believe that at the POSIX level, it's ok for
-> truncate_inode_page()
-> not scanning  COWed pages, since basically we does not provide any guarantee
-> for privately mapped file pages for this behavior. But missing a file
-> mapped pte after its
-> cache page is already removed from the the page cache is a
+When running -rt, I got some warning when doing cpu hotplug,
+for details please check:
+http://marc.info/?l=linux-kernel&m=132143661616297&w=2
 
-I also exclude there is a case that would break, but it's safer to
-keep things as is, in case somebody depends on segfault trapping.
+But seems the problem also exists in mainline, a typical
+scenario is:
 
-> fundermental malfuntion for
-> a shared mapping when some threads see the file cache page is gone
-> while some thread
-> is still r/w from/to it! No matter how short the gap between
-> truncate_inode_page() and
-> the second loop, this is wrong.
+        CPU A                           CPU B
 
-Truncate will destroy the info on disk too... so if somebody is
-writing to a mapping which points beyond the end of the i_size
-concurrently with truncate, the result is undefined. The write may
-well reach the page but then the page is discared. Or you may get
-SIGBUS before the write.
+doing printk with console_sem held
+                                take_cpu_down();
+                                  cpu_notify(CPU_DYING);
+                                    console_cpu_notify();
+                                      console_lock();
+                                        down(&console_sem);
+                                          *BANG*
+  up(&console_sem);
 
-> Second, even if the we don't care about this POSIX flaw that may
-> introduce, a pte can still
-> missed by the second loop. mremap can happen serveral times during
-> these non-atomic
-> firstpass-trunc-secondpass operations, a proper events can happily
-> make the wrong order
-> for every scan, and miss them all -- That's just what in Hugh's mind
-> in the post you just
-> replied. Without lock and proper ordering( which patial mremap cannot provide),
-> this *will* happen.
 
-There won't be more than one mremap running concurrently from the same
-process (we must enforce it by making sure anon_vma lock and
-i_mmap_lock are both taken at least once in copy_vma, they're already
-both taken in fork, they should already be taken in all common cases
-in copy_vma so for all cases it's going to be a L1 exclusive cacheline
-already). I don't exclude there may be some case that won't take the
-locks in vma_adjust though, we should check it, if we decide to relay
-on the double loop, but it'd be a simple addition if needed.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: James Morris <jmorris@namei.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Kevin Cernekee <cernekee@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/printk.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-I'm more concerned about the pte pointing to the orphaned pagecache
-that would materialize for a little while because of
-unmap+truncate+unmap instead of unmap+unmap+truncate (but the latter
-order is needed for the COWs).
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 535bc3b..ba0393e 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1223,7 +1223,6 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
+ 	switch (action) {
+ 	case CPU_ONLINE:
+ 	case CPU_DEAD:
+-	case CPU_DYING:
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_UP_CANCELED:
+ 		console_lock();
+-- 
+1.7.5.4
 
-> You may disagree with me and have that locking removed, and I am
-> already have that
-> one line patch prepared waiting fora bug bumpping up again, what a
-> cheap patch submission!
-
-Well I'm not yet sure it's good idea to remove the i_mmap_mutex, or if
-we should just add the anon_vma lock in mremap and add the i_mmap_lock
-in fork (to avoid the orphaned pagecache left mapped in the child
-which already may happen unless there's some i_mmap_lock belonging to
-the same inode taken after copy_page_range returns until we return to
-userland and child can run, and I don't think we can relay on the
-order of the prio tree in fork. Fork is safe for anon pages because
-there we can relay on the order of the same_anon_vma list.
-
-I think clearing up if this orphaned pagecache is dangerous would be a
-good start. If too complex we just add the i_mmap_lock around
-copy_page_range in fork if vma->vm_file is set. If you instead think
-we can deal with the orphaned pagecache we can add a dummy lock/unlock
-of i_mmap_mutex in copy_vma vma_merge succeeding case (short critical
-section and not common common case) and remove the i_mmap_mutex around
-move_page_tables (common case) overall speeding up mremap and not
-degrading fork.
