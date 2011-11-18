@@ -1,166 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1KRSjy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 13:39:54 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64415 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab1KRSjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 13:39:53 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, mingo@elte.hu, linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, fweisbec@gmail.com, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf script: Add comm filtering option
-Date: Fri, 18 Nov 2011 11:39:45 -0700
-Message-Id: <1321641585-5643-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.7.1
+	id S1754357Ab1KRSkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 13:40:24 -0500
+Received: from ackle.nomi.cz ([81.31.33.35]:60494 "EHLO ackle.nomi.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753121Ab1KRSkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 13:40:22 -0500
+Date: Fri, 18 Nov 2011 19:40:17 +0100
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Szymon Janc <szymon@janc.net.pl>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [REGRESSION] resume takes 10s longer due to e1b6eb3 (Bluetooth:
+	Increase HCI reset timeout ...)
+Message-ID: <20111118184017.GA5052@nomi.cz>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="VS++wcV0S1rZb1Fb"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows collecting events system wide and then pulling out events
-for a specific task name(s). e.g,
 
-    perf script -c gnome-shell,gnome-terminal
+--VS++wcV0S1rZb1Fb
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
-Applies on top of:
-    https://lkml.org/lkml/2011/11/13/74
+Hello,
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/Documentation/perf-script.txt |    4 ++++
- tools/perf/builtin-script.c              |   11 +++++++++++
- tools/perf/util/strlist.c                |   15 +++++++++++++++
- tools/perf/util/strlist.h                |    2 ++
- tools/perf/util/symbol.c                 |   14 --------------
- 5 files changed, 32 insertions(+), 14 deletions(-)
+while testing the 3.2-rc kernel, I experienced that resume takes 10 seconds
+more than usual, and bisected this to be caused by e1b6eb3 (Bluetooth:
+Increase HCI reset timeout in hci_dev_do_close).
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 3613b0a..e7a9378 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -188,6 +188,10 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+-c::
-+--comms=::
-+    Comma separated list of comms. Only events for these comms are shown.
-+
- -I::
- --show-info::
- 	Display extended information about the perf.data file. This adds
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 01329ca..6b867ba 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -13,6 +13,7 @@
- #include "util/util.h"
- #include "util/evlist.h"
- #include "util/evsel.h"
-+#include "util/strlist.h"
- #include <linux/bitmap.h>
- 
- static char const		*script_name;
-@@ -24,6 +25,8 @@ extern const struct option	record_options[];
- static bool			no_callchain;
- static bool			show_full_info;
- static const char		*cpu_list;
-+static const char      *comm_list_str;
-+struct strlist         *comm_list;
- static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- 
- enum perf_output_field {
-@@ -461,6 +464,9 @@ static int process_sample_event(union perf_event *event,
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
- 		return 0;
- 
-+	if (comm_list && !strlist__has_entry(comm_list, thread->comm))
-+		return 0;
-+
- 	scripting_ops->process_event(event, sample, evsel, session, thread);
- 
- 	session->hists.stats.total_period += sample->period;
-@@ -1084,6 +1090,8 @@ static const struct option options[] = {
- 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
- 		     parse_output_fields),
- 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING('c', "comms", &comm_list_str, "comm[,comm...]",
-+		   "only display events for these comms"),
- 	OPT_BOOLEAN('I', "show-info", &show_full_info,
- 		    "display extended information from perf.data file"),
- 	OPT_END()
-@@ -1256,6 +1264,9 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		exit(-1);
- 	}
- 
-+	if (setup_list(&comm_list, comm_list_str, "comm") < 0)
-+		return -1;
-+
- 	if (symbol__init() < 0)
- 		return -1;
- 	if (!script_name)
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index 6783a20..145749d 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -198,3 +198,18 @@ struct str_node *strlist__entry(const struct strlist *self, unsigned int idx)
- 
- 	return NULL;
- }
-+
-+int setup_list(struct strlist **list, const char *list_str,
-+	       const char *list_name)
-+{
-+	if (list_str == NULL)
-+		return 0;
-+
-+	*list = strlist__new(true, list_str);
-+	if (!*list) {
-+		pr_err("problems parsing %s list\n", list_name);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/strlist.h b/tools/perf/util/strlist.h
-index 3ba8390..695bd4c 100644
---- a/tools/perf/util/strlist.h
-+++ b/tools/perf/util/strlist.h
-@@ -24,6 +24,8 @@ int strlist__add(struct strlist *self, const char *str);
- 
- struct str_node *strlist__entry(const struct strlist *self, unsigned int idx);
- struct str_node *strlist__find(struct strlist *self, const char *entry);
-+int setup_list(struct strlist **list, const char *list_str,
-+	       const char *list_name);
- 
- static inline bool strlist__has_entry(struct strlist *self, const char *entry)
- {
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 632b50c..48969d2 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2525,20 +2525,6 @@ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp)
- 	return printed;
- }
- 
--static int setup_list(struct strlist **list, const char *list_str,
--		      const char *list_name)
--{
--	if (list_str == NULL)
--		return 0;
--
--	*list = strlist__new(true, list_str);
--	if (!*list) {
--		pr_err("problems parsing %s list\n", list_name);
--		return -1;
--	}
--	return 0;
--}
--
- static bool symbol__read_kptr_restrict(void)
- {
- 	bool value = false;
+My hardware is Lenovo ThinkPad T420, model number 4178-A3G, with a Broadcom
+Bluetooth adapter (I'm attaching the relevant part of lsusb).
+
+The relevant portion of dmesg is:
+[   76.502818] usb 1-1.4: reset full-speed USB device number 4 using ehci_hcd
+[   76.588225] btusb 1-1.4:1.0: no reset_resume for driver btusb?
+[   76.591870] btusb 1-1.4:1.1: no reset_resume for driver btusb?
+[   86.565269] PM: resume of devices complete after 10486.220 msecs
+
+My resume scripts did contain a hciconfig hci0 down followed by up, because
+on my previous notebook (and the kernel I used at the time) it was needed for
+BT to work after suspend. On this hardware, however, none of that is needed.
+Bluetooth after suspend works regardless of whether that patch is applied or
+not, and I believe it would wait indefinitely if given large enough timeout.
+
+Aside from reverting the patch, doing the following before suspend also works
+around the issue:
+    echo disable > /proc/acpi/ibm/bluetooth
+
+Kind regards,
 -- 
-1.7.7.1
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
 
+--VS++wcV0S1rZb1Fb
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: attachment; filename="bt.txt"
+
+Bus 001 Device 006: ID 0a5c:217f Broadcom Corp. Bluetooth Controller
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass          224 Wireless
+  bDeviceSubClass         1 Radio Frequency
+  bDeviceProtocol         1 Bluetooth
+  bMaxPacketSize0        64
+  idVendor           0x0a5c Broadcom Corp.
+  idProduct          0x217f Bluetooth Controller
+  bcdDevice            7.48
+  iManufacturer           1 Broadcom Corp
+  iProduct                2 Broadcom Bluetooth Device
+  iSerial                 3 CCAF78EC8B4F
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength          216
+    bNumInterfaces          4
+    bConfigurationValue     1
+    iConfiguration          0 
+    bmAttributes         0xe0
+      Self Powered
+      Remote Wakeup
+    MaxPower                0mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           3
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0010  1x 16 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x02  EP 2 OUT
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0000  1x 0 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0000  1x 0 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       1
+      bNumEndpoints           2
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0009  1x 9 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0009  1x 9 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       2
+      bNumEndpoints           2
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0011  1x 17 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0011  1x 17 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       3
+      bNumEndpoints           2
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0020  1x 32 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0020  1x 32 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       4
+      bNumEndpoints           2
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       5
+      bNumEndpoints           2
+      bInterfaceClass       224 Wireless
+      bInterfaceSubClass      1 Radio Frequency
+      bInterfaceProtocol      1 Bluetooth
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            1
+          Transfer Type            Isochronous
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        2
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass       255 Vendor Specific Class
+      bInterfaceSubClass    255 Vendor Specific Subclass
+      bInterfaceProtocol    255 Vendor Specific Protocol
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x84  EP 4 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0020  1x 32 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x04  EP 4 OUT
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0020  1x 32 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        3
+      bAlternateSetting       0
+      bNumEndpoints           0
+      bInterfaceClass       254 Application Specific Interface
+      bInterfaceSubClass      1 Device Firmware Update
+      bInterfaceProtocol      1 
+      iInterface              0 
+      Device Firmware Upgrade Interface Descriptor:
+        bLength                             7
+        bDescriptorType                    33
+        bmAttributes                        7
+          Will Not Detach
+          Manifestation Tolerant
+          Upload Supported
+          Download Supported
+        wDetachTimeout                   5000 milliseconds
+        wTransferSize                      64 bytes
+Device Status:     0x0001
+  Self Powered
+
+--VS++wcV0S1rZb1Fb--
