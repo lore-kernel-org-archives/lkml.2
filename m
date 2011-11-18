@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768Ab1KRKP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:15:28 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54843 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757723Ab1KRKP0 (ORCPT
+	id S1757809Ab1KRKQX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:16:23 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:30811 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757754Ab1KRKQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:15:26 -0500
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH] nfsd: Fix oops when parsing a 0 length export
-Date: Fri, 18 Nov 2011 12:14:49 +0200
-Message-Id: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.rc1
+	Fri, 18 Nov 2011 05:16:22 -0500
+Message-ID: <4EC6306B.8070800@oracle.com>
+Date: Fri, 18 Nov 2011 18:16:11 +0800
+From: ANNIE LI <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org, paul.durrant@citrix.com,
+        Ian.Campbell@citrix.com
+CC: annie.li@oracle.com, kurt.hackel@oracle.com
+Subject: Re: [PATCH 3/3] xen/granttable: Keep code format clean
+References: <4EC3B62F.6080702@oracle.com> <1321451431-13632-1-git-send-email-annie.li@oracle.com>
+In-Reply-To: <1321451431-13632-1-git-send-email-annie.li@oracle.com>
+Content-Type: multipart/mixed;
+ boundary="------------050905090709060000090701"
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4EC63072.00AC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-expkey_parse() oopses when handling a 0 length export. This is easily
-triggerable from usermode by writing 0 bytes into
-'/proc/[proc id]/net/rpc/nfsd.fh/channel'.
+This is a multi-part message in MIME format.
+--------------050905090709060000090701
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Below is the log:
+This patch does not change from the initial one: [PATCH 3/3] 
+xen/granttable: Keep code format clean.
 
-[ 1402.286893] BUG: unable to handle kernel paging request at ffff880077c49fff
-[ 1402.287632] IP: [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] PGD 2206063 PUD 1fdfd067 PMD 1ffbc067 PTE 8000000077c49160
-[ 1402.287632] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1402.287632] CPU 1
-[ 1402.287632] Pid: 20198, comm: trinity Not tainted 3.2.0-rc2-sasha-00058-gc65cd37 #6
-[ 1402.287632] RIP: 0010:[<ffffffff812b4b99>]  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] RSP: 0018:ffff880077f0fd68  EFLAGS: 00010292
-[ 1402.287632] RAX: ffff880077c49fff RBX: 00000000ffffffea RCX: 0000000001043400
-[ 1402.287632] RDX: 0000000000000000 RSI: ffff880077c4a000 RDI: ffffffff82283de0
-[ 1402.287632] RBP: ffff880077f0fe18 R08: 0000000000000001 R09: ffff880000000000
-[ 1402.287632] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880077c4a000
-[ 1402.287632] R13: ffffffff82283de0 R14: 0000000001043400 R15: ffffffff82283de0
-[ 1402.287632] FS:  00007f25fec3f700(0000) GS:ffff88007d400000(0000) knlGS:0000000000000000
-[ 1402.287632] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1402.287632] CR2: ffff880077c49fff CR3: 0000000077e1d000 CR4: 00000000000406e0
-[ 1402.287632] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1402.287632] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1402.287632] Process trinity (pid: 20198, threadinfo ffff880077f0e000, task ffff880077db17b0)
-[ 1402.287632] Stack:
-[ 1402.287632]  ffff880077db17b0 ffff880077c4a000 ffff880077f0fdb8 ffffffff810b411e
-[ 1402.287632]  ffff880000000000 ffff880077db17b0 ffff880077c4a000 ffffffff82283de0
-[ 1402.287632]  0000000001043400 ffffffff82283de0 ffff880077f0fde8 ffffffff81111f63
-[ 1402.287632] Call Trace:
-[ 1402.287632]  [<ffffffff810b411e>] ? lock_release+0x1af/0x1bc
-[ 1402.287632]  [<ffffffff81111f63>] ? might_fault+0x97/0x9e
-[ 1402.287632]  [<ffffffff81111f1a>] ? might_fault+0x4e/0x9e
-[ 1402.287632]  [<ffffffff81a8bcf2>] cache_do_downcall+0x3e/0x4f
-[ 1402.287632]  [<ffffffff81a8c950>] cache_write.clone.16+0xbb/0x130
-[ 1402.287632]  [<ffffffff81a8c9df>] ? cache_write_pipefs+0x1a/0x1a
-[ 1402.287632]  [<ffffffff81a8c9f8>] cache_write_procfs+0x19/0x1b
-[ 1402.287632]  [<ffffffff8118dc54>] proc_reg_write+0x8e/0xad
-[ 1402.287632]  [<ffffffff8113fe81>] vfs_write+0xaa/0xfd
-[ 1402.287632]  [<ffffffff8114142d>] ? fget_light+0x35/0x9e
-[ 1402.287632]  [<ffffffff8113ff8b>] sys_write+0x48/0x6f
-[ 1402.287632]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
-[ 1402.287632] Code: c0 c9 c3 55 48 63 d2 48 89 e5 48 8d 44 32 ff 41 57 41 56 41 55 41 54 53 bb ea ff ff ff 48 81 ec 88 00 00 00 48 89 b5 58 ff ff ff
-[ 1402.287632]  38 0a 0f 85 89 02 00 00 c6 00 00 48 8b 3d 44 4a e5 01 48 85
-[ 1402.287632] RIP  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632]  RSP <ffff880077f0fd68>
-[ 1402.287632] CR2: ffff880077c49fff
-[ 1402.287632] ---[ end trace 368ef53ff773a5e3 ]---
+Thanks
+Annie
 
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- fs/nfsd/export.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+--------------050905090709060000090701
+Content-Type: text/plain;
+ name="0004-xen-granttable-Keep-code-format-clean.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0004-xen-granttable-Keep-code-format-clean.patch"
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 62f3b90..5f312ab 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -87,7 +87,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
- 	struct svc_expkey key;
- 	struct svc_expkey *ek = NULL;
- 
--	if (mesg[mlen-1] != '\n')
-+	if (mlen < 1 || mesg[mlen-1] != '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] = 0;
- 
--- 
-1.7.8.rc1
-
+RnJvbSBmOGI2ZjQzMTExNWQ3YWZlNmM5YjI0ZTY4ZDFiZTdmN2RhOTMzZjlmIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBBbm5pZSBMaSA8YW5uaWUubGlAb3JhY2xlLmNvbT4K
+RGF0ZTogRnJpLCAxOCBOb3YgMjAxMSAxNzowOTowOSArMDgwMApTdWJqZWN0OiBbUEFUQ0gg
+NC80XSB4ZW4vZ3JhbnR0YWJsZTogS2VlcCBjb2RlIGZvcm1hdCBjbGVhbgoKU2lnbmVkLW9m
+Zi1ieTogQW5uaWUgTGkgPGFubmllLmxpQG9yYWNsZS5jb20+Ci0tLQogZHJpdmVycy94ZW4v
+Z3JhbnQtdGFibGUuYyB8ICAgIDcgKysrLS0tLQogaW5jbHVkZS94ZW4vZ3JhbnRfdGFibGUu
+aCB8ICAgIDIgKy0KIDIgZmlsZXMgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCA1IGRlbGV0
+aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMveGVuL2dyYW50LXRhYmxlLmMgYi9kcml2
+ZXJzL3hlbi9ncmFudC10YWJsZS5jCmluZGV4IGNhMDc1ZTkuLjJhYWIyZGYgMTAwNjQ0Ci0t
+LSBhL2RyaXZlcnMveGVuL2dyYW50LXRhYmxlLmMKKysrIGIvZHJpdmVycy94ZW4vZ3JhbnQt
+dGFibGUuYwpAQCAtNTAsNyArNTAsNiBAQAogI2luY2x1ZGUgPGFzbS9wZ3RhYmxlLmg+CiAj
+aW5jbHVkZSA8YXNtL3N5bmNfYml0b3BzLmg+CiAKLQogLyogRXh0ZXJuYWwgdG9vbHMgcmVz
+ZXJ2ZSBmaXJzdCBmZXcgZ3JhbnQgdGFibGUgZW50cmllcy4gKi8KICNkZWZpbmUgTlJfUkVT
+RVJWRURfRU5UUklFUyA4CiAjZGVmaW5lIEdOVFRBQl9MSVNUX0VORCAweGZmZmZmZmZmCkBA
+IC02MDAsOCArNTk5LDggQEAgdW5zaWduZWQgaW50IGdudHRhYl9tYXhfZ3JhbnRfZnJhbWVz
+KHZvaWQpCiBFWFBPUlRfU1lNQk9MX0dQTChnbnR0YWJfbWF4X2dyYW50X2ZyYW1lcyk7CiAK
+IGludCBnbnR0YWJfbWFwX3JlZnMoc3RydWN0IGdudHRhYl9tYXBfZ3JhbnRfcmVmICptYXBf
+b3BzLAotCQkJc3RydWN0IGdudHRhYl9tYXBfZ3JhbnRfcmVmICprbWFwX29wcywKLQkJCXN0
+cnVjdCBwYWdlICoqcGFnZXMsIHVuc2lnbmVkIGludCBjb3VudCkKKwkJICAgIHN0cnVjdCBn
+bnR0YWJfbWFwX2dyYW50X3JlZiAqa21hcF9vcHMsCisJCSAgICBzdHJ1Y3QgcGFnZSAqKnBh
+Z2VzLCB1bnNpZ25lZCBpbnQgY291bnQpCiB7CiAJaW50IGksIHJldDsKIAlwdGVfdCAqcHRl
+OwpAQCAtNjUxLDcgKzY1MCw3IEBAIGludCBnbnR0YWJfbWFwX3JlZnMoc3RydWN0IGdudHRh
+Yl9tYXBfZ3JhbnRfcmVmICptYXBfb3BzLAogRVhQT1JUX1NZTUJPTF9HUEwoZ250dGFiX21h
+cF9yZWZzKTsKIAogaW50IGdudHRhYl91bm1hcF9yZWZzKHN0cnVjdCBnbnR0YWJfdW5tYXBf
+Z3JhbnRfcmVmICp1bm1hcF9vcHMsCi0JCXN0cnVjdCBwYWdlICoqcGFnZXMsIHVuc2lnbmVk
+IGludCBjb3VudCkKKwkJICAgICAgc3RydWN0IHBhZ2UgKipwYWdlcywgdW5zaWduZWQgaW50
+IGNvdW50KQogewogCWludCBpLCByZXQ7CiAKZGlmZiAtLWdpdCBhL2luY2x1ZGUveGVuL2dy
+YW50X3RhYmxlLmggYi9pbmNsdWRlL3hlbi9ncmFudF90YWJsZS5oCmluZGV4IDU0OTRjNDAu
+LmZlYTQ5NTQgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUveGVuL2dyYW50X3RhYmxlLmgKKysrIGIv
+aW5jbHVkZS94ZW4vZ3JhbnRfdGFibGUuaApAQCAtMTU3LDcgKzE1Nyw3IEBAIHVuc2lnbmVk
+IGludCBnbnR0YWJfbWF4X2dyYW50X2ZyYW1lcyh2b2lkKTsKICNkZWZpbmUgZ250dGFiX21h
+cF92YWRkcihtYXApICgodm9pZCAqKShtYXAuaG9zdF92aXJ0X2FkZHIpKQogCiBpbnQgZ250
+dGFiX21hcF9yZWZzKHN0cnVjdCBnbnR0YWJfbWFwX2dyYW50X3JlZiAqbWFwX29wcywKLQkJ
+CXN0cnVjdCBnbnR0YWJfbWFwX2dyYW50X3JlZiAqa21hcF9vcHMsCisJCSAgICBzdHJ1Y3Qg
+Z250dGFiX21hcF9ncmFudF9yZWYgKmttYXBfb3BzLAogCQkgICAgc3RydWN0IHBhZ2UgKipw
+YWdlcywgdW5zaWduZWQgaW50IGNvdW50KTsKIGludCBnbnR0YWJfdW5tYXBfcmVmcyhzdHJ1
+Y3QgZ250dGFiX3VubWFwX2dyYW50X3JlZiAqdW5tYXBfb3BzLAogCQkgICAgICBzdHJ1Y3Qg
+cGFnZSAqKnBhZ2VzLCB1bnNpZ25lZCBpbnQgY291bnQpOwotLSAKMS43LjYuNAoK
+--------------050905090709060000090701--
