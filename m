@@ -1,213 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab1KQX5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 18:57:52 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51708 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab1KQX5v (ORCPT
+	id S1755013Ab1KRAAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 19:00:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45650 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab1KRAAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 18:57:51 -0500
-X-Originating-IP: 217.70.178.131
-X-Originating-IP: 50.43.15.19
-Date: Thu, 17 Nov 2011 15:57:33 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 2/9] rcu: Add rcutorture system-shutdown
- capability
-Message-ID: <20111117235733.GF1865@leaf>
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
- <1321388885-11211-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111115214615.GD31473@leaf>
- <20111116203226.GK2355@linux.vnet.ibm.com>
- <20111116221545.GA2325@leaf>
- <20111116224447.GO2355@linux.vnet.ibm.com>
- <20111116225856.GD2325@leaf>
- <20111116234358.GP2355@linux.vnet.ibm.com>
- <20111117004923.GB5201@leaf>
- <20111117014056.GS2355@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111117014056.GS2355@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Nov 2011 19:00:21 -0500
+Date: Thu, 17 Nov 2011 16:00:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Miao Xie <miaox@cn.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch v2 for-3.2-rc3] cpusets: stall when updating
+ mems_allowed for mempolicy or disjoint nodemask
+Message-Id: <20111117160019.c8bd45ba.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1111171507340.9933@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com>
+	<20111117142213.2b34469d.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1111171507340.9933@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 05:40:57PM -0800, Paul E. McKenney wrote:
-> On Wed, Nov 16, 2011 at 04:49:23PM -0800, Josh Triplett wrote:
-> > On Wed, Nov 16, 2011 at 03:43:58PM -0800, Paul E. McKenney wrote:
-> > > I suspect that the only way for you to be convinced is for you to write
-> > > a script that takes your preferred approach for injecting a test into
-> > > (say) a KVM instance.
-> > 
-> > Done and attached.
+On Thu, 17 Nov 2011 15:08:08 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
+
+> cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
 > 
-> Cute trick!
+> c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
+> cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
+> nodes from changing for a thread.  This causes any update to a set of
+> allowed nodes to stall until put_mems_allowed() is called.
 > 
-> The scripting has to also include getting the test duration into the .c
-> file and building it, but that isn't too big of a deal.  Give or take
-> cross-compilation of the sleep-shutdown.c program, that is...  :-/
-
-:)
-
-> However, this approach does cause the rcutorture success/failure message
-> to be lost.  One possible way around this would be to put rcutorture.ko
-> into your initrd, then make the program insmod it, sleep, rmmod it,
-> and then shut down.  But unless I am missing something basic (which is
-> quite possible), just doing the shutdown inside rcutorture is simpler
-> at that point.
-
-When you build rcutorture into the kernel, the module's exit function
-will never get called at all.  If you want to see the final summary, you
-might want to build in a mechanism for rcutorture to quiesce even when
-built in, and then arrange to run that via a shutdown notifier.  That
-seems like the right way around: you shut down the system, and the
-built-in rcutorture notices and gives a final summary.
-
-Alternatively, similar to your addition of rcutorture.stat_interval to
-periodically write out a summary, you might consider having rcutorture
-periodically quiesce and write out a PASS/FAIL.
-
-> However, the thought of improving boot speed by confining the kernel to
-> a very simple initrd does sound attractive.
-
-Definitely.  I frequently use an initrd rather than creating an entire
-filesystem, and the result runs very quickly.  It also proves easier to
-build than a block device.
-
-> Interesting behavior.  I forgot that the bzImage that I had lying around
-> already had an initrd built into it.  The kernel seemed to start up on
-> the built-in initrd, complete with serial output.  Then powered off after
-> about 30 seconds (I did s/3600/30/ in your sleep-shutdown.c), rather than
-> the 120 I had specified to rcutorture (preventing any success/failure
-> message from rcutorture as well).  Two initrds executing in parallel?
-> Hmmm...
-
-Huh.  Odd.  But no, initramfses don't execute in parallel, or in series
-for that matter.  The kernel will extract its built-in initramfs to the
-"rootfs" tmpfs filesystem, then extract any externally-supplied
-initramfs on top of that, and then run /init in the rootfs filesystem.
-So, the /init from sleep-shutdown would overwrite any /init from your
-built-in initramfs, and most likely nothing else from your built-in
-initramfs had any effect at all.
-
-> FWIW, I used the following command:
+> This stall is unncessary, however, if at least one node remains unchanged
+> in the update to the set of allowed nodes.  This was addressed by
+> 89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
+> node remains set"), but it's still possible that an empty nodemask may be
+> read from a mempolicy because the old nodemask may be remapped to the new
+> nodemask during rebind.  To prevent this, only avoid the stall if there
+> is no mempolicy for the thread being changed.
 > 
-> kvm -kernel linux-2.6/arch/x86/boot/bzImage -initrd /tmp/sleep-shutdown/sleep-shutdown -serial file:/home/kvm/linux-2.6/console.log -nographic -smp 2 -m 512 -append "noapic selinux=0 console=ttyS0 initcall_debug debug rcutorture.stat_interval=15 rcutorture.shutdown_secs=120 rcutorture.rcutorture_runnable=1"
-
-Looks reasonable, other than that you don't need
-rcutorture.shutdown_secs if you use sleep-shutdown.  Also, as far as I
-know you shouldn't need noapic with KVM; if you do then you should
-report a KVM bug.  (Or does that represent a scenario or code path you
-wanted to test RCU under?)
-
-> Thoughts?  (Other than that I should re-build the kernel with
-> CONFIG_INITRAMFS_SOURCE="", which I will try.)
+> This is a temporary solution until all reads from mempolicy nodemasks can
+> be guaranteed to not be empty without the get_mems_allowed()
+> synchronization.
 > 
-> Just so you know, my next step is to make rcutorture orchestrate the
-> CPU-hotplug operations, if rcutorture is told to do so and if the kernel
-> is configured to support this.
+> Also moves the check for nodemask intersection inside task_lock() so that
+> tsk->mems_allowed cannot change.  This ensures that nothing can set this
+> tsk's mems_allowed out from under us and also protects tsk->mempolicy.
 
-And that really seems easier than just running a simple script from an
-initrd?
-
-On Wed, Nov 16, 2011 at 05:40:57PM -0800, Paul E. McKenney wrote:
-> On Wed, Nov 16, 2011 at 04:49:23PM -0800, Josh Triplett wrote:
-> > On Wed, Nov 16, 2011 at 03:43:58PM -0800, Paul E. McKenney wrote:
-> > > On Wed, Nov 16, 2011 at 02:58:56PM -0800, Josh Triplett wrote:
-> > > > On Wed, Nov 16, 2011 at 02:44:47PM -0800, Paul E. McKenney wrote:
-> > > > > rcu_torture_shutdown(void *arg)
-> > > > > {
-> > > > > 	long delta;
-> > > > > 	unsigned long jiffies_snap;
-> > > > > 
-> > > > > 	VERBOSE_PRINTK_STRING("rcu_torture_shutdown task started");
-> > > > > 	jiffies_snap = ACCESS_ONCE(jiffies);
-> > > > 
-> > > > Why do you need to snapshot jiffies in this version but not in the
-> > > > version you originally posted?
-> > > 
-> > > Because in the original, the maximum error was one second, which was
-> > > not worth worrying about.
-> > 
-> > The original shouldn't have an error either.  If something incorrectly
-> > caches jiffies, either version would sleep forever, not just for an
-> > extra second.
-> 
-> If it cached it from one iteration of the loop to the next, agreed.
-> But the new version of the code introduces other possible ways for the
-> compiler to confuse the issue.
-
-At least in theory, the compiler can't cache the value of jiffies at
-all, since jiffies uses "volatile".  The CPU potentially could, but we
-don't normally expect CPUs to hold onto old cached values indefinitely;
-we tend to count on updates to eventually propagate.
-
-> > > > > 	while (ULONG_CMP_LT(jiffies_snap, shutdown_time) &&
-> > > > > 	       !kthread_should_stop()) {
-> > > > > 		delta = shutdown_time - jiffies_snap;
-> > > > > 		if (verbose)
-> > > > > 			printk(KERN_ALERT "%s" TORTURE_FLAG
-> > > > > 			       "rcu_torture_shutdown task: %lu "
-> > > > > 			       "jiffies remaining\n",
-> > > > > 			       torture_type, delta);
-> > > > 
-> > > > I suggested dropping this print entirely; under normal circumstances it
-> > > > should never print.  It will only print if
-> > > > schedule_timeout_interruptible wakes up spuriously.
-> > > 
-> > > OK, I can qualify with a firsttime local variable.
-> > 
-> > Oh, i see; it does print the very first time through.  In that case, you
-> > could move the print out of the loop entirely, rather than using a
-> > "first time" flag.
-> 
-> I could, but that would prevent me from seeing cases where there are
-> multiple passes through the loop.
-
-...which should never happen unless something signals that thread,
-right?  (And normally, that signal will occur as part of kthread_stop,
-which would terminate the loop as well.)
-
-> > > > > 		schedule_timeout_interruptible(delta);
-> > > > > 		jiffies_snap = ACCESS_ONCE(jiffies);
-> > > > > 	}
-> > > > 
-> > > > Any reason this entire loop body couldn't just become
-> > > > msleep_interruptible()?
-> > > 
-> > > Aha!!!  Because then it won't break out of the loop if someone does
-> > > a rmmod of rcutorture.  Which will cause the rmmod to hang until
-> > > the thing decides that it is time to shut down the system.  Which
-> > > is why I need to do the sleep in smallish pieces -- I cannot sleep
-> > > longer than I would be comfortable delaying the rmmod.
-> > > 
-> > > Which is why I think I need to revert back to the old version that
-> > > did the schedule_timeout_interruptible(1).
-> > 
-> > Does kthread_stop not interrupt an interruptible kthread?  As far as I
-> > can tell, rmmod of rcutorture currently finishes immediately, rather
-> > than after all the one-second sleeps finish, which suggests that it
-> > wakes up the threads in question.
-> 
-> OK, it might well.  But even if kthread_stop() does interrupt an
-> interruptible kthread, I still need to avoid msleep_interruptible(),
-> right?
-
-I don't see any reason you need to avoid it.  As far as I can tell,
-msleep_interruptible should do *exactly* what you want, including
-allowing interruptions by kthread_stop.  You just need something like
-this:
-
-unsigned int timeout = ...;
-while (timeout && !kthread_should_stop())
-    timeout = msleep_interruptible(timeout);
-
-- Josh Triplett
+Nothing in this changelog makes me understand why you think we need this
+change in 3.2.  What are the user-visible effects of this change?
