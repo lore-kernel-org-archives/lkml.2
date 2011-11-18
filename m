@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab1KRNDC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:03:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38561 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab1KRNC7 (ORCPT
+	id S1757728Ab1KRNDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:03:13 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49728 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab1KRNDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:02:59 -0500
+	Fri, 18 Nov 2011 08:03:10 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 23/25] Staging: comedi: fix printk issue in pcl818.c
-Date: Fri, 18 Nov 2011 18:32:19 +0530
-Message-Id: <1321621341-10284-3-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 25/25] Staging: comedi: fix printk issue in pcl818.c
+Date: Fri, 18 Nov 2011 18:32:21 +0530
+Message-Id: <1321621341-10284-5-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321621341-10284-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1321621341-10284-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -24,63 +24,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a patch to the pcl818.c file that fixes up a printk
-warning found by the checkpatch.pl tool
+warning found by the checkpatch.pl tool.
+Removed an unnecessary printks.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/pcl818.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/pcl818.c |   16 ++++------------
+ 1 files changed, 4 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index 4e134e9..c207b25 100644
+index bad7ee4..7344a53 100644
 --- a/drivers/staging/comedi/drivers/pcl818.c
 +++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1745,22 +1745,23 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	/* claim our I/O space */
- 	iobase = it->options[0];
--	printk("comedi%d: pcl818:  board=%s, ioport=0x%03lx",
--	       dev->minor, this_board->name, iobase);
-+	printk
-+	    ("comedi%d: pcl818:  board=%s, ioport=0x%03lx",
-+	     dev->minor, this_board->name, iobase);
- 	devpriv->io_range = this_board->io_range;
- 	if ((this_board->fifo) && (it->options[2] == -1)) {	/*  we've board with FIFO and we want to use FIFO */
- 		devpriv->io_range = PCLx1xFIFO_RANGE;
- 		devpriv->usefifo = 1;
- 	}
- 	if (!request_region(iobase, devpriv->io_range, "pcl818")) {
--		printk("I/O port conflict\n");
-+		comedi_error(dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 
- 	dev->iobase = iobase;
- 
- 	if (pcl818_check(iobase)) {
--		printk(", I can't detect board. FAIL!\n");
-+		comedi_error(dev, "I can't detect board. FAIL!\n");
- 		return -EIO;
- 	}
- 
-@@ -1784,7 +1785,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 					     irq);
- 					irq = 0;	/* Can't use IRQ */
- 				} else {
--					printk(", irq=%u", irq);
-+					printk(KERN_DEBUG "irq=%u", irq);
- 				}
- 			}
+@@ -1841,34 +1841,26 @@ no_rtc:
+ 		if (dma < 1)
+ 			goto no_dma;	/* DMA disabled */
+ 		if (((1 << dma) & this_board->DMAbits) == 0) {
+-			printk(", DMA is out of allowed range, FAIL!\n");
++			printk(KERN_ERR "DMA is out of allowed range, FAIL!\n");
+ 			return -EINVAL;	/* Bad DMA */
  		}
-@@ -1815,7 +1816,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 				 "pcl818 DMA (RTC)", dev)) {
- 			devpriv->dma_rtc = 1;
- 			devpriv->rtc_irq = RTC_IRQ;
--			printk(", dma_irq=%u", devpriv->rtc_irq);
-+			printk(KERN_DEBUG "dma_irq=%u", devpriv->rtc_irq);
- 		} else {
- 			RTC_lock--;
- 			if (RTC_lock == 0) {
+ 		ret = request_dma(dma, "pcl818");
+-		if (ret) {
+-			printk(", unable to allocate DMA %u, FAIL!\n", dma);
++		if (ret)
+ 			return -EBUSY;	/* DMA isn't free */
+-		}
+ 		devpriv->dma = dma;
+-		printk(", dma=%u", dma);
+ 		pages = 2;	/* we need 16KB */
+ 		devpriv->dmabuf[0] = __get_dma_pages(GFP_KERNEL, pages);
+-		if (!devpriv->dmabuf[0]) {
+-			printk(", unable to allocate DMA buffer, FAIL!\n");
++		if (!devpriv->dmabuf[0])
+ 			/* maybe experiment with try_to_free_pages() will help .... */
+ 			return -EBUSY;	/* no buffer :-( */
+-		}
+ 		devpriv->dmapages[0] = pages;
+ 		devpriv->hwdmaptr[0] = virt_to_bus((void *)devpriv->dmabuf[0]);
+ 		devpriv->hwdmasize[0] = (1 << pages) * PAGE_SIZE;
+ 		/* printk("%d %d %ld, ",devpriv->dmapages[0],devpriv->hwdmasize[0],PAGE_SIZE); */
+ 		if (devpriv->dma_rtc == 0) {	/*  we must do duble buff :-( */
+ 			devpriv->dmabuf[1] = __get_dma_pages(GFP_KERNEL, pages);
+-			if (!devpriv->dmabuf[1]) {
+-				printk
+-				    (", unable to allocate DMA buffer, FAIL!\n");
++			if (!devpriv->dmabuf[1])
+ 				return -EBUSY;
+-			}
+ 			devpriv->dmapages[1] = pages;
+ 			devpriv->hwdmaptr[1] =
+ 			    virt_to_bus((void *)devpriv->dmabuf[1]);
 -- 
 1.7.0.4
 
