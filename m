@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab1KRPrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:47:32 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:31636 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757979Ab1KRPra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:47:30 -0500
-Message-ID: <1321631242.2885.118.camel@deadeye>
-Subject: Re: [PATCH] ethtool: Use kmemdup rather than duplicating its
- implementation
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Nov 2011 15:47:22 +0000
-In-Reply-To: <1321571135.1624.313.camel@localhost.localdomain>
-References: <1321571135.1624.313.camel@localhost.localdomain>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	id S1758117Ab1KRPrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:47:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59478 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758105Ab1KRPri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 10:47:38 -0500
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-i2c@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH v2] I2C: Make i2cdev_notifier_call static
+Date: Fri, 18 Nov 2011 21:17:31 +0530
+Message-ID: <1321631251-4438-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18526.005
-X-TM-AS-Result: No--17.560600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 18 Nov 2011 15:47:30.0521 (UTC) FILETIME=[615B9490:01CCA609]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 00:05 +0100, Thomas Meyer wrote:
-> The semantic patch that makes this change is available
-> in scripts/coccinelle/api/memdup.cocci.
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
+The function i2cdev_notifier_call is used only in i2c-dev file
+making it static.
+Also removes the following sparse warning
 
-The one-line description should refer to 'gianfar', not 'ethtool'.
-(I expect David will fix this up.)
+drivers/i2c/i2c-dev.c:582:5: warning: symbol 'i2cdev_notifier_call'
+was not declared. Should it be static?
 
-Ben.
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/i2c/i2c-dev.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> diff -u -p a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
-> --- a/drivers/net/ethernet/freescale/gianfar_ethtool.c 2011-11-07 19:37:57.036756543 +0100
-> +++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c 2011-11-08 10:42:14.842512269 +0100
-> @@ -1410,10 +1410,9 @@ static int gfar_optimize_filer_masks(str
->  
->  	/* We need a copy of the filer table because
->  	 * we want to change its order */
-> -	temp_table = kmalloc(sizeof(*temp_table), GFP_KERNEL);
-> +	temp_table = kmemdup(tab, sizeof(*temp_table), GFP_KERNEL);
->  	if (temp_table == NULL)
->  		return -ENOMEM;
-> -	memcpy(temp_table, tab, sizeof(*temp_table));
->  
->  	mask_table = kcalloc(MAX_FILER_CACHE_IDX / 2 + 1,
->  			sizeof(struct gfar_mask_entry), GFP_KERNEL);
-> 
-
-
+diff --git a/drivers/i2c/i2c-dev.c b/drivers/i2c/i2c-dev.c
+index c90ce50..57a45ce 100644
+--- a/drivers/i2c/i2c-dev.c
++++ b/drivers/i2c/i2c-dev.c
+@@ -579,7 +579,7 @@ static int i2cdev_detach_adapter(struct device *dev, void *dummy)
+ 	return 0;
+ }
+ 
+-int i2cdev_notifier_call(struct notifier_block *nb, unsigned long action,
++static int i2cdev_notifier_call(struct notifier_block *nb, unsigned long action,
+ 			 void *data)
+ {
+ 	struct device *dev = data;
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.1
 
