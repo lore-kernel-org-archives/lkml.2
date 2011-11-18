@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab1KRQUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:20:40 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:56291 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050Ab1KRQUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:20:38 -0500
-Message-ID: <4EC685D1.2000900@Calva.COM>
-Date: Fri, 18 Nov 2011 17:20:33 +0100
-From: John Hughes <john@Calva.COM>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
-MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758162Ab1KRQXP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:23:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757929Ab1KRQXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 11:23:14 -0500
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [PATCH v3 3/3] slub: min order when debug_guardpage_minorder > 0
+Date: Fri, 18 Nov 2011 17:25:07 +0100
+Message-Id: <1321633507-13614-3-git-send-email-sgruszka@redhat.com>
+In-Reply-To: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
+References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't write anything to the log if a user Kerberos ticket expires or is missing,
-these are not kernel problems.
+Disable slub debug facilities and allocate slabs at minimal order when
+debug_guardpage_minorder > 0 to increase probability to catch random
+memory corruption by cpu exception.
 
-Signed-off-by: John Hughes<john@calva.com>
+v1 -> v2:
+  - use slub_max_order to minimalize slub order
 
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index 39914be..18897cb 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1339,14 +1339,6 @@ static void nfs4_state_start_reclaim_nograce(struct nfs_client *clp)
-  	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
-  }
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ mm/slub.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
--static void nfs4_warn_keyexpired(const char *s)
--{
--	printk_ratelimited(KERN_WARNING "Error: state manager"
--			" encountered RPCSEC_GSS session"
--			" expired against NFSv4 server %s.\n",
--			s);
--}
--
-  static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
-  {
-  	switch (error) {
-@@ -1378,7 +1370,6 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
-  			return 0;
-  		case -EKEYEXPIRED:
-  			/* Nothing we can do */
--			nfs4_warn_keyexpired(clp->cl_hostname);
-  			return 0;
-  	}
-  	return error;
-@@ -1620,7 +1611,6 @@ static void nfs4_set_lease_expired(struct nfs_client *clp, int status)
-  		break;
-
-  	case -EKEYEXPIRED:
--		nfs4_warn_keyexpired(clp->cl_hostname);
-  	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
-  				 * in nfs4_exchange_id */
-  	default:
-@@ -1728,8 +1718,9 @@ static void nfs4_state_manager(struct nfs_client *clp)
-  	} while (atomic_read(&clp->cl_count)>  1);
-  	return;
-  out_error:
--	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
--			" with error %d\n", clp->cl_hostname, -status);
-+	if (status != -EACCESS)
-+		printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-+				" with error %d\n", clp->cl_hostname, -status);
-  	nfs4_end_drain_session(clp);
-  	nfs4_clear_state_manager_bit(clp);
-  }
-
+diff --git a/mm/slub.c b/mm/slub.c
+index 7d2a996..a66be56 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3645,6 +3645,9 @@ void __init kmem_cache_init(void)
+ 	struct kmem_cache *temp_kmem_cache_node;
+ 	unsigned long kmalloc_size;
+ 
++	if (debug_guardpage_minorder())
++		slub_max_order = 0;
++
+ 	kmem_size = offsetof(struct kmem_cache, node) +
+ 				nr_node_ids * sizeof(struct kmem_cache_node *);
+ 
+-- 
+1.7.1
 
