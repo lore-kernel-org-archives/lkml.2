@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab1KROrC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 09:47:02 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40815 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab1KROrB (ORCPT
+	id S1758033Ab1KROy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 09:54:58 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:55486 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756797Ab1KROy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 09:47:01 -0500
+	Fri, 18 Nov 2011 09:54:57 -0500
+Message-ID: <4EC671BB.4080805@Calva.COM>
+Date: Fri, 18 Nov 2011 15:54:51 +0100
+From: John Hughes <john@Calva.COM>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <CAONaPpHybQL38PSq-hux5X44zuHDCQg=8L1fb+geWv00ktQq7g@mail.gmail.com>
-References: <CAJd=RBC+p8033bHNfP=WQ2SU1Y1zRpj+FEi9FdjuFKkjF_=_iA@mail.gmail.com>
-	<CAONaPpGQdpNDT9EuTq_xian+bRFDUsLn7AgjtG-=y0C6-9fDTQ@mail.gmail.com>
-	<CAONaPpHybQL38PSq-hux5X44zuHDCQg=8L1fb+geWv00ktQq7g@mail.gmail.com>
-Date: Fri, 18 Nov 2011 22:46:59 +0800
-Message-ID: <CAJd=RBAxq4knDnehEXEy+yWYRwXp5ukwkNvgssKPLr+HrgUnPg@mail.gmail.com>
-Subject: Re: [PATCH] hugetlb: detect race if fail to COW
-From: Hillf Danton <dhillf@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <jweiner@redhat.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Luk Claes <luk@debian.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry
+References: <4EC6426A.3020306@Calva.COM> <4EC66148.4020003@RedHat.com> <4EC664D3.9030402@Calva.COM> <4EC67021.6060905@debian.org>
+In-Reply-To: <4EC67021.6060905@debian.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAIEl9ks011119
 
-On Fri, Nov 18, 2011 at 10:21 PM, John Kacur <jkacur@redhat.com> wrote:
-> On Fri, Nov 18, 2011 at 3:16 PM, John Kacur <jkacur@redhat.com> wrote:
->> On Fri, Nov 18, 2011 at 3:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
->>> In the error path that we fail to allocate new huge page, before try again, we
->>> have to check race since page_table_lock is re-acquired.
->>>
->>> If racing, our job is done.
->>>
->>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->>> ---
->>>
->>> --- a/mm/hugetlb.c      Fri Nov 18 21:38:30 2011
->>> +++ b/mm/hugetlb.c      Fri Nov 18 21:48:15 2011
->>> @@ -2407,7 +2407,14 @@ retry_avoidcopy:
->>>                                BUG_ON(page_count(old_page) != 1);
->>>                                BUG_ON(huge_pte_none(pte));
->>>                                spin_lock(&mm->page_table_lock);
->>> -                               goto retry_avoidcopy;
->>> +                               ptep = huge_pte_offset(mm, address & huge_page_mask(h));
->>> +                               if (likely(pte_same(huge_ptep_get(ptep), pte)))
->>> +                                       goto retry_avoidcopy;
->>> +                               /*
->>> +                                * race occurs while re-acquiring page_table_lock, and
->>> +                                * our job is done.
->>> +                                */
->>> +                               return 0;
->>>                        }
->>>                        WARN_ON_ONCE(1);
->>>                }
+On 18/11/11 15:48, Luk Claes wrote:
+> On 11/18/2011 02:59 PM, John Hughes wrote:
 >>
+>> Okeydoke, let's see, where's the man page...
 >>
->> I'm not sure about the veracity of the race condition, but you better
->> do spin_unlock before you return.
+>> $ find  /usr/share/man* -name 'rcp.gssd*'
 >>
->
-> Ugh, sorry for the noise, I see that's not how it works here.
+>> find: cannot get current directory: Permission denied
+> rcp != rpc
 
-Welcome:)
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+The joke was that I was using the patched rpc.gssd and my (deliberately 
+short life) ticket had expired, so find bitched about not being able to 
+read my home directory.
+
+And I made a typo.  What a maroon I am.
+
