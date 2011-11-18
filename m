@@ -1,160 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab1KRWh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:37:59 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38047 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757002Ab1KRWh6 (ORCPT
+	id S1757332Ab1KRWiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:38:10 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:37638 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756209Ab1KRWiG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:37:58 -0500
-Message-ID: <4EC6DE9E.2080709@solonet.org.ua>
-Date: Sat, 19 Nov 2011 00:39:26 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Fri, 18 Nov 2011 17:38:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=bcHcOVsA6E1I63qtqD/
+	VcogAj4SB5ejxKinIc7/O4lRy+hMKbdqvkLk4HQE/1cGkVsIlT8hMxfPsuhJe/Gl
+	HUnoyH0Y5wlzRmFALjhYkdDi7uz46VAWJShTaX5nNxexGuw07X4LAmZJMw3+CjKJ
+	tvlrm7ShdSCnRJ/Hpc6N827o=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.7.4
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Nov 2011 14:38:03 -0800
+Message-ID: <7vbos9jbuc.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH v2] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use gpiolib
-References: <4EC572E1.1020209@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com> <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com> <4EC6DD8F.9070904@solonet.org.ua>
-In-Reply-To: <4EC6DD8F.9070904@solonet.org.ua>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: FB07F62C-1235-11E1-B9A1-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make s3c24xx LEDS driver use gpiolib. Disable using pull-resistor when not
-using S3C24XX_LEDF_TRISTATE and enble it when in opposite case.
+The latest maintenance release Git 1.7.7.4 is available.
 
-Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
----
+The release tarballs are found at:
 
-Patch is against 3.0.9
-Tested on Mini2440 board which implements most complex case where both 
-S3C24XX_LEDF_ACTLOW and S3C24XX_LEDF_TRISTATE are set
+    http://code.google.com/p/git-core/downloads/list
 
-diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
-index a77771d..63feda8 100644
---- a/drivers/leds/leds-s3c24xx.c
-+++ b/drivers/leds/leds-s3c24xx.c
-@@ -45,23 +45,35 @@ static void s3c24xx_led_set(struct led_classdev *led_cdev,
- 	struct s3c24xx_gpio_led *led = to_gpio(led_cdev);
- 	struct s3c24xx_led_platdata *pd = led->pdata;
- 
--	/* there will be a short delay between setting the output and
--	 * going from output to input when using tristate. */
--
--	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
--			    (pd->flags & S3C24XX_LEDF_ACTLOW));
--
--	if (pd->flags & S3C24XX_LEDF_TRISTATE)
--		s3c2410_gpio_cfgpin(pd->gpio,
--			value ? S3C2410_GPIO_OUTPUT : S3C2410_GPIO_INPUT);
-+	/*
-+	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
-+	 * (only 100% brightness is supported)
-+	 */
-+	value = value ? 1 : 0;
-+
-+	if (pd->flags & S3C24XX_LEDF_TRISTATE) {
-+		if (value) {
-+			/* invert value if S3C24XX_LEDF_ACTLOW is set */
-+			value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
-+			gpio_direction_output(pd->gpio, value);
-+		} else {
-+			gpio_direction_input(pd->gpio);
-+		}
-+	} else {
-+		/* invert value if S3C24XX_LEDF_ACTLOW is set */
-+		value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
-+		gpio_set_value(pd->gpio, value);
-+	}
- 
- }
- 
- static int s3c24xx_led_remove(struct platform_device *dev)
- {
-+	struct s3c24xx_led_platdata *pdata = dev->dev.platform_data;
- 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
- 
- 	led_classdev_unregister(&led->cdev);
-+	gpio_free(pdata->gpio);
- 	kfree(led);
- 
- 	return 0;
-@@ -76,7 +88,8 @@ static int s3c24xx_led_probe(struct platform_device *dev)
- 	led = kzalloc(sizeof(struct s3c24xx_gpio_led), GFP_KERNEL);
- 	if (led == NULL) {
- 		dev_err(&dev->dev, "No memory for device\n");
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_kzalloc;
- 	}
- 
- 	platform_set_drvdata(dev, led);
-@@ -88,15 +101,33 @@ static int s3c24xx_led_probe(struct platform_device *dev)
- 
- 	led->pdata = pdata;
- 
--	/* no point in having a pull-up if we are always driving */
-+	ret = gpio_request(pdata->gpio, pdata->name);
-+	if (ret < 0) {
-+		dev_err(&dev->dev, "gpio_request failed\n");
-+		goto err_gpio_request;
-+	}
- 
- 	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
--		s3c2410_gpio_setpin(pdata->gpio, 0);
--		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
-+		/*
-+		 * pull is needed here to protect pin from being left
-+		 * floating (this is dangerous since pin becomes more
-+		 * sensitive to ESD)
-+		 */
-+		ret = s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_UP);
-+		if (ret)
-+			s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_DOWN);
-+		/* initially turn off led */
-+		ret = gpio_direction_input(pdata->gpio);
- 	} else {
--		s3c2410_gpio_pullup(pdata->gpio, 0);
--		s3c2410_gpio_setpin(pdata->gpio, 0);
--		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
-+		/* no point in having a pull-up as we are always driving */
-+		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
-+		/* initially turn off led */
-+		ret = gpio_direction_output(pdata->gpio,
-+				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
-+	}
-+	if (ret < 0) {
-+		dev_err(&dev->dev, "can't set gpio direction\n");
-+		goto err_gpio_set_direction;
- 	}
- 
- 	/* register our new led device */
-@@ -104,11 +135,18 @@ static int s3c24xx_led_probe(struct platform_device *dev)
- 	ret = led_classdev_register(&dev->dev, &led->cdev);
- 	if (ret < 0) {
- 		dev_err(&dev->dev, "led_classdev_register failed\n");
--		kfree(led);
--		return ret;
-+		goto err_led_classdev_register;
- 	}
- 
- 	return 0;
-+
-+err_led_classdev_register:
-+err_gpio_set_direction:
-+		gpio_free(pdata->gpio);
-+err_gpio_request:
-+		kfree(led);
-+err_kzalloc:
-+		return ret;
- }
- 
- static struct platform_driver s3c24xx_led_driver = {
+and their SHA-1 checksums are:
+
+5b6920989480a37ec65977e756b24961578795dd  git-1.7.7.4.tar.gz
+6012cb017a04ded85c48ca5510f741e98c02f671  git-htmldocs-1.7.7.4.tar.gz
+cb21e55ae793865453c165a0e666348f2db8c740  git-manpages-1.7.7.4.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.7.4
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+
+Git v1.7.7.4 Release Notes
+==========================
+
+Fixes since v1.7.7.3
+--------------------
+
+ * A few header dependencies were missing from the Makefile.
+
+ * Some newer parts of the code used C99 __VA_ARGS__ while we still
+   try to cater to older compilers.
+
+ * "git name-rev --all" tried to name all _objects_, naturally failing to
+   describe many blobs and trees, instead of showing only commits as
+   advertised in its documentation.
+
+----------------------------------------------------------------
+
+Changes since v1.7.7.3 are as follows:
+
+Jonathan Nieder (2):
+      notes merge: eliminate OUTPUT macro
+      Makefile: add missing header file dependencies
+
+Junio C Hamano (2):
+      name-rev --all: do not even attempt to describe non-commit object
+      Git 1.7.7.4
+
+Marc-André Lureau (1):
+      mailmap: xcalloc mailmap_info
 
