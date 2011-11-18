@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab1KSARy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:17:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38353 "EHLO mx2.suse.de"
+	id S1758245Ab1KSAIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:08:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38332 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758146Ab1KSAIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:08:53 -0500
+	id S1758146Ab1KSAIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:08:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:06 2011
-Message-Id: <20111119000006.221446367@clark.kroah.org>
+Message-Id: <20111119000006.140588439@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 15:58:38 -0800
+Date: Fri, 18 Nov 2011 15:58:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Jens Axboe <axboe@kernel.dk>
-Subject: [25/26] backing-dev: ensure wakeup_timer is deleted
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [24/26] powerpc: Copy down exception vectors after feature fixups
 In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,94 +25,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 7a401a972df8e184b3d1a3fc958c0a4ddee8d312 upstream.
+commit d715e433b7ad19c02fc4becf0d5e9a59f97925de upstream.
 
-bdi_prune_sb() in bdi_unregister() attempts to removes the bdi links
-from all super_blocks and then del_timer_sync() the writeback timer.
+kdump fails because we try to execute an HV only instruction. Feature
+fixups are being applied after we copy the exception vectors down to 0
+so they miss out on any updates.
 
-However, this can race with __mark_inode_dirty(), leading to
-bdi_wakeup_thread_delayed() rearming the writeback timer on the bdi
-we're unregistering, after we've called del_timer_sync().
+We have always had this issue but it only became critical in v3.0
+when we added CFAR support (breaks POWER5) and v3.1 when we added
+POWERNV (breaks everyone).
 
-This can end up with the bdi being freed with an active timer inside it,
-as in the case of the following dump after the removal of an SD card.
-
-Fix this by redoing the del_timer_sync() in bdi_destory().
-
- ------------[ cut here ]------------
- WARNING: at /home/rabin/kernel/arm/lib/debugobjects.c:262 debug_print_object+0x9c/0xc8()
- ODEBUG: free active (active state 0) object type: timer_list hint: wakeup_timer_fn+0x0/0x180
- Modules linked in:
- Backtrace:
- [<c00109dc>] (dump_backtrace+0x0/0x110) from [<c0236e4c>] (dump_stack+0x18/0x1c)
-  r6:c02bc638 r5:00000106 r4:c79f5d18 r3:00000000
- [<c0236e34>] (dump_stack+0x0/0x1c) from [<c0025e6c>] (warn_slowpath_common+0x54/0x6c)
- [<c0025e18>] (warn_slowpath_common+0x0/0x6c) from [<c0025f28>] (warn_slowpath_fmt+0x38/0x40)
-  r8:20000013 r7:c780c6f0 r6:c031613c r5:c780c6f0 r4:c02b1b29
- r3:00000009
- [<c0025ef0>] (warn_slowpath_fmt+0x0/0x40) from [<c015eb4c>] (debug_print_object+0x9c/0xc8)
-  r3:c02b1b29 r2:c02bc662
- [<c015eab0>] (debug_print_object+0x0/0xc8) from [<c015f574>] (debug_check_no_obj_freed+0xac/0x1dc)
-  r6:c7964000 r5:00000001 r4:c7964000
- [<c015f4c8>] (debug_check_no_obj_freed+0x0/0x1dc) from [<c00a9e38>] (kmem_cache_free+0x88/0x1f8)
- [<c00a9db0>] (kmem_cache_free+0x0/0x1f8) from [<c014286c>] (blk_release_queue+0x70/0x78)
- [<c01427fc>] (blk_release_queue+0x0/0x78) from [<c015290c>] (kobject_release+0x70/0x84)
-  r5:c79641f0 r4:c796420c
- [<c015289c>] (kobject_release+0x0/0x84) from [<c0153ce4>] (kref_put+0x68/0x80)
-  r7:00000083 r6:c74083d0 r5:c015289c r4:c796420c
- [<c0153c7c>] (kref_put+0x0/0x80) from [<c01527d0>] (kobject_put+0x48/0x5c)
-  r5:c79643b4 r4:c79641f0
- [<c0152788>] (kobject_put+0x0/0x5c) from [<c013ddd8>] (blk_cleanup_queue+0x68/0x74)
-  r4:c7964000
- [<c013dd70>] (blk_cleanup_queue+0x0/0x74) from [<c01a6370>] (mmc_blk_put+0x78/0xe8)
-  r5:00000000 r4:c794c400
- [<c01a62f8>] (mmc_blk_put+0x0/0xe8) from [<c01a64b4>] (mmc_blk_release+0x24/0x38)
-  r5:c794c400 r4:c0322824
- [<c01a6490>] (mmc_blk_release+0x0/0x38) from [<c00de11c>] (__blkdev_put+0xe8/0x170)
-  r5:c78d5e00 r4:c74083c0
- [<c00de034>] (__blkdev_put+0x0/0x170) from [<c00de2c0>] (blkdev_put+0x11c/0x12c)
-  r8:c79f5f70 r7:00000001 r6:c74083d0 r5:00000083 r4:c74083c0
- r3:00000000
- [<c00de1a4>] (blkdev_put+0x0/0x12c) from [<c00b0724>] (kill_block_super+0x60/0x6c)
-  r7:c7942300 r6:c79f4000 r5:00000083 r4:c74083c0
- [<c00b06c4>] (kill_block_super+0x0/0x6c) from [<c00b0a94>] (deactivate_locked_super+0x44/0x70)
-  r6:c79f4000 r5:c031af64 r4:c794dc00 r3:c00b06c4
- [<c00b0a50>] (deactivate_locked_super+0x0/0x70) from [<c00b1358>] (deactivate_super+0x6c/0x70)
-  r5:c794dc00 r4:c794dc00
- [<c00b12ec>] (deactivate_super+0x0/0x70) from [<c00c88b0>] (mntput_no_expire+0x188/0x194)
-  r5:c794dc00 r4:c7942300
- [<c00c8728>] (mntput_no_expire+0x0/0x194) from [<c00c95e0>] (sys_umount+0x2e4/0x310)
-  r6:c7942300 r5:00000000 r4:00000000 r3:00000000
- [<c00c92fc>] (sys_umount+0x0/0x310) from [<c000d940>] (ret_fast_syscall+0x0/0x30)
- ---[ end trace e5c83c92ada51c76 ]---
-
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/backing-dev.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/powerpc/include/asm/sections.h |    2 +-
+ arch/powerpc/include/asm/synch.h    |    1 +
+ arch/powerpc/kernel/kvm.c           |    1 -
+ arch/powerpc/kernel/setup_32.c      |    2 ++
+ arch/powerpc/kernel/setup_64.c      |    1 +
+ arch/powerpc/lib/feature-fixups.c   |   23 +++++++++++++++++++++++
+ 6 files changed, 28 insertions(+), 2 deletions(-)
 
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -686,6 +686,14 @@ void bdi_destroy(struct backing_dev_info
+--- a/arch/powerpc/include/asm/sections.h
++++ b/arch/powerpc/include/asm/sections.h
+@@ -8,7 +8,7 @@
  
- 	bdi_unregister(bdi);
+ #ifdef __powerpc64__
  
-+	/*
-+	 * If bdi_unregister() had already been called earlier, the
-+	 * wakeup_timer could still be armed because bdi_prune_sb()
-+	 * can race with the bdi_wakeup_thread_delayed() calls from
-+	 * __mark_inode_dirty().
-+	 */
-+	del_timer_sync(&bdi->wb.wakeup_timer);
+-extern char _end[];
++extern char __end_interrupts[];
+ 
+ static inline int in_kernel_text(unsigned long addr)
+ {
+--- a/arch/powerpc/include/asm/synch.h
++++ b/arch/powerpc/include/asm/synch.h
+@@ -13,6 +13,7 @@
+ extern unsigned int __start___lwsync_fixup, __stop___lwsync_fixup;
+ extern void do_lwsync_fixups(unsigned long value, void *fixup_start,
+ 			     void *fixup_end);
++extern void do_final_fixups(void);
+ 
+ static inline void eieio(void)
+ {
+--- a/arch/powerpc/kernel/kvm.c
++++ b/arch/powerpc/kernel/kvm.c
+@@ -131,7 +131,6 @@ static void kvm_patch_ins_b(u32 *inst, i
+ 	/* On relocatable kernels interrupts handlers and our code
+ 	   can be in different regions, so we don't patch them */
+ 
+-	extern u32 __end_interrupts;
+ 	if ((ulong)inst < (ulong)&__end_interrupts)
+ 		return;
+ #endif
+--- a/arch/powerpc/kernel/setup_32.c
++++ b/arch/powerpc/kernel/setup_32.c
+@@ -107,6 +107,8 @@ notrace unsigned long __init early_init(
+ 			 PTRRELOC(&__start___lwsync_fixup),
+ 			 PTRRELOC(&__stop___lwsync_fixup));
+ 
++	do_final_fixups();
 +
- 	for (i = 0; i < NR_BDI_STAT_ITEMS; i++)
- 		percpu_counter_destroy(&bdi->bdi_stat[i]);
+ 	return KERNELBASE + offset;
+ }
  
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -352,6 +352,7 @@ void __init setup_system(void)
+ 			  &__start___fw_ftr_fixup, &__stop___fw_ftr_fixup);
+ 	do_lwsync_fixups(cur_cpu_spec->cpu_features,
+ 			 &__start___lwsync_fixup, &__stop___lwsync_fixup);
++	do_final_fixups();
+ 
+ 	/*
+ 	 * Unflatten the device-tree passed by prom_init or kexec
+--- a/arch/powerpc/lib/feature-fixups.c
++++ b/arch/powerpc/lib/feature-fixups.c
+@@ -18,6 +18,8 @@
+ #include <linux/init.h>
+ #include <asm/cputable.h>
+ #include <asm/code-patching.h>
++#include <asm/page.h>
++#include <asm/sections.h>
+ 
+ 
+ struct fixup_entry {
+@@ -128,6 +130,27 @@ void do_lwsync_fixups(unsigned long valu
+ 	}
+ }
+ 
++void do_final_fixups(void)
++{
++#if defined(CONFIG_PPC64) && defined(CONFIG_RELOCATABLE)
++	int *src, *dest;
++	unsigned long length;
++
++	if (PHYSICAL_START == 0)
++		return;
++
++	src = (int *)(KERNELBASE + PHYSICAL_START);
++	dest = (int *)KERNELBASE;
++	length = (__end_interrupts - _stext) / sizeof(int);
++
++	while (length--) {
++		patch_instruction(dest, *src);
++		src++;
++		dest++;
++	}
++#endif
++}
++
+ #ifdef CONFIG_FTR_FIXUP_SELFTEST
+ 
+ #define check(x)	\
 
 
