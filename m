@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab1KRWNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:13:49 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43259 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab1KRWNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:13:47 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-kernel@vger.kernel.org, Eric Moore <Eric.Moore@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Kashyap Desai <kashyap.desai@lsi.com>, DL-MPTFusionLinux@lsi.com,
-        support@lsi.com, linux-scsi@vger.kernel.org
-Cc: Chandrakala Chavva <cchavva@caviumnetworks.com>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] mptsas: Add device ID for SAS1068_820XELP.
-Date: Fri, 18 Nov 2011 14:13:42 -0800
-Message-Id: <1321654422-27617-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1756797Ab1KRWRI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:17:08 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53805 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756249Ab1KRWRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 17:17:06 -0500
+Date: Fri, 18 Nov 2011 14:15:58 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, kbuild@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 6/8] x86: Machine-readable syscall tables and scripts to
+ process them
+Message-ID: <20111118221558.GA6408@count0.beaverton.ibm.com>
+References: <1321569446-20433-1-git-send-email-hpa@linux.intel.com>
+ <1321569446-20433-7-git-send-email-hpa@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321569446-20433-7-git-send-email-hpa@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11111822-5930-0000-0000-000001E9DD54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chandrakala Chavva <cchavva@caviumnetworks.com>
+On Thu, Nov 17, 2011 at 02:37:24PM -0800, H. Peter Anvin wrote:
 
-We need this new devid to be able to use this board.
+<snip>
 
-Signed-off-by: Chandrakala Chavva <cchavva@caviumnetworks.com>
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/message/fusion/lsi/mpi_cnfg.h |    1 +
- drivers/message/fusion/mptsas.c       |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+> diff --git a/arch/x86/syscalls/syscallhdr.sh b/arch/x86/syscalls/syscallhdr.sh
+> new file mode 100644
+> index 0000000..0d473ff
+> --- /dev/null
+> +++ b/arch/x86/syscalls/syscallhdr.sh
+> @@ -0,0 +1,36 @@
+> +#!/bin/sh
+> +
+> +in="$1"
+> +out="$2"
+> +my_abis=`echo "$3" | tr ',' ' '`
 
-diff --git a/drivers/message/fusion/lsi/mpi_cnfg.h b/drivers/message/fusion/lsi/mpi_cnfg.h
-index 22027e7..d9bcfba 100644
---- a/drivers/message/fusion/lsi/mpi_cnfg.h
-+++ b/drivers/message/fusion/lsi/mpi_cnfg.h
-@@ -583,6 +583,7 @@ typedef struct _MSG_CONFIG_REPLY
- #define MPI_MANUFACTPAGE_DEVID_SAS1066E             (0x005A)
- #define MPI_MANUFACTPAGE_DEVID_SAS1068              (0x0054)
- #define MPI_MANUFACTPAGE_DEVID_SAS1068E             (0x0058)
-+#define MPI_MANUFACTPAGE_DEVID_SAS1068_820XELP      (0x0059)
- #define MPI_MANUFACTPAGE_DEVID_SAS1078              (0x0062)
- 
- 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 9d95042..551262e 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -5376,6 +5376,8 @@ static struct pci_device_id mptsas_pci_table[] = {
- 		PCI_ANY_ID, PCI_ANY_ID },
- 	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1078,
- 		PCI_ANY_ID, PCI_ANY_ID },
-+	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1068_820XELP,
-+		PCI_ANY_ID, PCI_ANY_ID },
- 	{0}	/* Terminating entry */
- };
- MODULE_DEVICE_TABLE(pci, mptsas_pci_table);
--- 
-1.7.2.3
+I think you can remove in_list() and just use grep to get your
+selected abis:
+
+my_abis=`echo "($3)" | tr ',' '|'`
+
+> +prefix="$4"
+> +offset="$5"
+> +
+> +fileguard=_ASM_X86_`basename "$out" | sed \
+> +    -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' \
+> +    -e 's/[^A-Z0-9_]/_/g' -e 's/__/_/g'`
+> +
+> +in_list () {
+> +    local x
+> +    for x in $1; do
+> +	if [ x"$x" = x"$2" ]; then
+> +	    return 0
+> +	fi
+> +    done
+> +    return 1
+> +}
+> +
+> +grep '^[0-9]' "$in" | sort -n | (
+
+grep "^[0-9]$my_abis" "$in" | sort -n | (
+
+> +    echo "#ifndef ${fileguard}"
+> +    echo "#define ${fileguard} 1"
+> +    echo ""
+> +
+> +    while read nr abi name entry ; do
+> +	if in_list "$my_abis" "$abi"; then
+> +	    echo "#define __NR_${prefix}${name}" $((nr+offset))
+> +        fi
+
+nanoscale nit: whitespace
+
+> +    done
+
+And finally this becomes:
+
+while read nr abi name entry ; do
+    echo "#define __NR_${prefix}${name}" $((nr+offset))
+done
 
