@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1KRTtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:49:07 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51557 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113Ab1KRTtE (ORCPT
+	id S1755768Ab1KRTvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:51:33 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:54358 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab1KRTvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:49:04 -0500
-X-Sasl-enc: VrwJGe7TK+GRSjAkO339rDDOVc1cGSuWUkZGML1twYmV 1321645744
-Date: Fri, 18 Nov 2011 11:48:43 -0800
-From: Greg KH <greg@kroah.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        balbi@ti.com, broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH V2 2/2] usb: dwc3: use debugfs_print_regs32()
-Message-ID: <20111118194843.GA17915@kroah.com>
-References: <20111118002049.GA24806@mail.gnudd.com>
- <20111118135143.GA1101@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111118135143.GA1101@mail.gnudd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Nov 2011 14:51:32 -0500
+Date: Fri, 18 Nov 2011 14:51:07 -0500 (EST)
+Message-Id: <20111118.145107.1788849543768712319.davem@davemloft.net>
+To: glommer@parallels.com
+Cc: jbottomley@parallels.com, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com, linux-mm@kvack.org,
+        devel@openvz.org, kirill@shutemov.name, gthelen@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [Devel] Re: [PATCH v5 00/10] per-cgroup tcp memory pressure
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4EC6B457.4010502@parallels.com>
+References: <1321381632.3021.57.camel@dabdike.int.hansenpartnership.com>
+	<20111117.163501.1963137869848419475.davem@davemloft.net>
+	<4EC6B457.4010502@parallels.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 18 Nov 2011 11:51:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 02:51:43PM +0100, Alessandro Rubini wrote:
-> This a use example of the regs32 utilities in debugfs, although
-> this fuse use ":" as separator between name and value, and debugs
-> uses "=" (as it looked to me a more common practice).
+From: Glauber Costa <glommer@parallels.com>
+Date: Fri, 18 Nov 2011 17:39:03 -0200
+
+> On 11/17/2011 07:35 PM, David Miller wrote:
+>> From: James Bottomley<jbottomley@parallels.com>
+>> Date: Tue, 15 Nov 2011 18:27:12 +0000
+>>
+>>> Ping on this, please.  We're blocked on this patch set until we can
+>>> get
+>>> an ack that the approach is acceptable to network people.
+>>
+>> __sk_mem_schedule is now more expensive, because instead of
+>> short-circuiting
+>> the majority of the function's logic when "allocated<=
+>> prot->sysctl_mem[0]"
+>> and immediately returning 1, the whole rest of the function is run.
 > 
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
+> Not the whole rest of the function. Rather, just the other two
+> tests. But that's the behavior we need since if your parent is on
+> pressure, you should be as well. How do you feel if we'd also provide
+> two versions for this:
+> 1) non-cgroup, try to return 1 as fast as we can
+> 2) cgroup, also check your parents.
 
-I've applied this, but it causes the following complier warnings to be
-spit out:
+Fair enough.
 
-drivers/usb/dwc3/debugfs.c: In function ‘dwc3_regdump_show’:
-drivers/usb/dwc3/debugfs.c:384:9: warning: passing argument 2 of ‘debugfs_print_regs32’ discards ‘const’ qualifier from pointer target type [enabled by default]
-include/linux/debugfs.h:93:5: note: expected ‘struct debugfs_reg32 *’ but argument is of type ‘const struct debugfs_reg32 *’
-drivers/usb/dwc3/debugfs.c:380:8: warning: unused variable ‘i’ [-Wunused-variable]
+> How about we make the jump_label only used for sockets (which is basic
+> what we have now, just need a clear name to indicate that), and then
+> enable it not when the first non-root cgroup is created, but when the
+> first one sets the limit to something different than unlimited?
+> 
+> Of course to that point, we'd be accounting only to the root
+> structures,
+> but I guess this is not a big deal.
 
-Alessandro, care to send me a follow-on patch to fix this up?
+This sounds good for now.
 
-thanks,
+>> TCP specific stuff in mm/memcontrol.c, at best that's not nice at all.
+> 
+> How crucial is that?
 
-greg k-h
+It's a big deal.  We've been working for years to yank protocol specific
+things even out of net/core/*.c, it simply doesn't belong there.
+
+I'd even be happier if you had to create a net/ipv4/tcp_memcg.c and
+include/net/tcp_memcg.h
+
+> Thing is that as far as I am concerned, all the
+> memcg people
+ ...
+
+What the memcg people want is entirely their problem, especially if it
+involves crapping up non-networking files with protocol specific junk.
+
