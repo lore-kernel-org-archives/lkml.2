@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab1KRQ2D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:28:03 -0500
-Received: from mexforward.lss.emc.com ([128.222.32.20]:14673 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab1KRQ2B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:28:01 -0500
-From: <peter.staubach@emc.com>
-To: <john@Calva.COM>, <Trond.Myklebust@netapp.com>
-CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Nov 2011 11:27:37 -0500
-Subject: RE: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
- errors
-Thread-Topic: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
- errors
-Thread-Index: AcymDhqB+34irIafThO7joAm3JdKjgAALFTA
-Message-ID: <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
-References: <4EC685D1.2000900@Calva.COM>
-In-Reply-To: <4EC685D1.2000900@Calva.COM>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-EMM-MHVC: 1
+	id S1758109Ab1KRQco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:32:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab1KRQcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 11:32:42 -0500
+Message-ID: <1321633956.26410.126.camel@bling.home>
+Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
+ iommu groups
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, dwmw2@infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 18 Nov 2011 09:32:36 -0700
+In-Reply-To: <20111118152710.GA5098@amd.com>
+References: <20111117170800.3125.84150.stgit@bling.home>
+	 <20111118104651.GJ5627@amd.com> <1321628190.26410.63.camel@bling.home>
+	 <20111118152710.GA5098@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given that the poor user will be sitting, with almost nothing working because of the expired ticket, how does the user figure out what is going on or how does the admin help him?
+On Fri, 2011-11-18 at 16:27 +0100, Joerg Roedel wrote:
+> On Fri, Nov 18, 2011 at 07:56:30AM -0700, Alex Williamson wrote:
+> > As you say, the interface is to tell userspace what devices the IOMMU
+> > can safely distinguish between.  On x86, the IOMMU cannot distinguish
+> > DMA to the interrupt region between devices without interrupt remapping.
+> > Therefore, to only expose devices we can safely distinguish between, we
+> > shouldn't expose any devices by default if we don't provide this
+> > isolation.  The interrupt remapping capability of the IOMMU isn't
+> > exposed to userspace, nor should userspace need to make the leap in
+> > understanding how MSIs are generated on a specific platform and whether
+> > interrupt remapping is required to provide isolation.
+> 
+> But the isolation domains are different. The iommu-group interface is
+> about device isolation and interrupt remapping is about DMA address
+> space isolation (MSI range vs. the rest). The iommu can still
+> distinguish between devices when it can not distinguish between DMA and
+> MSI interrupts.
 
-Some guidance seems like a good thing.  Is there really a problem with these messages being printed to the log?
+I guess I fail to see the difference.  We group devices behind certain
+bridges together because we can't distinguish DMA from those devices.
+MSI presents an address window across all devices for which we
+potentially can't distinguish between any of them.  If instead of MSI
+the window was VGA and the IOMMU could differentiate all devices, so
+long as they don't do DMA to 0xa0000-0xc0000, what would we do?  I think
+we'd have to exclude such an IOMMU from providing grouping information.
 
-	Thanx...
+> So what you want to do belongs to the VFIO driver or (as it is today)
+> into the KVM device assignment code and not into the iommu-group
+> interface.
 
-		ps
+The trouble is that interrupt remapping closing a hole in DMA isolation
+is a platform issue.  Is vfio supposed to know that on architecture foo
+we don't have such a hole and we don't need to look for interrupt
+remapping.  Or maybe that platform bar solved it differently and we need
+to instead check flag MSI_OK.  Current KVM doesn't care about this
+because it only does device assignment on x86.
 
+Another way to solve this might be to expose a more generic capability
+for the IOMMU.  Instead of exposing "interrupt remapping support" it
+could expose "full DMA isolation", then amd_iommu/intel-iommu could set
+it based on interrupt remapping capability.  The trouble is that then we
+expose grouping information for devices, but can't figure out the domain
+capabilities until we actually create a domain and attach those devices,
+which is kind of a crappy experience for a vfio user to find out they
+don't actually get to use those device.
 
------Original Message-----
-From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of John Hughes
-Sent: Friday, November 18, 2011 11:21 AM
-To: Trond Myklebust
-Cc: linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
+Instead, it seems like the device-group interface should only provide
+grouping information for devices with full DMA isolation, and hide the
+rest.  Then we know that if iommu_device_group() returns an error, we
+can't safely use that device.  Thanks,
 
-Don't write anything to the log if a user Kerberos ticket expires or is missing,
-these are not kernel problems.
-
-Signed-off-by: John Hughes<john@calva.com>
-
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index 39914be..18897cb 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1339,14 +1339,6 @@ static void nfs4_state_start_reclaim_nograce(struct nfs_client *clp)
-  	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
-  }
-
--static void nfs4_warn_keyexpired(const char *s)
--{
--	printk_ratelimited(KERN_WARNING "Error: state manager"
--			" encountered RPCSEC_GSS session"
--			" expired against NFSv4 server %s.\n",
--			s);
--}
--
-  static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
-  {
-  	switch (error) {
-@@ -1378,7 +1370,6 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
-  			return 0;
-  		case -EKEYEXPIRED:
-  			/* Nothing we can do */
--			nfs4_warn_keyexpired(clp->cl_hostname);
-  			return 0;
-  	}
-  	return error;
-@@ -1620,7 +1611,6 @@ static void nfs4_set_lease_expired(struct nfs_client *clp, int status)
-  		break;
-
-  	case -EKEYEXPIRED:
--		nfs4_warn_keyexpired(clp->cl_hostname);
-  	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
-  				 * in nfs4_exchange_id */
-  	default:
-@@ -1728,8 +1718,9 @@ static void nfs4_state_manager(struct nfs_client *clp)
-  	} while (atomic_read(&clp->cl_count)>  1);
-  	return;
-  out_error:
--	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
--			" with error %d\n", clp->cl_hostname, -status);
-+	if (status != -EACCESS)
-+		printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-+				" with error %d\n", clp->cl_hostname, -status);
-  	nfs4_end_drain_session(clp);
-  	nfs4_clear_state_manager_bit(clp);
-  }
-
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Alex
 
