@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab1KRSAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 13:00:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab1KRSAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 13:00:08 -0500
-Date: Fri, 18 Nov 2011 18:59:23 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111118175923.GD3579@redhat.com>
-References: <20111110151211.523fa185.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
- <20111111101414.GJ3083@suse.de>
- <20111114154408.10de1bc7.akpm@linux-foundation.org>
- <20111115132513.GF27150@suse.de>
- <alpine.DEB.2.00.1111151303230.23579@chino.kir.corp.google.com>
- <20111115234845.GK27150@suse.de>
- <alpine.DEB.2.00.1111151554190.3781@chino.kir.corp.google.com>
- <20111116041350.GA3306@redhat.com>
- <20111116133056.GC3306@redhat.com>
+	id S1753415Ab1KRSFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 13:05:20 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:47450 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab1KRSFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 13:05:18 -0500
+Date: Fri, 18 Nov 2011 13:05:00 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: annie li <annie.li@oracle.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Subject: Re: [Xen-devel] Re: [PATCH 2/3] xen/granttable: Grant tables V2
+ implementation
+Message-ID: <20111118180500.GA19469@phenom.dumpdata.com>
+References: <4EC3B62F.6080702@oracle.com>
+ <1321451372-13596-1-git-send-email-annie.li@oracle.com>
+ <4EC62FE5.2080608@oracle.com>
+ <1321614166.3664.311.camel@zakaz.uk.xensource.com>
+ <20111118135221.GC12433@phenom.dumpdata.com>
+ <1321624845.3664.354.camel@zakaz.uk.xensource.com>
+ <4EC6837F.1050201@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111116133056.GC3306@redhat.com>
+In-Reply-To: <4EC6837F.1050201@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4EC69E59.011E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 02:30:56PM +0100, Andrea Arcangeli wrote:
-> On Wed, Nov 16, 2011 at 05:13:50AM +0100, Andrea Arcangeli wrote:
-> > After checking my current thp vmstat I think Andrew was right and we
-> > backed out for a good reason before. I'm getting significantly worse
-> > success rate, not sure why it was a small reduction in success rate
-> > but hey I cannot exclude I may have broke something with some other
-> > patch. I've been running it together with a couple more changes. If
-> > it's this change that reduced the success rate, I'm afraid going
-> > always async is not ok.
+> So we have two candidates:
+> xen_raw_printk + panic
+> panic + earlyprintk=xen
 > 
-> I wonder if the high failure rate when shutting off "sync compaction"
-> and forcing only "async compaction" for THP (your patch queued in -mm)
-> is also because of ISOLATE_CLEAN being set in compaction from commit
-> 39deaf8. ISOLATE_CLEAN skipping PageDirty means all tmpfs/anon pages
+> If panic does work with earlyprintk, then the latter one is better.
+> Otherwise, there will be duplicated string printed out with
+> 'earlyprintk=xen'.
 
-I think I tracked down the source of the thp allocation
-regression. They're commit e0887c19b2daa140f20ca8104bdc5740f39dbb86
-and e0c23279c9f800c403f37511484d9014ac83adec. They're also wrong
-because compaction_suitable doesn't check that there is enough free
-memory in the number of "movable" pageblocks.
+The idea is just to have one function. Whichever prints the
+string and panics the machine. If 'panic' does this properly
+(and properly meaning it actually prints data when using
+the earlyprintk=xen as well as console=hvc0) printout system
+the we cuold just use 'panic' and not worry about it.
 
-I'm going to test this not sure if it helps. But the more free memory
-the more likely compaction succeeds, so there's still a risk we're
-reducing the compaction success.
 
-With the two commits above reverted my compaction success rate returns
-near 100%, with the two commits above applied it goes to <50%... Now
-we'll see what happens with the below patch.
+But if it does not, then we (and by we I mean you) should 
+provide a variant of panic() that prints the data properly using the 
+earlprintk mechanism. Preferrabily to make it generic.
 
-===
-From: Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH] compaction: correct reverse check for compaction_deferred
-
-Otherwise when compaction is deferred, reclaim stops to, leading to
-high failure rate of high order allocations.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/vmscan.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f7f7677..ce745f0 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2144,8 +2144,8 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				 * allocations.
- 				 */
- 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
--					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
-+				    (compaction_suitable(zone, sc->order) &&
-+				     !compaction_deferred(zone))) {
- 					should_abort_reclaim = true;
- 					continue;
- 				}
