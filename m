@@ -1,167 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab1KRHCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 02:02:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58817 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab1KRHCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 02:02:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,530,1315206000"; 
-   d="scan'208";a="76495099"
-Subject: [RFC]numa: improve I/O performance by optimizing numa interleave
- allocation
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
-        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
-        lee.schermerhorn@hp.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 15:12:12 +0800
-Message-ID: <1321600332.22361.309.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755867Ab1KRHIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 02:08:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41411 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab1KRHIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 02:08:46 -0500
+Date: Fri, 18 Nov 2011 15:08:35 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
+ memcg_check_events()
+Message-ID: <20111118070835.GA24650@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LFD.2.02.1111150050590.4902@ionos>
+ <20111115084059.GA23250@zhy>
+ <20111116091653.GA8692@zhy>
+ <1321452758.4181.18.camel@frodo>
+ <alpine.LFD.2.02.1111161801270.4902@ionos>
+ <20111117030332.GA14492@zhy>
+ <alpine.LFD.2.02.1111171125020.4902@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1111171125020.4902@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If mem plicy is interleaves, we will allocated pages from nodes in a round
-robin way. This surely can do interleave fairly, but not optimal.
+On Thu, Nov 17, 2011 at 11:25:56AM +0100, Thomas Gleixner wrote:
+> On Thu, 17 Nov 2011, Yong Zhang wrote:
+> 
+> > On Wed, Nov 16, 2011 at 06:02:42PM +0100, Thomas Gleixner wrote:
+> > > On Wed, 16 Nov 2011, Steven Rostedt wrote:
+> > > > On Wed, 2011-11-16 at 17:16 +0800, Yong Zhang wrote:
+> > > > > Looking at commit 4799401f [memcg: Fix race condition in
+> > > > > memcg_check_events() with this_cpu usage], we just want
+> > > > > to disable migration. So use the right API in -rt. This
+> > > > > will cure below warning.
+> > > > No this won't work. Not even for -rt. If we disable migration but not
+> > > > preemption, then two tasks can take this path. And the checks in
+> > > > __memcg_event_check() will be corrupted because nothing is protecting
+> > > > the updates from two tasks going into the same path.
+> > > > 
+> > > > Perhaps a local_lock would work.
+> > > 
+> > > Yes, that's the only sensible option for now. Untested patch below.
+> > 
+> > Works for me.
+> 
+> Johannes came up with a different solution. Could you please give it a try?
 
-Say the pages will be used for I/O later. Interleave allocation for two pages
-are allocated from two nodes, so the pages are not physically continuous. Later
-each page needs one segment for DMA scatter-gathering. But maxium hardware
-segment number is limited. The non-continuous pages will use up maxium
-hardware segment number soon and we can't merge I/O to bigger DMA. Allocating
-pages from one node hasn't such issue. The memory allocator pcp list makes
-we can get physically continuous pages in several alloc quite likely.
+Works too :)
 
-So can we make both interleave fairness and continuous allocation happy?
-Simplily we can adjust the round robin algorithm. We switch to another node
-after several (N) allocation happens. If N isn't too big, we can still get
-fair allocation. And we get N continuous pages. I use N=8 in below patch.
-I thought 8 isn't too big for modern NUMA machine. Applications which use
-interleave are unlikely run short time, so I thought fairness still works.
+Thanks,
+Yong
 
-Run a sequential read workload which accesses disk sdc - sdf,
-iostat -x -m 5 shows:
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> ------------->
+> Subject: [patch] mm: memcg: shorten preempt-disabled section around event checks
+> 
+> Only the ratelimit checks themselves have to run with preemption
+> disabled, the resulting actions - checking for usage thresholds,
+> updating the soft limit tree - can and should run with preemption
+> enabled.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> ---
+>  mm/memcontrol.c |   73 ++++++++++++++++++++++++++----------------------------
+>  1 files changed, 35 insertions(+), 38 deletions(-)
+> 
+> Thomas, HTH and it is probably interesting for upstream as well.
+> Unfortunately, I'm in the middle of moving right now, so this is
+> untested except for compiling.
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 6aff93c..8e62d3e 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -683,37 +683,32 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
+>  	return total;
+>  }
+>  
+> -static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
+> +static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+> +				       enum mem_cgroup_events_target target)
+>  {
+>  	unsigned long val, next;
+>  
+>  	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+>  	next = __this_cpu_read(memcg->stat->targets[target]);
+>  	/* from time_after() in jiffies.h */
+> -	return ((long)next - (long)val < 0);
+> -}
+> -
+> -static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
+> -{
+> -	unsigned long val, next;
+> -
+> -	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+> -
+> -	switch (target) {
+> -	case MEM_CGROUP_TARGET_THRESH:
+> -		next = val + THRESHOLDS_EVENTS_TARGET;
+> -		break;
+> -	case MEM_CGROUP_TARGET_SOFTLIMIT:
+> -		next = val + SOFTLIMIT_EVENTS_TARGET;
+> -		break;
+> -	case MEM_CGROUP_TARGET_NUMAINFO:
+> -		next = val + NUMAINFO_EVENTS_TARGET;
+> -		break;
+> -	default:
+> -		return;
+> +	if ((long)next - (long)val < 0) {
+> +		switch (target) {
+> +		case MEM_CGROUP_TARGET_THRESH:
+> +			next = val + THRESHOLDS_EVENTS_TARGET;
+> +			break;
+> +		case MEM_CGROUP_TARGET_SOFTLIMIT:
+> +			next = val + SOFTLIMIT_EVENTS_TARGET;
+> +			break;
+> +		case MEM_CGROUP_TARGET_NUMAINFO:
+> +			next = val + NUMAINFO_EVENTS_TARGET;
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +		__this_cpu_write(memcg->stat->targets[target], next);
+> +		return true;
+>  	}
+> -
+> -	__this_cpu_write(memcg->stat->targets[target], next);
+> +	return false;
+>  }
+>  
+>  /*
+> @@ -724,25 +719,27 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+>  {
+>  	preempt_disable();
+>  	/* threshold event is triggered in finer grain than soft limit */
+> -	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
+> +	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_THRESH))) {
+> +		bool do_softlimit, do_numainfo;
+> +
+> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_SOFTLIMIT);
+> +#if MAX_NUMNODES > 1
+> +		do_numainfo = mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_NUMAINFO);
+> +#endif
+> +		preempt_enable();
+> +
+>  		mem_cgroup_threshold(memcg);
+> -		__mem_cgroup_target_update(memcg, MEM_CGROUP_TARGET_THRESH);
+> -		if (unlikely(__memcg_event_check(memcg,
+> -			     MEM_CGROUP_TARGET_SOFTLIMIT))) {
+> +		if (unlikely(do_softlimit))
+>  			mem_cgroup_update_tree(memcg, page);
+> -			__mem_cgroup_target_update(memcg,
+> -						   MEM_CGROUP_TARGET_SOFTLIMIT);
+> -		}
+>  #if MAX_NUMNODES > 1
+> -		if (unlikely(__memcg_event_check(memcg,
+> -			MEM_CGROUP_TARGET_NUMAINFO))) {
+> +		if (unlikely(do_numainfo))
+>  			atomic_inc(&memcg->numainfo_events);
+> -			__mem_cgroup_target_update(memcg,
+> -				MEM_CGROUP_TARGET_NUMAINFO);
+> -		}
+>  #endif
+> -	}
+> -	preempt_enable();
+> +	} else
+> +		preempt_enable();
+>  }
+>  
+>  static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+> -- 
+> 1.7.6.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-without numactl --interleave=0,1:
-Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
-sdc              13.40     0.00  259.00    0.00    67.05     0.00   530.19     5.00   19.38   3.86 100.00
-sdd              13.00     0.00  249.00    0.00    64.95     0.00   534.21     5.05   19.73   4.02 100.00
-sde              13.60     0.00  258.60    0.00    67.40     0.00   533.78     4.96   18.98   3.87 100.00
-sdf              13.00     0.00  261.60    0.00    67.50     0.00   528.44     5.24   19.77   3.82 100.00
-
-with numactl --interleave=0,1:
-sdc               6.80     0.00  419.60    0.00    64.90     0.00   316.77    14.17   34.04   2.38 100.00
-sdd               6.00     0.00  423.40    0.00    65.58     0.00   317.23    17.33   41.14   2.36 100.00
-sde               5.60     0.00  419.60    0.00    64.90     0.00   316.77    17.29   40.94   2.38 100.00
-sdf               5.20     0.00  417.80    0.00    64.17     0.00   314.55    16.69   39.42   2.39 100.00
-
-with numactl --interleave=0,1 and below patch:
-sdc              13.00     0.00  261.20    0.00    68.20     0.00   534.74     5.05   19.19   3.83 100.00
-sde              13.40     0.00  259.00    0.00    67.85     0.00   536.52     4.85   18.80   3.86 100.00
-sdf              13.00     0.00  260.60    0.00    68.20     0.00   535.97     4.85   18.61   3.84 100.00
-sdd              13.20     0.00  251.60    0.00    66.00     0.00   537.23     4.95   19.45   3.97 100.00
-
-The avgrq-sz is increased a lot. performance boost a little too.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
----
- include/linux/sched.h |    2 +-
- mm/mempolicy.c        |   33 +++++++++++++++++++++++----------
- 2 files changed, 24 insertions(+), 11 deletions(-)
-
-Index: linux/include/linux/sched.h
-===================================================================
---- linux.orig/include/linux/sched.h	2011-11-18 13:38:50.000000000 +0800
-+++ linux/include/linux/sched.h	2011-11-18 13:42:41.000000000 +0800
-@@ -1506,7 +1506,7 @@ struct task_struct {
- #endif
- #ifdef CONFIG_NUMA
- 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
--	short il_next;
-+	int il_alloc_cnt;
- 	short pref_node_fork;
- #endif
- 	struct rcu_head rcu;
-Index: linux/mm/mempolicy.c
-===================================================================
---- linux.orig/mm/mempolicy.c	2011-11-18 13:38:50.000000000 +0800
-+++ linux/mm/mempolicy.c	2011-11-18 13:44:57.000000000 +0800
-@@ -97,6 +97,10 @@
- 
- #include "internal.h"
- 
-+#define IL_ALLOC_STRIP (8)
-+#define IL_CNT_TO_NODE(il_alloc_cnt) ((il_alloc_cnt) / IL_ALLOC_STRIP)
-+#define IL_NODE_TO_CNT(node) ((node) * IL_ALLOC_STRIP)
-+
- /* Internal flags */
- #define MPOL_MF_DISCONTIG_OK (MPOL_MF_INTERNAL << 0)	/* Skip checks for continuous vmas */
- #define MPOL_MF_INVERT (MPOL_MF_INTERNAL << 1)		/* Invert check for nodemask */
-@@ -335,12 +339,15 @@ static void mpol_rebind_nodemask(struct
- 	else
- 		BUG();
- 
--	if (!node_isset(current->il_next, tmp)) {
--		current->il_next = next_node(current->il_next, tmp);
--		if (current->il_next >= MAX_NUMNODES)
--			current->il_next = first_node(tmp);
--		if (current->il_next >= MAX_NUMNODES)
--			current->il_next = numa_node_id();
-+	if (!node_isset(IL_CNT_TO_NODE(current->il_alloc_cnt), tmp)) {
-+		int newnode;
-+
-+		newnode = next_node(IL_CNT_TO_NODE(current->il_alloc_cnt), tmp);
-+		if (newnode >= MAX_NUMNODES)
-+			newnode = first_node(tmp);
-+		if (newnode >= MAX_NUMNODES)
-+			newnode = numa_node_id();
-+		current->il_alloc_cnt = IL_NODE_TO_CNT(newnode);
- 	}
- }
- 
-@@ -744,7 +751,8 @@ static long do_set_mempolicy(unsigned sh
- 	mpol_set_task_struct_flag();
- 	if (new && new->mode == MPOL_INTERLEAVE &&
- 	    nodes_weight(new->v.nodes))
--		current->il_next = first_node(new->v.nodes);
-+		current->il_alloc_cnt =
-+			IL_NODE_TO_CNT(first_node(new->v.nodes));
- 	task_unlock(current);
- 	if (mm)
- 		up_write(&mm->mmap_sem);
-@@ -849,7 +857,7 @@ static long do_get_mempolicy(int *policy
- 			*policy = err;
- 		} else if (pol == current->mempolicy &&
- 				pol->mode == MPOL_INTERLEAVE) {
--			*policy = current->il_next;
-+			*policy = IL_CNT_TO_NODE(current->il_alloc_cnt);
- 		} else {
- 			err = -EINVAL;
- 			goto out;
-@@ -1553,12 +1561,17 @@ static unsigned interleave_nodes(struct
- 	unsigned nid, next;
- 	struct task_struct *me = current;
- 
--	nid = me->il_next;
-+	if (((me->il_alloc_cnt + 1) % IL_ALLOC_STRIP) != 0) {
-+		me->il_alloc_cnt++;
-+		return IL_CNT_TO_NODE(me->il_alloc_cnt);
-+	}
-+
-+	nid = IL_CNT_TO_NODE(me->il_alloc_cnt);
- 	next = next_node(nid, policy->v.nodes);
- 	if (next >= MAX_NUMNODES)
- 		next = first_node(policy->v.nodes);
- 	if (next < MAX_NUMNODES)
--		me->il_next = next;
-+		me->il_alloc_cnt = IL_NODE_TO_CNT(next);
- 	return nid;
- }
- 
-
-
+-- 
+Only stand for myself
