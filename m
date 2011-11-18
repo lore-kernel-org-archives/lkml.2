@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab1KRPhL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:37:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44455 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758029Ab1KRPhK convert rfc822-to-8bit (ORCPT
+	id S1758086Ab1KRPjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:39:00 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39022 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757645Ab1KRPi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:37:10 -0500
-Subject: Re: [patch 3/6] sched: use rq->avg_event to resurrect nohz
- ratelimiting
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Date: Fri, 18 Nov 2011 16:36:59 +0100
-In-Reply-To: <1321629562.7080.17.camel@marge.simson.net>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1321629562.7080.17.camel@marge.simson.net>
+	Fri, 18 Nov 2011 10:38:59 -0500
+X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=jse97-sfE1UA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=7EmI2jxxPtW0Z_KlsfEA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 2/3] ktest: check parent options for a repeated test
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1321616131-21352-2-git-send-email-rabin@rab.in>
+References: <1321616131-21352-1-git-send-email-rabin@rab.in>
+	 <1321616131-21352-2-git-send-email-rabin@rab.in>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1321630619.2197.16.camel@twins>
+Date: Fri, 18 Nov 2011 10:38:57 -0500
+Message-ID: <1321630737.3533.49.camel@frodo>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:19 +0100, Mike Galbraith wrote:
-> Entering nohz at high frequency eats cycles, ratelimit it
-> just as we do idle_balance(), and for the same reason.
+On Fri, 2011-11-18 at 17:05 +0530, Rabin Vincent wrote:
+> Let's say we have "OUTPUT_DIR = build/${TEST_NAME}", and we're iterating
+> a test.  In the second iteration of a test, the TEST_NAME of the test
+> we're repeating is not used.  Instead, ${TEST_NAME} appears literally:
 > 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
+>    touch /home/rabin/kernel/test/build/${TEST_NAME}/.config ... SUCCESS
+> 
+> Fix this by making __eval_option() check the parent test options
+> for a repeated test.
 
-Arjan, can we do something smart with the idle governor which already
-guestimates the idle duration for us?
+Nice catch! I missed this. I'll give it a test run, and if all is fine,
+I'll pull it in. Thanks.
 
+This looks like a bug fix, so I may even push this to Linus now.
+
+Thanks!
+
+-- Steve
+
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 > ---
->  include/linux/sched.h    |    2 ++
->  kernel/sched.c           |    7 +++++++
->  kernel/time/tick-sched.c |    2 +-
->  3 files changed, 10 insertions(+), 1 deletion(-)
+>  tools/testing/ktest/ktest.pl |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
 > 
-> Index: linux-3.2.git/include/linux/sched.h
-> ===================================================================
-> --- linux-3.2.git.orig/include/linux/sched.h
-> +++ linux-3.2.git/include/linux/sched.h
-> @@ -1979,8 +1979,10 @@ static inline void idle_task_exit(void)
->  
->  #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
->  extern void wake_up_idle_cpu(int cpu);
-> +extern int sched_needs_cpu(int cpu);
->  #else
->  static inline void wake_up_idle_cpu(int cpu) { }
-> +static inline void sched_needs_cpu(int cpu) { }
->  #endif
->  
->  extern unsigned int sysctl_sched_latency;
-> Index: linux-3.2.git/kernel/sched.c
-> ===================================================================
-> --- linux-3.2.git.orig/kernel/sched.c
-> +++ linux-3.2.git/kernel/sched.c
-> @@ -1419,6 +1419,13 @@ static inline bool got_nohz_idle_kick(vo
->  	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
->  }
->  
-> +#ifdef CONFIG_SMP
-> +int sched_needs_cpu(int cpu)
-> +{
-> +	return cpu_rq(cpu)->avg_event < sysctl_sched_migration_cost;
-> +}
-> +#endif
+> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+> index 3185e0a..e93c21c 100755
+> --- a/tools/testing/ktest/ktest.pl
+> +++ b/tools/testing/ktest/ktest.pl
+> @@ -748,6 +748,18 @@ sub __eval_option {
+>      # Add space to evaluate the character before $
+>      $option = " $option";
+>      my $retval = "";
+> +    my $repeated = 0;
+> +    my $parent = 0;
 > +
->  #else /* CONFIG_NO_HZ */
+> +    foreach my $test (keys %repeat_tests) {
+> +	if ($i >= $test &&
+> +	    $i < $test + $repeat_tests{$test}) {
+> +
+> +	    $repeated = 1;
+> +	    $parent = $test;
+> +	    last;
+> +	}
+> +    }
 >  
->  static inline bool got_nohz_idle_kick(void)
-> Index: linux-3.2.git/kernel/time/tick-sched.c
-> ===================================================================
-> --- linux-3.2.git.orig/kernel/time/tick-sched.c
-> +++ linux-3.2.git/kernel/time/tick-sched.c
-> @@ -352,7 +352,7 @@ void tick_nohz_stop_sched_tick(int inidl
->  	} while (read_seqretry(&xtime_lock, seq));
+>      while ($option =~ /(.*?[^\\])\$\{(.*?)\}(.*)/) {
+>  	my $start = $1;
+> @@ -761,10 +773,14 @@ sub __eval_option {
+>  	# otherwise see if the default OPT (without [$i]) exists.
 >  
->  	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
-> -	    arch_needs_cpu(cpu)) {
-> +	    arch_needs_cpu(cpu) || sched_needs_cpu(cpu)) {
->  		next_jiffies = last_jiffies + 1;
->  		delta_jiffies = 1;
->  	} else {
-> 
-> 
+>  	my $o = "$var\[$i\]";
+> +	my $parento = "$var\[$parent\]";
+>  
+>  	if (defined($opt{$o})) {
+>  	    $o = $opt{$o};
+>  	    $retval = "$retval$o";
+> +	} elsif ($repeated && defined($opt{$parento})) {
+> +	    $o = $opt{$parento};
+> +	    $retval = "$retval$o";
+>  	} elsif (defined($opt{$var})) {
+>  	    $o = $opt{$var};
+>  	    $retval = "$retval$o";
+
 
