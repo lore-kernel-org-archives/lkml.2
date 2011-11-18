@@ -1,183 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab1KRB1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 20:27:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43567 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab1KRB1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 20:27:04 -0500
-X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ROpngT_7MxMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=QyXUC8HyAAAA:8 a=lwmcjWK_4c6Z4KxQNRMA:9 a=bAmGZfYICvn2uyURma8A:7 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: [BUG] e1000: possible deadlock scenario caught by lockdep
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Nov 2011 20:27:00 -0500
-Message-ID: <1321579620.3533.29.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1755681Ab1KRBlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 20:41:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43703 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab1KRBlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 20:41:12 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH 4/9] ACPI, APEI, Resolve false conflict between ACPI NVS and APEI
+Date: Fri, 18 Nov 2011 02:41:08 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+References: <1320719974-3598-1-git-send-email-ying.huang@intel.com> <1320719974-3598-5-git-send-email-ying.huang@intel.com>
+In-Reply-To: <1320719974-3598-5-git-send-email-ying.huang@intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111180241.09150.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hit the following lockdep splat:
+Hi,
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.2.0-rc2-test+ #14
--------------------------------------------------------
-reboot/2316 is trying to acquire lock:
- ((&(&adapter->watchdog_task)->work)){+.+...}, at: [<ffffffff81069553>] wait_on_work+0x0/0xac
+On Tuesday 08 November 2011 03:39:29 Huang Ying wrote:
+> Some firmware will access memory in ACPI NVS region via APEI.  That
+> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
+> region.  The original resource conflict checking in APEI code will
+> check memory/ioport accessed by APEI via general resource management
+> mech.  But ACPI NVS region is marked as busy already, so that the
+> false resource conflict will prevent APEI ERST/EINJ to work.
+> 
+> To fix this, this patch excludes ACPI NVS regions when APEI components
+> request resources.  So that they will not conflict with ACPI NVS
+> regions.
 
-but task is already holding lock:
- (&adapter->mutex){+.+...}, at: [<ffffffff81359b1d>] __e1000_shutdown+0x56/0x1f5
+find below an approach which still allows requesting the resources,
+similar to Yinghai's patch.
+But instead of allowing everybody to access NVS memory, it needs to
+be explicitly requested.
 
-which lock already depends on the new lock.
+Compile tested only.
 
+Also this is a bit hacky, as it reserves the last free bits in the
+the generic resource flags for X86 only.
 
-the existing dependency chain (in reverse order) is:
+I fear doing it properly needs quite some more efforts.
 
--> #1 (&adapter->mutex){+.+...}:
-       [<ffffffff8108261a>] lock_acquire+0x103/0x158
-       [<ffffffff8150bcf3>] __mutex_lock_common+0x6a/0x441
-       [<ffffffff8150c13d>] mutex_lock_nested+0x1b/0x1d
-       [<ffffffff81359288>] e1000_watchdog+0x56/0x4a4
-       [<ffffffff8106a1b0>] process_one_work+0x1ef/0x3e0
-       [<ffffffff8106b4e0>] worker_thread+0xda/0x15e
-       [<ffffffff8106f00e>] kthread+0x9f/0xa7
-       [<ffffffff81514e84>] kernel_thread_helper+0x4/0x10
+   Thomas
 
--> #0 ((&(&adapter->watchdog_task)->work)){+.+...}:
-       [<ffffffff81081e4a>] __lock_acquire+0xa29/0xd06
-       [<ffffffff8108261a>] lock_acquire+0x103/0x158
-       [<ffffffff81069590>] wait_on_work+0x3d/0xac
-       [<ffffffff8106a616>] __cancel_work_timer+0xb9/0xff
-       [<ffffffff8106a66e>] cancel_delayed_work_sync+0x12/0x14
-       [<ffffffff81355c8f>] e1000_down_and_stop+0x2e/0x4a
-       [<ffffffff813581ed>] e1000_down+0x116/0x176
-       [<ffffffff81359b4a>] __e1000_shutdown+0x83/0x1f5
-       [<ffffffff81359cd6>] e1000_shutdown+0x1a/0x43
-       [<ffffffff8126fdad>] pci_device_shutdown+0x29/0x3d
-       [<ffffffff8130c601>] device_shutdown+0xbe/0xf9
-       [<ffffffff81065b17>] kernel_restart_prepare+0x31/0x38
-       [<ffffffff81065b32>] kernel_restart+0x14/0x51
-       [<ffffffff81065cd8>] sys_reboot+0x157/0x1b0
-       [<ffffffff81513882>] system_call_fastpath+0x16/0x1b
+---
+ arch/x86/kernel/e820.c        |   30 ++++++++++++++++++++++--------
+ drivers/acpi/apei/apei-base.c |    4 ++--
+ include/linux/ioport.h        |    5 +++++
+ kernel/resource.c             |    5 ++++-
+ 4 files changed, 33 insertions(+), 11 deletions(-)
 
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&adapter->mutex);
-                               lock((&(&adapter->watchdog_task)->work));
-                               lock(&adapter->mutex);
-  lock((&(&adapter->watchdog_task)->work));
-
- *** DEADLOCK ***
-
-2 locks held by reboot/2316:
- #0:  (reboot_mutex){+.+.+.}, at: [<ffffffff81065c20>] sys_reboot+0x9f/0x1b0
- #1:  (&adapter->mutex){+.+...}, at: [<ffffffff81359b1d>] __e1000_shutdown+0x56/0x1f5
-
-stack backtrace:
-Pid: 2316, comm: reboot Not tainted 3.2.0-rc2-test+ #14
-Call Trace:
- [<ffffffff81503eb2>] print_circular_bug+0x1f8/0x209
- [<ffffffff81081e4a>] __lock_acquire+0xa29/0xd06
- [<ffffffff81069553>] ? wait_on_cpu_work+0x94/0x94
- [<ffffffff8108261a>] lock_acquire+0x103/0x158
- [<ffffffff81069553>] ? wait_on_cpu_work+0x94/0x94
- [<ffffffff810c7caf>] ? trace_preempt_on+0x2a/0x2f
- [<ffffffff81069590>] wait_on_work+0x3d/0xac
- [<ffffffff81069553>] ? wait_on_cpu_work+0x94/0x94
- [<ffffffff8106a616>] __cancel_work_timer+0xb9/0xff
- [<ffffffff8106a66e>] cancel_delayed_work_sync+0x12/0x14
- [<ffffffff81355c8f>] e1000_down_and_stop+0x2e/0x4a
- [<ffffffff813581ed>] e1000_down+0x116/0x176
- [<ffffffff81359b4a>] __e1000_shutdown+0x83/0x1f5
- [<ffffffff8150d51c>] ? _raw_spin_unlock+0x33/0x56
- [<ffffffff8130c583>] ? device_shutdown+0x40/0xf9
- [<ffffffff81359cd6>] e1000_shutdown+0x1a/0x43
- [<ffffffff81510757>] ? sub_preempt_count+0xa1/0xb4
- [<ffffffff8126fdad>] pci_device_shutdown+0x29/0x3d
- [<ffffffff8130c601>] device_shutdown+0xbe/0xf9
- [<ffffffff81065b17>] kernel_restart_prepare+0x31/0x38
- [<ffffffff81065b32>] kernel_restart+0x14/0x51
- [<ffffffff81065cd8>] sys_reboot+0x157/0x1b0
- [<ffffffff81072ccb>] ? hrtimer_cancel+0x17/0x24
- [<ffffffff8150c304>] ? do_nanosleep+0x74/0xac
- [<ffffffff8125c72d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff8150e066>] ? error_sti+0x5/0x6
- [<ffffffff810c7c80>] ? time_hardirqs_off+0x2a/0x2f
- [<ffffffff8125c6ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8150db5d>] ? retint_swapgs+0x13/0x1b
- [<ffffffff8150db5d>] ? retint_swapgs+0x13/0x1b
- [<ffffffff81082a78>] ? trace_hardirqs_on_caller+0x12d/0x164
- [<ffffffff810a74ce>] ? audit_syscall_entry+0x11c/0x148
- [<ffffffff8125c6ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81513882>] system_call_fastpath+0x16/0x1b
-
-
-The issue comes from two recent commits:
-
-commit a4010afef585b7142eb605e3a6e4210c0e1b2957
-Author: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Date:   Wed Oct 5 07:24:41 2011 +0000
-e1000: convert hardware management from timers to threads
-
-and
-
-commit 0ef4eedc2e98edd51cd106e1f6a27178622b7e57
-Author: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Date:   Wed Oct 5 07:24:51 2011 +0000
-e1000: convert to private mutex from rtnl
-
-
-What we have is on __e1000_shutdown():
-
-	mutex_lock(&adapter->mutex);
-
-	if (netif_running(netdev)) {
-		WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
-		e1000_down(adapter);
-	}
-
-but e1000_down() calls: e1000_down_and_stop():
-
-static void e1000_down_and_stop(struct e1000_adapter *adapter)
-{
-	set_bit(__E1000_DOWN, &adapter->flags);
-	cancel_work_sync(&adapter->reset_task);
-	cancel_delayed_work_sync(&adapter->watchdog_task);
-	cancel_delayed_work_sync(&adapter->phy_info_task);
-	cancel_delayed_work_sync(&adapter->fifo_stall_task);
-}
-
-
-Here you see that we are calling cancel_delayed_work_sync(&adapter->watchdog_task);
-
-The problem is that adapter->watchdog_task grabs the mutex &adapter->mutex.
-
-If the work has started and it blocked on that mutex, the
-cancel_delayed_work_sync() will block indefinitely and we have a
-deadlock.
-
-Not sure what's the best way around this. Can we call e1000_down()
-without grabbing the adapter->mutex?
-
--- Steve
-
-
-
-
-
-
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 303a0e4..4b1b15f 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -958,15 +958,29 @@ void __init e820_reserve_resources(void)
+ 
+ 		res->flags = IORESOURCE_MEM;
+ 
+-		/*
+-		 * don't register the region that could be conflicted with
+-		 * pci device BAR resource and insert them later in
+-		 * pcibios_resource_survey()
+-		 */
+-		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
++		switch (e820.map[i].type) {
++		case E820_RESERVED:
++			/*
++			 * don't register the region that could be conflicted
++			 * with pci device BAR resource and insert them later in
++			 * pcibios_resource_survey()
++			 */
++			if (res->start < (1ULL<<20))
++				res->flags |= IORESOURCE_BUSY;
++			res->flags |= IORESOURCE_RESERVED_RAM;
++			break;
++		case E820_ACPI:
++			res->flags |= IORESOURCE_ACPI_RAM;
+ 			res->flags |= IORESOURCE_BUSY;
+-			insert_resource(&iomem_resource, res);
+-		}
++			break;
++		case E820_NVS:
++			res->flags |= IORESOURCE_NVS_RAM;
++			res->flags |= IORESOURCE_BUSY;
++			break;
++		default:
++			res->flags |= IORESOURCE_BUSY;
++		}			
++		insert_resource(&iomem_resource, res);
+ 		res++;
+ 	}
+ 
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index 6154036..a86aa24 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -456,8 +456,8 @@ int apei_resources_request(struct apei_resources *resources,
+ 
+ 	rc = -EINVAL;
+ 	list_for_each_entry(res, &resources->iomem, list) {
+-		r = request_mem_region(res->start, res->end - res->start,
+-				       desc);
++		r = __request_mem_region(res->start, res->end - res->start,
++					 desc, IORESOURCE_NVS_RAM);
+ 		if (!r) {
+ 			pr_err(APEI_PFX
+ 		"Can not request iomem region <%016llx-%016llx> for GARs.\n",
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 9d57a71..2c1b3db 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -54,6 +54,11 @@ struct resource_list {
+ #define IORESOURCE_WINDOW	0x00200000	/* forwarded by bridge */
+ #define IORESOURCE_MUXED	0x00400000	/* Resource is software muxed */
+ 
++/* X86 specific e820 marked memory resources */
++#define IORESOURCE_NVS_RAM      0x01000000
++#define IORESOURCE_ACPI_RAM     0x02000000
++#define IORESOURCE_RESERVED_RAM 0x04000000
++
+ #define IORESOURCE_EXCLUSIVE	0x08000000	/* Userland may not map this resource */
+ #define IORESOURCE_DISABLED	0x10000000
+ #define IORESOURCE_UNSET	0x20000000
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 7640b3a..4397543 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -861,7 +861,10 @@ struct resource * __request_region(struct resource *parent,
+ 			break;
+ 		if (conflict != parent) {
+ 			parent = conflict;
+-			if (!(conflict->flags & IORESOURCE_BUSY))
++			if (!(conflict->flags & IORESOURCE_BUSY) ||
++			    /* Even the region is busy, it was explicitly
++			       requested -> allow access */
++			    flags & conflict->flags)
+ 				continue;
+ 		}
+ 		if (conflict->flags & flags & IORESOURCE_MUXED) {
