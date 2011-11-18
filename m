@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1KRFca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 00:32:30 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52055 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab1KRFc3 (ORCPT
+	id S1754421Ab1KRFf4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 00:35:56 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52771 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab1KRFfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 00:32:29 -0500
+	Fri, 18 Nov 2011 00:35:55 -0500
 From: Zac Storer <zac.3.14159@gmail.com>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, Zac Storer <zac.3.14159@gmail.com>
-Subject: [PATCH 18/18] Drivers: tty: synclink: fixed a brace coding style issue
-Date: Thu, 17 Nov 2011 22:32:23 -0700
-Message-Id: <1321594343-9948-1-git-send-email-zac.3.14159@gmail.com>
+Subject: [PATCH 19/19] Drivers: tty: synclink: fixed a brace coding style issue
+Date: Thu, 17 Nov 2011 22:35:50 -0700
+Message-Id: <1321594550-10058-1-git-send-email-zac.3.14159@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,18 +26,18 @@ Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
-index d1ffd42..3d56804 100644
+index 3d56804..82b5684 100644
 --- a/drivers/tty/synclink.c
 +++ b/drivers/tty/synclink.c
-@@ -4176,7 +4176,7 @@ static void mgsl_release_resources(struct mgsl_struct *info)
- 		iounmap(info->memory_base);
- 		info->memory_base = NULL;
- 	}
--	if (info->lcr_base){
-+	if (info->lcr_base) {
- 		iounmap(info->lcr_base - info->lcr_offset);
- 		info->lcr_base = NULL;
- 	}
+@@ -6555,7 +6555,7 @@ static bool mgsl_get_rx_frame(struct mgsl_struct *info)
+ 			 * the end of a frame. Reset buffers and receiver.
+ 			 */
+ 
+-			if ( info->rx_enabled ){
++			if ( info->rx_enabled ) {
+ 				spin_lock_irqsave(&info->irq_spinlock,flags);
+ 				usc_start_receiver(info);
+ 				spin_unlock_irqrestore(&info->irq_spinlock,flags);
 -- 
 1.7.7.3
 
