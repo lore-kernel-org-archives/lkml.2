@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab1KRKsC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:48:02 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:43612 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752414Ab1KRKr7 (ORCPT
+	id S1752447Ab1KRKyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:54:51 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:4043 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab1KRKyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:47:59 -0500
-Message-ID: <4EC637D9.7000201@ti.com>
-Date: Fri, 18 Nov 2011 16:17:53 +0530
-From: Shubhrajyoti <shubhrajyoti@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C: Make i2cdev_detach_adapter static
-References: <1321605731-3098-1-git-send-email-shubhrajyoti@ti.com> <20111118104317.7d150bab@endymion.delvare>
-In-Reply-To: <20111118104317.7d150bab@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Nov 2011 05:54:51 -0500
+X-IronPort-AV: E=Sophos;i="4.69,532,1315180800"; 
+   d="scan'208";a="9006394"
+Subject: Re: [Xen-devel] [PATCH 1/3] xen/granttable: Introducing grant table
+ V2 stucture
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: ANNIE LI <annie.li@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Date: Fri, 18 Nov 2011 10:54:49 +0000
+In-Reply-To: <4EC62E77.7090007@oracle.com>
+References: <4EC3B62F.6080702@oracle.com>
+	 <1321451304-13559-1-git-send-email-annie.li@oracle.com>
+	 <4EC62E77.7090007@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1321613689.3664.305.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 November 2011 03:13 PM, Jean Delvare wrote:
-> On Fri, 18 Nov 2011 14:12:11 +0530, Shubhrajyoti D wrote:
->> The function i2cdev_detach_adapter is used only in i2c-dev file
->> making it static.
-> This description doesn't match what the patch actually does. Please
-> resubmit with proper subject and description.
-Yes will correct it.
->> Also removes the following sparse warning
->>
->> drivers/i2c/i2c-dev.c:582:5: warning: symbol 'i2cdev_notifier_call'
->> was not declared. Should it be static?
->>
->> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
->> ---
->>  drivers/i2c/i2c-dev.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/i2c/i2c-dev.c b/drivers/i2c/i2c-dev.c
->> index c90ce50..57a45ce 100644
->> --- a/drivers/i2c/i2c-dev.c
->> +++ b/drivers/i2c/i2c-dev.c
->> @@ -579,7 +579,7 @@ static int i2cdev_detach_adapter(struct device *dev, void *dummy)
->>  	return 0;
->>  }
->>  
->> -int i2cdev_notifier_call(struct notifier_block *nb, unsigned long action,
->> +static int i2cdev_notifier_call(struct notifier_block *nb, unsigned long action,
->>  			 void *data)
->>  {
->>  	struct device *dev = data;
->
+Thanks for splitting these up.
+
+On Fri, 2011-11-18 at 10:07 +0000, ANNIE LI wrote:
+> [...]
+
+> return value
+> +        * by bit operations.
+> +        */
+> +       int (*query_foreign_access)(grant_ref_t);
+> +};
+> +
+> +static struct gnttab_ops gnttab_v1_ops;
+
+You don't actually need this forward declaration since the struct
+definition and usage are ordered correctly.
+
+> +static struct gnttab_ops gnttab_v1_ops = {
+> +       .map_frames                     = gnttab_map_frames_v1,
+> +       .unmap_frames                   = gnttab_unmap_frames_v1,
+> +       .update_entry                   = update_grant_entry_v1,
+
+Any reason this one is not gnttab_foo?
+
+Ian.
+
 
