@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab1KRV4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 16:56:09 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40576 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1KRV4H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 16:56:07 -0500
+	id S1756684Ab1KRV6C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 16:58:02 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46475 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab1KRV6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 16:58:00 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] PM/Hibernation: Fix the early termination of test modes
+Date: Fri, 18 Nov 2011 23:00:43 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com> <4EC6250F.4010501@linux.vnet.ibm.com> <4EC62956.8060608@linux.vnet.ibm.com>
+In-Reply-To: <4EC62956.8060608@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740D74FA4@HQMAIL01.nvidia.com>
-References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com>
-	<1321546766-26770-9-git-send-email-pdeschrijver@nvidia.com>
-	<20111118214324.GD31678@quad.lixom.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF1740D74FA4@HQMAIL01.nvidia.com>
-Date: Fri, 18 Nov 2011 13:56:07 -0800
-Message-ID: <CAOesGMh-n9cp1f_tCB7qaFMZ86mXM7WDVkA_hOxf9bb0Z4_XjA@mail.gmail.com>
-Subject: Re: [PATCH 08/10] arm/tegra: pinmux tables and definitions for tegra30
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111182300.44173.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 1:51 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Olof Johansson wrote at Friday, November 18, 2011 2:43 PM:
->> > @@ -667,7 +710,12 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
->> >  }
->> >
->> >  static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
->> > +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
->> >     { .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
->> > +#endif
->> > +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
->> > +   { .compatible = "nvidia,tegra30-pinmux", tegra30_pinmux_init },
->> > +#endif
->>
->> Again, provide empty stubs instead of ifdeffing the table.
->
-> Isn't it better for the driver not to support that compatible flag, rather
-> than claiming support, but then not actually working correctly?
+On Friday, November 18, 2011, Srivatsa S. Bhat wrote:
+> On 11/18/2011 02:57 PM, Srivatsa S. Bhat wrote:
+> > On 11/18/2011 02:50 PM, Rafael J. Wysocki wrote:
+> >>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> >>> index b4511b6..257e8e7 100644
+> >>> --- a/kernel/power/hibernate.c
+> >>> +++ b/kernel/power/hibernate.c
+> >>> @@ -55,6 +55,8 @@ enum {
+> >>>  
+> >>>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
+> >>>  
+> >>> +static bool freezer_test_done;
+> >>> +
+> >>>  static const struct platform_hibernation_ops *hibernation_ops;
+> >>>  
+> >>>  /**
+> >>> @@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
+> >>>  	if (error)
+> >>>  		goto Close;
+> >>>  
+> >>> +	if (hibernation_test(TEST_FREEZER) ||
+> >>> +		hibernation_testmode(HIBERNATION_TESTPROC)) {
+> >>> +
+> >>> +		/*
+> >>> +		 * Indicate to the caller that we are returning due to a
+> >>> +		 * successful freezer test.
+> >>> +		 */
+> >>> +		freezer_test_done = true;
+> >>> +		goto Close;
+> >>> +	}
+> >>> +
+> >>>  	error = dpm_prepare(PMSG_FREEZE);
+> >>>  	if (error)
+> >>>  		goto Complete_devices;
+> >>> @@ -641,15 +654,13 @@ int hibernate(void)
+> >>>  	if (error)
+> >>>  		goto Finish;
+> >>>  
+> >>> -	if (hibernation_test(TEST_FREEZER))
+> >>> -		goto Thaw;
+> >>> -
+> >>> -	if (hibernation_testmode(HIBERNATION_TESTPROC))
+> >>> -		goto Thaw;
+> >>> -
+> >>>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+> >>>  	if (error)
+> >>>  		goto Thaw;
+> >>> +	if (freezer_test_done) {
+> >>> +		freezer_test_done = false;
+> >>> +		goto Thaw;
+> >>> +	}
+> >>
+> >> What happens if hibernation_snapshot() and freezer_test_done is 'true'?
+> >> Won't that leek freezer_test_done to the next hibernation cycle?
+> >>
+> > 
+> > Oh yes, thanks for catching that! I'll fix that and send an updated patch.
+> >
+> 
+> Sorry, I think I hit reply too soon.
+> To restate your question, you are asking if freezer_test_done was set in
+> hibernation_snapshot() and then there was a genuine error in
+> hibernation_snapshot() which it returned, then won't freezer_test_done
+> leak to the next cycle.., right?
+> 
+> If there is a genuine error before hibernation_test(TEST_FREEZER)... is
+> done, then we will never set freezer_test_done flag to true.
+> 
+> And whenever freezer_test_done is set (inside hibernation_snapshot) there
+> is no way it will continue further executing normal code. It will jump to
+> the Close label and come out, so that here in hibernate(), the first
+> check for error will fail (because it returned 0) and the subsequent
+> check for freezer_test_done will succeed. So I don't see how it can leak.
+> 
+> Or, am I missing something?
 
-Ah, yes, of course. I misread it as one of the scan tables, not used
-for probing. Nevermind.
+No, that's fine, I just wasn't sure. :-)
 
+I'm going to apply your patch without the documentation changes.
 
--Olof
+Thanks,
+Rafael
