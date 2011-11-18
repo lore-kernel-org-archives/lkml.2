@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab1KSAEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:04:25 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51277 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752860Ab1KSAEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:04:12 -0500
-X-Sasl-enc: IYt3BLQpYVVf//hIEn2xFTSn99dwCFr9c5elMydtFZ/Q 1321661051
-Date: Fri, 18 Nov 2011 16:03:36 -0800
+	id S1755945Ab1KSAIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:08:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38108 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab1KSAIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:08:05 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:05 2011
+Message-Id: <20111119000005.022385328@clark.kroah.org>
+User-Agent: quilt/0.48-20.1.2
+Date: Fri, 18 Nov 2011 15:58:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/26] 3.1.2-stable review
-Message-ID: <20111119000336.GA8452@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: [12/26] Revert "leds: save the delay values after a successful call to blink_set()"
+In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.1.2 release.
-There are 26 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Monday, November 21, 2011, 20:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.2-rc1.gz
-and the diffstat can be found below.
+From: Johan Hovold <jhovold@gmail.com>
 
-thanks,
+commit cb871513f656bdfc48b185b55f37857b5c750c40 upstream.
 
-greg k-h
+Revert commit 6123b0e274503a0d3588e84fbe07c9aa01bfaf5d.
+
+The problem this patch intends to solve has alreadqy been fixed by
+commit 7a5caabd090b ("drivers/leds/ledtrig-timer.c: fix broken sysfs
+delay handling").
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: Antonio Ospite <ospite@studenti.unina.it>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/leds/led-class.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -270,11 +270,8 @@ void led_blink_set(struct led_classdev *
+ 	del_timer_sync(&led_cdev->blink_timer);
+ 
+ 	if (led_cdev->blink_set &&
+-	    !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
+-		led_cdev->blink_delay_on = *delay_on;
+-		led_cdev->blink_delay_off = *delay_off;
++	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+ 		return;
+-	}
+ 
+ 	/* blink with 1 Hz as default if nothing specified */
+ 	if (!*delay_on && !*delay_off)
 
 
- Documentation/sound/alsa/HD-Audio-Models.txt     |    1 +
- Makefile                                         |    4 +-
- arch/arm/mach-at91/at91cap9_devices.c            |    2 +-
- arch/arm/mach-at91/at91sam9g45_devices.c         |    2 +-
- arch/arm/mach-at91/at91sam9rl_devices.c          |    2 +-
- arch/powerpc/include/asm/sections.h              |    2 +-
- arch/powerpc/include/asm/synch.h                 |    1 +
- arch/powerpc/kernel/kvm.c                        |    1 -
- arch/powerpc/kernel/setup_32.c                   |    2 +
- arch/powerpc/kernel/setup_64.c                   |    1 +
- arch/powerpc/kvm/book3s_hv.c                     |    1 +
- arch/powerpc/lib/feature-fixups.c                |   23 ++++
- arch/powerpc/platforms/ps3/interrupt.c           |   23 ++++-
- arch/powerpc/platforms/ps3/platform.h            |    1 +
- arch/powerpc/platforms/ps3/smp.c                 |    2 +
- arch/sh/include/asm/page.h                       |    5 +
- arch/x86/xen/enlighten.c                         |    3 +-
- block/blk-map.c                                  |    7 +-
- drivers/gpu/drm/i915/i915_gem.c                  |    2 +-
- drivers/gpu/drm/nouveau/nouveau_channel.c        |    1 +
- drivers/gpu/drm/nouveau/nouveau_fence.c          |    2 -
- drivers/gpu/drm/radeon/atombios_dp.c             |    2 +-
- drivers/leds/led-class.c                         |    5 +-
- drivers/mfd/twl-core.c                           |    2 +-
- drivers/net/wireless/b43/main.c                  |    7 ++
- drivers/staging/brcm80211/brcmsmac/mac80211_if.c |    9 ++-
- drivers/staging/brcm80211/brcmsmac/mac80211_if.h |    6 +
- drivers/staging/brcm80211/brcmsmac/main.c        |    8 ++
- drivers/virtio/virtio_pci.c                      |   11 +-
- drivers/xen/gntalloc.c                           |    4 +-
- fs/hfs/trans.c                                   |    2 +
- include/drm/drm_pciids.h                         |    2 +
- mm/backing-dev.c                                 |    8 ++
- security/keys/user_defined.c                     |    3 +-
- sound/pci/hda/hda_codec.c                        |   60 +++++++----
- sound/pci/hda/patch_sigmatel.c                   |   11 ++
- sound/soc/codecs/wm8994.c                        |    2 +-
- sound/usb/mixer.c                                |  120 +++++++++++++---------
- 38 files changed, 245 insertions(+), 105 deletions(-)
