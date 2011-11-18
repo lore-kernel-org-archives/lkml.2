@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab1KRWiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:38:10 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:37638 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756209Ab1KRWiG convert rfc822-to-8bit (ORCPT
+	id S1757398Ab1KRWi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:38:29 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:52480 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757002Ab1KRWiJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:38:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=bcHcOVsA6E1I63qtqD/
-	VcogAj4SB5ejxKinIc7/O4lRy+hMKbdqvkLk4HQE/1cGkVsIlT8hMxfPsuhJe/Gl
-	HUnoyH0Y5wlzRmFALjhYkdDi7uz46VAWJShTaX5nNxexGuw07X4LAmZJMw3+CjKJ
-	tvlrm7ShdSCnRJ/Hpc6N827o=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.7.4
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Nov 2011 14:38:03 -0800
-Message-ID: <7vbos9jbuc.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: FB07F62C-1235-11E1-B9A1-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	Fri, 18 Nov 2011 17:38:09 -0500
+X-IronPort-AV: E=Sophos;i="4.69,535,1315206000"; 
+   d="scan'208";a="600141512"
+Message-ID: <1321655886.10541.24.camel@lade.trondhjem.org>
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry. Try 2 with added man pages.
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: John Hughes <john@calvaedi.com>
+Cc: John Hughes <john@calva.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 19 Nov 2011 00:38:06 +0200
+In-Reply-To: <4EC6D767.6030109@calvaedi.com>
+References: <4EC66D12.2090505@Calva.COM>
+		 <1321641333.2653.15.camel@lade.trondhjem.org>
+		 <4EC6AFA9.9000705@calvaedi.com>
+	 <1321648435.2653.53.camel@lade.trondhjem.org>
+	 <4EC6D767.6030109@calvaedi.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 18 Nov 2011 22:38:08.0684 (UTC) FILETIME=[BED8E6C0:01CCA642]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.7.4 is available.
+On Fri, 2011-11-18 at 23:08 +0100, John Hughes wrote: 
+> On 11/18/2011 09:33 PM, Trond Myklebust wrote:
+> > On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote:
+> >    
+> >> On 11/18/2011 07:35 PM, Trond Myklebust wrote:
+> >>      
+> >>>
+> >>> You need a big fat warning somewhere that enabling this option WILL
+> >>> cause data corruption...
+> >>>
+> >>>        
+> >> Why?
+> >>
+> >> Because some process may get the EACCES error half way through it's
+> >> operation.
+> >>      
+> > No. Because the process can receive a reply to the write() syscall that
+> > indicates that the data is safe,
+> 
+> There is no reply from "write(2)" that says the data is safe.
 
-The release tarballs are found at:
+Read the rest of the thread... Jim and Nick already made this point, and
+I've replied.
 
-    http://code.google.com/p/git-core/downloads/list
+The fact of the matter is that most application writers remain blithely
+oblivious of the need to fsync() as the ext4 people know all to well:
+see the attempts to impose the fully posix-compatible 'data=writeback'
+mode as the default and the catastrophe that occurred when
+'data=ordered' semantics changed for the rename() syscall. Adding new
+failure modes needs to be done with care, or GNOME will crash and/or
+your word processor _will_ lose your last hour or so of work.
 
-and their SHA-1 checksums are:
+> >   but the EKEYEXPIRED error will cause
+> > the data to be lost when the client tries to actually commit the data to
+> > disk.
+> >
+> >    
+> >> The traditional Kerberos/AFS way was to behave the old way, and use
+> >> krenew to keep the ticket from expiring if a process needed to be run
+> >> overnight.
+> >>      
+> > Which is just wrong: the general intention of kerberos security is to
+> > ensure that the _user_ has ACKed an operation. Renewing tickets without
+> > user input would circumvent that intention. If you need to have the job
+> > run overnight, then ask for a longer lifetime for your ticket.
+> >    
+> 
+> Ok, so no need for the hang on ticket expired then.
+> 
+> (Although I don't think renewable tickets and krenew are a figment of my 
+> imagination).
 
-5b6920989480a37ec65977e756b24961578795dd  git-1.7.7.4.tar.gz
-6012cb017a04ded85c48ca5510f741e98c02f671  git-htmldocs-1.7.7.4.tar.gz
-cb21e55ae793865453c165a0e666348f2db8c740  git-manpages-1.7.7.4.tar.gz
+They are a workaround to the problem of users failing to plan ahead
+and/or jobs not running as quickly as originally scheduled. You can run
+them if you feel safe doing so, but they should not be a mandatory
+feature to ensure data isn't lost during normal operation.
 
-Also the following public repositories all have a copy of the v1.7.7.4
-tag and the maint branch that the tag points at:
+BTW: instead of trying to change existing kernel and gssd semantics, why
+not concentrate on adding the equivalent of krenewd/kstart?
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+> >> What other way is there of fixing the problem if we are going to keep
+> >> the "hang 'till a ticket turns up" behaviour?  (rewrite gnome and kde
+> >> seems kind of a big job).
+> >>      
+> > Notify the kernel that a ticket is about to expire so that the kernel
+> > can decide to block the process on the next NFS-related syscall.
+> >
+> >    
+> I don't understand.  How is it a win to block processes *before* the 
+> ticket has expired?
 
+So that the kernel can flush out any dirty data while the ticket is
+valid, and block further asynchronous read/write operations (either by
+making them synchronous, or by returning an appropriate error). We may
+also want to consider closing open file state and possibly freeing up
+locks so that other processes with valid credentials may still access
+the data.
 
-Git v1.7.7.4 Release Notes
-==========================
+IOW: that allows for an _orderly_ failure mode instead of the current
+catastrophic mode. The application gets a chance to deal with any errors
+_before_ the data is lost.
 
-Fixes since v1.7.7.3
---------------------
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
- * A few header dependencies were missing from the Makefile.
-
- * Some newer parts of the code used C99 __VA_ARGS__ while we still
-   try to cater to older compilers.
-
- * "git name-rev --all" tried to name all _objects_, naturally failing to
-   describe many blobs and trees, instead of showing only commits as
-   advertised in its documentation.
-
-----------------------------------------------------------------
-
-Changes since v1.7.7.3 are as follows:
-
-Jonathan Nieder (2):
-      notes merge: eliminate OUTPUT macro
-      Makefile: add missing header file dependencies
-
-Junio C Hamano (2):
-      name-rev --all: do not even attempt to describe non-commit object
-      Git 1.7.7.4
-
-Marc-André Lureau (1):
-      mailmap: xcalloc mailmap_info
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
