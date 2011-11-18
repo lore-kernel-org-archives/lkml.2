@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab1KSAJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:09:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38400 "EHLO mx2.suse.de"
+	id S1758395Ab1KSAJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:09:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38563 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758282Ab1KSAJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:09:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:04 2011
-Message-Id: <20111119000004.407781487@clark.kroah.org>
+	id S1758380Ab1KSAJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:09:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:06 2011
+Message-Id: <20111119000006.312013406@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 15:58:18 -0800
+Date: Fri, 18 Nov 2011 15:58:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Anholt <eric@anholt.net>,
-        Keith Packard <keithp@keithp.com>
-Subject: [05/26] drm/i915: Fix object refcount leak on mmappable size limit error path.
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [26/26] block: Always check length of all iov entries in blk_rq_map_user_iov()
 In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Anholt <eric@anholt.net>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 14660ccd599dc7bd6ecef17408bd76dc853f9b77 upstream.
+commit 6b76106d8ef31111d6fc469564b83b5f5542794f upstream.
 
-I've been seeing memory leaks on my system in the form of large
-(300-400MB) GEM objects created by now-dead processes laying around
-clogging up memory.  I usually notice when it gets to about 1.2GB of
-them.  Hopefully this clears up the issue, but I just found this bug
-by inspection.
+Even after commit 5478755616ae2ef1ce144dded589b62b2a50d575
+("block: check for proper length of iov entries earlier ...")
+we still won't check for zero-length entries after an unaligned
+entry.  Remove the break-statement, so all entries are checked.
 
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-map.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1475,7 +1475,7 @@ i915_gem_mmap_gtt(struct drm_file *file,
+--- a/block/blk-map.c
++++ b/block/blk-map.c
+@@ -204,10 +204,11 @@ int blk_rq_map_user_iov(struct request_q
+ 		if (!iov[i].iov_len)
+ 			return -EINVAL;
  
- 	if (obj->base.size > dev_priv->mm.gtt_mappable_end) {
- 		ret = -E2BIG;
--		goto unlock;
-+		goto out;
+-		if (uaddr & queue_dma_alignment(q)) {
++		/*
++		 * Keep going so we check length of all segments
++		 */
++		if (uaddr & queue_dma_alignment(q))
+ 			unaligned = 1;
+-			break;
+-		}
  	}
  
- 	if (obj->madv != I915_MADV_WILLNEED) {
+ 	if (unaligned || (q->dma_pad_mask & len) || map_data)
 
 
