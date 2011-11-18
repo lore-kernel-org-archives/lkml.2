@@ -1,95 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1KRJSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:18:36 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:46849 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752290Ab1KRJRw (ORCPT
+	id S1756780Ab1KRJTC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:19:02 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39833 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab1KRJS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:17:52 -0500
-Date: Fri, 18 Nov 2011 11:17:48 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: balbi@ti.com, Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Kevin Cernekee <cernekee@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] ahci: platform support for suspend/resume
-Message-ID: <20111118091747.GD9759@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1321475279-29930-1-git-send-email-computersforpeace@gmail.com>
- <20111116203422.GA29581@legolas.emea.dhcp.ti.com>
- <CAN8TOE9T8YJ8Kbz=cuQ_CYPQozxU--yskZuBcXwe_emVVNQqDg@mail.gmail.com>
+	Fri, 18 Nov 2011 04:18:59 -0500
+Message-ID: <4EC622F8.30005@linux.vnet.ibm.com>
+Date: Fri, 18 Nov 2011 17:18:48 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fOHHtNG4YXGJ0yqR"
-Content-Disposition: inline
-In-Reply-To: <CAN8TOE9T8YJ8Kbz=cuQ_CYPQozxU--yskZuBcXwe_emVVNQqDg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 3/6] KVM: introduce kvm_for_each_memslot macro
+References: <4EC6226B.3080408@linux.vnet.ibm.com>
+In-Reply-To: <4EC6226B.3080408@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111809-3864-0000-0000-0000002426CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce kvm_for_each_memslot to walk all valid memslot
 
---fOHHtNG4YXGJ0yqR
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/ia64/kvm/kvm-ia64.c |    4 +---
+ arch/x86/kvm/mmu.c       |    9 +++++----
+ include/linux/kvm_host.h |    4 ++++
+ virt/kvm/iommu.c         |   13 +++++++------
+ virt/kvm/kvm_main.c      |    5 +++--
+ 5 files changed, 20 insertions(+), 15 deletions(-)
 
-On Thu, Nov 17, 2011 at 04:31:32PM -0800, Brian Norris wrote:
-> +linux-pm mailing list
->=20
-> Hi Felipe,
->=20
-> On Wed, Nov 16, 2011 at 12:34 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > On Wed, Nov 16, 2011 at 12:27:59PM -0800, Brian Norris wrote:
-> >> + =A0 =A0 /* Does platform support suspend/resume? */
-> >> + =A0 =A0 if (!pdata->suspend || !pdata->resume)
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 return -EINVAL;
-> >
-> > should you really prevent suspend is platform doesn't provide
-> > ->suspend() ?
->=20
-> No, we shouldn't prevent suspend entirely; that would just be my
-> accidental side effect.
->=20
-> > I mean, we could some platform where all clocks are autogated and
-> > there's no need for platform to do anything. Would it be better to only
-> > call pdata->suspend if it exists but still let the AHCI-specific part go
-> > through ?
->=20
-> Perhaps. But would this have any unintended effects on systems that
-> don't implement AHCI power management at all? My intention was just to
-> provide an 'opt-in' interface for platform developers. I probably got
-> this wrong.
+diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+index 43f4c92..7d5bc81 100644
+--- a/arch/ia64/kvm/kvm-ia64.c
++++ b/arch/ia64/kvm/kvm-ia64.c
+@@ -1370,10 +1370,8 @@ static void kvm_release_vm_pages(struct kvm *kvm)
+ 	unsigned long base_gfn;
 
-I guess you could add a flag for that, but until we know that the AHCI
-powermanagement is broken somewhere should we really care ? :-)
+ 	slots = kvm_memslots(kvm);
+-	for (i = 0; i < slots->nmemslots; i++) {
+-		memslot = &slots->memslots[i];
++	kvm_for_each_memslot(slots, memslot, i) {
+ 		base_gfn = memslot->base_gfn;
+-
+ 		for (j = 0; j < memslot->npages; j++) {
+ 			if (memslot->rmap[j])
+ 				put_page((struct page *)memslot->rmap[j]);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index e6c2755..53dbae0 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1120,11 +1120,11 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 	int ret;
+ 	int retval = 0;
+ 	struct kvm_memslots *slots;
++	struct kvm_memory_slot *memslot;
 
---=20
-balbi
+ 	slots = kvm_memslots(kvm);
 
---fOHHtNG4YXGJ0yqR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-	for (i = 0; i < slots->nmemslots; i++) {
+-		struct kvm_memory_slot *memslot = &slots->memslots[i];
++	kvm_for_each_memslot(slots, memslot, i) {
+ 		unsigned long start = memslot->userspace_addr;
+ 		unsigned long end;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+@@ -3977,11 +3977,12 @@ unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm)
+ 	unsigned int nr_mmu_pages;
+ 	unsigned int  nr_pages = 0;
+ 	struct kvm_memslots *slots;
++	struct kvm_memory_slot *memslot;
 
-iQIcBAEBAgAGBQJOxiK7AAoJEIaOsuA1yqREU/EQALUUH2e/7kVn88k+MFSnW6f4
-71/RTp+rXa+LROdZF+XQtnguPrhazJ6noX5hMhDRsYOt645QMHU3zzV1PgSeCdNI
-Y+QDzmZsPMtYPqiPbmS9Q4r4NwQGAasrxPnW1eDPck0HRbXyi5qz3CTiNksYaZ1+
-7eihLXRyxC+2kHBH7cDBLYJ1Q9wrWaK3XC3ctI+541mBib3R/RSma5R8YeeKmWNj
-s6unkGZdbQBgHWQ6grew2jFuoL405PCZ/Ong8EXf9A6PBs+hVB/sLRtWSWr3I0Sc
-ufJJrR9PV8EDa/rC2h2M+XS1L0viP9xHC7eR/iOrE+jpS2aACCj9QAT2CD+FnN6R
-DNO8c5ciTIA6y2JFUnsELGJqTJ0GrkD8GAea4ut0tWzcN++8mhLJyokLitEEPLqF
-bnZL0pdvQ8o+MGa/7r1N0y7eT5jInHkIRVJvILxJBeDBCyhmoxkWCANR6vV5fkNC
-Tg+FmgWrDPUQLKJavTiEeiB6jlDQxeTuvMbV/4EMWxoOxUhk6nphVKsT00eSH03C
-Tr7ER1mCKWNyqhjQJp+NANT0VZpOlP008jvR9UhtD3ddPFGLXjaMvi2gRW93oLVw
-+OmdUXG1W4MxDKze4pzhT8pZtS83QdgttZoOfMlc7Rm804pa1uaTrzrlTaO7pWMM
-5XUteNkcmemjHRq59adt
-=fhKt
------END PGP SIGNATURE-----
+ 	slots = kvm_memslots(kvm);
 
---fOHHtNG4YXGJ0yqR--
+-	for (i = 0; i < slots->nmemslots; i++)
+-		nr_pages += slots->memslots[i].npages;
++	kvm_for_each_memslot(slots, memslot, i)
++		nr_pages += memslot->npages;
+
+ 	nr_mmu_pages = nr_pages * KVM_PERMILLE_MMU_PAGES / 1000;
+ 	nr_mmu_pages = max(nr_mmu_pages,
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index bb8728e..10524c0 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -307,6 +307,10 @@ static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
+ 	     (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
+ 	     idx++)
+
++#define kvm_for_each_memslot(slots, memslot, i)	\
++	for (i = 0; i < (slots)->nmemslots &&	\
++	      ({ memslot = &(slots)->memslots[i]; 1; }); i++)
++
+ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
+ void kvm_vcpu_uninit(struct kvm_vcpu *vcpu);
+
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index d5f3b8d..02df243 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -134,12 +134,13 @@ static int kvm_iommu_map_memslots(struct kvm *kvm)
+ {
+ 	int i, idx, r = 0;
+ 	struct kvm_memslots *slots;
++	struct kvm_memory_slot *memslot;
+
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	slots = kvm_memslots(kvm);
+
+-	for (i = 0; i < slots->nmemslots; i++) {
+-		r = kvm_iommu_map_pages(kvm, &slots->memslots[i]);
++	kvm_for_each_memslot(slots, memslot, i) {
++		r = kvm_iommu_map_pages(kvm, memslot);
+ 		if (r)
+ 			break;
+ 	}
+@@ -311,14 +312,14 @@ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
+ {
+ 	int i, idx;
+ 	struct kvm_memslots *slots;
++	struct kvm_memory_slot *memslot;
+
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	slots = kvm_memslots(kvm);
+
+-	for (i = 0; i < slots->nmemslots; i++) {
+-		kvm_iommu_put_pages(kvm, slots->memslots[i].base_gfn,
+-				    slots->memslots[i].npages);
+-	}
++	kvm_for_each_memslot(slots, memslot, i)
++		kvm_iommu_put_pages(kvm, memslot->base_gfn, memslot->npages);
++
+ 	srcu_read_unlock(&kvm->srcu, idx);
+
+ 	return 0;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 0fb3aeb..ec3b03b 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -549,9 +549,10 @@ void kvm_free_physmem(struct kvm *kvm)
+ {
+ 	int i;
+ 	struct kvm_memslots *slots = kvm->memslots;
++	struct kvm_memory_slot *memslot;
+
+-	for (i = 0; i < slots->nmemslots; ++i)
+-		kvm_free_physmem_slot(&slots->memslots[i], NULL);
++	kvm_for_each_memslot(slots, memslot, i)
++		kvm_free_physmem_slot(memslot, NULL);
+
+ 	kfree(kvm->memslots);
+ }
+-- 
+1.7.7.1
+
