@@ -1,144 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab1KRK10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:27:26 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61627 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab1KRK1X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:27:23 -0500
-Message-ID: <4EC63302.4040006@polito.it>
-Date: Fri, 18 Nov 2011 11:27:14 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1757247Ab1KRK1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:27:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14252 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316Ab1KRK1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 05:27:44 -0500
+Message-ID: <4EC63304.1060709@redhat.com>
+Date: Fri, 18 Nov 2011 18:27:16 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>  <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>  <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it> <1321564518.21708.63.camel@falcor>
-In-Reply-To: <1321564518.21708.63.camel@falcor>
+To: Hugh Dickins <hughd@google.com>
+CC: Pekka Enberg <penberg@kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-mm@kvack.org, kay.sievers@vrfy.org
+Subject: Re: [Patch] tmpfs: add fallocate support
+References: <1321346525-10187-1-git-send-email-amwang@redhat.com> <CAOJsxLEXbWbEhqX2YfzcQhyLJrY0H2ifCJCvGkoFHZsYAZEMPA@mail.gmail.com> <4EC361C0.7040309@redhat.com> <alpine.LFD.2.02.1111160911320.2446@tux.localdomain> <4EC3633D.6090900@redhat.com> <alpine.LSU.2.00.1111161634360.1957@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1111161634360.1957@sister.anvils>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 10:15 PM, Mimi Zohar wrote:
-> On Thu, 2011-11-17 at 11:57 +0100, Roberto Sassu wrote:
->> On 11/16/2011 07:52 PM, Rajiv Andrade wrote:
+于 2011年11月17日 09:31, Hugh Dickins 写道:
+> On Wed, 16 Nov 2011, Cong Wang wrote:
+>> 于 2011年11月16日 15:12, Pekka Enberg 写道:
+>>> On Wed, 16 Nov 2011, Cong Wang wrote:
+>>>>> What's the use case for this?
+>>>>
+>>>> Systemd needs it, see http://lkml.org/lkml/2011/10/20/275.
+>>>> I am adding Kay into Cc.
 >>>
->>> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
->>>
->>> On 16-11-2011 12:37, Roberto Sassu wrote:
->>>> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
->>>>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
->>>>>> The ima_add_digest_entry() function has been split in order to avoid
->>>>>> adding an entry in the measurements list for which the PCR extend
->>>>>> operation subsequently fails. Required memory is allocated earlier
->>>>>> in the
->>>>>> new function ima_prepare_template_entry() and the template entry is
->>>>>> added
->>>>>> after ima_pcr_extend().
->>>>>>
->>>>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
->>>>>
->>>>
->>>> Hi Mimi
->>>>
->>>> i don't know if this condition can happen, but suppose that
->>>> for whatever reason the PCR extend fails. In this case, since
->>>> the PCR is not extended, the measurements list can be modified,
->>>> by removing the non-measured entry, without this fact being
->>>> detected by the verifier. So, probably we can avoid to display
->>>> the entry.
->>>>
->>>>
->>> Hi Roberto,
->>>
->>> IMA's trustworthiness is built on the assumption that the TPM underneath
->>> can
->>> be trusted. If that can't be, the eventlog alone doesn't provide us any
->>> security.
->>> It's the TPM device driver's job though to workaround any HW bug so that
->>> in the
->>> end all its stakeholders have their commands processed successfully, as
->>> we've
->>> pursued in some changes here:
+>>> The post doesn't mention why it needs it, though.
 >>>
 >>
->> Hi Rajiv
->>
->> thanks for your comments.
->>
->> I absolutely agree that we have to trust the TPM for the correct
->> execution of IMA.
->>
->> I think the principle that has been used to build IMA (according
->> to the TGC specifications) is that we can trust the eventlog
->> as long as the measurement infrastructure is reliable or it is
->> possible to detect a threat from previous measurements.
->>
->> For this reason, a system call is never executed before the
->> inode measurement is inserted in the eventlog and the PCR
->> is extended. Since these operations must be considered as
->> atomic, their execution is protected by a mutex, that is
->> released only after all tasks have been performed. This
->> ensures that we begin with a measured kernel and we can
->> reliably measure all further interactions. This also explains,
->> in my view, why delaying the PCR extend operation may lead
->> to security risks.
->>
->> About my patch, i did not move out the protected region any
->> of the above described operations. Instead, i'm preventing
->> measurements for which the PCR extend failed to be added to
->> the measurements list, because in any case it is impossible
->> for a verifier to detect their removal from the list.
->>
->> As i mentioned in the previous mail, one solution to overcome
->> this issue is to deny, on the platform running IMA, the execution
->> of those system calls for which the measurement process ended
->> with an error.
->>
->> Regards
->>
->> Roberto Sassu
+>> Right, I should mention this in the changelog. :-/
 >
-> True, if the TPM failed to extend the PCR, a malicious user would be
-> able to remove the measurement from the measurement list without it
-> being detected.  However, according to the TPM specs, the PCR extend
-> operation is always suppose to succeed, even in the case when the TPM is
-> not enabled.
+> Yes, but I think Pekka's point is that the page which you link to does not
+> explain why Plumbers would want tmpfs to support fallocate() properly.
 >
-
-Hi Mimi
-
-i don't know if this can happen, but, since the TPM always returns
-a result in its response, there may be particular conditions under
-which the PCR extend fails.
-
-After quickly looking at the code in 'drivers/char/tpm.c' there are
-some additional cases where the operation may fail. For instance,
-an operation may have been cancelled or it may have just reached the
-defined time limit.
+> What good is it going to do for them?  Why not just do it in userspace,
+> either by dd if=/dev/zero of=tmpfsfile, or by mmap() and touch if very
+> anxious to avoid the triple memset/memcpy (once reading from /dev/zero,
+> once allocating tmpfs pages, once copying to tmpfs pages)?  Or splice().
 
 
-> More importantly we need to be able to detect when the PCR has not been
-> extended appropriately in order to address it.  Otherwise we're just
-> covering it up.
+It is not hard at all to implement this in kernel space, so this
+will make systemd a little happier.
+
+>
+> I don't want to stand in the way of progress, but there's a lot of
+> things tmpfs does not support (a persistent filesystem would be top
+> of the list; but readahead, direct I/O, AIO, ....), and it may be
+> better to continue not to support them unless there's good reason.
+> tmpfs does not have a disk layout that we need to optimize.
+
+
+True, and no one requests for these features so far? As systemd
+developers need this light feature, fallocate, and it is not hard
+to implement it, so why not? ;)
+
+>
+> I did not study your implementation in detail, but agree with Dave
+> and Kame that (if it needs to be in kernel at all) you should reuse
+> the existing code rather than repeating extracts: shmem_getpage_gfp()
+> is the one place which looks after all of shmem page allocation, so
+> I'd prefer you just make a loop of calls to that (with a new sgp_type
+> if there's particular reason to do something differently in there).
+
+
+Yes, while reworking on this patch, I did exactly what you said.
+
+>
+> I've not yet looked up the specification of fallocate(), but it
+> looked surprising to be allocating pages up to the point where a
+> page already exists (when shmem_add_to_page_cache will fail) and
+> then giving up with -EEXIST.
+
+You are right, I need to fix this.
+
+>
+> Seeing your Subject, I imagined at first that you would be implementing
+> FALLOC_FL_PUNCH_HOLE support. That is on my list to do: tmpfs has its
+> own peculiar madvise(MADV_REMOVE) support (and yes, you may question
+> whether we were right to add that in) - we should be converting
+> MADV_REMOVE to use FALLOC_FL_PUNCH_HOLE, and tmpfs to support that.
 >
 
-Probably i did not understand this point, but do the return code of 
-tpm_pcr_extend() is not sufficient to determine if the operation was
-completed successfully?
+I will add this in my V2 patch.
 
-Roberto Sassu
-
-
-> thanks,
->
-> Mimi
->
-
+Thanks!
