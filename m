@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab1KRPT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:19:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35615 "HELO
+	id S1758035Ab1KRPVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:21:05 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:35781 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756772Ab1KRPT0 (ORCPT
+	with SMTP id S1756772Ab1KRPVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:19:26 -0500
+	Fri, 18 Nov 2011 10:21:02 -0500
 X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+hbA4Ni7KhcDGGJBgOyMCyLIpFrT17vDCMgbubDR
-	j1/Py1acCKyq3w
-Subject: [patch 3/6] sched: use rq->avg_event to resurrect nohz ratelimiting
+X-Provags-ID: V01U2FsdGVkX19G4ExPIDNGIGRHieWUWdAdoNisNtLmcexk1064Ys
+	1qiViEzfLYAR2R
+Subject: [patch 4/6] sched: ratelimit select_idle_sibling()for sync wakeups
 From: Mike Galbraith <efault@gmx.de>
 To: Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -28,8 +28,8 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
 	 <1321629267.7080.13.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 16:19:22 +0100
-Message-ID: <1321629562.7080.17.camel@marge.simson.net>
+Date: Fri, 18 Nov 2011 16:20:59 +0100
+Message-ID: <1321629659.7080.19.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -39,62 +39,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Entering nohz at high frequency eats cycles, ratelimit it
-just as we do idle_balance(), and for the same reason.
+select_idle_sibling() injures synchromous loads horribly
+on processors with L3 (ala westmere) when called at high
+Frequency.  Cut it off at 40 KHz (25usec event rate) when
+waking sync, in lieu of an inter-domain cache penalty.
 
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 
 ---
- include/linux/sched.h    |    2 ++
- kernel/sched.c           |    7 +++++++
- kernel/time/tick-sched.c |    2 +-
- 3 files changed, 10 insertions(+), 1 deletion(-)
+ kernel/sched_fair.c     |   20 ++++++++++++++++++--
+ kernel/sched_features.h |    6 ++++++
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-Index: linux-3.2.git/include/linux/sched.h
+Index: linux-3.2.git/kernel/sched_fair.c
 ===================================================================
---- linux-3.2.git.orig/include/linux/sched.h
-+++ linux-3.2.git/include/linux/sched.h
-@@ -1979,8 +1979,10 @@ static inline void idle_task_exit(void)
- 
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
- extern void wake_up_idle_cpu(int cpu);
-+extern int sched_needs_cpu(int cpu);
- #else
- static inline void wake_up_idle_cpu(int cpu) { }
-+static inline void sched_needs_cpu(int cpu) { }
- #endif
- 
- extern unsigned int sysctl_sched_latency;
-Index: linux-3.2.git/kernel/sched.c
-===================================================================
---- linux-3.2.git.orig/kernel/sched.c
-+++ linux-3.2.git/kernel/sched.c
-@@ -1419,6 +1419,13 @@ static inline bool got_nohz_idle_kick(vo
- 	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
+--- linux-3.2.git.orig/kernel/sched_fair.c
++++ linux-3.2.git/kernel/sched_fair.c
+@@ -2264,6 +2264,21 @@ static inline struct sched_domain *highe
  }
  
-+#ifdef CONFIG_SMP
-+int sched_needs_cpu(int cpu)
-+{
-+	return cpu_rq(cpu)->avg_event < sysctl_sched_migration_cost;
-+}
-+#endif
+ /*
++ * select_idle_sibling() injures synchromous loads horribly
++ * on processors with L3 (ala westmere) when called at high
++ * Frequency.  Cut it off at 40 KHz (25usec event rate) when
++ * waking sync, in lieu of an inter-domain cache penalty.
++ */
++#define SIBLING_SYNC_CUTOFF_NS (NSEC_PER_SEC/40000UL)
 +
- #else /* CONFIG_NO_HZ */
++static int idle_sibling_limit(int target, int sync)
++{
++	if (!sync || !sched_feat(SIBLING_LIMIT_SYNC))
++		return 0;
++	return cpu_rq(target)->avg_event < SIBLING_SYNC_CUTOFF_NS;
++}
++
++/*
+  * Try and locate an idle CPU in the sched_domain.
+  */
+ static int select_idle_sibling(struct task_struct *p, int target)
+@@ -2400,9 +2415,10 @@ select_task_rq_fair(struct task_struct *
  
- static inline bool got_nohz_idle_kick(void)
-Index: linux-3.2.git/kernel/time/tick-sched.c
+ 	if (affine_sd) {
+ 		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+-			prev_cpu = cpu;
++			new_cpu = cpu;
+ 
+-		new_cpu = select_idle_sibling(p, prev_cpu);
++		if (!idle_sibling_limit(new_cpu, sync))
++			new_cpu = select_idle_sibling(p, new_cpu);
+ 		goto unlock;
+ 	}
+ 
+Index: linux-3.2.git/kernel/sched_features.h
 ===================================================================
---- linux-3.2.git.orig/kernel/time/tick-sched.c
-+++ linux-3.2.git/kernel/time/tick-sched.c
-@@ -352,7 +352,7 @@ void tick_nohz_stop_sched_tick(int inidl
- 	} while (read_seqretry(&xtime_lock, seq));
+--- linux-3.2.git.orig/kernel/sched_features.h
++++ linux-3.2.git/kernel/sched_features.h
+@@ -67,3 +67,9 @@ SCHED_FEAT(NONTASK_POWER, 1)
+ SCHED_FEAT(TTWU_QUEUE, 1)
  
- 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
--	    arch_needs_cpu(cpu)) {
-+	    arch_needs_cpu(cpu) || sched_needs_cpu(cpu)) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
- 	} else {
+ SCHED_FEAT(FORCE_SD_OVERLAP, 0)
++
++/*
++ * Restrict the frequency at which select_idle_sibling() may be called
++ * for synchronous wakeups.
++ */
++SCHED_FEAT(SIBLING_LIMIT_SYNC, 1)
 
 
