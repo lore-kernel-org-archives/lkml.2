@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1KRAVC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 19:21:02 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:62720 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754067Ab1KRAVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 19:21:00 -0500
-Date: Fri, 18 Nov 2011 01:20:49 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org
-Cc: anaghi@mail.gnudd.com, balbi@ti.com, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH V2 0/2] debugfs: a tool to print 32-bit registers
-Message-ID: <20111118002049.GA24806@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+	id S1755209Ab1KRAXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 19:23:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38175 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460Ab1KRAXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 19:23:24 -0500
+Date: Thu, 17 Nov 2011 16:23:22 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] mm: account reaped page cache on inode cache pruning
+Message-Id: <20111117162322.1c3e3d05.akpm@linux-foundation.org>
+In-Reply-To: <20111116134713.8933.34389.stgit@zurg>
+References: <20111116134713.8933.34389.stgit@zurg>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is V2 of what I posted a few days ago. I also updates
-the file in Documentation.  I Cc:d people who gave feedback.
+On Wed, 16 Nov 2011 17:47:13 +0300
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-Patch 2 uses the new tool for an existing file I didn't initially
-notice (I had a victim file, but it's seriously failing compilation).
-Code removal there is almost zero because Felipe Balbi already did
-stuff in the way I do.
+> Inode cache pruning indirectly reclaims page-cache by invalidating mapping pages.
+> Let's account them into reclaim-state to notice this progress in memory reclaimer.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  fs/inode.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index ee4e66b..1f6c48d 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -692,6 +692,8 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+>  	else
+>  		__count_vm_events(PGINODESTEAL, reap);
+>  	spin_unlock(&sb->s_inode_lru_lock);
+> +	if (current->reclaim_state)
+> +		current->reclaim_state->reclaimed_slab += reap;
+>  
+>  	dispose_list(&freeable);
+>  }
 
-Mark Brown suggested to look at drivers/base/regmap, and actually this
-may be duplicating what is already being worked on in a more general
-way. My code base is earlier than regmap so I didn't notice.
-Unfortunately I have no resources left to study regmap as it
-deserves.
+hm, yes, I suppose we should.
 
-Mark, if you say this is not useful at this point, I'm fine with it; I
-may return with some regbase-aware code when time permits if it's not
-already there.
+It seems to be cheating to use the "reclaimed_slab" field for this. 
+Perhaps it would be cleaner to add an additional field to reclaim_state
+for non-slab pages which were also reclaimed.  That's a cosmetic thing
+and I guess we don't need to go that far, not sure...
 
-/alessandro
 
-Alessandro Rubini (2):
-  debugfs: add tools to printk 32-bit registers
-  usb: dwc3: use debugfs_print_regs32()
-
- Documentation/filesystems/debugfs.txt |   32 +++++++++++-
- drivers/usb/dwc3/debugfs.c            |   15 +----
- fs/debugfs/file.c                     |   90 +++++++++++++++++++++++++++++++++
- include/linux/debugfs.h               |   26 +++++++++
- 4 files changed, 150 insertions(+), 13 deletions(-)
