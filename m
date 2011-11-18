@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab1KRQej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:34:39 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:27947 "EHLO mx2.netapp.com"
+	id S1758124Ab1KRQfZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:35:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37420 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab1KRQei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:34:38 -0500
-X-IronPort-AV: E=Sophos;i="4.69,533,1315206000"; 
-   d="scan'208";a="600027610"
-Message-ID: <4EC6890C.3070803@netapp.com>
-Date: Fri, 18 Nov 2011 11:34:20 -0500
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	id S1752905Ab1KRQfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 11:35:24 -0500
+Date: Fri, 18 Nov 2011 17:35:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
+Message-ID: <20111118163521.GD23223@tiehlicka.suse.cz>
+References: <20111117103308.063f78df.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: peter.staubach@emc.com
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, john@calva.com,
-        trond.myklebust@netapp.com
-Subject: Re: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
-References: <4EC685D1.2000900@Calva.COM> <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
-In-Reply-To: <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111117103308.063f78df.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 18 Nov 2011 11:27:37 AM EST, peter.staubach@emc.com wrote:
-> Given that the poor user will be sitting, with almost nothing working because of the expired ticket, how does the user figure out what is going on or how does the admin help him?
->
-> Some guidance seems like a good thing.  Is there really a problem with these messages being printed to the log?
+On Thu 17-11-11 10:33:08, KAMEZAWA Hiroyuki wrote:
+> 
+> I'll send this again when mm is shipped.
+> I sometimes see mem_cgroup_split_huge_fixup() in perf report and noticed
+> it's very slow. This fixes it. Any comments are welcome.
+> 
+> ==
+> Subject: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
+> 
+> at split_huge_page(), mem_cgroup_split_huge_fixup() is called to
+> handle page_cgroup modifcations. It takes move_lock_page_cgroup()
+> and modify page_cgroup and LRU accounting jobs and called
+> HPAGE_PMD_SIZE - 1 times.
+> 
+> But thinking again,
+>   - compound_lock() is held at move_accout...then, it's not necessary
+>     to take move_lock_page_cgroup().
+>   - LRU is locked and all tail pages will go into the same LRU as
+>     head is now on.
+>   - page_cgroup is contiguous in huge page range.
+> 
+> This patch fixes mem_cgroup_split_huge_fixup() as to be called once per
+> hugepage and reduce costs for spliting.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I agree.  Rather than removing the messages, is there a way to slow 
-them down even further so the logs don't fill up as quickly?
+Yes, looks good. Andrew already took the patch, but just in case
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
->
-> 	Thanx...
->
-> 		ps
->
->
-> -----Original Message-----
-> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of John Hughes
-> Sent: Friday, November 18, 2011 11:21 AM
-> To: Trond Myklebust
-> Cc: linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
->
-> Don't write anything to the log if a user Kerberos ticket expires or is missing,
-> these are not kernel problems.
->
-> Signed-off-by: John Hughes<john@calva.com>
->
-> diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-> index 39914be..18897cb 100644
-> --- a/fs/nfs/nfs4state.c
-> +++ b/fs/nfs/nfs4state.c
-> @@ -1339,14 +1339,6 @@ static void nfs4_state_start_reclaim_nograce(struct nfs_client *clp)
->   	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
->   }
->
-> -static void nfs4_warn_keyexpired(const char *s)
-> -{
-> -	printk_ratelimited(KERN_WARNING "Error: state manager"
-> -			" encountered RPCSEC_GSS session"
-> -			" expired against NFSv4 server %s.\n",
-> -			s);
-> -}
-> -
->   static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
->   {
->   	switch (error) {
-> @@ -1378,7 +1370,6 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
->   			return 0;
->   		case -EKEYEXPIRED:
->   			/* Nothing we can do */
-> -			nfs4_warn_keyexpired(clp->cl_hostname);
->   			return 0;
->   	}
->   	return error;
-> @@ -1620,7 +1611,6 @@ static void nfs4_set_lease_expired(struct nfs_client *clp, int status)
->   		break;
->
->   	case -EKEYEXPIRED:
-> -		nfs4_warn_keyexpired(clp->cl_hostname);
->   	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
->   				 * in nfs4_exchange_id */
->   	default:
-> @@ -1728,8 +1718,9 @@ static void nfs4_state_manager(struct nfs_client *clp)
->   	} while (atomic_read(&clp->cl_count)>  1);
->   	return;
->   out_error:
-> -	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-> -			" with error %d\n", clp->cl_hostname, -status);
-> +	if (status != -EACCESS)
-> +		printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-> +				" with error %d\n", clp->cl_hostname, -status);
->   	nfs4_end_drain_session(clp);
->   	nfs4_clear_state_manager_bit(clp);
->   }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Just one really minor comment bellow
+[...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 6aff93c..99101f1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2523,38 +2523,38 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>  /*
+>   * Because tail pages are not marked as "used", set it. We're under
+>   * zone->lru_lock, 'splitting on pmd' and compund_lock.
 
+typo that could be fixed to make grep happier
 
+> + * charge/uncharge will be never happen and move_account() is done under
+> + * compound_lock(), so we don't have to take care of races.
+>   */
+> -void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
+> +void mem_cgroup_split_huge_fixup(struct page *head)
+
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
