@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab1KRWqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:46:13 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41574 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab1KRWqM (ORCPT
+	id S1757044Ab1KRWvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:51:05 -0500
+Received: from mail176c2.megamailservers.com ([69.49.111.76]:53074 "EHLO
+	mail176c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752002Ab1KRWvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:46:12 -0500
-Date: Fri, 18 Nov 2011 14:46:06 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul Menage <paul@paulmenage.org>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Turner <pjt@google.com>
-Subject: [GIT PULL cgroup] Update maintainership
-Message-ID: <20111118224606.GB27152@google.com>
+	Fri, 18 Nov 2011 17:51:03 -0500
+X-Authenticated-User: konrad.gaisler.com
+Message-ID: <4EC6E179.1030703@gaisler.com>
+Date: Fri, 18 Nov 2011 23:51:37 +0100
+From: "konrad.gaisler" <konrad@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: linux-kernel@vger.kernel.org,
+        linux kbuild list <linux-kbuild@vger.kernel.org>, mmarek@suse.cz,
+        pefoley2@verizon.net, yann.morin.1998@anciens.enib.fr,
+        sam@ravnborg.org, zippel@linux-m68k.org
+Subject: Re: [PATCH 1/1] kconfig: Add a configuration subtree command to kconfig
+References: <1321625774-12749-1-git-send-email-konrad@gaisler.com> <4EC69F65.20207@xenotime.net>
+In-Reply-To: <4EC69F65.20207@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-CSC: 0
+X-CHA: v=1.1 cv=nzisDwsushzt7gU+UbbGT+7gaUmTco5i81mmV/NoaDo= c=1 sm=1
+		a=nFJ2T2qeKKUA:10 a=wd-vcygihCUA:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
+		a=2wAOqaBLMYbCqLQOYtKPHg==:17 a=VwQbUJbxAAAA:8 a=ebG-ZW-8AAAA:8
+		a=FAXIp6hDv2bdCbhm5ukA:9 a=wPNLvfGTeEIA:10 a=xQdB8fRqRzQA:10
+		a=cCYF7-FHeg4A:10 a=NWVoK91CQyQA:10 a=2wAOqaBLMYbCqLQOYtKPHg==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On 11/18/2011 07:09 PM, Randy Dunlap wrote:
+> (changed linux-config@ to linux-kbuild@vger.kernel.org)
+>
+> On 11/18/2011 06:16 AM, Konrad Eisele wrote:
+>> New kconfig command "subsource":
+>> subsource "<kconfig>""<cwd>""<.config>""<title>"<internal_prefix>  <.config_prefix>
+>> Allocates<kconfig>  as a configuration subtree using<.config>  as the configuration
+>> file to save and load from.<cwd>  is the directory path to switch to for "source" to
+>> work, "<title>" is the Menu tile of the subtree,<internal_prefix>  is a internal prefix,
+>> and<.config_prefix>  is the prefix to append/remove when saving/loading<.config>.
+> That explains what but not why.  You need some justification(s) for such
+> a large patch.  Maybe even some example usages.
+The patch originated from a buildsystem that uses buildroot and linux.
+Both use Kconfig and the buildsystem itself uses Kconfig. To configure
+a subproject you have to exit the toplevel Kconfig and restart to
+startup a subproject Kconfig, It is even more anoying when looking
+inside buildroot. It has in its turn subprojects uClibc, busybox,
+linux, crosstools-ng which all use Kconfig. The subtree patch
+does make it possible to unify all in one Kconfig.
 
-Paul doesn't have enough time to maintain cgroup and we agreed that I
-take over as one of the maintainers and maintain git tree.  I would be
-doing standard for-next/fixes branch management.  At least until
-things settle down, I wouldn't be committing any patch w/o Li Zefan's
-co-ack.
+As an example, apply the patch, then add to <top>/Kconfig the lines:
 
-At the moment, there are a few conflicting patchsets floating around
-and sorting them out for the next merge window would be the first
-priority.
+subsource "arch/sparc/Kconfig" "." ".config_sparc" "SPARC config" SPARC_ 
+CONFIG_
+subsource "arch/mips/Kconfig" "." ".config_mips" "MIPS config" MIPS_ CONFIG_
+(my mailclient breaks up the lines, it should be 2 lines only).
 
-Please pull from the following git branch to receive MAINTAINERS update.
+Then start "make xconfig" once to build "qconfig". The patch adds an
+extra option to qconfig (also mconfig, gconfig and nconfig) "-s". This
+option enables the "subsource" tag. Now start qconfig:
+$<path-to-qconfig>/qconfig -s Kconfig
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.2-fixes
+Then you see a subtree "Sparc config" and "Mips config" that is a sparc
+and mips complete Kconfig. They are independent from another. The Sparc
+subtree is saved/loaded from .config_sparc, the  Mips subtree is
+saved/loaded from .config_mips. No namespace clash.
 
-Thank you.
+Note that without the "-s" option the Kconfig behaviour is as usual. I
+think it would be a help for many projects that use Kconfig.
 
-Paul Menage (1):
-      cgroup: Replace Paul Menage with Tejun Heo as cgroups maintainer
+-- Konrad
 
- MAINTAINERS |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7f6bc29..78751bb 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1927,10 +1927,11 @@ S:	Maintained
- F:	drivers/connector/
- 
- CONTROL GROUPS (CGROUPS)
--M:	Paul Menage <paul@paulmenage.org>
-+M:	Tejun Heo <tj@kernel.org>
- M:	Li Zefan <lizf@cn.fujitsu.com>
- L:	containers@lists.linux-foundation.org
- L:	cgroups@vger.kernel.org
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
- S:	Maintained
- F:	include/linux/cgroup*
- F:	kernel/cgroup*
 
---
-tejun
+
+
+>
+>> Signed-off-by: Konrad Eisele<konrad@gaisler.com>
+>> ---
+>>   scripts/kconfig/conf.c               |    6 +-
+>>   scripts/kconfig/confdata.c           |   83 ++-
+>>   scripts/kconfig/expr.h               |   16 +
+>>   scripts/kconfig/gconf.c              |    3 +
+>>   scripts/kconfig/lkc.h                |    1 +
+>>   scripts/kconfig/lkc_proto.h          |   12 +-
+>>   scripts/kconfig/mconf.c              |   13 +-
+>>   scripts/kconfig/menu.c               |   18 +-
+>>   scripts/kconfig/nconf.c              |   13 +-
+>>   scripts/kconfig/qconf.cc             |    3 +
+>>   scripts/kconfig/symbol.c             |   50 ++-
+>>   scripts/kconfig/util.c               |   49 ++
+>>   scripts/kconfig/zconf.gperf          |    1 +
+>>   scripts/kconfig/zconf.hash.c_shipped |  252 +++++-----
+>>   scripts/kconfig/zconf.l              |   50 ++-
+>>   scripts/kconfig/zconf.lex.c_shipped  |   52 ++-
+>>   scripts/kconfig/zconf.tab.c_shipped  |  985 ++++++++++++++++++----------------
+>>   scripts/kconfig/zconf.y              |   23 +-
+>>   18 files changed, 991 insertions(+), 639 deletions(-)
+>
+>
+
