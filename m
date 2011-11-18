@@ -1,199 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab1KRHIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 02:08:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41411 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1KRHIq (ORCPT
+	id S1756518Ab1KRHJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 02:09:41 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:58678 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755007Ab1KRHJk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 02:08:46 -0500
-Date: Fri, 18 Nov 2011 15:08:35 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -rt] memcg: use migrate_disable()/migrate_enable( ) in
- memcg_check_events()
-Message-ID: <20111118070835.GA24650@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <alpine.LFD.2.02.1111150050590.4902@ionos>
- <20111115084059.GA23250@zhy>
- <20111116091653.GA8692@zhy>
- <1321452758.4181.18.camel@frodo>
- <alpine.LFD.2.02.1111161801270.4902@ionos>
- <20111117030332.GA14492@zhy>
- <alpine.LFD.2.02.1111171125020.4902@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1111171125020.4902@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Nov 2011 02:09:40 -0500
+Date: Fri, 18 Nov 2011 02:09:21 -0500 (EST)
+Message-Id: <20111118.020921.1221623749729939203.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: david.decotigny@google.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ian.campbell@citrix.com,
+        rick.jones2@hp.com
+Subject: Re: [PATCH FIX net-next v1] net-forcedeth: fix possible stats
+ inaccuracies on 32b hosts
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1321560495.2444.1.camel@edumazet-laptop>
+References: <cover.1321558587.git.david.decotigny@google.com>
+	<34add86253ddd91d5d4d4c7fee9c90f63a8d8edf.1321558587.git.david.decotigny@google.com>
+	<1321560495.2444.1.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 17 Nov 2011 23:09:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 11:25:56AM +0100, Thomas Gleixner wrote:
-> On Thu, 17 Nov 2011, Yong Zhang wrote:
-> 
-> > On Wed, Nov 16, 2011 at 06:02:42PM +0100, Thomas Gleixner wrote:
-> > > On Wed, 16 Nov 2011, Steven Rostedt wrote:
-> > > > On Wed, 2011-11-16 at 17:16 +0800, Yong Zhang wrote:
-> > > > > Looking at commit 4799401f [memcg: Fix race condition in
-> > > > > memcg_check_events() with this_cpu usage], we just want
-> > > > > to disable migration. So use the right API in -rt. This
-> > > > > will cure below warning.
-> > > > No this won't work. Not even for -rt. If we disable migration but not
-> > > > preemption, then two tasks can take this path. And the checks in
-> > > > __memcg_event_check() will be corrupted because nothing is protecting
-> > > > the updates from two tasks going into the same path.
-> > > > 
-> > > > Perhaps a local_lock would work.
-> > > 
-> > > Yes, that's the only sensible option for now. Untested patch below.
-> > 
-> > Works for me.
-> 
-> Johannes came up with a different solution. Could you please give it a try?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 17 Nov 2011 21:08:15 +0100
 
-Works too :)
+> Le jeudi 17 novembre 2011 à 11:38 -0800, David Decotigny a écrit :
+>> The software stats are updated from BH, this change ensures that 32b
+>> UP hosts use appropriate protection.
+>> 
+>> Tested:
+>>   - HW/SW stats consistent with pktgen (in particular tx=rx)
+>>   - HW/SW stats consistent when tx/rx offloads disabled
+>>   - no problem with+without lockdep (SMP 16-way)
+>> 
+>> 
+>> 
+>> Signed-off-by: David Decotigny <david.decotigny@google.com>
+> 
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Thanks,
-Yong
-
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> ------------->
-> Subject: [patch] mm: memcg: shorten preempt-disabled section around event checks
-> 
-> Only the ratelimit checks themselves have to run with preemption
-> disabled, the resulting actions - checking for usage thresholds,
-> updating the soft limit tree - can and should run with preemption
-> enabled.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> ---
->  mm/memcontrol.c |   73 ++++++++++++++++++++++++++----------------------------
->  1 files changed, 35 insertions(+), 38 deletions(-)
-> 
-> Thomas, HTH and it is probably interesting for upstream as well.
-> Unfortunately, I'm in the middle of moving right now, so this is
-> untested except for compiling.
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6aff93c..8e62d3e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -683,37 +683,32 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
->  	return total;
->  }
->  
-> -static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
-> +static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
-> +				       enum mem_cgroup_events_target target)
->  {
->  	unsigned long val, next;
->  
->  	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
->  	next = __this_cpu_read(memcg->stat->targets[target]);
->  	/* from time_after() in jiffies.h */
-> -	return ((long)next - (long)val < 0);
-> -}
-> -
-> -static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
-> -{
-> -	unsigned long val, next;
-> -
-> -	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
-> -
-> -	switch (target) {
-> -	case MEM_CGROUP_TARGET_THRESH:
-> -		next = val + THRESHOLDS_EVENTS_TARGET;
-> -		break;
-> -	case MEM_CGROUP_TARGET_SOFTLIMIT:
-> -		next = val + SOFTLIMIT_EVENTS_TARGET;
-> -		break;
-> -	case MEM_CGROUP_TARGET_NUMAINFO:
-> -		next = val + NUMAINFO_EVENTS_TARGET;
-> -		break;
-> -	default:
-> -		return;
-> +	if ((long)next - (long)val < 0) {
-> +		switch (target) {
-> +		case MEM_CGROUP_TARGET_THRESH:
-> +			next = val + THRESHOLDS_EVENTS_TARGET;
-> +			break;
-> +		case MEM_CGROUP_TARGET_SOFTLIMIT:
-> +			next = val + SOFTLIMIT_EVENTS_TARGET;
-> +			break;
-> +		case MEM_CGROUP_TARGET_NUMAINFO:
-> +			next = val + NUMAINFO_EVENTS_TARGET;
-> +			break;
-> +		default:
-> +			break;
-> +		}
-> +		__this_cpu_write(memcg->stat->targets[target], next);
-> +		return true;
->  	}
-> -
-> -	__this_cpu_write(memcg->stat->targets[target], next);
-> +	return false;
->  }
->  
->  /*
-> @@ -724,25 +719,27 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  {
->  	preempt_disable();
->  	/* threshold event is triggered in finer grain than soft limit */
-> -	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
-> +	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_THRESH))) {
-> +		bool do_softlimit, do_numainfo;
-> +
-> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_SOFTLIMIT);
-> +#if MAX_NUMNODES > 1
-> +		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_NUMAINFO);
-> +#endif
-> +		preempt_enable();
-> +
->  		mem_cgroup_threshold(memcg);
-> -		__mem_cgroup_target_update(memcg, MEM_CGROUP_TARGET_THRESH);
-> -		if (unlikely(__memcg_event_check(memcg,
-> -			     MEM_CGROUP_TARGET_SOFTLIMIT))) {
-> +		if (unlikely(do_softlimit))
->  			mem_cgroup_update_tree(memcg, page);
-> -			__mem_cgroup_target_update(memcg,
-> -						   MEM_CGROUP_TARGET_SOFTLIMIT);
-> -		}
->  #if MAX_NUMNODES > 1
-> -		if (unlikely(__memcg_event_check(memcg,
-> -			MEM_CGROUP_TARGET_NUMAINFO))) {
-> +		if (unlikely(do_numainfo))
->  			atomic_inc(&memcg->numainfo_events);
-> -			__mem_cgroup_target_update(memcg,
-> -				MEM_CGROUP_TARGET_NUMAINFO);
-> -		}
->  #endif
-> -	}
-> -	preempt_enable();
-> +	} else
-> +		preempt_enable();
->  }
->  
->  static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
-> -- 
-> 1.7.6.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Only stand for myself
+Applied, thanks.
