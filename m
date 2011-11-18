@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab1KRVD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 16:03:29 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53102 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab1KRVD2 (ORCPT
+	id S1756252Ab1KRVED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 16:04:03 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:19076 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab1KRVEB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 16:03:28 -0500
-Date: Sat, 19 Nov 2011 01:03:22 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
- that can be shared between tasks
-Message-ID: <20111118210322.GD21041@moon>
-References: <4EC4DA15.7090106@parallels.com>
- <20111117124831.688adbeb.akpm@linux-foundation.org>
- <4EC6246A.6020807@parallels.com>
- <20111118110716.c854b4bd.akpm@linux-foundation.org>
- <20111118200342.GC21041@moon>
- <20111118123728.554b45e7.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118123728.554b45e7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Nov 2011 16:04:01 -0500
+X-IronPort-AV: E=Sophos;i="4.69,535,1315206000"; 
+   d="scan'208";a="600118000"
+Message-ID: <1321650239.2653.68.camel@lade.trondhjem.org>
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry. Try 2 with added man pages.
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Jim Rees <rees@umich.edu>
+Cc: John Hughes <john@calvaedi.com>, John Hughes <john@calva.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 18 Nov 2011 23:03:59 +0200
+In-Reply-To: <20111118205749.GA1680@umich.edu>
+References: <4EC66D12.2090505@Calva.COM>
+	 <1321641333.2653.15.camel@lade.trondhjem.org>
+	 <4EC6AFA9.9000705@calvaedi.com>
+	 <1321648435.2653.53.camel@lade.trondhjem.org>
+	 <20111118205749.GA1680@umich.edu>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 18 Nov 2011 21:04:00.0465 (UTC) FILETIME=[983F1410:01CCA635]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 12:37:28PM -0800, Andrew Morton wrote:
-...
-> > 
-> > Actually the address is not exposed in open-form but rather xor'ed with
-> > a random number, still from security pov it's not clear if it's really useful
-> > for attacker to obtain inverted low bits of the former random number (which
-> > might happen on aligned addresses).
-> > 
+On Fri, 2011-11-18 at 15:57 -0500, Jim Rees wrote: 
+> Trond Myklebust wrote:
 > 
-> Of course.  But
+>   On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote: 
+>   > On 11/18/2011 07:35 PM, Trond Myklebust wrote:
+>   > > On Fri, 2011-11-18 at 15:34 +0100, John Hughes wrote:
+>   > >    
+>   > >> Description: Add "-e" (ticket expiry is error) option to rpc.gssd
+>   > >>    In kernels starting around 2.6.34 the nfs4 server will block all I/O
+>   > >>    when a user ticket expires.  In earlier kernels the I/O would fail
+>   > >>    with an EACCESS error.  This patch adds a "-e" option to rpc.gssd
+>   > >>    which allow the earlier behaviour (EKEYEXPIRED is converted to
+>   > >>    EACCESS).  This behaviour is particularly useful when user home
+>   > >>    directories are nfs4 mounted with krb5 security - if the user is
+>   > >>    absent from their workstation for long enough for the ticket to
+>   > >>    expire a new ticket will be obtained (via pam_krb5) by the screen
+>   > >>    unlock process.
+>   > >>      
+>   > > You need a big fat warning somewhere that enabling this option WILL
+>   > > cause data corruption...
+>   > >    
+>   > Why?
+>   > 
+>   > Because some process may get the EACCES error half way through it's 
+>   > operation.
+>   
+>   No. Because the process can receive a reply to the write() syscall that
+>   indicates that the data is safe, but the EKEYEXPIRED error will cause
+>   the data to be lost when the client tries to actually commit the data to
+>   disk.
 > 
-> a) I'm not sure that this scheme actually protects the kernel
->    addresses - there may be way in which cunning userspace can work out
->    the random mask.
-> 
+> The write() syscall doesn't indicate whether the data is safe or not.  That
+> would be the close() syscall.
 
-Well, in case of hw-rng it should not be that easy, still of course
-there is no 100% guarantee that there is absolutely no way to predict
-this mask (espec since it's generated once at lives here forever). But
-whatever makes attacker life harder -- is a good thing. After all we might
-simply take some hash on kernel address here (such as sha256) since it's
-not a time-critical operation and as far as I know collision is not found
-for it yet (??).
+fsync(). Which may succeed if the user renews their ticket first.
+However you may still have data loss if dirty data has been lost because
+of EKEYEXPIRED returns on the WRITE RPC call...
 
-> b) If we can export these addresses only to CAP_SYS_ADMIN tasks then
->    we don't need to obfuscate them anyway.
-> 
->    Which takes me back to again asking: why not make c/r root-only?
->    And provide non-root access via a carefully-written setuid
->    front-end?
-> 
+Also, for the fsync() to return EKEYEXPIRED _after_ the user has renewed
+their ticket would seem counter-intuitive to most people.
 
-I think non-root approach is a win in a long term (even if it requires
-some new CAP_ for that). The less root priviledge needed -- then better.
-Having it root-only is easier of course and solves the problem of masking
-kernel addresses from untrusted user-space agents, but still. Pavel, what
-do you think about root-only?
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-	Cyrill
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
