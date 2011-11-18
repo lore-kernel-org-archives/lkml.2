@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab1KRQ6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:58:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39295 "EHLO mx2.suse.de"
+	id S1758184Ab1KRQ6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:58:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39290 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757772Ab1KRQ6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:58:48 -0500
+	id S1753386Ab1KRQ6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 11:58:47 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -13,49 +13,79 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Andy Isaacson <adi@hexapodia.org>,
         Johannes Weiner <jweiner@redhat.com>, Mel Gorman <mgorman@suse.de>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] mm: compaction: Allow compaction to isolate dirty pages
-Date: Fri, 18 Nov 2011 16:58:40 +0000
-Message-Id: <1321635524-8586-2-git-send-email-mgorman@suse.de>
+Subject: [RFC PATCH 0/5] Reduce compaction-related stalls and improve asynchronous migration of dirty pages v3
+Date: Fri, 18 Nov 2011 16:58:39 +0000
+Message-Id: <1321635524-8586-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1321635524-8586-1-git-send-email-mgorman@suse.de>
-References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-noted that compaction does not migrate dirty or writeback pages and
-that is was meaningless to pick the page and re-add it to the LRU list.
+This series is against 3.2-rc2 and follows on from discussions on "mm:
+Do not stall in synchronous compaction for THP allocations". That
+patch eliminated stalls due to compaction which sometimes resulted
+in user-visible interactivity problems on browsers. The downside was
+that THP success allocation rates were lower because dirty pages were
+not being migrated.
 
-What was missed during review is that asynchronous migration moves
-dirty pages if their ->migratepage callback is migrate_page() because
-these can be moved without blocking. This potentially impacted
-hugepage allocation success rates by a factor depending on how many
-dirty pages are in the system.
+This series is an RFC on how we can migrate more dirty pages with
+asynchronous compaction.  The intention is to maximise transparent
+hugepage availability while minimising stalls. This does not rule out
+the possibility of having a tunable to enable synchronous compaction
+at a time when a user is willing to stall waiting on huge pages and
+to disable khugepaged.
 
-This patch partially reverts 39deaf85 to allow migration to isolate
-dirty pages again. This increases how much compaction disrupts the
-LRU but that is addressed later in the series.
+Patch 1 partially reverts commit 39deaf85 to allow migration to isolate
+	dirty pages.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+Patch 2 notes that the /proc/sys/vm/compact_memory handler is not using
+	synchronous compaction when it should be.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 899d956..237560e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -349,9 +349,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			continue;
- 		}
- 
--		if (!cc->sync)
--			mode |= ISOLATE_CLEAN;
--
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
+Patch 3 prevents THP allocations using synchronous compaction as this
+	can result in user-visible stalls. More details on the stalls
+	are in the changelog.
+
+Patch 4 adds a sync parameter to the migratepage callback. It is up
+	to the callback to migrate that page without blocking if
+	sync==false. For example, fallback_migrate_page will not
+	call writepage if sync==false
+
+Patch 5 restores filter-awareness to isolate_lru_page for migration.
+	In practice, it means that pages under writeback and pages
+	without a ->migratepage callback will not be isolated
+	for migration.
+
+This has been lightly tested and nothing horrible fell out
+but I need to think a lot more more on patch 4 to see if
+buffer_migrate_lock_buffers() is really doing the right thing for
+async compaction and if the backout logic is correct. Stalls due
+to compaction were eliminated and hugepage allocation success rates
+were more or less the same. I'm running a more comprehensive set of
+tests over the weekend to see if the warning in patch 4 triggers
+in particular and what the allocation success rates look like for
+different loads.
+
+Andrea, I didn't pick up your "move ISOLATE_CLEAN setting out of
+compaction_migratepages loop" but obviously could if this series gains
+any traction. This is also orthogonal to your "improve synchronous
+compaction" idea but obviously if the stalls from sync compaction could
+be significantly reduced, it would still not collide with this series
+that improves the migration of dirty pages for asynchronous compaction.
+If your approach works, it would replace patch 3 from this series.
+
+ fs/btrfs/disk-io.c      |    2 +-
+ fs/nfs/internal.h       |    2 +-
+ fs/nfs/write.c          |    4 +-
+ include/linux/fs.h      |    9 +++-
+ include/linux/gfp.h     |   11 +++++
+ include/linux/migrate.h |    2 +-
+ include/linux/mmzone.h  |    2 +
+ mm/compaction.c         |    3 +-
+ mm/migrate.c            |  106 ++++++++++++++++++++++++++++++++---------------
+ mm/page_alloc.c         |    9 ++++-
+ mm/vmscan.c             |   36 +++++++++++++++-
+ 11 files changed, 140 insertions(+), 46 deletions(-)
+
 -- 
 1.7.3.4
 
