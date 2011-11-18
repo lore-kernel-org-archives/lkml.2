@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab1KRQfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:35:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37420 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab1KRQfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:35:24 -0500
-Date: Fri, 18 Nov 2011 17:35:21 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
-Message-ID: <20111118163521.GD23223@tiehlicka.suse.cz>
-References: <20111117103308.063f78df.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1758163Ab1KRQfu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:35:50 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52890 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752905Ab1KRQfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 11:35:48 -0500
+X-Sasl-enc: Ze8Li9n/2sISvGFWW8X3qaRBLoZfbcMTj5i/xt0OGvCo 1321634147
+Date: Fri, 18 Nov 2011 08:18:55 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Dave Young <dyoung@redhat.com>
+Subject: Re: linux-next: manual merge of the tty tree with the tty.current
+ tree
+Message-ID: <20111118161855.GA30462@kroah.com>
+References: <20111118143010.4a6c9eb17b86d24b9ebe706b@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111117103308.063f78df.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111118143010.4a6c9eb17b86d24b9ebe706b@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 17-11-11 10:33:08, KAMEZAWA Hiroyuki wrote:
+On Fri, Nov 18, 2011 at 02:30:10PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> I'll send this again when mm is shipped.
-> I sometimes see mem_cgroup_split_huge_fixup() in perf report and noticed
-> it's very slow. This fixes it. Any comments are welcome.
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/tty/tty_ldisc.c between commits df92d0561de3 ("TTY: ldisc, allow
+> waiting for ldisc arbitrarily long") and 0c73c08ec73d ("TTY: ldisc, wait
+> for ldisc infinitely in hangup") from the tty.current tree and commits
+> 66ef27c3fd0e ("tty_ldisc: remove unnecessary negative return check for
+> wait_event_timeout") and 8b3ffa173ffa ("TTY: ldisc, remove some unneeded
+> includes") from the tty tree.
 > 
-> ==
-> Subject: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
-> 
-> at split_huge_page(), mem_cgroup_split_huge_fixup() is called to
-> handle page_cgroup modifcations. It takes move_lock_page_cgroup()
-> and modify page_cgroup and LRU accounting jobs and called
-> HPAGE_PMD_SIZE - 1 times.
-> 
-> But thinking again,
->   - compound_lock() is held at move_accout...then, it's not necessary
->     to take move_lock_page_cgroup().
->   - LRU is locked and all tail pages will go into the same LRU as
->     head is now on.
->   - page_cgroup is contiguous in huge page range.
-> 
-> This patch fixes mem_cgroup_split_huge_fixup() as to be called once per
-> hugepage and reduce costs for spliting.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Yes, looks good. Andrew already took the patch, but just in case
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Thanks, the fix looks correct, I'll end up resolving it when I merge the
+tty-linus tree to Linus.
 
-Just one really minor comment bellow
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6aff93c..99101f1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2523,38 +2523,38 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->  /*
->   * Because tail pages are not marked as "used", set it. We're under
->   * zone->lru_lock, 'splitting on pmd' and compund_lock.
-
-typo that could be fixed to make grep happier
-
-> + * charge/uncharge will be never happen and move_account() is done under
-> + * compound_lock(), so we don't have to take care of races.
->   */
-> -void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
-> +void mem_cgroup_split_huge_fixup(struct page *head)
-
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+greg k-h
