@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab1KRRuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 12:50:08 -0500
-Received: from relay04ant.iops.be ([212.53.5.219]:48590 "EHLO
-	relay04ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab1KRRuG (ORCPT
+	id S1754078Ab1KRRvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 12:51:18 -0500
+Received: from mexforward.lss.emc.com ([128.222.32.20]:56475 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab1KRRvR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 12:50:06 -0500
-From: Bart Van Assche <bvanassche@acm.org>
-To: linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        James Bottomley <JBottomley@parallels.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/2] hv: Add Kconfig menu entry
-Date: Fri, 18 Nov 2011 18:40:52 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38.8-scst; KDE/4.6.0; x86_64; ; )
+	Fri, 18 Nov 2011 12:51:17 -0500
+From: <peter.staubach@emc.com>
+To: <john@Calva.COM>
+CC: <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Nov 2011 12:50:38 -0500
+Subject: RE: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
+ errors
+Thread-Topic: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
+ errors
+Thread-Index: AcymEnRdNh5uGkteQdGnfMWNJ/xrMQACBHfw
+Message-ID: <5E6794FC7B8FCA41A704019BE3C70E8B9422FC49@MX31A.corp.emc.com>
+References: <4EC685D1.2000900@Calva.COM>
+ <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
+ <4EC68D29.7030005@Calva.COM>
+In-Reply-To: <4EC68D29.7030005@Calva.COM>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111181840.52672.bvanassche@acm.org>
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the drivers/*/Kconfig files define a menu entry. Define
-a menu item for hv too such that it becomes uniform with e.g.
-virtio for at least "make xconfig" and "make menuconfig" users.
+The log messages are for the poor admin who has to figure out why nothing is working for the user.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/Kconfig |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+		ps
 
-diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
-index 9fa09ac..70f5dde 100644
---- a/drivers/hv/Kconfig
-+++ b/drivers/hv/Kconfig
-@@ -1,3 +1,5 @@
-+menu "Microsoft Hyper-V guest support"
-+
- config HYPERV
- 	tristate "Microsoft Hyper-V client drivers"
- 	depends on X86 && ACPI && PCI
-@@ -11,4 +13,4 @@ config HYPERV_UTILS
- 	help
- 	  Select this option to enable the Hyper-V Utilities.
- 
--
-+endmenu
--- 
-1.7.3.4
+
+-----Original Message-----
+From: John Hughes [mailto:john@Calva.COM] 
+Sent: Friday, November 18, 2011 11:52 AM
+To: Staubach, Peter
+Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
+
+On 18/11/11 17:27, peter.staubach@emc.com wrote:
+> Given that the poor user will be sitting, with almost nothing working because of the expired ticket, how does the user figure out what is going on or how does the admin help him?
+>
+> Some guidance seems like a good thing.  Is there really a problem with these messages being printed to the log?
+If you're sat at your console with nothing responding how are you going 
+to see the log messages?
+
+The "ticket expired" messages are rate limited.
+
+The "Error: state manager failed on NFSv4 server" messages are not rate 
+limited, but if you use my "rpc.gssd -e" hack they'll be written to the 
+log every 5 seconds all night long.
+
 
