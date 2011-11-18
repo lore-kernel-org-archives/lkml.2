@@ -1,81 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab1KRDQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 22:16:18 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:6391
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755107Ab1KRDQQ (ORCPT
+	id S1756056Ab1KRDQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 22:16:44 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:55183 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756026Ab1KRDQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 22:16:16 -0500
-X-SpamScore: -11
-X-BigFish: VS-11(zzc89bh542M1432Nzz1202hzzz2dh2a8h668h839h8e2h8e3h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tang Yuantian-B29983 <B29983@freescale.com>
-To: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sun york-R58495 <R58495@freescale.com>
-Subject: RE: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Thread-Topic: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Thread-Index: AQHMpIUnsb9+I0lR9k+0uRq1j4EoUpWwJ/0AgAAFb4CAAAQAAIAAAwAAgAAOBACAAAE+gIAAAP2AgAABnICAAX/yAIAAMKGg
-Date: Fri, 18 Nov 2011 03:15:39 +0000
-Message-ID: <3C06C26914DACA4BB3A368F78CA0B3A712BAB1@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-	 <CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
-	 <E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
-	 <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
-	 <1321464509.7847.41.camel@oslab-l1>
-	 <1321464968.2309.384.camel@groeck-laptop>
-	 <1321466135.7847.55.camel@oslab-l1>
-	 <20111116190954.67c846fc@endymion.delvare>
-	 <1321467638.7847.73.camel@oslab-l1>
-	 <20111116201048.4b7877dd@endymion.delvare>
-	 <1321470915.7847.122.camel@oslab-l1>
-	 <20111116201847.6b11dc7f@endymion.delvare>
-	 <1321471473.7847.126.camel@oslab-l1> <1321553924.2730.7.camel@groeck-laptop>
-In-Reply-To: <1321553924.2730.7.camel@groeck-laptop>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.75]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 17 Nov 2011 22:16:42 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2] PM/Hibernation: Fix the early termination of test modes
+To: rjw@sisk.pl
+Cc: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Fri, 18 Nov 2011 08:46:30 +0530
+Message-ID: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111717-6102-0000-0000-000000316050
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAI3GUMt007805
 
-I have tested this patch. It works on p1022ds platform.
-Thanks.
+Commit 2aede851ddf08666f68ffc17be446420e9d2a056
+(PM / Hibernate: Freeze kernel threads after preallocating memory)
+postponed the freezing of kernel threads to after preallocating memory
+for hibernation. But while doing that, the hibernation test TEST_FREEZER
+and the test mode HIBERNATION_TESTPROC were not moved accordingly.
 
-Regards,
-Yuantian
+As a result, when using these test modes, it only goes upto the freezing of
+userspace and exits, when in fact it should go till the complete end of task
+freezing stage, namely the freezing of kernel threads as well.
 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
-> Sent: 2011Âπ¥11Êúà18Êó• 2:19
-> To: sun york-R58495
-> Cc: Jean Delvare; Tabi Timur-B04825; linux-i2c@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Tang Yuantian-B29983
-> Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
-> SMBUS_READ_BLOCK_DATA
-> 
-> If you look closely, you may realize that the mpc_read also doesn't
-> validate of any of the other parameters. Are you going to request that
-> such validations be added as well ? How about the other functions in this
-> driver ? Should each function also validate each of its parameters ? If
-> not, where do you draw the line ?
-> 
-> Besides, the caller is the SMBus block read function, which does know
-> that SMBus block reads are limited to 32 bytes (plus length).
-> 
-> Guenter
-> 
-> 
+So, move these points of exit to appropriate places so that freezing of
+kernel threads is also tested while using these test harnesses. And while at
+it, add some documentation about these test modes.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+v2: Changed 'freezer_test_done' flag from int to bool.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ Documentation/power/basic-pm-debugging.txt |   16 ++++++++++++----
+ kernel/power/hibernate.c                   |   28 ++++++++++++++++++++++------
+ 2 files changed, 34 insertions(+), 10 deletions(-)
+
+diff --git a/Documentation/power/basic-pm-debugging.txt b/Documentation/power/basic-pm-debugging.txt
+index 40a4c65..ba6c879 100644
+--- a/Documentation/power/basic-pm-debugging.txt
++++ b/Documentation/power/basic-pm-debugging.txt
+@@ -38,10 +38,18 @@ identify what goes wrong.
+ 
+ a) Test modes of hibernation
+ 
+-To find out why hibernation fails on your system, you can use a special testing
+-facility available if the kernel is compiled with CONFIG_PM_DEBUG set.  Then,
+-there is the file /sys/power/pm_test that can be used to make the hibernation
+-core run in a test mode.  There are 5 test modes available:
++To find out why hibernation fails on your system, you can use some special
++testing facilities available if the kernel is compiled with CONFIG_PM_DEBUG set.
++Hibernation will then have 2 more modes that can be used, namely "testproc" and
++"test". When the "testproc" mode is used, it executes everything upto the task
++freezing phase and reverts back. When the "test" mode is used, it goes much
++deeper down, stopping just short of actually hibernating the machine, and then
++reverts back to normal state.
++
++However, there is an even more fine-grained debugging tool, also enabled by
++setting CONFIG_PM_DEBUG: there appears a file /sys/power/pm_test that can be
++used to make the hibernation core run in a test mode.
++There are 5 test modes available:
+ 
+ freezer
+ - test the freezing of processes
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index b4511b6..257e8e7 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -55,6 +55,8 @@ enum {
+ 
+ static int hibernation_mode = HIBERNATION_SHUTDOWN;
+ 
++static bool freezer_test_done;
++
+ static const struct platform_hibernation_ops *hibernation_ops;
+ 
+ /**
+@@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
+ 	if (error)
+ 		goto Close;
+ 
++	if (hibernation_test(TEST_FREEZER) ||
++		hibernation_testmode(HIBERNATION_TESTPROC)) {
++
++		/*
++		 * Indicate to the caller that we are returning due to a
++		 * successful freezer test.
++		 */
++		freezer_test_done = true;
++		goto Close;
++	}
++
+ 	error = dpm_prepare(PMSG_FREEZE);
+ 	if (error)
+ 		goto Complete_devices;
+@@ -641,15 +654,13 @@ int hibernate(void)
+ 	if (error)
+ 		goto Finish;
+ 
+-	if (hibernation_test(TEST_FREEZER))
+-		goto Thaw;
+-
+-	if (hibernation_testmode(HIBERNATION_TESTPROC))
+-		goto Thaw;
+-
+ 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+ 	if (error)
+ 		goto Thaw;
++	if (freezer_test_done) {
++		freezer_test_done = false;
++		goto Thaw;
++	}
+ 
+ 	if (in_suspend) {
+ 		unsigned int flags = 0;
+@@ -864,6 +875,11 @@ static const char * const hibernation_modes[] = {
+  *
+  * If a platform hibernation driver is in use, 'platform' will be supported
+  * and will be used by default.  Otherwise, 'shutdown' will be used by default.
++ * The 2 test modes are useful only when CONFIG_PM_DEBUG is set. In that case,
++ * using the 'testproc' mode will do everything upto the freezing of tasks
++ * and exits after undoing all that it did. The 'test' mode is deeper, in that,
++ * it does everything except actually hibernating the machine and exits after
++ * restoring the machine back to its original state.
+  * The selected option (i.e. the one corresponding to the current value of
+  * hibernation_mode) is enclosed by a square bracket.
+  *
+
