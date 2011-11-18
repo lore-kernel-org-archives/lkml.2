@@ -1,50 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab1KRK0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:26:32 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50296 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab1KRK0b (ORCPT
+	id S1756890Ab1KRK10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:27:26 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61627 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab1KRK1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:26:31 -0500
-Date: Fri, 18 Nov 2011 10:16:28 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, mrst: Casting (void *) value returned by kmalloc
- is useless
-Message-ID: <20111118101628.5013a1ea@pyx>
-In-Reply-To: <1321569820.1624.244.camel@localhost.localdomain>
-References: <1321569820.1624.244.camel@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; i386-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 18 Nov 2011 05:27:23 -0500
+Message-ID: <4EC63302.4040006@polito.it>
+Date: Fri, 18 Nov 2011 11:27:14 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jmorris@namei.org
+Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>  <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>  <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it> <1321564518.21708.63.camel@falcor>
+In-Reply-To: <1321564518.21708.63.camel@falcor>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011 23:43:40 +0100
-Thomas Meyer <thomas@m3y3r.de> wrote:
+On 11/17/2011 10:15 PM, Mimi Zohar wrote:
+> On Thu, 2011-11-17 at 11:57 +0100, Roberto Sassu wrote:
+>> On 11/16/2011 07:52 PM, Rajiv Andrade wrote:
+>>>
+>>> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
+>>>
+>>> On 16-11-2011 12:37, Roberto Sassu wrote:
+>>>> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
+>>>>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
+>>>>>> The ima_add_digest_entry() function has been split in order to avoid
+>>>>>> adding an entry in the measurements list for which the PCR extend
+>>>>>> operation subsequently fails. Required memory is allocated earlier
+>>>>>> in the
+>>>>>> new function ima_prepare_template_entry() and the template entry is
+>>>>>> added
+>>>>>> after ima_pcr_extend().
+>>>>>>
+>>>>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+>>>>>
+>>>>
+>>>> Hi Mimi
+>>>>
+>>>> i don't know if this condition can happen, but suppose that
+>>>> for whatever reason the PCR extend fails. In this case, since
+>>>> the PCR is not extended, the measurements list can be modified,
+>>>> by removing the non-measured entry, without this fact being
+>>>> detected by the verifier. So, probably we can avoid to display
+>>>> the entry.
+>>>>
+>>>>
+>>> Hi Roberto,
+>>>
+>>> IMA's trustworthiness is built on the assumption that the TPM underneath
+>>> can
+>>> be trusted. If that can't be, the eventlog alone doesn't provide us any
+>>> security.
+>>> It's the TPM device driver's job though to workaround any HW bug so that
+>>> in the
+>>> end all its stakeholders have their commands processed successfully, as
+>>> we've
+>>> pursued in some changes here:
+>>>
+>>
+>> Hi Rajiv
+>>
+>> thanks for your comments.
+>>
+>> I absolutely agree that we have to trust the TPM for the correct
+>> execution of IMA.
+>>
+>> I think the principle that has been used to build IMA (according
+>> to the TGC specifications) is that we can trust the eventlog
+>> as long as the measurement infrastructure is reliable or it is
+>> possible to detect a threat from previous measurements.
+>>
+>> For this reason, a system call is never executed before the
+>> inode measurement is inserted in the eventlog and the PCR
+>> is extended. Since these operations must be considered as
+>> atomic, their execution is protected by a mutex, that is
+>> released only after all tasks have been performed. This
+>> ensures that we begin with a measured kernel and we can
+>> reliably measure all further interactions. This also explains,
+>> in my view, why delaying the PCR extend operation may lead
+>> to security risks.
+>>
+>> About my patch, i did not move out the protected region any
+>> of the above described operations. Instead, i'm preventing
+>> measurements for which the PCR extend failed to be added to
+>> the measurements list, because in any case it is impossible
+>> for a verifier to detect their removal from the list.
+>>
+>> As i mentioned in the previous mail, one solution to overcome
+>> this issue is to deny, on the platform running IMA, the execution
+>> of those system calls for which the measurement process ended
+>> with an error.
+>>
+>> Regards
+>>
+>> Roberto Sassu
+>
+> True, if the TPM failed to extend the PCR, a malicious user would be
+> able to remove the measurement from the measurement list without it
+> being detected.  However, according to the TPM specs, the PCR extend
+> operation is always suppose to succeed, even in the case when the TPM is
+> not enabled.
+>
 
-> The semantic patch that makes this change is available
-> in scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci.
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
-> 
-> diff -u -p a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-> --- a/arch/x86/platform/mrst/mrst.c 2011-11-07 19:37:40.283168752 +0100
-> +++ b/arch/x86/platform/mrst/mrst.c 2011-11-08 09:19:24.686513740 +0100
-> @@ -331,7 +331,7 @@ static int __init sfi_parse_gpio(struct
->  	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
->  	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
->  
-> -	gpio_table = (struct sfi_gpio_table_entry *)
-> +	gpio_table =
->  				kmalloc(num * sizeof(*pentry), GFP_KERNEL);
+Hi Mimi
 
-True but the formatting also wants fixing with that change.
+i don't know if this can happen, but, since the TPM always returns
+a result in its response, there may be particular conditions under
+which the PCR extend fails.
+
+After quickly looking at the code in 'drivers/char/tpm.c' there are
+some additional cases where the operation may fail. For instance,
+an operation may have been cancelled or it may have just reached the
+defined time limit.
+
+
+> More importantly we need to be able to detect when the PCR has not been
+> extended appropriately in order to address it.  Otherwise we're just
+> covering it up.
+>
+
+Probably i did not understand this point, but do the return code of 
+tpm_pcr_extend() is not sufficient to determine if the operation was
+completed successfully?
+
+Roberto Sassu
+
+
+> thanks,
+>
+> Mimi
+>
 
