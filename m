@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab1KRUrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 15:47:49 -0500
-Received: from mail.elliptictech.com ([209.217.122.41]:57860 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab1KRUrs (ORCPT
+	id S1755677Ab1KRUzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 15:55:00 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:29774 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab1KRUy6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 15:47:48 -0500
-Date: Fri, 18 Nov 2011 15:47:28 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: John Hughes <john@calvaedi.com>, John Hughes <john@calva.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+	Fri, 18 Nov 2011 15:54:58 -0500
+X-IronPort-AV: E=Sophos;i="4.69,535,1315206000"; 
+   d="scan'208";a="600115302"
+Message-ID: <1321649696.2653.64.camel@lade.trondhjem.org>
 Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
  expiry. Try 2 with added man pages.
-Message-ID: <20111118204728.GA5761@elliptictech.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: John Hughes <john@calvaedi.com>, John Hughes <john@calva.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 18 Nov 2011 22:54:56 +0200
+In-Reply-To: <20111118204728.GA5761@elliptictech.com>
 References: <4EC66D12.2090505@Calva.COM>
- <1321641333.2653.15.camel@lade.trondhjem.org>
- <4EC6AFA9.9000705@calvaedi.com>
- <1321648435.2653.53.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321648435.2653.53.camel@lade.trondhjem.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1321641333.2653.15.camel@lade.trondhjem.org>
+	 <4EC6AFA9.9000705@calvaedi.com>
+	 <1321648435.2653.53.camel@lade.trondhjem.org>
+	 <20111118204728.GA5761@elliptictech.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 18 Nov 2011 20:54:57.0898 (UTC) FILETIME=[54D9ECA0:01CCA634]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-18 22:33 +0200, Trond Myklebust wrote:
-> On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote: 
-> > On 11/18/2011 07:35 PM, Trond Myklebust wrote:
-> > > On Fri, 2011-11-18 at 15:34 +0100, John Hughes wrote:
-> > >    
-> > >> Description: Add "-e" (ticket expiry is error) option to rpc.gssd
-> > >>    In kernels starting around 2.6.34 the nfs4 server will block all I/O
-> > >>    when a user ticket expires.  In earlier kernels the I/O would fail
-> > >>    with an EACCESS error.  This patch adds a "-e" option to rpc.gssd
-> > >>    which allow the earlier behaviour (EKEYEXPIRED is converted to
-> > >>    EACCESS).  This behaviour is particularly useful when user home
-> > >>    directories are nfs4 mounted with krb5 security - if the user is
-> > >>    absent from their workstation for long enough for the ticket to
-> > >>    expire a new ticket will be obtained (via pam_krb5) by the screen
-> > >>    unlock process.
-> > >>      
-> > > You need a big fat warning somewhere that enabling this option WILL
-> > > cause data corruption...
-> > >    
-> > Why?
+On Fri, 2011-11-18 at 15:47 -0500, Nick Bowler wrote: 
+> On 2011-11-18 22:33 +0200, Trond Myklebust wrote:
+> > On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote: 
+> > > On 11/18/2011 07:35 PM, Trond Myklebust wrote:
+> > > > On Fri, 2011-11-18 at 15:34 +0100, John Hughes wrote:
+> > > >    
+> > > >> Description: Add "-e" (ticket expiry is error) option to rpc.gssd
+> > > >>    In kernels starting around 2.6.34 the nfs4 server will block all I/O
+> > > >>    when a user ticket expires.  In earlier kernels the I/O would fail
+> > > >>    with an EACCESS error.  This patch adds a "-e" option to rpc.gssd
+> > > >>    which allow the earlier behaviour (EKEYEXPIRED is converted to
+> > > >>    EACCESS).  This behaviour is particularly useful when user home
+> > > >>    directories are nfs4 mounted with krb5 security - if the user is
+> > > >>    absent from their workstation for long enough for the ticket to
+> > > >>    expire a new ticket will be obtained (via pam_krb5) by the screen
+> > > >>    unlock process.
+> > > >>      
+> > > > You need a big fat warning somewhere that enabling this option WILL
+> > > > cause data corruption...
+> > > >    
+> > > Why?
+> > > 
+> > > Because some process may get the EACCES error half way through it's 
+> > > operation.
 > > 
-> > Because some process may get the EACCES error half way through it's 
-> > operation.
+> > No. Because the process can receive a reply to the write() syscall that
+> > indicates that the data is safe, but the EKEYEXPIRED error will cause
+> > the data to be lost when the client tries to actually commit the data to
+> > disk.
 > 
-> No. Because the process can receive a reply to the write() syscall that
-> indicates that the data is safe, but the EKEYEXPIRED error will cause
-> the data to be lost when the client tries to actually commit the data to
-> disk.
+> But on a local disk, a successful return from the write syscall doesn't
+> mean "the data is safe".  It seems odd to me that NFS should provide
+> this guarantee while a local disk does not.
 
-But on a local disk, a successful return from the write syscall doesn't
-mean "the data is safe".  It seems odd to me that NFS should provide
-this guarantee while a local disk does not.
+The guarantee that POSIX offers is that if the close() or fsync()
+succeeds, then the data is guaranteed to be on disk. That is the same
+guarantee that NFS is supposed to offer.
 
-Is this guarantee documented anywhere?
+Allowing data to disappear into a black hole after a successful write()
+and before the client has a chance to fsync() is not sanctioned by POSIX
+or anything else.
 
-Cheers,
+> Is this guarantee documented anywhere?
+
+Yes. It is the same guarantee as POSIX offers.
+
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
