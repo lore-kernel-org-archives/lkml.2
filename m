@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab1KRJxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:53:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:52163 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab1KRJxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757353Ab1KRJyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:54:04 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33739 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab1KRJxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Nov 2011 04:53:51 -0500
-Message-ID: <4EC62AEA.2030602@cn.fujitsu.com>
-Date: Fri, 18 Nov 2011 17:52:42 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+Message-ID: <4EC62B2A.5080606@evidence.eu.com>
+Date: Fri, 18 Nov 2011 10:53:46 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-18 17:53:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-18 17:53:36,
-	Serialize complete at 2011-11-18 17:53:36
+To: Greg KH <gregkh@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] drivers/base/node.c: fix compilation error
+References: <4EC4DD20.6080201@evidence.eu.com> <20111117175210.GE13208@suse.de>
+In-Reply-To: <20111117175210.GE13208@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011 13:33:14 -0800 (pst), David Rientjes wrote:
-> On Thu, 17 Nov 2011, Miao Xie wrote:
+Il 17/11/2011 18:52, Greg KH ha scritto:
+> On Thu, Nov 17, 2011 at 11:08:32AM +0100, Claudio Scordino wrote:
+>> Hi all,
+>>
+>> 	the current mainline kernel gives a "directives may not be used
+>> inside a macro argument" error message when compiled for the
+>> cris architecture.
 > 
->> Oh~, David
->>
->> I find these is another problem, please take account of the following case:
->>
->>   2-3 -> 1-2 -> 0-1
->>
->> the user change mems_allowed twice continuously, the task may see the empty
->> mems_allowed.
->>
->> So, it is still dangerous.
->>
-> 
-> With this patch, we're protected by task_lock(tsk) to determine whether we 
-> want to take the exception, i.e. whether need_loop is false, and the 
-> setting of tsk->mems_allowed.  So this would see the nodemask change at 
-> the individual steps from 2-3 -> 1-2 -> 0-1, not some inconsistent state 
-> in between or directly from 2-3 -> 0-1.  The only time we don't hold 
-> task_lock(tsk) to change tsk->mems_allowed is when tsk == current and in 
-> that case we're not concerned about intermediate reads to its own nodemask 
-> while storing to a mask where MAX_NUMNODES > BITS_PER_LONG.
-> 
-> Thus, there's no problem here with regard to such behavior if we exclude 
-> mempolicies, which this patch does.
-> 
+> Is this because cris is using an older version of gcc, or is it due to
+> something else?
 
-No.
-When the task does memory allocation, it access its mems_allowed without
-task_lock(tsk), and it may be blocked after it check 0-1 bits. And then, the
-user changes mems_allowed twice continuously(2-3(initial state) -> 1-2 -> 0-1),
-After that, the task is woke up and it see the empty mems_allowed.
+Hi Greg.
+
+The compiler I used it's still the same I used in the past (i.e., gcc 3.2.1):
+
+/usr/local/cris/bin/cris-axis-linux-gnu-gcc -v
+Reading specs from /usr/local/cris/lib/gcc-lib/cris-axis-linux-gnu/3.2.1/specs
+Configured with: /home/cii/cris-dist/./gnu-toplev/configure --enable-version-specific-runtime-libs --disable-nls --target=cris-axis-linux-gnu --without-newlib --with-headers=installed --enable-languages=c,c++ --enable-shared --enable-threads=posix --prefix=/usr/local/cris
+Thread model: posix
+gcc version 3.2.1 Axis release R64/1.64
+
+It's contained inside the cris-dist_1.64-1_i386.deb package. I don't
+know if a newer compiler has been made available by the Axis group.
+
+However, I never found this issue when compiling  /fs/proc/meminfo.c in
+the past.  Therefore, I couldn't find the same error in
+drivers/base/node.c either.
+
+I suspect that  /fs/proc/meminfo.c has been recently changed, and then the
+same (old) compiler started complaining.
+
+The two patches I have sent are very trivial, but allow to fix those
+build problems.
+
+Best regards,
+
+	Claudio
+
