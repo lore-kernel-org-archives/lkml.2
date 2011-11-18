@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab1KREJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 23:09:28 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50117 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756127Ab1KREJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 23:09:27 -0500
-MIME-Version: 1.0
-Date: Fri, 18 Nov 2011 12:09:25 +0800
-Message-ID: <CABPbr_msepemFt4ezGVRk3QS0MU3F47MKimfV4Y+6jqvUrLFeA@mail.gmail.com>
-Subject: ipv4 udplite broken in >=linux-3.0 ?
-From: Jinxin Zheng <jinxinzheng@gmail.com>
-To: gerrit@erg.abdn.ac.uk
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756446Ab1KREJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 23:09:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31094 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756387Ab1KREJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 23:09:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,530,1315206000"; 
+   d="scan'208";a="92222380"
+Subject: Re: [PATCH] iwl-debug: Shrink object by using dev_err and
+ deduplicating formats
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1321580775.22117.8.camel@Joe-Laptop>
+References: <1321580775.22117.8.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Nov 2011 19:14:16 -0800
+Message-ID: <1321586056.11647.10.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-11-17 at 17:46 -0800, Joe Perches wrote:
+> Using dev_err instead of dev_printk(KERN_ERR uses fewer
+> arguments and is a bit smaller.
+> 
+> Deduplicating formats used by IWL_DEBUG_QUIET_RFKILL also
+> makes the object a bit smaller.
+>  
+> Neatened the macros, used ##__VA_ARGS__.
+> 
+> $ size drivers/net/wireless/iwlwifi/built-in.o*
+>    text	   data	    bss	    dec	    hex	filename
+>  462652	   8646	  92576	 563874	  89aa2	drivers/net/wireless/iwlwifi/built-in.o.new
+>  467557	   8646	  92592	 568795	  8addb	drivers/net/wireless/iwlwifi/built-in.o.old
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> ---
+> \
 
-I recently migrated my work from udp to udplite. Thanks for your great effort.
+very interesting. Thanks
 
-But after I upgraded the kernel from 2.6.38 to 3.0, the ipv4 version
-of udplite stops working.
-I tested the applications downloaded from Gerrit's udplite wiki, and
-found that the ipv6 version works well, but not ipv4.
+Wey
 
-I did the tests on a Gentoo. The kernels are downloaded from the
-official web site.
 
-I don't know how to debug udplite. Can any one of you give me a tip on
-how to get more debug info, then I can do further test and provide
-with it?
-
-Thanks!
-
---
-Zheng Jinxin
