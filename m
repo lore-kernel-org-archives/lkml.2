@@ -1,221 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1KRHsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 02:48:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51769 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab1KRHsk (ORCPT
+	id S1753191Ab1KRHv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 02:51:57 -0500
+Received: from ganondorf.loclhst.com ([216.145.224.138]:37278 "EHLO
+	ganondorf.loclhst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab1KRHv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 02:48:40 -0500
-Date: Fri, 18 Nov 2011 08:48:31 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "Cousson, Benoit" <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 6/8] of: add clock providers
-Message-ID: <20111118074831.GW27267@pengutronix.de>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
- <20111109091328.GY16886@pengutronix.de>
- <4EBA62AD.3000407@ti.com>
- <20111109114936.GL16886@pengutronix.de>
- <4EBD7E47.8010502@ti.com>
- <20111116221250.GA12884@ponder.secretlab.ca>
+	Fri, 18 Nov 2011 02:51:56 -0500
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Nov 2011 02:51:56 EST
+Message-ID: <4EC60E9D.6070606@loclhst.com>
+Date: Fri, 18 Nov 2011 01:51:57 -0600
+From: Dan Delaney <drdelaney@loclhst.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116221250.GA12884@ponder.secretlab.ca>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:52:36 up 5 days, 14:39, 17 users,  load average: 0.00, 0.01, 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+CC: jkosina@suse.cz
+Subject: [PATCH] usbled: add support for Dream Cheeky DL100B Mailbox Friends
+ Alert (1d34:000a)
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 16, 2011 at 03:12:50PM -0700, Grant Likely wrote:
-> On Fri, Nov 11, 2011 at 08:57:59PM +0100, Cousson, Benoit wrote:
-> > On 11/9/2011 12:49 PM, Sascha Hauer wrote:
-> > >On Wed, Nov 09, 2011 at 12:23:25PM +0100, Cousson, Benoit wrote:
-> > >>On 11/9/2011 10:13 AM, Sascha Hauer wrote:
-> > >>>On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
-> > >>
-> > >>[...]
-> > >>
-> > >>>>+Sources of clock signal can be represented by any node in the device
-> > >>>>+tree.  Those nodes are designated as clock providers.  Clock consumer
-> > >>>>+nodes use a phandle and clock specifier pair to connect clock provider
-> > >>>>+outputs to clock inputs.  Similar to the gpio specifiers, a clock
-> > >>>>+specifier is an array of one more more cells identifying the clock
-> > >>>>+output on a device.  The length of a clock specifier is defined by the
-> > >>>>+value of a #clock-cells property in the clock provider node.
-> > >>>>+
-> > >>>>+[1] http://patchwork.ozlabs.org/patch/31551/
-> > >>>>+
-> > >>>>+==Clock providers==
-> > >>>>+
-> > >>>>+Required properties:
-> > >>>>+#clock-cells:	   Number of cells in a clock specifier; typically will be
-> > >>>>+		   set to 1
-> > >>>>+
-> > >>>>+Optional properties:
-> > >>>>+clock-output-name: Recommended to be a list of strings of clock output signal
-> > >>>>+		   names indexed by the first cell in the clock specifier.
-> > >>>>+		   However, the meaning of clock-output-names is domain
-> > >>>>+		   specific to the clock provider, and is only provided to
-> > >>>>+		   encourage using the same meaning for the majority of clock
-> > >>>>+		   providers.  This format may not work for clock providers
-> > >>>>+		   using a complex clock specifier format.  In those cases it
-> > >>>>+		   is recommended to omit this property and create a binding
-> > >>>>+		   specific names property.
-> > >>>
-> > >>>If the clock-output-name property is omitted, does this mean a clock
-> > >>>provider only has a single output or does it mean that it's not known
-> > >>>how many clock outputs a provider actually has?
-> 
-> As Rob said, it only means that there are no names assigned to those
-> inputs.  In fact, it leaves it up to the specific clock binding as to
-> what it really means.  One driver may require the clock-output-name
-> property to be present because it uses data from there to figure out
-> how to configure the clock.  Another might not require it at all and
-> the only reason for its existence is informational.
-> 
-> > >>Allowing several outputs for a single clock node might lead to a lot
-> > >>of confusion. What will be the meaning of a clock rate if you have
-> > >>several outputs at different frequency?
-> 
-> No, clock-frequency is specific to the fixed-clock binding (which I
-> need to document).  That may or may not be present in other clock
-> provider nodes.  For instance, there is a xilinx clock divider ip
-> block that doesn't have any frequency of its own, but rather has
-> multiple clock outputs that are a scale of the input clock.  The node
-> for that device would never have a clock-frequency property because it
-> relies entirely on the upstream clock.
-> 
-> This proposed binding is only about one thing: attaching clock
-> providers to clock consumers.  It doesn't make any statements about
-> how the clock provider driver is organized or how it manages its
-> clocks.
-> 
-> This is by design to prevent clock consumers from digging into a clock
-> provider node manually without consulting its driver.  The consumer
-> only has a reference to a clock provider node + arguments.  It is the
-> job of the producer driver to interpret the arguments.
-> 
-> The proposed API also reflects this.  The consumer driver requests a
-> clock, but it is the producer driver that determines what the clock
-> reference actually means, and which struct clk to return.
-> 
-> > >>I think it will be better to define a clock node as a single source
-> > >>of clock. If several outputs are needed, then we should define
-> > >>several clock nodes.
-> 
-> That is entirely up to the binding for the specific clock device(s).
-> If it makes sense to have one node per clock, so be it.  If it makes
-> more sense to have a clock nexus node for other hardware, then that is
-> fine too.
-> 
-> > >>If we let a clock node be any kind of big clock blob, we will never
-> > >>be able to define some generic reusable clock node API. Everybody
-> > >>will define its own custom clock blobs.
-> > >
-> > >Generally +1. I asked myself the same question whether it's a good thing
-> > >to allow a node to have multiple clocks. For i.MX I can say that I don't
-> > >need this and that I do not intend to use this feature. Grants concerns
-> > >about this are that the clock part of the device tree might explode when
-> > >we put each and every clock into the devicetree, so he wants to allow
-> > >bigger blobs of multiple clocks.
-> > 
-> > I can clearly understand this concern, because in the case of OMAP4,
-> > we will have to add ~250 nodes if we want to define the current
-> > clock tree.
-> 
-> I'm really not convinced that it is a good idea to break out the
-> entire clock tree into one node per struct clk.  To begin with, that
-> looks to be very centric around the current 'struct clk' Linux
-> abstraction, which is potentially in flux.  Also, looking at Sascha's
-> initial RFC for describing the clock tree, I see cases where it looks
-> like a clock nexus node really makes sense.  For instance, the
-> 'divider-ipg@0x53fd4014' node which has a list of child nodes
-> which merely provide a register offset and shift value
-> (reg=0x53fd4068..0x53fd4084, shift=0x0..0xf).
+This patch will add support for the Dream Cheeky Mailbox Friends Alert (http://www.dreamcheeky.com/mailbox-friends-alert) usb led dongle.
+The drivers for the webmail notifier (1d34:0004) work perfectly fine, so I just would like to add support for the new device.
+I have tested the patch on gentoo sources of 2.6.39 and 3.0.6, as well as vanilla 3.1.1 and 3.2-rc2.
 
-Yes, these are 6 (or 7) registers which contains all the gates. But not
-all of these gates are children of the ipg clock, some are derived from
-other clocks. So describing this as a nexus clock would give you 6 nexus
-clocks, each having 16 parents and 16 children (we have 2 bits per gate).
-Many of these clock gates go to external devices, but others are also
-used internally by the clock module.
-With the clock gates you picked the only example in the i.MX clock
-module which has a straight forward register layout. All other muxes
-and dividers are spread randomly in the registers.
+This is my first attempt at making a change to the kernel, so let me know if I need to change something (formatting, where to post, etc)
 
-> It would be natural to
-> instead encode that as part of the clock reference, or map it directly
-> from the clock reference (ie, assign names to each of the clocks, and
-> let the clock provider driver match up the name to the reg offset &
-> shift values).
-> 
-> I had originally thought that it would be better to use names directly
-> for references to clocks (ie. clock = <phandle>,"name") , but after
-> actually playing with it and looking at the existing DT conventions,
-> I've reverted to cell values for the arguments and a separate set of
-> clock-{input,output}-name properties for attaching meaningful names,
-> just like we decided to do for assigning names to 'reg' properties.
-> 
-> > >My impression gets more and more that we either put the clock tree in the
-> > >devicetree or we do not do it, but there's not much room in between.
-> 
-> I disagree here entirely because there is a lot of room in between.
-> Drivers still need to understand the hardware block they are driving,
-> and there will still be a lot of hardware-specific knowledge encoded
-> into clock provider drivers (just as there is for every other kind of
-> driver).  The trick (and even artistry) is to determine the ideal
-> balance between hard coding static hardware details and
-> parameterization of interconnects between blocks.
+I am not sure who else I may need to CC on this.
 
-That's part of the problem. When in copy-a-new-clktree-from-datasheet-to-c
-mode I don't want to be an artist at all. Instead I want to be a trained
-monkey. Too many people have tried to be intelligent when hacking the
-clock files which explains the mess we currently have.
+Device data:
+[169976.524055] usb 6-1: new low speed USB device number 3 using ohci_hcd
+[169976.685943] usb 6-1: New USB device found, idVendor=1d34, idProduct=000a
+[169976.685947] usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[169976.685950] usb 6-1: Product: DL100B Dream Cheeky Generic Controller
+[169976.685951] usb 6-1: Manufacturer: Dream Link
+[169976.689931] usbled 6-1:1.0: USB LED device now attached
 
-Ok, as you know my original goal was only to describe the building
-blocks as what they are and not arbitrarily grouped together. Originally
-I did not even have the device tree in mind. I am perfectly fine with
-describing the clock module as a single blob with few input clocks
-and many many output clocks. Then we can internally (in C code) still
-describe the building blocks.
+Bus 006 Device 003: ID 1d34:000a
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               1.10
+  bDeviceClass            0 (Defined at Interface level)
+  bDeviceSubClass         0
+  bDeviceProtocol         0
+  bMaxPacketSize0         8
+  idVendor           0x1d34
+  idProduct          0x000a
+  bcdDevice            0.02
+  iManufacturer           1 Dream Link
+  iProduct                2 DL100B Dream Cheeky Generic Controller
+  iSerial                 0
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength           34
+    bNumInterfaces          1
+    bConfigurationValue     1
+    iConfiguration          0
+    bmAttributes         0x80
+      (Bus Powered)
+    MaxPower              500mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           1
+      bInterfaceClass         3 Human Interface Device
+      bInterfaceSubClass      0 No Subclass
+      bInterfaceProtocol      0 None
+      iInterface              0
+        HID Device Descriptor:
+          bLength                 9
+          bDescriptorType        33
+          bcdHID               1.10
+          bCountryCode            0 Not supported
+          bNumDescriptors         1
+          bDescriptorType        34 Report
+          wDescriptorLength      37
+         Report Descriptors:
+           ** UNAVAILABLE **
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0008  1x 8 bytes
+        bInterval              10
+Device Status:     0x0000
+  (Bus Powered)
 
-One thing I like about the full description in the device tree is
-that boards would be able to adjust divider/mux settings directly in the
-device tree, but we can do without.
 
-One thing though needs a better solution I think. What if a clock module
-has 100 outputs? An UART might look like this then:
+And the patch:
 
-uart {
-	clock-input = <&ccm 23> <&ccm 97>;
-	clock-input-name = "baud", "register";
-};
+--- a/drivers/hid/hid-core.c    2011-11-16 02:06:51.000000000 -0600
++++ b/drivers/hid/hid-core.c    2011-11-16 02:01:06.000000000 -0600
+@@ -1687,6 +1687,7 @@
+        { HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EARTHMATE) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x000a) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
+diff -ur a/drivers/usb/misc/usbled.c b/drivers/usb/misc/usbled.c
+--- a/drivers/usb/misc/usbled.c 2011-11-16 02:05:43.000000000 -0600
++++ b/drivers/usb/misc/usbled.c 2011-11-16 02:01:40.000000000 -0600
+@@ -31,6 +31,8 @@
+                        .driver_info = DELCOM_VISUAL_SIGNAL_INDICATOR },
+        { USB_DEVICE(0x1d34, 0x0004),
+                        .driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
++       { USB_DEVICE(0x1d34, 0x000a),
++                       .driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
+        { },
+ };
+ MODULE_DEVICE_TABLE (usb, id_table);
 
-This would be hard to verify for correctness because of the high
-numbers. Also, when a maintainer gets two patches which both add
-a forgotten clock to the device tree he can't just merge them but
-instead has to adjust the numbers in one patch.
-
-Sascha
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Dan Delaney
+drdelaney@loclhst.com
