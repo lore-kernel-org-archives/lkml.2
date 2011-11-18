@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab1KRAbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 19:31:35 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50649 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab1KRAbe convert rfc822-to-8bit (ORCPT
+	id S1755504Ab1KRAlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 19:41:45 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41341 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab1KRAlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 19:31:34 -0500
+	Thu, 17 Nov 2011 19:41:44 -0500
+Date: Thu, 17 Nov 2011 22:41:39 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        fweisbec@gmail.com
+Subject: Re: [PATCH v2] perf tools: make -C consistent across commands (for
+ cpu list arg)
+Message-ID: <20111118004139.GA2315@ghostprotocols.net>
+References: <1321209008-7004-1-git-send-email-dsahern@gmail.com>
+ <4EC59460.7020705@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111116203422.GA29581@legolas.emea.dhcp.ti.com>
-References: <1321475279-29930-1-git-send-email-computersforpeace@gmail.com>
-	<20111116203422.GA29581@legolas.emea.dhcp.ti.com>
-Date: Thu, 17 Nov 2011 16:31:32 -0800
-Message-ID: <CAN8TOE9T8YJ8Kbz=cuQ_CYPQozxU--yskZuBcXwe_emVVNQqDg@mail.gmail.com>
-Subject: Re: [PATCH] ahci: platform support for suspend/resume
-From: Brian Norris <computersforpeace@gmail.com>
-To: balbi@ti.com
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Kevin Cernekee <cernekee@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC59460.7020705@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+linux-pm mailing list
+Em Thu, Nov 17, 2011 at 04:10:24PM -0700, David Ahern escreveu:
+> On 11/13/2011 11:30 AM, David Ahern wrote:
+> > Currently the meaning of -C varies by perf command: for perf-top,
+> > perf-stat, perf-record it means cpu list. For perf-report it
+> > means comm list. Then perf-annotate, perf-report and perf-script
+> > use -c for cpu list.
+> > 
+> > Fix annotate, report and script to use -C for cpu list to be
+> > consistent with top, stat and record. This means report needs
+> > to use -c for comm list which does introduce a backward
+> > compatibility change.
+> 
+> Any objections to making this argument consistent? I am waiting to send
+> a follow-on patch that adds comm filtering to perf-script.
 
-Hi Felipe,
-
-On Wed, Nov 16, 2011 at 12:34 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Nov 16, 2011 at 12:27:59PM -0800, Brian Norris wrote:
->> +     /* Does platform support suspend/resume? */
->> +     if (!pdata->suspend || !pdata->resume)
->> +             return -EINVAL;
->
-> should you really prevent suspend is platform doesn't provide
-> ->suspend() ?
-
-No, we shouldn't prevent suspend entirely; that would just be my
-accidental side effect.
-
-> I mean, we could some platform where all clocks are autogated and
-> there's no need for platform to do anything. Would it be better to only
-> call pdata->suspend if it exists but still let the AHCI-specific part go
-> through ?
-
-Perhaps. But would this have any unintended effects on systems that
-don't implement AHCI power management at all? My intention was just to
-provide an 'opt-in' interface for platform developers. I probably got
-this wrong.
-
-Brian
+Its OK for perf/core, I'll apply and try to publish what I have
+tomorrow.
+ 
+- Arnaldo
