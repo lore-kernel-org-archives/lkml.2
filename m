@@ -1,32 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab1KRQZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:25:57 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10078 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab1KRQZz convert rfc822-to-8bit (ORCPT
+	id S1758177Ab1KRQ2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:28:03 -0500
+Received: from mexforward.lss.emc.com ([128.222.32.20]:14673 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab1KRQ2B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:25:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 18 Nov 2011 08:25:34 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Marc Dietrich <marvin24@gmx.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 18 Nov 2011 08:25:33 -0800
-Subject: RE: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-Thread-Topic: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-Thread-Index: Acyl6iVz8IzhNcLGToy3I7CxdBq2YgAJE2JQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1740D74E63@HQMAIL01.nvidia.com>
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
- <20111118120352.GZ19069@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20111118120352.GZ19069@tbergstrom-lnx.Nvidia.com>
+	Fri, 18 Nov 2011 11:28:01 -0500
+From: <peter.staubach@emc.com>
+To: <john@Calva.COM>, <Trond.Myklebust@netapp.com>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Nov 2011 11:27:37 -0500
+Subject: RE: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
+ errors
+Thread-Topic: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
+ errors
+Thread-Index: AcymDhqB+34irIafThO7joAm3JdKjgAALFTA
+Message-ID: <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
+References: <4EC685D1.2000900@Calva.COM>
+In-Reply-To: <4EC685D1.2000900@Calva.COM>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,30 +27,83 @@ acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Friday, November 18, 2011 5:04 AM:
-> On Thu, Nov 17, 2011 at 07:51:35PM +0100, Stephen Warren wrote:
-> > Peter De Schrijver wrote at Thursday, November 17, 2011 8:07 AM:
-> > > Convert tegra20 IRQ intialization to the GIC devicetree binding. Modify the
-> > > interrupt definitions in the dts files according to
-> > > Documentation/devicetree/bindings/arm/gic.txt
-> > >
-> > > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> >
-> > tegra-harmony.dts contains an interrupts property that wasn't updated,
-> > for the WM8903 codec.
-> 
-> But that's a GPIO interrupt no?
+Given that the poor user will be sitting, with almost nothing working because of the expired ticket, how does the user figure out what is going on or how does the admin help him?
 
-The interrupt line from codec to Tegra is a GPIO, yes.
+Some guidance seems like a good thing.  Is there really a problem with these messages being printed to the log?
 
-But the WM8903 still has the same interrupt-parent as everything else,
-since it's inherited from /interrupt-parent and doesn't define its own.
-Perhaps this is a mistake?
+	Thanx...
 
--- 
-nvpublic
+		ps
+
+
+-----Original Message-----
+From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of John Hughes
+Sent: Friday, November 18, 2011 11:21 AM
+To: Trond Myklebust
+Cc: linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
+
+Don't write anything to the log if a user Kerberos ticket expires or is missing,
+these are not kernel problems.
+
+Signed-off-by: John Hughes<john@calva.com>
+
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index 39914be..18897cb 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1339,14 +1339,6 @@ static void nfs4_state_start_reclaim_nograce(struct nfs_client *clp)
+  	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
+  }
+
+-static void nfs4_warn_keyexpired(const char *s)
+-{
+-	printk_ratelimited(KERN_WARNING "Error: state manager"
+-			" encountered RPCSEC_GSS session"
+-			" expired against NFSv4 server %s.\n",
+-			s);
+-}
+-
+  static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+  {
+  	switch (error) {
+@@ -1378,7 +1370,6 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+  			return 0;
+  		case -EKEYEXPIRED:
+  			/* Nothing we can do */
+-			nfs4_warn_keyexpired(clp->cl_hostname);
+  			return 0;
+  	}
+  	return error;
+@@ -1620,7 +1611,6 @@ static void nfs4_set_lease_expired(struct nfs_client *clp, int status)
+  		break;
+
+  	case -EKEYEXPIRED:
+-		nfs4_warn_keyexpired(clp->cl_hostname);
+  	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
+  				 * in nfs4_exchange_id */
+  	default:
+@@ -1728,8 +1718,9 @@ static void nfs4_state_manager(struct nfs_client *clp)
+  	} while (atomic_read(&clp->cl_count)>  1);
+  	return;
+  out_error:
+-	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
+-			" with error %d\n", clp->cl_hostname, -status);
++	if (status != -EACCESS)
++		printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
++				" with error %d\n", clp->cl_hostname, -status);
+  	nfs4_end_drain_session(clp);
+  	nfs4_clear_state_manager_bit(clp);
+  }
+
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
