@@ -1,78 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136Ab1KRQLc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:11:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35817 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753769Ab1KRQLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:11:31 -0500
-Date: Fri, 18 Nov 2011 17:11:28 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hugetlb: detect race if fail to COW
-Message-ID: <20111118161128.GC23223@tiehlicka.suse.cz>
-References: <CAJd=RBC+p8033bHNfP=WQ2SU1Y1zRpj+FEi9FdjuFKkjF_=_iA@mail.gmail.com>
- <20111118150742.GA23223@tiehlicka.suse.cz>
- <CAJd=RBCOK9tis-bF87Csn70miRDqLtCUiZmDH2hnc8i_9+KtNw@mail.gmail.com>
+	id S1758147Ab1KRQLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:11:47 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:20720 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab1KRQLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 11:11:46 -0500
+Reply-To: <barr-george.ggarrigues@ozu.es>
+From: "Barrister Pepe Gonzalez." <rabishankar@hp.com>
+Subject: Soliciting Your Consent and Sincerity 
+Date: Fri, 18 Nov 2011 17:11:37 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBCOK9tis-bF87Csn70miRDqLtCUiZmDH2hnc8i_9+KtNw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 111118-0, 18/11/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20111118161125.CE0D310005@g5t0012.atlanta.hp.com>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 18-11-11 23:23:12, Hillf Danton wrote:
-> On Fri, Nov 18, 2011 at 11:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Fri 18-11-11 22:04:37, Hillf Danton wrote:
-> >> In the error path that we fail to allocate new huge page, before try again, we
-> >> have to check race since page_table_lock is re-acquired.
-> >
-> > I do not think we can race here because we are serialized by
-> > hugetlb_instantiation_mutex AFAIU. Without this lock, however, we could
-> > fall into avoidcopy and shortcut despite the fact that other thread has
-> > already did the job.
-> >
-> > The mutex usage is not obvious in hugetlb_cow so maybe we want to be
-> > explicit about it (either a comment or do the recheck).
-> >
-> 
-> Then the following check is unnecessary, no?
+Soliciting Your Consent
 
-Hmm, thinking about it some more, I guess we have to recheck because we
-can still race with page migration. So we need you patch.
+I am confirming if you received my previous email regarding you having the same Surname with my late client/inheritance.Please email me for more information
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+contact Email : barr-george.ggarrigues@ozu.es
 
-> 
-> Thanks,
-> Hillf
-> 
-> 	/*
-> 	 * Retake the page_table_lock to check for racing updates
-> 	 * before the page tables are altered
-> 	 */
-> 	spin_lock(&mm->page_table_lock);
-> 	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
-> 	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
-> 		/* Break COW */
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Regards
+Barrister George Gordillo Garrigues
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
