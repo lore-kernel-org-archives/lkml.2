@@ -1,84 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab1KRVED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 16:04:03 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:19076 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab1KRVEB convert rfc822-to-8bit (ORCPT
+	id S1756608Ab1KRVEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 16:04:11 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60767 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756488Ab1KRVEI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 16:04:01 -0500
-X-IronPort-AV: E=Sophos;i="4.69,535,1315206000"; 
-   d="scan'208";a="600118000"
-Message-ID: <1321650239.2653.68.camel@lade.trondhjem.org>
-Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
- expiry. Try 2 with added man pages.
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Jim Rees <rees@umich.edu>
-Cc: John Hughes <john@calvaedi.com>, John Hughes <john@calva.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 18 Nov 2011 23:03:59 +0200
-In-Reply-To: <20111118205749.GA1680@umich.edu>
-References: <4EC66D12.2090505@Calva.COM>
-	 <1321641333.2653.15.camel@lade.trondhjem.org>
-	 <4EC6AFA9.9000705@calvaedi.com>
-	 <1321648435.2653.53.camel@lade.trondhjem.org>
-	 <20111118205749.GA1680@umich.edu>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 18 Nov 2011 16:04:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111118202552.GB2203@ZenIV.linux.org.uk>
+References: <1321646674-26890-1-git-send-email-levinsasha928@gmail.com>
+	<20111118202552.GB2203@ZenIV.linux.org.uk>
+Date: Fri, 18 Nov 2011 23:04:08 +0200
+X-Google-Sender-Auth: jRr9556C_1CRbj5ImASLE8Rnyo8
+Message-ID: <CAOJsxLG7Q-DEAOXo0SpsBDFRZzFRkRdA4xnP48Khu4QdCrdrWA@mail.gmail.com>
+Subject: Re: [PATCH] pipe: Fail cleanly when root tries F_SETPIPE_SZ with big size
+From: Pekka Enberg <penberg@kernel.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 18 Nov 2011 21:04:00.0465 (UTC) FILETIME=[983F1410:01CCA635]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 15:57 -0500, Jim Rees wrote: 
-> Trond Myklebust wrote:
-> 
->   On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote: 
->   > On 11/18/2011 07:35 PM, Trond Myklebust wrote:
->   > > On Fri, 2011-11-18 at 15:34 +0100, John Hughes wrote:
->   > >    
->   > >> Description: Add "-e" (ticket expiry is error) option to rpc.gssd
->   > >>    In kernels starting around 2.6.34 the nfs4 server will block all I/O
->   > >>    when a user ticket expires.  In earlier kernels the I/O would fail
->   > >>    with an EACCESS error.  This patch adds a "-e" option to rpc.gssd
->   > >>    which allow the earlier behaviour (EKEYEXPIRED is converted to
->   > >>    EACCESS).  This behaviour is particularly useful when user home
->   > >>    directories are nfs4 mounted with krb5 security - if the user is
->   > >>    absent from their workstation for long enough for the ticket to
->   > >>    expire a new ticket will be obtained (via pam_krb5) by the screen
->   > >>    unlock process.
->   > >>      
->   > > You need a big fat warning somewhere that enabling this option WILL
->   > > cause data corruption...
->   > >    
->   > Why?
->   > 
->   > Because some process may get the EACCES error half way through it's 
->   > operation.
->   
->   No. Because the process can receive a reply to the write() syscall that
->   indicates that the data is safe, but the EKEYEXPIRED error will cause
->   the data to be lost when the client tries to actually commit the data to
->   disk.
-> 
-> The write() syscall doesn't indicate whether the data is safe or not.  That
-> would be the close() syscall.
+On Fri, Nov 18, 2011 at 10:04:34PM +0200, Sasha Levin wrote:
+>> +     if (nr_pages * sizeof(struct pipe_buffer) > KMALLOC_MAX_SIZE)
+>> +             return -ENOMEM;
 
-fsync(). Which may succeed if the user renews their ticket first.
-However you may still have data loss if dirty data has been lost because
-of EKEYEXPIRED returns on the WRITE RPC call...
+On Fri, Nov 18, 2011 at 10:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> nr_pages is unsigned long, sizeof is greater than 1, KMALLOC_MAX_SIZE is
+> unsigned long...  So write that check as KMALLOC_MAX_SIZE / sizeof > nr_pages
 
-Also, for the fsync() to return EKEYEXPIRED _after_ the user has renewed
-their ticket would seem counter-intuitive to most people.
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+We could just use __GFP_NOWARN here and let kcalloc() deal with the
+overflow case.
