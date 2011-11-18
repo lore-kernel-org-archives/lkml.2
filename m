@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047Ab1KRXbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:31:04 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51707 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757374Ab1KRXbB (ORCPT
+	id S1758099Ab1KRXbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:31:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52777 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab1KRXbb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:31:01 -0500
-Date: Fri, 18 Nov 2011 15:30:55 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
- given pids
-Message-ID: <20111118233055.GA29378@google.com>
-References: <4EC4F2FB.408@parallels.com>
- <20111117154936.GB12325@redhat.com>
- <4EC52FBF.1010407@parallels.com>
+	Fri, 18 Nov 2011 18:31:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC52FBF.1010407@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <op.v45u6zyy3l0zgt@mpn-glaptop>
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+ <CA+K6fF6SH6BNoKgwArcqvyav4b=C5SGvymo5LS3akfD_yE_beg@mail.gmail.com> <op.v45u6zyy3l0zgt@mpn-glaptop>
+From: sandeep patil <psandeep.s@gmail.com>
+Date: Fri, 18 Nov 2011 15:30:49 -0800
+Message-ID: <CA+K6fF6iDivqmN9kfY34tWNg+g_rYBBmyS_Mxb6gvLuSgA2JyQ@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCHv17 0/11] Contiguous Memory Allocator
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2011/11/18 Michal Nazarewicz <mina86@mina86.com>:
+> On Fri, 18 Nov 2011 22:20:48 +0100, sandeep patil <psandeep.s@gmail.com>
+> wrote:
+>>
+>> I am running a simple test to allocate contiguous regions and write a log
+>> on
+>> in a file on sdcard simultaneously. I can reproduce this migration failure
+>> 100%
+>> times with it.
+>> when I tracked the pages that failed to migrate, I found them on the
+>> buffer head lru
+>> list with a reference held on the buffer_head in the page, which
+>> causes drop_buffers()
+>> to fail.
+>>
+>> So, i guess my question is, until all the migration failures are
+>> tracked down and fixed,
+>> is there a plan to retry the contiguous allocation from a new range in
+>> the CMA region?
+>
+> No.  Current CMA implementation will stick to the same range of pages also
+> on consequent allocations of the same size.
+>
 
-On Thu, Nov 17, 2011 at 08:01:03PM +0400, Pavel Emelyanov wrote:
-> > Yes, personally I'd prefer /proc/set_last_pid (or something similar) which
-> > simply writes to pid_ns->last_pid. Perhaps it is less convenient from the
-> > user-space pov (serialization, security) but it is much simpler.
-> 
-> Yes, this is also possible. I have a working prototype of /proc/sys/kernel/ns_last_pid
-> with the security issue solved, but setting sysctl then cloning seems more obfuscating
-> to me than just passing an array of pids to clone.
+Doesn't that mean the drivers that fail to allocate from contiguous DMA region
+will fail, if the migration fails?
 
-Do you mind sharing the patch?  It doesn't have to be perfect.  I'm
-just curious how it looks.  IMHO the suggested pid array passing is
-good enough and not too intrusive but, if there's something simpler
-from kernel side, given that this is a very specialized interface, I
-think we definitely need to consider that.
-
-Thank you.
-
--- 
-tejun
+~ sandeep
