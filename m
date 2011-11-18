@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab1KRTDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:03:07 -0500
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:39913 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755155Ab1KRTDF (ORCPT
+	id S1755416Ab1KRTGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:06:45 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39732 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab1KRTGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:03:05 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Tero Kristo <t-kristo@ti.com>
-Cc: <linux-omap@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCHv9 07/18] mfd: omap-prm: added suspend prepare and complete callbacks
-Organization: Texas Instruments, Inc.
-References: <1316781986-30642-1-git-send-email-t-kristo@ti.com>
-	<1316781986-30642-8-git-send-email-t-kristo@ti.com>
-Date: Fri, 18 Nov 2011 11:02:55 -0800
-In-Reply-To: <1316781986-30642-8-git-send-email-t-kristo@ti.com> (Tero
-	Kristo's message of "Fri, 23 Sep 2011 15:46:15 +0300")
-Message-ID: <87d3cpxnhc.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 18 Nov 2011 14:06:44 -0500
+Date: Fri, 18 Nov 2011 20:06:38 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Antonio Ospite <ospite@studenti.unina.it>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Richard Purdie <rpurdie@rpsys.net>, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert "leds: save the delay values after a successful
+ call to blink_set()"
+Message-ID: <20111118190638.GA19331@localhost>
+References: <1317973118.3988.2.camel@jlt3.sipsolutions.net>
+ <1320662197-21471-1-git-send-email-jhovold@gmail.com>
+ <20111116222100.323aa751b8a19c0fc2e08a97@studenti.unina.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111116222100.323aa751b8a19c0fc2e08a97@studenti.unina.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tero Kristo <t-kristo@ti.com> writes:
+On Wed, Nov 16, 2011 at 10:21:00PM +0100, Antonio Ospite wrote:
+> On Mon,  7 Nov 2011 11:36:37 +0100
+> Johan Hovold <jhovold@gmail.com> wrote:
+> 
+> > This reverts commit 6123b0e274503a0d3588e84fbe07c9aa01bfaf5d.
+> > 
+> > The problem this patch intends to solve has already been fixed by commit
+> > 7a5caabd090b8f7 (drivers/leds/ledtrig-timer.c: fix broken sysfs delay
+> > handling).
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> 
+> Sorry for not replying earlier, I was on vacation.
+> 
+> Thanks Johan, I've just verified the timer trigger works fine on 3.1
+> indeed even without my changes. But keep reading, please.
+> 
+> > ---
+> > 
+> > Hi, 
+> > 
+> > A fix for the problem with the delay parameters not being stored is already in
+> > 3.1 (and stable). Rather than storing both values at every call to
+> > led_blink_set only the updated value is stored in led_delay_{on,off}_store in
+> > ledtrig-timer.c.
+> >
+> 
+> I thought that this was better fixed in the led_blink_set() directly,
+> as delay_on and delay_off are led_cdev fields after all, not
+> necessarily specific to ledtrig-timer, what about other users of them?
+> For example I can see led_blink_set() used in: net/mac80211/led.c
+> and led_trigger_blink(), which uses led_blink_set() in:
+> drivers/power/power_supply_leds.c
+> 
+> Maybe I am missing something.
 
-> These are needed because runtime PM is disabled during suspend, and
-> it is bad if we get interrupts from the PRCM chain handler during it.
-> Now, PRCM interrupt forwarding is disabled until the suspend->complete,
-> which makes sure that all the needed drivers are up.
+When ledtrig-timer was generalised to led_set_blink() with fallback to
+software blinking, the blink_delay_{on,off} parameters were moved to
+led_classdev and now have two, partly overlapping uses: to store the
+ledtrig-timer delay parameters and to implement generic software
+blinking.
 
-Just to clarify...  based on reading the patch, the wakeup and PRCM
-interrupts themselves still happen (and are saved). They are just not
-dispatched to the drivers until ->complete().
+Note that both uses are internal -- drivers implementing hardware
+blinking through blink_set() receives both parameters at each call and
+need not access these fields directly. And apart from the ledtrig-timer
+sysfs interface there is no other way to read them back either.
 
-I think the changelog should be a bit clearer about that.
+In particular, there is currently no need to update them at each call to
+led_blink_set() as far as I can see.
 
 Thanks,
-
-Kevin
+Johan
