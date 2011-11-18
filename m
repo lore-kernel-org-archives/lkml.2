@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab1KRRUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 12:20:38 -0500
-Received: from mailfw02.zoner.fi ([84.34.147.249]:34783 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758061Ab1KRRUh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 12:20:37 -0500
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Nov 2011 12:20:37 EST
-Date: Fri, 18 Nov 2011 19:10:09 +0200
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] unlzo: Fix input buffer free
-Message-ID: <20111118191009.2b695416@tukaani.org>
-In-Reply-To: <1321565360-28111-1-git-send-email-s.hauer@pengutronix.de>
-References: <1321565360-28111-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+	id S1752076Ab1KRR1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 12:27:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753Ab1KRR1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 12:27:44 -0500
+Date: Fri, 18 Nov 2011 18:27:09 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] mm: compaction: Use synchronous compaction for
+ /proc/sys/vm/compact_memory
+Message-ID: <20111118172709.GA3579@redhat.com>
+References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
+ <1321635524-8586-3-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321635524-8586-3-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-17 Sascha Hauer wrote:
-> unlzo modifies the pointer to in_buf, so we have to free the
-> original buffer, not the modified pointer.
+On Fri, Nov 18, 2011 at 04:58:41PM +0000, Mel Gorman wrote:
+> When asynchronous compaction was introduced, the
+> /proc/sys/vm/compact_memory handler should have been updated to always
+> use synchronous compaction. This did not happen so this patch addresses
+> it. The assumption is if a user writes to /proc/sys/vm/compact_memory,
+> they are willing for that process to stall.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/compaction.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 237560e..615502b 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -666,6 +666,7 @@ static int compact_node(int nid)
+>  			.nr_freepages = 0,
+>  			.nr_migratepages = 0,
+>  			.order = -1,
+> +			.sync = true,
+>  		};
+>  
+>  		zone = &pgdat->node_zones[zoneid];
 
-The fix looks good.
+Yep I noticed that yesterday too.
 
-> This only happens when a fill function is passed, a case which is
-> currently unused in the kernel.
-
-It is used for initrd decompression (not initramfs) in
-init/do_mounts_rd.c in crd_load(). The problematic code can only get
-run when the initrd is corrupt and thus the system will panic anyway.
-
--- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
