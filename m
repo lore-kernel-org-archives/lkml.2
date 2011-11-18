@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab1KRJfS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:35:18 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:47046 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab1KRJfN (ORCPT
+	id S1757041Ab1KRJh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:37:26 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:52775 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756852Ab1KRJhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:35:13 -0500
-Date: Fri, 18 Nov 2011 10:35:01 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Zac Storer <zac.3.14159@gmail.com>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers: hwmon: adm1031: fixed spacing coding style
- issues
-Message-ID: <20111118103501.3c14d106@endymion.delvare>
-In-Reply-To: <1321605413-13614-1-git-send-email-zac.3.14159@gmail.com>
-References: <1321605413-13614-1-git-send-email-zac.3.14159@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 18 Nov 2011 04:37:23 -0500
+Message-ID: <4EC6273C.1050602@st.com>
+Date: Fri, 18 Nov 2011 15:07:00 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "baruch@tkos.co.il" <baruch@tkos.co.il>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>
+Subject: Re: [PATCH V2] GPIO/pl061: Add suspend resume capability
+References: <7edd51181a5c9ee7da0dc5115ec5c2dc336af1fc.1321588277.git.viresh.kumar@st.com> <201111181031.53381.rjw@sisk.pl>
+In-Reply-To: <201111181031.53381.rjw@sisk.pl>
+Content-Type: text/plain; charset="ISO-8859-2"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011 01:36:53 -0700, Zac Storer wrote:
-> Fixed spacing coding style issues.
+On 11/18/2011 3:01 PM, Rafael J. Wysocki wrote:
+>> > +SIMPLE_DEV_PM_OPS(pl061_dev_pm_ops, pl061_suspend, pl061_resume);
+> "static" perhaps?
 > 
-> Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
-> ---
->  drivers/hwmon/adm1031.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
-> index 0683e6b..694392b 100644
-> --- a/drivers/hwmon/adm1031.c
-> +++ b/drivers/hwmon/adm1031.c
-> @@ -1058,7 +1058,7 @@ static struct adm1031_data *adm1031_update_device(struct device *dev)
->  			data->alarm &= 0xc0ff;
->  		}
->  
-> -		for (chan=0; chan<(data->chip_type == adm1030 ? 1 : 2); chan++) {
-> +		for (chan = 0; chan < (data->chip_type == adm1030 ? 1 : 2); chan++) {
->  			data->fan_div[chan] =
->  			    adm1031_read_value(client, ADM1031_REG_FAN_DIV(chan));
->  			data->fan_min[chan] =
 
-Err, you apparently did not understand my request. Please send _one_
-patch fixing all the adm1031 coding style issues at once.
+Ooops!
+It Should be static.
 
 -- 
-Jean Delvare
+viresh
