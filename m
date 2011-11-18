@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab1KRHX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 02:23:28 -0500
-Received: from kyoto.magic.fr ([188.130.33.140]:34543 "EHLO kyoto.magic.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab1KRHX1 convert rfc822-to-8bit (ORCPT
+	id S1756219Ab1KRHZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 02:25:23 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:50160 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1KRHZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 02:23:27 -0500
-Message-ID: <20111117234954.v1h7jeeszogc04gk@webmail.evdg.org>
-Date: Thu, 17 Nov 2011 23:49:54 +0100
-From: "Mr.Vincent Cheng" <info@vincent.com>
-Reply-to: vincent_cheng011@yahoo.co.jp
-To: undisclosed-recipients:;
-Subject: Protected Project.
+	Fri, 18 Nov 2011 02:25:22 -0500
+Date: Fri, 18 Nov 2011 08:25:19 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Alex Shi <alex.shi@intel.com>
+Subject: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111118072519.GA1615@x4.trippels.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This happend during boot this morning:
 
-    I am Mr. Vincent Cheng Hoi Chuen, GBS, JP Chairman of the Hong Kong and
-Shanghai Banking Corporation Limited.i have a business proposal of TwentyTwo
-million Five Hundred Thousand United State Dollars only for you to  
-transact with
-me from my bank to your country.
+Nov 18 07:57:12 x4 kernel: XFS (sdb2): Ending clean mount
+Nov 18 07:57:12 x4 kernel: VFS: Mounted root (xfs filesystem) readonly on device 8:18.
+Nov 18 07:57:12 x4 kernel: devtmpfs: mounted
+Nov 18 07:57:12 x4 kernel: Freeing unused kernel memory: 436k freed
+Nov 18 07:57:12 x4 kernel: Write protecting the kernel read-only data: 8192k
+Nov 18 07:57:12 x4 kernel: Freeing unused kernel memory: 1220k freed
+Nov 18 07:57:12 x4 kernel: Freeing unused kernel memory: 132k freed
+Nov 18 07:57:12 x4 kernel: XFS (sda): Mounting Filesystem
+Nov 18 07:57:12 x4 kernel: XFS (sda): Ending clean mount
+Nov 18 07:57:12 x4 kernel: ATL1E 0000:02:00.0: irq 40 for MSI/MSI-X
+Nov 18 07:57:12 x4 kernel: ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+Nov 18 07:57:12 x4 kernel: ATL1E 0000:02:00.0: eth0: NIC Link is Up <100 Mbps Full Duplex>
+Nov 18 07:57:13 x4 kernel: Adding 2097148k swap on /var/tmp/swap/swapfile.  Priority:-1 extents:2 across:2634672k
+Nov 18 07:57:16 x4 kernel: ------------[ cut here ]------------
+Nov 18 07:57:16 x4 kernel: WARNING: at mm/slub.c:3357 ksize+0xa5/0xb0()
+Nov 18 07:57:16 x4 kernel: Hardware name: System Product Name
+Nov 18 07:57:16 x4 kernel: Pid: 1539, comm: wmii Not tainted 3.2.0-rc2-00057-ga9098b3-dirty #60
+Nov 18 07:57:16 x4 kernel: Call Trace:                                                                                                               Nov 18 07:57:16 x4 kernel: [<ffffffff8106cb75>] warn_slowpath_common+0x75/0xb0
+Nov 18 07:57:16 x4 kernel: [<ffffffff8106cc75>] warn_slowpath_null+0x15/0x20
+Nov 18 07:57:16 x4 kernel: [<ffffffff81103985>] ksize+0xa5/0xb0
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141e3ee>] __alloc_skb+0x7e/0x210
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141b75e>] sock_alloc_send_pskb+0x1be/0x300
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141a5d2>] ? sock_wfree+0x52/0x60                                                                               Nov 18 07:57:16 x4 kernel: [<ffffffff8141b8b0>] sock_alloc_send_skb+0x10/0x20                                                                        Nov 18 07:57:16 x4 kernel: [<ffffffff814a3c61>] unix_stream_sendmsg+0x261/0x420
+Nov 18 07:57:16 x4 kernel: [<ffffffff814176ff>] sock_aio_write+0xdf/0x100                                                                            Nov 18 07:57:16 x4 kernel: [<ffffffff81417620>] ? sock_aio_read+0x110/0x110
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110b6ca>] do_sync_readv_writev+0xca/0x110
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110b7fb>] ? rw_copy_check_uvector+0x6b/0x130
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110a8a6>] ? do_sync_read+0xd6/0x110                                                                            Nov 18 07:57:16 x4 kernel: [<ffffffff8110b996>] do_readv_writev+0xd6/0x1e0
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110bb20>] vfs_writev+0x30/0x60                                                                                 Nov 18 07:57:16 x4 kernel: [<ffffffff8110bc25>] sys_writev+0x45/0x90
+Nov 18 07:57:16 x4 kernel: [<ffffffff8111d8d1>] ? sys_poll+0x71/0x110
+Nov 18 07:57:16 x4 kernel: [<ffffffff814ca5fb>] system_call_fastpath+0x16/0x1b
+Nov 18 07:57:16 x4 kernel: ---[ end trace 320a3cfbcb373e9a ]---
+Nov 18 07:57:16 x4 kernel: ------------[ cut here ]------------
+Nov 18 07:57:16 x4 kernel: kernel BUG at mm/slub.c:3413!
+Nov 18 07:57:16 x4 kernel: invalid opcode: 0000 [#1] PREEMPT SMP
+Nov 18 07:57:16 x4 kernel: CPU 1
+Nov 18 07:57:16 x4 kernel: Pid: 1500, comm: X Tainted: G        W    3.2.0-rc2-00057-ga9098b3-dirty #60 System manufacturer System Product Name/M4A78T-E
+Nov 18 07:57:16 x4 kernel: RIP: 0010:[<ffffffff81103ac1>]  [<ffffffff81103ac1>] kfree+0x131/0x140
+Nov 18 07:57:16 x4 kernel: RSP: 0018:ffff88020fbc1b88  EFLAGS: 00010246
+Nov 18 07:57:16 x4 kernel: RAX: 4000000000000000 RBX: ffff880200000000 RCX: 0000000000000304
+Nov 18 07:57:16 x4 kernel: RDX: ffffffff7fffffff RSI: 0000000000000282 RDI: ffff880200000000
+Nov 18 07:57:16 x4 kernel: RBP: ffff88020fbc1ba8 R08: 0000000000000304 R09: ffffea0008000000
+Nov 18 07:57:16 x4 kernel: R10: 00000000005d6ba0 R11: 0000000000003246 R12: ffff880213570700
+Nov 18 07:57:16 x4 kernel: R13: ffffffff8141e8c0 R14: ffff880213570700 R15: ffff880216bba3a0
+Nov 18 07:57:16 x4 kernel: FS:  00007fdc1da79880(0000) GS:ffff88021fc80000(0000) knlGS:0000000000000000
+Nov 18 07:57:16 x4 kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Nov 18 07:57:16 x4 kernel: CR2: 0000000001b39a98 CR3: 000000020fbfc000 CR4: 00000000000006e0
+Nov 18 07:57:16 x4 kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Nov 18 07:57:16 x4 kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Nov 18 07:57:16 x4 kernel: Process X (pid: 1500, threadinfo ffff88020fbc0000, task ffff880216bba3a0)
+Nov 18 07:57:16 x4 kernel: Stack:
+Nov 18 07:57:16 x4 kernel: 0000000000000000 ffff880213570700 ffff880213570700 0000000000000000
+Nov 18 07:57:16 x4 kernel: ffff88020fbc1bc8 ffffffff8141e8c0 ffff880213570700 ffff880213570700
+Nov 18 07:57:16 x4 kernel: ffff88020fbc1be8 ffffffff8141e8e9 ffff880200000000 ffff880213570700
+Nov 18 07:57:16 x4 kernel: Call Trace:
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141e8c0>] skb_release_data+0xf0/0x100
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141e8e9>] skb_release_all+0x19/0x20
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141e901>] __kfree_skb+0x11/0xa0
+Nov 18 07:57:16 x4 kernel: [<ffffffff8141e9b6>] consume_skb+0x26/0xa0
+Nov 18 07:57:16 x4 kernel: [<ffffffff814a5614>] unix_stream_recvmsg+0x2c4/0x790
+Nov 18 07:57:16 x4 kernel: [<ffffffff8111c1c0>] ? __pollwait+0xf0/0xf0
+Nov 18 07:57:16 x4 kernel: [<ffffffff814175f4>] sock_aio_read+0xe4/0x110
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110a8a6>] do_sync_read+0xd6/0x110
+Nov 18 07:57:16 x4 kernel: [<ffffffff8108fa64>] ? enqueue_hrtimer+0x24/0xc0
+Nov 18 07:57:16 x4 kernel: [<ffffffff81090303>] ? hrtimer_start+0x13/0x20
+Nov 18 07:57:16 x4 kernel: [<ffffffff810714ac>] ? do_setitimer+0x1bc/0x240
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110b095>] vfs_read+0x135/0x160
+Nov 18 07:57:16 x4 kernel: [<ffffffff8110b375>] sys_read+0x45/0x90
+Nov 18 07:57:16 x4 kernel: [<ffffffff814ca5fb>] system_call_fastpath+0x16/0x1b
+Nov 18 07:57:16 x4 kernel: Code: e9 3d ff ff ff 48 89 da 4c 89 ce e8 51 fe 3b 00 e9 77 ff ff ff 49 f7 01 00 c0 00 00 74 0d 4c 89 cf e8 64 24 fd ff e9 61 ff ff ff <0f> 0b 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48
+Nov 18 07:57:16 x4 kernel: RIP  [<ffffffff81103ac1>] kfree+0x131/0x140
+Nov 18 07:57:16 x4 kernel: RSP <ffff88020fbc1b88>
+Nov 18 07:57:16 x4 kernel: ---[ end trace 320a3cfbcb373e9b ]---
+Nov 18 08:01:30 x4 kernel: SysRq : Emergency Sync
+Nov 18 08:01:30 x4 kernel: Emergency Sync complete
 
-All confirmable documents to back up the claims will be made available toyou
-prior to your acceptance and as soon as I receive your return mail Via  
-my email
-address: vincent_cheng011@yahoo.co.jp and I will let you know whatis  
-required of
-you.Your earliest response to this letter will be appreciated.
+The dirty flag comes from a bunch of unrelated xfs patches from Christoph, that
+I'm testing right now.
 
-Best Regards,
-Mr.Vincent Cheng
+Please also see my previous post: http://thread.gmane.org/gmane.linux.kernel/1215023
+It looks like something is scribbling over memory.
 
+This machine uses ECC, so bit-flips should be impossible.
 
-
-
-
-    I am Mr. Vincent Cheng Hoi Chuen, GBS, JP Chairman of the Hong Kong and
-Shanghai Banking Corporation Limited.i have a business proposal of TwentyTwo
-million Five Hundred Thousand United State Dollars only for you to  
-transact with
-me from my bank to your country.
-
-All confirmable documents to back up the claims will be made available toyou
-prior to your acceptance and as soon as I receive your return mail Via  
-my email
-address: vincent_cheng011@yahoo.co.jp and I will let you know whatis  
-required of
-you.Your earliest response to this letter will be appreciated.
-
-Best Regards,
-Mr.Vincent Cheng
-
-
-
-
-
+-- 
+Markus
