@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab1KRWKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:10:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59872 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab1KRWK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:10:29 -0500
-Date: Fri, 18 Nov 2011 14:08:49 -0800
-From: Greg KH <gregkh@suse.de>
-To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Cc: hjk@hansjkoch.de, tglx@linutronix.de, linux-pci@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: extra large DMA buffer for PCI-E device under UIO
-Message-ID: <20111118220849.GA25205@suse.de>
-References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
+	id S1756841Ab1KRWLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:11:00 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57218 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab1KRWK6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 17:10:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOJsxLFLxKGTzxjotAYv-d7Qzn5cqc1AGhXX0FSiK1i3to19Tg@mail.gmail.com>
+References: <4EC4DA15.7090106@parallels.com> <20111117124831.688adbeb.akpm@linux-foundation.org>
+ <4EC6246A.6020807@parallels.com> <20111118110716.c854b4bd.akpm@linux-foundation.org>
+ <20111118200342.GC21041@moon> <20111118123728.554b45e7.akpm@linux-foundation.org>
+ <20111118210322.GD21041@moon> <CAOJsxLFLxKGTzxjotAYv-d7Qzn5cqc1AGhXX0FSiK1i3to19Tg@mail.gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Fri, 18 Nov 2011 17:10:37 -0500
+Message-ID: <CAGZ=bqJBWboHrh_zc4mWNK5DuY3vy1+QhrMosXK4nusfqDbRSQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
+ that can be shared between tasks
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
-> Hello fellow hackers.
-> 
-> I am maintaining a UIO based driver for a PCI-E data acquisition device.
-> 
-> I map BAR0 of the device to userspace. I also map two memory areas,
-> one is used to feed instructions to the acquisition device, the other
-> is used autonomously by the PCI device to write the acquired data.
+On Fri, Nov 18, 2011 at 16:09, Pekka Enberg <penberg@kernel.org> wrote:
+> On Fri, Nov 18, 2011 at 11:03 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>>> Of course.  But
+>>>
+>>> a) I'm not sure that this scheme actually protects the kernel
+>>>    addresses - there may be way in which cunning userspace can work out
+>>>    the random mask.
+>>
+>> Well, in case of hw-rng it should not be that easy, still of course
+>> there is no 100% guarantee that there is absolutely no way to predict
+>> this mask (espec since it's generated once at lives here forever). But
+>> whatever makes attacker life harder -- is a good thing. After all we might
+>> simply take some hash on kernel address here (such as sha256) since it's
+>> not a time-critical operation and as far as I know collision is not found
+>> for it yet (??).
+>
+> XOR cipher is very easy to crack with frequency analysis. I'd also
+> consider using SHA256 or similar hash for this.
 
-Nice, have a pointer to your driver anywhere so we can include it in the
-main kernel tree to make your life easier?
+Some of the bits you don't even need to guess.  On 32-bit PPC, for
+example, all kernel addresses have the top two bits set (0xC0000000 -
+0xFFFFFFFF) and some of that space is reserved for virtual maps and
+kernel code.  Additionally, all your significant datastructures are
+probably allocated with kmalloc() and have 16-byte alignment or more,
+so you only have maybe 24 or 25 bits (out of 32) with relevant
+randomness.
 
-> The strategy we have been using for those two share memory areas has
-> historically been using pci_alloc_coherent on v2.6.35 x86_64 (limited
-> to 4MB based on my trials) and later, I made use of the VT-d
-> (intel_iommu) to allocate as much as 128MB (an arbitrary limit) which
-> appear contiguous to the PCI device. I use vmalloc_user to allocate
-> 128M, then write all the physically continuous segments in a
-> scatterlist, then use pci_map_sg which works it's way to intel_iommu.
-> The device DMA addresses I get back are contiguous over the whole
-> 128M. Neat! Our VT-d capable devices still use this strategy.
-> 
-> This large memory is mission-critical in making the acquisition device
-> autonomous (real-time), yet keep the DMA implementation very simple.
-> Today, we are re-using this device on a CPU architecture that has no
-> IOMMU (intel E6XX/EG20T) and want to avoid creating a scatter-gather
-> scheme between my driver and the FPGA (PCI device).
-> 
-> So I went back to the old pci_alloc_coherent method, which although
-> limited to 4 MB, will do for early development phases. Instead of
-> 2.6.35, we are doing preliminary development using 2.6.37 and will
-> probably use 3.1 or more later.  The cpu/device shared memory maps
-> (1MB and 4MB) are allocated using pci_alloc_coherent and handed to UIO
-> as physical memory using the dma_addr_t returned by the pci_alloc
-> func.
-> 
-> The 1st memory map is written to by CPU and read from device.
-> The 2nd memory map is typically written by the device and read by the
-> CPU, but future features may have the device also read this memory.
-> 
-> My initial testing on the atom E6XX show the PCI device failing when
-> trying to read from the first memory map. I suspect PCI-E payload
-> sizes which may be somewhat hardcoded in the FPGA firmware... we will
-> confirm this soon.
+Even then I'm sure you can brute-force that primitive XOR masking
+pretty easily.  Just use memory pressure to get some large contiguous
+chunks of free memory and then create lots of the relevant
+datastructures... which will occur in linearly ascending order!
+Examine the values from each "cookie" after large numbers of
+allocations, if the highest bit to change was bit 20 and almost all of
+the bits underneath it flip at the same time, then you know the real
+value of bit X just changed from a 0 to a 1, so you know what the XOR
+value for that bit is.
 
-That would be good to find out.
+The #1 rule of one-time pads is never use it for more than one thing,
+and you use it here for every object in the system.
 
-> Now from the get go I have felt lucky to have made this work because
-> of my limited research into the intricacies of the kernel's memory
-> management. So I ask two things:
-> 
-> - Is this kosher?
+If you actually want to be able to compare uniqueness without exposing
+anything vulnerable to various kinds of guessing, you should generate
+a random 64-bit value for each class of object and then use a proper
+cryptographic hash function on it:
+  crypto_hash(concat(object_ptr, random_value))
 
-I think so, yes, but others who know the DMA subsystem better than I
-should chime in here, as I might be totally wrong.
+Even given the best possible practical attacks against SHA1 or MD5
+today both still provides more than enough security to prevent someone
+from guessing "object_ptr" in less than an absurd amount of time.
 
-> - Is there a better/easier/safer way to achieve this? (remember that
-> for the second map, the more memory I have, the better. We have a gig
-> of ram, if I take, say 256MB, that would be OK too.
-> 
-> I had thought about cutting out a chunk of ram from the kernel's boot
-> args, but had always feared cache/snooping errors. Not to mention I
-> had no idea how to "claim" or setup this memory once my driver's probe
-> function. Maybe I would still be lucky and it would just work? mmmh...
+Cheers,
+Kyle Moffett
 
-Yeah, don't do that, it might not work out well.
-
-greg k-h
+-- 
+Curious about my work on the Debian powerpcspe port?
+I'm keeping a blog here: http://pureperl.blogspot.com/
