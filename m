@@ -1,119 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab1KROFm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 09:05:42 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:55603 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756797Ab1KROFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 09:05:42 -0500
-Subject: Re: tracing vs. string formatting
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1321624241.3533.45.camel@frodo>
-References: <1321610382.10266.19.camel@jlt3.sipsolutions.net>
-	 <1321624241.3533.45.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 15:05:38 +0100
-Message-ID: <1321625138.10266.56.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758023Ab1KROOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 09:14:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757913Ab1KROOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 09:14:33 -0500
+Date: Fri, 18 Nov 2011 12:14:16 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC,PATCH] perf tool: Refactoring IO data files code
+Message-ID: <20111118141416.GA13052@ghostprotocols.net>
+References: <1321624005-6889-1-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321624005-6889-1-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 08:50 -0500, Steven Rostedt wrote:
-
-> > The issue I ran into is that obviously almost all messages need string
-> > formatting. But to put them into the trace, we have two choices now that
-> > I can see:
-> > 
-> > 1) format the messages into a temporary buffer, then copy into the trace
-> > 2) format the messages into the ringbuffer, reserving the max length we
-> >    think we might need
+Em Fri, Nov 18, 2011 at 02:46:40PM +0100, Jiri Olsa escreveu:
+> Hi,
 > 
-> I'm confused? Is this a different topic than printk tracing? As with
-> printk, if you put the trace point where I mentioned before, you let
-> printk figure out the size already and all it takes is a string and
-> length, and it will allocate just enough for the ring buffer to place it
-> there.
-
-Yes it's a different topic. With the printk tracing I can today (with
-the trace console I posted initially that can even be done out of tree)
-get all those messages. But if at the same time you have a slow serial
-console connected, printk'ing all the messages to the console can be
-expensive.
-
-> But if you are talking about something else, then sure this is an issue.
-> Currently trace_printk() uses a temporary buffer. Why waste 200 bytes in
-> the ring buffer that's not needed.
-
-I hadn't even thought about trace_printk, but yeah, d'oh, it obviously
-has the same issue.
-
-> > TRACE_EVENT(foo_dbg,
-> >         TP_PROTO(const char *fmt, va_list args),
-> >         TP_ARGS(fmt, args),
-> >         TP_STRUCT__entry(
-> > 		/* 200 is the max length we expect/reserve */
-> >                 __fmt_string(msg, 200)
-> >         ),
-> >         TP_fast_assign(
-> >                 __vprint_str(msg, fmt, args);
-> >         ),
-> >         TP_printk("%s", __get_str(msg))
-> > );
-> > 
-> > 
-> > Behind the scenes somehow the 200 would get reserved, propagated,
-> > __vprint_str would call something like
-> > 	r = vsnprintf(__get_str(msg), 200, fmt, args);
-> > 
-> > and use r to shrink the entry if possible.
+> based on following discussion:
+> http://marc.info/?l=linux-kernel&m=131731212425421&w=2
+> http://marc.info/?l=linux-kernel&m=131736842010972&w=2
 > 
-> This is interesting. Now we could add an API to ftrace (and maybe even
-> perf?) that can shrink the buffer if the space isn't needed. We do that
-> already if we decide to filter out the trace ponit, the allocated buffer
-> is freed if no interrupt came in and added data after it. If that
-> happens than we just convert the event into dead space.
+> I made some changes to have event memory mapping and input/output
+> data code in one place. The reason was to make the change for
+> multiple event data files at least possible ;)
 > 
-> But another issue with this is that when you get to an end of a buffer
-> page (internal buffers which currently are just page sizes). If you
-> don't have enough space, it will go to the next buffer page and the
-> space on the previous page is now wasted and can't be reclaimed.
-
-Right. That's not *too* bad though because you're (hopefully!) not going
-to have like 1024 here for the size of the messages.
-
-
-> > Does this sound completely stupid? Yes maybe adding tracing (is there a
-> > way to cause certain tracepoints to be printk'ed?) would be better but
-> > converting all the messages to like a few hundred tracepoints would be a
-> > huge waste as well.
+> This patchset is marked as RFC since it's quite big change
+> and I expect some better design might come up.
 > 
-> Wait? I'm confused again. Maybe I read you wrong. Do you mean to make
-> trace points printk'd? I think just make the current printk into a
-> tracepoint and be done with it. But it would be all printks or none. We
-> even still have ftrace_dump_on_oops if we need this information on a
-> system crash.
+> However, patches 1 and 2 are not big deal, since they are
+> just small (not so related) changes.
+> 
+> Patches 3-4 are the main change of the patchset.
+> 
+> 1/5 perf tool: Fix session host_nachine retrieval
+> 2/5 perf tool: Initialize events IDs in a single function
+> 3/5 perf tool: Introducing perf_mmap object
+> 4/5 perf tool: Introducing perf_data object
+> 5/5 perf tool: Putting mmap support to perf_data object
 
-No I'm just thinking into too many different directions at once.
+Reading those patches now.
+ 
+> I did some overall testing of all the changed command,
+> and so far so good. Just hit issue with 'diff' command,
+> but this one seems not to work even without my changes.
 
-If you assume my mail is about optimising trace_printk() to directly
-format into the ring buffer, you'll be much happier ;-)
+Yeah, it needs more work to properly suport multi-event perf.data files.
+ 
+> Also the current perf python binsing code is broken
+> wit missing dependencies so I could not test my
+> changes there.
 
-What my last paragraph was trying to say was: In theory I wouldn't need
-to do
-	trace_fmt_msg(fmt, va_args);
-because I'd have a
-	trace_foo(arg1, arg2, arg3);
+Which ones? I fixed some and posted to my perf/urgent branch, waiting
+for Ingo to merge.
 
-with the right format in TP_printk(), but I'm trying to get existing
-debug infrastructure into the trace *without* getting it into the kernel
-messages (!)
-
-johannes
-
+- Arnaldo
