@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab1KROV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 09:21:28 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65219 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab1KROV1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 09:21:27 -0500
+	id S1757699Ab1KROXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 09:23:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752122Ab1KROXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 09:23:06 -0500
+Date: Fri, 18 Nov 2011 12:22:55 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] perf tool: Initialize events IDs in a single
+	function
+Message-ID: <20111118142255.GB13052@ghostprotocols.net>
+References: <1321624005-6889-1-git-send-email-jolsa@redhat.com> <1321624005-6889-3-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAONaPpGQdpNDT9EuTq_xian+bRFDUsLn7AgjtG-=y0C6-9fDTQ@mail.gmail.com>
-References: <CAJd=RBC+p8033bHNfP=WQ2SU1Y1zRpj+FEi9FdjuFKkjF_=_iA@mail.gmail.com>
-	<CAONaPpGQdpNDT9EuTq_xian+bRFDUsLn7AgjtG-=y0C6-9fDTQ@mail.gmail.com>
-Date: Fri, 18 Nov 2011 15:21:26 +0100
-X-Google-Sender-Auth: lD48TS2nI3HZ5SB0LUxIWM3ZA08
-Message-ID: <CAONaPpHybQL38PSq-hux5X44zuHDCQg=8L1fb+geWv00ktQq7g@mail.gmail.com>
-Subject: Re: [PATCH] hugetlb: detect race if fail to COW
-From: John Kacur <jkacur@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <jweiner@redhat.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321624005-6889-3-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 3:16 PM, John Kacur <jkacur@redhat.com> wrote:
-> On Fri, Nov 18, 2011 at 3:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> In the error path that we fail to allocate new huge page, before try again, we
->> have to check race since page_table_lock is re-acquired.
->>
->> If racing, our job is done.
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>
->> --- a/mm/hugetlb.c      Fri Nov 18 21:38:30 2011
->> +++ b/mm/hugetlb.c      Fri Nov 18 21:48:15 2011
->> @@ -2407,7 +2407,14 @@ retry_avoidcopy:
->>                                BUG_ON(page_count(old_page) != 1);
->>                                BUG_ON(huge_pte_none(pte));
->>                                spin_lock(&mm->page_table_lock);
->> -                               goto retry_avoidcopy;
->> +                               ptep = huge_pte_offset(mm, address & huge_page_mask(h));
->> +                               if (likely(pte_same(huge_ptep_get(ptep), pte)))
->> +                                       goto retry_avoidcopy;
->> +                               /*
->> +                                * race occurs while re-acquiring page_table_lock, and
->> +                                * our job is done.
->> +                                */
->> +                               return 0;
->>                        }
->>                        WARN_ON_ONCE(1);
->>                }
->
->
-> I'm not sure about the veracity of the race condition, but you better
-> do spin_unlock before you return.
->
+Em Fri, Nov 18, 2011 at 02:46:42PM +0100, Jiri Olsa escreveu:
+> Currently events' IDs initialization is scattered among the
+> code. Adding function 'perf_evlist__init_ids' to allocate
+> and retrive events' IDs in one place.
 
-Ugh, sorry for the noise, I see that's not how it works here.
+I'm ok with this one, will merge it in my perf/core branch together with
+a fix for a bug I noticed in the original code and that remains with
+your changes: consider what happens if we do a second perf_evlist__mmap,
+we will call perf_evlist__id_add_fd again and thus bump evsel->ids++
+over nr_threads * nr_cpus, overflowing it.
+
+- Arnaldo
