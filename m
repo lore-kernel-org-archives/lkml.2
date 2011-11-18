@@ -1,303 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab1KRLgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 06:36:03 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21576
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756209Ab1KRLf5 (ORCPT
+	id S1757314Ab1KRLg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 06:36:29 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58407 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756209Ab1KRLg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 06:35:57 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LUUTJS-02-DWX-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH v4 1/2] perf, x86: Implement event scheduler helper functions
-Date: Fri, 18 Nov 2011 12:35:21 +0100
-Message-ID: <1321616122-1533-2-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1321616122-1533-1-git-send-email-robert.richter@amd.com>
-References: <1321616122-1533-1-git-send-email-robert.richter@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Fri, 18 Nov 2011 06:36:27 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Date: Fri, 18 Nov 2011 16:40:14 +0530
+Message-Id: <20111118111014.10512.99729.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH v7 3.2-rc2 18/30] uprobes: slot allocation.
+x-cbid: 11111801-7014-0000-0000-0000001A60CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces x86 perf scheduler code helper functions. We
-need this to later add more complex functionality to support
-overlapping counter constraints (next patch).
 
-The algorithm is modified so that the range of weight values is now
-generated from the constraints. There shouldn't be other functional
-changes.
+One page of slots are allocated per mm.
+On a probehit one free slot is acquired and released after
+singlestep operation completes.
 
-With the helper functions the scheduler is controlled. There are
-functions to initialize, traverse the event list, find unused counters
-etc. The scheduler keeps its own state.
-
-V3:
-* Added macro for_each_set_bit_cont().
-* Changed functions interfaces of perf_sched_find_counter() and
-  perf_sched_next_event() to use bool as return value.
-* Added some comments to make code better understandable.
-
-V4:
-* Fix broken event assignment if weight of the first event is not
-  wmin (perf_sched_init()).
-
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |  185 +++++++++++++++++++++++++++-----------
- include/linux/bitops.h           |   10 ++-
- 2 files changed, 140 insertions(+), 55 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6408910..02b9020 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -488,18 +488,145 @@ static inline int is_x86_event(struct perf_event *event)
- 	return event->pmu == &pmu;
+Changelog (since v5)
+- no more spin lock needed for slot allocation.
+- use install_special_mapping to add a vma. (previous approach used
+  init_creds)
+- set uprobes_xol_area while holding map_sem exclusively.
+
+ include/linux/mm_types.h |    2 
+ include/linux/uprobes.h  |   24 +++++
+ kernel/fork.c            |    2 
+ kernel/uprobes.c         |  215 +++++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 240 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 544a0b6..2595c9c 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -12,6 +12,7 @@
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+ #include <linux/page-debug-flags.h>
++#include <linux/uprobes.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
+ 
+@@ -391,6 +392,7 @@ struct mm_struct {
+ #endif
+ #ifdef CONFIG_UPROBES
+ 	atomic_t mm_uprobes_count;
++	struct uprobes_xol_area *uprobes_xol_area;
+ #endif
+ };
+ 
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index c1378a9..add5222 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -90,6 +90,26 @@ struct uprobe_task {
+ 	struct uprobe *active_uprobe;
+ };
+ 
++/*
++ * On a breakpoint hit, thread contests for a slot.  It free the
++ * slot after singlestep.  Only definite number of slots are
++ * allocated.
++ */
++
++struct uprobes_xol_area {
++	wait_queue_head_t wq;	/* if all slots are busy */
++	atomic_t slot_count;	/* currently in use slots */
++	unsigned long *bitmap;	/* 0 = free slot */
++	struct page *page;
++
++	/*
++	 * We keep the vma's vm_start rather than a pointer to the vma
++	 * itself.  The probed process or a naughty kernel module could make
++	 * the vma go away, and we must handle that reasonably gracefully.
++	 */
++	unsigned long vaddr;		/* Page(s) of instruction slots */
++};
++
+ #ifdef CONFIG_UPROBES
+ extern int __weak set_bkpt(struct mm_struct *mm, struct uprobe *uprobe,
+ 							unsigned long vaddr);
+@@ -101,6 +121,7 @@ extern int register_uprobe(struct inode *inode, loff_t offset,
+ extern void unregister_uprobe(struct inode *inode, loff_t offset,
+ 				struct uprobe_consumer *consumer);
+ extern void free_uprobe_utask(struct task_struct *tsk);
++extern void free_uprobes_xol_area(struct mm_struct *mm);
+ extern int mmap_uprobe(struct vm_area_struct *vma);
+ extern void munmap_uprobe(struct vm_area_struct *vma);
+ extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
+@@ -134,5 +155,8 @@ static inline unsigned long get_uprobe_bkpt_addr(struct pt_regs *regs)
+ static inline void free_uprobe_utask(struct task_struct *tsk)
+ {
+ }
++static inline void free_uprobes_xol_area(struct mm_struct *mm)
++{
++}
+ #endif /* CONFIG_UPROBES */
+ #endif	/* _LINUX_UPROBES_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index a03f436..c605f2a 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -558,6 +558,7 @@ void mmput(struct mm_struct *mm)
+ 	might_sleep();
+ 
+ 	if (atomic_dec_and_test(&mm->mm_users)) {
++		free_uprobes_xol_area(mm);
+ 		exit_aio(mm);
+ 		ksm_exit(mm);
+ 		khugepaged_exit(mm); /* must run before exit_mmap */
+@@ -746,6 +747,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #endif
+ #ifdef CONFIG_UPROBES
+ 	atomic_set(&mm->mm_uprobes_count, 0);
++	mm->uprobes_xol_area = NULL;
+ #endif
+ 
+ 	if (!mm_init(mm, tsk))
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index b9e1932..b440acd 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -33,6 +33,9 @@
+ #include <linux/kdebug.h>	/* notifier mechanism */
+ #include <linux/uprobes.h>
+ 
++#define UINSNS_PER_PAGE	(PAGE_SIZE/UPROBES_XOL_SLOT_BYTES)
++#define MAX_UPROBES_XOL_SLOTS UINSNS_PER_PAGE
++
+ static bulkref_t uprobes_srcu;
+ static struct rb_root uprobes_tree = RB_ROOT;
+ static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
+@@ -1051,6 +1054,201 @@ void munmap_uprobe(struct vm_area_struct *vma)
+ 	return;
  }
  
++/* Slot allocation for XOL */
++static int xol_add_vma(struct uprobes_xol_area *area)
++{
++	struct mm_struct *mm;
++	int ret;
++
++	area->page = alloc_page(GFP_HIGHUSER);
++	if (!area->page)
++		return -ENOMEM;
++
++	mm = current->mm;
++	down_write(&mm->mmap_sem);
++	ret = -EALREADY;
++	if (mm->uprobes_xol_area)
++		goto fail;
++
++	ret = -ENOMEM;
++
++	/* Try to map as high as possible, this is only a hint. */
++	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE,
++							PAGE_SIZE, 0, 0);
++	if (area->vaddr & ~PAGE_MASK) {
++		ret = area->vaddr;
++		goto fail;
++	}
++
++	ret = install_special_mapping(mm, area->vaddr, PAGE_SIZE,
++				VM_EXEC|VM_MAYEXEC|VM_DONTCOPY|VM_IO,
++				&area->page);
++	if (ret)
++		goto fail;
++
++	smp_wmb();	/* pairs with get_uprobes_xol_area() */
++	mm->uprobes_xol_area = area;
++	ret = 0;
++
++fail:
++	up_write(&mm->mmap_sem);
++	if (ret)
++		__free_page(area->page);
++
++	return ret;
++}
++
++static struct uprobes_xol_area *get_uprobes_xol_area(struct mm_struct *mm)
++{
++	struct uprobes_xol_area *area = mm->uprobes_xol_area;
++	smp_read_barrier_depends();/* pairs with wmb in xol_add_vma() */
++	return area;
++}
++
 +/*
-+ * Event scheduler state:
++ * xol_alloc_area - Allocate process's uprobes_xol_area.
++ * This area will be used for storing instructions for execution out of
++ * line.
 + *
-+ * Assign events iterating over all events and counters, beginning
-+ * with events with least weights first. Keep the current iterator
-+ * state in struct sched_state.
++ * Returns the allocated area or NULL.
 + */
-+struct sched_state {
-+	int	weight;
-+	int	event;		/* event index */
-+	int	counter;	/* counter index */
-+	int	unassigned;	/* number of events to be assigned left */
-+	unsigned long used[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-+};
-+
-+struct perf_sched {
-+	int			max_weight;
-+	int			max_events;
-+	struct event_constraint	**constraints;
-+	struct sched_state	state;
-+};
-+
-+/*
-+ * Initialize interator that runs through all events and counters.
-+ */
-+static void perf_sched_init(struct perf_sched *sched, struct event_constraint **c,
-+			    int num, int wmin, int wmax)
++static struct uprobes_xol_area *xol_alloc_area(void)
 +{
-+	int idx;
++	struct uprobes_xol_area *area;
 +
-+	memset(sched, 0, sizeof(*sched));
-+	sched->max_events	= num;
-+	sched->max_weight	= wmax;
-+	sched->constraints	= c;
++	area = kzalloc(sizeof(*area), GFP_KERNEL);
++	if (unlikely(!area))
++		return NULL;
 +
-+	for (idx = 0; idx < num; idx++) {
-+		if (c[idx]->weight == wmin)
-+			break;
-+	}
++	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
++								GFP_KERNEL);
 +
-+	sched->state.event	= idx;		/* start with min weight */
-+	sched->state.weight	= wmin;
-+	sched->state.unassigned	= num;
++	if (!area->bitmap)
++		goto fail;
++
++	init_waitqueue_head(&area->wq);
++	if (!xol_add_vma(area))
++		return area;
++
++fail:
++	kfree(area->bitmap);
++	kfree(area);
++	return get_uprobes_xol_area(current->mm);
 +}
 +
 +/*
-+ * Select a counter for the current event to schedule. Return true on
-+ * success.
++ * free_uprobes_xol_area - Free the area allocated for slots.
 + */
-+static bool perf_sched_find_counter(struct perf_sched *sched)
++void free_uprobes_xol_area(struct mm_struct *mm)
 +{
-+	struct event_constraint *c;
-+	int idx;
++	struct uprobes_xol_area *area = mm->uprobes_xol_area;
 +
-+	if (!sched->state.unassigned)
-+		return false;
++	if (!area)
++		return;
 +
-+	if (sched->state.event >= sched->max_events)
-+		return false;
-+
-+	c = sched->constraints[sched->state.event];
-+
-+	/* Grab the first unused counter starting with idx */
-+	idx = sched->state.counter;
-+	for_each_set_bit_cont(idx, c->idxmsk, X86_PMC_IDX_MAX) {
-+		if (!__test_and_set_bit(idx, sched->state.used))
-+			break;
-+	}
-+	sched->state.counter = idx;
-+
-+	if (idx >= X86_PMC_IDX_MAX)
-+		return false;
-+
-+	return true;
++	put_page(area->page);
++	kfree(area->bitmap);
++	kfree(area);
 +}
 +
 +/*
-+ * Go through all unassigned events and find the next one to schedule.
-+ * Take events with the least weight first. Return true on success.
++ *  - search for a free slot.
 + */
-+static bool perf_sched_next_event(struct perf_sched *sched)
++static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
 +{
-+	struct event_constraint *c;
-+
-+	if (!sched->state.unassigned || !--sched->state.unassigned)
-+		return false;
++	unsigned long slot_addr;
++	int slot_nr;
 +
 +	do {
-+		/* next event */
-+		sched->state.event++;
-+		if (sched->state.event >= sched->max_events) {
-+			/* next weight */
-+			sched->state.event = 0;
-+			sched->state.weight++;
-+			if (sched->state.weight > sched->max_weight)
-+				return false;
++		slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
++		if (slot_nr < UINSNS_PER_PAGE) {
++			if (!test_and_set_bit(slot_nr, area->bitmap))
++				break;
++
++			slot_nr = UINSNS_PER_PAGE;
++			continue;
 +		}
-+		c = sched->constraints[sched->state.event];
-+	} while (c->weight != sched->state.weight);
++		wait_event(area->wq,
++			(atomic_read(&area->slot_count) < UINSNS_PER_PAGE));
++	} while (slot_nr >= UINSNS_PER_PAGE);
 +
-+	sched->state.counter = 0;	/* start with first counter */
-+
-+	return true;
++	slot_addr = area->vaddr + (slot_nr * UPROBES_XOL_SLOT_BYTES);
++	atomic_inc(&area->slot_count);
++	return slot_addr;
 +}
 +
 +/*
-+ * Assign a counter for each event.
++ * xol_get_insn_slot - If was not allocated a slot, then
++ * allocate a slot.
++ * Returns the allocated slot address or 0.
 + */
-+static int perf_assign_events(struct event_constraint **constraints, int n,
-+			      int wmin, int wmax, int *assign)
++static unsigned long xol_get_insn_slot(struct uprobe *uprobe,
++					unsigned long slot_addr)
 +{
-+	struct perf_sched sched;
++	struct uprobes_xol_area *area;
++	unsigned long offset;
++	void *vaddr;
 +
-+	perf_sched_init(&sched, constraints, n, wmin, wmax);
++	area = get_uprobes_xol_area(current->mm);
++	if (!area) {
++		area = xol_alloc_area();
++		if (!area)
++			return 0;
++	}
++	current->utask->xol_vaddr = xol_take_insn_slot(area);
 +
-+	do {
-+		if (!perf_sched_find_counter(&sched))
-+			break;	/* failed */
-+		if (assign)
-+			assign[sched.state.event] = sched.state.counter;
-+	} while (perf_sched_next_event(&sched));
++	/*
++	 * Initialize the slot if xol_vaddr points to valid
++	 * instruction slot.
++	 */
++	if (unlikely(!current->utask->xol_vaddr))
++		return 0;
 +
-+	return sched.state.unassigned;
++	current->utask->vaddr = slot_addr;
++	offset = current->utask->xol_vaddr & ~PAGE_MASK;
++	vaddr = kmap_atomic(area->page);
++	memcpy(vaddr + offset, uprobe->insn, MAX_UINSN_BYTES);
++	kunmap_atomic(vaddr);
++	return current->utask->xol_vaddr;
 +}
 +
- int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- {
- 	struct event_constraint *c, *constraints[X86_PMC_IDX_MAX];
- 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
--	int i, j, w, wmax, num = 0;
-+	int i, wmin, wmax, num = 0;
- 	struct hw_perf_event *hwc;
- 
- 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
- 
--	for (i = 0; i < n; i++) {
-+	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
- 		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
- 		constraints[i] = c;
-+		wmin = min(wmin, c->weight);
-+		wmax = max(wmax, c->weight);
- 	}
- 
- 	/*
-@@ -525,60 +652,12 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 		if (assign)
- 			assign[i] = hwc->idx;
- 	}
--	if (i == n)
--		goto done;
--
--	/*
--	 * begin slow path
--	 */
- 
--	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
--
--	/*
--	 * weight = number of possible counters
--	 *
--	 * 1    = most constrained, only works on one counter
--	 * wmax = least constrained, works on any counter
--	 *
--	 * assign events to counters starting with most
--	 * constrained events.
--	 */
--	wmax = x86_pmu.num_counters;
-+	/* slow path */
-+	if (i != n)
-+		num = perf_assign_events(constraints, n, wmin, wmax, assign);
- 
- 	/*
--	 * when fixed event counters are present,
--	 * wmax is incremented by 1 to account
--	 * for one more choice
--	 */
--	if (x86_pmu.num_counters_fixed)
--		wmax++;
--
--	for (w = 1, num = n; num && w <= wmax; w++) {
--		/* for each event */
--		for (i = 0; num && i < n; i++) {
--			c = constraints[i];
--			hwc = &cpuc->event_list[i]->hw;
--
--			if (c->weight != w)
--				continue;
--
--			for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
--				if (!test_bit(j, used_mask))
--					break;
--			}
--
--			if (j == X86_PMC_IDX_MAX)
--				break;
--
--			__set_bit(j, used_mask);
--
--			if (assign)
--				assign[i] = j;
--			num--;
--		}
--	}
--done:
--	/*
- 	 * scheduling failed or is just a simulation,
- 	 * free resources if necessary
- 	 */
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3ef66a..3c1063a 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -22,8 +22,14 @@ extern unsigned long __sw_hweight64(__u64 w);
- #include <asm/bitops.h>
- 
- #define for_each_set_bit(bit, addr, size) \
--	for ((bit) = find_first_bit((addr), (size)); \
--	     (bit) < (size); \
-+	for ((bit) = find_first_bit((addr), (size));		\
-+	     (bit) < (size);					\
-+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
++/*
++ * xol_free_insn_slot - If slot was earlier allocated by
++ * @xol_get_insn_slot(), make the slot available for
++ * subsequent requests.
++ */
++static void xol_free_insn_slot(struct task_struct *tsk)
++{
++	struct uprobes_xol_area *area;
++	unsigned long vma_end;
++	unsigned long slot_addr;
 +
-+/* same as for_each_set_bit() but use bit as value to start with */
-+#define for_each_set_bit_cont(bit, addr, size) \
-+	for ((bit) = find_next_bit((addr), (size), (bit));	\
-+	     (bit) < (size);					\
- 	     (bit) = find_next_bit((addr), (size), (bit) + 1))
++	if (!tsk->mm || !tsk->mm->uprobes_xol_area || !tsk->utask)
++		return;
++
++	slot_addr = tsk->utask->xol_vaddr;
++
++	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
++		return;
++
++	area = tsk->mm->uprobes_xol_area;
++	vma_end = area->vaddr + PAGE_SIZE;
++	if (area->vaddr <= slot_addr && slot_addr < vma_end) {
++		int slot_nr;
++		unsigned long offset = slot_addr - area->vaddr;
++
++		slot_nr = offset / UPROBES_XOL_SLOT_BYTES;
++		if (slot_nr >= UINSNS_PER_PAGE)
++			return;
++
++		clear_bit(slot_nr, area->bitmap);
++		atomic_dec(&area->slot_count);
++		if (waitqueue_active(&area->wq))
++			wake_up(&area->wq);
++		tsk->utask->xol_vaddr = 0;
++	}
++}
++
+ /**
+  * get_uprobe_bkpt_addr - compute address of bkpt given post-bkpt regs
+  * @regs: Reflects the saved state of the task after it has hit a breakpoint
+@@ -1079,6 +1277,7 @@ void free_uprobe_utask(struct task_struct *tsk)
+ 	if (utask->active_uprobe)
+ 		put_uprobe(utask->active_uprobe);
  
- static __inline__ int get_bitmask_order(unsigned int count)
--- 
-1.7.7
-
++	xol_free_insn_slot(tsk);
+ 	kfree(utask);
+ 	tsk->utask = NULL;
+ }
+@@ -1108,7 +1307,8 @@ static struct uprobe_task *add_utask(void)
+ static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
+ 				unsigned long vaddr)
+ {
+-	/* TODO: Yet to be implemented */
++	if (xol_get_insn_slot(uprobe, vaddr) && !pre_xol(uprobe, regs))
++		return 0;
+ 	return -EFAULT;
+ }
+ 
+@@ -1118,8 +1318,16 @@ static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
+  */
+ static bool sstep_complete(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+-	/* TODO: Yet to be implemented */
+-	return false;
++	unsigned long vaddr = instruction_pointer(regs);
++
++	/*
++	 * If we have executed out of line, Instruction pointer
++	 * cannot be same as virtual address of XOL slot.
++	 */
++	if (vaddr == current->utask->xol_vaddr)
++		return false;
++	post_xol(uprobe, regs);
++	return true;
+ }
+ 
+ /*
+@@ -1176,6 +1384,7 @@ void uprobe_notify_resume(struct pt_regs *regs)
+ 			utask->active_uprobe = NULL;
+ 			utask->state = UTASK_RUNNING;
+ 			user_disable_single_step(current);
++			xol_free_insn_slot(current);
+ 		}
+ 	}
+ 	return;
 
