@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab1KRCOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 21:14:00 -0500
-Received: from home.keithp.com ([63.227.221.253]:43234 "EHLO keithp.com"
+	id S1755959Ab1KRCR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 21:17:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39540 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755058Ab1KRCOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 21:14:00 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Adam Jackson <ajax@redhat.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hook up Ivybridge eDP
-In-Reply-To: <1321569940.18123.7.camel@atropine>
-References: <1321489780-17085-1-git-send-email-keithp@keithp.com> <1321569940.18123.7.camel@atropine>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 17 Nov 2011 18:13:56 -0800
-Message-ID: <yun8vnech3v.fsf@aiko.keithp.com>
+	id S1755489Ab1KRCR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 21:17:56 -0500
+Date: Fri, 18 Nov 2011 03:17:14 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+Message-ID: <20111118021714.GP3306@redhat.com>
+References: <20111105013317.GU18879@redhat.com>
+ <CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
+ <20111107131413.GA18279@suse.de>
+ <20111107154235.GE3249@redhat.com>
+ <20111107162808.GA3083@suse.de>
+ <20111109012542.GC5075@redhat.com>
+ <20111116140042.GD3306@redhat.com>
+ <alpine.LSU.2.00.1111161540060.1861@sister.anvils>
+ <20111117184252.GK3306@redhat.com>
+ <CAPQyPG7MvO8Qw3jrOMShQcG5Z-RwbzpKnu-AheoS6aRYNhW14w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPQyPG7MvO8Qw3jrOMShQcG5Z-RwbzpKnu-AheoS6aRYNhW14w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 18, 2011 at 09:42:05AM +0800, Nai Xia wrote:
+> First of all, I believe that at the POSIX level, it's ok for
+> truncate_inode_page()
+> not scanning  COWed pages, since basically we does not provide any guarantee
+> for privately mapped file pages for this behavior. But missing a file
+> mapped pte after its
+> cache page is already removed from the the page cache is a
 
-On Thu, 17 Nov 2011 17:45:40 -0500, Adam Jackson <ajax@redhat.com> wrote:
+I also exclude there is a case that would break, but it's safer to
+keep things as is, in case somebody depends on segfault trapping.
 
-> Your silicon people worry me.
+> fundermental malfuntion for
+> a shared mapping when some threads see the file cache page is gone
+> while some thread
+> is still r/w from/to it! No matter how short the gap between
+> truncate_inode_page() and
+> the second loop, this is wrong.
 
-In any case, the changes are mostly to move bits around so that there
-are two bits for pipe select
+Truncate will destroy the info on disk too... so if somebody is
+writing to a mapping which points beyond the end of the i_size
+concurrently with truncate, the result is undefined. The write may
+well reach the page but then the page is discared. Or you may get
+SIGBUS before the write.
 
-> I don't even.  Unless you're looking at some other version of the DP
-> spec than me, I was pretty sure those weren't legal voltage values.  And
-> 3.5dB preemph on 1000mV gives you 1500mV at the peak, which is
-> definitely outside the spec.
+> Second, even if the we don't care about this POSIX flaw that may
+> introduce, a pte can still
+> missed by the second loop. mremap can happen serveral times during
+> these non-atomic
+> firstpass-trunc-secondpass operations, a proper events can happily
+> make the wrong order
+> for every scan, and miss them all -- That's just what in Hugh's mind
+> in the post you just
+> replied. Without lock and proper ordering( which patial mremap cannot provide),
+> this *will* happen.
 
-I'm just writing down what's in the spec. I don't use these values, just
-the useful ones above.
+There won't be more than one mremap running concurrently from the same
+process (we must enforce it by making sure anon_vma lock and
+i_mmap_lock are both taken at least once in copy_vma, they're already
+both taken in fork, they should already be taken in all common cases
+in copy_vma so for all cases it's going to be a L1 exclusive cacheline
+already). I don't exclude there may be some case that won't take the
+locks in vma_adjust though, we should check it, if we decide to relay
+on the double loop, but it'd be a simple addition if needed.
 
-You don't happen to have any hardware to test this with, do you?
+I'm more concerned about the pte pointing to the orphaned pagecache
+that would materialize for a little while because of
+unmap+truncate+unmap instead of unmap+unmap+truncate (but the latter
+order is needed for the COWs).
 
-=2D-=20
-keith.packard@intel.com
+> You may disagree with me and have that locking removed, and I am
+> already have that
+> one line patch prepared waiting fora bug bumpping up again, what a
+> cheap patch submission!
 
---=-=-=
-Content-Type: application/pgp-signature
+Well I'm not yet sure it's good idea to remove the i_mmap_mutex, or if
+we should just add the anon_vma lock in mremap and add the i_mmap_lock
+in fork (to avoid the orphaned pagecache left mapped in the child
+which already may happen unless there's some i_mmap_lock belonging to
+the same inode taken after copy_page_range returns until we return to
+userland and child can run, and I don't think we can relay on the
+order of the prio tree in fork. Fork is safe for anon pages because
+there we can relay on the order of the same_anon_vma list.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTsW/ZDYtFsjWk68qAQiTIxAAvHI5yXadLLqasImSPJ8cj9S0wrFNGCZS
-NDLj+wc0ns5wf857bSag7Cs6eoBQ3tM4PLy6i/KUGMoxiRKkU7Ile/vRkUvOIe/4
-xaGhe3zBx2AHY8B/QsrscJyyZ5XtQpgSaSUhAU1BofwfEwGk5wNtBCifW3nUpnh7
-KJSpmd/k9wghHM/Gdehhti3BVU394YySJIqNkE/AveWUd4kXQjvRcJy+bDieDj5t
-Q4728T/NeYgk1aYiDb30osCibcOASylfyPyqUvr3m/+gIjSojGYOeWrKvCxoqgsG
-509Ii3nTYHDVsjulXGzvMc5ohLm2pv/fErxlrxXWNF4ah0VLvSC8XnkB81FsNq86
-rodJQvbmuxYYc3tCxXxwb2PX1tnhan8whcNa9XOw43rUj+xv/F7dSOkDw4s2lLLL
-J1yBi5ooULM2t8BTRGPkfE8mo9raW3u3J04nCJqgor4ZpHNYnk3eMHH/AJcdaVEG
-ijYesXWHEjVFUpytLaj+h2RnSlLmaK6wj28gP0H5ohd+8g+F7APGMisQVoiqc6Ln
-bMTCGDWeMKE5xsj4lN6odtSc35sAcqL5JRxGUM8YI3kEM5Eq3iyBMfBLGNOQ4i8n
-RZw2wAmndambJkIc+HRhZcm7TIX/zGClnxD2+UkJ8piu/Qat4VA9IKz9pVKSZldG
-PjwaSRcgKo0=
-=MEgM
------END PGP SIGNATURE-----
---=-=-=--
+I think clearing up if this orphaned pagecache is dangerous would be a
+good start. If too complex we just add the i_mmap_lock around
+copy_page_range in fork if vma->vm_file is set. If you instead think
+we can deal with the orphaned pagecache we can add a dummy lock/unlock
+of i_mmap_mutex in copy_vma vma_merge succeeding case (short critical
+section and not common common case) and remove the i_mmap_mutex around
+move_page_tables (common case) overall speeding up mremap and not
+degrading fork.
