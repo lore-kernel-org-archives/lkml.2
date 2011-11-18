@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1KRSXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 13:23:49 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:63559 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab1KRSXs convert rfc822-to-8bit (ORCPT
+	id S1754055Ab1KRS02 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 13:26:28 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:44384 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753070Ab1KRS01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 13:23:48 -0500
-X-IronPort-AV: E=Sophos;i="4.69,534,1315206000"; 
-   d="scan'208";a="600068899"
-Message-ID: <1321640624.2653.5.camel@lade.trondhjem.org>
-Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
- mount expires
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Jim Rees <rees@umich.edu>
-Cc: John Hughes <john@Calva.COM>, Jeff Layton <jlayton@redhat.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 18 Nov 2011 20:23:44 +0200
-In-Reply-To: <20111118175409.GA1347@umich.edu>
-References: <00c101cca615$c2e08db6$78be630a@hq.netapp.com>
-	 <20111118175409.GA1347@umich.edu>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 18 Nov 2011 18:23:46.0626 (UTC) FILETIME=[35F3AA20:01CCA61F]
+	Fri, 18 Nov 2011 13:26:27 -0500
+Message-ID: <4EC6A2D6.10702@xenotime.net>
+Date: Fri, 18 Nov 2011 10:24:22 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] Documentation for sysfs attributes for 3.3 (xen related)
+References: <1321640393-19708-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1321640393-19708-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 12:54 -0500, Jim Rees wrote: 
-> Myklebust, Trond wrote:
+On 11/18/2011 10:19 AM, Konrad Rzeszutek Wilk wrote:
+> Please accept the following two patches that describe the
+> SysFS of some of the Xen drivers. Thank you.
 > 
->   So what are they supposed to do without tickets? Crash?
+> David Vrabel (2):
+>       xen: document balloon driver sysfs files
+>       xen: document backend sysfs files
 > 
-> No, why would they want to do that?
-> 
-> I feel like I've entered the Twilight Zone here, so please continue without
-> me while I dig up the relevant background info.
+>  Documentation/ABI/stable/sysfs-bus-xen-backend     |   75 +++++++++++++++++++
+>  .../ABI/stable/sysfs-devices-system-xen_memory     |   77 ++++++++++++++++++++
+>  2 files changed, 152 insertions(+), 0 deletions(-)
 
-The point is that if the server won't allow them to issue read or write
-system calls, then there are 2 options available to them: 
+Hey,
 
-     1. hang until someone renews their ticket 
-     2. get an error which means crash, since most (all?) applications
-        aren't written according to the non-posix assumption that read
-        and write can return EACCES/EKEYEXPIRED errors.
+Documentation/ABI/ patches should go to GregKH.
 
-
-
-Trond
+Greg, can we clarify that in MAINTAINERS ?
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
