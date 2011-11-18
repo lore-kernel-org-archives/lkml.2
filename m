@@ -1,107 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab1KRBqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 20:46:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:59985 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751415Ab1KRBqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 20:46:16 -0500
-Message-ID: <1321580775.22117.8.camel@Joe-Laptop>
-Subject: [PATCH] iwl-debug: Shrink object by using dev_err and deduplicating
- formats
-From: Joe Perches <joe@perches.com>
-To: Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 17 Nov 2011 17:46:15 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755942Ab1KRBxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 20:53:33 -0500
+Received: from tundra.namei.org ([65.99.196.166]:40133 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755626Ab1KRBxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 20:53:31 -0500
+Date: Fri, 18 Nov 2011 12:53:28 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] Security subsystem fixes
+Message-ID: <alpine.LRH.2.00.1111181252440.29924@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using dev_err instead of dev_printk(KERN_ERR uses fewer
-arguments and is a bit smaller.
+Hi Linus,
 
-Deduplicating formats used by IWL_DEBUG_QUIET_RFKILL also
-makes the object a bit smaller.
- 
-Neatened the macros, used ##__VA_ARGS__.
+Please pull to your current tree.
 
-$ size drivers/net/wireless/iwlwifi/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 462652	   8646	  92576	 563874	  89aa2	drivers/net/wireless/iwlwifi/built-in.o.new
- 467557	   8646	  92592	 568795	  8addb	drivers/net/wireless/iwlwifi/built-in.o.old
+The following changes since commit 6aaf05f472c97ebceff47d9eef464574f1a55727:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git390.marist.edu/pub/scm/linux-2.6
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/iwlwifi/iwl-debug.h |   37 +++++++++++++++++-------------
- 1 files changed, 21 insertions(+), 16 deletions(-)
+are available in the git repository at:
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-debug.h b/drivers/net/wireless/iwlwifi/iwl-debug.h
-index 40ef97b..44a7bdd 100644
---- a/drivers/net/wireless/iwlwifi/iwl-debug.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-debug.h
-@@ -47,20 +47,21 @@ do {									\
- } while (0)
- 
- #ifdef CONFIG_IWLWIFI_DEBUG
--#define IWL_DEBUG(m, level, fmt, args...)				\
-+#define IWL_DEBUG(m, level, fmt, ...)					\
- do {									\
- 	if (iwl_get_debug_level((m)->shrd) & (level))			\
--		dev_printk(KERN_ERR, bus(m)->dev,			\
--			 "%c %s " fmt, in_interrupt() ? 'I' : 'U',	\
--			__func__ , ## args);				\
-+		dev_err(bus(m)->dev, "%c %s " fmt,			\
-+			in_interrupt() ? 'I' : 'U', __func__,		\
-+			##__VA_ARGS__);					\
- } while (0)
- 
--#define IWL_DEBUG_LIMIT(m, level, fmt, args...)				\
-+#define IWL_DEBUG_LIMIT(m, level, fmt, ...)				\
- do {									\
--	if (iwl_get_debug_level((m)->shrd) & (level) && net_ratelimit())\
--		dev_printk(KERN_ERR, bus(m)->dev,			\
--			"%c %s " fmt, in_interrupt() ? 'I' : 'U',	\
--			 __func__ , ## args);				\
-+	if (iwl_get_debug_level((m)->shrd) & (level) &&			\
-+	    net_ratelimit())						\
-+		dev_err(bus(m)->dev, "%c %s " fmt,			\
-+			in_interrupt() ? 'I' : 'U', __func__,		\
-+			##__VA_ARGS__);					\
- } while (0)
- 
- #define iwl_print_hex_dump(m, level, p, len)				\
-@@ -70,14 +71,18 @@ do {                                            			\
- 			       DUMP_PREFIX_OFFSET, 16, 1, p, len, 1);	\
- } while (0)
- 
--#define IWL_DEBUG_QUIET_RFKILL(p, fmt, args...)			\
-+#define IWL_DEBUG_QUIET_RFKILL(p, fmt, ...)				\
- do {									\
--	if (!iwl_is_rfkill(p->shrd))				\
--		dev_printk(KERN_ERR, bus(p)->dev, "%c %s " fmt,	\
--		(in_interrupt() ? 'I' : 'U'), __func__ , ##args);	\
--	else if	(iwl_get_debug_level(p->shrd) & IWL_DL_RADIO)	\
--		dev_printk(KERN_ERR, bus(p)->dev, "(RFKILL) %c %s " fmt, \
--		(in_interrupt() ? 'I' : 'U'), __func__ , ##args);	\
-+	if (!iwl_is_rfkill(p->shrd))					\
-+		dev_err(bus(p)->dev, "%s%c %s " fmt,			\
-+			"",						\
-+			in_interrupt() ? 'I' : 'U', __func__,		\
-+			##__VA_ARGS__);					\
-+	else if	(iwl_get_debug_level(p->shrd) & IWL_DL_RADIO)		\
-+		dev_err(bus(p)->dev, "%s%c %s " fmt,			\
-+			"(RFKILL) ",					\
-+			in_interrupt() ? 'I' : 'U', __func__,		\
-+			##__VA_ARGS__);					\
- } while (0)
- 
- #else
+  git://git.selinuxproject.org/~jmorris/linux-security for-linus
 
+Casey Schaufler (1):
+      Smack: smackfs cipso seq read repair
+
+James Morris (2):
+      Merge branch 'for-1111' of git://gitorious.org/smack-next/kernel into for-linus
+      Merge branch 'encrypted-key-fixes' of git://git.kernel.org/.../zohar/linux-integrity into for-linus
+
+Mimi Zohar (2):
+      encrypted-keys: fix error return code
+      encrypted-keys: module build fixes
+
+ security/keys/encrypted-keys/Makefile    |    8 ++-
+ security/keys/encrypted-keys/encrypted.c |    2 +-
+ security/keys/encrypted-keys/encrypted.h |    3 +-
+ security/smack/smackfs.c                 |  115 ++++++++++--------------------
+ 4 files changed, 48 insertions(+), 80 deletions(-)
 
