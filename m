@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690Ab1KRKI5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:08:57 -0500
-Received: from orion.tchmachines.com ([208.76.84.200]:52695 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534Ab1KRKIz (ORCPT
+	id S1757730Ab1KRKJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:09:15 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:59252
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757501Ab1KRKJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:08:55 -0500
-Message-ID: <4EC62EB1.6040405@scalemp.com>
-Date: Fri, 18 Nov 2011 12:08:49 +0200
-From: Eial Czerwacki <eial@scalemp.com>
-Organization: ScaleMP
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101020 Remi/fc8 Thunderbird/3.1.5
+	Fri, 18 Nov 2011 05:09:11 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-SS: 13,
+From: <michael.hennerich@analog.com>
+To: <greg@kroah.com>, <arnd@arndb.de>
+CC: <device-drivers-devel@blackfin.uclinux.org>, <drivers@analog.com>,
+        <linux-kernel@vger.kernel.org>,
+        Michael Hennerich <michael.hennerich@analog.com>
+Subject: [PATCH 1/2] misc: ad525x_dpot: Fix AD8400 spi transfer size.
+Date: Fri, 18 Nov 2011 11:05:10 +0100
+Message-ID: <1321610711-12507-1-git-send-email-michael.hennerich@analog.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: screen goes black suddenly while using drm/radeon and reboot
- of X is needed
-References: <4EC62E2F.7010702@scalemp.com>
-In-Reply-To: <4EC62E2F.7010702@scalemp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Content-Type: text/plain
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 12:06 PM, Eial Czerwacki wrote:
+From: Michael Hennerich <michael.hennerich@analog.com>
 
-> Hello All,
-> 
-> I have a two seat multiseat config using two gpus.
-> when I first boot the computer and starts to work with seat 0, after a
-> few minutes my screen goes black and it behaves like it went to sleep.
-> 
-> the system has two gpus, seat 1 uses an ati 5450HD at slot 1
-> (pcie2.0x16) and seat 0 uses an ati 3650HD at slot 1 (pciex4).
-> 
-> this only happens after cold reboot/power cycle, after I restart X, it
-> doesn't happens again.
-> 
-> also this doesn't occurs on seat 1 so I suspect it has to do with the
-> pci slot.
-> 
-> I've manually disabled DPMS in X but I don't think that is the issue.
-> 
-> I'm using kernel 3.1.1, my dmesg can be found at
-> http://pastebin.com/TZHvDWNe and my lspci can be found at
-> http://paste.pocoo.org/show/509652/
-> 
-> any ideas what can cause it?
-> 
-> Thanks
-> 
-> Eial.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+AD8400 type devices require 16-bit command transfers.
+
+Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+---
+ drivers/misc/ad525x_dpot.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/ad525x_dpot.h b/drivers/misc/ad525x_dpot.h
+index a662f59..82b2cb7 100644
+--- a/drivers/misc/ad525x_dpot.h
++++ b/drivers/misc/ad525x_dpot.h
+@@ -100,7 +100,7 @@ enum dpot_devid {
+ 	AD5293_ID = DPOT_CONF(F_RDACS_RW | F_SPI_16BIT, BRDAC0, 10, 27),
+ 	AD7376_ID = DPOT_CONF(F_RDACS_WONLY | F_AD_APPDATA | F_SPI_8BIT,
+ 			BRDAC0, 7, 28),
+-	AD8400_ID = DPOT_CONF(F_RDACS_WONLY | F_AD_APPDATA | F_SPI_8BIT,
++	AD8400_ID = DPOT_CONF(F_RDACS_WONLY | F_AD_APPDATA | F_SPI_16BIT,
+ 			BRDAC0, 8, 29),
+ 	AD8402_ID = DPOT_CONF(F_RDACS_WONLY | F_AD_APPDATA | F_SPI_16BIT,
+ 			BRDAC0 | BRDAC1, 8, 30),
+-- 
+1.7.0.4
 
 
-correction, seat 0's gpu uses slot 6.
-
-Eial.
