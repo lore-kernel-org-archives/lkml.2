@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1KRSpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 13:45:21 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:49140 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab1KRSpT (ORCPT
+	id S1754828Ab1KRSqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 13:46:24 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:46273 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab1KRSqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 13:45:19 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, richard@nod.at,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, oleg@redhat.com, dhowells@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <20111117045230.GA26345@hallyn.com>
-	<m1aa7u2jv1.fsf@fess.ebiederm.org> <20111118173752.GB11823@sergelap>
-Date: Fri, 18 Nov 2011 10:46:17 -0800
-In-Reply-To: <20111118173752.GB11823@sergelap> (Serge E. Hallyn's message of
-	"Fri, 18 Nov 2011 11:37:52 -0600")
-Message-ID: <m14ny12rra.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19VuLTNxXdP3+TbtB1xLFE9WwdnR2GHB/w=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge.hallyn@canonical.com>
-X-Spam-Relay-Country: **
-Subject: Re: user namespace: make signal.c respect user namespaces (v5)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 18 Nov 2011 13:46:23 -0500
+Subject: Re: [PATCH v2] printk: add console output tracing
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20111118184401.GA24787@somewhere.redhat.com> (sfid-20111118_194444_693542_8E85EDDA)
+References: <1321461693.4181.26.camel@frodo>
+	 <1321461902.4502.14.camel@jlt3.sipsolutions.net>
+	 <1321462856.4181.28.camel@frodo>
+	 <1321468380.4502.16.camel@jlt3.sipsolutions.net>
+	 <1321473443.4181.38.camel@frodo>
+	 <1321478719.4502.20.camel@jlt3.sipsolutions.net>
+	 <20111117145502.GA18437@somewhere>
+	 <1321541877.3997.31.camel@jlt3.sipsolutions.net>
+	 <20111117150040.GB18437@somewhere>
+	 <1321543268.3997.40.camel@jlt3.sipsolutions.net>
+	 <20111118184401.GA24787@somewhere.redhat.com>
+	 (sfid-20111118_194444_693542_8E85EDDA)
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Nov 2011 19:46:15 +0100
+Message-ID: <1321641975.10266.73.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge.hallyn@canonical.com> writes:
+On Fri, 2011-11-18 at 19:44 +0100, Frederic Weisbecker wrote:
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> There is a small bug here.  You want to fixup q->info, not info.
->> Otherwise you might try dereferencing one of the special signals and get
->> a NULL pointer dereference.
->
-> Thanks, Eric.  Oddly I've not seen this happen in quite a bit of
-> testing with the kernel, but you certainly must be right.  I sent
-> out a new patch to fix that.
+> > +TRACE_EVENT_CONDITION(console,
+> > +	TP_PROTO(const char *log_buf, unsigned start, unsigned end,
+> > +		 unsigned log_buf_len),
+> > +
+> > +	TP_ARGS(log_buf, start, end, log_buf_len),
+> > +
+> > +	TP_CONDITION(start != end),
+> > +
+> > +	TP_STRUCT__entry(
+> > +		__dynamic_array(char, msg,
+> > +				((end - start + log_buf_len) &
+> > +				 (log_buf_len - 1)) + 1)
+> 
+> Is all that care about log_buf_len necessary? It seems that
+> printk ensures that log_end - con_start never exceeds log_buf_len,
+> looking at emit_log_char()
 
-You clearly have a different test case than I do.
+I think it is. The buffer can wrap around so in that case end < start,
+which just end-start won't handle here.
 
-I managed to trigger the oops  within about 5 minutes of just fooling
-around.
+johannes
 
-You want to say &q->info not q->info in your updated patch.
-
-Thanks,
-Eric
