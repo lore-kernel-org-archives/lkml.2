@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab1KRJyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:54:04 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33739 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1KRJxv (ORCPT
+	id S1757268Ab1KRJ4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:56:39 -0500
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:44340 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab1KRJ4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:53:51 -0500
-Message-ID: <4EC62B2A.5080606@evidence.eu.com>
-Date: Fri, 18 Nov 2011 10:53:46 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] drivers/base/node.c: fix compilation error
-References: <4EC4DD20.6080201@evidence.eu.com> <20111117175210.GE13208@suse.de>
-In-Reply-To: <20111117175210.GE13208@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
+	Fri, 18 Nov 2011 04:56:37 -0500
+Subject: Re: [PATCH 1/11] MFD: DA9052 MFD core module v8
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+In-Reply-To: <1320300865.2092.10.camel@dhruva>
+References: <1320300865.2092.10.camel@dhruva>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Nov 2011 10:56:30 +0100
+Message-ID: <1321610190.20271.328.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/11/2011 18:52, Greg KH ha scritto:
-> On Thu, Nov 17, 2011 at 11:08:32AM +0100, Claudio Scordino wrote:
->> Hi all,
->>
->> 	the current mainline kernel gives a "directives may not be used
->> inside a macro argument" error message when compiled for the
->> cris architecture.
+On Thu, 2011-11-03 at 11:44 +0530, Ashish Jangam wrote:
+> The DA9052/53 is a highly integrated PMIC subsystem with supply domain
+> flexibility to support wide range of high performance application.
 > 
-> Is this because cris is using an older version of gcc, or is it due to
-> something else?
+> It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
+> control and other functionality.
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> ---
+[...]
+> ---
+>  drivers/mfd/Kconfig               |   26 ++
+>  drivers/mfd/Makefile              |    7 +
+>  drivers/mfd/da9052-core.c         |  371 ++++++++++++++++++
+>  drivers/mfd/da9052-i2c.c          |  144 +++++++
+>  drivers/mfd/da9052-irq.c          |  175 +++++++++
+>  drivers/mfd/da9052-spi.c          |  169 ++++++++
+>  include/linux/mfd/da9052/da9052.h |  154 ++++++++
+>  include/linux/mfd/da9052/pdata.h  |   42 ++
+>  include/linux/mfd/da9052/reg.h    |  777 +++++++++++++++++++++++++++++++++++++
+>  9 files changed, 1865 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/da9052-core.c
+>  create mode 100644 drivers/mfd/da9052-i2c.c
+>  create mode 100644 drivers/mfd/da9052-irq.c
+>  create mode 100644 drivers/mfd/da9052-spi.c
+>  create mode 100644 include/linux/mfd/da9052/da9052.h
+>  create mode 100644 include/linux/mfd/da9052/pdata.h
+>  create mode 100644 include/linux/mfd/da9052/reg.h
 
-Hi Greg.
+These three headers are needed by drivers/gpio/gpio-da9052.c. (That file
+also needs a fourth header, linux/mfd/da9052/gpio.h, but maybe that's
+added by another patch in this series. I didn't check). That file got
+added by commit 07bfc91523 ("GPIO: DA9052 GPIO module v3"), and is
+included since v3.1.
 
-The compiler I used it's still the same I used in the past (i.e., gcc 3.2.1):
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index f1391c2..268f03b 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -328,6 +328,32 @@ config PMIC_DA903X
+>  	  individual components like LCD backlight, voltage regulators,
+>  	  LEDs and battery-charger under the corresponding menus.
+>  
+> +config PMIC_DA9052
+> +	bool
+> +	select MFD_CORE
 
-/usr/local/cris/bin/cris-axis-linux-gnu-gcc -v
-Reading specs from /usr/local/cris/lib/gcc-lib/cris-axis-linux-gnu/3.2.1/specs
-Configured with: /home/cii/cris-dist/./gnu-toplev/configure --enable-version-specific-runtime-libs --disable-nls --target=cris-axis-linux-gnu --without-newlib --with-headers=installed --enable-languages=c,c++ --enable-shared --enable-threads=posix --prefix=/usr/local/cris
-Thread model: posix
-gcc version 3.2.1 Axis release R64/1.64
+And the DA9052 GPIO module currently depends on this Kconfig symbol.
 
-It's contained inside the cris-dist_1.64-1_i386.deb package. I don't
-know if a newer compiler has been made available by the Axis group.
+> +config MFD_DA9052_SPI
+> +	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with SPI"
+> +	select REGMAP_SPI
+> +	select PMIC_DA9052
+> +	depends on SPI_MASTER=y
+> +	help
+> +	  Support for the Dialog Semiconductor DA9052 PMIC
+> +	  when controlled using SPI. This driver provides common support
+> +	  for accessing the device, additional drivers must be enabled in
+> +	  order to use the functionality of the device.
+> +
+> +config MFD_DA9052_I2C
+> +	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with I2C"
+> +	select REGMAP_I2C
+> +	select PMIC_DA9052
+> +	depends on I2C=y
+> +	help
+> +	  Support for the Dialog Semiconductor DA9052 PMIC
+> +	  when controlled using I2C. This driver provides common support
+> +	  for accessing the device, additional drivers must be enabled in
+> +	  order to use the functionality of the device.
+> +
+>  config PMIC_ADP5520
+>  	bool "Analog Devices ADP5520/01 MFD PMIC Core Support"
+>  	depends on I2C=y
 
-However, I never found this issue when compiling  /fs/proc/meminfo.c in
-the past.  Therefore, I couldn't find the same error in
-drivers/base/node.c either.
+[...]
 
-I suspect that  /fs/proc/meminfo.c has been recently changed, and then the
-same (old) compiler started complaining.
+So the DA9052 GPIO module that is currently in the mainline tree was
+added as unbuildable code, wasn't it?
 
-The two patches I have sent are very trivial, but allow to fix those
-build problems.
 
-Best regards,
-
-	Claudio
+Paul Bolle
 
