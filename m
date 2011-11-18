@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab1KRXjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:39:17 -0500
-Received: from dee.erg.abdn.ac.uk ([139.133.204.82]:58738 "EHLO erg.abdn.ac.uk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751479Ab1KRXjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:39:16 -0500
-X-Greylist: delayed 694 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Nov 2011 18:39:15 EST
-Date: Fri, 18 Nov 2011 16:27:29 -0700
-From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
-To: Jinxin Zheng <jinxinzheng@gmail.com>
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: ipv4 udplite broken in >=linux-3.0 ?
-Message-ID: <20111118232729.GA3902@gerrit.erg.abdn.ac.uk>
-Mail-Followup-To: Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-	Jinxin Zheng <jinxinzheng@gmail.com>,
-	Hagen Paul Pfeifer <hagen@jauu.net>, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <CABPbr_msepemFt4ezGVRk3QS0MU3F47MKimfV4Y+6jqvUrLFeA@mail.gmail.com>
- <20111118120430.GG3317@hell>
- <CABPbr_=fgB-AKK3H8ryccqA7SUO=ejZiWP7tEKYLh=qNG5r7CQ@mail.gmail.com>
+	id S1754725Ab1KRXkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:40:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53451 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab1KRXkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 18:40:22 -0500
+Date: Fri, 18 Nov 2011 15:39:55 -0800
+From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
+Message-ID: <tip-87cdee71166fa107c5dc8e43060eeefa533c6a3b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, mitake@dcl.info.waseda.ac.jp,
+        yong.zhang0@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, mitake@dcl.info.waseda.ac.jp,
+        tglx@linutronix.de, yong.zhang0@gmail.com, mingo@elte.hu
+In-Reply-To: <20111109080714.GC8124@zhy>
+References: <20111109080714.GC8124@zhy>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] lockdep: Always try to set ->class_cache in register_lock_class() lockdep_init_map()
+Git-Commit-ID: 87cdee71166fa107c5dc8e43060eeefa533c6a3b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CABPbr_=fgB-AKK3H8ryccqA7SUO=ejZiWP7tEKYLh=qNG5r7CQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-ERG-MailScanner: Found to be clean
-X-ERG-MailScanner-From: gerrit@erg.abdn.ac.uk
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:40:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jinxin, -
-| On Fri, Nov 18, 2011 at 8:04 PM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-| > * Jinxin Zheng | 2011-11-18 12:09:25 [+0800]:
-| >
-| >>I don't know how to debug udplite. Can any one of you give me a tip on
-| >>how to get more debug info, then I can do further test and provide
-| >>with it?
-| >
-| > net-next works for me:
-That is very likely the point. Between 2.6.39 and 3.0 UDP-Lite checksum coverage was
-broken and got only recently fixed. The correct kernel version should have the 
-commit shown below. Alternatively, you can check include/net/udplite.h, which
-should mention "Slow-path" and "Fast-Path" computation. UDP-Litev6 still uses the
-slow path, that is why it is not affected.
-    
+Commit-ID:  87cdee71166fa107c5dc8e43060eeefa533c6a3b
+Gitweb:     http://git.kernel.org/tip/87cdee71166fa107c5dc8e43060eeefa533c6a3b
+Author:     Yong Zhang <yong.zhang0@gmail.com>
+AuthorDate: Wed, 9 Nov 2011 16:07:14 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 14 Nov 2011 13:54:11 +0100
 
-commit f36c23bb9f822904dacf83a329518d0a5fde7968
-Author: Gerrit Renker <gerrit@erg.abdn.ac.uk>
-Date:   Mon Oct 17 19:07:30 2011 -0400
+lockdep: Always try to set ->class_cache in register_lock_class() lockdep_init_map()
 
-    udplite: fast-path computation of checksum coverage
-    
-    Commit 903ab86d195cca295379699299c5fc10beba31c7 of 1 March this year ("udp: Add
-    lockless transmit path") introduced a new fast TX path that broke the checksum
-    coverage computation of UDP-lite, which so far depended on up->len (only set
-    if the socket is locked and 0 in the fast path).
-    
-    Fixed by providing both fast- and slow-path computation of checksum coverage.
-    The latter can be removed when UDP(-lite)v6 also uses a lockless transmit path.
-  
+Commit ["62016250 lockdep: Add improved subclass caching"] tries to
+improve performance (expecially to reduce the cost of rq->lock)
+when using lockdep, but it fails due to lockdep_init_map() in
+which ->class_cache is cleared. The typical caller is
+lock_set_subclass(), after that class will not be cached anymore.
+
+This patch tries to achive the goal of commit 62016250 by always
+setting ->class_cache in register_lock_class().
+
+=== Score comparison of benchmarks ===
+
+for i in `seq 1 10`; do ./perf bench -f simple sched messaging; done
+
+before:  min: 0.604, max: 0.660, avg: 0.622
+after:   min: 0.414, max: 0.473, avg: 0.427
+
+for i in `seq 1 10`; do ./perf bench -f simple sched messaging -g 40; done
+
+before:  min: 2.347, max: 2.421, avg: 2.391
+after:   min: 1.652, max: 1.699, avg: 1.671
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20111109080714.GC8124@zhy
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/lockdep.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index e69434b..103bed8 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -722,7 +722,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
+ 
+ 	class = look_up_lock_class(lock, subclass);
+ 	if (likely(class))
+-		return class;
++		goto out_set_class_cache;
+ 
+ 	/*
+ 	 * Debug-check: all keys must be persistent!
+@@ -807,6 +807,7 @@ out_unlock_set:
+ 	graph_unlock();
+ 	raw_local_irq_restore(flags);
+ 
++out_set_class_cache:
+ 	if (!subclass || force)
+ 		lock->class_cache[0] = class;
+ 	else if (subclass < NR_LOCKDEP_CACHING_CLASSES)
