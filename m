@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab1KRL74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 06:59:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36974 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab1KRL7z convert rfc822-to-8bit (ORCPT
+	id S1755676Ab1KRMAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 07:00:13 -0500
+Received: from katapult.uhulinux.hu ([195.228.155.101]:51596 "EHLO
+	katapult.uhulinux.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab1KRMAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 06:59:55 -0500
+	Fri, 18 Nov 2011 07:00:11 -0500
+Message-ID: <4EC648C9.8080405@uhulinux.hu>
+Date: Fri, 18 Nov 2011 13:00:09 +0100
+From: =?ISO-8859-1?Q?Pozs=E1r_Bal=E1zs?= <pozsy@uhulinux.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100515 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com>
-References: <cover.1321507421.git.viresh.kumar@st.com> <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Fri, 18 Nov 2011 17:29:14 +0530
-X-Google-Sender-Auth: QkWadkYV5FqJnO8dBldr4gOJixo
-Message-ID: <CAH+eYFCLauXusdDs75qm2rGB5Y0==bhTbxPJD+gyaaZQVbvsVw@mail.gmail.com>
-Subject: Re: [PATCH V2 5/5] gpio/gpio-stmpe: ADD support for stmpe variant 801
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
-        mirko.gardi@st.com, grant.likely@secretlab.ca
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+CC: =?ISO-8859-1?Q?Tam=E1si_J=E1nos?= <janusz@uhulinux.hu>
+Subject: routing bug?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 11:02, Viresh Kumar <viresh.kumar@st.com> wrote:
-> diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-> index 4c980b5..000b019 100644
-> --- a/drivers/gpio/gpio-stmpe.c
-> +++ b/drivers/gpio/gpio-stmpe.c
-> @@ -65,7 +65,15 @@ static void stmpe_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
->        u8 reg = stmpe->regs[which] - (offset / 8);
->        u8 mask = 1 << (offset % 8);
->
-> -       stmpe_reg_write(stmpe, reg, mask);
-> +       /*
-> +        * Some variants have single register for gpio set/clear functionality.
-> +        * For them we need to write 0 to clear and 1 to set.
-> +        */
-> +       if (!val && (stmpe->regs[STMPE_IDX_GPSR_LSB] ==
-> +                               stmpe->regs[STMPE_IDX_GPCR_LSB]))
-> +               stmpe_set_bits(stmpe, reg, mask, ~mask);
-> +       else
-> +               stmpe_set_bits(stmpe, reg, mask, mask);
->  }
+Hi all,
 
-This code,
+I have been struggling with this not easily reproducible issue since a 
+while. I am using linux kernel v3.1.0, and sometimes routing to a few IP 
+addresses does not work. What seems to happen is that instead of sending 
+the packet to the gateway, the kernel treats the destination address as 
+local, and tries to gets its MAC address via ARP.
 
- (1) for 801, when clearing one GPIO, sets all the others.
- (2) for other devices, adds an an unnecessary read (within stmpe_set_bits()),
-     which wasn't there before.
+For example, now my current IP address is 172.16.1.104/24, the gateway 
+is 172.16.1.254:
 
-Please rework to something like:
+|# ifconfig eth0 eth0      Link encap:Ethernet  HWaddr 00:1B:63:97:FC:DC
+           inet addr:172.16.1.104  Bcast:172.16.1.255  Mask:255.255.255.0
+           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+           RX packets:230772 errors:0 dropped:0 overruns:0 frame:0
+           TX packets:171013 errors:0 dropped:0 overruns:0 carrier:0
+           collisions:0 txqueuelen:1000
+           RX bytes:191879370 (182.9 Mb)  TX bytes:47173253 (44.9 Mb)
+           Interrupt:17
 
-	if (stmpe->regs[...)
-		stmpe_set_bits(stmpe, reg, mask, val ? mask : 0);
-	else
-		stmpe_reg_write(stmpe, reg, mask);
+# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         172.16.1.254    0.0.0.0         UG    0      0        0 eth0
+172.16.1.0      0.0.0.0         255.255.255.0   U     1      0        0 eth0
+|
 
->
->  static int stmpe_gpio_direction_output(struct gpio_chip *chip,
-> @@ -125,10 +133,19 @@ static struct gpio_chip template_chip = {
->  static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
->  {
->        struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
-> +       struct stmpe *stmpe = stmpe_gpio->stmpe;
->        int offset = d->irq - stmpe_gpio->irq_base;
->        int regoffset = offset / 8;
->        int mask = 1 << (offset % 8);
->
-> +       /* STMPE801 doesn't have RE and FE registers */
-> +       if (stmpe->partnum == STMPE801) {
-> +               if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_LEVEL_HIGH)
-> +                       return 0;
+I can ping a few addresses, but not 172.16.0.59:
 
-This looks wrong.  From the datasheet I see that it supports edges only,
-so perhaps you meant to say IRQ_TYPE_EDGE_* above.
+|# ping -c1 172.16.1.254
+PING 172.16.1.254 (172.16.1.254) 56(84) bytes of data.
+64 bytes from 172.16.1.254: icmp_seq=1 ttl=64 time=0.383 ms
 
-In that case please reorganize this to add the return 0 after the
-existing check which excludes levels (below).
+--- 172.16.1.254 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.383/0.383/0.383/0.000 ms
+root@pozsybook:~# ping -c1 172.16.0.1
+PING 172.16.0.1 (172.16.0.1) 56(84) bytes of data.
+64 bytes from 172.16.0.1: icmp_seq=1 ttl=63 time=5.54 ms
 
-> +               else
-> +                       return -EINVAL;
-> +       }
-> +
->        if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_LEVEL_HIGH)
->                return -EINVAL;
+--- 172.16.0.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 5.545/5.545/5.545/0.000 ms
+root@pozsybook:~# ping -c1 172.16.0.2
+PING 172.16.0.2 (172.16.0.2) 56(84) bytes of data.
+64 bytes from 172.16.0.2: icmp_seq=1 ttl=62 time=7.92 ms
+
+--- 172.16.0.2 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 7.925/7.925/7.925/0.000 ms
+root@pozsybook:~# ping -c1 172.16.0.59
+PING 172.16.0.59 (172.16.0.59) 56(84) bytes of data.
+ From 172.16.1.104 icmp_seq=1 Destination Host Unreachable
+
+--- 172.16.0.59 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+|
+
+When trying to ping 172.16.0.59, I can see in tcpdump that an ARP req 
+was sent:
+
+|# tcpdump -n -i eth0|grep ARP
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 96 bytes
+15:25:16.671217 ARP, Request who-has 172.16.0.59 tell 172.16.1.104, length 28
+|
+
+and /proc/net/arp has an incomplete entry for 172.16.0.59:
+
+|# grep 172.16.0.59 /proc/net/arp
+
+172.16.0.59      0x1         0x0         00:00:00:00:00:00     *        eth0
+|
+
+Please note, that 172.16.0.59 /is/ accessible from this LAN from other 
+computers.
+
+
+Does anyone have any idea of what's going on? Thanks,
+
+
+Balazs Pozsar
+
+ps: I think it is related to this one: https://lkml.org/lkml/2011/11/16/292
+
