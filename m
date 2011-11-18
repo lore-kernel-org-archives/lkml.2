@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab1KRTao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:30:44 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64226 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176Ab1KRTal (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:30:41 -0500
-Message-ID: <4EC6B25D.70708@gmail.com>
-Date: Fri, 18 Nov 2011 13:30:37 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 01/10] arm/tegra: initial device tree for tegra30
-References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com> <1321546766-26770-2-git-send-email-pdeschrijver@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF1740D74C46@HQMAIL01.nvidia.com> <20111118184942.GA31678@quad.lixom.net>
-In-Reply-To: <20111118184942.GA31678@quad.lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755970Ab1KRTc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:32:58 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:34305 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab1KRTc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 14:32:57 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Chen Gong <gong.chen@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 0/2 v2] ramoops: use pstore interface
+Date: Fri, 18 Nov 2011 11:31:36 -0800
+Message-Id: <1321644698-13677-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 12:49 PM, Olof Johansson wrote:
-> On Thu, Nov 17, 2011 at 11:39:14AM -0800, Stephen Warren wrote:
->> Peter De Schrijver wrote at Thursday, November 17, 2011 9:19 AM:
->>> This patch adds the initial device tree for tegra30
->>
->>> diff --git a/Documentation/devicetree/bindings/arm/tegra.txt
->> ...
->>> +* harmony: tegra20 based development board
->>> +Required root node properties:
->>> + - compatible = "nvidia,harmony", "nvidia,tegra20";
->>> +
->>> +* seaboard: tegra20 based clamshell reference design
->>> +Required root node properties:
->>> + - compatible = "nvidia,seaboard", "nvidia,tegra20";
->>
->> Do we really want to list all the board names here? In the future, there
->> could be tens or hundreds. I would argue that we should just document
->> nvidia,tegra20 and nvidia,tegra30.
-> 
-> Agreed.
+This patchset switches ramoops away from using /dev/mem and registers
+itself as a pstore backend instead. This is built on top of needed
+changes to the pstore API:
 
-It's not really any different than mach-types which does have every
-board in it.
+https://lkml.org/lkml/2011/11/16/342 (accepted)
+https://lkml.org/lkml/2011/11/16/409 (accepted)
+https://lkml.org/lkml/2011/11/17/324 (pending)
 
-I think if a board requires a new dts, then it needs a unique name.
+v2:
+ - incorporated changes suggested by Chen Gong and Arnd Bergmann
 
-> 
->> At a later point, we should fix board-dt.c to solely look for those
->> compatible values, although this will have to wait until the pinmux DT
->> bindings are present. Then, the kernel won't care about the board names.
-> 
-> Exactly.
+Thanks,
 
-That is perfectly acceptable, but you should still have the option to do
-something specific for any given board.
+-Kees
 
-Rob
