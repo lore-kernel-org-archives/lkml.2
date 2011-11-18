@@ -1,177 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074Ab1KRX16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:27:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53239 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757402Ab1KRX14 (ORCPT
+	id S1757895Ab1KRX2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:28:24 -0500
+Received: from mail3.microsoft.com ([131.107.115.214]:37861 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab1KRX2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:27:56 -0500
-Date: Fri, 18 Nov 2011 15:27:32 -0800
-From: tip-bot for Pekka Enberg <penberg@kernel.org>
-Message-ID: <tip-176239153049a023d060ce95b05f7ef31667e362@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, penberg@kernel.org, tj@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, tj@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1320155902-10424-7-git-send-email-penberg@kernel.org>
-References: <1320155902-10424-7-git-send-email-penberg@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Unify zone_sizes_init()
-Git-Commit-ID: 176239153049a023d060ce95b05f7ef31667e362
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Fri, 18 Nov 2011 18:28:22 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHMnj6gZ2NVqeJYKEyKywEkfms/G5Wx9nyA///jaKCAAZbjgP//5X5w
+Date: Fri, 18 Nov 2011 23:28:19 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA6D4CC@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1320776028-29568-1-git-send-email-kys@microsoft.com>
+	 <1321554393.3041.77.camel@dabdike.int.hansenpartnership.com>
+	 <6E21E5352C11B742B20C142EB499E0481AA6D232@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <1321635631.3022.44.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1321635631.3022.44.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:27:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAINSXxT013754
 
-Commit-ID:  176239153049a023d060ce95b05f7ef31667e362
-Gitweb:     http://git.kernel.org/tip/176239153049a023d060ce95b05f7ef31667e362
-Author:     Pekka Enberg <penberg@kernel.org>
-AuthorDate: Tue, 1 Nov 2011 15:58:22 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 11 Nov 2011 10:22:55 +0100
 
-x86, mm: Unify zone_sizes_init()
 
-Now that zone_sizes_init() is identical on 32-bit and 64-bit,
-move the code to arch/x86/mm/init.c and use it for both
-architectures.
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Friday, November 18, 2011 12:01 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; linux-
+> scsi@vger.kernel.org; ohering@suse.com; hch@infradead.org
+> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> staging area
+> 
+> On Fri, 2011-11-18 at 04:53 +0000, KY Srinivasan wrote:
+> > > I still think you need to disable clustering and junk the bvec merge
+> > > function.  Your object seems to be to accumulate in page size multiples
+> > > (and not aggregate over this) ... that's what clustering is designed to
+> > > do.
+> >
+> > As part of addressing your first round of comments, I experimented with your
+> > suggestions and I could not get rid of the code that does the bounce buffer
+> handling.
+> > I could generate I/O patterns that would require bounce buffer handling with
+> your
+> > suggestions in place.
+> 
+> There are two separate things here.  One is the scatter gather list
+> bounce buffer processing, which is a bit nasty, but if you want to use <
+> 4kb block size filesystems, I suppose I have to accept that you need it
+> (although since it's a global fault of the hypervisor, perhaps it should
+> sit in the hypervisor interface layer, so that every SG based transport
+> can use it).  The other is the biovec merge function addition.  The
+> purpose of this function seems to be to ensure you get one SG entry for
+> every page (if I read it right)?  In that case, you don't need any of
+> this special casing.  The flag DISABLE_CLUSTERING achieves the same
+> thing.
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Link: http://lkml.kernel.org/r/1320155902-10424-7-git-send-email-penberg@kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/init.h |    2 ++
- arch/x86/mm/init.c          |   23 +++++++++++++++++++++++
- arch/x86/mm/init_32.c       |   19 -------------------
- arch/x86/mm/init_64.c       |   19 -------------------
- 4 files changed, 25 insertions(+), 38 deletions(-)
+Thanks James. I will keep you posted on my progress on this issue.
 
-diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-index 8dbe353..adcc0ae 100644
---- a/arch/x86/include/asm/init.h
-+++ b/arch/x86/include/asm/init.h
-@@ -5,6 +5,8 @@
- extern void __init early_ioremap_page_table_range_init(void);
- #endif
- 
-+extern void __init zone_sizes_init(void);
-+
- extern unsigned long __init
- kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 87488b9..2426b60 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -3,6 +3,7 @@
- #include <linux/ioport.h>
- #include <linux/swap.h>
- #include <linux/memblock.h>
-+#include <linux/bootmem.h>	/* for max_low_pfn */
- 
- #include <asm/cacheflush.h>
- #include <asm/e820.h>
-@@ -15,6 +16,7 @@
- #include <asm/tlbflush.h>
- #include <asm/tlb.h>
- #include <asm/proto.h>
-+#include <asm/dma.h>		/* for MAX_DMA_PFN */
- 
- unsigned long __initdata pgt_buf_start;
- unsigned long __meminitdata pgt_buf_end;
-@@ -392,3 +394,24 @@ void free_initrd_mem(unsigned long start, unsigned long end)
- 	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
- }
- #endif
-+
-+void __init zone_sizes_init(void)
-+{
-+	unsigned long max_zone_pfns[MAX_NR_ZONES];
-+
-+	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
-+
-+#ifdef CONFIG_ZONE_DMA
-+	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
-+#endif
-+#ifdef CONFIG_ZONE_DMA32
-+	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
-+#endif
-+	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
-+#ifdef CONFIG_HIGHMEM
-+	max_zone_pfns[ZONE_HIGHMEM]	= max_pfn;
-+#endif
-+
-+	free_area_init_nodes(max_zone_pfns);
-+}
-+
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 27455b9..3bebaed 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -674,25 +674,6 @@ void __init initmem_init(void)
- }
- #endif /* !CONFIG_NEED_MULTIPLE_NODES */
- 
--static void __init zone_sizes_init(void)
--{
--	unsigned long max_zone_pfns[MAX_NR_ZONES];
--
--	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
--#ifdef CONFIG_ZONE_DMA
--	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
--#endif
--#ifdef CONFIG_ZONE_DMA32
--        max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
--#endif
--	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
--#ifdef CONFIG_HIGHMEM
--	max_zone_pfns[ZONE_HIGHMEM] = max_pfn;
--#endif
--
--	free_area_init_nodes(max_zone_pfns);
--}
--
- void __init setup_bootmem_allocator(void)
- {
- 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 06c4360..6fcce7d 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -612,25 +612,6 @@ void __init initmem_init(void)
- }
- #endif
- 
--static void __init zone_sizes_init(void)
--{
--	unsigned long max_zone_pfns[MAX_NR_ZONES];
--
--	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
--#ifdef CONFIG_ZONE_DMA
--	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
--#endif
--#ifdef CONFIG_ZONE_DMA32
--	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
--#endif
--	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
--#ifdef CONFIG_HIGHMEM
--	max_zone_pfns[ZONE_HIGHMEM] = max_pfn;
--#endif
--
--	free_area_init_nodes(max_zone_pfns);
--}
--
- void __init paging_init(void)
- {
- 	sparse_memory_present_with_active_regions(MAX_NUMNODES);
+Regards,
+
+K. Y
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
