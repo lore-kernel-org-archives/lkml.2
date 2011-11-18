@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab1KRPrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:47:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59478 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758105Ab1KRPri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:47:38 -0500
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-i2c@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH v2] I2C: Make i2cdev_notifier_call static
-Date: Fri, 18 Nov 2011 21:17:31 +0530
-Message-ID: <1321631251-4438-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1758120Ab1KRPs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:48:28 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:31693 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab1KRPs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 10:48:27 -0500
+Message-ID: <1321631298.2885.119.camel@deadeye>
+Subject: Re: [PATCH] net: Use kmemdup rather than duplicating its
+ implementation
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: <samuel@sortiz.org>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Nov 2011 15:48:18 +0000
+In-Reply-To: <1321569820.1624.307.camel@localhost.localdomain>
+References: <1321569820.1624.307.camel@localhost.localdomain>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18526.005
+X-TM-AS-Result: No--11.029500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-OriginalArrivalTime: 18 Nov 2011 15:48:27.0068 (UTC) FILETIME=[830FF7C0:01CCA609]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function i2cdev_notifier_call is used only in i2c-dev file
-making it static.
-Also removes the following sparse warning
+On Thu, 2011-11-17 at 23:43 +0100, Thomas Meyer wrote:
+> The semantic patch that makes this change is available
+> in scripts/coccinelle/api/memdup.cocci.
+> 
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> ---
 
-drivers/i2c/i2c-dev.c:582:5: warning: symbol 'i2cdev_notifier_call'
-was not declared. Should it be static?
+Similarly this is for the specific driver 'irttp' and not generally
+'net'.
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/i2c/i2c-dev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ben.
 
-diff --git a/drivers/i2c/i2c-dev.c b/drivers/i2c/i2c-dev.c
-index c90ce50..57a45ce 100644
---- a/drivers/i2c/i2c-dev.c
-+++ b/drivers/i2c/i2c-dev.c
-@@ -579,7 +579,7 @@ static int i2cdev_detach_adapter(struct device *dev, void *dummy)
- 	return 0;
- }
- 
--int i2cdev_notifier_call(struct notifier_block *nb, unsigned long action,
-+static int i2cdev_notifier_call(struct notifier_block *nb, unsigned long action,
- 			 void *data)
- {
- 	struct device *dev = data;
+> diff -u -p a/net/irda/irttp.c b/net/irda/irttp.c
+> --- a/net/irda/irttp.c 2011-11-07 19:39:06.071138486 +0100
+> +++ b/net/irda/irttp.c 2011-11-08 10:59:07.152748948 +0100
+> @@ -1461,14 +1461,13 @@ struct tsap_cb *irttp_dup(struct tsap_cb
+>  	}
+>  
+>  	/* Allocate a new instance */
+> -	new = kmalloc(sizeof(struct tsap_cb), GFP_ATOMIC);
+> +	new = kmemdup(orig, sizeof(struct tsap_cb), GFP_ATOMIC);
+>  	if (!new) {
+>  		IRDA_DEBUG(0, "%s(), unable to kmalloc\n", __func__);
+>  		spin_unlock_irqrestore(&irttp->tsaps->hb_spinlock, flags);
+>  		return NULL;
+>  	}
+>  	/* Dup */
+> -	memcpy(new, orig, sizeof(struct tsap_cb));
+>  	spin_lock_init(&new->lock);
+>  
+>  	/* We don't need the old instance any more */
+
 -- 
-1.7.1
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
