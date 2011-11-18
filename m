@@ -1,107 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab1KRJqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:46:18 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51284 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669Ab1KRJqR (ORCPT
+	id S1757056Ab1KRJue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:50:34 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:37992 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756323Ab1KRJud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:46:17 -0500
-Message-ID: <4EC62956.8060608@linux.vnet.ibm.com>
-Date: Fri, 18 Nov 2011 15:15:58 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Fri, 18 Nov 2011 04:50:33 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <baruch@tkos.co.il>, <grant.likely@secretlab.ca>, <rjw@sisk.pl>
+Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
+        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
+Subject: [PATCH V4] GPIO/pl061: Add suspend resume capability
+Date: Fri, 18 Nov 2011 15:20:12 +0530
+Message-ID: <ae47c7f2f31276ffb2b8db132bcabe80aa1139f6.1321609430.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2] PM/Hibernation: Fix the early termination of test
- modes
-References: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com> <201111181020.44167.rjw@sisk.pl> <4EC6250F.4010501@linux.vnet.ibm.com>
-In-Reply-To: <4EC6250F.4010501@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111809-5564-0000-0000-000000286D59
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 02:57 PM, Srivatsa S. Bhat wrote:
-> On 11/18/2011 02:50 PM, Rafael J. Wysocki wrote:
->>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->>> index b4511b6..257e8e7 100644
->>> --- a/kernel/power/hibernate.c
->>> +++ b/kernel/power/hibernate.c
->>> @@ -55,6 +55,8 @@ enum {
->>>  
->>>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
->>>  
->>> +static bool freezer_test_done;
->>> +
->>>  static const struct platform_hibernation_ops *hibernation_ops;
->>>  
->>>  /**
->>> @@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
->>>  	if (error)
->>>  		goto Close;
->>>  
->>> +	if (hibernation_test(TEST_FREEZER) ||
->>> +		hibernation_testmode(HIBERNATION_TESTPROC)) {
->>> +
->>> +		/*
->>> +		 * Indicate to the caller that we are returning due to a
->>> +		 * successful freezer test.
->>> +		 */
->>> +		freezer_test_done = true;
->>> +		goto Close;
->>> +	}
->>> +
->>>  	error = dpm_prepare(PMSG_FREEZE);
->>>  	if (error)
->>>  		goto Complete_devices;
->>> @@ -641,15 +654,13 @@ int hibernate(void)
->>>  	if (error)
->>>  		goto Finish;
->>>  
->>> -	if (hibernation_test(TEST_FREEZER))
->>> -		goto Thaw;
->>> -
->>> -	if (hibernation_testmode(HIBERNATION_TESTPROC))
->>> -		goto Thaw;
->>> -
->>>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
->>>  	if (error)
->>>  		goto Thaw;
->>> +	if (freezer_test_done) {
->>> +		freezer_test_done = false;
->>> +		goto Thaw;
->>> +	}
->>
->> What happens if hibernation_snapshot() and freezer_test_done is 'true'?
->> Won't that leek freezer_test_done to the next hibernation cycle?
->>
-> 
-> Oh yes, thanks for catching that! I'll fix that and send an updated patch.
->
+From: Deepak Sikri <deepak.sikri@st.com>
 
-Sorry, I think I hit reply too soon.
-To restate your question, you are asking if freezer_test_done was set in
-hibernation_snapshot() and then there was a genuine error in
-hibernation_snapshot() which it returned, then won't freezer_test_done
-leak to the next cycle.., right?
+This patch adds the suspend and resume operations in the driver. The patch
+ensures the data save and restore for the device registers during the
+suspend and resume operations respectively.
 
-If there is a genuine error before hibernation_test(TEST_FREEZER)... is
-done, then we will never set freezer_test_done flag to true.
+Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Acked-by: Baruch Siach <baruch@tkos.co.il>
+---
 
-And whenever freezer_test_done is set (inside hibernation_snapshot) there
-is no way it will continue further executing normal code. It will jump to
-the Close label and come out, so that here in hibernate(), the first
-check for error will fail (because it returned 0) and the subsequent
-check for freezer_test_done will succeed. So I don't see how it can leak.
+Changes since V3:
+- pl061_dev_pm_ops marked as static
 
-Or, am I missing something?
+changes Since V2:
+- gpio_context_save_regs renamed to pl061_context_save_regs
+- Hibernation callbacks added with help of SIMPLE_DEV_PM_OPS macro
 
-Thanks,
-Srivatsa S. Bhat
+
+ drivers/gpio/gpio-pl061.c |   68 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 68 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index 093c90b..42a5d56 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -23,6 +23,7 @@
+ #include <linux/amba/bus.h>
+ #include <linux/amba/pl061.h>
+ #include <linux/slab.h>
++#include <linux/pm.h>
+ 
+ #define GPIODIR 0x400
+ #define GPIOIS  0x404
+@@ -35,6 +36,17 @@
+ 
+ #define PL061_GPIO_NR	8
+ 
++#ifdef CONFIG_PM
++struct pl061_context_save_regs {
++	u8 gpio_data;
++	u8 gpio_dir;
++	u8 gpio_is;
++	u8 gpio_ibe;
++	u8 gpio_iev;
++	u8 gpio_ie;
++};
++#endif
++
+ struct pl061_gpio {
+ 	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
+ 	 * interrupts controller of the system. We need this to support systems
+@@ -54,6 +66,10 @@ struct pl061_gpio {
+ 	void __iomem		*base;
+ 	unsigned		irq_base;
+ 	struct gpio_chip	gc;
++
++#ifdef CONFIG_PM
++	struct pl061_context_save_regs csave_regs;
++#endif
+ };
+ 
+ static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
+@@ -330,6 +346,8 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
+ 		irq_set_chip_data(i + chip->irq_base, chip);
+ 	}
+ 
++	amba_set_drvdata(dev, chip);
++
+ 	return 0;
+ 
+ iounmap:
+@@ -342,6 +360,53 @@ free_mem:
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_PM
++static int pl061_suspend(struct device *dev)
++{
++	struct pl061_gpio *chip = dev_get_drvdata(dev);
++	int offset;
++
++	chip->csave_regs.gpio_data = 0;
++	chip->csave_regs.gpio_dir = readb(chip->base + GPIODIR);
++	chip->csave_regs.gpio_is = readb(chip->base + GPIOIS);
++	chip->csave_regs.gpio_ibe = readb(chip->base + GPIOIBE);
++	chip->csave_regs.gpio_iev = readb(chip->base + GPIOIEV);
++	chip->csave_regs.gpio_ie = readb(chip->base + GPIOIE);
++
++	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
++		if (chip->csave_regs.gpio_dir & (1 << offset))
++			chip->csave_regs.gpio_data |=
++				pl061_get_value(&chip->gc, offset) << offset;
++	}
++
++	return 0;
++}
++
++static int pl061_resume(struct device *dev)
++{
++	struct pl061_gpio *chip = dev_get_drvdata(dev);
++	int offset;
++
++	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
++		if (chip->csave_regs.gpio_dir & (1 << offset))
++			pl061_direction_output(&chip->gc, offset,
++					chip->csave_regs.gpio_data &
++					(1 << offset));
++		else
++			pl061_direction_input(&chip->gc, offset);
++	}
++
++	writeb(chip->csave_regs.gpio_is, chip->base + GPIOIS);
++	writeb(chip->csave_regs.gpio_ibe, chip->base + GPIOIBE);
++	writeb(chip->csave_regs.gpio_iev, chip->base + GPIOIEV);
++	writeb(chip->csave_regs.gpio_ie, chip->base + GPIOIE);
++
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(pl061_dev_pm_ops, pl061_suspend, pl061_resume);
++#endif
++
+ static struct amba_id pl061_ids[] = {
+ 	{
+ 		.id	= 0x00041061,
+@@ -353,6 +418,9 @@ static struct amba_id pl061_ids[] = {
+ static struct amba_driver pl061_gpio_driver = {
+ 	.drv = {
+ 		.name	= "pl061_gpio",
++#ifdef CONFIG_PM
++		.pm	= &pl061_dev_pm_ops,
++#endif
+ 	},
+ 	.id_table	= pl061_ids,
+ 	.probe		= pl061_probe,
+-- 
+1.7.2.2
 
