@@ -1,97 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab1KRDXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 22:23:40 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:53312 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab1KRDXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 22:23:39 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Matt Helsley <matthltc@us.ibm.com>, richard@nod.at,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        oleg@redhat.com, dhowells@redhat.com
-References: <20111117045230.GA26345@hallyn.com>
-Date: Thu, 17 Nov 2011 19:24:34 -0800
-In-Reply-To: <20111117045230.GA26345@hallyn.com> (Serge E. Hallyn's message of
-	"Thu, 17 Nov 2011 04:52:30 +0000")
-Message-ID: <m1aa7u2jv1.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18AKBggsCfHyhsQTvduOlCSDRoMrNmpMyw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: user namespace: make signal.c respect user namespaces (v5)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1756215Ab1KRD3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 22:29:20 -0500
+Received: from gate.crashing.org ([63.228.1.57]:42859 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755107Ab1KRD3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 22:29:19 -0500
+Message-ID: <1321586945.2847.5.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Nov 2011 14:29:05 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+Hi Linus !
 
-> ipc/mqueue.c: for __SI_MESQ, convert the uid being sent to recipient's
-> user namespace. (new, thanks Oleg)
->
-> __send_signal: convert current's uid to the recipient's user namespace
-> for any siginfo which is not SI_FROMKERNEL (patch from Oleg, thanks
-> again :)
->
-> do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
-> user namespace
->
-> ptrace_signal maps parent's uid into current's user namespace before
-> including in signal to current.  IIUC Oleg has argued that this shouldn't
-> matter as the debugger will play with it, but it seems like not converting
-> the value currently being set is misleading.
->
-> Changelog:
-> Sep 20: Inspired by Oleg's suggestion, define map_cred_ns() helper to
-> 	simplify callers and help make clear what we are translating
->         (which uid into which namespace).  Passing the target task would
-> 	make callers even easier to read, but we pass in user_ns because
-> 	current_user_ns() != task_cred_xxx(current, user_ns).
-> Sep 20: As recommended by Oleg, also put task_pid_vnr() under rcu_read_lock
-> 	in ptrace_signal().
-> Sep 23: In send_signal(), detect when (user) signal is coming from an
-> 	ancestor or unrelated user namespace.  Pass that on to __send_signal,
-> 	which sets si_uid to 0 or overflowuid if needed.
-> Oct 12: Base on Oleg's fixup_uid() patch.  On top of that, handle all
-> 	SI_FROMKERNEL cases at callers, because we can't assume sender is
-> 	current in those cases.
-> Nov 10: (mhelsley) rename fixup_uid to more meaningful usern_fixup_signal_uid
-> Nov 10: (akpm) make the !CONFIG_USER_NS case clearer
->
+Here are a few fixes remaining for powerpc in 3.2. Some tiny build
+breakage, a couple of nasty ps3 bugs fixes, other very small and
+quite obvious fixes and and a long standing issue with atomics &
+ordering for which we have to use stronger barriers than we do to
+be correct.
 
-> @@ -1088,6 +1117,9 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
->  				q->info.si_pid = 0;
->  			break;
->  		}
-> +
-> +		userns_fixup_signal_uid(info, t);
+Cheers,
+Ben.
 
-There is a small bug here.  You want to fixup q->info, not info.
-Otherwise you might try dereferencing one of the special signals and get
-a NULL pointer dereference.
+The following changes since commit a9098b372606a15745cdeb012de4ee91c0df82c4:
 
-Eric
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6 (2011-11-17 15:28:54 -0200)
 
-> +
->  	} else if (!is_si_special(info)) {
->  		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
->  			/*
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+Al Viro (4):
+      powerpc: Fix build breakage in jump_label.c
+      carma-fpga: Missed switch from of_register_platform_driver()
+      powerpc/fsl_udc_core: Fix dumb typo
+      powerpc/fsl: MCU_MPC8349EMITX wants I2C built-in, modular won't do...
+
+Anton Blanchard (2):
+      powerpc: panic if we can't instantiate RTAS
+      powerpc: Copy down exception vectors after feature fixups
+
+Benjamin Herrenschmidt (1):
+      powerpc: Fix atomic_xxx_return barrier semantics
+
+Geoff Levand (2):
+      powerpc/ps3: Fix lost SMP IPIs
+      powerpc/ps3: Fix SMP lockdep boot warning
+
+Kevin Hao (1):
+      powerpc/trace: Add a dummy stack frame for trace_hardirqs_off
+
+Kumar Gala (3):
+      powerpc: Revert show_regs() define for readability
+      powerpc: Remove extraneous CONFIG_PPC_ADV_DEBUG_REGS define
+      powerpc/book3e-64: Fix debug support for userspace
+
+Kyle Moffett (1):
+      powerpc: Remove buggy 9-year-old test for binutils < 2.12.1
+
+Michael Neuling (1):
+      powerpc: Add hvcall.h include to book3s_hv.c
+
+Suzuki Poulose (1):
+      powerpc/4xx: Fix typos in kexec config dependencies
+
+Will Deacon (1):
+      powerpc/signal32: Fix sigset_t conversion when copying to user
+
+ arch/powerpc/Kconfig                    |    2 +-
+ arch/powerpc/Makefile                   |    6 ---
+ arch/powerpc/include/asm/atomic.h       |   48 ++++++++++++------------
+ arch/powerpc/include/asm/bitops.h       |   12 +++---
+ arch/powerpc/include/asm/futex.h        |    7 ++-
+ arch/powerpc/include/asm/reg_booke.h    |    2 +-
+ arch/powerpc/include/asm/sections.h     |    2 +-
+ arch/powerpc/include/asm/synch.h        |    9 +++-
+ arch/powerpc/kernel/entry_32.S          |   15 +++++++
+ arch/powerpc/kernel/jump_label.c        |    2 +
+ arch/powerpc/kernel/kvm.c               |    1 -
+ arch/powerpc/kernel/misc_32.S           |    2 +-
+ arch/powerpc/kernel/process.c           |   24 +-----------
+ arch/powerpc/kernel/prom_init.c         |    6 +--
+ arch/powerpc/kernel/setup_32.c          |    2 +
+ arch/powerpc/kernel/setup_64.c          |    1 +
+ arch/powerpc/kernel/signal_32.c         |    2 +-
+ arch/powerpc/kernel/traps.c             |    2 -
+ arch/powerpc/kvm/book3s_hv.c            |    1 +
+ arch/powerpc/lib/feature-fixups.c       |   23 +++++++++++
+ arch/powerpc/platforms/Kconfig          |    2 +-
+ arch/powerpc/platforms/ps3/interrupt.c  |   23 +++++++++++-
+ arch/powerpc/platforms/ps3/platform.h   |    1 +
+ arch/powerpc/platforms/ps3/smp.c        |   62 ++++++++++++++++---------------
+ drivers/misc/carma/carma-fpga-program.c |    9 ++--
+ drivers/misc/carma/carma-fpga.c         |    9 ++--
+ drivers/usb/gadget/fsl_udc_core.c       |    2 +-
+ 27 files changed, 158 insertions(+), 119 deletions(-)
+
+
