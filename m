@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab1KRTAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:00:39 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:59836 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754009Ab1KRTAh (ORCPT
+	id S1755290Ab1KRTBD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:01:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57651 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab1KRTBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:00:37 -0500
-Message-ID: <4EC6AADA.2040805@xenotime.net>
-Date: Fri, 18 Nov 2011 10:58:34 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation for sysfs attributes for 3.3 (xen related)
-References: <1321640393-19708-1-git-send-email-konrad.wilk@oracle.com> <4EC6A2D6.10702@xenotime.net> <20111118183313.GA7417@suse.de>
-In-Reply-To: <20111118183313.GA7417@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Nov 2011 14:01:01 -0500
+Date: Fri, 18 Nov 2011 11:01:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        James Morris <jmorris@namei.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC] [PATCH] printk: Don't emit console_cpu_notify() for
+ CPU_DYING
+Message-Id: <20111118110100.1cedc784.akpm@linux-foundation.org>
+In-Reply-To: <1321582764-22218-1-git-send-email-yong.zhang0@gmail.com>
+References: <1321582764-22218-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 10:33 AM, Greg KH wrote:
-> On Fri, Nov 18, 2011 at 10:24:22AM -0800, Randy Dunlap wrote:
->> On 11/18/2011 10:19 AM, Konrad Rzeszutek Wilk wrote:
->>> Please accept the following two patches that describe the
->>> SysFS of some of the Xen drivers. Thank you.
->>>
->>> David Vrabel (2):
->>>       xen: document balloon driver sysfs files
->>>       xen: document backend sysfs files
->>>
->>>  Documentation/ABI/stable/sysfs-bus-xen-backend     |   75 +++++++++++++++++++
->>>  .../ABI/stable/sysfs-devices-system-xen_memory     |   77 ++++++++++++++++++++
->>>  2 files changed, 152 insertions(+), 0 deletions(-)
->>
->> Hey,
->>
->> Documentation/ABI/ patches should go to GregKH.
+On Fri, 18 Nov 2011 10:19:24 +0800
+Yong Zhang <yong.zhang0@gmail.com> wrote:
+
+> When running -rt, I got some warning when doing cpu hotplug,
+> for details please check:
+> http://marc.info/?l=linux-kernel&m=132143661616297&w=2
 > 
-> Really?  I'm now in charge of the kernel ABI?
-
-Well, you are the person who usually tells people that they need
-to provide Documentation/ABI/ patches for sysfs files AFAICT.
-
-> Ah, the power...
-
-:(
-
-> /me rubs his hands together
+> But seems the problem also exists in mainline, a typical
+> scenario is:
 > 
->> Greg, can we clarify that in MAINTAINERS ?
+>         CPU A                           CPU B
 > 
-> Seriously, I'm not in charge of it, that's up to the subsystem for which
-> the API comes from, I am not the one in charge of the whole thing.
-> 
-> So, for this type of patch, they should go through the xen subsystem
-> maintainers directly.
+> doing printk with console_sem held
+>                                 take_cpu_down();
+>                                   cpu_notify(CPU_DYING);
+>                                     console_cpu_notify();
+>                                       console_lock();
+>                                         down(&console_sem);
+>                                           *BANG*
+>   up(&console_sem);
 
-Sounds good.  Thanks.
+This doesn't describe a deadlock.  For a deadlock to occur, something
+must prevent CPU A from proceeding to the up().
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Are you able to more fully describe this?  I'm suspecting that CPU A
+got shut down by CPU B?  If so, shutting down a CPU while it holds
+locks seems rather bad.  Or perhaps it's something else...
+
+
