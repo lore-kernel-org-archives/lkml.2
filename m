@@ -1,63 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab1KRRvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 12:51:18 -0500
-Received: from mexforward.lss.emc.com ([128.222.32.20]:56475 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab1KRRvR convert rfc822-to-8bit (ORCPT
+	id S1752766Ab1KRRyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 12:54:15 -0500
+Received: from smtp.mail.umich.edu ([141.211.14.81]:60502 "EHLO
+	hackers.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab1KRRyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 12:51:17 -0500
-From: <peter.staubach@emc.com>
-To: <john@Calva.COM>
-CC: <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Nov 2011 12:50:38 -0500
-Subject: RE: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
- errors
-Thread-Topic: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS
- errors
-Thread-Index: AcymEnRdNh5uGkteQdGnfMWNJ/xrMQACBHfw
-Message-ID: <5E6794FC7B8FCA41A704019BE3C70E8B9422FC49@MX31A.corp.emc.com>
-References: <4EC685D1.2000900@Calva.COM>
- <5E6794FC7B8FCA41A704019BE3C70E8B9422FC09@MX31A.corp.emc.com>
- <4EC68D29.7030005@Calva.COM>
-In-Reply-To: <4EC68D29.7030005@Calva.COM>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Nov 2011 12:54:14 -0500
+Date: Fri, 18 Nov 2011 12:54:09 -0500
+From: Jim Rees <rees@umich.edu>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: John Hughes <john@Calva.COM>, Jeff Layton <jlayton@redhat.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
+ mount expires
+Message-ID: <20111118175409.GA1347@umich.edu>
+References: <00c101cca615$c2e08db6$78be630a@hq.netapp.com>
 MIME-Version: 1.0
-X-EMM-MHVC: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00c101cca615$c2e08db6$78be630a@hq.netapp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The log messages are for the poor admin who has to figure out why nothing is working for the user.
+Myklebust, Trond wrote:
 
-		ps
+  So what are they supposed to do without tickets? Crash?
 
+No, why would they want to do that?
 
------Original Message-----
-From: John Hughes [mailto:john@Calva.COM] 
-Sent: Friday, November 18, 2011 11:52 AM
-To: Staubach, Peter
-Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
-
-On 18/11/11 17:27, peter.staubach@emc.com wrote:
-> Given that the poor user will be sitting, with almost nothing working because of the expired ticket, how does the user figure out what is going on or how does the admin help him?
->
-> Some guidance seems like a good thing.  Is there really a problem with these messages being printed to the log?
-If you're sat at your console with nothing responding how are you going 
-to see the log messages?
-
-The "ticket expired" messages are rate limited.
-
-The "Error: state manager failed on NFSv4 server" messages are not rate 
-limited, but if you use my "rpc.gssd -e" hack they'll be written to the 
-log every 5 seconds all night long.
-
-
+I feel like I've entered the Twilight Zone here, so please continue without
+me while I dig up the relevant background info.
