@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab1KRTvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:51:33 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:54358 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab1KRTvc (ORCPT
+	id S1755949Ab1KRTxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:53:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43996 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab1KRTxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:51:32 -0500
-Date: Fri, 18 Nov 2011 14:51:07 -0500 (EST)
-Message-Id: <20111118.145107.1788849543768712319.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: jbottomley@parallels.com, eric.dumazet@gmail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        paul@paulmenage.org, lizf@cn.fujitsu.com, linux-mm@kvack.org,
-        devel@openvz.org, kirill@shutemov.name, gthelen@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [Devel] Re: [PATCH v5 00/10] per-cgroup tcp memory pressure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4EC6B457.4010502@parallels.com>
-References: <1321381632.3021.57.camel@dabdike.int.hansenpartnership.com>
-	<20111117.163501.1963137869848419475.davem@davemloft.net>
-	<4EC6B457.4010502@parallels.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 18 Nov 2011 14:53:38 -0500
+Date: Fri, 18 Nov 2011 11:53:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH 1/2] NUMA emulation x86_64: numa=fake parameter for
+ custom nodes distance
+Message-Id: <20111118115336.18de45a0.akpm@linux-foundation.org>
+In-Reply-To: <1321617308-4998-1-git-send-email-pholasek@redhat.com>
+References: <1321617308-4998-1-git-send-email-pholasek@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 18 Nov 2011 11:51:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Fri, 18 Nov 2011 17:39:03 -0200
+On Fri, 18 Nov 2011 12:55:07 +0100
+Petr Holasek <pholasek@redhat.com> wrote:
 
-> On 11/17/2011 07:35 PM, David Miller wrote:
->> From: James Bottomley<jbottomley@parallels.com>
->> Date: Tue, 15 Nov 2011 18:27:12 +0000
->>
->>> Ping on this, please.  We're blocked on this patch set until we can
->>> get
->>> an ack that the approach is acceptable to network people.
->>
->> __sk_mem_schedule is now more expensive, because instead of
->> short-circuiting
->> the majority of the function's logic when "allocated<=
->> prot->sysctl_mem[0]"
->> and immediately returning 1, the whole rest of the function is run.
+> As default, when numa emulation is turned on, node distance table
+> uses physical distance, so for 4 nodes emulated on 1 physical table is
 > 
-> Not the whole rest of the function. Rather, just the other two
-> tests. But that's the behavior we need since if your parent is on
-> pressure, you should be as well. How do you feel if we'd also provide
-> two versions for this:
-> 1) non-cgroup, try to return 1 as fast as we can
-> 2) cgroup, also check your parents.
-
-Fair enough.
-
-> How about we make the jump_label only used for sockets (which is basic
-> what we have now, just need a clear name to indicate that), and then
-> enable it not when the first non-root cgroup is created, but when the
-> first one sets the limit to something different than unlimited?
+> node   0   1   2   3
+> 0:  10  10  10  10
+> 1:  10  10  10  10
+> 2:  10  10  10  10
+> 3:  10  10  10  10
 > 
-> Of course to that point, we'd be accounting only to the root
-> structures,
-> but I guess this is not a big deal.
-
-This sounds good for now.
-
->> TCP specific stuff in mm/memcontrol.c, at best that's not nice at all.
+> This patch adds new [distance] argument to
 > 
-> How crucial is that?
+> numa=fake=<number/size of nodes>[,distance]
+> 
+> When distance argument is used, it sets linear distance between nodes
+> like that:
+> 
+>     __distance__
+> ___|___     ____|___     ________     ________
+> |       |   |        |   |        |   |        |
+> | node1 |---| node 2 |---| node 3 |---| node 4 |
+> |_______|   |________|   |________|   |________|
+> |                        |             |
+> |                        |             |
+> |____distance * 2________|             |
+> |                                      |
+> |____________distance * 3______________|
+> 
+> This feature might be useful for testing some numa awareness features in
+> both user and kernel spaces.
+> 
 
-It's a big deal.  We've been working for years to yank protocol specific
-things even out of net/core/*.c, it simply doesn't belong there.
+"might" is a red flag.  We don't merge things which might be useful!
 
-I'd even be happier if you had to create a net/ipv4/tcp_memcg.c and
-include/net/tcp_memcg.h
+*Is* it useful?  If so then please tell us why and explain how it might
+be useful to others.
 
-> Thing is that as far as I am concerned, all the
-> memcg people
- ...
+> @@ -404,6 +406,17 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+>  		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+>  			emu_nid_to_phys[i] = dfl_phys_nid;
+>  
+> +	/* load distance level parameter */
+> +	dist_level = -1;
+> +	c = strchr(emu_cmdline, ',');
+> +	if (c) {
+> +		c++;
+> +		ret = kstrtoul(c, 10, &dist_level);
+> +		if (ret < 0 || dist_level < LOCAL_DISTANCE ||
+> +				dist_level * max_emu_nid > ULONG_MAX)
+> +			dist_level = -1;
 
-What the memcg people want is entirely their problem, especially if it
-involves crapping up non-networking files with protocol specific junk.
+If this happens, the user goofed and we should tell them, with a printk.
+
+
+[patch 2/2] adds the documentation for the feature and should be
+included in the same patch as the implementation.
 
