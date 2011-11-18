@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab1KRRNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 12:13:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758015Ab1KRRNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 12:13:21 -0500
-Message-ID: <4EC6922D.8010306@redhat.com>
-Date: Fri, 18 Nov 2011 12:13:17 -0500
-From: Adam Jackson <ajax@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1758175Ab1KRROX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 12:14:23 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52374 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758015Ab1KRROW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 12:14:22 -0500
+Message-ID: <4EC69269.7060505@gmail.com>
+Date: Fri, 18 Nov 2011 09:14:17 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hook up Ivybridge eDP
-References: <1321489780-17085-1-git-send-email-keithp@keithp.com> <1321569940.18123.7.camel@atropine> <yun8vnech3v.fsf@aiko.keithp.com>
-In-Reply-To: <yun8vnech3v.fsf@aiko.keithp.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v2 2/2] hugetlb: Provide safer dummy values for HPAGE_MASK
+ and HPAGE_SIZE
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com> <1321567050-13197-3-git-send-email-ddaney.cavm@gmail.com> <4EC61DB1.3090608@mvista.com>
+In-Reply-To: <4EC61DB1.3090608@mvista.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/11 9:13 PM, Keith Packard wrote:
-> On Thu, 17 Nov 2011 17:45:40 -0500, Adam Jackson<ajax@redhat.com>  wrote:
+On 11/18/2011 12:56 AM, Sergei Shtylyov wrote:
+> Hello.
 >
->> Your silicon people worry me.
+> On 18-11-2011 1:57, David Daney wrote:
 >
-> In any case, the changes are mostly to move bits around so that there
-> are two bits for pipe select
-
-Yeah, the patch looks like it could be correct, just shaking my head.
-
->> I don't even.  Unless you're looking at some other version of the DP
->> spec than me, I was pretty sure those weren't legal voltage values.  And
->> 3.5dB preemph on 1000mV gives you 1500mV at the peak, which is
->> definitely outside the spec.
+>> From: David Daney<david.daney@cavium.com>
 >
-> I'm just writing down what's in the spec. I don't use these values, just
-> the useful ones above.
- >
-> You don't happen to have any hardware to test this with, do you?
+>> It was pointed out by David Rientjes that the dummy values for
+>> HPAGE_MASK and HPAGE_SIZE are quite unsafe. It they are inadvertently
+>> used with !CONFIG_HUGETLB_PAGE, compilation would succeed, but the
+>> resulting code would surly not do anything sensible.
+>>
+>> Place BUG() in the these dummy definitions, as we do in similar
+>> circumstances in other places, so any abuse can be easily detected.
+>>
+>> Since the only sane place to use these symbols when
+>> !CONFIG_HUGETLB_PAGE is on dead code paths, the BUG() cause any actual
+>> code to be emitted by the compiler.
+>
+> You mean "doesn't cause"?
 
-Not at the moment.  I'll see if I can dig something up though.
+Yes.
 
-- ajax
+I mentioned this in a different message to akpm, but I am not sure if I 
+should resend the patch with a corrected change log.
+
+David Daney
+
+>
+>> Cc: David Rientjes<rientjes@google.com>
+>> Signed-off-by: David Daney<david.daney@cavium.com>
+>
+> WBR, Sergei
+>
+>
+
