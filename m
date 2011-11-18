@@ -1,116 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab1KRXPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:15:19 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56225 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283Ab1KRXPR (ORCPT
+	id S1758010Ab1KRXP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:15:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53028 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757937Ab1KRXPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:15:17 -0500
-Message-ID: <4EC6E75E.2080200@solonet.org.ua>
-Date: Sat, 19 Nov 2011 01:16:46 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Fri, 18 Nov 2011 18:15:22 -0500
+Date: Fri, 18 Nov 2011 15:14:58 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-7e9a49ef542610609144d1afcd516dc3fafac4d6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        jolsa@redhat.com
+In-Reply-To: <20111107150849.GE1807@m.brq.redhat.com>
+References: <20111107150849.GE1807@m.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing/latency: Fix header output for latency tracers
+Git-Commit-ID: 7e9a49ef542610609144d1afcd516dc3fafac4d6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-References: <4EC572E1.1020209@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com> <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com> <4EC6DD8F.9070904@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:15:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2011 12:44 AM, Stephen Warren wrote:
-> Denis Kuzmenko wrote at Friday, November 18, 2011 3:35 PM:
->> On 11/18/2011 11:59 PM, Stephen Warren wrote:
->>> Denis Kuzmenko wrote at Friday, November 18, 2011 2:45 PM:
->>>> Make s3c24xx LEDS driver use gpiolib. Disable using pull-resistor when not
->>>> using S3C24XX_LEDF_TRISTATE and enble it when in opposite case.
->>>>
->>>> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
->>>
->>>>  	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
->>>> -		s3c2410_gpio_setpin(pdata->gpio, 0);
->>>> -		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
->>>> +		/*
->>>> +		 * pull is needed here to protect pin from being left
->>>> +		 * floating
->>>> +		 */
->>>> +		ret = s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_UP);
->>>> +		if (ret)
->>>> +			s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_DOWN);
->>>
->>> Sorry, could you explain why it's appropriate to configure a pull here
->>> at all, let alone why it's OK to have a random pull on the line?
->>>
->>
->> Of course I'll explain.
->> Imagine you are working with generic GPIO lines on your board connecting
->> and disconnecting LEDs and other stuff. In this case there can be
->> situation where GPIO line is configured as TRISTATE LED but have nothing
->> connected physically to pin. This configuration is dangerous because
->> input pin without _any_ pull-resistor is _much_ more sensitive to
->> statical electricity (ESD) so you can *burn* (unsure this is correct
->> word) your pin much easily (especially is you are using soldering iron
->> as much as I do). Most of GPIO modules I worked with have "input with
->> pull-up" as default and most safe initial state (and s3c2440's one is
->> not an exception).
->> Maybe, I need to write more wide exlanation in comment above?
-> 
-> OK, I see the need for a pull of some kind (although aren't there meant
-> to be ESD protection diodes for this purpose; relying on what are probably
-> pretty weak pullup/down resistors doesn't seem like it will provide much
-> protection at all).
-> 
+Commit-ID:  7e9a49ef542610609144d1afcd516dc3fafac4d6
+Gitweb:     http://git.kernel.org/tip/7e9a49ef542610609144d1afcd516dc3fafac4d6
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 7 Nov 2011 16:08:49 +0100
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 7 Nov 2011 13:48:35 -0500
 
-I don't mean pull as any kind of good protection. But it's much better
-to have it than not.
+tracing/latency: Fix header output for latency tracers
 
-> I have a slight feeling this detail should be hidden inside the gpiolib
-> driver.
-> 
+In case the the graph tracer (CONFIG_FUNCTION_GRAPH_TRACER) or even the
+function tracer (CONFIG_FUNCTION_TRACER) are not set, the latency tracers
+do not display proper latency header.
 
-Do you mean to add to a function that makes pin act as input some kind
-of logic like:
-	if(!(flags & FLAG_PULL_NONE))
-		try_to_enable_pull(PULL_ANY);
-?
+The involved/fixed latency tracers are:
+        wakeup_rt
+        wakeup
+        preemptirqsoff
+        preemptoff
+        irqsoff
 
-> Presumably the pull is pretty weak, so that if/when the pin is actively
-> driven later, the drive completely overrides this pull?
->
+The patch adds proper handling of tracer configuration options for latency
+tracers, and displaying correct header info accordingly.
 
-As far as know pull-resistor is _designed_ to be weak enough so driver
-can always override it.
+* The current output (for wakeup tracer) with both graph and function
+  tracers disabled is:
 
-> Is this pull strong enough to light the LED? Judging by what
-> s3c24xx_led_set() does, when the LED is off, the pin is tri-stated, and
-> when the LED is on, it's driven (high/low depending on the active high/low
-> flag). When tri-stated, if the pull happens to pull the same direction as
-> the on state would drive it, won't the LED light? It seems like you need
-> to pick a suitable pull direction based on flags & S3C24XX_LEDF_ACTLOW,
-> and if that can't be set, it's an error.
+  # tracer: wakeup
+  #
+    <idle>-0       0d.h5    1us+:      0:120:R   + [000]     7:  0:R watchdog/0
+    <idle>-0       0d.h5    3us+: ttwu_do_activate.clone.1 <-try_to_wake_up
+    ...
 
-I couldn't find any information about pull strength in s3c2440's
-datasheet but usually pull is about 10-100k. So even in worst case
-maximum current through it on 3.3V VCC is 0.33 mA (not taking into
-account own LED's resistance and voltage-fall) which is definitely not
-enough to light a LED.
+* The fixed output is:
 
-> (BTW, when posting a new version, starting a new thread with just the
-> patch, rather than pasting it into a reply and prefixing it with other
-> text will make is easiest for people to take the patch and apply it)
+  # tracer: wakeup
+  #
+  # wakeup latency trace v1.1.5 on 3.1.0-tip+
+  # --------------------------------------------------------------------
+  # latency: 55 us, #4/4, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
+  #    -----------------
+  #    | task: migration/0-6 (uid:0 nice:0 policy:1 rt_prio:99)
+  #    -----------------
+  #
+  #                  _------=> CPU#
+  #                 / _-----=> irqs-off
+  #                | / _----=> need-resched
+  #                || / _---=> hardirq/softirq
+  #                ||| / _--=> preempt-depth
+  #                |||| /     delay
+  #  cmd     pid   ||||| time  |   caller
+  #     \   /      |||||  \    |   /
+       cat-1129    0d..4    1us :   1129:120:R   + [000]     6:  0:R migration/0
+       cat-1129    0d..4    2us+: ttwu_do_activate.clone.1 <-try_to_wake_up
 
-Thank you, I'll do so in future.
+* The current output (for wakeup tracer) with only function
+  tracer enabled is:
 
+  # tracer: wakeup
+  #
+       cat-1140    0d..4    1us+:   1140:120:R   + [000]     6:  0:R migration/0
+       cat-1140    0d..4    2us : ttwu_do_activate.clone.1 <-try_to_wake_up
 
--- 
-Best regards, Denis Kuzmenko.
+* The fixed output is:
+  # tracer: wakeup
+  #
+  # wakeup latency trace v1.1.5 on 3.1.0-tip+
+  # --------------------------------------------------------------------
+  # latency: 207 us, #109/109, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
+  #    -----------------
+  #    | task: watchdog/1-12 (uid:0 nice:0 policy:1 rt_prio:99)
+  #    -----------------
+  #
+  #                  _------=> CPU#
+  #                 / _-----=> irqs-off
+  #                | / _----=> need-resched
+  #                || / _---=> hardirq/softirq
+  #                ||| / _--=> preempt-depth
+  #                |||| /     delay
+  #  cmd     pid   ||||| time  |   caller
+  #     \   /      |||||  \    |   /
+    <idle>-0       1d.h5    1us+:      0:120:R   + [001]    12:  0:R watchdog/1
+    <idle>-0       1d.h5    3us : ttwu_do_activate.clone.1 <-try_to_wake_up
+
+Link: http://lkml.kernel.org/r/20111107150849.GE1807@m.brq.redhat.com
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c              |   15 +++++++++++++++
+ kernel/trace/trace.h              |    1 +
+ kernel/trace/trace_irqsoff.c      |   13 ++++++++++++-
+ kernel/trace/trace_sched_wakeup.c |   13 ++++++++++++-
+ 4 files changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index b24a72d..b296186 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2140,6 +2140,21 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
+ 	return print_trace_fmt(iter);
+ }
+ 
++void trace_latency_header(struct seq_file *m)
++{
++	struct trace_iterator *iter = m->private;
++
++	/* print nothing if the buffers are empty */
++	if (trace_empty(iter))
++		return;
++
++	if (iter->iter_flags & TRACE_FILE_LAT_FMT)
++		print_trace_header(m, iter);
++
++	if (!(trace_flags & TRACE_ITER_VERBOSE))
++		print_lat_help_header(m);
++}
++
+ void trace_default_header(struct seq_file *m)
+ {
+ 	struct trace_iterator *iter = m->private;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 092e1f8..f8ec229 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -370,6 +370,7 @@ void trace_graph_function(struct trace_array *tr,
+ 		    unsigned long ip,
+ 		    unsigned long parent_ip,
+ 		    unsigned long flags, int pc);
++void trace_latency_header(struct seq_file *m);
+ void trace_default_header(struct seq_file *m);
+ void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
+ int trace_empty(struct trace_iterator *iter);
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index a1a3359..a248c68 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -280,9 +280,20 @@ static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
+ }
+ 
+ static void irqsoff_graph_return(struct ftrace_graph_ret *trace) { }
+-static void irqsoff_print_header(struct seq_file *s) { }
+ static void irqsoff_trace_open(struct trace_iterator *iter) { }
+ static void irqsoff_trace_close(struct trace_iterator *iter) { }
++
++#ifdef CONFIG_FUNCTION_TRACER
++static void irqsoff_print_header(struct seq_file *s)
++{
++	trace_default_header(s);
++}
++#else
++static void irqsoff_print_header(struct seq_file *s)
++{
++	trace_latency_header(s);
++}
++#endif /* CONFIG_FUNCTION_TRACER */
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+ /*
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index e4a70c0..ff791ea 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -280,9 +280,20 @@ static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
+ }
+ 
+ static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
+-static void wakeup_print_header(struct seq_file *s) { }
+ static void wakeup_trace_open(struct trace_iterator *iter) { }
+ static void wakeup_trace_close(struct trace_iterator *iter) { }
++
++#ifdef CONFIG_FUNCTION_TRACER
++static void wakeup_print_header(struct seq_file *s)
++{
++	trace_default_header(s);
++}
++#else
++static void wakeup_print_header(struct seq_file *s)
++{
++	trace_latency_header(s);
++}
++#endif /* CONFIG_FUNCTION_TRACER */
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+ /*
