@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab1KRNyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:54:31 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50261 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185Ab1KRNy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:54:29 -0500
-Message-ID: <1321624465.3277.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: routing bug?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Pozs=E1r_Bal=E1zs?= <pozsy@uhulinux.hu>
-Cc: Sven-Haegar Koch <haegar@sdinet.de>,
-        Linux-Kernel-Mailinglist <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Tam=E1si_J=E1nos?= <janusz@uhulinux.hu>,
-        netdev@vger.kernel.org
-Date: Fri, 18 Nov 2011 14:54:25 +0100
-In-Reply-To: <4EC65FF1.9010601@uhulinux.hu>
-References: <4EC648C9.8080405@uhulinux.hu>
-			 <alpine.DEB.2.02.1111181346480.17023@aurora>
-		 <1321621796.3277.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-		 <4EC65C4B.6050505@uhulinux.hu>
-	 <1321623207.3277.4.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <4EC65FF1.9010601@uhulinux.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1758024Ab1KRNyf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:54:35 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:46005 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758008Ab1KRNyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 08:54:33 -0500
+Message-ID: <4EC66396.30202@nod.at>
+Date: Fri, 18 Nov 2011 14:54:30 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Jiri Kosina <trivial@kernel.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] [TRIVIAL] defconfig cleanup
+References: <1321621002.20271.354.camel@x61.thuisdomein>
+In-Reply-To: <1321621002.20271.354.camel@x61.thuisdomein>
+X-Enigmail-Version: 1.3.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig93C2DCB390BD8E4200E6ED7D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 18 novembre 2011 à 14:38 +0100, Pozsár Balázs a écrit :
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig93C2DCB390BD8E4200E6ED7D
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> Unfortunately it does not solve the problem for me, I have have these 
-> "cache <redirected>" entries even after that echo command.
-> 
+Am 18.11.2011 13:56, schrieb Paul Bolle:
+>  arch/um/defconfig                                  |   28 -----------
 
-Its a problem with a cached value.
+For the um part:
 
-You must reboot to flush it.
+Acked-by: Richard Weinberger <richard@nod.at>
 
-It was already discussed yesterday on netdev.
+Thanks,
+//richard
 
 
+--------------enig93C2DCB390BD8E4200E6ED7D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOxmOWAAoJEN9758yqZn9em4sIANEESG2L+P08nFJe4S3Rpb3M
++penvouFpNMvyWUS41e/B3QxYEtdWrKW0toQHGx7exHqgyadbRT4ZzxNfdAxCCrb
+39VjY47n8SE0WxoTic6jip8PweTUhOIok/JRWex7pdEppxYO8gZgnZ0fi9NYwdyS
+I7+FeWy6U5nt1ls7mpJFm0cKpUJGuQRGSRs+62znvh4gGuiYCSxK+k/QGuqaw2XF
+HD+Qk8eHr9qOZgiRkW95aFauscGbwnv2sn2g0HNUaeC6jVaYcYKqkOWC946Rnd6u
+UHThYYNkZ7hSbb3wfOnVVj+LuLffKNSmmIkmCetXs9EFxjkm31gY/noMhBjXpc0=
+=f5iR
+-----END PGP SIGNATURE-----
+
+--------------enig93C2DCB390BD8E4200E6ED7D--
