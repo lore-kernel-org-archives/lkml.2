@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab1KRRaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 12:30:19 -0500
-Received: from mga01.intel.com ([192.55.52.88]:45636 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab1KRRaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 12:30:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,534,1315206000"; 
-   d="scan'208";a="92542619"
-Date: Fri, 18 Nov 2011 09:30:14 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
-        lee.schermerhorn@hp.com
-Subject: Re: [RFC]numa: improve I/O performance by optimizing numa
- interleave allocation
-Message-ID: <20111118173013.GB25022@alboin.amr.corp.intel.com>
-References: <1321600332.22361.309.camel@sli10-conroe>
+	id S1753143Ab1KRRcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 12:32:17 -0500
+Received: from mx3.schottelius.org ([77.109.138.221]:45958 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab1KRRcQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 12:32:16 -0500
+Date: Fri, 18 Nov 2011 18:32:42 +0100
+From: Nico -telmich- Schottelius <nico-linux-20111118@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>
+Subject: b43: BCM 4331: MacBook 8,1: No connection after suspend
+Message-ID: <20111118173242.GA2101@schottelius.org>
+Mail-Followup-To: Nico -telmich- Schottelius <nico-linux-20111118@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+	Arend van Spriel <arend@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321600332.22361.309.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.2.0-rc1 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 03:12:12PM +0800, Shaohua Li wrote:
-> If mem plicy is interleaves, we will allocated pages from nodes in a round
-> robin way. This surely can do interleave fairly, but not optimal.
-> 
-> Say the pages will be used for I/O later. Interleave allocation for two pages
-> are allocated from two nodes, so the pages are not physically continuous. Later
-> each page needs one segment for DMA scatter-gathering. But maxium hardware
-> segment number is limited. The non-continuous pages will use up maxium
-> hardware segment number soon and we can't merge I/O to bigger DMA. Allocating
-> pages from one node hasn't such issue. The memory allocator pcp list makes
-> we can get physically continuous pages in several alloc quite likely.
+Hello,
 
-FWIW it depends a lot on the IO hardware if the SG limitation
-really makes a measurable difference for IO performance. I saw some wins from 
-clustering using the IOMMU before, but that was a long time ago. I wouldn't 
-consider it a truth without strong numbers, and then also only
-for that particular device measured.
+new notebook, new problems (*):
 
-My understanding is that modern IO devices like NHM Express will
-be faster at large SG lists.
+Running 3.2.0-rc1 on the MacBook Pro 8,1 with the BCM4331
+(14e4:4331) the WLAN indeed works:
 
-> So can we make both interleave fairness and continuous allocation happy?
-> Simplily we can adjust the round robin algorithm. We switch to another node
-> after several (N) allocation happens. If N isn't too big, we can still get
-> fair allocation. And we get N continuous pages. I use N=8 in below patch.
-> I thought 8 isn't too big for modern NUMA machine. Applications which use
-> interleave are unlikely run short time, so I thought fairness still works.
+[   86.231702] b43-phy0: Broadcom 4331 WLAN found (core revision 29)
+[   86.269190] ieee80211 phy0: Selected rate control algorithm
+'minstrel_ht'
+[   86.270486] Broadcom 43xx driver loaded [ Features: PMNLS ]
+[   87.677265] b43-phy0: Loading firmware version 666.2 (2011-02-23
+01:15:07)
 
-It depends a lot on the CPU access pattern.
+But: After a suspend it seems not to receive any packets anymore:
 
-Some workloads seem to do reasonable well with 2MB huge page interleaving.
-But others actually prefer the cache line interleaving supplied by 
-the BIOS.
+[ 2334.494845] wlan0: authenticate with 64:87:d7:37:89:89 (try 1)
+[ 2334.694035] wlan0: authenticate with 64:87:d7:37:89:89 (try 2)
+[ 2334.893909] wlan0: authenticate with 64:87:d7:37:89:89 (try 3)
+[ 2335.093824] wlan0: authentication with 64:87:d7:37:89:89 timed out
 
-So you can have a trade off between IO and CPU performance.
-When in doubt I usually opt for CPU performance by default.
+wpa_supplicant thus retries to connect to the network again and again
+without success.
 
-I definitely wouldn't make it default, but if there are workloads
-that benefits a lot it could be an additional parameter to the
-interleave policy.
+This is reproducable on the MBP 8,1 and is *NOT* fixed if I unload
+b43 and modprobe it again. It is also "not fixed" when doing
+multiple suspends/resumes.
 
-> Run a sequential read workload which accesses disk sdc - sdf,
+Any pointers to this?
 
-What IO device is that?
+Cheers,
 
--Andi
+Nico
+
+
+(*) feels like in good old times...
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
