@@ -1,252 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab1KRNud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:50:33 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:61498 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab1KRNuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:50:32 -0500
-Date: Fri, 18 Nov 2011 14:50:21 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org
-Cc: anaghi@mail.gnudd.com, balbi@ti.com, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH V2 1/2] debugfs: add tools to printk 32-bit registers
-Message-ID: <20111118135021.GA860@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <20111118002049.GA24806@mail.gnudd.com>
+	id S1757967Ab1KRNuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:50:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37523 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757919Ab1KRNup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 08:50:45 -0500
+X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=bld6Cl09aJV4sZ3SSjkA:9 a=VF6Nvi1XXHHPLZbr3DUA:7 a=QEXdDO2ut3YA:10 a=Kw0oQSCfRH7OzOqa:21 a=-9EhNBvnkgyptK-B:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: tracing vs. string formatting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <1321610382.10266.19.camel@jlt3.sipsolutions.net>
+References: <1321610382.10266.19.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Nov 2011 08:50:41 -0500
+Message-ID: <1321624241.3533.45.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some debugfs file I deal with are mostly blocks of registers,
-i.e. lines of the form "<name> = 0x<value>". Some files are only
-registers, some include registers blocks among other material.  This
-patch introduces data structures and functions to deal with both
-cases.  I expect more users of this over time.
+On Fri, 2011-11-18 at 10:59 +0100, Johannes Berg wrote:
+> Hi,
+> 
+> I'm thinking about adding tracing to all debug messages in our driver
+> (iwlwifi) so we can ask people to record all debug messages (which are
+> way too many, some can be removed), and then we could post-process it
+> and only show selectively the ones we care about.
+> 
+> Converting all the messages and/or adding tracing at all the points
+> where we have messages now would be a huge effort, and sometimes the
+> messages are all that we can get from users, so we wouldn't want to get
+> rid of them either.
+> 
+> Therefore I was thinking we should just trace the messages.
+> 
+> The issue I ran into is that obviously almost all messages need string
+> formatting. But to put them into the trace, we have two choices now that
+> I can see:
+> 
+> 1) format the messages into a temporary buffer, then copy into the trace
+> 2) format the messages into the ringbuffer, reserving the max length we
+>    think we might need
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
----
- Documentation/filesystems/debugfs.txt |   32 +++++++++++-
- fs/debugfs/file.c                     |   90 +++++++++++++++++++++++++++++++++
- include/linux/debugfs.h               |   26 +++++++++
- 3 files changed, 147 insertions(+), 1 deletions(-)
+I'm confused? Is this a different topic than printk tracing? As with
+printk, if you put the trace point where I mentioned before, you let
+printk figure out the size already and all it takes is a string and
+length, and it will allocate just enough for the ring buffer to place it
+there.
 
-diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
-index 742cc06..f04066a 100644
---- a/Documentation/filesystems/debugfs.txt
-+++ b/Documentation/filesystems/debugfs.txt
-@@ -97,7 +97,8 @@ A read on the resulting file will yield either Y (for non-zero values) or
- N, followed by a newline.  If written to, it will accept either upper- or
- lower-case values, or 1 or 0.  Any other input will be silently ignored.
- 
--Finally, a block of arbitrary binary data can be exported with:
-+Another option is exporting a block of arbitrary binary data, with
-+this structure and function:
- 
-     struct debugfs_blob_wrapper {
- 	void *data;
-@@ -115,6 +116,35 @@ can be used to export binary information, but there does not appear to be
- any code which does so in the mainline.  Note that all files created with
- debugfs_create_blob() are read-only.
- 
-+If you want to dump a block of registers (something that happens quite
-+often during development, even if little such code reaches mainline.
-+Debugfs offers two functions: one to make a registers-only file, and
-+another to insert a register block in the middle of another sequential
-+file.
-+
-+    struct debugfs_reg32 {
-+	char *name;
-+	unsigned long offset;
-+    };
-+
-+    struct debugfs_regset32 {
-+	struct debugfs_reg32 *regs;
-+	int nregs;
-+	void __iomem *base;
-+    };
-+
-+    struct dentry *debugfs_create_regset32(const char *name, mode_t mode,
-+				     struct dentry *parent,
-+				     struct debugfs_regset32 *regset);
-+
-+    int debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
-+			 int nregs, void __iomem *base, char *prefix);
-+
-+The "base" argument may be 0, but you may want to build the reg32 array
-+using __stringify, and a number of register names (macros) are actually
-+byte offsets over a base for the register block.
-+
-+
- There are a couple of other directory-oriented helper functions:
- 
-     struct dentry *debugfs_rename(struct dentry *old_dir, 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 90f7657..f31a27c 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -15,6 +15,7 @@
- 
- #include <linux/module.h>
- #include <linux/fs.h>
-+#include <linux/seq_file.h>
- #include <linux/pagemap.h>
- #include <linux/namei.h>
- #include <linux/debugfs.h>
-@@ -525,3 +526,92 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
- 	return debugfs_create_file(name, mode, parent, blob, &fops_blob);
- }
- EXPORT_SYMBOL_GPL(debugfs_create_blob);
-+
-+/*
-+ * The regset32 stuff is used to print 32-bit registers using the
-+ * seq_file utilities. We offer printing a register set in an already-opened
-+ * sequential file or create a debugfs file that only prints a regset32.
-+ */
-+
-+/**
-+ * debugfs_print_regs32 - use seq_print to describe a set of registers
-+ * @s: the seq_file structure being used to generate output
-+ * @regs: an array if struct debugfs_reg32 structures
-+ * @mregs: the length of the above array
-+ * @base: the base address to be used in reading the registers
-+ * @prefix: a string to be prefixed to every output line
-+ *
-+ * This function outputs a text block describing the current values of
-+ * some 32-bit hardware registers. It is meant to be used within debugfs
-+ * files based on seq_file that need to show registers, intermixed with other
-+ * information. The prefix argument may be used to specify a leading string,
-+ * because some peripherals have several blocks of identical registers,
-+ * for example configuration of dma channels
-+ */
-+int debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
-+			   int nregs, void __iomem *base, char *prefix)
-+{
-+	int i, ret = 0;
-+
-+	for (i = 0; i < nregs; i++, regs++) {
-+		if (prefix)
-+			ret += seq_printf(s, "%s", prefix);
-+		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
-+				  readl((void *)(base + regs->offset)));
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(debugfs_print_regs32);
-+
-+static int debugfs_show_regset32(struct seq_file *s, void *data)
-+{
-+	struct debugfs_regset32 *regset = s->private;
-+
-+	debugfs_print_regs32(s, regset->regs, regset->nregs, regset->base, "");
-+	return 0;
-+}
-+
-+static int debugfs_open_regset32(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_show_regset32, inode->i_private);
-+}
-+
-+static const struct file_operations fops_regset32 = {
-+	.open =		debugfs_open_regset32,
-+	.read =		seq_read,
-+	.llseek =	seq_lseek,
-+	.release =	single_release,
-+};
-+
-+/**
-+ * debugfs_create_regset32 - create a debugfs file that returns register values
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @regset: a pointer to a struct debugfs_regset32, which contains a pointer
-+ *          to an array of register definitions, the array size and the base
-+ *          address where the register bank is to be found.
-+ *
-+ * This function creates a file in debugfs with the given name that reports
-+ * the names and values of a set of 32-bit registers. If the @mode variable
-+ * is so set it can be read from. Writing is not supported.
-+ *
-+ * This function will return a pointer to a dentry if it succeeds.  This
-+ * pointer must be passed to the debugfs_remove() function when the file is
-+ * to be removed (no automatic cleanup happens if your module is unloaded,
-+ * you are responsible here.)  If an error occurs, %NULL will be returned.
-+ *
-+ * If debugfs is not enabled in the kernel, the value -%ENODEV will be
-+ * returned.  It is not wise to check for this value, but rather, check for
-+ * %NULL or !%NULL instead as to eliminate the need for #ifdef in the calling
-+ * code.
-+ */
-+struct dentry *debugfs_create_regset32(const char *name, mode_t mode,
-+				       struct dentry *parent,
-+				       struct debugfs_regset32 *regset)
-+{
-+	return debugfs_create_file(name, mode, parent, regset, &fops_regset32);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_regset32);
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index e7d9b20..5e6b01f 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -16,6 +16,7 @@
- #define _DEBUGFS_H_
- 
- #include <linux/fs.h>
-+#include <linux/seq_file.h>
- 
- #include <linux/types.h>
- 
-@@ -26,6 +27,17 @@ struct debugfs_blob_wrapper {
- 	unsigned long size;
- };
- 
-+struct debugfs_reg32 {
-+	char *name;
-+	unsigned long offset;
-+};
-+
-+struct debugfs_regset32 {
-+	struct debugfs_reg32 *regs;
-+	int nregs;
-+	void __iomem *base;
-+};
-+
- extern struct dentry *arch_debugfs_dir;
- 
- #if defined(CONFIG_DEBUG_FS)
-@@ -74,6 +86,13 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
- 				  struct dentry *parent,
- 				  struct debugfs_blob_wrapper *blob);
- 
-+struct dentry *debugfs_create_regset32(const char *name, mode_t mode,
-+				     struct dentry *parent,
-+				     struct debugfs_regset32 *regset);
-+
-+int debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
-+			 int nregs, void __iomem *base, char *prefix);
-+
- bool debugfs_initialized(void);
- 
- #else
-@@ -188,6 +207,13 @@ static inline struct dentry *debugfs_create_blob(const char *name, mode_t mode,
- 	return ERR_PTR(-ENODEV);
- }
- 
-+static inline struct dentry *debugfs_create_regset32(const char *name,
-+				   mode_t mode, struct dentry *parent,
-+				   struct debugfs_regset32 *regset)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
- static inline bool debugfs_initialized(void)
- {
- 	return false;
--- 
-1.6.0.2
+But if you are talking about something else, then sure this is an issue.
+Currently trace_printk() uses a temporary buffer. Why waste 200 bytes in
+the ring buffer that's not needed.
+
+> 
+> Both have obvious problems: The trivial implementation of 1) is stupid
+> if tracing is disabled and at least incurs an extra copy. 2) means that
+> I need to reserve say 200 bytes for each entry and then will end up not
+> using a large chunk of it in most cases.
+> 
+> Is there any way to reserve those 200 bytes, but then when we commit
+> update the trace entry length and also un-reserve whatever size we
+> didn't need? Then we could directly vsnprintf into the ring-buffer and
+> use the return value to update from 200 bytes reserved to say 20.
+> 
+> The API I'm envisioning would look a bit like this:
+> 
+> TRACE_EVENT(foo_dbg,
+>         TP_PROTO(const char *fmt, va_list args),
+>         TP_ARGS(fmt, args),
+>         TP_STRUCT__entry(
+> 		/* 200 is the max length we expect/reserve */
+>                 __fmt_string(msg, 200)
+>         ),
+>         TP_fast_assign(
+>                 __vprint_str(msg, fmt, args);
+>         ),
+>         TP_printk("%s", __get_str(msg))
+> );
+> 
+> 
+> Behind the scenes somehow the 200 would get reserved, propagated,
+> __vprint_str would call something like
+> 	r = vsnprintf(__get_str(msg), 200, fmt, args);
+> 
+> and use r to shrink the entry if possible.
+
+This is interesting. Now we could add an API to ftrace (and maybe even
+perf?) that can shrink the buffer if the space isn't needed. We do that
+already if we decide to filter out the trace ponit, the allocated buffer
+is freed if no interrupt came in and added data after it. If that
+happens than we just convert the event into dead space.
+
+But another issue with this is that when you get to an end of a buffer
+page (internal buffers which currently are just page sizes). If you
+don't have enough space, it will go to the next buffer page and the
+space on the previous page is now wasted and can't be reclaimed.
+
+
+> 
+> 
+> 
+> Now obviously I have no idea if it's even possible to shrink an entry
+> afterwards :-) It seems like it should be since the local CPU buffer is
+> locked in some way, but ... what do I know. Interrupts coming in would
+> probably have to make it not shrink the entry, but that seems feasible
+> too -- in that case you'd just have the 200 bytes used but not filled
+> except for the message (though then maybe you have to memset the
+> remainder to 0).
+> 
+> 
+> Does this sound completely stupid? Yes maybe adding tracing (is there a
+> way to cause certain tracepoints to be printk'ed?) would be better but
+> converting all the messages to like a few hundred tracepoints would be a
+> huge waste as well.
+
+Wait? I'm confused again. Maybe I read you wrong. Do you mean to make
+trace points printk'd? I think just make the current printk into a
+tracepoint and be done with it. But it would be all printks or none. We
+even still have ftrace_dump_on_oops if we need this information on a
+system crash.
+
+
+> 
+> 
+> If you made it this far -- thanks! :-)
+
+I did, but I'm still on meds ;)
+
+-- Steve
+
+
