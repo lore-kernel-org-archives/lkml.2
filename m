@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab1KRCrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 21:47:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18442 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab1KRCrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 21:47:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="77030314"
-Message-ID: <4EC5C753.6040904@linux.intel.com>
-Date: Fri, 18 Nov 2011 10:47:47 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1756079Ab1KRDJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 22:09:04 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33158 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab1KRDJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 22:09:03 -0500
+Message-ID: <4EC5CC3B.4050808@oracle.com>
+Date: Fri, 18 Nov 2011 11:08:43 +0800
+From: ANNIE LI <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 1/2] ramoops: use pstore interface
-References: <1321478739-8978-1-git-send-email-keescook@chromium.org> <1321478739-8978-2-git-send-email-keescook@chromium.org> <4EC49D13.2010206@linux.intel.com> <CAGXu5jJfhLjBN4hEUNv5DaivJJaX5=15+JaC0VEON+mfDSeF+A@mail.gmail.com>
-In-Reply-To: <CAGXu5jJfhLjBN4hEUNv5DaivJJaX5=15+JaC0VEON+mfDSeF+A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Subject: Re: [Xen-devel] Re: [PATCH 1/3] xen/granttable: Introducing grant
+ table V2 stucture
+References: <4EC3B62F.6080702@oracle.com>	<1321451304-13559-1-git-send-email-annie.li@oracle.com>	<1321526148.3664.263.camel@zakaz.uk.xensource.com>	<4EC53119.7060307@oracle.com> <20111117162955.GA6758@phenom.dumpdata.com>
+In-Reply-To: <20111117162955.GA6758@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4EC5CC4A.002B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
->>> +       /* TODO(kees): It shouldn't be possible to remove ramoops since
->>> +        * pstore doesn't support unregistering yet. When it does, remove
->>> +        * this early return and add the unregister where noted below.
->>> +        */
->>> +       return -EBUSY;
->>
->> This style is not reasonable. Maybe it should have a better wrap.
->
-> I'm not sure I understand what you mean. It's wrapped roughly to
-> column 75 already. What would be better for this comment? Or did you
-> mean I shouldn't have unreachable code?
 
-I mean you shouldn't write unreachable codes. It looks weird.
 
+On 2011-11-18 0:29, Konrad Rzeszutek Wilk wrote:
+>>> The more normal way to do this would be to make gnttab_interface a
+>>> pointer, define gnttab_v1_ops and do:
+>>> 	gnttab_interface =&gnttab_v1_ops;
+>>> or if the pointer overhead is significant remove that and just do a
+>>> struct assignment:
+>>> 	gnttab_interface = gnttab_v1_ops;
+>>>
+>> If using this way, we need two more public structures(gnttab_v1_ops
+>> and gnttab_v2_ops), and two more functions to initialize those two
+>> structures and then initialize the pointer gnttab_interface. It is
+>> more complicated, am i missing something?
+> Why two functions? I agree on the structures - but they need not to be
+> public (they can be static).
 >
->> BTW, you need to update Documentation/ramoops.txt
->
-> Ah! Yes, thanks for the reminder.
->
-> -Kees
->
+> For a good example look at how apic_physflat is done.
+Thanks, static structure is simpler and clean. I am very glad to change 
+that.:-)
 
+Thanks
+Annie
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
