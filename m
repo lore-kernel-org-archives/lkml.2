@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab1KRLic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 06:38:32 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46923 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757712Ab1KRLi3 (ORCPT
+	id S1757879Ab1KRLim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 06:38:42 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45078 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757835Ab1KRLij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 06:38:29 -0500
+	Fri, 18 Nov 2011 06:38:39 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,90 +23,171 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 18 Nov 2011 16:42:19 +0530
-Message-Id: <20111118111219.10512.2502.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 18 Nov 2011 16:42:29 +0530
+Message-Id: <20111118111229.10512.51316.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
 References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v7 3.2-rc2 28/30] uprobes: introduce UTASK_SSTEP_TRAPPED logic
-x-cbid: 11111811-2000-0000-0000-0000021C85B0
+Subject: [PATCH v7 3.2-rc2 29/30] uprobes: Introduce uprobe flags
+x-cbid: 11111811-5564-0000-0000-00000028D6C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add UTASK_SSTEP_TRAPPED state/code to handle the case when
-xol insn itself triggers the signal.
+While registering a probe, there is a timelag between the time the register
+request is given all probes are inserted in different processes. If the probe
+register fails after inserting  a probe in couple of processes; the installed
+probes are reverted. However the probes could have hit and triggered handler
+before the probes are reverted.
 
-In this case we should restart the original insn even if the task is
-already SIGKILL'ed (say, the coredump should report the correct ip).
-This is even more important if the task has a handler for SIGSEGV/etc,
-The _same_ instruction should be repeated again after return from the
-signal handler, and SSTEP can never finish in this case.
+Avoids running the handler until the register is complete or as soon as the
+last unregister kicks in.
 
-Change uprobe_deny_signal() to set UTASK_SSTEP_TRAPPED and TIF_UPROBE. It
-also sets TIF_NOTIFY_RESUME.
+Also this patch
+- enables skipping singlestep where possible.
+- uses a flag to denote if a copy of instruction is made.
 
-When uprobe_notify_resume() sees UTASK_SSTEP_TRAPPED it does abort_xol()
-instead of post_xol().
-
-Original-patch-from: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
-Changelog (since v6)
--	abort_xol moved to previous patch.
-
- include/linux/uprobes.h |    1 +
- kernel/uprobes.c        |   13 ++++++++++---
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ include/linux/uprobes.h |   11 ++++++++++-
+ kernel/uprobes.c        |   32 ++++++++++++++++++++++++++------
+ 2 files changed, 36 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 8d12c06..6a84332 100644
+index 6a84332..20bdd0a 100644
 --- a/include/linux/uprobes.h
 +++ b/include/linux/uprobes.h
-@@ -76,6 +76,7 @@ enum uprobe_task_state {
- 	UTASK_BP_HIT,
- 	UTASK_SSTEP,
- 	UTASK_SSTEP_ACK,
-+	UTASK_SSTEP_TRAPPED,
- };
+@@ -46,6 +46,14 @@ struct uprobe_task_arch_info {};	/* arch specific task info */
+ /* Adjust the return address of a call insn */
+ #define UPROBES_FIX_CALL	0x2
  
- /*
++/* flags that denote/change uprobes behaviour */
++/* Have a copy of original instruction */
++#define UPROBES_COPY_INSN	0x1
++/* Dont run handlers when first register/ last unregister in progress*/
++#define UPROBES_RUN_HANDLER	0x2
++/* Can skip singlestep */
++#define UPROBES_SKIP_SSTEP	0x4
++
+ struct uprobe_consumer {
+ 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+ 	/*
+@@ -66,7 +74,7 @@ struct uprobe {
+ 	struct uprobe_consumer	*consumers;
+ 	struct inode		*inode;		/* Also hold a ref to inode */
+ 	loff_t			offset;
+-	int			copy;
++	int			flags;
+ 	u16			fixups;
+ 	u8			insn[MAX_UINSN_BYTES];
+ };
+@@ -131,6 +139,7 @@ extern int uprobe_post_notifier(struct pt_regs *regs);
+ extern int uprobe_bkpt_notifier(struct pt_regs *regs);
+ extern void uprobe_notify_resume(struct pt_regs *regs);
+ extern bool uprobe_deny_signal(void);
++extern bool __weak can_skip_xol(struct pt_regs *regs, struct uprobe *u);
+ #else /* CONFIG_UPROBES is not defined */
+ static inline int register_uprobe(struct inode *inode, loff_t offset,
+ 				struct uprobe_consumer *consumer)
 diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 3e7c4c5..f8c0f7c 100644
+index f8c0f7c..2493191 100644
 --- a/kernel/uprobes.c
 +++ b/kernel/uprobes.c
-@@ -1326,6 +1326,12 @@ bool uprobe_deny_signal(void)
- 		spin_lock_irq(&tsk->sighand->siglock);
- 		clear_tsk_thread_flag(tsk, TIF_SIGPENDING);
- 		spin_unlock_irq(&tsk->sighand->siglock);
+@@ -436,6 +436,9 @@ static struct uprobe *insert_uprobe(struct uprobe *uprobe)
+ 	spin_lock_irqsave(&uprobes_treelock, flags);
+ 	u = __insert_uprobe(uprobe);
+ 	spin_unlock_irqrestore(&uprobes_treelock, flags);
 +
-+		if (__fatal_signal_pending(tsk) || xol_was_trapped(tsk)) {
-+			utask->state = UTASK_SSTEP_TRAPPED;
-+			set_tsk_thread_flag(tsk, TIF_UPROBE);
-+			set_tsk_thread_flag(tsk, TIF_NOTIFY_RESUME);
-+		}
- 	}
- 
- 	return true;
-@@ -1382,6 +1388,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 		u = utask->active_uprobe;
- 		if (utask->state == UTASK_SSTEP_ACK)
- 			post_xol(u, regs);
-+		else if (utask->state == UTASK_SSTEP_TRAPPED)
-+			abort_xol(regs, u);
- 		else
- 			WARN_ON_ONCE(1);
- 
-@@ -1405,9 +1413,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 	if (u) {
- 		put_uprobe(u);
- 		set_instruction_pointer(regs, probept);
--	} else {
--		/*TODO Return SIGTRAP signal */
--	}
-+	} else
-+		send_sig(SIGTRAP, current, 0);
++	/* For now assume that the instruction need not be single-stepped */
++	uprobe->flags |= UPROBES_SKIP_SSTEP;
+ 	return u;
  }
  
+@@ -475,6 +478,9 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_consumer *consumer;
+ 
++	if (!(uprobe->flags & UPROBES_RUN_HANDLER))
++		return;
++
+ 	down_read(&uprobe->consumer_rwsem);
+ 	consumer = uprobe->consumers;
+ 	for (consumer = uprobe->consumers; consumer;
+@@ -594,7 +600,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 		return -EEXIST;
+ 
+ 	addr = (unsigned long)vaddr;
+-	if (!uprobe->copy) {
++	if (!(uprobe->flags & UPROBES_COPY_INSN)) {
+ 		ret = copy_insn(uprobe, vma, addr);
+ 		if (ret)
+ 			return ret;
+@@ -606,7 +612,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 		if (ret)
+ 			return ret;
+ 
+-		uprobe->copy = 1;
++		uprobe->flags |= UPROBES_COPY_INSN;
+ 	}
+ 	ret = set_bkpt(mm, uprobe, addr);
+ 	if (!ret)
+@@ -850,7 +856,8 @@ int register_uprobe(struct inode *inode, loff_t offset,
+ 		if (ret) {
+ 			uprobe->consumers = NULL;
+ 			__unregister_uprobe(inode, offset, uprobe);
+-		}
++		} else
++			uprobe->flags |= UPROBES_RUN_HANDLER;
+ 	}
+ 
+ 	mutex_unlock(uprobes_hash(inode));
+@@ -886,9 +893,10 @@ void unregister_uprobe(struct inode *inode, loff_t offset,
+ 		goto unreg_out;
+ 	}
+ 
+-	if (!uprobe->consumers)
++	if (!uprobe->consumers) {
+ 		__unregister_uprobe(inode, offset, uprobe);
+-
++		uprobe->flags &= ~UPROBES_RUN_HANDLER;
++	}
+ 	mutex_unlock(uprobes_hash(inode));
+ 
+ unreg_out:
+@@ -1337,6 +1345,12 @@ bool uprobe_deny_signal(void)
+ 	return true;
+ }
+ 
++bool __weak can_skip_xol(struct pt_regs *regs, struct uprobe *u)
++{
++	u->flags &= ~UPROBES_SKIP_SSTEP;
++	return false;
++}
++
  /*
+  * uprobe_notify_resume gets called in task context just before returning
+  * to userspace.
+@@ -1378,6 +1392,10 @@ void uprobe_notify_resume(struct pt_regs *regs)
+ 		}
+ 		utask->active_uprobe = u;
+ 		handler_chain(u, regs);
++
++		if (u->flags & UPROBES_SKIP_SSTEP && can_skip_xol(regs, u))
++			goto cleanup_ret;
++
+ 		utask->state = UTASK_SSTEP;
+ 		if (!pre_ssout(u, regs, probept))
+ 			user_enable_single_step(current);
+@@ -1411,8 +1429,10 @@ void uprobe_notify_resume(struct pt_regs *regs)
+ 		utask->state = UTASK_RUNNING;
+ 	}
+ 	if (u) {
++		if (!(u->flags & UPROBES_SKIP_SSTEP))
++			set_instruction_pointer(regs, probept);
++
+ 		put_uprobe(u);
+-		set_instruction_pointer(regs, probept);
+ 	} else
+ 		send_sig(SIGTRAP, current, 0);
+ }
 
