@@ -1,78 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab1KRWhh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:37:37 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:30147 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755754Ab1KRWhg convert rfc822-to-8bit (ORCPT
+	id S1757219Ab1KRWh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:37:59 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38047 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757002Ab1KRWh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:37:36 -0500
-X-IronPort-AV: E=Sophos;i="4.69,535,1315206000"; 
-   d="scan'208";a="600141382"
-Message-ID: <1321655828.10541.23.camel@lade.trondhjem.org>
-Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
- expiry. Try 2 with added man pages.
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: John Hughes <john@calvaedi.com>
-Cc: Jim Rees <rees@umich.edu>, John Hughes <john@Calva.COM>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 19 Nov 2011 00:37:08 +0200
-In-Reply-To: <4EC6DD4D.1010008@calvaedi.com>
-References: <4EC66D12.2090505@Calva.COM>
-		 <1321641333.2653.15.camel@lade.trondhjem.org>
-		 <4EC6AFA9.9000705@calvaedi.com>
-		 <1321648435.2653.53.camel@lade.trondhjem.org>
-		 <20111118205749.GA1680@umich.edu>
-	 <1321650239.2653.68.camel@lade.trondhjem.org>
-	 <4EC6DD4D.1010008@calvaedi.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 18 Nov 2011 22:37:09.0430 (UTC) FILETIME=[9B877560:01CCA642]
+	Fri, 18 Nov 2011 17:37:58 -0500
+Message-ID: <4EC6DE9E.2080709@solonet.org.ua>
+Date: Sat, 19 Nov 2011 00:39:26 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: Stephen Warren <swarren@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH v2] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use gpiolib
+References: <4EC572E1.1020209@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com> <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com> <4EC6DD8F.9070904@solonet.org.ua>
+In-Reply-To: <4EC6DD8F.9070904@solonet.org.ua>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 23:33 +0100, John Hughes wrote: 
-> On 11/18/2011 10:03 PM, Trond Myklebust wrote:
-> > On Fri, 2011-11-18 at 15:57 -0500, Jim Rees wrote:
-> >    
-> >>
-> >> The write() syscall doesn't indicate whether the data is safe or not.  That
-> >> would be the close() syscall.
-> >>      
-> > fsync(). Which may succeed if the user renews their ticket first.
-> > However you may still have data loss if dirty data has been lost because
-> > of EKEYEXPIRED returns on the WRITE RPC call...
-> >    
-> Only if the write(2) returned EKEYEXPIRED, surely,
+Make s3c24xx LEDS driver use gpiolib. Disable using pull-resistor when not
+using S3C24XX_LEDF_TRISTATE and enble it when in opposite case.
 
-What part of "write is asynchronous" is so hard to understand?
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+---
 
-> > Also, for the fsync() to return EKEYEXPIRED _after_ the user has renewed
-> > their ticket would seem counter-intuitive to most people.
-> >    
-> 
-> I would want to know if data was lost.
-> 
-> Intuition means nothing if I get an error.
-> 
-> If it were possible I'd like:
-> 
-> 1. write works
-> 1a. WRITE RPC fails, data stays in cache
-> 2. ticket renewed
-> 3. fsync works, data written
+Patch is against 3.0.9
+Tested on Mini2440 board which implements most complex case where both 
+S3C24XX_LEDF_ACTLOW and S3C24XX_LEDF_TRISTATE are set
 
-Which is _exactly_ how it works today, so what is the problem?
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index a77771d..63feda8 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -45,23 +45,35 @@ static void s3c24xx_led_set(struct led_classdev *led_cdev,
+ 	struct s3c24xx_gpio_led *led = to_gpio(led_cdev);
+ 	struct s3c24xx_led_platdata *pd = led->pdata;
+ 
+-	/* there will be a short delay between setting the output and
+-	 * going from output to input when using tristate. */
+-
+-	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
+-			    (pd->flags & S3C24XX_LEDF_ACTLOW));
+-
+-	if (pd->flags & S3C24XX_LEDF_TRISTATE)
+-		s3c2410_gpio_cfgpin(pd->gpio,
+-			value ? S3C2410_GPIO_OUTPUT : S3C2410_GPIO_INPUT);
++	/*
++	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
++	 * (only 100% brightness is supported)
++	 */
++	value = value ? 1 : 0;
++
++	if (pd->flags & S3C24XX_LEDF_TRISTATE) {
++		if (value) {
++			/* invert value if S3C24XX_LEDF_ACTLOW is set */
++			value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++			gpio_direction_output(pd->gpio, value);
++		} else {
++			gpio_direction_input(pd->gpio);
++		}
++	} else {
++		/* invert value if S3C24XX_LEDF_ACTLOW is set */
++		value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++		gpio_set_value(pd->gpio, value);
++	}
+ 
+ }
+ 
+ static int s3c24xx_led_remove(struct platform_device *dev)
+ {
++	struct s3c24xx_led_platdata *pdata = dev->dev.platform_data;
+ 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+ 
+ 	led_classdev_unregister(&led->cdev);
++	gpio_free(pdata->gpio);
+ 	kfree(led);
+ 
+ 	return 0;
+@@ -76,7 +88,8 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	led = kzalloc(sizeof(struct s3c24xx_gpio_led), GFP_KERNEL);
+ 	if (led == NULL) {
+ 		dev_err(&dev->dev, "No memory for device\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_kzalloc;
+ 	}
+ 
+ 	platform_set_drvdata(dev, led);
+@@ -88,15 +101,33 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 
+ 	led->pdata = pdata;
+ 
+-	/* no point in having a pull-up if we are always driving */
++	ret = gpio_request(pdata->gpio, pdata->name);
++	if (ret < 0) {
++		dev_err(&dev->dev, "gpio_request failed\n");
++		goto err_gpio_request;
++	}
+ 
+ 	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
++		/*
++		 * pull is needed here to protect pin from being left
++		 * floating (this is dangerous since pin becomes more
++		 * sensitive to ESD)
++		 */
++		ret = s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_UP);
++		if (ret)
++			s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_DOWN);
++		/* initially turn off led */
++		ret = gpio_direction_input(pdata->gpio);
+ 	} else {
+-		s3c2410_gpio_pullup(pdata->gpio, 0);
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
++		/* no point in having a pull-up as we are always driving */
++		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
++		/* initially turn off led */
++		ret = gpio_direction_output(pdata->gpio,
++				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
++	}
++	if (ret < 0) {
++		dev_err(&dev->dev, "can't set gpio direction\n");
++		goto err_gpio_set_direction;
+ 	}
+ 
+ 	/* register our new led device */
+@@ -104,11 +135,18 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	ret = led_classdev_register(&dev->dev, &led->cdev);
+ 	if (ret < 0) {
+ 		dev_err(&dev->dev, "led_classdev_register failed\n");
+-		kfree(led);
+-		return ret;
++		goto err_led_classdev_register;
+ 	}
+ 
+ 	return 0;
++
++err_led_classdev_register:
++err_gpio_set_direction:
++		gpio_free(pdata->gpio);
++err_gpio_request:
++		kfree(led);
++err_kzalloc:
++		return ret;
+ }
+ 
+ static struct platform_driver s3c24xx_led_driver = {
 
