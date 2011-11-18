@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab1KRJ7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:59:50 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:57011 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab1KRJ7r (ORCPT
+	id S1757302Ab1KRKDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:03:18 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44727 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab1KRKDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:59:47 -0500
-Subject: tracing vs. string formatting
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 10:59:42 +0100
-Message-ID: <1321610382.10266.19.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 18 Nov 2011 05:03:17 -0500
+Message-ID: <4EC62D58.103@linux.vnet.ibm.com>
+Date: Fri, 18 Nov 2011 18:03:04 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 6/6] KVM: introduce a table to map slot id to index
+ in memslots arry
+References: <4EC6226B.3080408@linux.vnet.ibm.com> <4EC6235A.90705@linux.vnet.ibm.com> <1321609536.8010.30.camel@lappy>
+In-Reply-To: <1321609536.8010.30.camel@lappy>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 11111723-6102-0000-0000-0000003200EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I'm thinking about adding tracing to all debug messages in our driver
-(iwlwifi) so we can ask people to record all debug messages (which are
-way too many, some can be removed), and then we could post-process it
-and only show selectively the ones we care about.
-
-Converting all the messages and/or adding tracing at all the points
-where we have messages now would be a huge effort, and sometimes the
-messages are all that we can get from users, so we wouldn't want to get
-rid of them either.
-
-Therefore I was thinking we should just trace the messages.
-
-The issue I ran into is that obviously almost all messages need string
-formatting. But to put them into the trace, we have two choices now that
-I can see:
-
-1) format the messages into a temporary buffer, then copy into the trace
-2) format the messages into the ringbuffer, reserving the max length we
-   think we might need
-
-Both have obvious problems: The trivial implementation of 1) is stupid
-if tracing is disabled and at least incurs an extra copy. 2) means that
-I need to reserve say 200 bytes for each entry and then will end up not
-using a large chunk of it in most cases.
-
-Is there any way to reserve those 200 bytes, but then when we commit
-update the trace entry length and also un-reserve whatever size we
-didn't need? Then we could directly vsnprintf into the ring-buffer and
-use the return value to update from 200 bytes reserved to say 20.
-
-The API I'm envisioning would look a bit like this:
-
-TRACE_EVENT(foo_dbg,
-        TP_PROTO(const char *fmt, va_list args),
-        TP_ARGS(fmt, args),
-        TP_STRUCT__entry(
-		/* 200 is the max length we expect/reserve */
-                __fmt_string(msg, 200)
-        ),
-        TP_fast_assign(
-                __vprint_str(msg, fmt, args);
-        ),
-        TP_printk("%s", __get_str(msg))
-);
+On 11/18/2011 05:45 PM, Sasha Levin wrote:
 
 
-Behind the scenes somehow the 200 would get reserved, propagated,
-__vprint_str would call something like
-	r = vsnprintf(__get_str(msg), 200, fmt, args);
+>>  struct kvm {
+>> @@ -340,14 +342,13 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+>>  static inline struct kvm_memory_slot *
+>>  id_to_memslot(struct kvm_memslots *slots, int id)
+>>  {
+>> -	int i;
+>> +	int index = slots->id_to_index[id];
+>> +	struct kvm_memory_slot *slot;
+>>
+>> -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
+>> -		if (slots->memslots[i].id == id)
+>> -			return &slots->memslots[i];
+>> +	slot = &slots->memslots[index];
+>>
+>> -	WARN_ON(1);
+>> -	return NULL;
+>> +	WARN_ON(slot->id != id);
+>> +	return slot;
+>>  }
+> 
+> If we didn't find the right memslot we shouldn't be returning a wrong
+> one, we should be failing.
+> 
 
-and use r to shrink the entry if possible.
 
-
-
-Now obviously I have no idea if it's even possible to shrink an entry
-afterwards :-) It seems like it should be since the local CPU buffer is
-locked in some way, but ... what do I know. Interrupts coming in would
-probably have to make it not shrink the entry, but that seems feasible
-too -- in that case you'd just have the 200 bytes used but not filled
-except for the message (though then maybe you have to memset the
-remainder to 0).
-
-
-Does this sound completely stupid? Yes maybe adding tracing (is there a
-way to cause certain tracepoints to be printk'ed?) would be better but
-converting all the messages to like a few hundred tracepoints would be a
-huge waste as well.
-
-
-If you made it this far -- thanks! :-)
-
-johannes
+Um, in the current code, the "id" has already been checked by the caller,
+that means "id" should be < KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS, so,
+if we can not find the memslot for this slot, it must be a bug.
 
