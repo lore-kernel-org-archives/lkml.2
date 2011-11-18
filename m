@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1KRMCH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 07:02:07 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:44724 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab1KRMCE (ORCPT
+	id S1755988Ab1KRMDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 07:03:33 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10324 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab1KRMDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 07:02:04 -0500
-Date: Fri, 18 Nov 2011 13:02:01 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111118120201.GA1642@x4.trippels.de>
-References: <20111118072519.GA1615@x4.trippels.de>
- <20111118075521.GB1615@x4.trippels.de>
- <1321605837.30341.551.camel@debian>
- <20111118085436.GC1615@x4.trippels.de>
+	Fri, 18 Nov 2011 07:03:31 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 18 Nov 2011 04:03:13 -0800
+Date: Fri, 18 Nov 2011 14:03:09 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Marc Dietrich <marvin24@gmx.de>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
+Message-ID: <20111118120309.GY19069@tbergstrom-lnx.Nvidia.com>
+References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111118085436.GC1615@x4.trippels.de>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.18 at 09:54 +0100, Markus Trippelsdorf wrote:
-> On 2011.11.18 at 16:43 +0800, Alex,Shi wrote:
-> > > > 
-> > > > The dirty flag comes from a bunch of unrelated xfs patches from Christoph, that
-> > > > I'm testing right now.
+On Thu, Nov 17, 2011 at 07:51:35PM +0100, Stephen Warren wrote:
+> Peter De Schrijver wrote at Thursday, November 17, 2011 8:07 AM:
+> > Convert tegra20 IRQ intialization to the GIC devicetree binding. Modify the
+> > interrupt definitions in the dts files according to
+> > Documentation/devicetree/bindings/arm/gic.txt
 > > 
-> > Where is the xfs patchset? I am wondering if it is due to slub code. 
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> 
+> tegra-harmony.dts contains an interrupts property that wasn't updated,
+> for the WM8903 codec.
+> 
+> board-dt.c contains logic to search for a node with compatible of
+> nvidia,tegra20-gic, and then call irq_domain_add_simple. I assume that
+> logic is replaced by the new common GIC code, and so should be removed
+> from board-dt.c entirely?
+> 
+> >  	serial@70006000 {
+> >  		compatible = "nvidia,tegra20-uart";
+> > -		reg = <0x70006000 0x40>;
+> > +		reg = <0x70006000 0x040>;
+> 
+> Here and a few other places, why change the reg property?
 
-I begin to wonder if this might be the result of a compiler bug. 
-The kernel in question was compiled with gcc version 4.7.0 20111117. And
-there was commit to the gcc repository today that looks suspicious:
-http://gcc.gnu.org/viewcvs?view=revision&revision=181466
+Oops. That was probably an overly agressive search and replace :)
 
-Will have to dig deeper, but if this turns out to be the cause of the
-issue, I apologize for the noise.
+Cheers,
 
--- 
-Markus
+Peter.
