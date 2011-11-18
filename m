@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab1KRN3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:29:42 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47295 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab1KRN3l (ORCPT
+	id S1757757Ab1KRNdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:33:18 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.182]:42977 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414Ab1KRNdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:29:41 -0500
-Date: Fri, 18 Nov 2011 11:30:17 -0200
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: linux-next: Tree for Nov 17 (bluetooth)
-Message-ID: <20111118133017.GA2131@joana>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	linux-bluetooth@vger.kernel.org
-References: <20111117150733.a70faf2c9030d511d5367e1e@canb.auug.org.au>
- <4EC5496F.2080509@xenotime.net>
- <20111118095855.GB9034@aemeltch-MOBL1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118095855.GB9034@aemeltch-MOBL1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Nov 2011 08:33:16 -0500
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <cover.1321616787.git.n.voss@weinmann.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Fri, 18 Nov 2011 12:46:27 +0100
+Subject: [PATCH v6 0/5] AT91: replace broken TWI driver i2c-at91.c
+To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: ben-linux@fluff.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrei,
+The old driver has two main deficencies:
+i)  No repeated start (Sr) condiction is possible, this makes it unusable
+    e.g. for most SMBus transfers.
+ii) I/O was done with polling/busy waiting what caused over-/underruns
+    even at light system loads and clock speeds.
 
-* Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com> [2011-11-18 11:58:58 +0200]:
+The new driver overcomes these deficencies and in addition allows for
+more than one TWI interface.
 
-> Hi Randy,
-> 
-> On Thu, Nov 17, 2011 at 09:50:39AM -0800, Randy Dunlap wrote:
-> > On 11/16/2011 08:07 PM, Stephen Rothwell wrote:
-> > > Hi all,
-> > 
-> > 
-> > When CONFIG_BT_L2CAP is not enabled:
-> > 
-> > net/built-in.o: In function `hci_dev_open':
-> > (.text+0xdce9a): undefined reference to `enable_hs'
-> 
-> Despite not enabling L2CAP sounds strange we might find solution even for
-> this usage :-)
-> I am thinking about moving enable_hs to common part not depending on
-> CONFIG_BT_L2CAP option:
+A remaining limitation is the fact, that only one repeated start is
+possible (two concatenated messages). This limitation is imposed by
+the hardware. However, this should not be a problem as all common
+i2c-client communication does not rely on more than one repeated start.
 
-This is ok, please send a proper git patch so I can apply it.
+v6: Patch 5/5: support for I2C_SMBUS_BLOCK_DATA transfers.
+    Better use of clk_(un)prepare().
+    More sensible transfer timeout.
+v5: Another round of review comments from Ryan Mallon, Felipe Balbi
+    and Russell King: convert twi clk to use .dev_id, cleanups
+v4: Integrated more review comments from Ryan Mallon and Felipe Balbi:
+    Moved register include file to local include, code cleanups
+v3: Integrated review comments from Ryan Mallon and Felipe Balbi
+v2: Fixed whitespace issue
 
-	Gustavo
+Nikolaus Voss (5):
+  drivers/i2c/busses/i2c-at91.c: remove broken driver
+  Replace clk_lookup.con_id with clk_lookup.dev_id entries for twi clk
+  drivers/i2c/busses/i2c-at91.c: add new driver
+  G45 TWI: remove open drain setting for twi function gpios
+  i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
+
+ arch/arm/mach-at91/at91cap9.c              |    1 +
+ arch/arm/mach-at91/at91rm9200.c            |    1 +
+ arch/arm/mach-at91/at91sam9260.c           |    1 +
+ arch/arm/mach-at91/at91sam9261.c           |    1 +
+ arch/arm/mach-at91/at91sam9263.c           |    1 +
+ arch/arm/mach-at91/at91sam9g45.c           |    2 +
+ arch/arm/mach-at91/at91sam9g45_devices.c   |    6 -
+ arch/arm/mach-at91/at91sam9rl.c            |    2 +
+ arch/arm/mach-at91/include/mach/at91_twi.h |   68 ----
+ drivers/i2c/busses/Kconfig                 |   11 +-
+ drivers/i2c/busses/i2c-at91.c              |  527 +++++++++++++++++-----------
+ drivers/i2c/busses/i2c-at91.h              |   80 +++++
+ 12 files changed, 406 insertions(+), 295 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_twi.h
+ create mode 100644 drivers/i2c/busses/i2c-at91.h
+
+-- 
+1.7.5.4
+
