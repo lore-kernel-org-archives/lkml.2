@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab1KRJpm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:45:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62794 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221Ab1KRJpk (ORCPT
+	id S1757183Ab1KRJqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:46:18 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51284 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756669Ab1KRJqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:45:40 -0500
-Subject: Re: [PATCH v2 6/6] KVM: introduce a table to map slot id to index
- in memslots arry
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-In-Reply-To: <4EC6235A.90705@linux.vnet.ibm.com>
-References: <4EC6226B.3080408@linux.vnet.ibm.com>
-	 <4EC6235A.90705@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Fri, 18 Nov 2011 11:45:36 +0200
-Message-ID: <1321609536.8010.30.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Fri, 18 Nov 2011 04:46:17 -0500
+Message-ID: <4EC62956.8060608@linux.vnet.ibm.com>
+Date: Fri, 18 Nov 2011 15:15:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] PM/Hibernation: Fix the early termination of test
+ modes
+References: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com> <201111181020.44167.rjw@sisk.pl> <4EC6250F.4010501@linux.vnet.ibm.com>
+In-Reply-To: <4EC6250F.4010501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 11111809-5564-0000-0000-000000286D59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 17:20 +0800, Xiao Guangrong wrote:
-> The operation of getting dirty log is frequency When framebuffer-based
-> displays are used(for example, Xwindow), so, we introduce a mapping table
-> to speed up id_to_memslot()
+On 11/18/2011 02:57 PM, Srivatsa S. Bhat wrote:
+> On 11/18/2011 02:50 PM, Rafael J. Wysocki wrote:
+>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+>>> index b4511b6..257e8e7 100644
+>>> --- a/kernel/power/hibernate.c
+>>> +++ b/kernel/power/hibernate.c
+>>> @@ -55,6 +55,8 @@ enum {
+>>>  
+>>>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
+>>>  
+>>> +static bool freezer_test_done;
+>>> +
+>>>  static const struct platform_hibernation_ops *hibernation_ops;
+>>>  
+>>>  /**
+>>> @@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
+>>>  	if (error)
+>>>  		goto Close;
+>>>  
+>>> +	if (hibernation_test(TEST_FREEZER) ||
+>>> +		hibernation_testmode(HIBERNATION_TESTPROC)) {
+>>> +
+>>> +		/*
+>>> +		 * Indicate to the caller that we are returning due to a
+>>> +		 * successful freezer test.
+>>> +		 */
+>>> +		freezer_test_done = true;
+>>> +		goto Close;
+>>> +	}
+>>> +
+>>>  	error = dpm_prepare(PMSG_FREEZE);
+>>>  	if (error)
+>>>  		goto Complete_devices;
+>>> @@ -641,15 +654,13 @@ int hibernate(void)
+>>>  	if (error)
+>>>  		goto Finish;
+>>>  
+>>> -	if (hibernation_test(TEST_FREEZER))
+>>> -		goto Thaw;
+>>> -
+>>> -	if (hibernation_testmode(HIBERNATION_TESTPROC))
+>>> -		goto Thaw;
+>>> -
+>>>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+>>>  	if (error)
+>>>  		goto Thaw;
+>>> +	if (freezer_test_done) {
+>>> +		freezer_test_done = false;
+>>> +		goto Thaw;
+>>> +	}
+>>
+>> What happens if hibernation_snapshot() and freezer_test_done is 'true'?
+>> Won't that leek freezer_test_done to the next hibernation cycle?
+>>
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  include/linux/kvm_host.h |   13 +++++++------
->  virt/kvm/kvm_main.c      |    7 ++++++-
->  2 files changed, 13 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 83b396a..fbf66eb 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -238,6 +238,8 @@ struct kvm_irq_routing_table {};
->  struct kvm_memslots {
->  	u64 generation;
->  	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
-> +	/* The mapping table from slot id to the index in memslots[]. */
-> +	int id_to_index[KVM_MEM_SLOTS_NUM];
->  };
-> 
->  struct kvm {
-> @@ -340,14 +342,13 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
->  static inline struct kvm_memory_slot *
->  id_to_memslot(struct kvm_memslots *slots, int id)
->  {
-> -	int i;
-> +	int index = slots->id_to_index[id];
-> +	struct kvm_memory_slot *slot;
-> 
-> -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-> -		if (slots->memslots[i].id == id)
-> -			return &slots->memslots[i];
-> +	slot = &slots->memslots[index];
-> 
-> -	WARN_ON(1);
-> -	return NULL;
-> +	WARN_ON(slot->id != id);
-> +	return slot;
->  }
+> Oh yes, thanks for catching that! I'll fix that and send an updated patch.
+>
 
-If we didn't find the right memslot we shouldn't be returning a wrong
-one, we should be failing.
+Sorry, I think I hit reply too soon.
+To restate your question, you are asking if freezer_test_done was set in
+hibernation_snapshot() and then there was a genuine error in
+hibernation_snapshot() which it returned, then won't freezer_test_done
+leak to the next cycle.., right?
 
--- 
+If there is a genuine error before hibernation_test(TEST_FREEZER)... is
+done, then we will never set freezer_test_done flag to true.
 
-Sasha.
+And whenever freezer_test_done is set (inside hibernation_snapshot) there
+is no way it will continue further executing normal code. It will jump to
+the Close label and come out, so that here in hibernate(), the first
+check for error will fail (because it returned 0) and the subsequent
+check for freezer_test_done will succeed. So I don't see how it can leak.
+
+Or, am I missing something?
+
+Thanks,
+Srivatsa S. Bhat
 
