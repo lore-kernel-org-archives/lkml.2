@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab1KRJhp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:37:45 -0500
-Received: from mga03.intel.com ([143.182.124.21]:56156 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757204Ab1KRJhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:37:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,532,1315206000"; 
-   d="scan'208";a="76540678"
-Date: Fri, 18 Nov 2011 17:37:40 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] drm/i915: hot removal notification to HDMI audio
- driver
-Message-ID: <20111118093740.GA2799@localhost>
-References: <20111116132004.299754849@intel.com>
- <20111116132221.374839261@intel.com>
- <20111116133548.GA23804@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111116133548.GA23804@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756616Ab1KRJl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:41:57 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62400 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab1KRJl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 04:41:56 -0500
+Subject: Re: [PATCH v2 0/6] KVM: optimize memslots searching
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+In-Reply-To: <4EC6226B.3080408@linux.vnet.ibm.com>
+References: <4EC6226B.3080408@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Fri, 18 Nov 2011 11:41:50 +0200
+Message-ID: <1321609310.8010.28.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update: Just tested DP and its working!
-
-However, it's found that hot plug under X won't work...
-
-The previous hot plug tests are done in KMS console which are all
-fine: on re-inserting the monitor, ->mode_set will be called and
-HDMI/DP audio will be re-enabled and ELD be transfered.
-
-However when in X, ->mode_set won't be called at all.  Only
-->get_modes and ->detect are called...
-
-Thanks,
-Fengguang
-
-On Wed, Nov 16, 2011 at 09:35:48PM +0800, Wu Fengguang wrote:
-> Sorry forgot to remove this left over chunk...
+On Fri, 2011-11-18 at 17:16 +0800, Xiao Guangrong wrote:
+> This is the more work base on my v1 patchset which is posted some months ago,
+> it can be found at:
+> https://lkml.org/lkml/2011/2/22/68
 > 
-> Note that I've not yet got the hardware to test the DisplayPort part
-> of this patch, but should be able to do so this week.
+> Change log:
+> - sort memslots base on its size and do the line search instead of binary
+>   search base on gfn, it is from Avi's idea.
+> - in order to reduce cache footprint, memslots are sorted in the array of
+>   kvm->memslots->memslots[] and introduce a table to map slot id to index in
+>   the array
 > 
-> > --- linux.orig/drivers/gpu/drm/i915/intel_drv.h	2011-11-16 20:54:27.000000000 +0800
-> > +++ linux/drivers/gpu/drm/i915/intel_drv.h	2011-11-16 21:19:42.000000000 +0800
-> > @@ -382,6 +382,10 @@ extern void intel_fb_restore_mode(struct
-> >  extern void intel_init_clock_gating(struct drm_device *dev);
-> >  extern void intel_write_eld(struct drm_encoder *encoder,
-> >  			    struct drm_display_mode *mode);
-> > +extern void intel_hotplug_status(struct drm_device *dev,
-> > +			  struct drm_connector *connector,
-> > +			  struct drm_crtc *crtc,
-> > +			  enum drm_connector_status status);
-> >  extern void intel_cpt_verify_modeset(struct drm_device *dev, int pipe);
-> >  
-> >  #endif /* __INTEL_DRV_H__ */
+> There is the performance result:
+> 
+> autotest for RHEL.6.1 setup/boot/reboot/shutdown(average):
+> ept=1:	before: 449.5	after: 447.8
+> ept=0:	before: 532.7	after: 529.8
+> 
+> kernbench(average):
+> ept=1:	before: 127.94	after: 126.98
+> ept=0:	before: 196.85	after: 189.66
+
+Hi,
+
+Do these patches depend on any other patches? Looks like they don't
+apply on kvm-next.
+
+-- 
+
+Sasha.
+
