@@ -1,33 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab1KRN4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:56:09 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:61522 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab1KRN4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:56:08 -0500
-Date: Fri, 18 Nov 2011 14:55:31 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: balbi@ti.com
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH V2 0/2] debugfs: a tool to print 32-bit registers
-Message-ID: <20111118135531.GA1548@mail.gnudd.com>
+	id S1756897Ab1KROAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 09:00:06 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:55089 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933Ab1KROAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 09:00:04 -0500
+Message-ID: <4EC664D3.9030402@Calva.COM>
+Date: Fri, 18 Nov 2011 14:59:47 +0100
+From: John Hughes <john@Calva.COM>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20111118133641.GE9999@legolas.emea.dhcp.ti.com>
-References: <20111118133641.GE9999@legolas.emea.dhcp.ti.com>
-  <20111118002049.GA24806@mail.gnudd.com>
+To: Steve Dickson <SteveD@redhat.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry
+References: <4EC6426A.3020306@Calva.COM> <4EC66148.4020003@RedHat.com>
+In-Reply-To: <4EC66148.4020003@RedHat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -ENOPATCH ?? I didn't receive any replies to this mail with the patch.
+On 18/11/11 14:44, Steve Dickson wrote:
+>
+> On 11/18/2011 06:32 AM, John Hughes wrote:
+>> By adding a new option to rpc.gssd the administrator can choose whether she wants the old "EACCESS on ticket expiry" or the new "wait for new ticket" behaviour.
+>>
+>>
+> I am not too keen this idea at all.... I've never been a fan of
+> added command line arguments for this purpose..
 
-You are right. Thanks and apologies. I mistyped Giancarlo Asnaghi's alias
-in all three, and the sending was interrupted. I resent now.
+Nope, me neither.
 
-thanks
-/alessandro
+> . Plus there is no man page update...
+
+Okeydoke, let's see, where's the man page...
+
+$ find  /usr/share/man* -name 'rcp.gssd*'
+
+find: cannot get current directory: Permission denied
+
+
+AArgh!  :-)  Yum, this dogfood tastes nice!
+
+> Also please post patches in-line
+> the email not as email attachments...
+
+De gustibus non disputandum est.
+
+New version of patch on it's way.
+
+
