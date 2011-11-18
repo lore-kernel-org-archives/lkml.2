@@ -1,60 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032Ab1KRXLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:11:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43394 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757283Ab1KRXKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:10:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,536,1315206000"; 
-   d="scan'208";a="92706441"
-Message-Id: <20111118230554.105376150@sbsiddha-desk.sc.intel.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 18 Nov 2011 15:03:28 -0800
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [patch 5/6] sched: disable sched feature TTWU_QUEUE by default
-References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
-Content-Disposition: inline; filename=disable_sched_ttwu_queue.patch
+	id S1758063Ab1KRXLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:11:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52934 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab1KRXLs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 18:11:48 -0500
+Date: Fri, 18 Nov 2011 15:11:22 -0800
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-e5e78d08f3ab3094783b8df08a5b6d1d1a56a58f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, rostedt@goodmis.org, srostedt@redhat.com,
+        tglx@linutronix.de, sim@hostway.ca
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, srostedt@redhat.com,
+        tglx@linutronix.de, sim@hostway.ca
+In-Reply-To: <20111025202049.GB25043@hostway.ca>
+References: <20111025202049.GB25043@hostway.ca>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] lockdep: Show subclass in pretty print of lockdep output
+Git-Commit-ID: e5e78d08f3ab3094783b8df08a5b6d1d1a56a58f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:11:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Context-switch intensive microbenchmark on a 8-socket system had
-~600K times more resched IPI's on each logical CPU with this feature enabled
-by default. Disabling this features makes that microbenchmark perform 5 times
-better.
+Commit-ID:  e5e78d08f3ab3094783b8df08a5b6d1d1a56a58f
+Gitweb:     http://git.kernel.org/tip/e5e78d08f3ab3094783b8df08a5b6d1d1a56a58f
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Wed, 2 Nov 2011 20:24:16 -0400
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 7 Nov 2011 11:01:46 -0500
 
-Also disabling this feature showed 2% performance improvement on a 8-socket
-OLTP workload.
+lockdep: Show subclass in pretty print of lockdep output
 
-More heurestics are needed when and how to use this feature by default.
-For now, disable it by default.
+The pretty print of the lockdep debug splat uses just the lock name
+to show how the locking scenario happens. But when it comes to
+nesting locks, the output becomes confusing which takes away the point
+of the pretty printing of the lock scenario.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Without displaying the subclass info, we get the following output:
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(slock-AF_INET);
+                                lock(slock-AF_INET);
+                                lock(slock-AF_INET);
+   lock(slock-AF_INET);
+
+  *** DEADLOCK ***
+
+The above looks more of a A->A locking bug than a A->B B->A.
+By adding the subclass to the output, we can see what really happened:
+
+ other info that might help us debug this:
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(slock-AF_INET);
+                                lock(slock-AF_INET/1);
+                                lock(slock-AF_INET);
+   lock(slock-AF_INET/1);
+
+  *** DEADLOCK ***
+
+This bug was discovered while tracking down a real bug caught by lockdep.
+
+Link: http://lkml.kernel.org/r/20111025202049.GB25043@hostway.ca
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/features.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/lockdep.c |   30 +++++++++++++-----------------
+ 1 files changed, 13 insertions(+), 17 deletions(-)
 
-Index: tip/kernel/sched/features.h
-===================================================================
---- tip.orig/kernel/sched/features.h
-+++ tip/kernel/sched/features.h
-@@ -64,7 +64,7 @@ SCHED_FEAT(NONTASK_POWER, 1)
-  * Queue remote wakeups on the target CPU and process them
-  * using the scheduler IPI. Reduces rq->lock contention/bounces.
-  */
--SCHED_FEAT(TTWU_QUEUE, 1)
-+SCHED_FEAT(TTWU_QUEUE, 0)
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 91d67ce..6bd915d 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -490,36 +490,32 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
+ 	usage[i] = '\0';
+ }
  
- SCHED_FEAT(FORCE_SD_OVERLAP, 0)
- SCHED_FEAT(RT_RUNTIME_SHARE, 1)
-
-
+-static int __print_lock_name(struct lock_class *class)
++static void __print_lock_name(struct lock_class *class)
+ {
+ 	char str[KSYM_NAME_LEN];
+ 	const char *name;
+ 
+ 	name = class->name;
+-	if (!name)
+-		name = __get_key_name(class->key, str);
+-
+-	return printk("%s", name);
+-}
+-
+-static void print_lock_name(struct lock_class *class)
+-{
+-	char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
+-	const char *name;
+-
+-	get_usage_chars(class, usage);
+-
+-	name = class->name;
+ 	if (!name) {
+ 		name = __get_key_name(class->key, str);
+-		printk(" (%s", name);
++		printk("%s", name);
+ 	} else {
+-		printk(" (%s", name);
++		printk("%s", name);
+ 		if (class->name_version > 1)
+ 			printk("#%d", class->name_version);
+ 		if (class->subclass)
+ 			printk("/%d", class->subclass);
+ 	}
++}
++
++static void print_lock_name(struct lock_class *class)
++{
++	char usage[LOCK_USAGE_CHARS];
++
++	get_usage_chars(class, usage);
++
++	printk(" (");
++	__print_lock_name(class);
+ 	printk("){%s}", usage);
+ }
+ 
