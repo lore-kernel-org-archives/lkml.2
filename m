@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab1KRNlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:41:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60799 "EHLO mga02.intel.com"
+	id S1757293Ab1KRNos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:44:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab1KRNlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:41:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="77241728"
-Date: Fri, 18 Nov 2011 15:41:17 +0200
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: linux-next: Tree for Nov 17 (bluetooth)
-Message-ID: <20111118134115.GB24392@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	linux-bluetooth@vger.kernel.org
-References: <20111117150733.a70faf2c9030d511d5367e1e@canb.auug.org.au>
- <4EC5496F.2080509@xenotime.net>
- <20111118095855.GB9034@aemeltch-MOBL1>
- <20111118133017.GA2131@joana>
+	id S1753804Ab1KRNor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 08:44:47 -0500
+Message-ID: <4EC66148.4020003@RedHat.com>
+Date: Fri, 18 Nov 2011 08:44:40 -0500
+From: Steve Dickson <SteveD@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118133017.GA2131@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Hughes <john@Calva.COM>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry
+References: <4EC6426A.3020306@Calva.COM>
+In-Reply-To: <4EC6426A.3020306@Calva.COM>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
 
-On Fri, Nov 18, 2011 at 11:30:17AM -0200, Gustavo Padovan wrote:
-> Hi Andrei,
-> 
-> * Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com> [2011-11-18 11:58:58 +0200]:
-> 
-> > Hi Randy,
-> > 
-> > On Thu, Nov 17, 2011 at 09:50:39AM -0800, Randy Dunlap wrote:
-> > > On 11/16/2011 08:07 PM, Stephen Rothwell wrote:
-> > > > Hi all,
-> > > 
-> > > 
-> > > When CONFIG_BT_L2CAP is not enabled:
-> > > 
-> > > net/built-in.o: In function `hci_dev_open':
-> > > (.text+0xdce9a): undefined reference to `enable_hs'
-> > 
-> > Despite not enabling L2CAP sounds strange we might find solution even for
-> > this usage :-)
-> > I am thinking about moving enable_hs to common part not depending on
-> > CONFIG_BT_L2CAP option:
-> 
-> This is ok, please send a proper git patch so I can apply it.
 
-The patch is already sent to linux-bluetooth
+On 11/18/2011 06:32 AM, John Hughes wrote:
+> By adding a new option to rpc.gssd the administrator can choose whether she wants the old "EACCESS on ticket expiry" or the new "wait for new ticket" behaviour.
+> 
+> 
+I am not too keen this idea at all.... I've never been a fan of
+added command line arguments for this purpose... Plus there 
+is no man page update... Also please post patches in-line
+the email not as email attachments...
 
-Best regards 
-Andrei Emeltchenko 
+If commit 2c64348 which causes the process to hang when 
+its kerberos ticket expires is a regression... then so
+be it... lets revert that commit and have the process error
+out with EPERM.... It sounds like the apps would rather
+have the error than the hanging... 
+
+I think the answer to all this is have the ticket
+renewed before it expires. There is a daemon call sssd
+that is part of the FreeIPA project that will supposedly
+do that for us... I'm looking into it... 
+
+steved.
+ 
