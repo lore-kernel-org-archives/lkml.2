@@ -1,110 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab1KRJRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:17:15 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49362 "EHLO
+	id S1756605Ab1KRJRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:17:53 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49506 "EHLO
 	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab1KRJRN (ORCPT
+	with ESMTP id S1751607Ab1KRJRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:17:13 -0500
-Message-ID: <4EC6228E.7090402@linux.vnet.ibm.com>
-Date: Fri, 18 Nov 2011 17:17:02 +0800
+	Fri, 18 Nov 2011 04:17:51 -0500
+Message-ID: <4EC622B4.3090802@linux.vnet.ibm.com>
+Date: Fri, 18 Nov 2011 17:17:40 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 1/6] KVM: introduce KVM_MEM_SLOTS_NUM macro
+Subject: [PATCH v2 2/6] KVM: introduce update_memslots function
 References: <4EC6226B.3080408@linux.vnet.ibm.com>
 In-Reply-To: <4EC6226B.3080408@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 11111809-8256-0000-0000-000000336B13
+x-cbid: 11111809-8256-0000-0000-000000336B7C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce KVM_MEM_SLOTS_NUM macro to instead of
-KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS
+Introduce update_memslots to update slot which will be update to
+kvm->memslots
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_host.h |    4 +++-
- arch/x86/kvm/mmu.c              |    2 +-
- include/linux/kvm_host.h        |    7 +++++--
- virt/kvm/kvm_main.c             |    2 +-
- 4 files changed, 10 insertions(+), 5 deletions(-)
+ arch/x86/kvm/x86.c       |    2 +-
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |   22 +++++++++++++++-------
+ 3 files changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 6d83264..b80a310 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -31,6 +31,8 @@
- #define KVM_MEMORY_SLOTS 32
- /* memory slots that does not exposed to userspace */
- #define KVM_PRIVATE_MEM_SLOTS 4
-+#define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
-+
- #define KVM_MMIO_SIZE 16
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 9eff4af..56d1a39 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3504,7 +3504,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 			goto out;
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+ 		slots->memslots[log->slot].dirty_bitmap = dirty_bitmap;
+-		slots->generation++;
++		update_memslots(slots, NULL);
 
- #define KVM_PIO_PAGE_OFFSET 1
-@@ -228,7 +230,7 @@ struct kvm_mmu_page {
- 	 * One bit set per slot which has memory
- 	 * in this shadow page.
- 	 */
--	DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
-+	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	bool unsync;
- 	int root_count;          /* Currently serving as active root */
- 	unsigned int unsync_children;
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a9b3a32..e6c2755 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1337,7 +1337,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
- 						  PAGE_SIZE);
- 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
- 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
--	bitmap_zero(sp->slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
-+	bitmap_zero(sp->slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	sp->parent_ptes = 0;
- 	mmu_page_add_parent_pte(vcpu, sp, parent_pte);
- 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
+ 		old_slots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c6a2ec9..a42d50b 100644
+index a42d50b..bb8728e 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
-@@ -226,11 +226,14 @@ struct kvm_irq_routing_table {};
+@@ -319,6 +319,7 @@ void kvm_exit(void);
 
- #endif
+ void kvm_get_kvm(struct kvm *kvm);
+ void kvm_put_kvm(struct kvm *kvm);
++void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new);
 
-+#ifndef KVM_MEM_SLOTS_NUM
-+#define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
-+#endif
-+
- struct kvm_memslots {
- 	int nmemslots;
- 	u64 generation;
--	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
--					KVM_PRIVATE_MEM_SLOTS];
-+	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
- };
-
- struct kvm {
+ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+ {
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index d9cfb78..eb55a11 100644
+index eb55a11..0fb3aeb 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -662,7 +662,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 			(void __user *)(unsigned long)mem->userspace_addr,
- 			mem->memory_size)))
- 		goto out;
--	if (mem->slot >= KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
-+	if (mem->slot >= KVM_MEM_SLOTS_NUM)
- 		goto out;
- 	if (mem->guest_phys_addr + mem->memory_size < mem->guest_phys_addr)
- 		goto out;
+@@ -629,6 +629,19 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
+ }
+ #endif /* !CONFIG_S390 */
+
++void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
++{
++	if (new) {
++		int id = new->id;
++
++		slots->memslots[id] = *new;
++		if (id >= slots->nmemslots)
++			slots->nmemslots = id + 1;
++	}
++
++	slots->generation++;
++}
++
+ /*
+  * Allocate some memory and give it an address in the guest physical address
+  * space.
+@@ -779,10 +792,8 @@ skip_lpage:
+ 		if (!slots)
+ 			goto out_free;
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+-		if (mem->slot >= slots->nmemslots)
+-			slots->nmemslots = mem->slot + 1;
+-		slots->generation++;
+ 		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
++		update_memslots(slots, NULL);
+
+ 		old_memslots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+@@ -814,9 +825,6 @@ skip_lpage:
+ 	if (!slots)
+ 		goto out_free;
+ 	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+-	if (mem->slot >= slots->nmemslots)
+-		slots->nmemslots = mem->slot + 1;
+-	slots->generation++;
+
+ 	/* actual memory is freed via old in kvm_free_physmem_slot below */
+ 	if (!npages) {
+@@ -826,7 +834,7 @@ skip_lpage:
+ 			new.lpage_info[i] = NULL;
+ 	}
+
+-	slots->memslots[mem->slot] = new;
++	update_memslots(slots, &new);
+ 	old_memslots = kvm->memslots;
+ 	rcu_assign_pointer(kvm->memslots, slots);
+ 	synchronize_srcu_expedited(&kvm->srcu);
 -- 
 1.7.7.1
 
