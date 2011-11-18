@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab1KRQRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:17:06 -0500
-Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:47399 "EHLO
-	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab1KRQRE (ORCPT
+	id S1758150Ab1KRQUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:20:40 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:56291 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758050Ab1KRQUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:17:04 -0500
-Message-ID: <4EC684FF.7000408@calxeda.com>
-Date: Fri, 18 Nov 2011 10:17:03 -0600
-From: Rob Herring <rob.herring@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 18 Nov 2011 11:20:38 -0500
+Message-ID: <4EC685D1.2000900@Calva.COM>
+Date: Fri, 18 Nov 2011 17:20:33 +0100
+From: John Hughes <john@Calva.COM>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-To: Wojciech Baranowski <baranowski@chromium.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/device: Obtain platform dev name and id from bus_id
-References: <1321630233.21392.43.camel@zalecze.wat.corp.google.com>
-In-Reply-To: <1321630233.21392.43.camel@zalecze.wat.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 09:30 AM, Wojciech Baranowski wrote:
-> When adding new platform device, parse platform_device.dev.bus_id (used as
-> device name) to get platform_device.name and platform_device.id before
-> calling device_add. If bus_id cannot be split into name and id, fallback to
-> the old way.
-> 
-> Currently the name is being set to bus_id and id is being set to -1, even
-> when bus_id is in the form "some_name.some_number". This might lead to
-> problems with device-driver matching and index out of bounds error. It is
-> also not consistent with how the bus_id is generated from name and id.
-> 
-> Signed-off-by: Wojciech Baranowski <baranowski@chromium.org>
-> ---
+Don't write anything to the log if a user Kerberos ticket expires or is missing,
+these are not kernel problems.
 
-This has come up before and been rejected. Drivers should not rely on id
-as an index. The main case I've seen where an index is needed is serial
-consoles and aliases supports that case.
+Signed-off-by: John Hughes<john@calva.com>
 
-Do you have a specific problem you are trying to solve?
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index 39914be..18897cb 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1339,14 +1339,6 @@ static void nfs4_state_start_reclaim_nograce(struct nfs_client *clp)
+  	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
+  }
 
-Rob
+-static void nfs4_warn_keyexpired(const char *s)
+-{
+-	printk_ratelimited(KERN_WARNING "Error: state manager"
+-			" encountered RPCSEC_GSS session"
+-			" expired against NFSv4 server %s.\n",
+-			s);
+-}
+-
+  static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+  {
+  	switch (error) {
+@@ -1378,7 +1370,6 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+  			return 0;
+  		case -EKEYEXPIRED:
+  			/* Nothing we can do */
+-			nfs4_warn_keyexpired(clp->cl_hostname);
+  			return 0;
+  	}
+  	return error;
+@@ -1620,7 +1611,6 @@ static void nfs4_set_lease_expired(struct nfs_client *clp, int status)
+  		break;
 
->  drivers/of/device.c |   43 +++++++++++++++++++++++++++++++++++++++----
->  1 files changed, 39 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index 62b4b32..8758c3f 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -47,14 +47,49 @@ void of_dev_put(struct platform_device *dev)
->  }
->  EXPORT_SYMBOL(of_dev_put);
->  
-> +static int of_dev_parse_devname(struct platform_device *ofdev)
-> +{
-> +	const char *name;
-> +	const char *dot_pos;
-> +	char *short_name;
-> +
-> +	name = dev_name(&ofdev->dev);
-> +	if (!name)
-> +		goto std_out;
-> +
-> +	dot_pos = strrchr(name, '.');
-> +	if (!dot_pos)
-> +		goto std_out;
-> +
-> +	short_name = kmalloc(dot_pos - name + 1, GFP_KERNEL);
-> +	if (!short_name)
-> +		return -ENOMEM;
-> +
-> +	strlcpy(short_name, name, dot_pos - name + 1);
-> +	ofdev->name = short_name;
-> +
-> +	if (kstrtoint(dot_pos + 1, 10, &ofdev->id))
-> +		goto kfree_out;
-> +
-> +	return 0;
-> +
-> +kfree_out:
-> +	kfree(short_name);
-> +std_out:
-> +	ofdev->name = name;
-> +	ofdev->id = -1;
-> +	return 0;
-> +}
-> +
->  int of_device_add(struct platform_device *ofdev)
->  {
-> +	int ret;
-> +
->  	BUG_ON(ofdev->dev.of_node == NULL);
->  
-> -	/* name and id have to be set so that the platform bus doesn't get
-> -	 * confused on matching */
-> -	ofdev->name = dev_name(&ofdev->dev);
-> -	ofdev->id = -1;
-> +	ret = of_dev_parse_devname(ofdev);
-> +	if (ret)
-> +		return ret;
->  
->  	/* device_add will assume that this device is on the same node as
->  	 * the parent. If there is no parent defined, set the node
+  	case -EKEYEXPIRED:
+-		nfs4_warn_keyexpired(clp->cl_hostname);
+  	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
+  				 * in nfs4_exchange_id */
+  	default:
+@@ -1728,8 +1718,9 @@ static void nfs4_state_manager(struct nfs_client *clp)
+  	} while (atomic_read(&clp->cl_count)>  1);
+  	return;
+  out_error:
+-	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
+-			" with error %d\n", clp->cl_hostname, -status);
++	if (status != -EACCESS)
++		printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
++				" with error %d\n", clp->cl_hostname, -status);
+  	nfs4_end_drain_session(clp);
+  	nfs4_clear_state_manager_bit(clp);
+  }
+
 
