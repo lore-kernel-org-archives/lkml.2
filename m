@@ -1,220 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab1KRXP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:15:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53028 "EHLO
+	id S1757974Ab1KRXQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:16:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53039 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab1KRXPW (ORCPT
+	with ESMTP id S1756911Ab1KRXQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:15:22 -0500
-Date: Fri, 18 Nov 2011 15:14:58 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-7e9a49ef542610609144d1afcd516dc3fafac4d6@git.kernel.org>
+	Fri, 18 Nov 2011 18:16:16 -0500
+Date: Fri, 18 Nov 2011 15:15:44 -0800
+From: "tip-bot for Luck, Tony" <tony.luck@intel.com>
+Message-ID: <tip-66f5ddf30a59f811818656cb2833c80da0340cfa@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        jolsa@redhat.com
+        arjan@linux.intel.com, tony.luck@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <20111107150849.GE1807@m.brq.redhat.com>
-References: <20111107150849.GE1807@m.brq.redhat.com>
+        arjan@linux.intel.com, tglx@linutronix.de, tony.luck@intel.com,
+        mingo@elte.hu
+In-Reply-To: <4eb2e1971326651a3b@agluck-desktop.sc.intel.com>
+References: <4eb2e1971326651a3b@agluck-desktop.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/latency: Fix header output for latency tracers
-Git-Commit-ID: 7e9a49ef542610609144d1afcd516dc3fafac4d6
+Subject: [tip:x86/urgent] x86/mce: Make mce_chrdev_ops 'static const'
+Git-Commit-ID: 66f5ddf30a59f811818656cb2833c80da0340cfa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:15:04 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:15:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7e9a49ef542610609144d1afcd516dc3fafac4d6
-Gitweb:     http://git.kernel.org/tip/7e9a49ef542610609144d1afcd516dc3fafac4d6
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 7 Nov 2011 16:08:49 +0100
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 7 Nov 2011 13:48:35 -0500
+Commit-ID:  66f5ddf30a59f811818656cb2833c80da0340cfa
+Gitweb:     http://git.kernel.org/tip/66f5ddf30a59f811818656cb2833c80da0340cfa
+Author:     Luck, Tony <tony.luck@intel.com>
+AuthorDate: Thu, 3 Nov 2011 11:46:47 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 8 Nov 2011 16:17:11 +0100
 
-tracing/latency: Fix header output for latency tracers
+x86/mce: Make mce_chrdev_ops 'static const'
 
-In case the the graph tracer (CONFIG_FUNCTION_GRAPH_TRACER) or even the
-function tracer (CONFIG_FUNCTION_TRACER) are not set, the latency tracers
-do not display proper latency header.
+Arjan would like to make struct file_operations const, but
+mce-inject directly writes to the mce_chrdev_ops to install its
+write handler. In an ideal world mce-inject would have its own
+character device, but we have a sizable legacy of test scripts
+that hardwire "/dev/mcelog", so it would be painful to switch to
+a separate device now. Instead, this patch switches to a stub
+function in the mce code, with a registration helper that
+mce-inject can call when it is loaded.
 
-The involved/fixed latency tracers are:
-        wakeup_rt
-        wakeup
-        preemptirqsoff
-        preemptoff
-        irqsoff
+Note that this would also allow for a sane process to allow
+mce-inject to be unloaded again (with an unregister function,
+and appropriate module_{get,put}() calls), but that is left for
+potential future patches.
 
-The patch adds proper handling of tracer configuration options for latency
-tracers, and displaying correct header info accordingly.
-
-* The current output (for wakeup tracer) with both graph and function
-  tracers disabled is:
-
-  # tracer: wakeup
-  #
-    <idle>-0       0d.h5    1us+:      0:120:R   + [000]     7:  0:R watchdog/0
-    <idle>-0       0d.h5    3us+: ttwu_do_activate.clone.1 <-try_to_wake_up
-    ...
-
-* The fixed output is:
-
-  # tracer: wakeup
-  #
-  # wakeup latency trace v1.1.5 on 3.1.0-tip+
-  # --------------------------------------------------------------------
-  # latency: 55 us, #4/4, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
-  #    -----------------
-  #    | task: migration/0-6 (uid:0 nice:0 policy:1 rt_prio:99)
-  #    -----------------
-  #
-  #                  _------=> CPU#
-  #                 / _-----=> irqs-off
-  #                | / _----=> need-resched
-  #                || / _---=> hardirq/softirq
-  #                ||| / _--=> preempt-depth
-  #                |||| /     delay
-  #  cmd     pid   ||||| time  |   caller
-  #     \   /      |||||  \    |   /
-       cat-1129    0d..4    1us :   1129:120:R   + [000]     6:  0:R migration/0
-       cat-1129    0d..4    2us+: ttwu_do_activate.clone.1 <-try_to_wake_up
-
-* The current output (for wakeup tracer) with only function
-  tracer enabled is:
-
-  # tracer: wakeup
-  #
-       cat-1140    0d..4    1us+:   1140:120:R   + [000]     6:  0:R migration/0
-       cat-1140    0d..4    2us : ttwu_do_activate.clone.1 <-try_to_wake_up
-
-* The fixed output is:
-  # tracer: wakeup
-  #
-  # wakeup latency trace v1.1.5 on 3.1.0-tip+
-  # --------------------------------------------------------------------
-  # latency: 207 us, #109/109, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
-  #    -----------------
-  #    | task: watchdog/1-12 (uid:0 nice:0 policy:1 rt_prio:99)
-  #    -----------------
-  #
-  #                  _------=> CPU#
-  #                 / _-----=> irqs-off
-  #                | / _----=> need-resched
-  #                || / _---=> hardirq/softirq
-  #                ||| / _--=> preempt-depth
-  #                |||| /     delay
-  #  cmd     pid   ||||| time  |   caller
-  #     \   /      |||||  \    |   /
-    <idle>-0       1d.h5    1us+:      0:120:R   + [001]    12:  0:R watchdog/1
-    <idle>-0       1d.h5    3us : ttwu_do_activate.clone.1 <-try_to_wake_up
-
-Link: http://lkml.kernel.org/r/20111107150849.GE1807@m.brq.redhat.com
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Arjan van de Ven <arjan@linux.intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/4eb2e1971326651a3b@agluck-desktop.sc.intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/trace/trace.c              |   15 +++++++++++++++
- kernel/trace/trace.h              |    1 +
- kernel/trace/trace_irqsoff.c      |   13 ++++++++++++-
- kernel/trace/trace_sched_wakeup.c |   13 ++++++++++++-
- 4 files changed, 40 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/mce.h              |    5 ++++-
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c        |   25 ++++++++++++++++++++++---
+ 3 files changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index b24a72d..b296186 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2140,6 +2140,21 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
- 	return print_trace_fmt(iter);
- }
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index c9321f3..0e8ae57 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -201,7 +201,10 @@ int mce_notify_irq(void);
+ void mce_notify_process(void);
  
-+void trace_latency_header(struct seq_file *m)
-+{
-+	struct trace_iterator *iter = m->private;
+ DECLARE_PER_CPU(struct mce, injectm);
+-extern struct file_operations mce_chrdev_ops;
 +
-+	/* print nothing if the buffers are empty */
-+	if (trace_empty(iter))
-+		return;
-+
-+	if (iter->iter_flags & TRACE_FILE_LAT_FMT)
-+		print_trace_header(m, iter);
-+
-+	if (!(trace_flags & TRACE_ITER_VERBOSE))
-+		print_lat_help_header(m);
-+}
-+
- void trace_default_header(struct seq_file *m)
- {
- 	struct trace_iterator *iter = m->private;
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 092e1f8..f8ec229 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -370,6 +370,7 @@ void trace_graph_function(struct trace_array *tr,
- 		    unsigned long ip,
- 		    unsigned long parent_ip,
- 		    unsigned long flags, int pc);
-+void trace_latency_header(struct seq_file *m);
- void trace_default_header(struct seq_file *m);
- void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
- int trace_empty(struct trace_iterator *iter);
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index a1a3359..a248c68 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -280,9 +280,20 @@ static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
- }
- 
- static void irqsoff_graph_return(struct ftrace_graph_ret *trace) { }
--static void irqsoff_print_header(struct seq_file *s) { }
- static void irqsoff_trace_open(struct trace_iterator *iter) { }
- static void irqsoff_trace_close(struct trace_iterator *iter) { }
-+
-+#ifdef CONFIG_FUNCTION_TRACER
-+static void irqsoff_print_header(struct seq_file *s)
-+{
-+	trace_default_header(s);
-+}
-+#else
-+static void irqsoff_print_header(struct seq_file *s)
-+{
-+	trace_latency_header(s);
-+}
-+#endif /* CONFIG_FUNCTION_TRACER */
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++extern void register_mce_write_callback(ssize_t (*)(struct file *filp,
++				    const char __user *ubuf,
++				    size_t usize, loff_t *off));
  
  /*
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index e4a70c0..ff791ea 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -280,9 +280,20 @@ static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
+  * Exception handler
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 6199232..319882e 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -208,7 +208,7 @@ static int inject_init(void)
+ 	if (!alloc_cpumask_var(&mce_inject_cpumask, GFP_KERNEL))
+ 		return -ENOMEM;
+ 	printk(KERN_INFO "Machine check injector initialized\n");
+-	mce_chrdev_ops.write = mce_write;
++	register_mce_write_callback(mce_write);
+ 	register_nmi_handler(NMI_LOCAL, mce_raise_notify, 0,
+ 				"mce_notify");
+ 	return 0;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 362056a..2af127d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1634,16 +1634,35 @@ static long mce_chrdev_ioctl(struct file *f, unsigned int cmd,
+ 	}
  }
  
- static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
--static void wakeup_print_header(struct seq_file *s) { }
- static void wakeup_trace_open(struct trace_iterator *iter) { }
- static void wakeup_trace_close(struct trace_iterator *iter) { }
+-/* Modified in mce-inject.c, so not static or const */
+-struct file_operations mce_chrdev_ops = {
++static ssize_t (*mce_write)(struct file *filp, const char __user *ubuf,
++			    size_t usize, loff_t *off);
 +
-+#ifdef CONFIG_FUNCTION_TRACER
-+static void wakeup_print_header(struct seq_file *s)
++void register_mce_write_callback(ssize_t (*fn)(struct file *filp,
++			     const char __user *ubuf,
++			     size_t usize, loff_t *off))
 +{
-+	trace_default_header(s);
++	mce_write = fn;
 +}
-+#else
-+static void wakeup_print_header(struct seq_file *s)
++EXPORT_SYMBOL_GPL(register_mce_write_callback);
++
++ssize_t mce_chrdev_write(struct file *filp, const char __user *ubuf,
++			 size_t usize, loff_t *off)
 +{
-+	trace_latency_header(s);
++	if (mce_write)
++		return mce_write(filp, ubuf, usize, off);
++	else
++		return -EINVAL;
 +}
-+#endif /* CONFIG_FUNCTION_TRACER */
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++
++static const struct file_operations mce_chrdev_ops = {
+ 	.open			= mce_chrdev_open,
+ 	.release		= mce_chrdev_release,
+ 	.read			= mce_chrdev_read,
++	.write			= mce_chrdev_write,
+ 	.poll			= mce_chrdev_poll,
+ 	.unlocked_ioctl		= mce_chrdev_ioctl,
+ 	.llseek			= no_llseek,
+ };
+-EXPORT_SYMBOL_GPL(mce_chrdev_ops);
  
- /*
+ static struct miscdevice mce_chrdev_device = {
+ 	MISC_MCELOG_MINOR,
