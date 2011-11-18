@@ -1,516 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab1KRTjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:39:31 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57307 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab1KRTiH (ORCPT
+	id S1756828Ab1KRTjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:39:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46904 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756239Ab1KRTjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:38:07 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-embedded@vger.kernel.org, x86@kernel.org
-Cc: David Daney <david.daney@cavium.com>
-Subject: [PATCH RFC 1/5] scripts: Add sortextable to sort the kernel's exception table.
-Date: Fri, 18 Nov 2011 11:37:44 -0800
-Message-Id: <1321645068-20475-2-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1321645068-20475-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1321645068-20475-1-git-send-email-ddaney.cavm@gmail.com>
+	Fri, 18 Nov 2011 14:39:48 -0500
+Date: Fri, 18 Nov 2011 11:39:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hillf Danton <dhillf@gmail.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hugetlb: detect race if fail to COW
+Message-Id: <20111118113946.6563fd08.akpm@linux-foundation.org>
+In-Reply-To: <20111118161128.GC23223@tiehlicka.suse.cz>
+References: <CAJd=RBC+p8033bHNfP=WQ2SU1Y1zRpj+FEi9FdjuFKkjF_=_iA@mail.gmail.com>
+	<20111118150742.GA23223@tiehlicka.suse.cz>
+	<CAJd=RBCOK9tis-bF87Csn70miRDqLtCUiZmDH2hnc8i_9+KtNw@mail.gmail.com>
+	<20111118161128.GC23223@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Fri, 18 Nov 2011 17:11:28 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Using this build-time sort saves time booting as we don't have to burn
-cycles sorting the exception table.
+> On Fri 18-11-11 23:23:12, Hillf Danton wrote:
+> > On Fri, Nov 18, 2011 at 11:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > > On Fri 18-11-11 22:04:37, Hillf Danton wrote:
+> > >> In the error path that we fail to allocate new huge page, before try again, we
+> > >> have to check race since page_table_lock is re-acquired.
+> > >
+> > > I do not think we can race here because we are serialized by
+> > > hugetlb_instantiation_mutex AFAIU. Without this lock, however, we could
+> > > fall into avoidcopy and shortcut despite the fact that other thread has
+> > > already did the job.
+> > >
+> > > The mutex usage is not obvious in hugetlb_cow so maybe we want to be
+> > > explicit about it (either a comment or do the recheck).
+> > >
+> > 
+> > Then the following check is unnecessary, no?
+> 
+> Hmm, thinking about it some more, I guess we have to recheck because we
+> can still race with page migration. So we need you patch.
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: David Daney <david.daney@cavium.com>
+So we need a new changelog.  How does this look?
+
+
+From: Hillf Danton <dhillf@gmail.com>
+Subject: hugetlb: detect race upon page allocation failure during COW
+
+In the error path where we failed to allocate a new huge page, we should
+check whether a racing thread has added this page for us while this thread
+waited for the page_table_lock.
+
+We are serialized by hugetlb_instantiation_mutex on the pagefault patch
+but this race can occur when another thread is performing page migration.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- scripts/.gitignore    |    1 +
- scripts/Makefile      |    1 +
- scripts/sortextable.c |  273 +++++++++++++++++++++++++++++++++++++++++++++++++
- scripts/sortextable.h |  168 ++++++++++++++++++++++++++++++
- 4 files changed, 443 insertions(+), 0 deletions(-)
- create mode 100644 scripts/sortextable.c
- create mode 100644 scripts/sortextable.h
 
-diff --git a/scripts/.gitignore b/scripts/.gitignore
-index 105b21f..65f362d 100644
---- a/scripts/.gitignore
-+++ b/scripts/.gitignore
-@@ -9,3 +9,4 @@ unifdef
- ihex2fw
- recordmcount
- docproc
-+sortextable
-diff --git a/scripts/Makefile b/scripts/Makefile
-index df7678f..43e19b9 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -13,6 +13,7 @@ hostprogs-$(CONFIG_LOGO)         += pnmtologo
- hostprogs-$(CONFIG_VT)           += conmakehash
- hostprogs-$(CONFIG_IKCONFIG)     += bin2c
- hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
-+hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
- 
- always		:= $(hostprogs-y) $(hostprogs-m)
- 
-diff --git a/scripts/sortextable.c b/scripts/sortextable.c
-new file mode 100644
-index 0000000..6546785
---- /dev/null
-+++ b/scripts/sortextable.c
-@@ -0,0 +1,273 @@
-+/*
-+ * sortextable.c: Sort the kernel's exception table
-+ *
-+ * Copyright 2011 Cavium, Inc.
-+ *
-+ * Based on code taken from recortmcount.c which is:
-+ *
-+ * Copyright 2009 John F. Reiser <jreiser@BitWagon.com>.  All rights reserved.
-+ * Licensed under the GNU General Public License, version 2 (GPLv2).
-+ *
-+ * Restructured to fit Linux format, as well as other updates:
-+ *  Copyright 2010 Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
-+ */
-+
-+/*
-+ * Strategy: alter the vmlinux file in-place.
-+ */
-+
-+#include <sys/types.h>
-+#include <sys/mman.h>
-+#include <sys/stat.h>
-+#include <getopt.h>
-+#include <elf.h>
-+#include <fcntl.h>
-+#include <setjmp.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <unistd.h>
-+
-+static int fd_map;	/* File descriptor for file being modified. */
-+static int mmap_failed; /* Boolean flag. */
-+static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
-+static struct stat sb;	/* Remember .st_size, etc. */
-+static jmp_buf jmpenv;	/* setjmp/longjmp per-file error escape */
-+
-+/* setjmp() return values */
-+enum {
-+	SJ_SETJMP = 0,  /* hardwired first return */
-+	SJ_FAIL,
-+	SJ_SUCCEED
-+};
-+
-+/* Per-file resource cleanup when multiple files. */
-+static void
-+cleanup(void)
-+{
-+	if (!mmap_failed)
-+		munmap(ehdr_curr, sb.st_size);
-+	close(fd_map);
-+}
-+
-+static void __attribute__((noreturn))
-+fail_file(void)
-+{
-+	cleanup();
-+	longjmp(jmpenv, SJ_FAIL);
-+}
-+
-+static void __attribute__((noreturn))
-+succeed_file(void)
-+{
-+	cleanup();
-+	longjmp(jmpenv, SJ_SUCCEED);
-+}
-+
-+
-+/*
-+ * Get the whole file as a programming convenience in order to avoid
-+ * malloc+lseek+read+free of many pieces.  If successful, then mmap
-+ * avoids copying unused pieces; else just read the whole file.
-+ * Open for both read and write.
-+ */
-+static void *mmap_file(char const *fname)
-+{
-+	void *addr;
-+
-+	fd_map = open(fname, O_RDWR);
-+	if (fd_map < 0 || fstat(fd_map, &sb) < 0) {
-+		perror(fname);
-+		fail_file();
-+	}
-+	if (!S_ISREG(sb.st_mode)) {
-+		fprintf(stderr, "not a regular file: %s\n", fname);
-+		fail_file();
-+	}
-+	addr = mmap(0, sb.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
-+		    fd_map, 0);
-+	if (addr == MAP_FAILED) {
-+		mmap_failed = 1;
-+		fprintf(stderr, "Could not mmap file: %s\n", fname);
-+		fail_file();
-+	}
-+	return addr;
-+}
-+
-+/* w8rev, w8nat, ...: Handle endianness. */
-+
-+static uint64_t w8rev(uint64_t const x)
-+{
-+	return   ((0xff & (x >> (0 * 8))) << (7 * 8))
-+	       | ((0xff & (x >> (1 * 8))) << (6 * 8))
-+	       | ((0xff & (x >> (2 * 8))) << (5 * 8))
-+	       | ((0xff & (x >> (3 * 8))) << (4 * 8))
-+	       | ((0xff & (x >> (4 * 8))) << (3 * 8))
-+	       | ((0xff & (x >> (5 * 8))) << (2 * 8))
-+	       | ((0xff & (x >> (6 * 8))) << (1 * 8))
-+	       | ((0xff & (x >> (7 * 8))) << (0 * 8));
-+}
-+
-+static uint32_t w4rev(uint32_t const x)
-+{
-+	return   ((0xff & (x >> (0 * 8))) << (3 * 8))
-+	       | ((0xff & (x >> (1 * 8))) << (2 * 8))
-+	       | ((0xff & (x >> (2 * 8))) << (1 * 8))
-+	       | ((0xff & (x >> (3 * 8))) << (0 * 8));
-+}
-+
-+static uint32_t w2rev(uint16_t const x)
-+{
-+	return   ((0xff & (x >> (0 * 8))) << (1 * 8))
-+	       | ((0xff & (x >> (1 * 8))) << (0 * 8));
-+}
-+
-+static uint64_t w8nat(uint64_t const x)
-+{
-+	return x;
-+}
-+
-+static uint32_t w4nat(uint32_t const x)
-+{
-+	return x;
-+}
-+
-+static uint32_t w2nat(uint16_t const x)
-+{
-+	return x;
-+}
-+
-+static uint64_t (*w8)(uint64_t);
-+static uint32_t (*w)(uint32_t);
-+static uint32_t (*w2)(uint16_t);
-+
-+
-+/* 32 bit and 64 bit are very similar */
-+#include "sortextable.h"
-+#define SORTEXTABLE_64
-+#include "sortextable.h"
-+
-+
-+static void
-+do_file(char const *const fname)
-+{
-+	Elf32_Ehdr *const ehdr = mmap_file(fname);
-+
-+	ehdr_curr = ehdr;
-+	w = w4nat;
-+	w2 = w2nat;
-+	w8 = w8nat;
-+	switch (ehdr->e_ident[EI_DATA]) {
-+		static unsigned int const endian = 1;
-+	default:
-+		fprintf(stderr, "unrecognized ELF data encoding %d: %s\n",
-+			ehdr->e_ident[EI_DATA], fname);
-+		fail_file();
-+		break;
-+	case ELFDATA2LSB:
-+		if (*(unsigned char const *)&endian != 1) {
-+			/* main() is big endian, file.o is little endian. */
-+			w = w4rev;
-+			w2 = w2rev;
-+			w8 = w8rev;
-+		}
-+		break;
-+	case ELFDATA2MSB:
-+		if (*(unsigned char const *)&endian != 0) {
-+			/* main() is little endian, file.o is big endian. */
-+			w = w4rev;
-+			w2 = w2rev;
-+			w8 = w8rev;
-+		}
-+		break;
-+	}  /* end switch */
-+	if (memcmp(ELFMAG, ehdr->e_ident, SELFMAG) != 0
-+	||  w2(ehdr->e_type) != ET_EXEC
-+	||  ehdr->e_ident[EI_VERSION] != EV_CURRENT) {
-+		fprintf(stderr, "unrecognized ET_EXEC file %s\n", fname);
-+		fail_file();
-+	}
-+
-+	switch (w2(ehdr->e_machine)) {
-+	default:
-+		fprintf(stderr, "unrecognized e_machine %d %s\n",
-+			w2(ehdr->e_machine), fname);
-+		fail_file();
-+		break;
-+	case EM_386:
-+	case EM_MIPS:
-+	case EM_X86_64:
-+		break;
-+	}  /* end switch */
-+
-+	switch (ehdr->e_ident[EI_CLASS]) {
-+	default:
-+		fprintf(stderr, "unrecognized ELF class %d %s\n",
-+			ehdr->e_ident[EI_CLASS], fname);
-+		fail_file();
-+		break;
-+	case ELFCLASS32:
-+		if (w2(ehdr->e_ehsize) != sizeof(Elf32_Ehdr)
-+		||  w2(ehdr->e_shentsize) != sizeof(Elf32_Shdr)) {
-+			fprintf(stderr,
-+				"unrecognized ET_EXEC file: %s\n", fname);
-+			fail_file();
-+		}
-+		do32(ehdr, fname);
-+		break;
-+	case ELFCLASS64: {
-+		Elf64_Ehdr *const ghdr = (Elf64_Ehdr *)ehdr;
-+		if (w2(ghdr->e_ehsize) != sizeof(Elf64_Ehdr)
-+		||  w2(ghdr->e_shentsize) != sizeof(Elf64_Shdr)) {
-+			fprintf(stderr,
-+				"unrecognized ET_EXEC file: %s\n", fname);
-+			fail_file();
-+		}
-+		do64(ghdr, fname);
-+		break;
-+	}
-+	}  /* end switch */
-+
-+	cleanup();
-+}
-+
-+int
-+main(int argc, char *argv[])
-+{
-+	int n_error = 0;  /* gcc-4.3.0 false positive complaint */
-+	int i;
-+
-+	if (argc < 2) {
-+		fprintf(stderr, "usage: sortextable vmlinux...\n");
-+		return 0;
-+	}
-+
-+	/* Process each file in turn, allowing deep failure. */
-+	for (i = 1; i < argc; i++) {
-+		char *file = argv[i];
-+		int const sjval = setjmp(jmpenv);
-+
-+		switch (sjval) {
-+		default:
-+			fprintf(stderr, "internal error: %s\n", file);
-+			exit(1);
-+			break;
-+		case SJ_SETJMP:    /* normal sequence */
-+			/* Avoid problems if early cleanup() */
-+			fd_map = -1;
-+			ehdr_curr = NULL;
-+			mmap_failed = 1;
-+			do_file(file);
-+			break;
-+		case SJ_FAIL:    /* error in do_file or below */
-+			++n_error;
-+			break;
-+		case SJ_SUCCEED:    /* premature success */
-+			/* do nothing */
-+			break;
-+		}  /* end switch */
-+	}
-+	return !!n_error;
-+}
-+
-+
-diff --git a/scripts/sortextable.h b/scripts/sortextable.h
-new file mode 100644
-index 0000000..bb6aaf1
---- /dev/null
-+++ b/scripts/sortextable.h
-@@ -0,0 +1,168 @@
-+/*
-+ * sortextable.h
-+ *
-+ * Copyright 2011 Cavium, Inc.
-+ *
-+ * Some of this code was taken out of recordmcount.h written by:
-+ *
-+ * Copyright 2009 John F. Reiser <jreiser@BitWagon.com>.  All rights reserved.
-+ * Copyright 2010 Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
-+ *
-+ *
-+ * Licensed under the GNU General Public License, version 2 (GPLv2).
-+ */
-+
-+#undef extable_ent_size
-+#undef compare_extable
-+#undef do_func
-+#undef Elf_Addr
-+#undef Elf_Ehdr
-+#undef Elf_Shdr
-+#undef Elf_Rel
-+#undef Elf_Rela
-+#undef Elf_Sym
-+#undef ELF_R_SYM
-+#undef Elf_r_sym
-+#undef ELF_R_INFO
-+#undef Elf_r_info
-+#undef ELF_ST_BIND
-+#undef ELF_ST_TYPE
-+#undef fn_ELF_R_SYM
-+#undef fn_ELF_R_INFO
-+#undef uint_t
-+#undef _w
-+
-+#ifdef SORTEXTABLE_64
-+# define extable_ent_size	16
-+# define compare_extable	compare_extable_64
-+# define do_func		do64
-+# define Elf_Addr		Elf64_Addr
-+# define Elf_Ehdr		Elf64_Ehdr
-+# define Elf_Shdr		Elf64_Shdr
-+# define Elf_Rel		Elf64_Rel
-+# define Elf_Rela		Elf64_Rela
-+# define Elf_Sym		Elf64_Sym
-+# define ELF_R_SYM		ELF64_R_SYM
-+# define Elf_r_sym		Elf64_r_sym
-+# define ELF_R_INFO		ELF64_R_INFO
-+# define Elf_r_info		Elf64_r_info
-+# define ELF_ST_BIND		ELF64_ST_BIND
-+# define ELF_ST_TYPE		ELF64_ST_TYPE
-+# define fn_ELF_R_SYM		fn_ELF64_R_SYM
-+# define fn_ELF_R_INFO		fn_ELF64_R_INFO
-+# define uint_t			uint64_t
-+# define _w			w8
-+#else
-+# define extable_ent_size	8
-+# define compare_extable	compare_extable_32
-+# define do_func		do32
-+# define Elf_Addr		Elf32_Addr
-+# define Elf_Ehdr		Elf32_Ehdr
-+# define Elf_Shdr		Elf32_Shdr
-+# define Elf_Rel		Elf32_Rel
-+# define Elf_Rela		Elf32_Rela
-+# define Elf_Sym		Elf32_Sym
-+# define ELF_R_SYM		ELF32_R_SYM
-+# define Elf_r_sym		Elf32_r_sym
-+# define ELF_R_INFO		ELF32_R_INFO
-+# define Elf_r_info		Elf32_r_info
-+# define ELF_ST_BIND		ELF32_ST_BIND
-+# define ELF_ST_TYPE		ELF32_ST_TYPE
-+# define fn_ELF_R_SYM		fn_ELF32_R_SYM
-+# define fn_ELF_R_INFO		fn_ELF32_R_INFO
-+# define uint_t			uint32_t
-+# define _w			w
-+#endif
-+
-+static int compare_extable(const void *a, const void *b)
-+{
-+	const uint_t *aa = a;
-+	const uint_t *bb = b;
-+
-+	if (_w(*aa) < _w(*bb))
-+		return -1;
-+	if (_w(*aa) > _w(*bb))
-+		return 1;
-+	return 0;
-+}
-+
-+static void
-+do_func(Elf_Ehdr *const ehdr, char const *const fname)
-+{
-+	Elf_Shdr *shdr;
-+	Elf_Shdr *shstrtab_sec;
-+	Elf_Shdr *strtab_sec = NULL;
-+	Elf_Shdr *symtab_sec = NULL;
-+	Elf_Shdr *extab_sec = NULL;
-+	Elf_Sym *sym;
-+	Elf_Sym *sort_needed_sym;
-+	Elf_Shdr *sort_needed_sec;
-+	uint32_t *sort_done_location;
-+	const char *secstrtab;
-+	const char *strtab;
-+	int i;
-+	int idx;
-+
-+	shdr = (Elf_Shdr *)((void *)ehdr + _w(ehdr->e_shoff));
-+	shstrtab_sec = shdr + w2(ehdr->e_shstrndx);
-+	secstrtab = (const char *)ehdr + _w(shstrtab_sec->sh_offset);
-+	for (i = 0; i < w2(ehdr->e_shnum); i++) {
-+		idx = w(shdr[i].sh_name);
-+		if (strcmp(secstrtab + idx, "__ex_table") == 0)
-+			extab_sec = shdr + i;
-+		if (strcmp(secstrtab + idx, ".symtab") == 0)
-+			symtab_sec = shdr + i;
-+		if (strcmp(secstrtab + idx, ".strtab") == 0)
-+			strtab_sec = shdr + i;
-+	}
-+	if (strtab_sec == NULL) {
-+		fprintf(stderr,	"no .strtab in  file: %s\n", fname);
-+		fail_file();
-+	}
-+	if (symtab_sec == NULL) {
-+		fprintf(stderr,	"no .symtab in  file: %s\n", fname);
-+		fail_file();
-+	}
-+	if (extab_sec == NULL) {
-+		fprintf(stderr,	"no __ex_table in  file: %s\n", fname);
-+		fail_file();
-+	}
-+	strtab = (const char *)ehdr + _w(strtab_sec->sh_offset);
-+
-+	/* Sort the table in place */
-+	qsort((void *)ehdr + _w(extab_sec->sh_offset),
-+	      (_w(extab_sec->sh_size) / extable_ent_size),
-+	      extable_ent_size, compare_extable);
-+
-+	/* find main_extable_sort_needed */
-+	sort_needed_sym = NULL;
-+	for (i = 0; i < _w(symtab_sec->sh_size) / sizeof(Elf_Sym); i++) {
-+		sym = (void *)ehdr + _w(symtab_sec->sh_offset);
-+		sym += i;
-+		if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
-+			continue;
-+		idx = w(sym->st_name);
-+		if (strcmp(strtab + idx, "main_extable_sort_needed") == 0) {
-+			sort_needed_sym = sym;
-+			break;
-+		}
-+	}
-+	if (sort_needed_sym == NULL) {
-+		fprintf(stderr,
-+			"no main_extable_sort_needed symbol in  file: %s\n",
-+			fname);
-+		fail_file();
-+	}
-+	sort_needed_sec = &shdr[w2(sort_needed_sym->st_shndx)];
-+	sort_done_location = (void *)ehdr +
-+		_w(sort_needed_sec->sh_offset) +
-+		_w(sort_needed_sym->st_value) -
-+		_w(sort_needed_sec->sh_addr);
-+
-+	printf("sort done marker at %lx\n",
-+		(unsigned long) (_w(sort_needed_sec->sh_offset) +
-+				 _w(sort_needed_sym->st_value) -
-+				 _w(sort_needed_sec->sh_addr)));
-+	/* We sorted it, clear the flag. */
-+	*sort_done_location = 0;
-+}
--- 
-1.7.2.3
+ mm/hugetlb.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff -puN mm/hugetlb.c~hugetlb-detect-race-upon-page-allocation-failure-during-cow mm/hugetlb.c
+--- a/mm/hugetlb.c~hugetlb-detect-race-upon-page-allocation-failure-during-cow
++++ a/mm/hugetlb.c
+@@ -2407,7 +2407,14 @@ retry_avoidcopy:
+ 				BUG_ON(page_count(old_page) != 1);
+ 				BUG_ON(huge_pte_none(pte));
+ 				spin_lock(&mm->page_table_lock);
+-				goto retry_avoidcopy;
++				ptep = huge_pte_offset(mm, address & huge_page_mask(h));
++				if (likely(pte_same(huge_ptep_get(ptep), pte)))
++					goto retry_avoidcopy;
++				/*
++				 * race occurs while re-acquiring page_table_lock, and
++				 * our job is done.
++				 */
++				return 0;
+ 			}
+ 			WARN_ON_ONCE(1);
+ 		}
+_
 
