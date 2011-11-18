@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758428Ab1KSAPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:15:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38605 "EHLO mx2.suse.de"
+	id S1758379Ab1KSAJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:09:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38528 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756516Ab1KSAJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:09:36 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:29 2011
-Message-Id: <20111119000329.053991778@clark.kroah.org>
+	id S1758358Ab1KSAJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:09:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:04 2011
+Message-Id: <20111119000004.854009573@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 16:02:49 -0800
+Date: Fri, 18 Nov 2011 15:58:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [13/26] hfs: add sanity check for file name length
-In-Reply-To: <20111119000336.GA8452@kroah.com>
+        alan@lxorguk.ukuu.org.uk, David Howells <dhowells@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        Steve Dickson <steved@redhat.com>, James Morris <jmorris@namei.org>
+Subject: [10/26] KEYS: Fix a NULL pointer deref in the user-defined key type
+In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: David Howells <dhowells@redhat.com>
 
-commit bc5b8a9003132ae44559edd63a1623b7b99dfb68 upstream.
+commit 9f35a33b8d06263a165efe3541d9aa0cdbd70b3b upstream.
 
-On a corrupted file system the ->len field could be wrong leading to
-a buffer overflow.
+Fix a NULL pointer deref in the user-defined key type whereby updating a
+negative key into a fully instantiated key will cause an oops to occur
+when the code attempts to free the non-existent old payload.
 
-Reported-and-acked-by: Clement LECIGNE <clement.lecigne@netasq.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+This results in an oops that looks something like the following:
+
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+  IP: [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+  PGD 3391d067 PUD 3894a067 PMD 0
+  Oops: 0002 [#1] SMP
+  CPU 1
+  Pid: 4354, comm: keyctl Not tainted 3.1.0-fsdevel+ #1140                  /DG965RY
+  RIP: 0010:[<ffffffff81085fa1>]  [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+  RSP: 0018:ffff88003d591df8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000006e
+  RDX: ffffffff8161d0c0 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff88003d591e18 R08: 0000000000000000 R09: ffffffff8152fa6c
+  R10: 0000000000000000 R11: 0000000000000300 R12: ffff88003b8f9538
+  R13: ffffffff8161d0c0 R14: ffff88003b8f9d50 R15: ffff88003c69f908
+  FS:  00007f97eb18c720(0000) GS:ffff88003bd00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 0000000000000008 CR3: 000000003d47a000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process keyctl (pid: 4354, threadinfo ffff88003d590000, task ffff88003c78a040)
+  Stack:
+   ffff88003e0ffde0 ffff88003b8f9538 0000000000000001 ffff88003b8f9d50
+   ffff88003d591e28 ffffffff810860f0 ffff88003d591e68 ffffffff8117bfea
+   ffff88003d591e68 ffffffff00000000 ffff88003e0ffde1 ffff88003e0ffde0
+  Call Trace:
+   [<ffffffff810860f0>] call_rcu_sched+0x10/0x12
+   [<ffffffff8117bfea>] user_update+0x8d/0xa2
+   [<ffffffff8117723a>] key_create_or_update+0x236/0x270
+   [<ffffffff811789b1>] sys_add_key+0x123/0x17e
+   [<ffffffff813b84bb>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: Neil Horman <nhorman@redhat.com>
+Acked-by: Steve Dickson <steved@redhat.com>
+Acked-by: James Morris <jmorris@namei.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/hfs/trans.c |    2 ++
- 1 file changed, 2 insertions(+)
+ security/keys/user_defined.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/hfs/trans.c
-+++ b/fs/hfs/trans.c
-@@ -40,6 +40,8 @@ int hfs_mac2asc(struct super_block *sb,
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -102,7 +102,8 @@ int user_update(struct key *key, const v
+ 		key->expiry = 0;
+ 	}
  
- 	src = in->name;
- 	srclen = in->len;
-+	if (srclen > HFS_NAMELEN)
-+		srclen = HFS_NAMELEN;
- 	dst = out;
- 	dstlen = HFS_MAX_NAMELEN;
- 	if (nls_io) {
+-	kfree_rcu(zap, rcu);
++	if (zap)
++		kfree_rcu(zap, rcu);
+ 
+ error:
+ 	return ret;
 
 
