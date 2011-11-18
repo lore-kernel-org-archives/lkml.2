@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab1KRJ1Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:27:25 -0500
-Received: from www17.your-server.de ([213.133.104.17]:48417 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585Ab1KRJ1W (ORCPT
+	id S1756971Ab1KRJ1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:27:24 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:55219 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755081Ab1KRJ1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Nov 2011 04:27:22 -0500
-Subject: [PATCH] x86, mrst: Use kmemdup rather than duplicating its
- implementation
-From: Thomas Meyer <thomas@m3y3r.de>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Date: Thu, 17 Nov 2011 23:43:40 +0100
-Message-ID: <1321569820.1624.277.camel@localhost.localdomain>
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+From: Oliver Neukum <oliver@neukum.org>
+To: Dan Delaney <drdelaney@loclhst.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usbled: add support for Dream Cheeky DL100B Mailbox Friends Alert (1d34:000a)
+Date: Fri, 18 Nov 2011 10:28:24 +0100
+User-Agent: KMail/1.13.5 (Linux/3.1.0-rc9-12-desktop+; KDE/4.4.4; x86_64; ; )
+References: <4EC60E9D.6070606@loclhst.com>
+In-Reply-To: <4EC60E9D.6070606@loclhst.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+Message-Id: <201111181028.24153.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The semantic patch that makes this change is available
-in scripts/coccinelle/api/memdup.cocci.
+Am Freitag, 18. November 2011, 08:51:57 schrieben Sie:
+> This patch will add support for the Dream Cheeky Mailbox Friends Alert (http://www.dreamcheeky.com/mailbox-friends-alert) usb led dongle.
+> The drivers for the webmail notifier (1d34:0004) work perfectly fine, so I just would like to add support for the new device.
+> I have tested the patch on gentoo sources of 2.6.39 and 3.0.6, as well as vanilla 3.1.1 and 3.2-rc2.
+> 
+> This is my first attempt at making a change to the kernel, so let me know if I need to change something (formatting, where to post, etc)
+> 
+> I am not sure who else I may need to CC on this.
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
+Please cc this to
 
-diff -u -p a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
---- a/arch/x86/platform/mrst/mrst.c 2011-11-07 19:37:40.283168752 +0100
-+++ b/arch/x86/platform/mrst/mrst.c 2011-11-08 11:01:48.424910801 +0100
-@@ -656,13 +656,12 @@ static void __init intel_scu_spi_device_
- 		return;
- 	}
- 
--	new_dev = kzalloc(sizeof(*sdev), GFP_KERNEL);
-+	new_dev = kmemdup(sdev, sizeof(*sdev), GFP_KERNEL);
- 	if (!new_dev) {
- 		pr_err("failed to alloc mem for delayed spi dev %s\n",
- 			sdev->modalias);
- 		return;
- 	}
--	memcpy(new_dev, sdev, sizeof(*sdev));
- 
- 	spi_devs[spi_next_dev++] = new_dev;
- }
-@@ -677,13 +676,12 @@ static void __init intel_scu_i2c_device_
- 		return;
- 	}
- 
--	new_dev = kzalloc(sizeof(*idev), GFP_KERNEL);
-+	new_dev = kmemdup(idev, sizeof(*idev), GFP_KERNEL);
- 	if (!new_dev) {
- 		pr_err("failed to alloc mem for delayed i2c dev %s\n",
- 			idev->type);
- 		return;
- 	}
--	memcpy(new_dev, idev, sizeof(*idev));
- 
- 	i2c_bus[i2c_next_dev] = bus;
- 	i2c_devs[i2c_next_dev++] = new_dev;
+greg@kroah.com
+linux-usb@vger.kernel.org
+
+In addition you need to add a "Signed-off-by" line as described in
+Documentation/SubmittingPatches in the kernel tree.
+
+	HTH
+		Oliver
