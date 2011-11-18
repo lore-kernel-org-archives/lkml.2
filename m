@@ -1,172 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1KRWEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:04:15 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:46491 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755505Ab1KRWEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:04:13 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@st.com>
-Subject: Re: [PATCH V4] GPIO/pl061: Add suspend resume capability
-Date: Fri, 18 Nov 2011 23:06:56 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: baruch@tkos.co.il, grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
-        mirko.gardi@st.com
-References: <ae47c7f2f31276ffb2b8db132bcabe80aa1139f6.1321609430.git.viresh.kumar@st.com>
-In-Reply-To: <ae47c7f2f31276ffb2b8db132bcabe80aa1139f6.1321609430.git.viresh.kumar@st.com>
+	id S1756682Ab1KRWHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:07:54 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:58989 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab1KRWHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 17:07:53 -0500
+Message-ID: <4EC6D767.6030109@calvaedi.com>
+Date: Fri, 18 Nov 2011 23:08:39 +0100
+From: John Hughes <john@calvaedi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: John Hughes <john@calva.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry. Try 2 with added man pages.
+References: <4EC66D12.2090505@Calva.COM>	 <1321641333.2653.15.camel@lade.trondhjem.org>	 <4EC6AFA9.9000705@calvaedi.com> <1321648435.2653.53.camel@lade.trondhjem.org>
+In-Reply-To: <1321648435.2653.53.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111182306.56767.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 18, 2011, Viresh Kumar wrote:
-> From: Deepak Sikri <deepak.sikri@st.com>
-> 
-> This patch adds the suspend and resume operations in the driver. The patch
-> ensures the data save and restore for the device registers during the
-> suspend and resume operations respectively.
-> 
-> Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> Acked-by: Baruch Siach <baruch@tkos.co.il>
+On 11/18/2011 09:33 PM, Trond Myklebust wrote:
+> On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote:
+>    
+>> On 11/18/2011 07:35 PM, Trond Myklebust wrote:
+>>      
+>>>
+>>> You need a big fat warning somewhere that enabling this option WILL
+>>> cause data corruption...
+>>>
+>>>        
+>> Why?
+>>
+>> Because some process may get the EACCES error half way through it's
+>> operation.
+>>      
+> No. Because the process can receive a reply to the write() syscall that
+> indicates that the data is safe,
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+There is no reply from "write(2)" that says the data is safe.
 
-> ---
-> 
-> Changes since V3:
-> - pl061_dev_pm_ops marked as static
-> 
-> changes Since V2:
-> - gpio_context_save_regs renamed to pl061_context_save_regs
-> - Hibernation callbacks added with help of SIMPLE_DEV_PM_OPS macro
-> 
-> 
->  drivers/gpio/gpio-pl061.c |   68 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 68 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-> index 093c90b..42a5d56 100644
-> --- a/drivers/gpio/gpio-pl061.c
-> +++ b/drivers/gpio/gpio-pl061.c
-> @@ -23,6 +23,7 @@
->  #include <linux/amba/bus.h>
->  #include <linux/amba/pl061.h>
->  #include <linux/slab.h>
-> +#include <linux/pm.h>
->  
->  #define GPIODIR 0x400
->  #define GPIOIS  0x404
-> @@ -35,6 +36,17 @@
->  
->  #define PL061_GPIO_NR	8
->  
-> +#ifdef CONFIG_PM
-> +struct pl061_context_save_regs {
-> +	u8 gpio_data;
-> +	u8 gpio_dir;
-> +	u8 gpio_is;
-> +	u8 gpio_ibe;
-> +	u8 gpio_iev;
-> +	u8 gpio_ie;
-> +};
-> +#endif
-> +
->  struct pl061_gpio {
->  	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
->  	 * interrupts controller of the system. We need this to support systems
-> @@ -54,6 +66,10 @@ struct pl061_gpio {
->  	void __iomem		*base;
->  	unsigned		irq_base;
->  	struct gpio_chip	gc;
-> +
-> +#ifdef CONFIG_PM
-> +	struct pl061_context_save_regs csave_regs;
-> +#endif
->  };
->  
->  static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
-> @@ -330,6 +346,8 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
->  		irq_set_chip_data(i + chip->irq_base, chip);
->  	}
->  
-> +	amba_set_drvdata(dev, chip);
-> +
->  	return 0;
->  
->  iounmap:
-> @@ -342,6 +360,53 @@ free_mem:
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_PM
-> +static int pl061_suspend(struct device *dev)
-> +{
-> +	struct pl061_gpio *chip = dev_get_drvdata(dev);
-> +	int offset;
-> +
-> +	chip->csave_regs.gpio_data = 0;
-> +	chip->csave_regs.gpio_dir = readb(chip->base + GPIODIR);
-> +	chip->csave_regs.gpio_is = readb(chip->base + GPIOIS);
-> +	chip->csave_regs.gpio_ibe = readb(chip->base + GPIOIBE);
-> +	chip->csave_regs.gpio_iev = readb(chip->base + GPIOIEV);
-> +	chip->csave_regs.gpio_ie = readb(chip->base + GPIOIE);
-> +
-> +	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
-> +		if (chip->csave_regs.gpio_dir & (1 << offset))
-> +			chip->csave_regs.gpio_data |=
-> +				pl061_get_value(&chip->gc, offset) << offset;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int pl061_resume(struct device *dev)
-> +{
-> +	struct pl061_gpio *chip = dev_get_drvdata(dev);
-> +	int offset;
-> +
-> +	for (offset = 0; offset < PL061_GPIO_NR; offset++) {
-> +		if (chip->csave_regs.gpio_dir & (1 << offset))
-> +			pl061_direction_output(&chip->gc, offset,
-> +					chip->csave_regs.gpio_data &
-> +					(1 << offset));
-> +		else
-> +			pl061_direction_input(&chip->gc, offset);
-> +	}
-> +
-> +	writeb(chip->csave_regs.gpio_is, chip->base + GPIOIS);
-> +	writeb(chip->csave_regs.gpio_ibe, chip->base + GPIOIBE);
-> +	writeb(chip->csave_regs.gpio_iev, chip->base + GPIOIEV);
-> +	writeb(chip->csave_regs.gpio_ie, chip->base + GPIOIE);
-> +
-> +	return 0;
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(pl061_dev_pm_ops, pl061_suspend, pl061_resume);
-> +#endif
-> +
->  static struct amba_id pl061_ids[] = {
->  	{
->  		.id	= 0x00041061,
-> @@ -353,6 +418,9 @@ static struct amba_id pl061_ids[] = {
->  static struct amba_driver pl061_gpio_driver = {
->  	.drv = {
->  		.name	= "pl061_gpio",
-> +#ifdef CONFIG_PM
-> +		.pm	= &pl061_dev_pm_ops,
-> +#endif
->  	},
->  	.id_table	= pl061_ids,
->  	.probe		= pl061_probe,
-> 
+>   but the EKEYEXPIRED error will cause
+> the data to be lost when the client tries to actually commit the data to
+> disk.
+>
+>    
+>> The traditional Kerberos/AFS way was to behave the old way, and use
+>> krenew to keep the ticket from expiring if a process needed to be run
+>> overnight.
+>>      
+> Which is just wrong: the general intention of kerberos security is to
+> ensure that the _user_ has ACKed an operation. Renewing tickets without
+> user input would circumvent that intention. If you need to have the job
+> run overnight, then ask for a longer lifetime for your ticket.
+>    
+
+Ok, so no need for the hang on ticket expired then.
+
+(Although I don't think renewable tickets and krenew are a figment of my 
+imagination).
+
+>    
+>> What other way is there of fixing the problem if we are going to keep
+>> the "hang 'till a ticket turns up" behaviour?  (rewrite gnome and kde
+>> seems kind of a big job).
+>>      
+> Notify the kernel that a ticket is about to expire so that the kernel
+> can decide to block the process on the next NFS-related syscall.
+>
+>    
+I don't understand.  How is it a win to block processes *before* the 
+ticket has expired?
+
 
