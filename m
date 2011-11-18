@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab1KRT2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:28:19 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:56099 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753009Ab1KRT2Q (ORCPT
+	id S1756015Ab1KRTab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:30:31 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40595 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab1KRTaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:28:16 -0500
-Date: Fri, 18 Nov 2011 21:28:10 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org, Felipe Balbi <balbi@ti.com>,
-        Tejun Heo <tj@kernel.org>, Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Kevin Cernekee <cernekee@gmail.com>
-Subject: Re: [PATCH v2] ahci: platform support for suspend/resume
-Message-ID: <20111118192809.GF11736@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1321643410-16102-1-git-send-email-computersforpeace@gmail.com>
+	Fri, 18 Nov 2011 14:30:30 -0500
+Date: Fri, 18 Nov 2011 14:22:18 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Nico -telmich- Schottelius <nico-linux-20111118@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>
+Cc: b43-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, Michael Buesch <m@bues.ch>
+Subject: Re: b43: BCM 4331: MacBook 8,1: No connection after suspend
+Message-ID: <20111118192217.GA2663@tuxdriver.com>
+References: <20111118173242.GA2101@schottelius.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Mjqg7Yu+0hL22rav"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321643410-16102-1-git-send-email-computersforpeace@gmail.com>
+In-Reply-To: <20111118173242.GA2101@schottelius.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arend has nothing to do with b43, and b43 has it's own
+mailing list, b43-dev@lists.infradead.org.  Even if it didn't,
+linux-wireless@vger.kernel.org would be a more appropriate list than
+this one.
 
---Mjqg7Yu+0hL22rav
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+John
 
-Hi,
+On Fri, Nov 18, 2011 at 06:32:42PM +0100, Nico -telmich- Schottelius wrote:
+> Hello,
+> 
+> new notebook, new problems (*):
+> 
+> Running 3.2.0-rc1 on the MacBook Pro 8,1 with the BCM4331
+> (14e4:4331) the WLAN indeed works:
+> 
+> [   86.231702] b43-phy0: Broadcom 4331 WLAN found (core revision 29)
+> [   86.269190] ieee80211 phy0: Selected rate control algorithm
+> 'minstrel_ht'
+> [   86.270486] Broadcom 43xx driver loaded [ Features: PMNLS ]
+> [   87.677265] b43-phy0: Loading firmware version 666.2 (2011-02-23
+> 01:15:07)
+> 
+> But: After a suspend it seems not to receive any packets anymore:
+> 
+> [ 2334.494845] wlan0: authenticate with 64:87:d7:37:89:89 (try 1)
+> [ 2334.694035] wlan0: authenticate with 64:87:d7:37:89:89 (try 2)
+> [ 2334.893909] wlan0: authenticate with 64:87:d7:37:89:89 (try 3)
+> [ 2335.093824] wlan0: authentication with 64:87:d7:37:89:89 timed out
+> 
+> wpa_supplicant thus retries to connect to the network again and again
+> without success.
+> 
+> This is reproducable on the MBP 8,1 and is *NOT* fixed if I unload
+> b43 and modprobe it again. It is also "not fixed" when doing
+> multiple suspends/resumes.
+> 
+> Any pointers to this?
+> 
+> Cheers,
+> 
+> Nico
+> 
+> 
+> (*) feels like in good old times...
+> 
+> -- 
+> PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-On Fri, Nov 18, 2011 at 11:10:10AM -0800, Brian Norris wrote:
-> Add platform hooks for custom suspend() and resume() functions. The
-> generic suspend/resume code in drivers/ata/ahci_platform.c is adapted
-> from the PCI version in drivers/ata/ahci.c.
->=20
-> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---Mjqg7Yu+0hL22rav
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOxrHJAAoJEIaOsuA1yqREKUEQAJflTGb45/bw3wHj62vGuIrl
-469kpAsIbhwGeAbkdLYNUMwbuMj7EsDHMdTfp7BqIKUg63PpTfcFM6Zmo5nNHSju
-S3rjD0U48Rfv/Q4xEtSuHaWmXHmbmz7PV6OYPLl+5++1cUAWhzLpFf5fSiXyHwEI
-5GVzwyx9yWkSrJtPXIlz4wYTk/ixA+XKtD2RY69TWttRf0AhBApvaMmfAwzCMc9j
-mQhUibVb3/NacV+W2hnaAn4yQVzxwVQQvevnVhkEuOr/upL/aO1vZP1hmxkG0ApH
-PMa6VzV2FQpQ42MHOOt3yUu1cQCHt4hqURbgE2HL6HLm0b+oLUeAPqOWV5Tm5ZpE
-jilCDIbcS0WiviSXqX1EmqWToiwlB834UkACAlp+Ha4tHXoFZWx40RPk5RMlGt5C
-DUq30EQQXCMY/HLKHQraRaUI2q6Q1MIs01qRU04six5m5VodUk5DkJ38wkKr0QFV
-MksE2GHaJdi4/rcvz+yqwnsxAv+VGu+m61MaqtFCV+qZgGSEsS+MaHpL+7fPbfFF
-lybg1WjaPZXC3XAF55MWUr2vBFCn8OLQOCfsulZ0BapjsIxmwkPO0HDK81hPC/cC
-MIdbj95uuPc9CcNrwYNxOrSBqTh9o4emSocqbtl16wjJ44e8J6SkR6dTbUYwkJXU
-DgPbEFoi5ZJNeiqb+PHB
-=NZuK
------END PGP SIGNATURE-----
-
---Mjqg7Yu+0hL22rav--
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
