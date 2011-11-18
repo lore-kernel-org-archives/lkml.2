@@ -1,139 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab1KRXQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 18:16:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53039 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab1KRXQQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 18:16:16 -0500
-Date: Fri, 18 Nov 2011 15:15:44 -0800
-From: "tip-bot for Luck, Tony" <tony.luck@intel.com>
-Message-ID: <tip-66f5ddf30a59f811818656cb2833c80da0340cfa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        arjan@linux.intel.com, tony.luck@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com, tglx@linutronix.de, tony.luck@intel.com,
-        mingo@elte.hu
-In-Reply-To: <4eb2e1971326651a3b@agluck-desktop.sc.intel.com>
-References: <4eb2e1971326651a3b@agluck-desktop.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mce: Make mce_chrdev_ops 'static const'
-Git-Commit-ID: 66f5ddf30a59f811818656cb2833c80da0340cfa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 15:15:50 -0800 (PST)
+	id S1757597Ab1KRXRI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 18:17:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43404 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753797Ab1KRXRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 18:17:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="77507961"
+Date: Fri, 18 Nov 2011 15:17:04 -0800
+From: Jesse Brandeburg <jesse.brandeburg@intel.com>
+To: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "Brown, Aaron F" <aaron.f.brown@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: [BUG] e1000: possible deadlock scenario caught by lockdep
+Message-ID: <20111118151704.0000007b@unknown>
+In-Reply-To: <20111118085737.0000387f@unknown>
+References: <1321579620.3533.29.camel@frodo>
+	<20111118085737.0000387f@unknown>
+X-Mailer: Claws Mail 3.7.10cvs7 (GTK+ 2.16.6; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  66f5ddf30a59f811818656cb2833c80da0340cfa
-Gitweb:     http://git.kernel.org/tip/66f5ddf30a59f811818656cb2833c80da0340cfa
-Author:     Luck, Tony <tony.luck@intel.com>
-AuthorDate: Thu, 3 Nov 2011 11:46:47 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 8 Nov 2011 16:17:11 +0100
+On Fri, 18 Nov 2011 08:57:37 -0800
+Jesse Brandeburg <jesse.brandeburg@intel.com> wrote:
 
-x86/mce: Make mce_chrdev_ops 'static const'
+> CC'd netdev, and e1000-devel
+> 
+> On Thu, 17 Nov 2011 17:27:00 -0800
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> > Here you see that we are calling cancel_delayed_work_sync(&adapter->watchdog_task);
+> > 
+> > The problem is that adapter->watchdog_task grabs the mutex &adapter->mutex.
+> > 
+> > If the work has started and it blocked on that mutex, the
+> > cancel_delayed_work_sync() will block indefinitely and we have a
+> > deadlock.
+> > 
+> > Not sure what's the best way around this. Can we call e1000_down()
+> > without grabbing the adapter->mutex?
+> 
+> Thanks for the report, I'll look at it today and see if I can work out
+> a way to avoid the bonk.
 
-Arjan would like to make struct file_operations const, but
-mce-inject directly writes to the mce_chrdev_ops to install its
-write handler. In an ideal world mce-inject would have its own
-character device, but we have a sizable legacy of test scripts
-that hardwire "/dev/mcelog", so it would be painful to switch to
-a separate device now. Instead, this patch switches to a stub
-function in the mce code, with a registration helper that
-mce-inject can call when it is loaded.
+this is a proposed patch to fix the issue:
+if it works for you please let me know and I will submit it officially
+through our process
 
-Note that this would also allow for a sane process to allow
-mce-inject to be unloaded again (with an unregister function,
-and appropriate module_{get,put}() calls), but that is left for
-potential future patches.
+e1000: fix lockdep splat in shutdown handler
 
-Reported-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/4eb2e1971326651a3b@agluck-desktop.sc.intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+From: Jesse Brandeburg <jesse.brandeburg@intel.com>
+
+as reported by Steven Rostedt, e1000 has a lockdep splat added
+during the recent merge window.  The issue is that
+cancel_delayed_work is called while holding our private mutex.
+
+There is no reason that I can see to hold the mutex during pci
+shutdown, it was more just paranoia that I put the mutex_lock
+around the call to e1000_down.
+
+in a quick survey lots of drivers handle locking differently when
+being called by the pci layer.  The assumption here is that we
+don't need the mutexes' protection in this function because
+the driver could not be unloaded while in the shutdown handler
+which is only called at reboot or poweroff.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
 ---
- arch/x86/include/asm/mce.h              |    5 ++++-
- arch/x86/kernel/cpu/mcheck/mce-inject.c |    2 +-
- arch/x86/kernel/cpu/mcheck/mce.c        |   25 ++++++++++++++++++++++---
- 3 files changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index c9321f3..0e8ae57 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -201,7 +201,10 @@ int mce_notify_irq(void);
- void mce_notify_process(void);
+ drivers/net/ethernet/intel/e1000/e1000_main.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index cf480b5..97b46ba 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -4716,8 +4716,6 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
  
- DECLARE_PER_CPU(struct mce, injectm);
--extern struct file_operations mce_chrdev_ops;
-+
-+extern void register_mce_write_callback(ssize_t (*)(struct file *filp,
-+				    const char __user *ubuf,
-+				    size_t usize, loff_t *off));
+ 	netif_device_detach(netdev);
  
- /*
-  * Exception handler
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index 6199232..319882e 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -208,7 +208,7 @@ static int inject_init(void)
- 	if (!alloc_cpumask_var(&mce_inject_cpumask, GFP_KERNEL))
- 		return -ENOMEM;
- 	printk(KERN_INFO "Machine check injector initialized\n");
--	mce_chrdev_ops.write = mce_write;
-+	register_mce_write_callback(mce_write);
- 	register_nmi_handler(NMI_LOCAL, mce_raise_notify, 0,
- 				"mce_notify");
+-	mutex_lock(&adapter->mutex);
+-
+ 	if (netif_running(netdev)) {
+ 		WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
+ 		e1000_down(adapter);
+@@ -4725,10 +4723,8 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
+ 
+ #ifdef CONFIG_PM
+ 	retval = pci_save_state(pdev);
+-	if (retval) {
+-		mutex_unlock(&adapter->mutex);
++	if (retval)
+ 		return retval;
+-	}
+ #endif
+ 
+ 	status = er32(STATUS);
+@@ -4783,8 +4779,6 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
+ 	if (netif_running(netdev))
+ 		e1000_free_irq(adapter);
+ 
+-	mutex_unlock(&adapter->mutex);
+-
+ 	pci_disable_device(pdev);
+ 
  	return 0;
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 362056a..2af127d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1634,16 +1634,35 @@ static long mce_chrdev_ioctl(struct file *f, unsigned int cmd,
- 	}
- }
- 
--/* Modified in mce-inject.c, so not static or const */
--struct file_operations mce_chrdev_ops = {
-+static ssize_t (*mce_write)(struct file *filp, const char __user *ubuf,
-+			    size_t usize, loff_t *off);
-+
-+void register_mce_write_callback(ssize_t (*fn)(struct file *filp,
-+			     const char __user *ubuf,
-+			     size_t usize, loff_t *off))
-+{
-+	mce_write = fn;
-+}
-+EXPORT_SYMBOL_GPL(register_mce_write_callback);
-+
-+ssize_t mce_chrdev_write(struct file *filp, const char __user *ubuf,
-+			 size_t usize, loff_t *off)
-+{
-+	if (mce_write)
-+		return mce_write(filp, ubuf, usize, off);
-+	else
-+		return -EINVAL;
-+}
-+
-+static const struct file_operations mce_chrdev_ops = {
- 	.open			= mce_chrdev_open,
- 	.release		= mce_chrdev_release,
- 	.read			= mce_chrdev_read,
-+	.write			= mce_chrdev_write,
- 	.poll			= mce_chrdev_poll,
- 	.unlocked_ioctl		= mce_chrdev_ioctl,
- 	.llseek			= no_llseek,
- };
--EXPORT_SYMBOL_GPL(mce_chrdev_ops);
- 
- static struct miscdevice mce_chrdev_device = {
- 	MISC_MCELOG_MINOR,
