@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab1KRWi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:38:29 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:52480 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757002Ab1KRWiJ convert rfc822-to-8bit (ORCPT
+	id S1757174Ab1KRWol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:44:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50703 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab1KRWoj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:38:09 -0500
-X-IronPort-AV: E=Sophos;i="4.69,535,1315206000"; 
-   d="scan'208";a="600141512"
-Message-ID: <1321655886.10541.24.camel@lade.trondhjem.org>
-Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
- expiry. Try 2 with added man pages.
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: John Hughes <john@calvaedi.com>
-Cc: John Hughes <john@calva.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 19 Nov 2011 00:38:06 +0200
-In-Reply-To: <4EC6D767.6030109@calvaedi.com>
-References: <4EC66D12.2090505@Calva.COM>
-		 <1321641333.2653.15.camel@lade.trondhjem.org>
-		 <4EC6AFA9.9000705@calvaedi.com>
-	 <1321648435.2653.53.camel@lade.trondhjem.org>
-	 <4EC6D767.6030109@calvaedi.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 18 Nov 2011 17:44:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111118214527.CE6AC2C0E7@topped-with-meat.com>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+	<alpine.LRH.2.00.1111181514220.30965@tundra.namei.org>
+	<CAGXu5jJ4h+uCF50DqbLe1m6CRr_Mw3pWq4mEm8nRtDPKV9C2Rg@mail.gmail.com>
+	<20111118214527.CE6AC2C0E7@topped-with-meat.com>
+Date: Fri, 18 Nov 2011 14:44:38 -0800
+X-Google-Sender-Auth: BFlVPNLAjMZl2e9QhxBwTfGhaok
+Message-ID: <CAGXu5jJuzjo0bLGcxDgyp6Uj=uJj02BL5Jr+e1WeqUwc18Oe-A@mail.gmail.com>
+Subject: Re: [PATCH v6 0/3] security: Yama LSM
+From: Kees Cook <keescook@chromium.org>
+To: Roland McGrath <roland@hack.frob.com>
+Cc: oleg@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 18 Nov 2011 22:38:08.0684 (UTC) FILETIME=[BED8E6C0:01CCA642]
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 23:08 +0100, John Hughes wrote: 
-> On 11/18/2011 09:33 PM, Trond Myklebust wrote:
-> > On Fri, 2011-11-18 at 20:19 +0100, John Hughes wrote:
-> >    
-> >> On 11/18/2011 07:35 PM, Trond Myklebust wrote:
-> >>      
-> >>>
-> >>> You need a big fat warning somewhere that enabling this option WILL
-> >>> cause data corruption...
-> >>>
-> >>>        
-> >> Why?
-> >>
-> >> Because some process may get the EACCES error half way through it's
-> >> operation.
-> >>      
-> > No. Because the process can receive a reply to the write() syscall that
-> > indicates that the data is safe,
-> 
-> There is no reply from "write(2)" that says the data is safe.
+On Fri, Nov 18, 2011 at 1:45 PM, Roland McGrath <roland@hack.frob.com> wrote:
+>> Do you have any objection to my LSM performing ptrace restrictions?
+>> It's entirely self-contained, and all the major upstream crash
+>> handlers are already using the prctl() interface it uses to declare
+>> ptrace attach relationships.
+>
+> I don't have the context of what your LSM does.  But other LSMs apply their
+> own rules in security_ptrace().  That's what the hook is for.  I'm not sure
+> why we would object from the perspective of core ptrace functionality.
+> LSMs are LSMs.  Their behavior is between you and your users, as far as I
+> am concerned.  As experts on ptrace and aficionados of its users, we may
+> have thoughts on what constraints on ptrace users would find annoying.
+> But that doesn't mean we'd object per se to whatever bizarre constraints
+> users want to ask an LSM to put on them.
 
-Read the rest of the thread... Jim and Nick already made this point, and
-I've replied.
+Yup, that's precisely what Yama does as well. Sounds like you're not
+naking an LSM that uses security_ptrace(), then.
 
-The fact of the matter is that most application writers remain blithely
-oblivious of the need to fsync() as the ext4 people know all to well:
-see the attempts to impose the fully posix-compatible 'data=writeback'
-mode as the default and the catastrophe that occurred when
-'data=ordered' semantics changed for the rename() syscall. Adding new
-failure modes needs to be done with care, or GNOME will crash and/or
-your word processor _will_ lose your last hour or so of work.
+Thanks!
 
-> >   but the EKEYEXPIRED error will cause
-> > the data to be lost when the client tries to actually commit the data to
-> > disk.
-> >
-> >    
-> >> The traditional Kerberos/AFS way was to behave the old way, and use
-> >> krenew to keep the ticket from expiring if a process needed to be run
-> >> overnight.
-> >>      
-> > Which is just wrong: the general intention of kerberos security is to
-> > ensure that the _user_ has ACKed an operation. Renewing tickets without
-> > user input would circumvent that intention. If you need to have the job
-> > run overnight, then ask for a longer lifetime for your ticket.
-> >    
-> 
-> Ok, so no need for the hang on ticket expired then.
-> 
-> (Although I don't think renewable tickets and krenew are a figment of my 
-> imagination).
-
-They are a workaround to the problem of users failing to plan ahead
-and/or jobs not running as quickly as originally scheduled. You can run
-them if you feel safe doing so, but they should not be a mandatory
-feature to ensure data isn't lost during normal operation.
-
-BTW: instead of trying to change existing kernel and gssd semantics, why
-not concentrate on adding the equivalent of krenewd/kstart?
-
-> >> What other way is there of fixing the problem if we are going to keep
-> >> the "hang 'till a ticket turns up" behaviour?  (rewrite gnome and kde
-> >> seems kind of a big job).
-> >>      
-> > Notify the kernel that a ticket is about to expire so that the kernel
-> > can decide to block the process on the next NFS-related syscall.
-> >
-> >    
-> I don't understand.  How is it a win to block processes *before* the 
-> ticket has expired?
-
-So that the kernel can flush out any dirty data while the ticket is
-valid, and block further asynchronous read/write operations (either by
-making them synchronous, or by returning an appropriate error). We may
-also want to consider closing open file state and possibly freeing up
-locks so that other processes with valid credentials may still access
-the data.
-
-IOW: that allows for an _orderly_ failure mode instead of the current
-catastrophic mode. The application gets a chance to deal with any errors
-_before_ the data is lost.
+-Kees
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Kees Cook
+ChromeOS Security
