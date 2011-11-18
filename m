@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab1KRTab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:30:31 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40595 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab1KRTaa (ORCPT
+	id S1756339Ab1KRTao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:30:44 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64226 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab1KRTal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:30:30 -0500
-Date: Fri, 18 Nov 2011 14:22:18 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Nico -telmich- Schottelius <nico-linux-20111118@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>
-Cc: b43-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, Michael Buesch <m@bues.ch>
-Subject: Re: b43: BCM 4331: MacBook 8,1: No connection after suspend
-Message-ID: <20111118192217.GA2663@tuxdriver.com>
-References: <20111118173242.GA2101@schottelius.org>
+	Fri, 18 Nov 2011 14:30:41 -0500
+Message-ID: <4EC6B25D.70708@gmail.com>
+Date: Fri, 18 Nov 2011 13:30:37 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118173242.GA2101@schottelius.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olof Johansson <olof@lixom.net>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 01/10] arm/tegra: initial device tree for tegra30
+References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com> <1321546766-26770-2-git-send-email-pdeschrijver@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF1740D74C46@HQMAIL01.nvidia.com> <20111118184942.GA31678@quad.lixom.net>
+In-Reply-To: <20111118184942.GA31678@quad.lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arend has nothing to do with b43, and b43 has it's own
-mailing list, b43-dev@lists.infradead.org.  Even if it didn't,
-linux-wireless@vger.kernel.org would be a more appropriate list than
-this one.
+On 11/18/2011 12:49 PM, Olof Johansson wrote:
+> On Thu, Nov 17, 2011 at 11:39:14AM -0800, Stephen Warren wrote:
+>> Peter De Schrijver wrote at Thursday, November 17, 2011 9:19 AM:
+>>> This patch adds the initial device tree for tegra30
+>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/tegra.txt
+>> ...
+>>> +* harmony: tegra20 based development board
+>>> +Required root node properties:
+>>> + - compatible = "nvidia,harmony", "nvidia,tegra20";
+>>> +
+>>> +* seaboard: tegra20 based clamshell reference design
+>>> +Required root node properties:
+>>> + - compatible = "nvidia,seaboard", "nvidia,tegra20";
+>>
+>> Do we really want to list all the board names here? In the future, there
+>> could be tens or hundreds. I would argue that we should just document
+>> nvidia,tegra20 and nvidia,tegra30.
+> 
+> Agreed.
 
-John
+It's not really any different than mach-types which does have every
+board in it.
 
-On Fri, Nov 18, 2011 at 06:32:42PM +0100, Nico -telmich- Schottelius wrote:
-> Hello,
-> 
-> new notebook, new problems (*):
-> 
-> Running 3.2.0-rc1 on the MacBook Pro 8,1 with the BCM4331
-> (14e4:4331) the WLAN indeed works:
-> 
-> [   86.231702] b43-phy0: Broadcom 4331 WLAN found (core revision 29)
-> [   86.269190] ieee80211 phy0: Selected rate control algorithm
-> 'minstrel_ht'
-> [   86.270486] Broadcom 43xx driver loaded [ Features: PMNLS ]
-> [   87.677265] b43-phy0: Loading firmware version 666.2 (2011-02-23
-> 01:15:07)
-> 
-> But: After a suspend it seems not to receive any packets anymore:
-> 
-> [ 2334.494845] wlan0: authenticate with 64:87:d7:37:89:89 (try 1)
-> [ 2334.694035] wlan0: authenticate with 64:87:d7:37:89:89 (try 2)
-> [ 2334.893909] wlan0: authenticate with 64:87:d7:37:89:89 (try 3)
-> [ 2335.093824] wlan0: authentication with 64:87:d7:37:89:89 timed out
-> 
-> wpa_supplicant thus retries to connect to the network again and again
-> without success.
-> 
-> This is reproducable on the MBP 8,1 and is *NOT* fixed if I unload
-> b43 and modprobe it again. It is also "not fixed" when doing
-> multiple suspends/resumes.
-> 
-> Any pointers to this?
-> 
-> Cheers,
-> 
-> Nico
-> 
-> 
-> (*) feels like in good old times...
-> 
-> -- 
-> PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I think if a board requires a new dts, then it needs a unique name.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> 
+>> At a later point, we should fix board-dt.c to solely look for those
+>> compatible values, although this will have to wait until the pinmux DT
+>> bindings are present. Then, the kernel won't care about the board names.
+> 
+> Exactly.
+
+That is perfectly acceptable, but you should still have the option to do
+something specific for any given board.
+
+Rob
