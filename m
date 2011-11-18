@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab1KRVgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 16:36:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14719 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755713Ab1KRVf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 16:35:58 -0500
-Date: Fri, 18 Nov 2011 22:35:30 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] mm: compaction: Determine if dirty pages can be
- migreated without blocking within ->migratepage
-Message-ID: <20111118213530.GA6323@redhat.com>
-References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
- <1321635524-8586-5-git-send-email-mgorman@suse.de>
+	id S1756698Ab1KRVgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 16:36:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38661 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755713Ab1KRVgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 16:36:01 -0500
+Message-ID: <4EC6CFBC.3090502@deeprootsystems.com>
+Date: Fri, 18 Nov 2011 13:35:56 -0800
+From: Kevin Hilman <khilman@deeprootsystems.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321635524-8586-5-git-send-email-mgorman@suse.de>
+To: Tero Kristo <t-kristo@ti.com>
+CC: linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCHv9 05/18] mfd: omap-prm: add driver skeleton
+References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-6-git-send-email-t-kristo@ti.com>
+In-Reply-To: <1316781986-30642-6-git-send-email-t-kristo@ti.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 04:58:43PM +0000, Mel Gorman wrote:
-> +	/* async case, we cannot block on lock_buffer so use trylock_buffer */
-> +	do {
-> +		get_bh(bh);
-> +		if (!trylock_buffer(bh)) {
-> +			/*
-> +			 * We failed to lock the buffer and cannot stall in
-> +			 * async migration. Release the taken locks
-> +			 */
-> +			struct buffer_head *failed_bh = bh;
-> +			bh = head;
-> +			do {
-> +				unlock_buffer(bh);
-> +				put_bh(bh);
-> +				bh = bh->b_this_page;
-> +			} while (bh != failed_bh);
-> +			return false;
+On 09/23/2011 05:46 AM, Tero Kristo wrote:
+> This driver will eventually support OMAP soc PRM module features, e.g. PRCM
+> chain interrupts and voltage processor / controller. This patch only adds
+> basic skeleton for the driver that can be probed for omap3 and omap4.
+> 
+> Signed-off-by: Tero Kristo <t-kristo@ti.com>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
 
-here if blocksize is < PAGE_SIZE you're leaking one get_bh
-(memleak). If blocksize is PAGE_SIZE (common) you're unlocking a
-locked bh leading to fs corruption.
-> +	if (!buffer_migrate_lock_buffers(head, sync)) {
-> +		/*
-> +		 * We have to revert the radix tree update. If this returns
-> +		 * non-zero, it either means that the page count changed
-> +		 * which "can't happen" or the slot changed from underneath
-> +		 * us in which case someone operated on a page that did not
-> +		 * have buffers fully migrated which is alarming so warn
-> +		 * that it happened.
-> +		 */
-> +		WARN_ON(migrate_page_move_mapping(mapping, page, newpage));
+> +config OMAP_PRM
+> +	bool "OMAP Power and Reset Management driver"
+> +	depends on (ARCH_OMAP) && PM
 
-speculative pagecache lookups can actually increase the count, the
-freezing is released before returning from
-migrate_page_move_mapping. It's not alarming that pagecache lookup
-flips bit all over the place. The only way to stop them is the
-page_freeze_refs.
+Minor: this should probably be
 
-folks who wants low latency or no memory overhead should simply
-disable compaction. In my tests these "lowlatency" changes, notably
-the change in vmscan that is already upstream breaks thp allocation
-reliability, the __GFP_NO_KSWAPD check too should be dropped I think,
-it's good thing we dropped it because the sync migrate is needed or
-the above pages with bh to migrate would become "unmovable" despite
-they're allocated in "movable" pageblocks.
+	default ARCH_OMAP && PM
 
-The workload to test is:
+So it's enabled by default whenever a PM kernel is built for OMAP.
 
-cp /dev/sda /dev/null &
-cp /dev/zero /media/someusb/zero &
-wait free memory to reach minimum level
-./largepage (allocate some gigabyte of hugepages)
-grep thp /proc/vmstat
-
-Anything that leads to a thp allocation failure rate of this workload
-of 50% should be banned and all compaction patches (including vmscan
-changes) should go through the above workload.
-
-I got back to the previous state and there's <10% of failures even in
-the above workload (and close to 100% in normal load but it's harder
-to define normal load while the above is pretty easy to define).
+Kevin
