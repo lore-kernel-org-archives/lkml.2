@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab1KRJ7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 04:59:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:30371 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab1KRJ7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 04:59:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,532,1315206000"; 
-   d="scan'208";a="92350658"
-Date: Fri, 18 Nov 2011 11:58:58 +0200
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: linux-next: Tree for Nov 17 (bluetooth)
-Message-ID: <20111118095855.GB9034@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	"Gustavo F. Padovan" <padovan@profusion.mobi>,
-	linux-bluetooth@vger.kernel.org
-References: <20111117150733.a70faf2c9030d511d5367e1e@canb.auug.org.au>
- <4EC5496F.2080509@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC5496F.2080509@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757449Ab1KRJ7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 04:59:50 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:57011 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab1KRJ7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 04:59:47 -0500
+Subject: tracing vs. string formatting
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Nov 2011 10:59:42 +0100
+Message-ID: <1321610382.10266.19.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+Hi,
 
-On Thu, Nov 17, 2011 at 09:50:39AM -0800, Randy Dunlap wrote:
-> On 11/16/2011 08:07 PM, Stephen Rothwell wrote:
-> > Hi all,
-> 
-> 
-> When CONFIG_BT_L2CAP is not enabled:
-> 
-> net/built-in.o: In function `hci_dev_open':
-> (.text+0xdce9a): undefined reference to `enable_hs'
+I'm thinking about adding tracing to all debug messages in our driver
+(iwlwifi) so we can ask people to record all debug messages (which are
+way too many, some can be removed), and then we could post-process it
+and only show selectively the ones we care about.
 
-Despite not enabling L2CAP sounds strange we might find solution even for
-this usage :-)
-I am thinking about moving enable_hs to common part not depending on
-CONFIG_BT_L2CAP option:
+Converting all the messages and/or adding tracing at all the points
+where we have messages now would be a huge effort, and sometimes the
+messages are all that we can get from users, so we wouldn't want to get
+rid of them either.
 
-diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-index cfd399f..ed0a656 100644
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -54,6 +54,8 @@
- 
- #define AUTO_OFF_TIMEOUT 2000
- 
-+int enable_hs;
-+
- static void hci_cmd_task(unsigned long arg);
- static void hci_rx_task(unsigned long arg);
- static void hci_tx_task(unsigned long arg);
-@@ -2691,3 +2693,6 @@ int hci_cancel_inquiry(struct hci_dev *hdev)
- 
-        return hci_send_cmd(hdev, HCI_OP_INQUIRY_CANCEL, 0, NULL);
- }
-+
-+module_param(enable_hs, bool, 0644);
-+MODULE_PARM_DESC(enable_hs, "Enable High Speed");
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index e49b6e5..f36bc3f 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -58,7 +58,6 @@
- #include <net/bluetooth/a2mp.h>
- 
- int disable_ertm;
--int enable_hs;
- 
- static u32 l2cap_feat_mask = L2CAP_FEAT_FIXED_CHAN;
- static u8 l2cap_fixed_chan[8] = { L2CAP_FC_L2CAP, };
-@@ -4811,6 +4810,3 @@ void l2cap_exit(void)
- 
- module_param(disable_ertm, bool, 0644);
- MODULE_PARM_DESC(disable_ertm, "Disable enhanced retransmission mode");
--
--module_param(enable_hs, bool, 0644);
--MODULE_PARM_DESC(enable_hs, "Enable High Speed");
+Therefore I was thinking we should just trace the messages.
+
+The issue I ran into is that obviously almost all messages need string
+formatting. But to put them into the trace, we have two choices now that
+I can see:
+
+1) format the messages into a temporary buffer, then copy into the trace
+2) format the messages into the ringbuffer, reserving the max length we
+   think we might need
+
+Both have obvious problems: The trivial implementation of 1) is stupid
+if tracing is disabled and at least incurs an extra copy. 2) means that
+I need to reserve say 200 bytes for each entry and then will end up not
+using a large chunk of it in most cases.
+
+Is there any way to reserve those 200 bytes, but then when we commit
+update the trace entry length and also un-reserve whatever size we
+didn't need? Then we could directly vsnprintf into the ring-buffer and
+use the return value to update from 200 bytes reserved to say 20.
+
+The API I'm envisioning would look a bit like this:
+
+TRACE_EVENT(foo_dbg,
+        TP_PROTO(const char *fmt, va_list args),
+        TP_ARGS(fmt, args),
+        TP_STRUCT__entry(
+		/* 200 is the max length we expect/reserve */
+                __fmt_string(msg, 200)
+        ),
+        TP_fast_assign(
+                __vprint_str(msg, fmt, args);
+        ),
+        TP_printk("%s", __get_str(msg))
+);
 
 
-Best regards 
-Andrei Emeltchenko 
+Behind the scenes somehow the 200 would get reserved, propagated,
+__vprint_str would call something like
+	r = vsnprintf(__get_str(msg), 200, fmt, args);
+
+and use r to shrink the entry if possible.
+
+
+
+Now obviously I have no idea if it's even possible to shrink an entry
+afterwards :-) It seems like it should be since the local CPU buffer is
+locked in some way, but ... what do I know. Interrupts coming in would
+probably have to make it not shrink the entry, but that seems feasible
+too -- in that case you'd just have the 200 bytes used but not filled
+except for the message (though then maybe you have to memset the
+remainder to 0).
+
+
+Does this sound completely stupid? Yes maybe adding tracing (is there a
+way to cause certain tracepoints to be printk'ed?) would be better but
+converting all the messages to like a few hundred tracepoints would be a
+huge waste as well.
+
+
+If you made it this far -- thanks! :-)
+
+johannes
+
