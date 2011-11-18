@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab1KRWqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 17:46:16 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:59248 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab1KRWqP (ORCPT
+	id S1757301Ab1KRWqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 17:46:13 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41574 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1KRWqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 17:46:15 -0500
-Message-ID: <4EC6E047.20800@calvaedi.com>
-Date: Fri, 18 Nov 2011 23:46:31 +0100
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+	Fri, 18 Nov 2011 17:46:12 -0500
+Date: Fri, 18 Nov 2011 14:46:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Turner <pjt@google.com>
+Subject: [GIT PULL cgroup] Update maintainership
+Message-ID: <20111118224606.GB27152@google.com>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: John Hughes <john@calva.com>, Jim Rees <rees@umich.edu>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
- expiry. Try 2 with added man pages.
-References: <4EC66D12.2090505@Calva.COM>		 <1321641333.2653.15.camel@lade.trondhjem.org>		 <4EC6AFA9.9000705@calvaedi.com>		 <1321648435.2653.53.camel@lade.trondhjem.org>		 <20111118205749.GA1680@umich.edu>	 <1321650239.2653.68.camel@lade.trondhjem.org>	 <4EC6DD4D.1010008@calvaedi.com> <1321655828.10541.23.camel@lade.trondhjem.org>
-In-Reply-To: <1321655828.10541.23.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 11:37 PM, Trond Myklebust wrote:
-> On Fri, 2011-11-18 at 23:33 +0100, John Hughes wrote:
->    
->> On 11/18/2011 10:03 PM, Trond Myklebust wrote:
->>      
->>> On Fri, 2011-11-18 at 15:57 -0500, Jim Rees wrote:
->>>
->>>        
->>>> The write() syscall doesn't indicate whether the data is safe or not.  That
->>>> would be the close() syscall.
->>>>
->>>>          
->>> fsync(). Which may succeed if the user renews their ticket first.
->>> However you may still have data loss if dirty data has been lost because
->>> of EKEYEXPIRED returns on the WRITE RPC call...
->>>
->>>        
->> Only if the write(2) returned EKEYEXPIRED, surely,
->>      
-> What part of "write is asynchronous" is so hard to understand?
->    
+Hello, Linus.
 
-If write succeeds,
-and the write rpc fails
-and data is lost
-and fsync succeeds
-then the nfs client is broken.
+Paul doesn't have enough time to maintain cgroup and we agreed that I
+take over as one of the maintainers and maintain git tree.  I would be
+doing standard for-next/fixes branch management.  At least until
+things settle down, I wouldn't be committing any patch w/o Li Zefan's
+co-ack.
 
-d'accord?
+At the moment, there are a few conflicting patchsets floating around
+and sorting them out for the next merge window would be the first
+priority.
 
->    
->> I would want to know if data was lost.
->> Intuition means nothing if I get an error.
->>
->> If it were possible I'd like:
->>
->> 1. write works
->> 1a. WRITE RPC fails, data stays in cache
->> 2. ticket renewed
->> 3. fsync works, data written
->>      
-> Which is _exactly_ how it works today, so what is the problem?
->
->    
-Well, the hang after step 1a.
+Please pull from the following git branch to receive MAINTAINERS update.
 
-If there is to be a hang I'd like it when the fsync is done.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.2-fixes
 
-(And no hang if no fsync).
+Thank you.
 
+Paul Menage (1):
+      cgroup: Replace Paul Menage with Tejun Heo as cgroups maintainer
 
+ MAINTAINERS |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 7f6bc29..78751bb 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1927,10 +1927,11 @@ S:	Maintained
+ F:	drivers/connector/
+ 
+ CONTROL GROUPS (CGROUPS)
+-M:	Paul Menage <paul@paulmenage.org>
++M:	Tejun Heo <tj@kernel.org>
+ M:	Li Zefan <lizf@cn.fujitsu.com>
+ L:	containers@lists.linux-foundation.org
+ L:	cgroups@vger.kernel.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
+ S:	Maintained
+ F:	include/linux/cgroup*
+ F:	kernel/cgroup*
+
+--
+tejun
