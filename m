@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab1KRKDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:03:18 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44727 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756535Ab1KRKDR (ORCPT
+	id S1757457Ab1KRKEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:04:45 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:52698
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756535Ab1KRKEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:03:17 -0500
-Message-ID: <4EC62D58.103@linux.vnet.ibm.com>
-Date: Fri, 18 Nov 2011 18:03:04 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Fri, 18 Nov 2011 05:04:44 -0500
+X-SpamScore: -20
+X-BigFish: VPS-20(zz9371K936eK542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h93fh)
+X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Subject: RE: [PATCH 1/11] MFD: DA9052 MFD core module v8
+Thread-Topic: [PATCH 1/11] MFD: DA9052 MFD core module v8
+Thread-Index: AQHMpdhedK85SV2zTE26Wdc+DoHCHJWyZW9A
+Date: Fri, 18 Nov 2011 10:00:59 +0000
+Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED1F9C5F05@KCHJEXMB01.kpit.com>
+References: <1320300865.2092.10.camel@dhruva>
+ <1321610190.20271.328.camel@x61.thuisdomein>
+In-Reply-To: <1321610190.20271.328.camel@x61.thuisdomein>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.10.38.22]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 6/6] KVM: introduce a table to map slot id to index
- in memslots arry
-References: <4EC6226B.3080408@linux.vnet.ibm.com> <4EC6235A.90705@linux.vnet.ibm.com> <1321609536.8010.30.camel@lappy>
-In-Reply-To: <1321609536.8010.30.camel@lappy>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111723-6102-0000-0000-0000003200EE
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAIA4rQJ009640
 
-On 11/18/2011 05:45 PM, Sasha Levin wrote:
-
-
->>  struct kvm {
->> @@ -340,14 +342,13 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
->>  static inline struct kvm_memory_slot *
->>  id_to_memslot(struct kvm_memslots *slots, int id)
->>  {
->> -	int i;
->> +	int index = slots->id_to_index[id];
->> +	struct kvm_memory_slot *slot;
->>
->> -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
->> -		if (slots->memslots[i].id == id)
->> -			return &slots->memslots[i];
->> +	slot = &slots->memslots[index];
->>
->> -	WARN_ON(1);
->> -	return NULL;
->> +	WARN_ON(slot->id != id);
->> +	return slot;
->>  }
+> -----Original Message-----
+> From: Paul Bolle [mailto:pebolle@tiscali.nl]
+> Sent: Friday, November 18, 2011 3:27 PM
+> To: Ashish Jangam
+> Cc: Mark Brown; arnd@arndb.de; sameo@openedhand.com; linux-
+> kernel@vger.kernel.org; Dajun; linaro-dev@lists.linaro.org
+> Subject: Re: [PATCH 1/11] MFD: DA9052 MFD core module v8
 > 
-> If we didn't find the right memslot we shouldn't be returning a wrong
-> one, we should be failing.
+> On Thu, 2011-11-03 at 11:44 +0530, Ashish Jangam wrote:
+> > The DA9052/53 is a highly integrated PMIC subsystem with supply domain
+> > flexibility to support wide range of high performance application.
+> >
+> > It provides voltage regulators, GPIO controller, Touch Screen, RTC,
+> Battery
+> > control and other functionality.
+> >
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> > ---
+> 
+> So the DA9052 GPIO module that is currently in the mainline tree was
+> added as unbuildable code, wasn't it?
+DA9052 MFD has undergone changes even after ack of DA9052 GPIO so with
+the current MFD it may not work. Now once MFD gets through I will send an
+incr patch for DA9052 GPIO. 
+> 
+> 
+> Paul Bolle
 > 
 
 
-Um, in the current code, the "id" has already been checked by the caller,
-that means "id" should be < KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS, so,
-if we can not find the memslot for this slot, it must be a bug.
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
