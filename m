@@ -1,213 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758426Ab1KSAJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:09:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38576 "EHLO mx2.suse.de"
+	id S1758303Ab1KSAJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:09:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38400 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758391Ab1KSAJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:09:30 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:28 2011
-Message-Id: <20111119000328.844875028@clark.kroah.org>
+	id S1758282Ab1KSAJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:09:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:04 2011
+Message-Id: <20111119000004.407781487@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 16:02:47 -0800
+Date: Fri, 18 Nov 2011 15:58:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [11/26] ALSA: usb-audio - Fix the missing volume quirks at delayed init
-In-Reply-To: <20111119000336.GA8452@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Eric Anholt <eric@anholt.net>,
+        Keith Packard <keithp@keithp.com>
+Subject: [05/26] drm/i915: Fix object refcount leak on mmappable size limit error path.
+In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Eric Anholt <eric@anholt.net>
 
-commit dcaaf9f2c16b56f8bb316881fcd3f15c18fc71e7 upstream.
+commit 14660ccd599dc7bd6ecef17408bd76dc853f9b77 upstream.
 
-In the recent usb-audio driver, the initialization of volume ranges
-may be delayed when the device doesn't respond well at the probing time.
-But the volume quirks for certain devices are applied only in
-mixer_ctl_feature_info() thus only at the very first probe and will be
-missing when the volume range is initialized later.
+I've been seeing memory leaks on my system in the form of large
+(300-400MB) GEM objects created by now-dead processes laying around
+clogging up memory.  I usually notice when it gets to about 1.2GB of
+them.  Hopefully this clears up the issue, but I just found this bug
+by inspection.
 
-This patch moves the volume quirk code to be always called from the
-volume-range extraction (get_min_max()), so that the quirks are properly
-applied in the later init time.
-
-Reported-and-tested-by: Alexey Fisher <bug-track@fisher-privat.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/mixer.c |  109 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 59 insertions(+), 50 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -765,10 +765,60 @@ static void usb_mixer_elem_free(struct s
-  * interface to ALSA control for feature/mixer units
-  */
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1475,7 +1475,7 @@ i915_gem_mmap_gtt(struct drm_file *file,
  
-+/* volume control quirks */
-+static void volume_control_quirks(struct usb_mixer_elem_info *cval,
-+				  struct snd_kcontrol *kctl)
-+{
-+	switch (cval->mixer->chip->usb_id) {
-+	case USB_ID(0x0471, 0x0101):
-+	case USB_ID(0x0471, 0x0104):
-+	case USB_ID(0x0471, 0x0105):
-+	case USB_ID(0x0672, 0x1041):
-+	/* quirk for UDA1321/N101.
-+	 * note that detection between firmware 2.1.1.7 (N101)
-+	 * and later 2.1.1.21 is not very clear from datasheets.
-+	 * I hope that the min value is -15360 for newer firmware --jk
-+	 */
-+		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
-+		    cval->min == -15616) {
-+			snd_printk(KERN_INFO
-+				 "set volume quirk for UDA1321/N101 chip\n");
-+			cval->max = -256;
-+		}
-+		break;
-+
-+	case USB_ID(0x046d, 0x09a4):
-+		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
-+			snd_printk(KERN_INFO
-+				"set volume quirk for QuickCam E3500\n");
-+			cval->min = 6080;
-+			cval->max = 8768;
-+			cval->res = 192;
-+		}
-+		break;
-+
-+	case USB_ID(0x046d, 0x0808):
-+	case USB_ID(0x046d, 0x0809):
-+	case USB_ID(0x046d, 0x0991):
-+	/* Most audio usb devices lie about volume resolution.
-+	 * Most Logitech webcams have res = 384.
-+	 * Proboly there is some logitech magic behind this number --fishor
-+	 */
-+		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
-+			snd_printk(KERN_INFO
-+				"set resolution quirk: cval->res = 384\n");
-+			cval->res = 384;
-+		}
-+		break;
-+
-+	}
-+}
-+
- /*
-  * retrieve the minimum and maximum values for the specified control
-  */
--static int get_min_max(struct usb_mixer_elem_info *cval, int default_min)
-+static int get_min_max_with_quirks(struct usb_mixer_elem_info *cval,
-+				   int default_min, struct snd_kcontrol *kctl)
- {
- 	/* for failsafe */
- 	cval->min = default_min;
-@@ -844,6 +894,9 @@ static int get_min_max(struct usb_mixer_
- 		cval->initialized = 1;
+ 	if (obj->base.size > dev_priv->mm.gtt_mappable_end) {
+ 		ret = -E2BIG;
+-		goto unlock;
++		goto out;
  	}
  
-+	if (kctl)
-+		volume_control_quirks(cval, kctl);
-+
- 	/* USB descriptions contain the dB scale in 1/256 dB unit
- 	 * while ALSA TLV contains in 1/100 dB unit
- 	 */
-@@ -864,6 +917,7 @@ static int get_min_max(struct usb_mixer_
- 	return 0;
- }
- 
-+#define get_min_max(cval, def)	get_min_max_with_quirks(cval, def, NULL)
- 
- /* get a feature/mixer unit info */
- static int mixer_ctl_feature_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
-@@ -882,7 +936,7 @@ static int mixer_ctl_feature_info(struct
- 		uinfo->value.integer.max = 1;
- 	} else {
- 		if (!cval->initialized) {
--			get_min_max(cval, 0);
-+			get_min_max_with_quirks(cval, 0, kcontrol);
- 			if (cval->initialized && cval->dBmin >= cval->dBmax) {
- 				kcontrol->vd[0].access &=
- 					~(SNDRV_CTL_ELEM_ACCESS_TLV_READ |
-@@ -1045,9 +1099,6 @@ static void build_feature_ctl(struct mix
- 		cval->ch_readonly = readonly_mask;
- 	}
- 
--	/* get min/max values */
--	get_min_max(cval, 0);
--
- 	/* if all channels in the mask are marked read-only, make the control
- 	 * read-only. set_cur_mix_value() will check the mask again and won't
- 	 * issue write commands to read-only channels. */
-@@ -1069,6 +1120,9 @@ static void build_feature_ctl(struct mix
- 		len = snd_usb_copy_string_desc(state, nameid,
- 				kctl->id.name, sizeof(kctl->id.name));
- 
-+	/* get min/max values */
-+	get_min_max_with_quirks(cval, 0, kctl);
-+
- 	switch (control) {
- 	case UAC_FU_MUTE:
- 	case UAC_FU_VOLUME:
-@@ -1118,51 +1172,6 @@ static void build_feature_ctl(struct mix
- 		break;
- 	}
- 
--	/* volume control quirks */
--	switch (state->chip->usb_id) {
--	case USB_ID(0x0471, 0x0101):
--	case USB_ID(0x0471, 0x0104):
--	case USB_ID(0x0471, 0x0105):
--	case USB_ID(0x0672, 0x1041):
--	/* quirk for UDA1321/N101.
--	 * note that detection between firmware 2.1.1.7 (N101)
--	 * and later 2.1.1.21 is not very clear from datasheets.
--	 * I hope that the min value is -15360 for newer firmware --jk
--	 */
--		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
--		    cval->min == -15616) {
--			snd_printk(KERN_INFO
--				 "set volume quirk for UDA1321/N101 chip\n");
--			cval->max = -256;
--		}
--		break;
--
--	case USB_ID(0x046d, 0x09a4):
--		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
--			snd_printk(KERN_INFO
--				"set volume quirk for QuickCam E3500\n");
--			cval->min = 6080;
--			cval->max = 8768;
--			cval->res = 192;
--		}
--		break;
--
--	case USB_ID(0x046d, 0x0808):
--	case USB_ID(0x046d, 0x0809):
--	case USB_ID(0x046d, 0x0991):
--	/* Most audio usb devices lie about volume resolution.
--	 * Most Logitech webcams have res = 384.
--	 * Proboly there is some logitech magic behind this number --fishor
--	 */
--		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
--			snd_printk(KERN_INFO
--				"set resolution quirk: cval->res = 384\n");
--			cval->res = 384;
--		}
--		break;
--
--	}
--
- 	range = (cval->max - cval->min) / cval->res;
- 	/* Are there devices with volume range more than 255? I use a bit more
- 	 * to be sure. 384 is a resolution magic number found on Logitech
+ 	if (obj->madv != I915_MADV_WILLNEED) {
 
 
