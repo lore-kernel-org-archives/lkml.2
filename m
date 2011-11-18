@@ -1,155 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab1KRReM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 12:34:12 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:58079 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab1KRReK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 12:34:10 -0500
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org
-Date: Fri, 18 Nov 2011 12:31:09 -0500
-In-Reply-To: <4EC63302.4040006@polito.it>
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
-	 <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
-	 <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>
-	 <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>
+	id S1753718Ab1KRRe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 12:34:26 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:60001 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753415Ab1KRReZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 12:34:25 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18N0tw8FQgN+vCNLUQg1ye7TdQHK1vAQ0dt3Y/Q+b
+	J9QtVVLzGGOcIK
+Subject: Re: [patch 1/6] sched: use rt.nr_cpus_allowed to recover
+ select_task_rq() cycles
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+In-Reply-To: <1321630552.2197.15.camel@twins>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629441.7080.15.camel@marge.simson.net>
+	 <1321630552.2197.15.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321637471.2158.44.camel@falcor>
+Date: Fri, 18 Nov 2011 18:34:19 +0100
+Message-ID: <1321637659.6238.15.camel@marge.simson.net>
 Mime-Version: 1.0
-x-cbid: 11111817-8974-0000-0000-0000025943CA
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 11:27 +0100, Roberto Sassu wrote:
-> On 11/17/2011 10:15 PM, Mimi Zohar wrote:
-> > On Thu, 2011-11-17 at 11:57 +0100, Roberto Sassu wrote:
-> >> On 11/16/2011 07:52 PM, Rajiv Andrade wrote:
-> >>>
-> >>> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
-> >>>
-> >>> On 16-11-2011 12:37, Roberto Sassu wrote:
-> >>>> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
-> >>>>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
-> >>>>>> The ima_add_digest_entry() function has been split in order to avoid
-> >>>>>> adding an entry in the measurements list for which the PCR extend
-> >>>>>> operation subsequently fails. Required memory is allocated earlier
-> >>>>>> in the
-> >>>>>> new function ima_prepare_template_entry() and the template entry is
-> >>>>>> added
-> >>>>>> after ima_pcr_extend().
-> >>>>>>
-> >>>>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
-> >>>>>
-> >>>>
-> >>>> Hi Mimi
-> >>>>
-> >>>> i don't know if this condition can happen, but suppose that
-> >>>> for whatever reason the PCR extend fails. In this case, since
-> >>>> the PCR is not extended, the measurements list can be modified,
-> >>>> by removing the non-measured entry, without this fact being
-> >>>> detected by the verifier. So, probably we can avoid to display
-> >>>> the entry.
-> >>>>
-> >>>>
-> >>> Hi Roberto,
-> >>>
-> >>> IMA's trustworthiness is built on the assumption that the TPM underneath
-> >>> can
-> >>> be trusted. If that can't be, the eventlog alone doesn't provide us any
-> >>> security.
-> >>> It's the TPM device driver's job though to workaround any HW bug so that
-> >>> in the
-> >>> end all its stakeholders have their commands processed successfully, as
-> >>> we've
-> >>> pursued in some changes here:
-> >>>
-> >>
-> >> Hi Rajiv
-> >>
-> >> thanks for your comments.
-> >>
-> >> I absolutely agree that we have to trust the TPM for the correct
-> >> execution of IMA.
-> >>
-> >> I think the principle that has been used to build IMA (according
-> >> to the TGC specifications) is that we can trust the eventlog
-> >> as long as the measurement infrastructure is reliable or it is
-> >> possible to detect a threat from previous measurements.
-> >>
-> >> For this reason, a system call is never executed before the
-> >> inode measurement is inserted in the eventlog and the PCR
-> >> is extended. Since these operations must be considered as
-> >> atomic, their execution is protected by a mutex, that is
-> >> released only after all tasks have been performed. This
-> >> ensures that we begin with a measured kernel and we can
-> >> reliably measure all further interactions. This also explains,
-> >> in my view, why delaying the PCR extend operation may lead
-> >> to security risks.
-> >>
-> >> About my patch, i did not move out the protected region any
-> >> of the above described operations. Instead, i'm preventing
-> >> measurements for which the PCR extend failed to be added to
-> >> the measurements list, because in any case it is impossible
-> >> for a verifier to detect their removal from the list.
-> >>
-> >> As i mentioned in the previous mail, one solution to overcome
-> >> this issue is to deny, on the platform running IMA, the execution
-> >> of those system calls for which the measurement process ended
-> >> with an error.
-> >>
-> >> Regards
-> >>
-> >> Roberto Sassu
-> >
-> > True, if the TPM failed to extend the PCR, a malicious user would be
-> > able to remove the measurement from the measurement list without it
-> > being detected.  However, according to the TPM specs, the PCR extend
-> > operation is always suppose to succeed, even in the case when the TPM is
-> > not enabled.
-> >
+On Fri, 2011-11-18 at 16:35 +0100, Peter Zijlstra wrote:
+> On Fri, 2011-11-18 at 16:17 +0100, Mike Galbraith wrote:
+> >  kernel/sched_fair.c |    3 +++
+> >  kernel/sched_rt.c   |    3 +++
 > 
-> Hi Mimi
-> 
-> i don't know if this can happen, but, since the TPM always returns
-> a result in its response, there may be particular conditions under
-> which the PCR extend fails.
-> 
-> After quickly looking at the code in 'drivers/char/tpm.c' there are
-> some additional cases where the operation may fail. For instance,
-> an operation may have been cancelled or it may have just reached the
-> defined time limit.
-> 
-> 
-> > More importantly we need to be able to detect when the PCR has not been
-> > extended appropriately in order to address it.  Otherwise we're just
-> > covering it up.
-> >
-> 
-> Probably i did not understand this point, but do the return code of 
-> tpm_pcr_extend() is not sufficient to determine if the operation was
-> completed successfully?
-> 
-> Roberto Sassu
+> I hate to be the bringer of bad news, but you're going to have to respin
+> all this, these files no longer exist ;-)
 
-Your concern, that if the PCR extend fails, the PCR value will not match
-the measurement list, is a valid concern. I'm not disagreeing with you
-on this point.  At the same time, the IMA measurement policy defines
-which files to include in the measurement list.  This policy is
-independent of the TPM, whether it is enabled or not, or even if the TPM
-is failing for some reason.  IMA goes into TPM by-pass mode and
-maintains the measurement list on systems without a TPM.
+No biggie, will do.
 
-Removing measurements from the measurement list, so that we can verify
-the PCR value, to me at least, is the wrong approach.  Maybe a better
-approach would be to go into TPM by-pass mode.
+I'm just showing what was in the kernel to go with the numbers.
 
-Mimi
+The nohz thing I dislike, but the problem isn't going away.  Don't like
+the select_idle_sibling() ratelimit as is either, but I don't have a
+better solution to this two faced little bugger.
+
+> Please update your tip/master.
+
+Yeah, these were master branch.  Was twiddling stable as usual first, as
+you then don't have to worry about stuff changing (especially unrelated
+stuff that still affects you) day to day, and munging results.
+
+> Also, < 2 ? nr_cpus_allowed being 0 is somewhat of a problem, so the
+> only remaining option is == 1.
+
+True, but see select_task_rq_rt() :)
+
+	-Mike
 
