@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab1KRD3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 22:29:20 -0500
-Received: from gate.crashing.org ([63.228.1.57]:42859 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755107Ab1KRD3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 22:29:19 -0500
-Message-ID: <1321586945.2847.5.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Nov 2011 14:29:05 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1756286Ab1KRDaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 22:30:20 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:37698 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab1KRDaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 22:30:18 -0500
+Date: Fri, 18 Nov 2011 14:30:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Dave Young <dyoung@redhat.com>
+Subject: linux-next: manual merge of the tty tree with the tty.current tree
+Message-Id: <20111118143010.4a6c9eb17b86d24b9ebe706b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__18_Nov_2011_14_30_10_+1100_ehQFfplVDQuw2u0n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+--Signature=_Fri__18_Nov_2011_14_30_10_+1100_ehQFfplVDQuw2u0n
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here are a few fixes remaining for powerpc in 3.2. Some tiny build
-breakage, a couple of nasty ps3 bugs fixes, other very small and
-quite obvious fixes and and a long standing issue with atomics &
-ordering for which we have to use stronger barriers than we do to
-be correct.
+Hi Greg,
 
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/tty_ldisc.c between commits df92d0561de3 ("TTY: ldisc, allow
+waiting for ldisc arbitrarily long") and 0c73c08ec73d ("TTY: ldisc, wait
+for ldisc infinitely in hangup") from the tty.current tree and commits
+66ef27c3fd0e ("tty_ldisc: remove unnecessary negative return check for
+wait_event_timeout") and 8b3ffa173ffa ("TTY: ldisc, remove some unneeded
+includes") from the tty tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The following changes since commit a9098b372606a15745cdeb012de4ee91c0df82c4:
+diff --cc drivers/tty/tty_ldisc.c
+index 8e0924f,174db3b..0000000
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@@ -24,19 -16,8 +16,9 @@@
+  #include <linux/device.h>
+  #include <linux/wait.h>
+  #include <linux/bitops.h>
+- #include <linux/delay.h>
+  #include <linux/seq_file.h>
+-=20
+  #include <linux/uaccess.h>
+- #include <asm/system.h>
+-=20
+- #include <linux/kbd_kern.h>
+- #include <linux/vt_kern.h>
+- #include <linux/selection.h>
+-=20
+- #include <linux/kmod.h>
+- #include <linux/nsproxy.h>
+ +#include <linux/ratelimit.h>
+ =20
+  /*
+   *	This guards the refcounted line discipline lists. The lock
+@@@ -553,13 -533,11 +535,11 @@@ static void tty_ldisc_flush_works(struc
+   *	Wait for the line discipline to become idle. The discipline must
+   *	have been halted for this to guarantee it remains idle.
+   */
+ -static int tty_ldisc_wait_idle(struct tty_struct *tty)
+ +static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
+  {
+ -	int ret;
+ +	long ret;
+  	ret =3D wait_event_timeout(tty_ldisc_idle,
+ -			atomic_read(&tty->ldisc->users) =3D=3D 1, 5 * HZ);
+ +			atomic_read(&tty->ldisc->users) =3D=3D 1, timeout);
+- 	if (ret < 0)
+- 		return ret;
+  	return ret > 0 ? 0 : -EBUSY;
+  }
+ =20
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6 (2011-11-17 15:28:54 -0200)
+--Signature=_Fri__18_Nov_2011_14_30_10_+1100_ehQFfplVDQuw2u0n
+Content-Type: application/pgp-signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+iQIcBAEBCAAGBQJOxdFCAAoJEECxmPOUX5FEn/sP/3Hz4odSgvha8j8KT+zrUO6/
+PVW+KRTvLzTgPNDvt1wkaZs1HsW5KZBhDRlwqhIapGnurWqOYAeahT73neqh7Wi6
+PJ2XAy24Q97LYxmnDL99MEo07nvEgWQO0DfjgIEe0KniqfPRLoBGVa8BvDy734av
+HJ3BpfCdW0LTy+t4eHkYWTVIvi9eZmqYJIRdXjjfJtsWYrjKZboI1JoFM/E2eRoW
+PqLhoUrU/6OI2FjWFByjMZPHFR8cXYxCodueRGjZD3fyrZxnySCwG2urQzVzuWmk
+LdpUfP0AiZFBVTtLA6k5o2IhwPGrj9UIP+mdnhPgEN8IiUZR8fjwFmPFCEJsVnuf
+cQFEPl6Y3rsWOAXk4oO+aZ5yO12PZyNbKWr+TBhlYYvgON7f5SpSKZ98N65YvLYZ
+mwLiSBfeYOQl3jqh4H2vv1kOoaM3gEuIxlxxIn2LI88a4u0WaoOixY/anVJMfWIA
+NyT9jqvB/mlYHlYXYBl+s01NJE5aVzAhR+CbH9qSrTyLzCPc+r1eJF7mXttFCJln
+6NTXgHo/si3K8nzlRO86f842rm8Lo63kSE7OIkBrtDKOUyMmFgEEydOnPEKyLLIL
+Q+gs7CdwLihGfrXE9qvwweMdRFu+yz6UrcJ+7OnVrMKrFKEOJFOe8J/rzTLgfnzd
+AZA3iZg/5cQ3f8Rtu6mm
+=dzzJ
+-----END PGP SIGNATURE-----
 
-Al Viro (4):
-      powerpc: Fix build breakage in jump_label.c
-      carma-fpga: Missed switch from of_register_platform_driver()
-      powerpc/fsl_udc_core: Fix dumb typo
-      powerpc/fsl: MCU_MPC8349EMITX wants I2C built-in, modular won't do...
-
-Anton Blanchard (2):
-      powerpc: panic if we can't instantiate RTAS
-      powerpc: Copy down exception vectors after feature fixups
-
-Benjamin Herrenschmidt (1):
-      powerpc: Fix atomic_xxx_return barrier semantics
-
-Geoff Levand (2):
-      powerpc/ps3: Fix lost SMP IPIs
-      powerpc/ps3: Fix SMP lockdep boot warning
-
-Kevin Hao (1):
-      powerpc/trace: Add a dummy stack frame for trace_hardirqs_off
-
-Kumar Gala (3):
-      powerpc: Revert show_regs() define for readability
-      powerpc: Remove extraneous CONFIG_PPC_ADV_DEBUG_REGS define
-      powerpc/book3e-64: Fix debug support for userspace
-
-Kyle Moffett (1):
-      powerpc: Remove buggy 9-year-old test for binutils < 2.12.1
-
-Michael Neuling (1):
-      powerpc: Add hvcall.h include to book3s_hv.c
-
-Suzuki Poulose (1):
-      powerpc/4xx: Fix typos in kexec config dependencies
-
-Will Deacon (1):
-      powerpc/signal32: Fix sigset_t conversion when copying to user
-
- arch/powerpc/Kconfig                    |    2 +-
- arch/powerpc/Makefile                   |    6 ---
- arch/powerpc/include/asm/atomic.h       |   48 ++++++++++++------------
- arch/powerpc/include/asm/bitops.h       |   12 +++---
- arch/powerpc/include/asm/futex.h        |    7 ++-
- arch/powerpc/include/asm/reg_booke.h    |    2 +-
- arch/powerpc/include/asm/sections.h     |    2 +-
- arch/powerpc/include/asm/synch.h        |    9 +++-
- arch/powerpc/kernel/entry_32.S          |   15 +++++++
- arch/powerpc/kernel/jump_label.c        |    2 +
- arch/powerpc/kernel/kvm.c               |    1 -
- arch/powerpc/kernel/misc_32.S           |    2 +-
- arch/powerpc/kernel/process.c           |   24 +-----------
- arch/powerpc/kernel/prom_init.c         |    6 +--
- arch/powerpc/kernel/setup_32.c          |    2 +
- arch/powerpc/kernel/setup_64.c          |    1 +
- arch/powerpc/kernel/signal_32.c         |    2 +-
- arch/powerpc/kernel/traps.c             |    2 -
- arch/powerpc/kvm/book3s_hv.c            |    1 +
- arch/powerpc/lib/feature-fixups.c       |   23 +++++++++++
- arch/powerpc/platforms/Kconfig          |    2 +-
- arch/powerpc/platforms/ps3/interrupt.c  |   23 +++++++++++-
- arch/powerpc/platforms/ps3/platform.h   |    1 +
- arch/powerpc/platforms/ps3/smp.c        |   62 ++++++++++++++++---------------
- drivers/misc/carma/carma-fpga-program.c |    9 ++--
- drivers/misc/carma/carma-fpga.c         |    9 ++--
- drivers/usb/gadget/fsl_udc_core.c       |    2 +-
- 27 files changed, 158 insertions(+), 119 deletions(-)
-
-
+--Signature=_Fri__18_Nov_2011_14_30_10_+1100_ehQFfplVDQuw2u0n--
