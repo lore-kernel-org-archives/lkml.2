@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379Ab1KSAJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:09:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38528 "EHLO mx2.suse.de"
+	id S1758536Ab1KSAQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:16:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38546 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758358Ab1KSAJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:09:20 -0500
+	id S1758366Ab1KSAJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:09:23 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:00:04 2011
-Message-Id: <20111119000004.854009573@clark.kroah.org>
+Message-Id: <20111119000004.025893516@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 15:58:23 -0800
+Date: Fri, 18 Nov 2011 15:58:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Howells <dhowells@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>, Neil Horman <nhorman@redhat.com>,
-        Steve Dickson <steved@redhat.com>, James Morris <jmorris@namei.org>
-Subject: [10/26] KEYS: Fix a NULL pointer deref in the user-defined key type
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [01/26] ALSA: hda - Dont add elements of other codecs to vmaster slave
 In-Reply-To: <20111119000026.GA6679@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +24,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9f35a33b8d06263a165efe3541d9aa0cdbd70b3b upstream.
+commit aeb4b88ec0a948efce8e3a23a8f964d3560a7308 upstream.
 
-Fix a NULL pointer deref in the user-defined key type whereby updating a
-negative key into a fully instantiated key will cause an oops to occur
-when the code attempts to free the non-existent old payload.
+When a virtual mater control is created, the driver looks for slave
+elements from the assigned card instance.  But this may include the
+elements of other codecs when multiple codecs are on the same HD-audio
+bus.  This works at the first time, but it'll give Oops when it's once
+freed and re-created via reconfig sysfs.
 
-This results in an oops that looks something like the following:
+This patch changes the element-look-up strategy to limit only to the
+mixer elements of the same codec.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
-  PGD 3391d067 PUD 3894a067 PMD 0
-  Oops: 0002 [#1] SMP
-  CPU 1
-  Pid: 4354, comm: keyctl Not tainted 3.1.0-fsdevel+ #1140                  /DG965RY
-  RIP: 0010:[<ffffffff81085fa1>]  [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
-  RSP: 0018:ffff88003d591df8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000006e
-  RDX: ffffffff8161d0c0 RSI: 0000000000000000 RDI: 0000000000000000
-  RBP: ffff88003d591e18 R08: 0000000000000000 R09: ffffffff8152fa6c
-  R10: 0000000000000000 R11: 0000000000000300 R12: ffff88003b8f9538
-  R13: ffffffff8161d0c0 R14: ffff88003b8f9d50 R15: ffff88003c69f908
-  FS:  00007f97eb18c720(0000) GS:ffff88003bd00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 0000000000000008 CR3: 000000003d47a000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process keyctl (pid: 4354, threadinfo ffff88003d590000, task ffff88003c78a040)
-  Stack:
-   ffff88003e0ffde0 ffff88003b8f9538 0000000000000001 ffff88003b8f9d50
-   ffff88003d591e28 ffffffff810860f0 ffff88003d591e68 ffffffff8117bfea
-   ffff88003d591e68 ffffffff00000000 ffff88003e0ffde1 ffff88003e0ffde0
-  Call Trace:
-   [<ffffffff810860f0>] call_rcu_sched+0x10/0x12
-   [<ffffffff8117bfea>] user_update+0x8d/0xa2
-   [<ffffffff8117723a>] key_create_or_update+0x236/0x270
-   [<ffffffff811789b1>] sys_add_key+0x123/0x17e
-   [<ffffffff813b84bb>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: Neil Horman <nhorman@redhat.com>
-Acked-by: Steve Dickson <steved@redhat.com>
-Acked-by: James Morris <jmorris@namei.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/user_defined.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/hda_codec.c |   60 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 39 insertions(+), 21 deletions(-)
 
---- a/security/keys/user_defined.c
-+++ b/security/keys/user_defined.c
-@@ -102,7 +102,8 @@ int user_update(struct key *key, const v
- 		key->expiry = 0;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2187,6 +2187,39 @@ int snd_hda_codec_reset(struct hda_codec
+ 	return 0;
+ }
+ 
++typedef int (*map_slave_func_t)(void *, struct snd_kcontrol *);
++
++/* apply the function to all matching slave ctls in the mixer list */
++static int map_slaves(struct hda_codec *codec, const char * const *slaves,
++		      map_slave_func_t func, void *data)
++{
++	struct hda_nid_item *items;
++	const char * const *s;
++	int i, err;
++
++	items = codec->mixers.list;
++	for (i = 0; i < codec->mixers.used; i++) {
++		struct snd_kcontrol *sctl = items[i].kctl;
++		if (!sctl || !sctl->id.name ||
++		    sctl->id.iface != SNDRV_CTL_ELEM_IFACE_MIXER)
++			continue;
++		for (s = slaves; *s; s++) {
++			if (!strcmp(sctl->id.name, *s)) {
++				err = func(data, sctl);
++				if (err)
++					return err;
++				break;
++			}
++		}
++	}
++	return 0;
++}
++
++static int check_slave_present(void *data, struct snd_kcontrol *sctl)
++{
++	return 1;
++}
++
+ /**
+  * snd_hda_add_vmaster - create a virtual master control and add slaves
+  * @codec: HD-audio codec
+@@ -2207,12 +2240,10 @@ int snd_hda_add_vmaster(struct hda_codec
+ 			unsigned int *tlv, const char * const *slaves)
+ {
+ 	struct snd_kcontrol *kctl;
+-	const char * const *s;
+ 	int err;
+ 
+-	for (s = slaves; *s && !snd_hda_find_mixer_ctl(codec, *s); s++)
+-		;
+-	if (!*s) {
++	err = map_slaves(codec, slaves, check_slave_present, NULL);
++	if (err != 1) {
+ 		snd_printdd("No slave found for %s\n", name);
+ 		return 0;
  	}
+@@ -2223,23 +2254,10 @@ int snd_hda_add_vmaster(struct hda_codec
+ 	if (err < 0)
+ 		return err;
  
--	kfree_rcu(zap, rcu);
-+	if (zap)
-+		kfree_rcu(zap, rcu);
- 
- error:
- 	return ret;
+-	for (s = slaves; *s; s++) {
+-		struct snd_kcontrol *sctl;
+-		int i = 0;
+-		for (;;) {
+-			sctl = _snd_hda_find_mixer_ctl(codec, *s, i);
+-			if (!sctl) {
+-				if (!i)
+-					snd_printdd("Cannot find slave %s, "
+-						    "skipped\n", *s);
+-				break;
+-			}
+-			err = snd_ctl_add_slave(kctl, sctl);
+-			if (err < 0)
+-				return err;
+-			i++;
+-		}
+-	}
++	err = map_slaves(codec, slaves, (map_slave_func_t)snd_ctl_add_slave,
++			 kctl);
++	if (err < 0)
++		return err;
+ 	return 0;
+ }
+ EXPORT_SYMBOL_HDA(snd_hda_add_vmaster);
 
 
