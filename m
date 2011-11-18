@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1KRSFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 13:05:20 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:47450 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab1KRSFS (ORCPT
+	id S1753345Ab1KRSLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 13:11:48 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:36683 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750949Ab1KRSLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 13:05:18 -0500
-Date: Fri, 18 Nov 2011 13:05:00 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: annie li <annie.li@oracle.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] xen/granttable: Grant tables V2
- implementation
-Message-ID: <20111118180500.GA19469@phenom.dumpdata.com>
-References: <4EC3B62F.6080702@oracle.com>
- <1321451372-13596-1-git-send-email-annie.li@oracle.com>
- <4EC62FE5.2080608@oracle.com>
- <1321614166.3664.311.camel@zakaz.uk.xensource.com>
- <20111118135221.GC12433@phenom.dumpdata.com>
- <1321624845.3664.354.camel@zakaz.uk.xensource.com>
- <4EC6837F.1050201@oracle.com>
+	Fri, 18 Nov 2011 13:11:47 -0500
+Message-ID: <4EC69F65.20207@xenotime.net>
+Date: Fri, 18 Nov 2011 10:09:41 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC6837F.1050201@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4EC69E59.011E,ss=1,re=0.000,fgs=0
+To: Konrad Eisele <konrad@gaisler.com>
+CC: linux-kernel@vger.kernel.org,
+        linux kbuild list <linux-kbuild@vger.kernel.org>, mmarek@suse.cz,
+        pefoley2@verizon.net, yann.morin.1998@anciens.enib.fr,
+        sam@ravnborg.org, zippel@linux-m68k.org
+Subject: Re: [PATCH 1/1] kconfig: Add a configuration subtree command to kconfig
+References: <1321625774-12749-1-git-send-email-konrad@gaisler.com>
+In-Reply-To: <1321625774-12749-1-git-send-email-konrad@gaisler.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So we have two candidates:
-> xen_raw_printk + panic
-> panic + earlyprintk=xen
-> 
-> If panic does work with earlyprintk, then the latter one is better.
-> Otherwise, there will be duplicated string printed out with
-> 'earlyprintk=xen'.
+(changed linux-config@ to linux-kbuild@vger.kernel.org)
 
-The idea is just to have one function. Whichever prints the
-string and panics the machine. If 'panic' does this properly
-(and properly meaning it actually prints data when using
-the earlyprintk=xen as well as console=hvc0) printout system
-the we cuold just use 'panic' and not worry about it.
+On 11/18/2011 06:16 AM, Konrad Eisele wrote:
+> New kconfig command "subsource":
+> subsource "<kconfig>" "<cwd>" "<.config>" "<title>"  <internal_prefix> <.config_prefix>
+> Allocates <kconfig> as a configuration subtree using <.config> as the configuration
+> file to save and load from. <cwd> is the directory path to switch to for "source" to
+> work, "<title>" is the Menu tile of the subtree, <internal_prefix> is a internal prefix,
+> and <.config_prefix> is the prefix to append/remove when saving/loading <.config>.
+
+That explains what but not why.  You need some justification(s) for such
+a large patch.  Maybe even some example usages.
+
+> Signed-off-by: Konrad Eisele <konrad@gaisler.com>
+> ---
+>  scripts/kconfig/conf.c               |    6 +-
+>  scripts/kconfig/confdata.c           |   83 ++-
+>  scripts/kconfig/expr.h               |   16 +
+>  scripts/kconfig/gconf.c              |    3 +
+>  scripts/kconfig/lkc.h                |    1 +
+>  scripts/kconfig/lkc_proto.h          |   12 +-
+>  scripts/kconfig/mconf.c              |   13 +-
+>  scripts/kconfig/menu.c               |   18 +-
+>  scripts/kconfig/nconf.c              |   13 +-
+>  scripts/kconfig/qconf.cc             |    3 +
+>  scripts/kconfig/symbol.c             |   50 ++-
+>  scripts/kconfig/util.c               |   49 ++
+>  scripts/kconfig/zconf.gperf          |    1 +
+>  scripts/kconfig/zconf.hash.c_shipped |  252 +++++-----
+>  scripts/kconfig/zconf.l              |   50 ++-
+>  scripts/kconfig/zconf.lex.c_shipped  |   52 ++-
+>  scripts/kconfig/zconf.tab.c_shipped  |  985 ++++++++++++++++++----------------
+>  scripts/kconfig/zconf.y              |   23 +-
+>  18 files changed, 991 insertions(+), 639 deletions(-)
 
 
-But if it does not, then we (and by we I mean you) should 
-provide a variant of panic() that prints the data properly using the 
-earlprintk mechanism. Preferrabily to make it generic.
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
