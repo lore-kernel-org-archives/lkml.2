@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1KRTR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 14:17:28 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:57980 "EHLO
+	id S1755112Ab1KRTSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 14:18:17 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:57999 "EHLO
 	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab1KRTR0 (ORCPT
+	with ESMTP id S1753969Ab1KRTSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 14:17:26 -0500
-Message-ID: <4EC6AF4B.5050604@calvaedi.com>
-Date: Fri, 18 Nov 2011 20:17:31 +0100
+	Fri, 18 Nov 2011 14:18:15 -0500
+Message-ID: <4EC6AFA9.9000705@calvaedi.com>
+Date: Fri, 18 Nov 2011 20:19:05 +0100
 From: John Hughes <john@calvaedi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
 To: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: John Hughes <john@calva.com>, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't spam kernel log with EKEYEXPIRED and EACCESS errors
-References: <4EC685D1.2000900@Calva.COM> <1321641010.2653.10.camel@lade.trondhjem.org>
-In-Reply-To: <1321641010.2653.10.camel@lade.trondhjem.org>
+Subject: Re: [PATCH] Add "-e" option to rpc.gssd to allow error on ticket
+ expiry. Try 2 with added man pages.
+References: <4EC66D12.2090505@Calva.COM> <1321641333.2653.15.camel@lade.trondhjem.org>
+In-Reply-To: <1321641333.2653.15.camel@lade.trondhjem.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 07:30 PM, Trond Myklebust wrote:
-> On Fri, 2011-11-18 at 17:20 +0100, John Hughes wrote:
+On 11/18/2011 07:35 PM, Trond Myklebust wrote:
+> On Fri, 2011-11-18 at 15:34 +0100, John Hughes wrote:
 >    
->> Don't write anything to the log if a user Kerberos ticket expires or is missing,
->> these are not kernel problems.
->>
->> Signed-off-by: John Hughes<john@calva.com>
->>
->> diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
->> index 39914be..18897cb 100644
->> --- a/fs/nfs/nfs4state.c
->> +++ b/fs/nfs/nfs4state.c
->> @@ -1339,14 +1339,6 @@ static void nfs4_state_start_reclaim_nograce(struct nfs_client *clp)
->>    	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
->>    }
->>
->> -static void nfs4_warn_keyexpired(const char *s)
->> -{
->> -	printk_ratelimited(KERN_WARNING "Error: state manager"
->> -			" encountered RPCSEC_GSS session"
->> -			" expired against NFSv4 server %s.\n",
->> -			s);
->> -}
+>> Description: Add "-e" (ticket expiry is error) option to rpc.gssd
+>>    In kernels starting around 2.6.34 the nfs4 server will block all I/O
+>>    when a user ticket expires.  In earlier kernels the I/O would fail
+>>    with an EACCESS error.  This patch adds a "-e" option to rpc.gssd
+>>    which allow the earlier behaviour (EKEYEXPIRED is converted to
+>>    EACCESS).  This behaviour is particularly useful when user home
+>>    directories are nfs4 mounted with krb5 security - if the user is
+>>    absent from their workstation for long enough for the ticket to
+>>    expire a new ticket will be obtained (via pam_krb5) by the screen
+>>    unlock process.
 >>      
-> NACK. This is useful.
->
+> You need a big fat warning somewhere that enabling this option WILL
+> cause data corruption...
 >    
->> -
->>    static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
->>    {
->>    	switch (error) {
->> @@ -1378,7 +1370,6 @@ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
->>    			return 0;
->>    		case -EKEYEXPIRED:
->>    			/* Nothing we can do */
->> -			nfs4_warn_keyexpired(clp->cl_hostname);
->>    			return 0;
->>    	}
->>    	return error;
->>      
+Why?
 
+Because some process may get the EACCES error half way through it's 
+operation.
 
->> @@ -1620,7 +1611,6 @@ static void nfs4_set_lease_expired(struct nfs_client *clp, int status)
->>    		break;
->>
->>    	case -EKEYEXPIRED:
->> -		nfs4_warn_keyexpired(clp->cl_hostname);
->>      
-> NACK. This means that the server can't even recover it's lease. It
-> shouldn't even trigger if you install a machine credential.
->    
+Ok, that needs documenting.
 
-Ok, couldn't see why there were two such warnings.  Maybe the error 
-should be more alarming in this case?
+So far we seem to have established that the old way of doing things was 
+bad because it produced non-posix behaviour and could lead to data 
+corruption if a ticket expires while a process needs it.
 
->    
->> 	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
->>    				 * in nfs4_exchange_id */
->>    	default:
->> @@ -1728,8 +1718,9 @@ static void nfs4_state_manager(struct nfs_client *clp)
->>    	} while (atomic_read(&clp->cl_count)>   1);
->>    	return;
->>    out_error:
->> -	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
->> -			" with error %d\n", clp->cl_hostname, -status);
->> +	if (status != -EACCESS)
->> +		printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
->> +				" with error %d\n", clp->cl_hostname, -status);
->>      
-> Obviously not even compile tested...
->    
+And the new way is bad because it leaves people puzzling over hung 
+workstations in the morning.
 
-Oh dear, my sins have found me out.  Sorry.
+The traditional Kerberos/AFS way was to behave the old way, and use 
+krenew to keep the ticket from expiring if a process needed to be run 
+overnight.
+
+What other way is there of fixing the problem if we are going to keep 
+the "hang 'till a ticket turns up" behaviour?  (rewrite gnome and kde 
+seems kind of a big job).
+
