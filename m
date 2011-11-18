@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab1KRPR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 10:17:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:43753 "HELO
+	id S1758004Ab1KRPS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 10:18:28 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:52078 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756415Ab1KRPR0 (ORCPT
+	with SMTP id S1756772Ab1KRPS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 10:17:26 -0500
+	Fri, 18 Nov 2011 10:18:27 -0500
 X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18zAVMh/oAztbDw8ad9bc7gXRi4+82tiLJcidsVaI
-	2+gLvPkXzkOFeB
-Subject: [patch 1/6] sched: use rt.nr_cpus_allowed to recover
- select_task_rq() cycles
+X-Provags-ID: V01U2FsdGVkX18p/2VlH3gpUwyJV7v3fBsgC36XdwHXz7E1DIphPt
+	+GSgUCBt++N1Oe
+Subject: [patch 2/6] sched: convert rq->avg_idle to rq->avg_event
 From: Mike Galbraith <efault@gmx.de>
 To: Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -29,8 +28,8 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
 	 <1321629267.7080.13.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Nov 2011 16:17:21 +0100
-Message-ID: <1321629441.7080.15.camel@marge.simson.net>
+Date: Fri, 18 Nov 2011 16:18:22 +0100
+Message-ID: <1321629502.7080.16.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -40,79 +39,135 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-rt.nr_cpus_allowed is always available, use it to bail from select_task_rq()
-when only one cpu can be used, and saves some cycles for pinned tasks.
-
-taskset -c 3 pipe-test
-
-   PerfTop:     997 irqs/sec  kernel:89.5%  exact:  0.0% [1000Hz cycles],  (all, CPU: 3)
-------------------------------------------------------------------------------------------------
-
-             Virgin                                    Patched
-             samples  pcnt function                    samples  pcnt function
-             _______ _____ ___________________________ _______ _____ ___________________________
-
-             2880.00 10.2% __schedule                  3136.00 11.3% __schedule
-             1634.00  5.8% pipe_read                   1615.00  5.8% pipe_read
-             1458.00  5.2% system_call                 1534.00  5.5% system_call
-             1382.00  4.9% _raw_spin_lock_irqsave      1412.00  5.1% _raw_spin_lock_irqsave
-             1202.00  4.3% pipe_write                  1255.00  4.5% copy_user_generic_string
-             1164.00  4.1% copy_user_generic_string    1241.00  4.5% __switch_to
-             1097.00  3.9% __switch_to                  929.00  3.3% mutex_lock
-              872.00  3.1% mutex_lock                   846.00  3.0% mutex_unlock
-              687.00  2.4% mutex_unlock                 804.00  2.9% pipe_write
-              682.00  2.4% native_sched_clock           713.00  2.6% native_sched_clock
-              643.00  2.3% system_call_after_swapgs     653.00  2.3% _raw_spin_unlock_irqrestore
-              617.00  2.2% sched_clock_local            633.00  2.3% fsnotify
-              612.00  2.2% fsnotify                     605.00  2.2% sched_clock_local
-              596.00  2.1% _raw_spin_unlock_irqrestore  593.00  2.1% system_call_after_swapgs
-              542.00  1.9% sysret_check                 559.00  2.0% sysret_check
-              467.00  1.7% fget_light                   472.00  1.7% fget_light
-              462.00  1.6% finish_task_switch           461.00  1.7% finish_task_switch
-              437.00  1.5% vfs_write                    442.00  1.6% vfs_write
-              431.00  1.5% do_sync_write                428.00  1.5% do_sync_write
-*             413.00  1.5% select_task_rq_fair          404.00  1.5% _raw_spin_lock_irq
-              386.00  1.4% update_curr                  402.00  1.4% update_curr
-              385.00  1.4% rw_verify_area               389.00  1.4% do_sync_read
-              377.00  1.3% _raw_spin_lock_irq           378.00  1.4% vfs_read
-              369.00  1.3% do_sync_read                 340.00  1.2% pipe_iov_copy_from_user
-              360.00  1.3% vfs_read                     316.00  1.1% __wake_up_sync_key
-              342.00  1.2% hrtick_start_fair            313.00  1.1% __wake_up_common
+We update rq->clock only at points of interest to the scheduler.
+Using this distance has the same effect as measuring idle time
+for idle_balance() throttling, and allows other uses as well.
 
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 
 ---
- kernel/sched_fair.c |    3 +++
- kernel/sched_rt.c   |    3 +++
- 2 files changed, 6 insertions(+)
+ kernel/sched.c       |   32 +++++++++++---------------------
+ kernel/sched_debug.c |    2 +-
+ kernel/sched_fair.c  |    8 ++------
+ 3 files changed, 14 insertions(+), 28 deletions(-)
 
+Index: linux-3.2.git/kernel/sched.c
+===================================================================
+--- linux-3.2.git.orig/kernel/sched.c
++++ linux-3.2.git/kernel/sched.c
+@@ -656,8 +656,7 @@ struct rq {
+ 
+ 	u64 rt_avg;
+ 	u64 age_stamp;
+-	u64 idle_stamp;
+-	u64 avg_idle;
++	u64 avg_event;
+ #endif
+ 
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+@@ -789,6 +788,14 @@ static inline struct task_group *task_gr
+ 
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
++static void update_avg(u64 *avg, u64 sample)
++{
++#ifdef CONFIG_SMP
++	s64 diff = sample - *avg;
++	*avg += diff >> 3;
++#endif
++}
++
+ static void update_rq_clock_task(struct rq *rq, s64 delta);
+ 
+ static void update_rq_clock(struct rq *rq)
+@@ -801,6 +808,7 @@ static void update_rq_clock(struct rq *r
+ 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+ 	rq->clock += delta;
+ 	update_rq_clock_task(rq, delta);
++	update_avg(&rq->avg_event, delta);
+ }
+ 
+ /*
+@@ -2593,12 +2601,6 @@ int select_task_rq(struct task_struct *p
+ 
+ 	return cpu;
+ }
+-
+-static void update_avg(u64 *avg, u64 sample)
+-{
+-	s64 diff = sample - *avg;
+-	*avg += diff >> 3;
+-}
+ #endif
+ 
+ static void
+@@ -2664,17 +2666,6 @@ ttwu_do_wakeup(struct rq *rq, struct tas
+ #ifdef CONFIG_SMP
+ 	if (p->sched_class->task_woken)
+ 		p->sched_class->task_woken(rq, p);
+-
+-	if (rq->idle_stamp) {
+-		u64 delta = rq->clock - rq->idle_stamp;
+-		u64 max = 2*sysctl_sched_migration_cost;
+-
+-		if (delta > max)
+-			rq->avg_idle = max;
+-		else
+-			update_avg(&rq->avg_idle, delta);
+-		rq->idle_stamp = 0;
+-	}
+ #endif
+ }
+ 
+@@ -8294,8 +8285,7 @@ void __init sched_init(void)
+ 		rq->push_cpu = 0;
+ 		rq->cpu = i;
+ 		rq->online = 0;
+-		rq->idle_stamp = 0;
+-		rq->avg_idle = 2*sysctl_sched_migration_cost;
++		rq->avg_event = 0;
+ 		rq_attach_root(rq, &def_root_domain);
+ #ifdef CONFIG_NO_HZ
+ 		rq->nohz_balance_kick = 0;
+Index: linux-3.2.git/kernel/sched_debug.c
+===================================================================
+--- linux-3.2.git.orig/kernel/sched_debug.c
++++ linux-3.2.git/kernel/sched_debug.c
+@@ -290,7 +290,7 @@ static void print_cpu(struct seq_file *m
+ 	P(sched_count);
+ 	P(sched_goidle);
+ #ifdef CONFIG_SMP
+-	P64(avg_idle);
++	P64(avg_event);
+ #endif
+ 
+ 	P(ttwu_count);
 Index: linux-3.2.git/kernel/sched_fair.c
 ===================================================================
 --- linux-3.2.git.orig/kernel/sched_fair.c
 +++ linux-3.2.git/kernel/sched_fair.c
-@@ -2340,6 +2340,9 @@ select_task_rq_fair(struct task_struct *
- 	int want_sd = 1;
- 	int sync = wake_flags & WF_SYNC;
+@@ -4190,9 +4190,7 @@ static void idle_balance(int this_cpu, s
+ 	int pulled_task = 0;
+ 	unsigned long next_balance = jiffies + HZ;
  
-+	if (p->rt.nr_cpus_allowed < 2)
-+		return prev_cpu;
-+
- 	if (sd_flag & SD_BALANCE_WAKE) {
- 		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
- 			want_affine = 1;
-Index: linux-3.2.git/kernel/sched_rt.c
-===================================================================
---- linux-3.2.git.orig/kernel/sched_rt.c
-+++ linux-3.2.git/kernel/sched_rt.c
-@@ -999,6 +999,9 @@ select_task_rq_rt(struct task_struct *p,
+-	this_rq->idle_stamp = this_rq->clock;
+-
+-	if (this_rq->avg_idle < sysctl_sched_migration_cost)
++	if (this_rq->avg_event < sysctl_sched_migration_cost)
+ 		return;
  
- 	cpu = task_cpu(p);
+ 	/*
+@@ -4218,10 +4216,8 @@ static void idle_balance(int this_cpu, s
+ 		interval = msecs_to_jiffies(sd->balance_interval);
+ 		if (time_after(next_balance, sd->last_balance + interval))
+ 			next_balance = sd->last_balance + interval;
+-		if (pulled_task) {
+-			this_rq->idle_stamp = 0;
++		if (pulled_task)
+ 			break;
+-		}
+ 	}
+ 	rcu_read_unlock();
  
-+	if (p->rt.nr_cpus_allowed < 2)
-+		goto out;
-+
- 	/* For anything but wake ups, just return the task_cpu */
- 	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
- 		goto out;
 
 
