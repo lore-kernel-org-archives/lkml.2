@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab1KRSqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 13:46:33 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:8057 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753616Ab1KRSqb (ORCPT
+	id S1754255Ab1KRStn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 13:49:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61246 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab1KRStl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 13:46:31 -0500
-Date: Fri, 18 Nov 2011 10:46:31 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        opensuse-kernel@opensuse.org, Sergiu Iordache <sergiu@chromium.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Andrei Warkentin <andreiw@vmware.com>
-Message-ID: <1406726419.275227.1321641991149.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <20111117150549.15528e81.akpm@linux-foundation.org>
-Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+	Fri, 18 Nov 2011 13:49:41 -0500
+Date: Fri, 18 Nov 2011 10:49:42 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 01/10] arm/tegra: initial device tree for tegra30
+Message-ID: <20111118184942.GA31678@quad.lixom.net>
+References: <1321546766-26770-1-git-send-email-pdeschrijver@nvidia.com>
+ <1321546766-26770-2-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF1740D74C46@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740D74C46@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Nov 17, 2011 at 11:39:14AM -0800, Stephen Warren wrote:
+> Peter De Schrijver wrote at Thursday, November 17, 2011 9:19 AM:
+> > This patch adds the initial device tree for tegra30
+> 
+> > diff --git a/Documentation/devicetree/bindings/arm/tegra.txt
+> ...
+> > +* harmony: tegra20 based development board
+> > +Required root node properties:
+> > + - compatible = "nvidia,harmony", "nvidia,tegra20";
+> > +
+> > +* seaboard: tegra20 based clamshell reference design
+> > +Required root node properties:
+> > + - compatible = "nvidia,seaboard", "nvidia,tegra20";
+> 
+> Do we really want to list all the board names here? In the future, there
+> could be tens or hundreds. I would argue that we should just document
+> nvidia,tegra20 and nvidia,tegra30.
 
------ Original Message -----
-> From: "Andrew Morton" <akpm@linux-foundation.org>
-> To: "Andrei Warkentin" <andreiw@vmware.com>
-> Cc: linux-kernel@vger.kernel.org, "Rolf Eike Beer" <eike-kernel@sf-tec.de>, opensuse-kernel@opensuse.org, "Sergiu
-> Iordache" <sergiu@chromium.org>, "Marco Stornelli" <marco.stornelli@gmail.com>, "Eddie Wai"
-> <eddie.wai@broadcom.com>, "Jayamohan Kallickal" <jayamohan.kallickal@emulex.com>, "Guennadi Liakhovetski"
-> <g.liakhovetski@gmx.de>
-> Sent: Thursday, November 17, 2011 6:05:49 PM
-> Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
-> 
-> 
-> I assume that nobody has gone off and checked whether all current
-> callers will survive this change.  If they had, they'd have looked in
-> drivers/char/ramoops.c and seen:
-> 
-> 	rounddown_pow_of_two(pdata->mem_size);
-> 	rounddown_pow_of_two(pdata->record_size);
-> 
-> These operations are no-ops.  It should be
-> 
-> 	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
-> 	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
-> 
-> Marco or Sergio: please fix, test and send it over sometime?
+Agreed.
 
-I did quickly look through for code that expected rounddown_pow_of_two(1) to give 0,
-but I didn't apparently look close enough for other issues.
+> At a later point, we should fix board-dt.c to solely look for those
+> compatible values, although this will have to wait until the pinmux DT
+> bindings are present. Then, the kernel won't care about the board names.
 
-A
+Exactly.
+
+
+-Olof
