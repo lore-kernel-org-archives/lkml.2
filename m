@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab1KRMfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 07:35:31 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53806 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab1KRMfa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 07:35:30 -0500
+	id S1756844Ab1KRMuL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 07:50:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755027Ab1KRMuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 07:50:10 -0500
+Date: Fri, 18 Nov 2011 13:52:02 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: linux-mm@kvack.org, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] mm,x86: remove debug_pagealloc_enabled
+Message-ID: <20111118125201.GC2203@redhat.com>
+References: <1321458232-6823-1-git-send-email-sgruszka@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20111118120430.GG3317@hell>
-References: <CABPbr_msepemFt4ezGVRk3QS0MU3F47MKimfV4Y+6jqvUrLFeA@mail.gmail.com>
-	<20111118120430.GG3317@hell>
-Date: Fri, 18 Nov 2011 20:35:28 +0800
-Message-ID: <CABPbr_=fgB-AKK3H8ryccqA7SUO=ejZiWP7tEKYLh=qNG5r7CQ@mail.gmail.com>
-Subject: Re: ipv4 udplite broken in >=linux-3.0 ?
-From: Jinxin Zheng <jinxinzheng@gmail.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: gerrit@erg.abdn.ac.uk, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321458232-6823-1-git-send-email-sgruszka@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 8:04 PM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> * Jinxin Zheng | 2011-11-18 12:09:25 [+0800]:
->
->>I don't know how to debug udplite. Can any one of you give me a tip on
->>how to get more debug info, then I can do further test and provide
->>with it?
->
-> net-next works for me:
->
-> $ sudo aptitude install netsend
-> $ sudo tcpdump -n -ttt -vv -i lo > pcap.trace &
-> $ netsend udplite receive &
-> $ netsend udplite transmit /etc/fstab 127.0.0.1
->
-> $ cat pcap.trace
-> 00:00:00.000000 IP (tos 0x0, ttl 64, id 30602, offset 0, flags [DF], proto unknown (136), length 40) 127.0.0.1 > 127.0.0.1:  udplite 20
-> 00:00:00.000074 IP (tos 0x0, ttl 64, id 30603, offset 0, flags [DF], proto unknown (136), length 1125) 127.0.0.1 > 127.0.0.1:  udplite 1105
->
->
-> Kernel version? What is the output of strace?
->
+On Wed, Nov 16, 2011 at 04:43:52PM +0100, Stanislaw Gruszka wrote:
+> When (no)bootmem finish operation, it pass pages to buddy allocator.
+> Since debug_pagealloc_enabled is not set, we will do not protect pages,
+> what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
+> 
+> To fix remove debug_pagealloc_enabled. That variable was introduced by
+> commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
+> more CPA (change page attribude) code testing. But currently we have
+> CONFIG_CPA_DEBUG, which test CPA.
 
-The kernel version is 3.0. I compiled it myself on a Gentoo i386.
+Note this is more like fix than cleanup. Without patch, pages are not
+protected until they are allocated and then freed again, what may
+not happen if system is not used intensively.
 
-I do not use Ubuntu or Debian. Cannot get netsend in Gentoo ...
+If that patch can not be accepted, I think we should just go through
+all free pages and mark then as not-presen in enable_debug_pagealloc()
 
-But I did the test using the hello_world application downloaded from
-Gerrit's wiki:
-http://www.erg.abdn.ac.uk/~gerrit/udp-lite/
-
-It contains a simple 'server' and a 'client' program.
-The client sends a "Hello World" to the server, and when the server
-receives the message it exits.
-
-$ tcpdump -n -ttt -vv -i lo > pcap.trace &
-$ ./server &
-$ ./client
-
-$ cat pcap.trace
-00:00:00.000000 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto
-unknown (136), length 41)
-   127.0.0.1 > 127.0.0.1:  ip-proto-136 21
-
-the pcap trace seems ok. The sendto() in the client returns ok. But
-the server just cannot return from recv() and echo the message...
-
-I can't see anything suspicious from strace for the server or client either...
-
--- 
-Zheng Jinxin
+Stanislaw
