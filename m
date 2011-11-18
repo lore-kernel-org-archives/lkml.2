@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab1KRAlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 19:41:45 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41341 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335Ab1KRAlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 19:41:44 -0500
-Date: Thu, 17 Nov 2011 22:41:39 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        fweisbec@gmail.com
-Subject: Re: [PATCH v2] perf tools: make -C consistent across commands (for
- cpu list arg)
-Message-ID: <20111118004139.GA2315@ghostprotocols.net>
-References: <1321209008-7004-1-git-send-email-dsahern@gmail.com>
- <4EC59460.7020705@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EC59460.7020705@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755557Ab1KRAol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 19:44:41 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:58772 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753424Ab1KRAok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 19:44:40 -0500
+From: Richard Weinberger <richard@nod.at>
+To: JBottomley@parallels.com
+Cc: Babu.moger@netapp.com, Somasundaram.Krishnasamy@lsi.com,
+        yanling.qi@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] scsi_dh_rdac: Fix error path
+Date: Fri, 18 Nov 2011 01:44:27 +0100
+Message-Id: <1321577067-26332-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 17, 2011 at 04:10:24PM -0700, David Ahern escreveu:
-> On 11/13/2011 11:30 AM, David Ahern wrote:
-> > Currently the meaning of -C varies by perf command: for perf-top,
-> > perf-stat, perf-record it means cpu list. For perf-report it
-> > means comm list. Then perf-annotate, perf-report and perf-script
-> > use -c for cpu list.
-> > 
-> > Fix annotate, report and script to use -C for cpu list to be
-> > consistent with top, stat and record. This means report needs
-> > to use -c for comm list which does introduce a backward
-> > compatibility change.
-> 
-> Any objections to making this argument consistent? I am waiting to send
-> a follow-on patch that adds comm filtering to perf-script.
+If create_singlethread_workqueue() failes, rdac_init should fail too.
 
-Its OK for perf/core, I'll apply and try to publish what I have
-tomorrow.
- 
-- Arnaldo
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/scsi/device_handler/scsi_dh_rdac.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/scsi/device_handler/scsi_dh_rdac.c b/drivers/scsi/device_handler/scsi_dh_rdac.c
+index 1d31279..2802394 100644
+--- a/drivers/scsi/device_handler/scsi_dh_rdac.c
++++ b/drivers/scsi/device_handler/scsi_dh_rdac.c
+@@ -934,6 +934,8 @@ static int __init rdac_init(void)
+ 	if (!kmpath_rdacd) {
+ 		scsi_unregister_device_handler(&rdac_dh);
+ 		printk(KERN_ERR "kmpath_rdacd creation failed.\n");
++
++		r = -EINVAL;
+ 	}
+ done:
+ 	return r;
+-- 
+1.7.7.3
+
