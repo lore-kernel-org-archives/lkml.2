@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1KRB70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Nov 2011 20:59:26 -0500
-Received: from mga11.intel.com ([192.55.52.93]:24662 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755489Ab1KRB7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Nov 2011 20:59:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,530,1315206000"; 
-   d="scan'208";a="92168797"
-Message-ID: <1321581563.13860.111.camel@yhuang-dev>
-Subject: Re: [RFC][PATCH]ACPI,APEI,ERST, back end driver for NVRAM
-From: Huang Ying <ying.huang@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>, "Chen, Gong" <gong.chen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Fri, 18 Nov 2011 09:59:23 +0800
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57AC8046@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C57AC8046@USINDEVS01.corp.hds.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756012Ab1KRB7r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Nov 2011 20:59:47 -0500
+Received: from iamlegend.mr.itd.umich.edu ([141.211.14.68]:54685 "EHLO
+	iamlegend.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755959Ab1KRB7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Nov 2011 20:59:45 -0500
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Nov 2011 20:59:45 EST
+Date: Thu, 17 Nov 2011 20:51:16 -0500
+From: Jim Rees <rees@umich.edu>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: John Hughes <john@Calva.COM>, Trond Myklebust <trond.myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't hang user processes if Kerberos ticket for nfs4
+ mount expires
+Message-ID: <20111118015116.GA1959@umich.edu>
+References: <4EC3FD8B.6000705@calvaedi.com>
+ <20111116144718.78b2e288@corrin.poochiereds.net>
+ <20111116234434.GA12882@umich.edu>
+ <20111116203119.1d9c0dd6@corrin.poochiereds.net>
+ <20111116203810.4e1b9d28@corrin.poochiereds.net>
+ <4EC4EA91.5070607@Calva.COM>
+ <4EC50882.2080803@Calva.COM>
+ <20111117164630.394027e7@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111117164630.394027e7@tlielax.poochiereds.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 04:47 +0800, Seiji Aguchi wrote:
-> Hi,
-> 
-> I developed write/read/clear functions of ERST driver for NVRAM. 
-> According to ACPI 4.0 specification, we can use the same procedure as storage.
-> 
-> This patch is tested on DELL PowerEdge T310.
+I would argue that if you don't want your applications to stop working when
+your ticket expires, you shouldn't let the ticket expire.  If you don't want
+to have to renew your ticket, you should use an infinite ticket lifetime.
 
-This machine has error log address range in NVRAM?
-
-According to ACPI 4.0a spec:
-
-"""
-17.5.2.4.1 Error Log Address Range Resides in NVRAM
-
-If the Error Log Address Range resides in NVRAM, then when OSPM writes a
-record into the logging
-range, the record is automatically persistent and the busy bit can be
-cleared immediately. On a subsequent
-boot, OSPM can read any persisted error records directly from the
-persistent store range. The size of the
-persistent store, in this case, is expected to be enough for several
-error records.
-"""
-
-So it should not work with the same procedure.
-
-Best Regards,
-Huang Ying
-
-
+It sounds like you've made up your mind, but I would urge you to make this
+a mount option, analogous to the hard/soft mount option.
