@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1KRKoB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 05:44:01 -0500
-Received: from 8bytes.org ([88.198.83.132]:56845 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752298Ab1KRKoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 05:44:00 -0500
-Date: Fri, 18 Nov 2011 11:43:54 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: hdoyu@nvidia.com, linux-tegra@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/3] ARM: iommu: tegra: Add initial Tegra IOMMU driver
-Message-ID: <20111118104354.GA19737@8bytes.org>
-References: <1321527667-12923-1-git-send-email-hdoyu@nvidia.com> <CAHQjnOM-N9suPrv_nSRQsxGCNrf77rFLNtRcOdsjyz_O6bGdpA@mail.gmail.com>
+	id S1752221Ab1KRKrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 05:47:52 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:8553
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750753Ab1KRKru (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 05:47:50 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LUURA5-01-53B-02
+X-M-MSG: 
+Date: Fri, 18 Nov 2011 11:46:51 +0100
+From: Joerg Roedel <Joerg.Roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: <iommu@lists.linux-foundation.org>, <dwmw2@infradead.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
+ iommu groups
+Message-ID: <20111118104651.GJ5627@amd.com>
+References: <20111117170800.3125.84150.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CAHQjnOM-N9suPrv_nSRQsxGCNrf77rFLNtRcOdsjyz_O6bGdpA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111117170800.3125.84150.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 07:19:53PM +0900, KyongHo Cho wrote:
+On Thu, Nov 17, 2011 at 10:09:26AM -0700, Alex Williamson wrote:
+> IOMMU drivers should account for the platform's susceptibility to
+> DMA triggered MSI interrupts in creating IOMMU groups.  Skip
+> devices when the IOMMU can't isolate MSI from DMA, but allow
+> an iommu=group_unsafe_msi option for opt-in.  This removes the
+> leap in logic for users that IOMMU_CAP_INTR_REMAP is required for
+> interrupt security when they may be running on a non-x86 platform
+> that does not have this dependency.
 
-> I found that those patches are not IOMMU API implementations.
-> I wonder why they need to be located in drivers/iommu?
+I actually don't see the point in this. The iommu-group thing is to tell
+user-space what devices the IOMMU can safely distinguish between. The
+absence of interrupt-remapping changes nothing to that grouping. So why
+remove it when interrupt remapping is not enabled?
 
-The current effort goes into creating a generic framework for IOMMUs.
-These patches create their own framework which is totally the wrong
-direction, they even implement their own version of an IOMMU-API.
+	Joerg
 
-I object against merging them until they are converted to the generic
-IOMMU-API.
+-- 
+AMD Operating System Research Center
 
-
-        Joerg
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
