@@ -1,139 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab1KRQgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 11:36:40 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38597 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab1KRQgj (ORCPT
+	id S1758169Ab1KRQn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 11:43:27 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:33343 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756975Ab1KRQnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 11:36:39 -0500
-X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=a3paKzzjGroA:10 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=wlPmwRsKSctrVcVrf2YA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=y29Y46CVE9pD68E95scA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: [PATCH][GIT PULL] ktest: Check parent options for iterated tests
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rabin Vincent <rabin@rab.in>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-/Q9CpxPJ0O5hkadsjgEm"
-Date: Fri, 18 Nov 2011 11:36:36 -0500
-Message-ID: <1321634196.3533.55.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Fri, 18 Nov 2011 11:43:24 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 18 Nov 2011 17:43:09 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 02/11] mm: compaction: introduce
+ isolate_{free,migrate}pages_range().
+In-reply-to: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Message-id: <1321634598-16859-3-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.7.1
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Michal Nazarewicz <mina86@mina86.com>
 
---=-/Q9CpxPJ0O5hkadsjgEm
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This commit introduces isolate_freepages_range() and
+isolate_migratepages_range() functions.  The first one replaces
+isolate_freepages_block() and the second one extracts functionality
+from isolate_migratepages().
 
+They are more generic and instead of operating on pageblocks operate
+on PFN ranges.
 
-Linus,
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ mm/compaction.c |  170 ++++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 111 insertions(+), 59 deletions(-)
 
-This patch includes a bug fix for ktest. And also proves that ktest has
-at least 3 users!=20
-
-Please pull the latest for-linus tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
-for-linus
-
-Head SHA1: f9dfb65b055c56678afa03e13e942761459ea53d
-
-
-Rabin Vincent (1):
-      ktest: Check parent options for iterated tests
-
-----
- tools/testing/ktest/ktest.pl |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
----------------------------
-commit f9dfb65b055c56678afa03e13e942761459ea53d
-Author: Rabin Vincent <rabin@rab.in>
-Date:   Fri Nov 18 17:05:30 2011 +0530
-
-    ktest: Check parent options for iterated tests
-   =20
-    Let's say we have "OUTPUT_DIR =3D build/${TEST_NAME}", and we're iterat=
-ing
-    a test.  In the second iteration of a test, the TEST_NAME of the test
-    we're repeating is not used.  Instead, ${TEST_NAME} appears literally:
-   =20
-       touch /home/rabin/kernel/test/build/${TEST_NAME}/.config ... SUCCESS
-   =20
-    Fix this by making __eval_option() check the parent test options
-    for a repeated test.
-   =20
-    Link: http://lkml.kernel.org/r/1321616131-21352-2-git-send-email-rabin@=
-rab.in
-   =20
-    Signed-off-by: Rabin Vincent <rabin@rab.in>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 30e2bef..8b4c253 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -747,6 +747,18 @@ sub __eval_option {
-     # Add space to evaluate the character before $
-     $option =3D " $option";
-     my $retval =3D "";
-+    my $repeated =3D 0;
-+    my $parent =3D 0;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 899d956..6afae0e 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -54,51 +54,64 @@ static unsigned long release_freepages(struct list_head *freelist)
+ 	return count;
+ }
+ 
+-/* Isolate free pages onto a private freelist. Must hold zone->lock */
+-static unsigned long isolate_freepages_block(struct zone *zone,
+-				unsigned long blockpfn,
+-				struct list_head *freelist)
++/**
++ * isolate_freepages_range() - isolate free pages, must hold zone->lock.
++ * @zone:	Zone pages are in.
++ * @start:	The first PFN to start isolating.
++ * @end:	The one-past-last PFN.
++ * @freelist:	A list to save isolated pages to.
++ *
++ * If @freelist is not provided, holes in range (either non-free pages
++ * or invalid PFNs) are considered an error and function undos its
++ * actions and returns zero.
++ *
++ * If @freelist is provided, function will simply skip non-free and
++ * missing pages and put only the ones isolated on the list.
++ *
++ * Returns number of isolated pages.  This may be more then end-start
++ * if end fell in a middle of a free page.
++ */
++static unsigned long
++isolate_freepages_range(struct zone *zone,
++			unsigned long start, unsigned long end,
++			struct list_head *freelist)
+ {
+-	unsigned long zone_end_pfn, end_pfn;
+-	int nr_scanned = 0, total_isolated = 0;
+-	struct page *cursor;
+-
+-	/* Get the last PFN we should scan for free pages at */
+-	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+-	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
++	unsigned long nr_scanned = 0, total_isolated = 0;
++	unsigned long pfn = start;
++	struct page *page;
+ 
+-	/* Find the first usable PFN in the block to initialse page cursor */
+-	for (; blockpfn < end_pfn; blockpfn++) {
+-		if (pfn_valid_within(blockpfn))
+-			break;
+-	}
+-	cursor = pfn_to_page(blockpfn);
++	VM_BUG_ON(!pfn_valid(pfn));
++	page = pfn_to_page(pfn);
+ 
+ 	/* Isolate free pages. This assumes the block is valid */
+-	for (; blockpfn < end_pfn; blockpfn++, cursor++) {
+-		int isolated, i;
+-		struct page *page = cursor;
+-
+-		if (!pfn_valid_within(blockpfn))
+-			continue;
+-		nr_scanned++;
+-
+-		if (!PageBuddy(page))
+-			continue;
++	while (pfn < end) {
++		unsigned isolated = 1, i;
 +
-+    foreach my $test (keys %repeat_tests) {
-+	if ($i >=3D $test &&
-+	    $i < $test + $repeat_tests{$test}) {
++		if (!pfn_valid_within(pfn))
++			goto skip;
++		++nr_scanned;
 +
-+	    $repeated =3D 1;
-+	    $parent =3D $test;
-+	    last;
++		if (!PageBuddy(page)) {
++skip:
++			if (freelist)
++				goto next;
++			for (; start < pfn; ++start)
++				__free_page(pfn_to_page(pfn));
++			return 0;
++		}
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+ 		total_isolated += isolated;
+-		for (i = 0; i < isolated; i++) {
+-			list_add(&page->lru, freelist);
+-			page++;
++		if (freelist) {
++			struct page *p = page;
++			for (i = isolated; i; --i, ++p)
++				list_add(&p->lru, freelist);
+ 		}
+ 
+-		/* If a page was split, advance to the end of it */
+-		if (isolated) {
+-			blockpfn += isolated - 1;
+-			cursor += isolated - 1;
+-		}
++next:
++		pfn += isolated;
++		page += isolated;
+ 	}
+ 
+ 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+@@ -135,7 +148,7 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn;
++	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
+ 	unsigned long flags;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+@@ -155,6 +168,8 @@ static void isolate_freepages(struct zone *zone,
+ 	 */
+ 	high_pfn = min(low_pfn, pfn);
+ 
++	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++
+ 	/*
+ 	 * Isolate free pages until enough are available to migrate the
+ 	 * pages on cc->migratepages. We stop searching if the migrate
+@@ -191,7 +206,9 @@ static void isolate_freepages(struct zone *zone,
+ 		isolated = 0;
+ 		spin_lock_irqsave(&zone->lock, flags);
+ 		if (suitable_migration_target(page)) {
+-			isolated = isolate_freepages_block(zone, pfn, freelist);
++			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
++			isolated = isolate_freepages_range(zone, pfn,
++					end_pfn, freelist);
+ 			nr_freepages += isolated;
+ 		}
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+@@ -250,31 +267,34 @@ typedef enum {
+ 	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
+ } isolate_migrate_t;
+ 
+-/*
+- * Isolate all pages that can be migrated from the block pointed to by
+- * the migrate scanner within compact_control.
++/**
++ * isolate_migratepages_range() - isolate all migrate-able pages in range.
++ * @zone:	Zone pages are in.
++ * @cc:		Compaction control structure.
++ * @low_pfn:	The first PFN of the range.
++ * @end_pfn:	The one-past-the-last PFN of the range.
++ *
++ * Isolate all pages that can be migrated from the range specified by
++ * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
++ * pending), otherwise PFN of the first page that was not scanned
++ * (which may be both less, equal to or more then end_pfn).
++ *
++ * Assumes that cc->migratepages is empty and cc->nr_migratepages is
++ * zero.
++ *
++ * Other then cc->migratepages and cc->nr_migratetypes this function
++ * does not modify any cc's fields, ie. it does not modify (or read
++ * for that matter) cc->migrate_pfn.
+  */
+-static isolate_migrate_t isolate_migratepages(struct zone *zone,
+-					struct compact_control *cc)
++static unsigned long
++isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
++			   unsigned long low_pfn, unsigned long end_pfn)
+ {
+-	unsigned long low_pfn, end_pfn;
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
+ 	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
+ 
+-	/* Do not scan outside zone boundaries */
+-	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+-
+-	/* Only scan within a pageblock boundary */
+-	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
+-
+-	/* Do not cross the free scanner or scan within a memory hole */
+-	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
+-		cc->migrate_pfn = end_pfn;
+-		return ISOLATE_NONE;
+-	}
+-
+ 	/*
+ 	 * Ensure that there are not too many pages isolated from the LRU
+ 	 * list by either parallel reclaimers or compaction. If there are,
+@@ -283,12 +303,12 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	while (unlikely(too_many_isolated(zone))) {
+ 		/* async migration should just abort */
+ 		if (!cc->sync)
+-			return ISOLATE_ABORT;
++			return 0;
+ 
+ 		congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 
+ 		if (fatal_signal_pending(current))
+-			return ISOLATE_ABORT;
++			return 0;
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
+@@ -365,17 +385,49 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 		nr_isolated++;
+ 
+ 		/* Avoid isolating too much */
+-		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX)
++		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX) {
++			++low_pfn;
+ 			break;
++		}
+ 	}
+ 
+ 	acct_isolated(zone, cc);
+ 
+ 	spin_unlock_irq(&zone->lru_lock);
+-	cc->migrate_pfn = low_pfn;
+ 
+ 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+ 
++	return low_pfn;
++}
++
++/*
++ * Isolate all pages that can be migrated from the block pointed to by
++ * the migrate scanner within compact_control.
++ */
++static isolate_migrate_t isolate_migratepages(struct zone *zone,
++					struct compact_control *cc)
++{
++	unsigned long low_pfn, end_pfn;
++
++	/* Do not scan outside zone boundaries */
++	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
++
++	/* Only scan within a pageblock boundary */
++	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
++
++	/* Do not cross the free scanner or scan within a memory hole */
++	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
++		cc->migrate_pfn = end_pfn;
++		return ISOLATE_NONE;
 +	}
-+    }
-=20
-     while ($option =3D~ /(.*?[^\\])\$\{(.*?)\}(.*)/) {
- 	my $start =3D $1;
-@@ -760,10 +772,14 @@ sub __eval_option {
- 	# otherwise see if the default OPT (without [$i]) exists.
-=20
- 	my $o =3D "$var\[$i\]";
-+	my $parento =3D "$var\[$parent\]";
-=20
- 	if (defined($opt{$o})) {
- 	    $o =3D $opt{$o};
- 	    $retval =3D "$retval$o";
-+	} elsif ($repeated && defined($opt{$parento})) {
-+	    $o =3D $opt{$parento};
-+	    $retval =3D "$retval$o";
- 	} elsif (defined($opt{$var})) {
- 	    $o =3D $opt{$var};
- 	    $retval =3D "$retval$o";
-
-
-
---=-/Q9CpxPJ0O5hkadsjgEm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOxomIAAoJEIy3vGnGbaoAZvcP/RoaDmlU2AqoIWomtULNesHg
-9K6m9AdKFc2dTU3z5q3d5YmBxZ2qjEjijL5lvfOY9Icke3R22D6kXVvTyMnNal1o
-h9pQDoywed1cC/832ta34LhHYIdOpdwemLxuQ8BzHNv5G+/xbItCpawwhB5K8JJi
-HagDBcTmODNgygM/Hs6uMU4xKw0msY8p6VnXrSFK3OIVxx2KWvBwZqUAZBiJcXQi
-UF/w8SFPHWEWr3mkt5qiMAkMPyP42WESvkWgW/PJjcrVQXy+3j24728HT1q6Jbfa
-lRGsJ9+XOukf7S+1LfagS+zK0N4N8qsgu8R0qs/IMNYwYuTneUKVt0arb1lZCaMI
-6xwCRBfjxUwr2YWnYhBCjzrH2Jm8eg2dr0GnCOP1TjfkdmJ9YFlbpyZeGGqwJVm1
-1sPDkmDtvTPexZo6tyYiXORUkp2gcoeYEV+VWxN+8IeW6wZctdeltSAeibFhQDKC
-Y2Jsaqss5fYBGF6g6nLxZGwQajgtk4TKrZpiGoHsnER8rYXpmdbHsxG/XRpZrX2J
-cndgG0VBxlM8+Vx5vLiAxferVLRoYoVvVoLUxRWFwLopVuKyMBHHSFzvpru3dENc
-yzWcVI0VOoJc73MIpMEP4Fz3GGXRB+DWbRKNDnMgC1rvhc0C40c1I0d/e7spD2A2
-CevufU3PTwiBZpLrtJ/5
-=n4am
------END PGP SIGNATURE-----
-
---=-/Q9CpxPJ0O5hkadsjgEm--
++
++	/* Perform the isolation */
++	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn);
++	if (!low_pfn)
++		return ISOLATE_ABORT;
++
++	cc->migrate_pfn = low_pfn;
++
+ 	return ISOLATE_SUCCESS;
+ }
+ 
+-- 
+1.7.1.569.g6f426
 
