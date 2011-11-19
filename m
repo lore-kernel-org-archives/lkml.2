@@ -1,129 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1KSJPP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 04:15:15 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42980 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab1KSJPL convert rfc822-to-8bit (ORCPT
+	id S1752927Ab1KSJPd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 04:15:33 -0500
+Received: from fed1rmfepi104.cox.net ([68.230.241.135]:49541 "EHLO
+	fed1rmfepi104.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab1KSJP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 04:15:11 -0500
+	Sat, 19 Nov 2011 04:15:29 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Nov 2011 04:15:29 EST
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020206.4EC77276.0096,ss=2,re=0.000,fgs=64
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=AMBwR8YDos1H7FJA5lHA2PA9bT1Kiuo1ZoGN/DZxOnQ=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=G8Uczd0VNMoA:10 a=5nW6iIwYxnwA:10
+ a=Cfj4BQAnxiAA:10 a=ss6J2Dnz7P9uIzKc79Vr6g==:17 a=rt0ozNMu-aZveinR7XkA:9
+ a=Ft8UYL4EG9YA:10 a=JoIK7SdabSg72k_w:21 a=ss6J2Dnz7P9uIzKc79Vr6g==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=vmilazzo@cox.net
+Reply-To: <alert01@cpll.cn>
+From: "EMAIL ALERT" <vmilazzo@cox.net>
+Subject: E-Mail Account Maintenance
+Date: Sat, 19 Nov 2011 14:40:13 +0530
 MIME-Version: 1.0
-In-Reply-To: <20111118021714.GP3306@redhat.com>
-References: <20111105013317.GU18879@redhat.com>
-	<CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
-	<20111107131413.GA18279@suse.de>
-	<20111107154235.GE3249@redhat.com>
-	<20111107162808.GA3083@suse.de>
-	<20111109012542.GC5075@redhat.com>
-	<20111116140042.GD3306@redhat.com>
-	<alpine.LSU.2.00.1111161540060.1861@sister.anvils>
-	<20111117184252.GK3306@redhat.com>
-	<CAPQyPG7MvO8Qw3jrOMShQcG5Z-RwbzpKnu-AheoS6aRYNhW14w@mail.gmail.com>
-	<20111118021714.GP3306@redhat.com>
-Date: Sat, 19 Nov 2011 17:15:10 +0800
-Message-ID: <CAPQyPG5GXOb1o5DjkTcjqbes=R_0BP8LR2fZDYroORn_-uE1AQ@mail.gmail.com>
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-From: Nai Xia <nai.xia@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 111118-1, 11/18/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20111119091014.RLBN3801.fed1rmfepo103.cox.net@fed1rmimpo210.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 10:17 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Fri, Nov 18, 2011 at 09:42:05AM +0800, Nai Xia wrote:
->> First of all, I believe that at the POSIX level, it's ok for
->> truncate_inode_page()
->> not scanning  COWed pages, since basically we does not provide any guarantee
->> for privately mapped file pages for this behavior. But missing a file
->> mapped pte after its
->> cache page is already removed from the the page cache is a
->
-> I also exclude there is a case that would break, but it's safer to
-> keep things as is, in case somebody depends on segfault trapping.
->
->> fundermental malfuntion for
->> a shared mapping when some threads see the file cache page is gone
->> while some thread
->> is still r/w from/to it! No matter how short the gap between
->> truncate_inode_page() and
->> the second loop, this is wrong.
->
-> Truncate will destroy the info on disk too... so if somebody is
-> writing to a mapping which points beyond the end of the i_size
-> concurrently with truncate, the result is undefined. The write may
-> well reach the page but then the page is discared. Or you may get
-> SIGBUS before the write.
->
->> Second, even if the we don't care about this POSIX flaw that may
->> introduce, a pte can still
->> missed by the second loop. mremap can happen serveral times during
->> these non-atomic
->> firstpass-trunc-secondpass operations, a proper events can happily
->> make the wrong order
->> for every scan, and miss them all -- That's just what in Hugh's mind
->> in the post you just
->> replied. Without lock and proper ordering( which patial mremap cannot provide),
->> this *will* happen.
->
-> There won't be more than one mremap running concurrently from the same
-> process (we must enforce it by making sure anon_vma lock and
-> i_mmap_lock are both taken at least once in copy_vma, they're already
-> both taken in fork, they should already be taken in all common cases
-> in copy_vma so for all cases it's going to be a L1 exclusive cacheline
-> already). I don't exclude there may be some case that won't take the
-> locks in vma_adjust though, we should check it, if we decide to relay
-> on the double loop, but it'd be a simple addition if needed.
 
-I mean it's not the concurrent mremap, it's mremap() can be done several
-times between these 3-stage scans, since we don't take the mmap_sem
-of the scanned VMAs, they are valid to do so. And without proper ordering
-and locks/mutex it's possible for these 3-stage scans racing with these
-mremap() s and a ghost PTE just jumps back and force and misses all
-these scans.
-
->
-> I'm more concerned about the pte pointing to the orphaned pagecache
-> that would materialize for a little while because of
-> unmap+truncate+unmap instead of unmap+unmap+truncate (but the latter
-> order is needed for the COWs).
->
->> You may disagree with me and have that locking removed, and I am
->> already have that
->> one line patch prepared waiting fora bug bumpping up again, what a
->> cheap patch submission!
->
-> Well I'm not yet sure it's good idea to remove the i_mmap_mutex, or if
-> we should just add the anon_vma lock in mremap and add the i_mmap_lock
-> in fork (to avoid the orphaned pagecache left mapped in the child
-> which already may happen unless there's some i_mmap_lock belonging to
-> the same inode taken after copy_page_range returns until we return to
-> userland and child can run, and I don't think we can relay on the
-> order of the prio tree in fork. Fork is safe for anon pages because
-> there we can relay on the order of the same_anon_vma list.
->
-> I think clearing up if this orphaned pagecache is dangerous would be a
-> good start. If too complex we just add the i_mmap_lock around
-> copy_page_range in fork if vma->vm_file is set. If you instead think
-> we can deal with the orphaned pagecache we can add a dummy lock/unlock
-> of i_mmap_mutex in copy_vma vma_merge succeeding case (short critical
-> section and not common common case) and remove the i_mmap_mutex around
-> move_page_tables (common case) overall speeding up mremap and not
-> degrading fork.
->
-
-I am actually feel comfortable either direction you take :)
-
-But I do think orphaned pagecache is not a good idea,
-don't you see there is a "BUG_ON(page_mapped(page))"
-in __delete_from_page_cache()? Do you really plan to
-remove this line?
-
-Nai
+  upgrade van onze UPC webmail service en als gevolg van deze onze UPC klant 
+  is veranderd en uw oorspronkelijke wachtwoord te resetten. Onze excuses voor 
+  het ongemak.
+ Om uw UPC account, zodat u om ons uw e-mail account gegevens die zijn als 
+  volgt:
+ 
+  * User name:
+  * Wachtwoord:
+  * Geboortedatum:
+ 
+  Doet u dit niet binnen 48 uur zal onmiddellijk maken van uw UPC account 
+  gedeactiveerd uit onze database.
+ 
+  Dank u voor het gebruik van de UPC-account!
+ 
