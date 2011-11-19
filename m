@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab1KSWMu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 17:12:50 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:47757 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754134Ab1KSWMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 17:12:49 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] More power management fixes for 3.2
-Date: Sat, 19 Nov 2011 23:15:32 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
+	id S1754457Ab1KSWQy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 17:16:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54557 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab1KSWQx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 17:16:53 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111192315.32660.rjw@sisk.pl>
+In-Reply-To: <710B9EAE-A4C8-4E8F-9AA1-F6CBDC84FD54@mit.edu>
+References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com>
+	<47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu>
+	<alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com>
+	<CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
+	<710B9EAE-A4C8-4E8F-9AA1-F6CBDC84FD54@mit.edu>
+Date: Sun, 20 Nov 2011 07:16:51 +0900
+Message-ID: <CAKYAXd85nEpYhiA3VFC53TA4jQJfWixDagab4WRWrsSANyLp-Q@mail.gmail.com>
+Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+2011/11/20 Theodore Tso <tytso@mit.edu>:
+>
+> On Nov 17, 2011, at 12:11 AM, Amit Sahrawat wrote:
+>> We looked for the details regarding the introduction of
+>> SLAB_MEM_SHARED(http://linux.derkeiler.com/Mailing-Lists/Kernel/2006-02/msg01409.html
+>> - provide the slab cache infrastructure to support cpuset memory
+>> spreading), and further the changes were introduced across all
+>> filesystems - http://lwn.net/Articles/173654/.
+>
+> The main thing I see when I look at this list was it was focused only on the file system's inode structures, or other structures which were long lived and likely to be accessed from many NUMA nodes other than the one where it was originally allocated.
+>
+> It's unfortunate that this has gotten turned into a much broader generalization that all slab caches should have this flag set.   Perhaps it might be interesting to reflect on the fact that if it was always good to do this, that a flag wouldn't be used to control this behavior, but rather it would be done conditionally?
+>
+> It's all very good to send  lots of clean up patches, perhaps as a way to learn how to submit kernel patches.   But I would ask people who do this to understand a bit more deeply what is going on.  What's most important for people who are getting started with kernel development is not so much the mechanics of submitting patches, but understanding why things work the way they do.
 
-Please pull additional power management fixes (on top of commit
-19e0bafc36abd84a5b4d7c7745b78a6f4626e944) for 3.2 from:
+Actually I checked btrfs before I posted this patch, I was more
+confused by temparal slab caches similar with page_io caches of ext4
+were not even using the spread flags in btrfs.
+I apologize for lacking a point. I will post a patch after
+understanding a bit more deeply.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-fixes
-
-with top-most commit 501a708f18ef911328ffd39f39738b8a7862aa8e
-(PM / Suspend: Fix bug in suspend statistics update).
-
-They include:
-
-* PM QoS and shmobile PM cleanups from Guennadi Liakhovetski.
-
-* PM clocks management and shmobile PM fixes from Magnus Damm.
-
-* devfreq fixes from MyungJoo Ham and Axel Lin.
-
-* shmobile PM fix to avoid restoring INTCS state from random data
-  during initialization.
-
-* Driver core fix to disable device runtime PM during shutdown from Peter Chen.
-
-* PM core fix to prevent devices with ignore_children set from blocking power
-  removal from their power domains unnecessarily (which is a power regression
-  with respect to 3.1 on some systems).
-
-* Hibernation test modes and suspend statistics fixes from Srivatsa S. Bhat.
-
-Thanks!
-
-
- arch/arm/mach-shmobile/pm-sh7372.c |   33 ++++++++++++++++++++++------
- drivers/base/core.c                |    3 ++
- drivers/base/power/clock_ops.c     |    3 +-
- drivers/base/power/main.c          |    3 +-
- drivers/base/power/qos.c           |   18 +++++----------
- drivers/devfreq/Kconfig            |   41 +++++++++++++++---------------------
- drivers/devfreq/devfreq.c          |   10 +++++++-
- include/linux/device.h             |    5 ++++
- include/linux/pm.h                 |    2 +-
- include/linux/pm_runtime.h         |    6 -----
- kernel/power/hibernate.c           |   23 +++++++++++++++-----
- kernel/power/main.c                |    3 +-
- 12 files changed, 89 insertions(+), 61 deletions(-)
-
----------------
-
-Axel Lin (1):
-      PM / devfreq: fix use after free in devfreq_remove_device
-
-Guennadi Liakhovetski (2):
-      PM / shmobile: Don't skip debugging output in pd_power_up()
-      PM / QoS: Properly use the WARN() macro in dev_pm_qos_add_request()
-
-Magnus Damm (2):
-      ARM: mach-shmobile: sh7372 A3SP no_suspend_console fix
-      PM / Clocks: Only disable enabled clocks in pm_clk_suspend()
-
-MyungJoo Ham (2):
-      PM / devfreq: Remove compiler error after irq.h update
-      PM / devfreq: correct Kconfig dependency
-
-Peter Chen (1):
-      PM / driver core: disable device's runtime PM during shutdown
-
-Rafael J. Wysocki (3):
-      PM / shmobile: Avoid restoring the INTCS state during initialization
-      PM Sleep: Do not extend wakeup paths to devices with ignore_children set
-      PM / shmobile: Fix build of sh7372_pm_init() for CONFIG_PM unset
-
-Srivatsa S. Bhat (2):
-      PM / Hibernate: Fix the early termination of test modes
-      PM / Suspend: Fix bug in suspend statistics update
-
+>
+> Best regards,
+>
+> -- Ted
+>
+>
