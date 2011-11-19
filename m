@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab1KSUDY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 15:03:24 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:14607 "EHLO
+	id S1753745Ab1KSUHR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 15:07:17 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:36687 "EHLO
 	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752831Ab1KSUDX (ORCPT
+	by vger.kernel.org with ESMTP id S1751303Ab1KSUHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 15:03:23 -0500
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Nov 2011 15:03:23 EST
+	Sat, 19 Nov 2011 15:07:15 -0500
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Nov 2011 15:07:15 EST
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4PAMUKyE64rwEk/2dsb2JhbABDmjMZjlyBFYEGgXIBAQUnER4GHAEQCwsDCgkWDwkDAgECAREWDBIGDQEFAgKIB6ROhl89iHQEihcEiBqCDIoWilKDBoRL
+X-IronPort-Anti-Spam-Result: AooAAHAJyE64rwEk/2dsb2JhbABDmiQoj3GBBoFyAQEFOBYIBhwBEAsLDQkWDwkDAgECAREOCB4GCAUBBQICBRQEh2qkToZfPYh4g1mGPgSIGoIMihaKU4MFhEs
 X-IronPort-AV: E=Sophos;i="4.69,539,1315195200"; 
-   d="scan'208";a="148620738"
-Message-ID: <4EC80B48.4060808@gmail.com>
-Date: Sat, 19 Nov 2011 15:02:16 -0500
+   d="scan'208";a="148619036"
+Message-ID: <4EC80A2F.7030800@gmail.com>
+Date: Sat, 19 Nov 2011 14:57:35 -0500
 From: Woody Suwalski <terraluna977@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110928 Firefox/7.0.1 SeaMonkey/2.4.1
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Alex Davis <alex14641@yahoo.com>,
-        Kamal Mostafa <kamal@canonical.com>, mjg@redhat.com
-Subject: Re: [PATCH] drm/i915: Fix inconsistent backlight level during disabled
-References: <s5hboscpexg.wl%tiwai@suse.de>
-In-Reply-To: <s5hboscpexg.wl%tiwai@suse.de>
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/26] 3.1.2-stable review
+References: <20111119000336.GA8452@kroah.com>
+In-Reply-To: <20111119000336.GA8452@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai wrote:
-> When the brightness property is inquired while the backlight is disabled,
-> the driver returns a wrong value (zero) because it probes the value after
-> the backlight was turned off.  This caused a black screen even after the
-> backlight is enabled again.  It should return the internal backlight_level
-> instead, so that it won't be influenced by the backlight-enable state.
+Greg KH wrote:
+> This is the start of the stable review cycle for the 3.1.2 release.
+> There are 26 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
 >
-> BugLink: https://bugs.freedesktop.org/show_bug.cgi?id=41926
-> BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/872652
+> Responses should be made by Monday, November 21, 2011, 20:00:00 UTC.
+> Anything received after that time might be too late.
 >
-> Tested-by: Kamal Mostafa<kamal@canonical.com>
-> Cc: Alex Davis<alex14641@yahoo.com>
-> Cc:<stable@kernel.org>
-> Signed-off-by: Takashi Iwai<tiwai@suse.de>
-> ---
->   drivers/gpu/drm/i915/intel_panel.c |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.2-rc1.gz
+> and the diffstat can be found below.
 >
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index 499d4c0..21f60b7 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -326,7 +326,8 @@ static int intel_panel_update_status(struct backlight_device *bd)
->   static int intel_panel_get_brightness(struct backlight_device *bd)
->   {
->   	struct drm_device *dev = bl_get_data(bd);
-> -	return intel_panel_get_backlight(dev);
-> +	struct drm_i915_private *dev_priv = dev->dev_private;
-> +	return dev_priv->backlight_level;
->   }
+> thanks,
 >
->   static const struct backlight_ops intel_panel_bl_ops = {
-Seems to be fixing a black-screen regression since 3.0 on EeePC devices 
-as well...
+> greg k-h
+>
+>
+>   Documentation/sound/alsa/HD-Audio-Models.txt     |    1 +
+>   Makefile                                         |    4 +-
+>   arch/arm/mach-at91/at91cap9_devices.c            |    2 +-
+>   arch/arm/mach-at91/at91sam9g45_devices.c         |    2 +-
+>   arch/arm/mach-at91/at91sam9rl_devices.c          |    2 +-
+>   arch/powerpc/include/asm/sections.h              |    2 +-
+>   arch/powerpc/include/asm/synch.h                 |    1 +
+>   arch/powerpc/kernel/kvm.c                        |    1 -
+>   arch/powerpc/kernel/setup_32.c                   |    2 +
+>   arch/powerpc/kernel/setup_64.c                   |    1 +
+>   arch/powerpc/kvm/book3s_hv.c                     |    1 +
+>   arch/powerpc/lib/feature-fixups.c                |   23 ++++
+>   arch/powerpc/platforms/ps3/interrupt.c           |   23 ++++-
+>   arch/powerpc/platforms/ps3/platform.h            |    1 +
+>   arch/powerpc/platforms/ps3/smp.c                 |    2 +
+>   arch/sh/include/asm/page.h                       |    5 +
+>   arch/x86/xen/enlighten.c                         |    3 +-
+>   block/blk-map.c                                  |    7 +-
+>   drivers/gpu/drm/i915/i915_gem.c                  |    2 +-
+>   drivers/gpu/drm/nouveau/nouveau_channel.c        |    1 +
+>   drivers/gpu/drm/nouveau/nouveau_fence.c          |    2 -
+>   drivers/gpu/drm/radeon/atombios_dp.c             |    2 +-
+>   drivers/leds/led-class.c                         |    5 +-
+>   drivers/mfd/twl-core.c                           |    2 +-
+>   drivers/net/wireless/b43/main.c                  |    7 ++
+>   drivers/staging/brcm80211/brcmsmac/mac80211_if.c |    9 ++-
+>   drivers/staging/brcm80211/brcmsmac/mac80211_if.h |    6 +
+>   drivers/staging/brcm80211/brcmsmac/main.c        |    8 ++
+>   drivers/virtio/virtio_pci.c                      |   11 +-
+>   drivers/xen/gntalloc.c                           |    4 +-
+>   fs/hfs/trans.c                                   |    2 +
+>   include/drm/drm_pciids.h                         |    2 +
+>   mm/backing-dev.c                                 |    8 ++
+>   security/keys/user_defined.c                     |    3 +-
+>   sound/pci/hda/hda_codec.c                        |   60 +++++++----
+>   sound/pci/hda/patch_sigmatel.c                   |   11 ++
+>   sound/soc/codecs/wm8994.c                        |    2 +-
+>   sound/usb/mixer.c                                |  120 +++++++++++++---------
+>   38 files changed, 245 insertions(+), 105 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+Please include also
+
+Takashi Iwai (1):
+       drm/i915: Fix inconsistent backlight level during disabled
+
+
+which is fixing a black-screen regression from 3.0 kernel.
 
 Thanks, Woody
+
 
