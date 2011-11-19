@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758323Ab1KSEto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:49:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58339 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589Ab1KSEsc (ORCPT
+	id S1758057Ab1KSEwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:52:11 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:53358 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757031Ab1KSEwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:48:32 -0500
-X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=HgA2DzUFgX0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=E6QszT8yXth5kcjDwrgA:9 a=QEXdDO2ut3YA:10 a=_twGcrsKVrYA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=nnD5aEwFM-1NGth418kA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20111119044829.193255499@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 18 Nov 2011 23:45:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, stable-rt@vger.kernel.org
-Subject: [PATCH 1/5] softirq: Export in_serving_softirq()
-References: <20111119044510.811163517@goodmis.org>
-Content-Disposition: inline; filename=0001-softirq-Export-in_serving_softirq.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Fri, 18 Nov 2011 23:52:09 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, richard@nod.at,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        eparis@redhat.com, oleg@redhat.com, dhowells@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <20111117045230.GA26345@hallyn.com>
+	<m1aa7u2jv1.fsf@fess.ebiederm.org> <20111118173752.GB11823@sergelap>
+	<m14ny12rra.fsf@fess.ebiederm.org> <20111119004302.GB16259@sergelap>
+Date: Fri, 18 Nov 2011 20:53:12 -0800
+In-Reply-To: <20111119004302.GB16259@sergelap> (Serge Hallyn's message of
+	"Fri, 18 Nov 2011 18:43:02 -0600")
+Message-ID: <m1ty601znr.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/CYRFuZSCzqTAltinjxK4kzHYzIntv2pQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Serge Hallyn <serge.hallyn@canonical.com>
+X-Spam-Relay-Country: **
+Subject: Re: user namespace: make signal.c respect user namespaces (v5)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Serge Hallyn <serge.hallyn@canonical.com> writes:
 
-From: John Kacur <jkacur@redhat.com>
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> "Serge E. Hallyn" <serge.hallyn@canonical.com> writes:
+>> 
+>> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> >> There is a small bug here.  You want to fixup q->info, not info.
+>> >> Otherwise you might try dereferencing one of the special signals and get
+>> >> a NULL pointer dereference.
+>> >
+>> > Thanks, Eric.  Oddly I've not seen this happen in quite a bit of
+>> > testing with the kernel, but you certainly must be right.  I sent
+>> > out a new patch to fix that.
+>> 
+>> You clearly have a different test case than I do.
+>
+> I ran a good chunk of ltp...  and it passed.  I can't explain it.
 
-ERROR: "in_serving_softirq" [net/sched/cls_cgroup.ko] undefined!
+I guess my test case as mostly dinking around and hitting ctrl-c because
+something wasn't behaving as I would like.
 
-The above can be fixed by exporting in_serving_softirq
+Still I a tad surprised that ltp doesn't seem to test that one.
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: stable-rt@vger.kernel.org
-Link: http://lkml.kernel.org/r/1321235083-21756-2-git-send-email-jkacur@red=
-hat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/softirq.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+>> I managed to trigger the oops  within about 5 minutes of just fooling
+>> around.
+>> 
+>> You want to say &q->info not q->info in your updated patch.
+>
+> Oh, yes, thanks.  Sorry, I shouldn't have sent that one as I wasn't able
+> to compile and test until tonight.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index e8756aa..026a283 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -447,6 +447,7 @@ int in_serving_softirq(void)
- 	preempt_enable();
- 	return res;
- }
-+EXPORT_SYMBOL(in_serving_softirq);
-=20
- /*
-  * Called with bh and local interrupts disabled. For full RT cpu must
---=20
-1.7.7.1
+No problem.
 
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOxzUdAAoJEIy3vGnGbaoA5hkP/RXE8dvtcVBBpJyu4QkXQfvM
-XkWkzrLe7TgSkllTNgwYGjn2B/No70zEVe7q8Nwl5ng14dfUoBZAmMj3YJ1ILw5Y
-k3+C2WOsJ018ZYdNdTm1GAEyvrXU86RV+KNl0TQnWhLbBK8rMVTXmkAOzoP6syAc
-wMWqDUw0vGNZ0uCssbmzvu/QJD724Q/+hHKCP1ueW/Y3JNxTAPgJr+X9u+3YzlwV
-Q2QeRDPR2H2XKjkKRBVag2Pk4Sz7/RYeM0XNEnIoDZZHK+/9F7jvhWajnQHgGq3+
-c5/5cglFbwaWiixSpTsoALQB+d/ThfABO2FJ/KnV2nbV5nBnDxQ9GFrf5HdVr1L5
-kJ/UFVz6pW+UoVplLAZNeVPdtRlDxhwNVjPKzHcuwKKexYCD+ztqhvJdLENIi5Wi
-BEekFm+MOazanJzGJBQwaVWY36rYEVYLNqXgrWGfe039j/KibJgPJxvOqy91ROaU
-GWIyiI2XmkwCm0jgM5U9xesOf5LKpyh3c5QyGDVi1usPsWY0IqB6CkyeKg8H8Viw
-4UG26oXhz2EC3ZoxpHZ/1tWf+fz2NC+BQ6nASvNK5jrdEurK5eu1ajgLxyOgPaaE
-5FWUqM+yDKsBLj1clkOhBFQ/7WrkZpJWkEBs2OJTTVLhtSMB1gnBQm/sI058t8yO
-nPvl65E/lLKY8kT1yzmh
-=xs32
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Eric
