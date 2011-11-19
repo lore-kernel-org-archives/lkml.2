@@ -1,130 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab1KST41 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 14:56:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16491 "EHLO mx1.redhat.com"
+	id S1753855Ab1KST40 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 14:56:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56462 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992Ab1KSTzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752831Ab1KSTzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 19 Nov 2011 14:55:06 -0500
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org
 Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
         Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
         Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] mm: compaction: defer compaction only with sync_migration
-Date: Sat, 19 Nov 2011 20:54:16 +0100
-Message-Id: <1321732460-14155-5-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 7/8] Revert "vmscan: abort reclaim/compaction if compaction can proceed"
+Date: Sat, 19 Nov 2011 20:54:19 +0100
+Message-Id: <1321732460-14155-8-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1321635524-8586-1-git-send-email-mgorman@suse.de>
 References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let only sync migration drive the
-compaction_deferred()/defer_compaction() logic. So sync migration
-isn't prevented to run if async migration fails. Without sync
-migration pages requiring migrate.c:writeout() or a ->migratepage
-operation (that isn't migrate_page) can't me migrated, and that has
-the effect of polluting the movable pageblock with pages that won't be
-migrated by async migration, so it's fundamental to guarantee sync
-compaction will be run too before failing.
+This reverts commit e0c23279c9f800c403f37511484d9014ac83adec.
+
+If reclaim runs with an high order allocation, it means compaction
+failed. That means something went wrong with compaction so we can't
+stop reclaim too. We can't assume it failed and was deferred because
+of the too low watermarks in compaction_suitable only, it may have
+failed for other reasons.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/page_alloc.c |   50 ++++++++++++++++++++++++++++++--------------------
- 1 files changed, 30 insertions(+), 20 deletions(-)
+ mm/vmscan.c |   32 +++++++++++---------------------
+ 1 files changed, 11 insertions(+), 21 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9dd443d..2229f7d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1891,7 +1891,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3421746..b1a3cb0 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2106,19 +2106,14 @@ restart:
+  *
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
+- *
+- * This function returns true if a zone is being reclaimed for a costly
+- * high-order allocation and compaction is either ready to begin or deferred.
+- * This indicates to the caller that it should retry the allocation or fail.
+  */
+-static bool shrink_zones(int priority, struct zonelist *zonelist,
++static void shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
  {
- 	struct page *page;
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+-	bool should_abort_reclaim = false;
  
--	if (!order || compaction_deferred(preferred_zone))
-+	if (!order)
- 		return NULL;
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2135,20 +2130,19 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 				continue;	/* Let kswapd poll it */
+ 			if (COMPACTION_BUILD) {
+ 				/*
+-				 * If we already have plenty of memory free for
+-				 * compaction in this zone, don't free any more.
+-				 * Even though compaction is invoked for any
+-				 * non-zero order, only frequent costly order
+-				 * reclamation is disruptive enough to become a
+-				 * noticable problem, like transparent huge page
+-				 * allocations.
++				 * If we already have plenty of memory
++				 * free for compaction, don't free any
++				 * more.  Even though compaction is
++				 * invoked for any non-zero order,
++				 * only frequent costly order
++				 * reclamation is disruptive enough to
++				 * become a noticable problem, like
++				 * transparent huge page allocations.
+ 				 */
+ 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+ 					(compaction_suitable(zone, sc->order) ||
+-					 compaction_deferred(zone))) {
+-					should_abort_reclaim = true;
++					 compaction_deferred(zone)))
+ 					continue;
+-				}
+ 			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+@@ -2167,8 +2161,6 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
  
- 	current->flags |= PF_MEMALLOC;
-@@ -1921,7 +1921,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 		 * but not enough to satisfy watermarks.
- 		 */
- 		count_vm_event(COMPACTFAIL);
--		defer_compaction(preferred_zone);
-+		if (sync_migration)
-+			defer_compaction(preferred_zone);
- 
- 		cond_resched();
+ 		shrink_zone(priority, zone, sc);
  	}
-@@ -2083,7 +2084,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	int alloc_flags;
- 	unsigned long pages_reclaimed = 0;
- 	unsigned long did_some_progress;
--	bool sync_migration = false;
-+	bool sync_migration = false, defer_compaction;
+-
+-	return should_abort_reclaim;
+ }
  
- 	/*
- 	 * In the slowpath, we sanity check order to avoid ever trying to
-@@ -2160,15 +2161,20 @@ rebalance:
- 	 * Try direct compaction. The first pass is asynchronous. Subsequent
- 	 * attempts after direct reclaim are synchronous
- 	 */
--	page = __alloc_pages_direct_compact(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask,
--					alloc_flags, preferred_zone,
--					migratetype, &did_some_progress,
--					sync_migration);
--	if (page)
--		goto got_pg;
--	sync_migration = true;
-+	defer_compaction = compaction_deferred(preferred_zone);
-+	if (!defer_compaction) {
-+		page = __alloc_pages_direct_compact(gfp_mask, order,
-+						    zonelist, high_zoneidx,
-+						    nodemask,
-+						    alloc_flags,
-+						    preferred_zone,
-+						    migratetype,
-+						    &did_some_progress,
-+						    sync_migration);
-+		if (page)
-+			goto got_pg;
-+		sync_migration = true;
-+	}
- 
- 	/* Try direct reclaim and then allocating */
- 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
-@@ -2223,19 +2229,23 @@ rebalance:
- 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
- 		goto rebalance;
- 	} else {
--		/*
--		 * High-order allocations do not necessarily loop after
--		 * direct reclaim and reclaim/compaction depends on compaction
--		 * being called after reclaim so call directly if necessary
--		 */
--		page = __alloc_pages_direct_compact(gfp_mask, order,
-+		if (!defer_compaction) {
-+			/*
-+			 * High-order allocations do not necessarily
-+			 * loop after direct reclaim and
-+			 * reclaim/compaction depends on compaction
-+			 * being called after reclaim so call directly
-+			 * if necessary
-+			 */
-+			page = __alloc_pages_direct_compact(gfp_mask, order,
- 					zonelist, high_zoneidx,
- 					nodemask,
- 					alloc_flags, preferred_zone,
- 					migratetype, &did_some_progress,
- 					sync_migration);
--		if (page)
--			goto got_pg;
-+			if (page)
-+				goto got_pg;
-+		}
- 	}
- 
- nopage:
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2233,9 +2225,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		if (shrink_zones(priority, zonelist, sc))
+-			break;
+-
++		shrink_zones(priority, zonelist, sc);
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
