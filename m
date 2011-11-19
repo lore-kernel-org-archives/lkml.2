@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1KSRyX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 12:54:23 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53480 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab1KSRyW convert rfc822-to-8bit (ORCPT
+	id S1752463Ab1KSSJd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 13:09:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38234 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab1KSSJc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 12:54:22 -0500
+	Sat, 19 Nov 2011 13:09:32 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "sandeep patil" <psandeep.s@gmail.com>
+Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Arnd Bergmann" <arnd@arndb.de>, "Jonathan Corbet" <corbet@lwn.net>,
+        "Mel Gorman" <mel@csn.ul.ie>, "Dave Hansen" <dave@linux.vnet.ibm.com>,
+        "Jesse Barker" <jesse.barker@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Ankita Garg" <ankita@in.ibm.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Linaro-mm-sig] [PATCHv17 0/11] Contiguous Memory Allocator
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+ <CA+K6fF6SH6BNoKgwArcqvyav4b=C5SGvymo5LS3akfD_yE_beg@mail.gmail.com>
+ <op.v45u6zyy3l0zgt@mpn-glaptop>
+ <CA+K6fF6iDivqmN9kfY34tWNg+g_rYBBmyS_Mxb6gvLuSgA2JyQ@mail.gmail.com>
+Date: Sat, 19 Nov 2011 19:09:23 +0100
 MIME-Version: 1.0
-In-Reply-To: <1321693664-3709-1-git-send-email-lars.schmohl@gmail.com>
-References: <1321693664-3709-1-git-send-email-lars.schmohl@gmail.com>
-Date: Sat, 19 Nov 2011 18:54:21 +0100
-Message-ID: <CAOui-B41NjqGQVYhF3nk-WUwmH_6AsTD8F5bqZTVUtzWJv8nEw@mail.gmail.com>
-Subject: [PATCH] ASIX: Add Asus ASIX USB ID
-From: Lars Schmohl <lars.schmohl@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v47gpxi03l0zgt@mpn-glaptop>
+In-Reply-To: <CA+K6fF6iDivqmN9kfY34tWNg+g_rYBBmyS_Mxb6gvLuSgA2JyQ@mail.gmail.com>
+User-Agent: Opera Mail/11.52 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Schmohl <lars.schmohl@gmail.com>
+>> On Fri, 18 Nov 2011 22:20:48 +0100, sandeep patil wrote:
+>>> So, i guess my question is, until all the migration failures are
+>>> tracked down and fixed, is there a plan to retry the contiguous
+>>> allocation from a new range in the CMA region?
 
-This device is bundled together with the Asus UX21E/UX31E laptops
+> 2011/11/18 Michal Nazarewicz <mina86@mina86.com>:
+>> No.  Current CMA implementation will stick to the same range of pages also
+>> on consequent allocations of the same size.
 
-Signed-off-by: Lars Schmohl <lars.schmohl@gmail.com>
----
-†drivers/net/usb/asix.c | † †4 ++++
-†1 files changed, 4 insertions(+), 0 deletions(-)
+On Sat, 19 Nov 2011 00:30:49 +0100, sandeep patil <psandeep.s@gmail.com> wrote:
+> Doesn't that mean the drivers that fail to allocate from contiguous DMA region
+> will fail, if the migration fails?
 
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index e81e22e..6947168 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -1619,6 +1619,10 @@ static const struct usb_device_id † † † †products [] = {
-† † † †// ASIX 88772a
-† † † †USB_DEVICE(0x0db0, 0xa877),
-† † † †.driver_info = (unsigned long) &ax88772_info,
-+}, {
-+ † † † /* ASUS ASIX */
-+ † † † USB_DEVICE(0x0b95, 0x7e2b),
-+ † † † .driver_info = (unsigned long) &ax88772_info,
-†},
-† † † †{ }, † † † † † †// END
-†};
---
-1.7.4.1
+Yes.
+
+I have some ideas how that could be mitigated.  The easiest would be to try
+another region to allocate from on failure.  More complicated could be to try
+and wait for the I/O transfer to finish.  I'll try to work on it during
+upcoming week.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Micha≈Ç ‚Äúmina86‚Äù Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
