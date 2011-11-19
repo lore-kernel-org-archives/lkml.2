@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab1KSEiE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:38:04 -0500
+	id S1758281Ab1KSEiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:38:17 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab1KSEiC (ORCPT
+	with ESMTP id S1758208Ab1KSEiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:38:02 -0500
+	Fri, 18 Nov 2011 23:38:14 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 12/25] Staging: comedi: fix printk issue in cb_pcimdas.c
-Date: Sat, 19 Nov 2011 10:06:44 +0530
-Message-Id: <1321677417-2415-12-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 15/25] Staging: comedi: fix printk issue in das800.c
+Date: Sat, 19 Nov 2011 10:06:47 +0530
+Message-Id: <1321677417-2415-15-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,81 +23,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcimdas.c file that fixes up a printk
+This is a patch to the das800.c file that fixes up a printk
 warning found by the checkpatch.pl tool.
 
-converted printks to dev_printk.
-Removed unnecessary printk statements.
+converted printks to dev_version.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcimdas.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/staging/comedi/drivers/das800.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdas.c b/drivers/staging/comedi/drivers/cb_pcimdas.c
-index b1b832b..321af6d 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdas.c
-@@ -212,8 +212,6 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
- 	int index;
- 	/* int i; */
+diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/comedi/drivers/das800.c
+index 96d41ad..ade55f1 100644
+--- a/drivers/staging/comedi/drivers/das800.c
++++ b/drivers/staging/comedi/drivers/das800.c
+@@ -466,42 +466,43 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	unsigned long irq_flags;
+ 	int board;
  
--	printk("comedi%d: cb_pcimdas: ", dev->minor);
--
- /*
-  * Allocate the private structure area.
-  */
-@@ -223,7 +221,6 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
- /*
-  * Probe the device to determine what device in the series it is.
-  */
+-	printk("comedi%d: das800: io 0x%lx", dev->minor, iobase);
++	dev_info(dev->hw_dev, "comedi%d: das800: io 0x%lx\n", dev->minor,
++		 iobase);
+ 	if (irq)
+-		printk(", irq %u", irq);
 -	printk("\n");
++		dev_dbg(dev->hw_dev, "irq %u\n", irq);
  
- 	for_each_pci_dev(pcidev) {
- 		/*  is it not a computer boards card? */
-@@ -248,26 +245,26 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
- 		}
+ 	/* allocate and initialize dev->private */
+ 	if (alloc_private(dev, sizeof(struct das800_private)) < 0)
+ 		return -ENOMEM;
+ 
+ 	if (iobase == 0) {
+-		printk("io base address required for das800\n");
++		dev_err(dev->hw_dev, "io base address required for das800\n");
+ 		return -EINVAL;
  	}
  
--	printk("No supported ComputerBoards/MeasurementComputing card found on "
--	       "requested position\n");
-+	dev_err(dev->hw_dev, "No supported ComputerBoards/MeasurementComputing card found on requested position\n");
- 	return -EIO;
- 
- found:
- 
--	printk("Found %s on bus %i, slot %i\n", cb_pcimdas_boards[index].name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	dev_dbg(dev->hw_dev, "Found %s on bus %i, slot %i\n",
-+		cb_pcimdas_boards[index].name, pcidev->bus->number,
-+		PCI_SLOT(pcidev->devfn));
- 
- 	/*  Warn about non-tested features */
- 	switch (thisboard->device_id) {
- 	case 0x56:
- 		break;
- 	default:
--		printk("THIS CARD IS UNSUPPORTED.\n"
--		       "PLEASE REPORT USAGE TO <mocelet@sucs.org>\n");
-+		dev_dbg(dev->hw_dev, "THIS CARD IS UNSUPPORTED.\n"
-+			"PLEASE REPORT USAGE TO <mocelet@sucs.org>\n");
- 	}
- 
- 	if (comedi_pci_enable(pcidev, "cb_pcimdas")) {
--		printk(" Failed to enable PCI device and request regions\n");
-+		dev_err(dev->hw_dev, "Failed to enable PCI device and request regions\n");
+ 	/* check if io addresses are available */
+ 	if (!request_region(iobase, DAS800_SIZE, "das800")) {
+-		printk("I/O port conflict\n");
++		dev_err(dev->hw_dev, "I/O port conflict\n");
  		return -EIO;
  	}
+ 	dev->iobase = iobase;
  
-@@ -333,8 +330,6 @@ found:
- 	else
- 		s->type = COMEDI_SUBD_UNUSED;
+ 	board = das800_probe(dev);
+ 	if (board < 0) {
+-		printk("unable to determine board type\n");
++		dev_dbg(dev->hw_dev, "unable to determine board type\n");
+ 		return -ENODEV;
+ 	}
+ 	dev->board_ptr = das800_boards + board;
  
--	printk("attached\n");
--
- 	return 1;
- }
+ 	/* grab our IRQ */
+ 	if (irq == 1 || irq > 7) {
+-		printk("irq out of range\n");
++		dev_err(dev->hw_dev, "irq out of range\n");
+ 		return -EINVAL;
+ 	}
+ 	if (irq) {
+ 		if (request_irq(irq, das800_interrupt, 0, "das800", dev)) {
+-			printk("unable to allocate irq %u\n", irq);
++			dev_err(dev->hw_dev, "unable to allocate irq %u\n",
++				irq);
+ 			return -EINVAL;
+ 		}
+ 	}
+@@ -557,7 +558,7 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
+ static int das800_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: das800: remove\n", dev->minor);
++	dev_info(dev->hw_dev, "comedi%d: das800: remove\n", dev->minor);
+ 
+ 	/* only free stuff if it has been allocated by _attach */
+ 	if (dev->iobase)
 -- 
 1.7.0.4
 
