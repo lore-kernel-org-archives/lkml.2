@@ -1,29 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab1KSPUa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 10:20:30 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63549 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab1KSPU3 (ORCPT
+	id S1752303Ab1KSP2q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 10:28:46 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:58565 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751555Ab1KSP2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 10:20:29 -0500
+	Sat, 19 Nov 2011 10:28:45 -0500
+Date: Sat, 19 Nov 2011 10:28:44 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: NamJae Jeon <linkinjeon@gmail.com>
+cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Greg KH <greg@kroah.com>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NLS: improve UTF8 -> UTF16 string conversion routine
+In-Reply-To: <CAKYAXd8q+crqi9oAX84SJmkBEwWj2ycQ+kie0OSxmtdWB7v3Zg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1111191021390.995-100000@netrider.rowland.org>
 MIME-Version: 1.0
-From: Rahul Bedarkar <rpal143@gmail.com>
-Date: Sat, 19 Nov 2011 20:50:08 +0530
-Message-ID: <CA+NV+VmR3P5=SAQBnR8NO637hhXT285VAkqzsLQSg7c48hcMrg@mail.gmail.com>
-Subject: Linux kernel bug tracking system.
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 19 Nov 2011, NamJae Jeon wrote:
 
-         I joined this mailing today, gone through necessary pre-documentation.
-I am not able to find bug tracking system. I tried one which is mentioned on
-www.kernel.org. But it is not working. Is there new one ?
+> >> > +int utf8s_to_utf16s(const u8 *s, int len, enum utf16_endian endian,
+> >> > +               wchar_t *pwcs, int maxlen)
+> >> >  {
+> >> >        u16 *op;
+> >> >        int size;
+> >> >        unicode_t u;
+> >> >
+> >> >        op = pwcs;
+> >> > -       while (*s && len > 0) {
+> >> > +       while (len > 0 && maxlen > 0 && *s) {
+> >> >                if (*s & 0x80) {
+> >> >                        size = utf8_to_utf32(s, len, &u);
+> >> >                        if (size < 0)
+> >> >                                return -EINVAL;
+> >> > +                       s += size;
+> >> > +                       len -= size;
+...
+> >> >                        if (u >= PLANE_SIZE) {
+> >> > +                               if (maxlen < 2)
+> >> > +                                       break;
+> >> >                                u -= PLANE_SIZE;
+> >> > -                               *op++ = (wchar_t) (SURROGATE_PAIR |
+> >> > -                                               ((u >> 10) & SURROGATE_BITS));
+> >> > -                               *op++ = (wchar_t) (SURROGATE_PAIR |
+> >> > +                               put_utf16(op++, SURROGATE_PAIR |
+> >> > +                                               ((u >> 10) & SURROGATE_BITS),
+> >> > +                                               endian);
+> >> > +                               put_utf16(op++, SURROGATE_PAIR |
+> >> >                                                SURROGATE_LOW |
+> >> > -                                               (u & SURROGATE_BITS));
+> >> > +                                               (u & SURROGATE_BITS),
+> >> > +                                               endian);
+> >> > +                               maxlen -= 2;
+> >>
+> >> Why did you use contants value(-2) instead of maxlen -= size; value ?
+> >
+> > "maxlen -= size" would be completely wrong, because size is the length
+> > of the utf8 input and maxlen is the number of 16-bit slots remaining
+> > in the output buffer.  A surrogate pair uses two 16-bit values,
+> > therefore maxlen has to be decreased by 2.
+> If so, len should also be minus -2 constant value like maxlen ?
 
+You seem to be confused.  "len" refers to the input string and "maxlen" 
+refers to the output string.  They have no connection to one another.  
+Would it help if "maxlen" were named "maxout" instead?
 
-Thanks,
-Rahul Bedarkar
+> and why does this code(if (maxlen < 2)) is needed ? If len is smaller than 2 ?
+
+If maxlen < 2 then there is room in the output buffer for only one more
+data value -- but a surrogate pair occupies two data values.  Hence
+there isn't room to store the pair in the output buffer, so the loop
+must terminate.
+
+> >> >                        } else {
+> >> > -                               *op++ = (wchar_t) u;
+> >> > +                               put_utf16(op++, u, endian);
+> >> > +                               maxlen--;
+> >> >                        }
+> >> > -                       s += size;
+> >> > -                       len -= size;
+> >> >                } else {
+> >> > -                       *op++ = *s++;
+> >> > +                       put_utf16(op++, *s++, endian);
+> >> >                        len--;
+> >> > +                       maxlen--;
+> >> >                }
+> >> >        }
+> >> >        return op - pwcs;
+> >> > Index: usb-3.2/fs/fat/namei_vfat.c
+> >> > ===================================================================
+> >> > --- usb-3.2.orig/fs/fat/namei_vfat.c
+> >> > +++ usb-3.2/fs/fat/namei_vfat.c
+> >> > @@ -512,7 +512,8 @@ xlate_to_uni(const unsigned char *name,
+> >> >        int charlen;
+> >> >
+> >> >        if (utf8) {
+> >> > -               *outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
+> >> > +               *outlen = utf8s_to_utf16s(name, len, UTF16_HOST_ENDIAN,
+> >> > +                               (wchar_t *) outname, FAT_LFN_LEN + 2);
+> >> Is there the reason why you plus 2 to FAT_LFN_LEN ?
+> >
+> > So that the "(*outlen > FAT_LFN_LEN)" test below will work correctly.
+> > If the maximum length were set to FAT_LFN_LEN then the test would
+> > always fail.  If the maximum length were set to FAT_LFN_LEN + 1 then
+> > the test would fail when the next character to be stored was a
+> > surrogate pair.
+> Although we are using maxlen, I don't know why do we check case that
+> outlen is bigger than FAT_LFN_LEN.
+
+Probably because the filesystem code requires that the UTF16 string fit 
+into a certain amount of space.  If *outlen > FAT_LFN_LEN then the 
+string doesn't fit.
+
+Alan Stern
+
