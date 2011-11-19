@@ -1,70 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab1KSJMx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 04:12:53 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40496 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab1KSJMt (ORCPT
+	id S1752757Ab1KSJPP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 04:15:15 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42980 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab1KSJPL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 04:12:49 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] kernel/power/main.c : Fix indentation and remove extraneous
- whitespaces
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Sat, 19 Nov 2011 14:42:41 +0530
-Message-ID: <20111119091233.27293.34295.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Sat, 19 Nov 2011 04:15:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111909-5564-0000-0000-0000002B94EC
+In-Reply-To: <20111118021714.GP3306@redhat.com>
+References: <20111105013317.GU18879@redhat.com>
+	<CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
+	<20111107131413.GA18279@suse.de>
+	<20111107154235.GE3249@redhat.com>
+	<20111107162808.GA3083@suse.de>
+	<20111109012542.GC5075@redhat.com>
+	<20111116140042.GD3306@redhat.com>
+	<alpine.LSU.2.00.1111161540060.1861@sister.anvils>
+	<20111117184252.GK3306@redhat.com>
+	<CAPQyPG7MvO8Qw3jrOMShQcG5Z-RwbzpKnu-AheoS6aRYNhW14w@mail.gmail.com>
+	<20111118021714.GP3306@redhat.com>
+Date: Sat, 19 Nov 2011 17:15:10 +0800
+Message-ID: <CAPQyPG5GXOb1o5DjkTcjqbes=R_0BP8LR2fZDYroORn_-uE1AQ@mail.gmail.com>
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lack of proper indentation of the goto statement decreases the readability
-of code significantly. In fact, this made me look twice at the code to check
-whether it really does what it should be doing. Fix this.
+On Fri, Nov 18, 2011 at 10:17 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Fri, Nov 18, 2011 at 09:42:05AM +0800, Nai Xia wrote:
+>> First of all, I believe that at the POSIX level, it's ok for
+>> truncate_inode_page()
+>> not scanning  COWed pages, since basically we does not provide any guarantee
+>> for privately mapped file pages for this behavior. But missing a file
+>> mapped pte after its
+>> cache page is already removed from the the page cache is a
+>
+> I also exclude there is a case that would break, but it's safer to
+> keep things as is, in case somebody depends on segfault trapping.
+>
+>> fundermental malfuntion for
+>> a shared mapping when some threads see the file cache page is gone
+>> while some thread
+>> is still r/w from/to it! No matter how short the gap between
+>> truncate_inode_page() and
+>> the second loop, this is wrong.
+>
+> Truncate will destroy the info on disk too... so if somebody is
+> writing to a mapping which points beyond the end of the i_size
+> concurrently with truncate, the result is undefined. The write may
+> well reach the page but then the page is discared. Or you may get
+> SIGBUS before the write.
+>
+>> Second, even if the we don't care about this POSIX flaw that may
+>> introduce, a pte can still
+>> missed by the second loop. mremap can happen serveral times during
+>> these non-atomic
+>> firstpass-trunc-secondpass operations, a proper events can happily
+>> make the wrong order
+>> for every scan, and miss them all -- That's just what in Hugh's mind
+>> in the post you just
+>> replied. Without lock and proper ordering( which patial mremap cannot provide),
+>> this *will* happen.
+>
+> There won't be more than one mremap running concurrently from the same
+> process (we must enforce it by making sure anon_vma lock and
+> i_mmap_lock are both taken at least once in copy_vma, they're already
+> both taken in fork, they should already be taken in all common cases
+> in copy_vma so for all cases it's going to be a L1 exclusive cacheline
+> already). I don't exclude there may be some case that won't take the
+> locks in vma_adjust though, we should check it, if we decide to relay
+> on the double loop, but it'd be a simple addition if needed.
 
-And in the same file, there are some extra whitespaces. Get rid of them too.
+I mean it's not the concurrent mremap, it's mremap() can be done several
+times between these 3-stage scans, since we don't take the mmap_sem
+of the scanned VMAs, they are valid to do so. And without proper ordering
+and locks/mutex it's possible for these 3-stage scans racing with these
+mremap() s and a ghost PTE just jumps back and force and misses all
+these scans.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+>
+> I'm more concerned about the pte pointing to the orphaned pagecache
+> that would materialize for a little while because of
+> unmap+truncate+unmap instead of unmap+unmap+truncate (but the latter
+> order is needed for the COWs).
+>
+>> You may disagree with me and have that locking removed, and I am
+>> already have that
+>> one line patch prepared waiting fora bug bumpping up again, what a
+>> cheap patch submission!
+>
+> Well I'm not yet sure it's good idea to remove the i_mmap_mutex, or if
+> we should just add the anon_vma lock in mremap and add the i_mmap_lock
+> in fork (to avoid the orphaned pagecache left mapped in the child
+> which already may happen unless there's some i_mmap_lock belonging to
+> the same inode taken after copy_page_range returns until we return to
+> userland and child can run, and I don't think we can relay on the
+> order of the prio tree in fork. Fork is safe for anon pages because
+> there we can relay on the order of the same_anon_vma list.
+>
+> I think clearing up if this orphaned pagecache is dangerous would be a
+> good start. If too complex we just add the i_mmap_lock around
+> copy_page_range in fork if vma->vm_file is set. If you instead think
+> we can deal with the orphaned pagecache we can add a dummy lock/unlock
+> of i_mmap_mutex in copy_vma vma_merge succeeding case (short critical
+> section and not common common case) and remove the i_mmap_mutex around
+> move_page_tables (common case) overall speeding up mremap and not
+> degrading fork.
+>
 
- kernel/power/main.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I am actually feel comfortable either direction you take :)
 
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 71f49fe..670fb08 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (c) 2003 Patrick Mochel
-  * Copyright (c) 2003 Open Source Development Lab
-- * 
-+ *
-  * This file is released under the GPLv2
-  *
-  */
-@@ -240,7 +240,7 @@ struct kobject *power_kobj;
-  *	'standby' (Power-On Suspend), 'mem' (Suspend-to-RAM), and
-  *	'disk' (Suspend-to-Disk).
-  *
-- *	store() accepts one of those strings, translates it into the 
-+ *	store() accepts one of those strings, translates it into the
-  *	proper enumerated value, and initiates a suspend transition.
-  */
- static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
-@@ -282,7 +282,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	/* First, check if we are requested to hibernate */
- 	if (len == 4 && !strncmp(buf, "disk", len)) {
- 		error = hibernate();
--  goto Exit;
-+		goto Exit;
- 	}
- 
- #ifdef CONFIG_SUSPEND
+But I do think orphaned pagecache is not a good idea,
+don't you see there is a "BUG_ON(page_mapped(page))"
+in __delete_from_page_cache()? Do you really plan to
+remove this line?
 
+Nai
