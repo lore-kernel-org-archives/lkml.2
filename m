@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1KSBTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 20:19:13 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57093 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab1KSBTM (ORCPT
+	id S1754540Ab1KSBrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 20:47:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:58104 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab1KSBrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 20:19:12 -0500
-From: "Ken O'Brien" <kernel@kenobrien.org>
-To: sjakub@gmail.com, gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Ken O'Brien" <kernel@kenobrien.org>
-Subject: [PATCH] Staging: asus_oled: Fixed use of obsolete function.
-Date: Sat, 19 Nov 2011 01:18:12 +0000
-Message-Id: <1321665492-1718-1-git-send-email-kernel@kenobrien.org>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 18 Nov 2011 20:47:20 -0500
+X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XgzihCSdOgwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=DOp0XZiC6rXYTvXu5DUA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [BUG] e1000: possible deadlock scenario caught by lockdep
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "Brown, Aaron F" <aaron.f.brown@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+In-Reply-To: <20111118151704.0000007b@unknown>
+References: <1321579620.3533.29.camel@frodo>
+	 <20111118085737.0000387f@unknown>  <20111118151704.0000007b@unknown>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Nov 2011 20:47:16 -0500
+Message-ID: <1321667236.3533.59.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed use of obsolete function "strict_strtoul". Replaced with "kstrtoul"
-as suggested by checkpatch.pl
+On Fri, 2011-11-18 at 15:17 -0800, Jesse Brandeburg wrote:
 
-Signed-off-by: Ken O'Brien <kernel@kenobrien.org>
----
- drivers/staging/asus_oled/asus_oled.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> this is a proposed patch to fix the issue:
+> if it works for you please let me know and I will submit it officially
+> through our process
 
-diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
-index 7bb7da7..e77e4e0 100644
---- a/drivers/staging/asus_oled/asus_oled.c
-+++ b/drivers/staging/asus_oled/asus_oled.c
-@@ -201,7 +201,7 @@ static ssize_t set_enabled(struct device *dev, struct device_attribute *attr,
- 	struct usb_interface *intf = to_usb_interface(dev);
- 	struct asus_oled_dev *odev = usb_get_intfdata(intf);
- 	unsigned long value;
--	if (strict_strtoul(buf, 10, &value))
-+	if (kstrtoul(buf, 10, &value))
- 		return -EINVAL;
- 
- 	enable_oled(odev, value);
-@@ -217,7 +217,7 @@ static ssize_t class_set_enabled(struct device *device,
- 		(struct asus_oled_dev *) dev_get_drvdata(device);
- 	unsigned long value;
- 
--	if (strict_strtoul(buf, 10, &value))
-+	if (kstrtoul(buf, 10, &value))
- 		return -EINVAL;
- 
- 	enable_oled(odev, value);
--- 
-1.7.5.4
+Well, the one time I tested it, it didn't crash and it didn't give a
+lockdep splat either. I'll add it and reboot it a few more times and
+I'll holler if something bad happens.
+
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
 
