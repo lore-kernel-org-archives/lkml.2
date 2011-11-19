@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab1KSSJd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 13:09:33 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38234 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab1KSSJc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 13:09:32 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "sandeep patil" <psandeep.s@gmail.com>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Arnd Bergmann" <arnd@arndb.de>, "Jonathan Corbet" <corbet@lwn.net>,
-        "Mel Gorman" <mel@csn.ul.ie>, "Dave Hansen" <dave@linux.vnet.ibm.com>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Linaro-mm-sig] [PATCHv17 0/11] Contiguous Memory Allocator
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <CA+K6fF6SH6BNoKgwArcqvyav4b=C5SGvymo5LS3akfD_yE_beg@mail.gmail.com>
- <op.v45u6zyy3l0zgt@mpn-glaptop>
- <CA+K6fF6iDivqmN9kfY34tWNg+g_rYBBmyS_Mxb6gvLuSgA2JyQ@mail.gmail.com>
-Date: Sat, 19 Nov 2011 19:09:23 +0100
+	id S1752279Ab1KSSLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 13:11:09 -0500
+Received: from ackle.nomi.cz ([81.31.33.35]:50037 "EHLO ackle.nomi.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab1KSSLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 13:11:08 -0500
+Date: Sat, 19 Nov 2011 19:11:06 +0100
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20111119181106.GA5515@nomi.cz>
+References: <20111109155411.GA1669@nomi.cz> <20111109165158.GA2254@redhat.com> <20111110091816.GA2247@nomi.cz> <20111110114732.GA2217@redhat.com> <20111110125347.GA29415@nomi.cz> <20111110160703.GA2775@redhat.com> <20111110163051.GA24533@nomi.cz> <20111111054731.GA2292@redhat.com> <20111111150105.GA25437@nomi.cz> <20111114140714.GD2513@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v47gpxi03l0zgt@mpn-glaptop>
-In-Reply-To: <CA+K6fF6iDivqmN9kfY34tWNg+g_rYBBmyS_Mxb6gvLuSgA2JyQ@mail.gmail.com>
-User-Agent: Opera Mail/11.52 (Linux)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111114140714.GD2513@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Fri, 18 Nov 2011 22:20:48 +0100, sandeep patil wrote:
->>> So, i guess my question is, until all the migration failures are
->>> tracked down and fixed, is there a plan to retry the contiguous
->>> allocation from a new range in the CMA region?
+Hello,
 
-> 2011/11/18 Michal Nazarewicz <mina86@mina86.com>:
->> No.  Current CMA implementation will stick to the same range of pages also
->> on consequent allocations of the same size.
+On Mon, Nov 14, 2011 at 03:07:15PM +0100, Stanislaw Gruszka wrote:
+> On Fri, Nov 11, 2011 at 04:01:05PM +0100, Tomáš Janoušek wrote:
+> > Could you please elaborate on that thing with enabling IOMMU? The only thing I
+> > know about IOMMU is that it is somehow related to VT-d (passing whole PCI
+> > devices to virtual guests), and that I have to pass intel_iommu=off to kernel
+> > command line, otherwise the machine doesn't even boot. Is that a problem?
+> Yes. That mean iommu software or hardware is broken on your system.
+>
+> I have no other ideas how to track this down. I think now, this is
+> a firwmare issue. BTW, you suspected that from very beginning :-)
+> This could be also a driver issue, but AFAICT programing DMA do not
+> differ on 6205 from other devices, so bug in firmware is much more
+> probable reason of corruption.
 
-On Sat, 19 Nov 2011 00:30:49 +0100, sandeep patil <psandeep.s@gmail.com> wrote:
-> Doesn't that mean the drivers that fail to allocate from contiguous DMA region
-> will fail, if the migration fails?
+I have some news. I got IOMMU to work, because I identified the problem [1]
+and disabled firewire-ohci for the time being completely, but I'm not sure
+what do I need to do to make it catch the problem. I assumed that all I need
+is to intel_iommu=on and then all devices do DMA stuff in isolation, but I can
+still reproduce the issue without the smallest hint of an error in dmesg. Does
+it tell us anything, or shall I enable some more debugging stuff?
 
-Yes.
+[1] http://thread.gmane.org/gmane.linux.kernel.pci/8765/focus=1217800
 
-I have some ideas how that could be mitigated.  The easiest would be to try
-another region to allocate from on failure.  More complicated could be to try
-and wait for the I/O transfer to finish.  I'll try to work on it during
-upcoming week.
+Anyway, I didn't get to trying 2.6.38/39 yet, but I will do that soon. It is
+also safe to say now that x86_64 is completely unaffected, as I was running
+various 64bit kernels the whole week without a single failure.
 
+Regards,
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
