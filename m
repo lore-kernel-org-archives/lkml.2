@@ -1,49 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab1KSK5j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 05:57:39 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43552 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab1KSK5i (ORCPT
+	id S1753626Ab1KSLD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 06:03:56 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64740 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab1KSLDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 05:57:38 -0500
-Date: Sat, 19 Nov 2011 11:57:36 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT pull] x86 fixes for 3.2
-In-Reply-To: <CA+55aFyGAB-BZ+DhAC7eY78NyvQWa8FcYpAoE-9gYBrrTDAk8w@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1111191157030.4902@ionos>
-References: <alpine.LFD.2.02.1111182021370.4902@ionos> <CA+55aFyGAB-BZ+DhAC7eY78NyvQWa8FcYpAoE-9gYBrrTDAk8w@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sat, 19 Nov 2011 06:03:54 -0500
+Date: Sat, 19 Nov 2011 15:01:26 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <greg@kroah.com>,
+        Theodore Tso <tytso@MIT.EDU>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [RFC v2 1/3] procfs: parse mount options
+Message-ID: <20111119110126.GA11468@albatros>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-601035502-1321700257=:4902"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This patch adds support of procfs mount options.
+Actual mount options are coming in the next patches.
 
---8323328-601035502-1321700257=:4902
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/proc/inode.c    |   10 +++++++++
+ fs/proc/internal.h |    1 +
+ fs/proc/root.c     |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 64 insertions(+), 2 deletions(-)
 
-On Fri, 18 Nov 2011, Linus Torvalds wrote:
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 7737c54..9b9f92a 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -7,6 +7,7 @@
+ #include <linux/time.h>
+ #include <linux/proc_fs.h>
+ #include <linux/kernel.h>
++#include <linux/pid_namespace.h>
+ #include <linux/mm.h>
+ #include <linux/string.h>
+ #include <linux/stat.h>
+@@ -17,7 +18,9 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/sysctl.h>
++#include <linux/seq_file.h>
+ #include <linux/slab.h>
++#include <linux/mount.h>
+ 
+ #include <asm/system.h>
+ #include <asm/uaccess.h>
+@@ -102,12 +105,19 @@ void __init proc_init_inodecache(void)
+ 					     init_once);
+ }
+ 
++static int proc_show_options(struct seq_file *seq, struct vfsmount *vfs)
++{
++	return 0;
++}
++
+ static const struct super_operations proc_sops = {
+ 	.alloc_inode	= proc_alloc_inode,
+ 	.destroy_inode	= proc_destroy_inode,
+ 	.drop_inode	= generic_delete_inode,
+ 	.evict_inode	= proc_evict_inode,
+ 	.statfs		= simple_statfs,
++	.remount_fs	= proc_remount,
++	.show_options	= proc_show_options,
+ };
+ 
+ static void __pde_users_dec(struct proc_dir_entry *pde)
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 7838e5c..2925775 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -117,6 +117,7 @@ void pde_put(struct proc_dir_entry *pde);
+ 
+ int proc_fill_super(struct super_block *);
+ struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
++int proc_remount(struct super_block *sb, int *flags, char *data);
+ 
+ /*
+  * These are generic /proc routines that use the internal
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 9a8a2b7..165a0d1 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -18,6 +18,7 @@
+ #include <linux/bitops.h>
+ #include <linux/mount.h>
+ #include <linux/pid_namespace.h>
++#include <linux/parser.h>
+ 
+ #include "internal.h"
+ 
+@@ -36,6 +37,48 @@ static int proc_set_super(struct super_block *sb, void *data)
+ 	return err;
+ }
+ 
++enum {
++	Opt_err,
++};
++
++static const match_table_t tokens = {
++	{Opt_err, NULL},
++};
++
++static int proc_parse_options(char *options, struct pid_namespace *pid)
++{
++	char *p;
++	substring_t args[MAX_OPT_ARGS];
++
++	pr_debug("proc: options = %s\n", options);
++
++	if (!options)
++		return 1;
++
++	while ((p = strsep(&options, ",")) != NULL) {
++		int token;
++		if (!*p)
++			continue;
++
++		args[0].to = args[0].from = 0;
++		token = match_token(p, tokens, args);
++		switch (token) {
++		default:
++			pr_err("proc: unrecognized mount option \"%s\" "
++			       "or missing value\n", p);
++			return 0;
++		}
++	}
++
++	return 1;
++}
++
++int proc_remount(struct super_block *sb, int *flags, char *data)
++{
++	struct pid_namespace *pid = sb->s_fs_info;
++	return !proc_parse_options(data, pid);
++}
++
+ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
+@@ -43,11 +86,15 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	struct super_block *sb;
+ 	struct pid_namespace *ns;
+ 	struct proc_inode *ei;
++	char *options;
+ 
+-	if (flags & MS_KERNMOUNT)
++	if (flags & MS_KERNMOUNT) {
+ 		ns = (struct pid_namespace *)data;
+-	else
++		options = NULL;
++	} else {
+ 		ns = current->nsproxy->pid_ns;
++		options = data;
++	}
+ 
+ 	sb = sget(fs_type, proc_test_super, proc_set_super, ns);
+ 	if (IS_ERR(sb))
+@@ -55,6 +102,10 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 
+ 	if (!sb->s_root) {
+ 		sb->s_flags = flags;
++		if (!proc_parse_options(options, ns)) {
++			deactivate_locked_super(sb);
++			return ERR_PTR(-EINVAL);
++		}
+ 		err = proc_fill_super(sb);
+ 		if (err) {
+ 			deactivate_locked_super(sb);
+-- 
+1.7.0.4
 
-> On Fri, Nov 18, 2011 at 5:23 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > Please pull the latest x86-urgent-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
-> 
-> That doesn't seem to work for me at all. Do you mean .../kernel/git/tip/tip.git?
-
-Bah, yes. Forgot to update the scripts :(
-
-     tglx
---8323328-601035502-1321700257=:4902--
