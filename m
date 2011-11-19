@@ -1,41 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab1KSEPI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:15:08 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:34409 "HELO
+	id S1757360Ab1KSEaR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:30:17 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:41054 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752084Ab1KSEPH (ORCPT
+	with SMTP id S1751744Ab1KSEaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:15:07 -0500
+	Fri, 18 Nov 2011 23:30:15 -0500
 X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19Aa6EExwtAu0MZ5riAdiAfziL1KSWC2HT26yQiDk
-	ZI9qvEIXFOc2XT
-Subject: RE: [patch 3/6] sched: use rq->avg_event to resurrect nohz
- ratelimiting
+X-Provags-ID: V01U2FsdGVkX1+35e5WeBq3+UPVT8k4ydHqo5yy1DNq7qrG19Tl6A
+	NHZOp2i2XMrYHn
+Subject: Re: [patch 5/6] sched: disable sched feature TTWU_QUEUE by default
 From: Mike Galbraith <efault@gmx.de>
-To: "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-In-Reply-To: <26E9B811E137AB4B95200FD4C950886BFF9781E8@orsmsx507.amr.corp.intel.com>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1321629562.7080.17.camel@marge.simson.net>
-	 <1321630619.2197.16.camel@twins>
-	 <1321638146.6238.20.camel@marge.simson.net>
-	 <26E9B811E137AB4B95200FD4C950886BFF9781E8@orsmsx507.amr.corp.intel.com>
+        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com
+In-Reply-To: <20111118230554.105376150@sbsiddha-desk.sc.intel.com>
+References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
+	 <20111118230554.105376150@sbsiddha-desk.sc.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 19 Nov 2011 05:15:01 +0100
-Message-ID: <1321676101.6307.3.camel@marge.simson.net>
+Date: Sat, 19 Nov 2011 05:30:09 +0100
+Message-ID: <1321677009.6307.13.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -44,21 +32,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:51 -0800, Van De Ven, Arjan wrote:
-> > > Arjan, can we do something smart with the idle governor which already
-> > > guestimates the idle duration for us?
-> > 
-> > That would be great.  Won't help my Intel Q6600 though, the intel_idle
-> > governor doesn't support it.  Other idle_governor gizmos really need to
-> > get smarter too.
+On Fri, 2011-11-18 at 15:03 -0800, Suresh Siddha wrote:
+> plain text document attachment (disable_sched_ttwu_queue.patch)
+> Context-switch intensive microbenchmark on a 8-socket system had
+> ~600K times more resched IPI's on each logical CPU with this feature enabled
+> by default. Disabling this features makes that microbenchmark perform 5 times
+> better.
 > 
+> Also disabling this feature showed 2% performance improvement on a 8-socket
+> OLTP workload.
 > 
-> you're confusing the governor (menu) and the low level hardware driver.
+> More heurestics are needed when and how to use this feature by default.
+> For now, disable it by default.
 
-Ok, I just saw that intel_idle_probe() says go away.
+Yeah, the overhead for very hefty switchers is high enough to increase
+TCP_RR latency up to 13% in my testing.  I used a trylock() to generally
+not eat that, but leave the contended case improvement intact.
 
-[    2.479695] intel_idle: MWAIT substates: 0x20
-[    2.484144] intel_idle: does not run on family 6 model 15
+Peter suggested trying doing the IPI only when crossing cache
+boundaries, which worked for me as well.
 
-	-Mike
+---
+ kernel/sched.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+Index: linux-3.0-tip/kernel/sched.c
+===================================================================
+--- linux-3.0-tip.orig/kernel/sched.c
++++ linux-3.0-tip/kernel/sched.c
+@@ -2784,12 +2784,34 @@ static int ttwu_activate_remote(struct t
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ #endif /* CONFIG_SMP */
+ 
++static int ttwu_share_cache(int this_cpu, int cpu)
++{
++#ifndef CONFIG_X86
++	struct sched_domain *sd;
++	int ret = 0;
++
++	rcu_read_lock();
++	for_each_domain(this_cpu, sd) {
++		if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
++			continue;
++
++		ret = (sd->flags & SD_SHARE_PKG_RESOURCES);
++		break;
++	}
++	rcu_read_unlock();
++
++	return ret;
++#else
++	return per_cpu(cpu_llc_id, this_cpu) == per_cpu(cpu_llc_id, cpu);
++#endif
++}
++
+ static void ttwu_queue(struct task_struct *p, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+ #if defined(CONFIG_SMP)
+-	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
++	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
+ 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+ 		ttwu_queue_remote(p, cpu);
+ 		return;
+  
 
