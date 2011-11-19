@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab1KSRF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 12:05:56 -0500
-Received: from mother.openwall.net ([195.42.179.200]:62509 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751276Ab1KSRFz (ORCPT
+	id S1752580Ab1KSRRl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 12:17:41 -0500
+Received: from adsl-66-120-108-250.dsl.sndg02.pacbell.net ([66.120.108.250]:42957
+	"EHLO mail.atsionline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab1KSRRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 12:05:55 -0500
-Date: Sat, 19 Nov 2011 20:59:03 +0400
-From: Solar Designer <solar@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 3/3] security: Yama: add ptrace relationship tracking interface
-Message-ID: <20111119165903.GB2208@openwall.com>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org> <1319672956-17114-4-git-send-email-keescook@chromium.org> <20111119163058.GA3131@albatros>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111119163058.GA3131@albatros>
-User-Agent: Mutt/1.4.2.3i
+	Sat, 19 Nov 2011 12:17:40 -0500
+X-Greylist: delayed 2227 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Nov 2011 12:17:40 EST
+Reply-To: <AmericanExpress@welcome.aexp.com>
+From: "American Express" <AmericanExpress@welcome.aexp.com>
+To: linuxcpa@netscape.net, linux-events-travel@yahoogroups.com,
+        linuxiskolen@skolelinux.no, linux-kernel@vger.kernel.org,
+        linuxogen@mail.ru, linuxpapers@bitmover.com,
+        linux-questions-only@ssc.com, linux-security@redhat.com,
+        linuxtag@travel.to, linux-users@lugwash.org, linux-xfs@oss.sgi.com,
+        linverity@msn.com, linville@garfield.catt.ncsu.edu, linvillewv@cs.com,
+        linwdtsf@aol.com
+Subject: Important !
+Date: Sat, 19 Nov 2011 16:14:35 -0000
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-ID: <SBS2003Ucnx05lbvTvC00000c2c@mail.atsionline.com>
+X-OriginalArrivalTime: 19 Nov 2011 16:14:36.0766 (UTC) FILETIME=[55169FE0:01CCA6D6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 08:30:58PM +0400, Vasiliy Kulikov wrote:
-> On Wed, Oct 26, 2011 at 16:49 -0700, Kees Cook wrote:
-> > +	if (mode == PTRACE_MODE_ATTACH &&
-> > +	    ptrace_scope &&
-> > +	    !capable(CAP_SYS_PTRACE) &&
-> > +	    !task_is_descendant(current, child) &&
-> > +	    !ptracer_exception_found(current, child))
-> > +		rc = -EPERM;
-> 
-> capable() is better to put after all other tests
-
-Right, but...
-
-> as a failed capable()
-> might emit a false positive warning into logs or something.
-
-...primarily for another reason: a successful capable() sets
-PF_SUPERPRIV, whereas the permission might have been granted without
-capable() as well.  The PF_SUPERPRIV flag is visible via BSD process
-accounting.
-
-Alexander
+Dear American Express costumer,
+ 
+We detected irregular activity on your American Express card. For your protection, you must verify your account before you can continue using your card.
+ 
+Please use the link below to verify your account immediately:
+ 
+http://www.kidstoryhouse.com.tw/img/www.americanexpres.com
+ 
+We will review the activity on your account with you and upon verification, we will remove any restrictions placed on your account.
