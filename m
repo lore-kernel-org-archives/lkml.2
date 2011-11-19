@@ -1,100 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab1KSEaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:30:17 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:41054 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751744Ab1KSEaP (ORCPT
+	id S1757589Ab1KSEhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:37:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab1KSEhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:30:15 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+35e5WeBq3+UPVT8k4ydHqo5yy1DNq7qrG19Tl6A
-	NHZOp2i2XMrYHn
-Subject: Re: [patch 5/6] sched: disable sched feature TTWU_QUEUE by default
-From: Mike Galbraith <efault@gmx.de>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com
-In-Reply-To: <20111118230554.105376150@sbsiddha-desk.sc.intel.com>
-References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
-	 <20111118230554.105376150@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 19 Nov 2011 05:30:09 +0100
-Message-ID: <1321677009.6307.13.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Fri, 18 Nov 2011 23:37:13 -0500
+From: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 01/25] Staging: comedi: fix printk issue in das6402.c
+Date: Sat, 19 Nov 2011 10:06:33 +0530
+Message-Id: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 15:03 -0800, Suresh Siddha wrote:
-> plain text document attachment (disable_sched_ttwu_queue.patch)
-> Context-switch intensive microbenchmark on a 8-socket system had
-> ~600K times more resched IPI's on each logical CPU with this feature enabled
-> by default. Disabling this features makes that microbenchmark perform 5 times
-> better.
-> 
-> Also disabling this feature showed 2% performance improvement on a 8-socket
-> OLTP workload.
-> 
-> More heurestics are needed when and how to use this feature by default.
-> For now, disable it by default.
+This is a patch to the das6402.c file that fixes up a printk
+warning found by the checkpatch.pl tool.
 
-Yeah, the overhead for very hefty switchers is high enough to increase
-TCP_RR latency up to 13% in my testing.  I used a trylock() to generally
-not eat that, but leave the contended case improvement intact.
+Converted printks to dev_version.
+Removed unnecessary printk statements.
 
-Peter suggested trying doing the IPI only when crossing cache
-boundaries, which worked for me as well.
-
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- kernel/sched.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/das6402.c |   23 +++++++----------------
+ 1 files changed, 7 insertions(+), 16 deletions(-)
 
-Index: linux-3.0-tip/kernel/sched.c
-===================================================================
---- linux-3.0-tip.orig/kernel/sched.c
-+++ linux-3.0-tip/kernel/sched.c
-@@ -2784,12 +2784,34 @@ static int ttwu_activate_remote(struct t
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- #endif /* CONFIG_SMP */
+diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
+index 6328f52..f256841 100644
+--- a/drivers/staging/comedi/drivers/das6402.c
++++ b/drivers/staging/comedi/drivers/das6402.c
+@@ -171,7 +171,7 @@ static irqreturn_t intr_handler(int irq, void *d)
+ 	struct comedi_subdevice *s = dev->subdevices;
  
-+static int ttwu_share_cache(int this_cpu, int cpu)
-+{
-+#ifndef CONFIG_X86
-+	struct sched_domain *sd;
-+	int ret = 0;
-+
-+	rcu_read_lock();
-+	for_each_domain(this_cpu, sd) {
-+		if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
-+			continue;
-+
-+		ret = (sd->flags & SD_SHARE_PKG_RESOURCES);
-+		break;
-+	}
-+	rcu_read_unlock();
-+
-+	return ret;
-+#else
-+	return per_cpu(cpu_llc_id, this_cpu) == per_cpu(cpu_llc_id, cpu);
-+#endif
-+}
-+
- static void ttwu_queue(struct task_struct *p, int cpu)
+ 	if (!dev->attached || devpriv->das6402_ignoreirq) {
+-		printk("das6402: BUG: spurious interrupt\n");
++		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
+ 		return IRQ_HANDLED;
+ 	}
+ #ifdef DEBUG
+@@ -228,9 +228,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
+ 	 */
+ 
+ 	devpriv->das6402_ignoreirq = 1;
+-#ifdef DEBUG
+-	printk("das6402: Stopping acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
+ 	devpriv->das6402_ignoreirq = 1;
+ 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+@@ -246,10 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s, comedi_trig * it)
  {
- 	struct rq *rq = cpu_rq(cpu);
+ 	devpriv->das6402_ignoreirq = 1;
+-
+-#ifdef DEBUG
+-	printk("das6402: Starting acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Starting acquisition\n");
+ 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+ 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
+@@ -329,10 +324,8 @@ static int das6402_attach(struct comedi_device *dev,
+ 	if (iobase == 0)
+ 		iobase = 0x300;
  
- #if defined(CONFIG_SMP)
--	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
-+	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
- 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
- 		ttwu_queue_remote(p, cpu);
- 		return;
-  
+-	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
+-
+ 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
+-		printk(" I/O port conflict\n");
++		dev_err(dev->hw_dev, "I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -340,14 +333,12 @@ static int das6402_attach(struct comedi_device *dev,
+ 	/* should do a probe here */
+ 
+ 	irq = it->options[0];
+-	printk(" ( irq = %u )", irq);
++	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
+ 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
+-	if (ret < 0) {
+-		printk("irq conflict\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+-	dev->irq = irq;
+ 
++	dev->irq = irq;
+ 	ret = alloc_private(dev, sizeof(struct das6402_private));
+ 	if (ret < 0)
+ 		return ret;
+-- 
+1.7.0.4
 
