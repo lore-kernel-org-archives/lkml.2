@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab1KSX3i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 18:29:38 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43492 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab1KSX3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 18:29:37 -0500
-Date: Sat, 19 Nov 2011 15:29:34 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Namjae Jeon <linkinjeon@gmail.com>
-cc: tytso@mit.edu, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH] ext4: group info caches set to SLAB_MEM_SPREAD flags.
-In-Reply-To: <1321742924-3189-1-git-send-email-linkinjeon@gmail.com>
-Message-ID: <alpine.DEB.2.00.1111191524200.5986@chino.kir.corp.google.com>
-References: <1321742924-3189-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754368Ab1KSXcR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 18:32:17 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:52291 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751654Ab1KSXcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 18:32:16 -0500
+Message-ID: <1321745535.18250.15.camel@Joe-Laptop>
+Subject: jfs: Remove unused debugging macros
+From: Joe Perches <joe@perches.com>
+To: Dave Kleikamp <shaggy@kernel.org>
+Cc: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Sat, 19 Nov 2011 15:32:15 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Nov 2011, Namjae Jeon wrote:
+Just neatening.
 
-> If group info caches set to SLAB_MEM_SPREAD flags, the allocation is 
-> spread evenly over all the memory nodes when using cpuset.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/jfs/jfs_extent.c |   26 --------------------------
+ 1 files changed, 0 insertions(+), 26 deletions(-)
 
-Incorrect, it also requires the cpuset to enable cpuset.memory_spread_slab 
-which is not the default.
+diff --git a/fs/jfs/jfs_extent.c b/fs/jfs/jfs_extent.c
+index e5fe850..c2789e4 100644
+--- a/fs/jfs/jfs_extent.c
++++ b/fs/jfs/jfs_extent.c
+@@ -34,32 +34,6 @@ static int extBrealloc(struct inode *, s64, s64, s64 *, s64 *);
+ #endif
+ static s64 extRoundDown(s64 nb);
+ 
+-#define DPD(a)		(printk("(a): %d\n",(a)))
+-#define DPC(a)		(printk("(a): %c\n",(a)))
+-#define DPL1(a)					\
+-{						\
+-	if ((a) >> 32)				\
+-		printk("(a): %x%08x  ",(a));	\
+-	else					\
+-		printk("(a): %x  ",(a) << 32);	\
+-}
+-#define DPL(a)					\
+-{						\
+-	if ((a) >> 32)				\
+-		printk("(a): %x%08x\n",(a));	\
+-	else					\
+-		printk("(a): %x\n",(a) << 32);	\
+-}
+-
+-#define DPD1(a)		(printk("(a): %d  ",(a)))
+-#define DPX(a)		(printk("(a): %08x\n",(a)))
+-#define DPX1(a)		(printk("(a): %08x  ",(a)))
+-#define DPS(a)		(printk("%s\n",(a)))
+-#define DPE(a)		(printk("\nENTERING: %s\n",(a)))
+-#define DPE1(a)		(printk("\nENTERING: %s",(a)))
+-#define DPS1(a)		(printk("  %s  ",(a)))
+-
+-
+ /*
+  * NAME:	extAlloc()
+  *
 
-> It is useful because group info caches are long lived.
-> 
 
-As mentioned earlier, you should be able to get performance data as a 
-result of this change by using any kernel, enabling CONFIG_CPUSETS and 
-CONFIG_SLAB, mounting cpusets at runtime, enabling 
-cpuset.memory_spread_slab, creating a mempolicy of MPOL_INTERLEAVE over 
-all nodes, and then running your comparison benchmark.  This requires no 
-modification of the kernel and will determine what performance benefit 
-there is by doing this on your own hardware that you're interested in.
-
-If there is convincing data that suggests it's helpful on your hardware, 
-then it would make a good case to merge your patch so users don't need to 
-set their own mempolicies that do this.  They'll just need to mount 
-cpusets and enable cpuset.memory_spread_slab.
-
-Absent that, there's no purpose in adding this flag.  If you're doing it 
-just because it's done in other filesystems, mention that in the changelog 
-so it can be judged on that criteria rather than pretending like the NUMA 
-affinity actually means anything to your environment.
