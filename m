@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab1KSAMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:12:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38844 "EHLO mx2.suse.de"
+	id S932315Ab1KSAMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:12:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38821 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932269Ab1KSAKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:10:33 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:29 2011
-Message-Id: <20111119000329.773403346@clark.kroah.org>
+	id S932217Ab1KSAK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:10:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:28 2011
+Message-Id: <20111119000328.754409007@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 16:02:57 -0800
+Date: Fri, 18 Nov 2011 16:02:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [21/26] xen-gntalloc: signedness bug in add_grefs()
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [10/26] ALSA: usb-audio - Check the dB-range validity in the later read, too
 In-Reply-To: <20111119000336.GA8452@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 99cb2ddcc617f43917e94a4147aa3ccdb2bcd77e upstream.
+commit 9fcd0ab130579d9742538340edda3225f2b49a3e upstream.
 
-gref->gref_id is unsigned so the error handling didn't work.
-gnttab_grant_foreign_access() returns an int type, so we can add a
-cast here, and it doesn't cause any problems.
-gnttab_grant_foreign_access() can return a variety of errors
-including -ENOSPC, -ENOSYS and -ENOMEM.
+When the initial check of dB-range failed due to the read error, try to
+check again at the later read, too.  When an invalid dB range is found,
+remove TLV flags and notify the mixer info change.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/gntalloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/mixer.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/xen/gntalloc.c
-+++ b/drivers/xen/gntalloc.c
-@@ -135,7 +135,7 @@ static int add_grefs(struct ioctl_gntall
- 		/* Grant foreign access to the page. */
- 		gref->gref_id = gnttab_grant_foreign_access(op->domid,
- 			pfn_to_mfn(page_to_pfn(gref->page)), readonly);
--		if (gref->gref_id < 0) {
-+		if ((int)gref->gref_id < 0) {
- 			rc = gref->gref_id;
- 			goto undo;
- 		}
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -881,8 +881,17 @@ static int mixer_ctl_feature_info(struct
+ 		uinfo->value.integer.min = 0;
+ 		uinfo->value.integer.max = 1;
+ 	} else {
+-		if (! cval->initialized)
+-			get_min_max(cval,  0);
++		if (!cval->initialized) {
++			get_min_max(cval, 0);
++			if (cval->initialized && cval->dBmin >= cval->dBmax) {
++				kcontrol->vd[0].access &=
++					~(SNDRV_CTL_ELEM_ACCESS_TLV_READ |
++					  SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK);
++				snd_ctl_notify(cval->mixer->chip->card,
++					       SNDRV_CTL_EVENT_MASK_INFO,
++					       &kcontrol->id);
++			}
++		}
+ 		uinfo->value.integer.min = 0;
+ 		uinfo->value.integer.max =
+ 			(cval->max - cval->min + cval->res - 1) / cval->res;
 
 
