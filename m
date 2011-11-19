@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab1KSAb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:31:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26011 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab1KSAb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:31:28 -0500
-Date: Sat, 19 Nov 2011 01:31:15 +0100
-From: Petr Holasek <pholasek@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Anton Arapov <anton@redhat.com>
-Subject: Re: NUMA emulation x86_64: numa=fake parameter for custom nodes
- distance
-Message-ID: <20111119003114.GA10179@stainedmachine.redhat.com>
-References: <1321617308-4998-1-git-send-email-pholasek@redhat.com>
- <20111118115336.18de45a0.akpm@linux-foundation.org>
+	id S1753241Ab1KSAey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:34:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54258 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab1KSAex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:34:53 -0500
+Date: Fri, 18 Nov 2011 16:34:41 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-f14525f9e033f344996905744f41680ea2b877ce@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        matthltc@us.ibm.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        matthltc@us.ibm.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20111118221558.GA6408@count0.beaverton.ibm.com>
+References: <20111118221558.GA6408@count0.beaverton.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/syscall] x86: Simplify syscallhdr.sh
+Git-Commit-ID: f14525f9e033f344996905744f41680ea2b877ce
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20111118115336.18de45a0.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 Nov 2011 16:34:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011, Andrew Morton wrote:
+Commit-ID:  f14525f9e033f344996905744f41680ea2b877ce
+Gitweb:     http://git.kernel.org/tip/f14525f9e033f344996905744f41680ea2b877ce
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 18 Nov 2011 16:03:27 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 18 Nov 2011 16:03:27 -0800
 
-> Date: Fri, 18 Nov 2011 11:53:36 -0800
-> From: Andrew Morton <akpm@linux-foundation.org>
-> To: Petr Holasek <pholasek@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
->  "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
->  x86@kernel.org, Anton Arapov <anton@redhat.com>
-> Subject: Re: [PATCH 1/2] NUMA emulation x86_64: numa=fake parameter for
->  custom nodes distance
-> 
-> On Fri, 18 Nov 2011 12:55:07 +0100
-> Petr Holasek <pholasek@redhat.com> wrote:
-> 
-> > As default, when numa emulation is turned on, node distance table
-> > uses physical distance, so for 4 nodes emulated on 1 physical table is
-> > 
-> > node   0   1   2   3
-> > 0:  10  10  10  10
-> > 1:  10  10  10  10
-> > 2:  10  10  10  10
-> > 3:  10  10  10  10
-> > 
-> > This patch adds new [distance] argument to
-> > 
-> > numa=fake=<number/size of nodes>[,distance]
-> > 
-> > When distance argument is used, it sets linear distance between nodes
-> > like that:
-> > 
-> >     __distance__
-> > ___|___     ____|___     ________     ________
-> > |       |   |        |   |        |   |        |
-> > | node1 |---| node 2 |---| node 3 |---| node 4 |
-> > |_______|   |________|   |________|   |________|
-> > |                        |             |
-> > |                        |             |
-> > |____distance * 2________|             |
-> > |                                      |
-> > |____________distance * 3______________|
-> > 
-> > This feature might be useful for testing some numa awareness features in
-> > both user and kernel spaces.
-> > 
-> 
-> "might" is a red flag.  We don't merge things which might be useful!
-> 
-> *Is* it useful?  If so then please tell us why and explain how it might
-> be useful to others.
+x86: Simplify syscallhdr.sh
 
-A lot of developers still have no access to large NUMA machines and 
-possibility of NUMA emulation could involve more of them to thinking
-about NUMA awareness of their apps/kernel code.
+Simplify syscallhdr.sh by letting grep sort out the ABIs that we want,
+rather than relying on manual list matching.  This is safe since the
+ABI strings already have to consist only of characters which are valid in C
+macro names.
 
-> 
-> > @@ -404,6 +406,17 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
-> >  		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
-> >  			emu_nid_to_phys[i] = dfl_phys_nid;
-> >  
-> > +	/* load distance level parameter */
-> > +	dist_level = -1;
-> > +	c = strchr(emu_cmdline, ',');
-> > +	if (c) {
-> > +		c++;
-> > +		ret = kstrtoul(c, 10, &dist_level);
-> > +		if (ret < 0 || dist_level < LOCAL_DISTANCE ||
-> > +				dist_level * max_emu_nid > ULONG_MAX)
-> > +			dist_level = -1;
-> 
-> If this happens, the user goofed and we should tell them, with a printk.
-> 
-> 
-> [patch 2/2] adds the documentation for the feature and should be
-> included in the same patch as the implementation.
+Suggested-by: Matt Helsley <matthltc@us.ibm.com>
+Link: http://lkml.kernel.org/r/20111118221558.GA6408@count0.beaverton.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/syscalls/syscallhdr.sh |   19 +++----------------
+ 1 files changed, 3 insertions(+), 16 deletions(-)
 
-Apologize, I'll send v2 of patch with printk() and documentation all-in-one
-if it is necessary.
-
-thanks,
-Petr H
-
-> 
+diff --git a/arch/x86/syscalls/syscallhdr.sh b/arch/x86/syscalls/syscallhdr.sh
+index 0d473ff..b3c5930 100644
+--- a/arch/x86/syscalls/syscallhdr.sh
++++ b/arch/x86/syscalls/syscallhdr.sh
+@@ -2,33 +2,20 @@
+ 
+ in="$1"
+ out="$2"
+-my_abis=`echo "$3" | tr ',' ' '`
++my_abis=`echo "($3)" | tr ',' '|'`
+ prefix="$4"
+ offset="$5"
+ 
+ fileguard=_ASM_X86_`basename "$out" | sed \
+     -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' \
+     -e 's/[^A-Z0-9_]/_/g' -e 's/__/_/g'`
+-
+-in_list () {
+-    local x
+-    for x in $1; do
+-	if [ x"$x" = x"$2" ]; then
+-	    return 0
+-	fi
+-    done
+-    return 1
+-}
+-
+-grep '^[0-9]' "$in" | sort -n | (
++grep -E "^[0-9A-Fa-fXx]+[[:space:]]+${my_abis}" "$in" | sort -n | (
+     echo "#ifndef ${fileguard}"
+     echo "#define ${fileguard} 1"
+     echo ""
+ 
+     while read nr abi name entry ; do
+-	if in_list "$my_abis" "$abi"; then
+-	    echo "#define __NR_${prefix}${name}" $((nr+offset))
+-        fi
++	echo "#define __NR_${prefix}${name}" $((nr+offset))
+     done
+ 
+     echo ""
