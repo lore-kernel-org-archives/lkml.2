@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab1KSEwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:52:11 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:53358 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab1KSEwJ (ORCPT
+	id S1750987Ab1KSFQF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 00:16:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62627 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab1KSFQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:52:09 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, richard@nod.at,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, oleg@redhat.com, dhowells@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <20111117045230.GA26345@hallyn.com>
-	<m1aa7u2jv1.fsf@fess.ebiederm.org> <20111118173752.GB11823@sergelap>
-	<m14ny12rra.fsf@fess.ebiederm.org> <20111119004302.GB16259@sergelap>
-Date: Fri, 18 Nov 2011 20:53:12 -0800
-In-Reply-To: <20111119004302.GB16259@sergelap> (Serge Hallyn's message of
-	"Fri, 18 Nov 2011 18:43:02 -0600")
-Message-ID: <m1ty601znr.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Sat, 19 Nov 2011 00:16:03 -0500
+Date: Sat, 19 Nov 2011 13:15:37 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        James Morris <jmorris@namei.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC] [PATCH] printk: Don't emit console_cpu_notify() for
+ CPU_DYING
+Message-ID: <20111119051537.GA2163@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1321582764-22218-1-git-send-email-yong.zhang0@gmail.com>
+ <20111118110100.1cedc784.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/CYRFuZSCzqTAltinjxK4kzHYzIntv2pQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Serge Hallyn <serge.hallyn@canonical.com>
-X-Spam-Relay-Country: **
-Subject: Re: user namespace: make signal.c respect user namespaces (v5)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111118110100.1cedc784.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@canonical.com> writes:
+On Fri, Nov 18, 2011 at 11:01:00AM -0800, Andrew Morton wrote:
+> On Fri, 18 Nov 2011 10:19:24 +0800
+> Yong Zhang <yong.zhang0@gmail.com> wrote:
+> 
+> > When running -rt, I got some warning when doing cpu hotplug,
+> > for details please check:
+> > http://marc.info/?l=linux-kernel&m=132143661616297&w=2
+> > 
+> > But seems the problem also exists in mainline, a typical
+> > scenario is:
+> > 
+> >         CPU A                           CPU B
+> > 
+> > doing printk with console_sem held
+> >                                 take_cpu_down();
+> >                                   cpu_notify(CPU_DYING);
+> >                                     console_cpu_notify();
+> >                                       console_lock();
+> >                                         down(&console_sem);
+> >                                           *BANG*
+> >   up(&console_sem);
+> 
+> This doesn't describe a deadlock.  For a deadlock to occur, something
+> must prevent CPU A from proceeding to the up().
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> "Serge E. Hallyn" <serge.hallyn@canonical.com> writes:
->> 
->> > Quoting Eric W. Biederman (ebiederm@xmission.com):
->> >> There is a small bug here.  You want to fixup q->info, not info.
->> >> Otherwise you might try dereferencing one of the special signals and get
->> >> a NULL pointer dereference.
->> >
->> > Thanks, Eric.  Oddly I've not seen this happen in quite a bit of
->> > testing with the kernel, but you certainly must be right.  I sent
->> > out a new patch to fix that.
->> 
->> You clearly have a different test case than I do.
->
-> I ran a good chunk of ltp...  and it passed.  I can't explain it.
+Hmm, after revisting the code, seems console_unlock() can't be
+preempted when helding console_sem. IOW, stop_machine() can't
+run if someone loops in printing something.
 
-I guess my test case as mostly dinking around and hitting ctrl-c because
-something wasn't behaving as I would like.
+So the problem only affect -rt, sorry for the noise.
 
-Still I a tad surprised that ltp doesn't seem to test that one.
+Thanks,
+Yong
 
->> I managed to trigger the oops  within about 5 minutes of just fooling
->> around.
->> 
->> You want to say &q->info not q->info in your updated patch.
->
-> Oh, yes, thanks.  Sorry, I shouldn't have sent that one as I wasn't able
-> to compile and test until tonight.
-
-No problem.
-
-Eric
+> 
+> Are you able to more fully describe this?  I'm suspecting that CPU A
+> got shut down by CPU B?  If so, shutting down a CPU while it holds
+> locks seems rather bad.  Or perhaps it's something else...
