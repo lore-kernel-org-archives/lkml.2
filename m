@@ -1,194 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab1KSOAh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 09:00:37 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:47362 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337Ab1KSOA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 09:00:27 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [Update 2x][PATCH 2/7] PM / Domains: Introduce "save/restore state" device callbacks
-Date: Sat, 19 Nov 2011 14:59:00 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Kevin Hilman <khilman@ti.com>, jean.pihet@newoldbits.com
-References: <201111070101.33960.rjw@sisk.pl> <201111140122.27328.rjw@sisk.pl> <201111191456.40453.rjw@sisk.pl>
-In-Reply-To: <201111191456.40453.rjw@sisk.pl>
+	id S1754425Ab1KSOMi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 09:12:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63352 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab1KSOMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 09:12:37 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111191459.00982.rjw@sisk.pl>
+In-Reply-To: <Pine.LNX.4.44L0.1111180956200.2064-100000@iolanthe.rowland.org>
+References: <CAKYAXd9fEJP7XsZtCMdCPszhhdgUrVhN=8RARrWs=Pq9uTw2aA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1111180956200.2064-100000@iolanthe.rowland.org>
+Date: Sat, 19 Nov 2011 23:12:35 +0900
+Message-ID: <CAKYAXd8q+crqi9oAX84SJmkBEwWj2ycQ+kie0OSxmtdWB7v3Zg@mail.gmail.com>
+Subject: Re: [PATCH] NLS: improve UTF8 -> UTF16 string conversion routine
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Greg KH <greg@kroah.com>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAJED56q016795
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+2011/11/19 Alan Stern <stern@rowland.harvard.edu>:
+> On Fri, 18 Nov 2011, NamJae Jeon wrote:
+>
+>> 2011/11/18 Alan Stern <stern@rowland.harvard.edu>:
+>> > The utf8s_to_utf16s conversion routine needs to be improved.  Unlike
+>> > its utf16s_to_utf8s sibling, it doesn't accept arguments specifying
+>> > the maximum length of the output buffer or the endianness of its
+>> > 16-bit output.
+>> >
+>> > This patch (as1501) adds the two missing arguments, and adjusts the
+>> > only two places in the kernel where the function is called.  A
+>> > follow-on patch will add a third caller that does utilize the new
+>> > capabilities.
+>> >
+>> > The two conversion routines are still annoyingly inconsistent in the
+>> > way they handle invalid byte combinations.  But that's a subject for a
+>> > different patch.
+>
+>> > Index: usb-3.2/fs/nls/nls_base.c
+>> > ===================================================================
+>> > --- usb-3.2.orig/fs/nls/nls_base.c
+>> > +++ usb-3.2/fs/nls/nls_base.c
+>> > @@ -114,34 +114,57 @@ int utf32_to_utf8(unicode_t u, u8 *s, in
+>> >  }
+>> >  EXPORT_SYMBOL(utf32_to_utf8);
+>> >
+>> > -int utf8s_to_utf16s(const u8 *s, int len, wchar_t *pwcs)
+>> > +static inline void put_utf16(wchar_t *s, unsigned c, enum utf16_endian endian)
+>> > +{
+>> > +       switch (endian) {
+>> > +       default:
+>> > +               *s = (wchar_t) c;
+>> > +               break;
+>> > +       case UTF16_LITTLE_ENDIAN:
+>> > +               *s = __cpu_to_le16(c);
+>> > +               break;
+>> > +       case UTF16_BIG_ENDIAN:
+>> > +               *s = __cpu_to_be16(c);
+>> > +               break;
+>> > +       }
+>> > +}
+>> > +
+>> > +int utf8s_to_utf16s(const u8 *s, int len, enum utf16_endian endian,
+>> > +               wchar_t *pwcs, int maxlen)
+>> >  {
+>> >        u16 *op;
+>> >        int size;
+>> >        unicode_t u;
+>> >
+>> >        op = pwcs;
+>> > -       while (*s && len > 0) {
+>> > +       while (len > 0 && maxlen > 0 && *s) {
+>> >                if (*s & 0x80) {
+>> >                        size = utf8_to_utf32(s, len, &u);
+>> >                        if (size < 0)
+>> >                                return -EINVAL;
+>> > +                       s += size;
+>> > +                       len -= size;
+>> Why did you move this code to here ?
+>
+> Mainly in order to keep the counter updates near the place where the
+> character is read.  Also, in an earlier version of the patch, I used a
+> "continue" instead of the "break" statement three lines below.  For
+> that to work, the updates to s and len had to be moved up here.
+>
+>> >                        if (u >= PLANE_SIZE) {
+>> > +                               if (maxlen < 2)
+>> > +                                       break;
+>> >                                u -= PLANE_SIZE;
+>> > -                               *op++ = (wchar_t) (SURROGATE_PAIR |
+>> > -                                               ((u >> 10) & SURROGATE_BITS));
+>> > -                               *op++ = (wchar_t) (SURROGATE_PAIR |
+>> > +                               put_utf16(op++, SURROGATE_PAIR |
+>> > +                                               ((u >> 10) & SURROGATE_BITS),
+>> > +                                               endian);
+>> > +                               put_utf16(op++, SURROGATE_PAIR |
+>> >                                                SURROGATE_LOW |
+>> > -                                               (u & SURROGATE_BITS));
+>> > +                                               (u & SURROGATE_BITS),
+>> > +                                               endian);
+>> > +                               maxlen -= 2;
+>>
+>> Why did you use contants value(-2) instead of maxlen -= size; value ?
+>
+> "maxlen -= size" would be completely wrong, because size is the length
+> of the utf8 input and maxlen is the number of 16-bit slots remaining
+> in the output buffer.  A surrogate pair uses two 16-bit values,
+> therefore maxlen has to be decreased by 2.
+If so, len should also be minus -2 constant value like maxlen ?
+and why does this code(if (maxlen < 2)) is needed ? If len is smaller than 2 ?
 
-The current PM domains code uses device drivers' .runtime_suspend()
-and .runtime_resume() callbacks as the "save device state" and
-"restore device state" operations, which may not be appropriate in
-general, because it forces drivers to assume that they always will
-be used with generic PM domains.  However, in theory, the same
-hardware may be used in devices that don't belong to any PM
-domain, in which case it would be necessary to add "fake" PM
-domains to satisfy the above assumption.  It also may be located in
-a PM domain that's not handled with the help of the generic code.
-
-To allow device drivers that may be used along with the generic PM
-domains code of more flexibility, introduce new device callbacks,
-.save_state() and .restore_state(), that can be supplied by the
-drivers in addition to their "standard" runtime PM callbacks.  This
-will allow the drivers to be designed to work with generic PM domains
-as well as without them.
-
-For backwards compatibility, introduce default .save_state() and
-.restore_state() callback routines for PM domains that will execute
-a device driver's .runtime_suspend() and .runtime_resume() callbacks,
-respectively, for the given device if the driver doesn't provide its
-own implementations of .save_state() and .restore_state().
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/domain.c |   68 ++++++++++++++++++++++++++++++++++++--------
- include/linux/pm_domain.h   |    2 +
- 2 files changed, 58 insertions(+), 12 deletions(-)
-
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -26,6 +26,8 @@ struct dev_power_governor {
- struct gpd_dev_ops {
- 	int (*start)(struct device *dev);
- 	int (*stop)(struct device *dev);
-+	int (*save_state)(struct device *dev);
-+	int (*restore_state)(struct device *dev);
- 	bool (*active_wakeup)(struct device *dev);
- };
- 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -56,6 +56,16 @@ static int genpd_start_dev(struct generi
- 	return GENPD_DEV_CALLBACK(genpd, int, start, dev);
- }
- 
-+static int genpd_save_dev(struct generic_pm_domain *genpd, struct device *dev)
-+{
-+	return GENPD_DEV_CALLBACK(genpd, int, save_state, dev);
-+}
-+
-+static int genpd_restore_dev(struct generic_pm_domain *genpd, struct device *dev)
-+{
-+	return GENPD_DEV_CALLBACK(genpd, int, restore_state, dev);
-+}
-+
- static bool genpd_sd_counter_dec(struct generic_pm_domain *genpd)
- {
- 	bool ret = false;
-@@ -217,7 +227,6 @@ static int __pm_genpd_save_device(struct
- {
- 	struct generic_pm_domain_data *gpd_data = to_gpd_data(pdd);
- 	struct device *dev = pdd->dev;
--	struct device_driver *drv = dev->driver;
- 	int ret = 0;
- 
- 	if (gpd_data->need_restore)
-@@ -225,11 +234,9 @@ static int __pm_genpd_save_device(struct
- 
- 	mutex_unlock(&genpd->lock);
- 
--	if (drv && drv->pm && drv->pm->runtime_suspend) {
--		genpd_start_dev(genpd, dev);
--		ret = drv->pm->runtime_suspend(dev);
--		genpd_stop_dev(genpd, dev);
--	}
-+	genpd_start_dev(genpd, dev);
-+	ret = genpd_save_dev(genpd, dev);
-+	genpd_stop_dev(genpd, dev);
- 
- 	mutex_lock(&genpd->lock);
- 
-@@ -250,18 +257,15 @@ static void __pm_genpd_restore_device(st
- {
- 	struct generic_pm_domain_data *gpd_data = to_gpd_data(pdd);
- 	struct device *dev = pdd->dev;
--	struct device_driver *drv = dev->driver;
- 
- 	if (!gpd_data->need_restore)
- 		return;
- 
- 	mutex_unlock(&genpd->lock);
- 
--	if (drv && drv->pm && drv->pm->runtime_resume) {
--		genpd_start_dev(genpd, dev);
--		drv->pm->runtime_resume(dev);
--		genpd_stop_dev(genpd, dev);
--	}
-+	genpd_start_dev(genpd, dev);
-+	genpd_restore_dev(genpd, dev);
-+	genpd_stop_dev(genpd, dev);
- 
- 	mutex_lock(&genpd->lock);
- 
-@@ -1358,6 +1362,44 @@ int pm_genpd_remove_callbacks(struct dev
- EXPORT_SYMBOL_GPL(pm_genpd_remove_callbacks);
- 
- /**
-+ * pm_genpd_default_save_state - Default "save device state" for PM domians.
-+ * @dev: Device to handle.
-+ */
-+static int pm_genpd_default_save_state(struct device *dev)
-+{
-+	int (*cb)(struct device *__dev);
-+	struct device_driver *drv = dev->driver;
-+
-+	cb = dev_gpd_data(dev)->ops.save_state;
-+	if (cb)
-+		return cb(dev);
-+
-+	if (drv && drv->pm && drv->pm->runtime_suspend)
-+		return drv->pm->runtime_suspend(dev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pm_genpd_default_restore_state - Default PM domians "restore device state".
-+ * @dev: Device to handle.
-+ */
-+static int pm_genpd_default_restore_state(struct device *dev)
-+{
-+	int (*cb)(struct device *__dev);
-+	struct device_driver *drv = dev->driver;
-+
-+	cb = dev_gpd_data(dev)->ops.restore_state;
-+	if (cb)
-+		return cb(dev);
-+
-+	if (drv && drv->pm && drv->pm->runtime_resume)
-+		return drv->pm->runtime_resume(dev);
-+
-+	return 0;
-+}
-+
-+/**
-  * pm_genpd_init - Initialize a generic I/O PM domain object.
-  * @genpd: PM domain object to initialize.
-  * @gov: PM domain governor to associate with the domain (may be NULL).
-@@ -1400,6 +1442,8 @@ void pm_genpd_init(struct generic_pm_dom
- 	genpd->domain.ops.restore_noirq = pm_genpd_restore_noirq;
- 	genpd->domain.ops.restore = pm_genpd_restore;
- 	genpd->domain.ops.complete = pm_genpd_complete;
-+	genpd->dev_ops.save_state = pm_genpd_default_save_state;
-+	genpd->dev_ops.restore_state = pm_genpd_default_restore_state;
- 	mutex_lock(&gpd_list_lock);
- 	list_add(&genpd->gpd_list_node, &gpd_list);
- 	mutex_unlock(&gpd_list_lock);
-
+>> >                        } else {
+>> > -                               *op++ = (wchar_t) u;
+>> > +                               put_utf16(op++, u, endian);
+>> > +                               maxlen--;
+>> >                        }
+>> > -                       s += size;
+>> > -                       len -= size;
+>> >                } else {
+>> > -                       *op++ = *s++;
+>> > +                       put_utf16(op++, *s++, endian);
+>> >                        len--;
+>> > +                       maxlen--;
+>> >                }
+>> >        }
+>> >        return op - pwcs;
+>> > Index: usb-3.2/fs/fat/namei_vfat.c
+>> > ===================================================================
+>> > --- usb-3.2.orig/fs/fat/namei_vfat.c
+>> > +++ usb-3.2/fs/fat/namei_vfat.c
+>> > @@ -512,7 +512,8 @@ xlate_to_uni(const unsigned char *name,
+>> >        int charlen;
+>> >
+>> >        if (utf8) {
+>> > -               *outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
+>> > +               *outlen = utf8s_to_utf16s(name, len, UTF16_HOST_ENDIAN,
+>> > +                               (wchar_t *) outname, FAT_LFN_LEN + 2);
+>> Is there the reason why you plus 2 to FAT_LFN_LEN ?
+>
+> So that the "(*outlen > FAT_LFN_LEN)" test below will work correctly.
+> If the maximum length were set to FAT_LFN_LEN then the test would
+> always fail.  If the maximum length were set to FAT_LFN_LEN + 1 then
+> the test would fail when the next character to be stored was a
+> surrogate pair.
+Although we are using maxlen, I don't know why do we check case that
+outlen is bigger than FAT_LFN_LEN.
+>
+>> >                if (*outlen < 0)
+>> >                        return *outlen;
+>> >                else if (*outlen > FAT_LFN_LEN)
+>>                           return -ENAMETOOLONG;
+>> "else if (*outlen > FAT_LFN_LEN)" code  is needed ? Is there the case
+>> that *outlen is over FAT_LFN_LEN in your patch ?
+>
+> I have no idea.  That test was already there, I didn't add or change it.
+>
+>> Thanks.
+>
+> Alan Stern
+>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
