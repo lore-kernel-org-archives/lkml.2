@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab1KSPeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 10:34:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36876 "EHLO
+	id S1752536Ab1KSPkc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 10:40:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36415 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab1KSPeQ (ORCPT
+	with ESMTP id S1751019Ab1KSPkb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 10:34:16 -0500
-Date: Sat, 19 Nov 2011 19:34:10 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
- that can be shared between tasks
-Message-ID: <20111119153410.GB1722@moon>
-References: <4EC4DA15.7090106@parallels.com>
- <20111117124831.688adbeb.akpm@linux-foundation.org>
- <4EC6246A.6020807@parallels.com>
- <20111118110716.c854b4bd.akpm@linux-foundation.org>
- <20111119075733.GB2675@albatros>
- <20111119081012.GC2675@albatros>
+	Sat, 19 Nov 2011 10:40:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111119081012.GC2675@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <0912364C-C313-4BCA-9EE2-73F55FE012E6@mit.edu>
+References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com>
+	<47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu>
+	<alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com>
+	<CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
+	<CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com>
+	<8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
+	<A5A56693-9C4C-4957-AAA5-3D1BD8AA7DCE@mit.edu>
+	<CAKYAXd99NrOC77=p31nax223UOxOONv3_JcLXUpXign8=58Vxw@mail.gmail.com>
+	<0912364C-C313-4BCA-9EE2-73F55FE012E6@mit.edu>
+Date: Sun, 20 Nov 2011 00:40:29 +0900
+Message-ID: <CAKYAXd91gcPbfAqRRkW7HhxRDXstzGVRbwqzve40z6BTDEj4_w@mail.gmail.com>
+Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 12:10:12PM +0400, Vasiliy Kulikov wrote:
-> On Sat, Nov 19, 2011 at 11:57 +0400, Vasiliy Kulikov wrote:
-> > Doing something like hash(cookie1 ++ obj ++ cookie) would leak only the
-> > equation of two objects, but it can be still dangerous - learn hashes of
-> > (a) objects created at boot time (their addresses are known) and (b)
-> > some objects, which allocation scheme is known (i.e. we know
-> > kmem_cache_alloc() gives us specific addresses with high probability),
-> > and then compare the hashes against other objects after (a) and (b)
-> > objects are kfree'd.
-> > 
+2011/11/19 Theodore Tso <tytso@mit.edu>:
+>
+> On Nov 19, 2011, at 8:52 AM, NamJae Jeon wrote:
+>
+>> 2011/11/18 Theodore Tso <tytso@mit.edu>:
+>>>
+>>> On Nov 17, 2011, at 10:11 AM, Theodore Tso wrote:
+>>>>
+>>>> So accessing non-local memory can be a really, really big deal.  And this
+>>>> isn't just theoretical, but have you considered what might happen on a 8
+>>>> core AMD machine?
+>>>
+>>> Sorry, typo.  This should have read, "have you considered what might happen on a 8 _socket_ AMD machine"?
+>>>
+>> You're right. but..
+>> It is only useful using cpuset, And have you read cpuset spread
+>> history link of Amit provided ?
+>> And why have you still used spread flags for inode cache ?
+>
+> The inode cache is different for the following reasons:
+>
+> (1) The memory allocations are long-lived, and there is a good chance for many of them that they will be used by other CPU's on different NUMA nodes.
+>
+> (2)  There are a very large number of inodes, so uneven allocation of the inodes has a significantly larger impact.
+>
+> In contrast, the page_io and mballoc allocations are very short lived, there aren't a whole lot of them (check /proc/slabinfo), and they are guaranteed to be used during their very short lifetime on the local CPU node.   So the benefits of spreading them around are not that great, since they aren't that many of them, and downsides of potential 2x or 3x time to access memory is large.
+>
+Thanks for your opinion.
+Have you thought that mem spread flags is not needed in group info
+caches same with page_io and mballoc ?
 
-First of all, thanks a *huge* for comments Vasiliy! Yes, agreed that plain
-single xor is not sufficient here.
-
-> > 
-> > What is the highest timeframe which must maintain the property of unique
-> > ids?  Is it the whole system lifetime or probably [dump start; dump
-> > end] and we can change the cookie many times?  Can we probably shorten
-
-Yes, dump-start/dump-end is a mininum timeframe.
-
-> > the time even?  Can we ensure that during this timeframe no new kernel
-> > objects will be created (unrealistic, but would be great)?
-> > 
-
-We might use PT_SEIZED as such flag and don't allow to allocate new kernel
-objects but it will bring too much complexity into kernel code I think,
-which is not what we want eventually ;)
-
-> > Also, I didn't understand from the quoted text who will use it - only
-> > the dumper or this interface is exposed to all userspace processes and
-> > anybody may learn hash(&kern_obj) for any kern_obj he may reference?
-> 
-
-It's limited to /proc/$pid/
-
-> Also, if one should have an ability to learn IDs of specific object
-> types and the set of types is very limited, it's much safer to have one
-> increasing u64 counter for each created object of one of these types.
-> The exposed to userspace data will be:
-> 
->     ID = hash(counter ^ cookie)
-> 
->     cookie is generated at boot time, once.  counter is a single
->     variable, one for all exposed kernel object types.
-> 
-> ID will be unpredictable if hash() is cryptographically secure, and
-> counter is not duplicated.  So, for each newly created object the ID is
-> the new random value, which is unique and says nothing to userspace about
-> either kernel object addresses or the counter itself.
-> 
-> The cost:
-> 
-> 1) counter storing for each kernel object exposed through this interface.
-> 
-
-Yes, this is main concern.
-
-> 2) object creation will be slowed down by hash().
-> 
-
-This is not that important I think, since it's not a time-critical operation.
-
-> Also, one thought - is it safe to say two kernel objects are the same to
-> userspace? :)  I don't see anything obviously dangerous, though.
-> 
-
-	Cyrill
+> -- Ted
+>
+>
