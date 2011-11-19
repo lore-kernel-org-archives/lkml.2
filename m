@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab1KSAKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:10:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38738 "EHLO mx2.suse.de"
+	id S932336Ab1KSAKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:10:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38889 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758509Ab1KSAKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:10:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:28 2011
-Message-Id: <20111119000328.123074999@clark.kroah.org>
+	id S932165Ab1KSAKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:10:36 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:29 2011
+Message-Id: <20111119000329.862001060@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 16:02:39 -0800
+Date: Fri, 18 Nov 2011 16:02:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Michael S. Tsirkin" <mst@redhat.com>,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [03/26] virtio-pci: fix use after free
+        alan@lxorguk.ukuu.org.uk, Geoff Levand <geoff@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [22/26] powerpc/ps3: Fix lost SMP IPIs
 In-Reply-To: <20111119000336.GA8452@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Geoff Levand <geoff@infradead.org>
 
-commit 72103bd1285211440621f2c46f4fce377584de54 upstream.
+commit 72f3bea075287785ed32b777b6dd2636aa7002e8 upstream.
 
-Commit 31a3ddda166cda86d2b5111e09ba4bda5239fae6 introduced
-a use after free in virtio-pci. The main issue is
-that the release method signals removal of the virtio device,
-while remove signals removal of the pci device.
+Fixes the PS3 bootup hang introduced in 3.0-rc1 by:
 
-For example, on driver removal or hot-unplug,
-virtio_pci_release_dev is called before virtio_pci_remove.
-We then might get a crash as virtio_pci_remove tries to use the
-device freed by virtio_pci_release_dev.
+  commit 317f394160e9beb97d19a84c39b7e5eb3d7815a
+  sched: Move the second half of ttwu() to the remote cpu
 
-We allocate/free all resources together with the
-pci device, so we can leave the release method empty.
+Move the PS3's LV1 EOI call lv1_end_of_interrupt_ext() from ps3_chip_eoi()
+to ps3_get_irq() for IPI messages.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+If lv1_send_event_locally() is called between a previous call to
+lv1_send_event_locally() and the coresponding call to
+lv1_end_of_interrupt_ext() the second event will not be delivered to the
+target cpu.
+
+The PS3's SMP IPIs are implemented using lv1_send_event_locally(), so if two
+IPI messages of the same type are sent to the same target in a relatively
+short period of time the second IPI event can become lost when
+lv1_end_of_interrupt_ext() is called from ps3_chip_eoi().
+
+Signed-off-by: Geoff Levand <geoff@infradead.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/virtio/virtio_pci.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ arch/powerpc/platforms/ps3/interrupt.c |   23 ++++++++++++++++++++++-
+ arch/powerpc/platforms/ps3/platform.h  |    1 +
+ arch/powerpc/platforms/ps3/smp.c       |    2 ++
+ 3 files changed, 25 insertions(+), 1 deletion(-)
 
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -590,11 +590,11 @@ static struct virtio_config_ops virtio_p
+--- a/arch/powerpc/platforms/ps3/interrupt.c
++++ b/arch/powerpc/platforms/ps3/interrupt.c
+@@ -88,6 +88,7 @@ struct ps3_private {
+ 	struct ps3_bmp bmp __attribute__ ((aligned (PS3_BMP_MINALIGN)));
+ 	u64 ppe_id;
+ 	u64 thread_id;
++	unsigned long ipi_mask;
+ };
  
- static void virtio_pci_release_dev(struct device *_d)
+ static DEFINE_PER_CPU(struct ps3_private, ps3_private);
+@@ -144,7 +145,11 @@ static void ps3_chip_unmask(struct irq_d
+ static void ps3_chip_eoi(struct irq_data *d)
  {
--	struct virtio_device *dev = container_of(_d, struct virtio_device,
--						 dev);
--	struct virtio_pci_device *vp_dev = to_vp_device(dev);
--
--	kfree(vp_dev);
-+	/*
-+	 * No need for a release method as we allocate/free
-+	 * all devices together with the pci devices.
-+	 * Provide an empty one to avoid getting a warning from core.
-+	 */
+ 	const struct ps3_private *pd = irq_data_get_irq_chip_data(d);
+-	lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, d->irq);
++
++	/* non-IPIs are EOIed here. */
++
++	if (!test_bit(63 - d->irq, &pd->ipi_mask))
++		lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, d->irq);
  }
  
- /* the PCI probing function */
-@@ -682,6 +682,7 @@ static void __devexit virtio_pci_remove(
- 	pci_iounmap(pci_dev, vp_dev->ioaddr);
- 	pci_release_regions(pci_dev);
- 	pci_disable_device(pci_dev);
-+	kfree(vp_dev);
+ /**
+@@ -691,6 +696,16 @@ void __init ps3_register_ipi_debug_brk(u
+ 		cpu, virq, pd->bmp.ipi_debug_brk_mask);
  }
  
- #ifdef CONFIG_PM
++void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq)
++{
++	struct ps3_private *pd = &per_cpu(ps3_private, cpu);
++
++	set_bit(63 - virq, &pd->ipi_mask);
++
++	DBG("%s:%d: cpu %u, virq %u, ipi_mask %lxh\n", __func__, __LINE__,
++		cpu, virq, pd->ipi_mask);
++}
++
+ static unsigned int ps3_get_irq(void)
+ {
+ 	struct ps3_private *pd = &__get_cpu_var(ps3_private);
+@@ -720,6 +735,12 @@ static unsigned int ps3_get_irq(void)
+ 		BUG();
+ 	}
+ #endif
++
++	/* IPIs are EOIed here. */
++
++	if (test_bit(63 - plug, &pd->ipi_mask))
++		lv1_end_of_interrupt_ext(pd->ppe_id, pd->thread_id, plug);
++
+ 	return plug;
+ }
+ 
+--- a/arch/powerpc/platforms/ps3/platform.h
++++ b/arch/powerpc/platforms/ps3/platform.h
+@@ -43,6 +43,7 @@ void ps3_mm_shutdown(void);
+ void ps3_init_IRQ(void);
+ void ps3_shutdown_IRQ(int cpu);
+ void __init ps3_register_ipi_debug_brk(unsigned int cpu, unsigned int virq);
++void __init ps3_register_ipi_irq(unsigned int cpu, unsigned int virq);
+ 
+ /* smp */
+ 
+--- a/arch/powerpc/platforms/ps3/smp.c
++++ b/arch/powerpc/platforms/ps3/smp.c
+@@ -94,6 +94,8 @@ static void __init ps3_smp_setup_cpu(int
+ 
+ 		if (result)
+ 			virqs[i] = NO_IRQ;
++		else
++			ps3_register_ipi_irq(cpu, virqs[i]);
+ 	}
+ 
+ 	ps3_register_ipi_debug_brk(cpu, virqs[PPC_MSG_DEBUGGER_BREAK]);
 
 
