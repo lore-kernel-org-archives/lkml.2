@@ -1,314 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab1KSIzc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 03:55:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55730 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab1KSIzb (ORCPT
+	id S1752705Ab1KSI7N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 03:59:13 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50196 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab1KSI7M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 03:55:31 -0500
-Subject: [PATCH v2] mm: remove struct reclaim_state
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
-Date: Sat, 19 Nov 2011 12:55:00 +0300
-Message-ID: <20111119085500.8517.4125.stgit@zurg>
-In-Reply-To: <20111118092806.21688.8662.stgit@zurg>
-References: <20111118092806.21688.8662.stgit@zurg>
-User-Agent: StGit/0.15
+	Sat, 19 Nov 2011 03:59:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1321635524-8586-5-git-send-email-mgorman@suse.de>
+References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
+	<1321635524-8586-5-git-send-email-mgorman@suse.de>
+Date: Sat, 19 Nov 2011 16:59:10 +0800
+Message-ID: <CAPQyPG4GTccLroA2NsdQK_PH1_KB3dD1v3m1FzenCeDW-8qb+g@mail.gmail.com>
+Subject: Re: [PATCH 4/5] mm: compaction: Determine if dirty pages can be
+ migreated without blocking within ->migratepage
+From: Nai Xia <nai.xia@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory reclaimer want to know how much pages was reclaimed during shrinking slabs.
-Currently there is special struct reclaim_state with single counter and pointer from
-task-struct. Let's store counter direcly on task struct and account freed pages
-unconditionally. This will reduce stack usage and simplify code in reclaimer and slab.
+On Sat, Nov 19, 2011 at 12:58 AM, Mel Gorman <mgorman@suse.de> wrote:
+> Asynchronous compaction is when allocating transparent hugepages to
+> avoid blocking for long periods of time. Due to reports of stalling,
+> synchronous compaction is never used but this impacts allocation
+> success rates. When deciding whether to migrate dirty pages, the
+> following check is made
+>
+>        if (PageDirty(page) && !sync &&
+>                mapping->a_ops->migratepage != migrate_page)
+>                        rc = -EBUSY;
+>
+> This skips over all pages using buffer_migrate_page() even though
+> it is possible to migrate some of these pages without blocking. This
+> patch updates the ->migratepage callback with a "sync" parameter. It
+> is the resposibility of the callback to gracefully fail migration of
+> the page if it cannot be achieved without blocking.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  fs/btrfs/disk-io.c      |    2 +-
+>  fs/nfs/internal.h       |    2 +-
+>  fs/nfs/write.c          |    4 +-
+>  include/linux/fs.h      |    9 +++-
+>  include/linux/migrate.h |    2 +-
+>  mm/migrate.c            |  106 ++++++++++++++++++++++++++++++++---------------
+>  6 files changed, 83 insertions(+), 42 deletions(-)
+>
+> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+> index 62afe5c..f841f00 100644
+> --- a/fs/btrfs/disk-io.c
+> +++ b/fs/btrfs/disk-io.c
+> @@ -872,7 +872,7 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
+>
+>  #ifdef CONFIG_MIGRATION
+>  static int btree_migratepage(struct address_space *mapping,
+> -                       struct page *newpage, struct page *page)
+> +                       struct page *newpage, struct page *page, bool sync)
+>  {
+>        /*
+>         * we can't safely write a btree page from here,
+> diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+> index c1a1bd8..d0c460f 100644
+> --- a/fs/nfs/internal.h
+> +++ b/fs/nfs/internal.h
+> @@ -328,7 +328,7 @@ void nfs_commit_release_pages(struct nfs_write_data *data);
+>
+>  #ifdef CONFIG_MIGRATION
+>  extern int nfs_migrate_page(struct address_space *,
+> -               struct page *, struct page *);
+> +               struct page *, struct page *, bool);
+>  #else
+>  #define nfs_migrate_page NULL
+>  #endif
+> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> index 1dda78d..33475df 100644
+> --- a/fs/nfs/write.c
+> +++ b/fs/nfs/write.c
+> @@ -1711,7 +1711,7 @@ out_error:
+>
+>  #ifdef CONFIG_MIGRATION
+>  int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+> -               struct page *page)
+> +               struct page *page, bool sync)
+>  {
+>        /*
+>         * If PagePrivate is set, then the page is currently associated with
+> @@ -1726,7 +1726,7 @@ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+>
+>        nfs_fscache_release_page(page, GFP_KERNEL);
+>
+> -       return migrate_page(mapping, newpage, page);
+> +       return migrate_page(mapping, newpage, page, sync);
+>  }
+>  #endif
+>
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 0c4df26..67f8e46 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -609,9 +609,12 @@ struct address_space_operations {
+>                        loff_t offset, unsigned long nr_segs);
+>        int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+>                                                void **, unsigned long *);
+> -       /* migrate the contents of a page to the specified target */
+> +       /*
+> +        * migrate the contents of a page to the specified target. If sync
+> +        * is false, it must not block. If it needs to block, return -EBUSY
+> +        */
+>        int (*migratepage) (struct address_space *,
+> -                       struct page *, struct page *);
+> +                       struct page *, struct page *, bool);
+>        int (*launder_page) (struct page *);
+>        int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
+>                                        unsigned long);
+> @@ -2577,7 +2580,7 @@ extern int generic_check_addressable(unsigned, u64);
+>
+>  #ifdef CONFIG_MIGRATION
+>  extern int buffer_migrate_page(struct address_space *,
+> -                               struct page *, struct page *);
+> +                               struct page *, struct page *, bool);
+>  #else
+>  #define buffer_migrate_page NULL
+>  #endif
+> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+> index e39aeec..14e6d2a 100644
+> --- a/include/linux/migrate.h
+> +++ b/include/linux/migrate.h
+> @@ -11,7 +11,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+>
+>  extern void putback_lru_pages(struct list_head *l);
+>  extern int migrate_page(struct address_space *,
+> -                       struct page *, struct page *);
+> +                       struct page *, struct page *, bool);
+>  extern int migrate_pages(struct list_head *l, new_page_t x,
+>                        unsigned long private, bool offlining,
+>                        bool sync);
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 578e291..8395697 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -415,7 +415,7 @@ EXPORT_SYMBOL(fail_migrate_page);
+>  * Pages are locked upon entry and exit.
+>  */
+>  int migrate_page(struct address_space *mapping,
+> -               struct page *newpage, struct page *page)
+> +               struct page *newpage, struct page *page, bool sync)
+>  {
+>        int rc;
+>
+> @@ -432,19 +432,60 @@ int migrate_page(struct address_space *mapping,
+>  EXPORT_SYMBOL(migrate_page);
+>
+>  #ifdef CONFIG_BLOCK
+> +
+> +/* Returns true if all buffers are successfully locked */
+> +bool buffer_migrate_lock_buffers(struct buffer_head *head, bool sync)
+> +{
+> +       struct buffer_head *bh = head;
+> +
+> +       /* Simple case, sync compaction */
+> +       if (sync) {
+> +               do {
+> +                       get_bh(bh);
+> +                       lock_buffer(bh);
+> +                       bh = bh->b_this_page;
+> +
+> +               } while (bh != head);
+> +
+> +               return true;
+> +       }
+> +
+> +       /* async case, we cannot block on lock_buffer so use trylock_buffer */
+> +       do {
+> +               get_bh(bh);
+> +               if (!trylock_buffer(bh)) {
+> +                       /*
+> +                        * We failed to lock the buffer and cannot stall in
+> +                        * async migration. Release the taken locks
+> +                        */
+> +                       struct buffer_head *failed_bh = bh;
+> +                       bh = head;
+> +                       do {
+> +                               unlock_buffer(bh);
+> +                               put_bh(bh);
+> +                               bh = bh->b_this_page;
+> +                       } while (bh != failed_bh);
+> +                       return false;
+> +               }
+> +
+> +               bh = bh->b_this_page;
+> +       } while (bh != head);
+> +       return true;
+> +}
+> +
+>  /*
+>  * Migration function for pages with buffers. This function can only be used
+>  * if the underlying filesystem guarantees that no other references to "page"
+>  * exist.
+>  */
+>  int buffer_migrate_page(struct address_space *mapping,
+> -               struct page *newpage, struct page *page)
+> +               struct page *newpage, struct page *page, bool sync)
+>  {
+>        struct buffer_head *bh, *head;
+>        int rc;
+>
+>        if (!page_has_buffers(page))
+> -               return migrate_page(mapping, newpage, page);
+> +               return migrate_page(mapping, newpage, page, sync);
+>
+>        head = page_buffers(page);
+>
+> @@ -453,13 +494,18 @@ int buffer_migrate_page(struct address_space *mapping,
+>        if (rc)
+>                return rc;
+>
+> -       bh = head;
+> -       do {
+> -               get_bh(bh);
+> -               lock_buffer(bh);
+> -               bh = bh->b_this_page;
+> -
+> -       } while (bh != head);
+> +       if (!buffer_migrate_lock_buffers(head, sync)) {
+> +               /*
+> +                * We have to revert the radix tree update. If this returns
+> +                * non-zero, it either means that the page count changed
+> +                * which "can't happen" or the slot changed from underneath
+> +                * us in which case someone operated on a page that did not
+> +                * have buffers fully migrated which is alarming so warn
+> +                * that it happened.
+> +                */
+> +               WARN_ON(migrate_page_move_mapping(mapping, page, newpage));
+> +               return -EBUSY;
 
-Logic in do_try_to_free_pages() is slightly changed, but this is ok.
-Nobody calls shrink_slab() explicitly before do_try_to_free_pages(),
-so there is no extra reclaim progress which we must account into scan-control.
+If this migrate_page_move_mapping() really fails, seems disk IO will be needed
+to bring the previously already cached page back, I wonder if we should make the
+double check for the two conditions of "page refs is ok " and "all bh
+trylocked"
+before doing radix_tree_replace_slot() ? which I think does not
+involve IO on the
+error path.
 
-v2: reset current->reclaimed_pages in the beginning of shrink_slab()
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Dave Chinner <david@fromorbit.com>
----
- fs/inode.c            |    3 +--
- include/linux/sched.h |    3 +--
- include/linux/swap.h  |    8 --------
- mm/page_alloc.c       |    4 ----
- mm/slab.c             |    5 ++---
- mm/slob.c             |    5 ++---
- mm/slub.c             |    5 ++---
- mm/vmscan.c           |   24 ++++--------------------
- 8 files changed, 12 insertions(+), 45 deletions(-)
+Nai
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 8d55a63..09750cd 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -692,8 +692,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
- 	spin_unlock(&sb->s_inode_lru_lock);
--	if (current->reclaim_state)
--		current->reclaim_state->reclaimed_slab += reap;
-+	current->reclaimed_pages += reap;
- 
- 	dispose_list(&freeable);
- }
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 68daf4f..9721610 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -729,7 +729,6 @@ extern struct user_struct root_user;
- 
- 
- struct backing_dev_info;
--struct reclaim_state;
- 
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
- struct sched_info {
-@@ -1465,7 +1464,7 @@ struct task_struct {
- #endif
- 
- /* VM state */
--	struct reclaim_state *reclaim_state;
-+	unsigned long reclaimed_pages;	/* for slab shrinkers */
- 
- 	struct backing_dev_info *backing_dev_info;
- 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 1e22e12..769229a 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -103,14 +103,6 @@ typedef struct {
- 	unsigned long val;
- } swp_entry_t;
- 
--/*
-- * current->reclaim_state points to one of these when a task is running
-- * memory reclaim
-- */
--struct reclaim_state {
--	unsigned long reclaimed_slab;
--};
--
- #ifdef __KERNEL__
- 
- struct address_space;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2104e23..4d03bce 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1961,7 +1961,6 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	int migratetype, unsigned long *did_some_progress)
- {
- 	struct page *page = NULL;
--	struct reclaim_state reclaim_state;
- 	bool drained = false;
- 
- 	cond_resched();
-@@ -1970,12 +1969,9 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	cpuset_memory_pressure_bump();
- 	current->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
--	current->reclaim_state = &reclaim_state;
- 
- 	*did_some_progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
- 
--	current->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
- 	current->flags &= ~PF_MEMALLOC;
- 
-diff --git a/mm/slab.c b/mm/slab.c
-index 708efe8..65b2eaa 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -88,8 +88,8 @@
- 
- #include	<linux/slab.h>
- #include	<linux/mm.h>
-+#include	<linux/sched.h> /* current->reclaimed_pages */
- #include	<linux/poison.h>
--#include	<linux/swap.h>
- #include	<linux/cache.h>
- #include	<linux/interrupt.h>
- #include	<linux/init.h>
-@@ -1785,8 +1785,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
- 		__ClearPageSlab(page);
- 		page++;
- 	}
--	if (current->reclaim_state)
--		current->reclaim_state->reclaimed_slab += nr_freed;
-+	current->reclaimed_pages += nr_freed;
- 	free_pages((unsigned long)addr, cachep->gfporder);
- }
- 
-diff --git a/mm/slob.c b/mm/slob.c
-index 8105be4..e35fb6a 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -60,7 +60,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
--#include <linux/swap.h> /* struct reclaim_state */
-+#include <linux/sched.h> /* current->reclaimed_pages  */
- #include <linux/cache.h>
- #include <linux/init.h>
- #include <linux/export.h>
-@@ -259,8 +259,7 @@ static void *slob_new_pages(gfp_t gfp, int order, int node)
- 
- static void slob_free_pages(void *b, int order)
- {
--	if (current->reclaim_state)
--		current->reclaim_state->reclaimed_slab += 1 << order;
-+	current->reclaimed_pages += 1 << order;
- 	free_pages((unsigned long)b, order);
- }
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index 7d2a996..2f1381d 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -10,7 +10,7 @@
-  */
- 
- #include <linux/mm.h>
--#include <linux/swap.h> /* struct reclaim_state */
-+#include <linux/sched.h> /* current->reclaimed_pages  */
- #include <linux/module.h>
- #include <linux/bit_spinlock.h>
- #include <linux/interrupt.h>
-@@ -1407,8 +1407,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
- 
- 	__ClearPageSlab(page);
- 	reset_page_mapcount(page);
--	if (current->reclaim_state)
--		current->reclaim_state->reclaimed_slab += pages;
-+	current->reclaimed_pages += pages;
- 	__free_pages(page, order);
- }
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f4be53d..393ebce 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -239,6 +239,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 	if (nr_pages_scanned == 0)
- 		nr_pages_scanned = SWAP_CLUSTER_MAX;
- 
-+	current->reclaimed_pages = 0;
-+
- 	if (!down_read_trylock(&shrinker_rwsem)) {
- 		/* Assume we'll be able to shrink next time */
- 		ret = 1;
-@@ -2197,7 +2199,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- {
- 	int priority;
- 	unsigned long total_scanned = 0;
--	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long writeback_threshold;
-@@ -2230,10 +2231,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 			}
- 
- 			shrink_slab(shrink, sc->nr_scanned, lru_pages);
--			if (reclaim_state) {
--				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
--				reclaim_state->reclaimed_slab = 0;
--			}
-+			sc->nr_reclaimed += current->reclaimed_pages;
- 		}
- 		total_scanned += sc->nr_scanned;
- 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-@@ -2505,7 +2503,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 	unsigned long total_scanned;
--	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
- 	struct scan_control sc = {
-@@ -2628,9 +2625,8 @@ loop_again:
- 					end_zone, 0)) {
- 				shrink_zone(priority, zone, &sc);
- 
--				reclaim_state->reclaimed_slab = 0;
- 				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
--				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
-+				sc.nr_reclaimed += current->reclaimed_pages;
- 				total_scanned += sc.nr_scanned;
- 
- 				if (nr_slab == 0 && !zone_reclaimable(zone))
-@@ -2839,16 +2835,12 @@ static int kswapd(void *p)
- 	pg_data_t *pgdat = (pg_data_t*)p;
- 	struct task_struct *tsk = current;
- 
--	struct reclaim_state reclaim_state = {
--		.reclaimed_slab = 0,
--	};
- 	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
- 
- 	lockdep_set_current_reclaim_state(GFP_KERNEL);
- 
- 	if (!cpumask_empty(cpumask))
- 		set_cpus_allowed_ptr(tsk, cpumask);
--	current->reclaim_state = &reclaim_state;
- 
- 	/*
- 	 * Tell the memory management that we're a "memory allocator",
-@@ -2993,7 +2985,6 @@ unsigned long zone_reclaimable_pages(struct zone *zone)
-  */
- unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- {
--	struct reclaim_state reclaim_state;
- 	struct scan_control sc = {
- 		.gfp_mask = GFP_HIGHUSER_MOVABLE,
- 		.may_swap = 1,
-@@ -3012,12 +3003,9 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 
- 	p->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(sc.gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
--	p->reclaim_state = &reclaim_state;
- 
- 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
- 
--	p->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
- 	p->flags &= ~PF_MEMALLOC;
- 
-@@ -3178,7 +3166,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	/* Minimum pages needed in order to stay on node */
- 	const unsigned long nr_pages = 1 << order;
- 	struct task_struct *p = current;
--	struct reclaim_state reclaim_state;
- 	int priority;
- 	struct scan_control sc = {
- 		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
-@@ -3202,8 +3189,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	 */
- 	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
- 	lockdep_set_current_reclaim_state(gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
--	p->reclaim_state = &reclaim_state;
- 
- 	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
- 		/*
-@@ -3252,7 +3237,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 			sc.nr_reclaimed += nr_slab_pages0 - nr_slab_pages1;
- 	}
- 
--	p->reclaim_state = NULL;
- 	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
- 	lockdep_clear_current_reclaim_state();
- 	return sc.nr_reclaimed >= nr_pages;
-
+> +       }
+>
+>        ClearPagePrivate(page);
+>        set_page_private(newpage, page_private(page));
+> @@ -536,10 +582,13 @@ static int writeout(struct address_space *mapping, struct page *page)
+>  * Default handling if a filesystem does not provide a migration function.
+>  */
+>  static int fallback_migrate_page(struct address_space *mapping,
+> -       struct page *newpage, struct page *page)
+> +       struct page *newpage, struct page *page, bool sync)
+>  {
+> -       if (PageDirty(page))
+> +       if (PageDirty(page)) {
+> +               if (!sync)
+> +                       return -EBUSY;
+>                return writeout(mapping, page);
+> +       }
+>
+>        /*
+>         * Buffers may be managed in a filesystem specific way.
+> @@ -549,7 +598,7 @@ static int fallback_migrate_page(struct address_space *mapping,
+>            !try_to_release_page(page, GFP_KERNEL))
+>                return -EAGAIN;
+>
+> -       return migrate_page(mapping, newpage, page);
+> +       return migrate_page(mapping, newpage, page, sync);
+>  }
+>
+>  /*
+> @@ -585,29 +634,18 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+>
+>        mapping = page_mapping(page);
+>        if (!mapping)
+> -               rc = migrate_page(mapping, newpage, page);
+> -       else {
+> +               rc = migrate_page(mapping, newpage, page, sync);
+> +       else if (mapping->a_ops->migratepage)
+>                /*
+> -                * Do not writeback pages if !sync and migratepage is
+> -                * not pointing to migrate_page() which is nonblocking
+> -                * (swapcache/tmpfs uses migratepage = migrate_page).
+> +                * Most pages have a mapping and most filesystems provide a
+> +                * migratepage callback. Anonymous pages are part of swap
+> +                * space which also has its own migratepage callback. This
+> +                * is the most common path for page migration.
+>                 */
+> -               if (PageDirty(page) && !sync &&
+> -                   mapping->a_ops->migratepage != migrate_page)
+> -                       rc = -EBUSY;
+> -               else if (mapping->a_ops->migratepage)
+> -                       /*
+> -                        * Most pages have a mapping and most filesystems
+> -                        * should provide a migration function. Anonymous
+> -                        * pages are part of swap space which also has its
+> -                        * own migration function. This is the most common
+> -                        * path for page migration.
+> -                        */
+> -                       rc = mapping->a_ops->migratepage(mapping,
+> -                                                       newpage, page);
+> -               else
+> -                       rc = fallback_migrate_page(mapping, newpage, page);
+> -       }
+> +               rc = mapping->a_ops->migratepage(mapping,
+> +                                               newpage, page, sync);
+> +       else
+> +               rc = fallback_migrate_page(mapping, newpage, page, sync);
+>
+>        if (rc) {
+>                newpage->mapping = NULL;
+> --
+> 1.7.3.4
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
