@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab1KSEhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:37:15 -0500
+	id S1758081Ab1KSEhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:37:38 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab1KSEhN (ORCPT
+	with ESMTP id S1751457Ab1KSEhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:37:13 -0500
+	Fri, 18 Nov 2011 23:37:35 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 01/25] Staging: comedi: fix printk issue in das6402.c
-Date: Sat, 19 Nov 2011 10:06:33 +0530
-Message-Id: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 06/25] Staging: comedi: fix NULL initilization issue in pcl818.c
+Date: Sat, 19 Nov 2011 10:06:38 +0530
+Message-Id: <1321677417-2415-6-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
+References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the das6402.c file that fixes up a printk
+This is a patch to the pcl818.c file that fixes up a NULL initilization
 warning found by the checkpatch.pl tool.
-
-Converted printks to dev_version.
-Removed unnecessary printk statements.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/das6402.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+ drivers/staging/comedi/drivers/pcl818.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
-index 6328f52..f256841 100644
---- a/drivers/staging/comedi/drivers/das6402.c
-+++ b/drivers/staging/comedi/drivers/das6402.c
-@@ -171,7 +171,7 @@ static irqreturn_t intr_handler(int irq, void *d)
- 	struct comedi_subdevice *s = dev->subdevices;
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index ca033de..4e134e9 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -252,8 +252,8 @@ static int pcl818_attach(struct comedi_device *dev,
+ static int pcl818_detach(struct comedi_device *dev);
  
- 	if (!dev->attached || devpriv->das6402_ignoreirq) {
--		printk("das6402: BUG: spurious interrupt\n");
-+		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
- 		return IRQ_HANDLED;
- 	}
- #ifdef DEBUG
-@@ -228,9 +228,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
- 	 */
+ #ifdef unused
+-static int RTC_lock = 0;	/* RTC lock */
+-static int RTC_timer_lock = 0;	/* RTC int lock */
++static int RTC_lock;	/* RTC lock */
++static int RTC_timer_lock;	/* RTC int lock */
+ #endif
  
- 	devpriv->das6402_ignoreirq = 1;
--#ifdef DEBUG
--	printk("das6402: Stopping acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
- 	devpriv->das6402_ignoreirq = 1;
- 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
-@@ -246,10 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
- 			    struct comedi_subdevice *s, comedi_trig * it)
- {
- 	devpriv->das6402_ignoreirq = 1;
--
--#ifdef DEBUG
--	printk("das6402: Starting acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "Starting acquisition\n");
- 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
- 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
-@@ -329,10 +324,8 @@ static int das6402_attach(struct comedi_device *dev,
- 	if (iobase == 0)
- 		iobase = 0x300;
- 
--	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
--
- 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -340,14 +333,12 @@ static int das6402_attach(struct comedi_device *dev,
- 	/* should do a probe here */
- 
- 	irq = it->options[0];
--	printk(" ( irq = %u )", irq);
-+	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
- 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
--	if (ret < 0) {
--		printk("irq conflict\n");
-+	if (ret < 0)
- 		return ret;
--	}
--	dev->irq = irq;
- 
-+	dev->irq = irq;
- 	ret = alloc_private(dev, sizeof(struct das6402_private));
- 	if (ret < 0)
- 		return ret;
+ struct pcl818_board {
 -- 
 1.7.0.4
 
