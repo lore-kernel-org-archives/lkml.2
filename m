@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1KSL3w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 06:29:52 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41083 "EHLO
+	id S1755505Ab1KSL3r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 06:29:47 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41073 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab1KSL3l (ORCPT
+	with ESMTP id S1754129Ab1KSL3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 06:29:41 -0500
-Subject: [PATCH] [SCSI] mptfusion: Use kmemdup rather than duplicating its
+	Sat, 19 Nov 2011 06:29:39 -0500
+Message-ID: <1321701965.1624.323.camel@localhost.localdomain>
+Subject: [PATCH] ia64: pcibr: Use kmemdup rather than duplicating its
  implementation
 From: Thomas Meyer <thomas@m3y3r.de>
-To: DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+To: jes@sgi.com, tony.luck@intel.com, fenghua.yu@intel.com,
+        linux-altix@sgi.com, linux-ia64@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Nov 2011 12:26:05 +0100
 Mime-Version: 1.0
-Date: Thu, 17 Nov 2011 23:43:40 +0100
-Message-ID: <1321569820.1624.287.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -29,21 +30,22 @@ in scripts/coccinelle/api/memdup.cocci.
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
---- a/drivers/message/fusion/mptbase.c 2011-11-07 19:37:51.796676955 +0100
-+++ b/drivers/message/fusion/mptbase.c 2011-11-08 10:40:23.121014643 +0100
-@@ -6003,13 +6003,12 @@ mpt_findImVolumes(MPT_ADAPTER *ioc)
- 	if (mpt_config(ioc, &cfg) != 0)
- 		goto out;
+diff -u -p a/arch/ia64/sn/pci/pcibr/pcibr_provider.c b/arch/ia64/sn/pci/pcibr/pcibr_provider.c
+--- a/arch/ia64/sn/pci/pcibr/pcibr_provider.c 2011-11-07 19:39:05.034456070 +0100
++++ b/arch/ia64/sn/pci/pcibr/pcibr_provider.c 2011-11-08 11:01:35.484737338 +0100
+@@ -127,12 +127,11 @@ pcibr_bus_fixup(struct pcibus_bussoft *p
+ 	 * Allocate kernel bus soft and copy from prom.
+ 	 */
  
--	mem = kmalloc(iocpage2sz, GFP_KERNEL);
-+	mem = kmemdup((u8 *)pIoc2, iocpage2sz, GFP_KERNEL);
- 	if (!mem) {
- 		rc = -ENOMEM;
- 		goto out;
+-	soft = kmalloc(sizeof(struct pcibus_info), GFP_KERNEL);
++	soft = kmemdup(prom_bussoft, sizeof(struct pcibus_info), GFP_KERNEL);
+ 	if (!soft) {
+ 		return NULL;
  	}
  
--	memcpy(mem, (u8 *)pIoc2, iocpage2sz);
- 	ioc->raid_data.pIocPg2 = (IOCPage2_t *) mem;
- 
- 	mpt_read_ioc_pg_3(ioc);
+-	memcpy(soft, prom_bussoft, sizeof(struct pcibus_info));
+ 	soft->pbi_buscommon.bs_base = (unsigned long)
+ 		ioremap(REGION_OFFSET(soft->pbi_buscommon.bs_base),
+ 			sizeof(struct pic));
+
+
