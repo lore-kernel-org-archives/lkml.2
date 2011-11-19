@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1KSNoL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 08:44:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:47328 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab1KSNoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 08:44:09 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] kernel/power/main.c : Fix indentation and remove extraneous whitespaces
-Date: Sat, 19 Nov 2011 14:46:53 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <20111119091233.27293.34295.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111119091233.27293.34295.stgit@srivatsabhat.in.ibm.com>
+	id S1754179Ab1KSNwz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 08:52:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52395 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab1KSNwx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 08:52:53 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111191446.53849.rjw@sisk.pl>
+In-Reply-To: <A5A56693-9C4C-4957-AAA5-3D1BD8AA7DCE@mit.edu>
+References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com>
+	<47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu>
+	<alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com>
+	<CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
+	<CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com>
+	<8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
+	<A5A56693-9C4C-4957-AAA5-3D1BD8AA7DCE@mit.edu>
+Date: Sat, 19 Nov 2011 22:52:52 +0900
+Message-ID: <CAKYAXd99NrOC77=p31nax223UOxOONv3_JcLXUpXign8=58Vxw@mail.gmail.com>
+Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 19, 2011, Srivatsa S. Bhat wrote:
-> Lack of proper indentation of the goto statement decreases the readability
-> of code significantly. In fact, this made me look twice at the code to check
-> whether it really does what it should be doing. Fix this.
-> 
-> And in the same file, there are some extra whitespaces. Get rid of them too.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+2011/11/18 Theodore Tso <tytso@mit.edu>:
+>
+> On Nov 17, 2011, at 10:11 AM, Theodore Tso wrote:
+>>
+>> So accessing non-local memory can be a really, really big deal.  And this
+>> isn't just theoretical, but have you considered what might happen on a 8
+>> core AMD machine?
+>
+> Sorry, typo.  This should have read, "have you considered what might happen on a 8 _socket_ AMD machine"?
+>
+You're right. but..
+It is only useful using cpuset, And have you read cpuset spread
+history link of Amit provided ?
+And why have you still used spread flags for inode cache ?
+Thanks.
 
-Applied to linux-pm/linux-next.
-
-Thanks,
-Rafael
-
-
-> ---
-> 
->  kernel/power/main.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/power/main.c b/kernel/power/main.c
-> index 71f49fe..670fb08 100644
-> --- a/kernel/power/main.c
-> +++ b/kernel/power/main.c
-> @@ -3,7 +3,7 @@
->   *
->   * Copyright (c) 2003 Patrick Mochel
->   * Copyright (c) 2003 Open Source Development Lab
-> - * 
-> + *
->   * This file is released under the GPLv2
->   *
->   */
-> @@ -240,7 +240,7 @@ struct kobject *power_kobj;
->   *	'standby' (Power-On Suspend), 'mem' (Suspend-to-RAM), and
->   *	'disk' (Suspend-to-Disk).
->   *
-> - *	store() accepts one of those strings, translates it into the 
-> + *	store() accepts one of those strings, translates it into the
->   *	proper enumerated value, and initiates a suspend transition.
->   */
->  static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
-> @@ -282,7 +282,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
->  	/* First, check if we are requested to hibernate */
->  	if (len == 4 && !strncmp(buf, "disk", len)) {
->  		error = hibernate();
-> -  goto Exit;
-> +		goto Exit;
->  	}
->  
->  #ifdef CONFIG_SUSPEND
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-
+> -- Ted
+>
+>
