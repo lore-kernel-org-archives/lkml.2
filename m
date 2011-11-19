@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1KSVx0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 16:53:26 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41843 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab1KSVxZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 16:53:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EC81AF1.2080108@linux.vnet.ibm.com>
-References: <1321023744-16249-1-git-send-email-linkinjeon@gmail.com>
-	<4EC80D6E.3090404@linux.vnet.ibm.com>
-	<4EC81AF1.2080108@linux.vnet.ibm.com>
-Date: Sun, 20 Nov 2011 06:53:23 +0900
-Message-ID: <CAKYAXd8BdKXOPEV0d4hN27Mb5kDbEfYnhcF5+Lxcw2nFkCKFpw@mail.gmail.com>
-Subject: Re: [PATCH] ext4: remove unneeded variable.
-From: NamJae Jeon <linkinjeon@gmail.com>
+	id S1754222Ab1KSVyg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 16:54:36 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:47738 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753834Ab1KSVye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 16:54:34 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+Date: Sat, 19 Nov 2011 22:57:19 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111192257.19763.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/20 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
-> On 11/20/2011 01:41 AM, Srivatsa S. Bhat wrote:
->> On 11/11/2011 08:32 PM, Namjae Jeon wrote:
->>> ret2 is not needed in ext4_flush_completed_IO().
->>>
->>
->> Not needed? I went through the code briefly, and I don't agree.
->>
->>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->>> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
->>> ---
->>>  fs/ext4/fsync.c |    5 +----
->>>  1 files changed, 1 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
->>> index 00a2cb7..40397ac 100644
->>> --- a/fs/ext4/fsync.c
->>> +++ b/fs/ext4/fsync.c
->>> @@ -81,7 +81,6 @@ int ext4_flush_completed_IO(struct inode *inode)
->>>      struct ext4_inode_info *ei = EXT4_I(inode);
->>>      unsigned long flags;
->>>      int ret = 0;
->>> -    int ret2 = 0;
->>>
->>>      dump_completed_IO(inode);
->>>      spin_lock_irqsave(&ei->i_completed_io_lock, flags);
->>> @@ -105,12 +104,10 @@ int ext4_flush_completed_IO(struct inode *inode)
->>>               */
->>>              spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
->>>              ret = ext4_end_io_nolock(io);
->>> -            if (ret < 0)
->>> -                    ret2 = ret;
->>>              spin_lock_irqsave(&ei->i_completed_io_lock, flags);
->>>      }
->>>      spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
->>> -    return (ret2 < 0) ? ret2 : 0;
->>> +    return (ret < 0) ? ret : 0;
->>>  }
->>
->> Please note that there is a while loop involved here. Which means, that ret2
->> is used to store the last negative value of ret. And due to the loop, ret can
->> be over-written in the next loop iteration, which we can afford, because we
->> have already stored what we need to save, in ret2. And this ret2 value is used
->> to return appropriate value to the caller.
->>
->
-> Actually, what I really meant was, removing ret2 as merely "unneeded" might not
-> be the right thing to do because once you apply your patch, you end up altering
-> the value returned by this function!
->
-> If the return value is indeed wrong in the current code, you should rather
-> be saying that this is a bug fix, with appropriate justification IMO.
->
-Thanks for your review. My thinking was reaching for to while loop().
-I will remember your advice.
-Thanks Srivatsa.
-> Thanks,
-> Srivatsa S. Bhat
->
->
+On Thursday, November 17, 2011, Srivatsa S. Bhat wrote:
+> The lock_system_sleep() function is used in the memory hotplug code at
+> several places in order to implement mutual exclusion with hibernation.
+> However, this function tries to acquire the 'pm_mutex' lock using
+> mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
+> get the lock. This would lead to task freezing failures and hence
+> hibernation failure as a consequence, even though the hibernation call path
+> successfully acquired the lock.
+> 
+> This patch fixes this issue by modifying lock_system_sleep() to use
+> mutex_trylock() in a loop until the lock is acquired, instead of using
+> mutex_lock(), in order to avoid going to uninterruptible sleep.
+> Also, we use msleep() to avoid busy looping and breaking expectations
+> that we go to sleep when we fail to acquire the lock.
+> And we also call try_to_freeze() in order to cooperate with the freezer,
+> without which we would end up in almost the same situation as mutex_lock(),
+> due to uninterruptible sleep caused by msleep().
+> 
+> v3: Tejun suggested avoiding busy-looping by adding an msleep() since
+>     it is not guaranteed that we will get frozen immediately.
+> 
+> v2: Tejun pointed problems with using mutex_lock_interruptible() in a
+>     while loop, when signals not related to freezing are involved.
+>     So, replaced it with mutex_trylock().
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+>  include/linux/suspend.h |   37 ++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 36 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+> index 57a6924..0af3048 100644
+> --- a/include/linux/suspend.h
+> +++ b/include/linux/suspend.h
+> @@ -5,6 +5,8 @@
+>  #include <linux/notifier.h>
+>  #include <linux/init.h>
+>  #include <linux/pm.h>
+> +#include <linux/freezer.h>
+> +#include <linux/delay.h>
+>  #include <linux/mm.h>
+>  #include <asm/errno.h>
+>  
+> @@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
+>  
+>  static inline void lock_system_sleep(void)
+>  {
+> -	mutex_lock(&pm_mutex);
+> +	/*
+> +	 * "To sleep, or not to sleep, that is the question!"
+> +	 *
+> +	 * We should not use mutex_lock() here because, in case we fail to
+> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
+> +	 * state, which would lead to task freezing failures. As a
+> +	 * consequence, hibernation would fail (even though it had acquired
+> +	 * the 'pm_mutex' lock).
+> +	 * Using mutex_lock_interruptible() in a loop is not a good idea,
+> +	 * because we could end up treating non-freezing signals badly.
+> +	 * So we use mutex_trylock() in a loop instead.
+> +	 *
+> +	 * Also, we add try_to_freeze() to the loop, to co-operate with the
+> +	 * freezer, to avoid task freezing failures due to busy-looping.
+> +	 *
+> +	 * But then, since it is not guaranteed that we will get frozen
+> +	 * rightaway, we could keep spinning for some time, breaking the
+> +	 * expectation that we go to sleep when we fail to acquire the lock.
+> +	 * So we add an msleep() to the loop, to dampen the spin (but we are
+> +	 * careful enough not to sleep for too long at a stretch, lest the
+> +	 * freezer whine and give up again!).
+> +	 *
+> +	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
+> +	 * more important, due to a subtle reason: if we don't cooperate with
+> +	 * the freezer at this point, we could end up in a situation very
+> +	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
+> +	 * uninterruptibly).
+> +	 *
+> +	 * Phew! What a delicate balance!
+> +	 */
+> +	while (!mutex_trylock(&pm_mutex)) {
+> +		try_to_freeze();
+> +		msleep(10);
+
+The number here seems to be somewhat arbitrary.  Is there any reason not to
+use 100 or any other number?
+
+> +	}
+>  }
+>  
+>  static inline void unlock_system_sleep(void)
+
+Rafael
