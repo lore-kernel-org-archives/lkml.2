@@ -1,150 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab1KSXKN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 18:10:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49324 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597Ab1KSXKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 18:10:12 -0500
-Date: Sun, 20 Nov 2011 00:10:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dan Delaney <drdelaney@loclhst.com>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usbled: add support for Dream Cheeky DL100B Mailbox
- Friends Alert (1d34:000a)
-In-Reply-To: <4EC60E9D.6070606@loclhst.com>
-Message-ID: <alpine.LNX.2.00.1111200007350.15187@pobox.suse.cz>
-References: <4EC60E9D.6070606@loclhst.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754486Ab1KSXZg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 18:25:36 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40095 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab1KSXZf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 18:25:35 -0500
+Date: Sat, 19 Nov 2011 23:25:37 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Paris <eparis@redhat.com>, richard@nod.at,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, dhowells@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 6/6] protect cap_netlink_recv from user namespaces
+Message-ID: <20111119232537.GB13312@hallyn.com>
+References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
+ <1320445482-8459-7-git-send-email-serge@hallyn.com>
+ <1320694510.10093.23.camel@localhost>
+ <20111108032902.GA29433@hallyn.com>
+ <1320848342.10093.57.camel@localhost>
+ <m11ut41nqy.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m11ut41nqy.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011, Dan Delaney wrote:
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> Eric Paris <eparis@redhat.com> writes:
+> 
+> > On Tue, 2011-11-08 at 03:29 +0000, Serge E. Hallyn wrote:
+> >> Quoting Eric Paris (eparis@redhat.com):
+> >
+> >> But, regardless, your point is valid in that I'm not tightening down as
+> >> much as I could.  So how about I don't change the security_netlink_recv()
+> >> and callers yet, and instead I change cap_netlink_recv() to do:
+> >> 
+> >> 	if (!IN_ROOT_USER_NS && !cap_raised(current_cap(), cap))
+> >
+> > Actually better thought.  Remove the LSM hook altogether and just use
+> > capable() in the callers.  This hook, being used this way, was
+> > introduced in c7bdb545 back when we took the effective perms from the
+> > skb.  We don't use the skb any more since netlink is synchronous.  This
+> > is functionally equivalent except the capabilities code checks against
+> > the init_user_ns (something we want) and it will now set PF_PRIV (which
+> > also seems like a good thing) Something like:
+> >
+> > security: remove the security_netlink_recv hook as it is equivalent to capable()
+> >     
+> > Once upon a time netlink was not sync and we had to get the effective
+> > capabilities from the skb that was being received.  Today we instead get
+> > the capabilities from the current task.  This has rendered the entire
+> > purpose of the hook moot as it is now functionally equivalent to the
+> > capable() call.
+> >
+> > Signed-off-by: Eric Paris <eparis@redhat.com>
+> 
+> Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> Darn.  I missed this one went it went past the first time.  Let's do
+> this.
+> 
+> As Serge pointed out checking against the user namespace of the network
+> namespace happens to be safe because the subsystems that are brittle
+> really have problems don't support multiple network namespaces.
+> 
+> Still I like the idea of erring on the conservative side here and
+> making everything safe.  We can open relax the restrictions later
+> by using ns_capable.  I want to get to a point where it is safe
+> for an unprivileged user to create their own user namespace,
+> and most of that is just getting the capable calls correct.
+> 
+> Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 
-> This patch will add support for the Dream Cheeky Mailbox Friends Alert (http://www.dreamcheeky.com/mailbox-friends-alert) usb led dongle.
-> The drivers for the webmail notifier (1d34:0004) work perfectly fine, so I just would like to add support for the new device.
-> I have tested the patch on gentoo sources of 2.6.39 and 3.0.6, as well as vanilla 3.1.1 and 3.2-rc2.
-> 
-> This is my first attempt at making a change to the kernel, so let me know if I need to change something (formatting, where to post, etc)
-> 
-> I am not sure who else I may need to CC on this.
+Ok.  Oh!  This was a part of my new 6-patch set I was going to send, but
+when you pursuaded me that some were not worth it if you're rethinking the
+nature of uids, I only sent patch 1.
 
-Dan,
+I did queue up the patch at http://kernel.ubuntu.com/git?p=serge/linux-2.6.git;a=commit;h=b97c54cb518160466095db8f8d2ecf5bd4f81ce2
+and tested it a bit in ltp (with userns both on and off).
 
-thanks for the patch.
+Eric Paris, would you like to resend it separately (with Eric's and my
+ack's, as above and at http://lkml.org/lkml/2011/11/9/195), or would you
+like me to do so?
 
-I am adding some more CCs. Greg, it's 50:50 between HID and usbled code, 
-so just let me know whether you'll be taking it or I should take it, 
-either way is fine by me of course.
-
-Dan, we also need your Signed-off-by: line (see 
-Documentation/SubmittingPatches), othwewise we unfortunately can't accept 
-your contribution.
-
-> 
-> Device data:
-> [169976.524055] usb 6-1: new low speed USB device number 3 using ohci_hcd
-> [169976.685943] usb 6-1: New USB device found, idVendor=1d34, idProduct=000a
-> [169976.685947] usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-> [169976.685950] usb 6-1: Product: DL100B Dream Cheeky Generic Controller
-> [169976.685951] usb 6-1: Manufacturer: Dream Link
-> [169976.689931] usbled 6-1:1.0: USB LED device now attached
-> 
-> Bus 006 Device 003: ID 1d34:000a
-> Device Descriptor:
->   bLength                18
->   bDescriptorType         1
->   bcdUSB               1.10
->   bDeviceClass            0 (Defined at Interface level)
->   bDeviceSubClass         0
->   bDeviceProtocol         0
->   bMaxPacketSize0         8
->   idVendor           0x1d34
->   idProduct          0x000a
->   bcdDevice            0.02
->   iManufacturer           1 Dream Link
->   iProduct                2 DL100B Dream Cheeky Generic Controller
->   iSerial                 0
->   bNumConfigurations      1
->   Configuration Descriptor:
->     bLength                 9
->     bDescriptorType         2
->     wTotalLength           34
->     bNumInterfaces          1
->     bConfigurationValue     1
->     iConfiguration          0
->     bmAttributes         0x80
->       (Bus Powered)
->     MaxPower              500mA
->     Interface Descriptor:
->       bLength                 9
->       bDescriptorType         4
->       bInterfaceNumber        0
->       bAlternateSetting       0
->       bNumEndpoints           1
->       bInterfaceClass         3 Human Interface Device
->       bInterfaceSubClass      0 No Subclass
->       bInterfaceProtocol      0 None
->       iInterface              0
->         HID Device Descriptor:
->           bLength                 9
->           bDescriptorType        33
->           bcdHID               1.10
->           bCountryCode            0 Not supported
->           bNumDescriptors         1
->           bDescriptorType        34 Report
->           wDescriptorLength      37
->          Report Descriptors:
->            ** UNAVAILABLE **
->       Endpoint Descriptor:
->         bLength                 7
->         bDescriptorType         5
->         bEndpointAddress     0x81  EP 1 IN
->         bmAttributes            3
->           Transfer Type            Interrupt
->           Synch Type               None
->           Usage Type               Data
->         wMaxPacketSize     0x0008  1x 8 bytes
->         bInterval              10
-> Device Status:     0x0000
->   (Bus Powered)
-> 
-> 
-> And the patch:
-> 
-> --- a/drivers/hid/hid-core.c    2011-11-16 02:06:51.000000000 -0600
-> +++ b/drivers/hid/hid-core.c    2011-11-16 02:01:06.000000000 -0600
-> @@ -1687,6 +1687,7 @@
->         { HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EARTHMATE) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x000a) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
-> diff -ur a/drivers/usb/misc/usbled.c b/drivers/usb/misc/usbled.c
-> --- a/drivers/usb/misc/usbled.c 2011-11-16 02:05:43.000000000 -0600
-> +++ b/drivers/usb/misc/usbled.c 2011-11-16 02:01:40.000000000 -0600
-> @@ -31,6 +31,8 @@
->                         .driver_info = DELCOM_VISUAL_SIGNAL_INDICATOR },
->         { USB_DEVICE(0x1d34, 0x0004),
->                         .driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
-> +       { USB_DEVICE(0x1d34, 0x000a),
-> +                       .driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
->         { },
->  };
->  MODULE_DEVICE_TABLE (usb, id_table);
-> 
-> 
-> -- 
-> Dan Delaney
-> drdelaney@loclhst.com
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
+thanks,
+-serge
