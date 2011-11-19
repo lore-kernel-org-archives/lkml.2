@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751072Ab1KSFfc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 00:35:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32780 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab1KSFfb (ORCPT
+	id S1751457Ab1KSFiB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 00:38:01 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39491 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab1KSFh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 00:35:31 -0500
-Date: Sat, 19 Nov 2011 09:35:26 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
- that can be shared between tasks
-Message-ID: <20111119053526.GF21041@moon>
-References: <4EC4DA15.7090106@parallels.com>
- <20111117124831.688adbeb.akpm@linux-foundation.org>
- <4EC6246A.6020807@parallels.com>
- <20111118110716.c854b4bd.akpm@linux-foundation.org>
- <20111118200342.GC21041@moon>
- <20111118123728.554b45e7.akpm@linux-foundation.org>
- <20111118210322.GD21041@moon>
- <20111118233840.GC6408@count0.beaverton.ibm.com>
+	Sat, 19 Nov 2011 00:37:59 -0500
+Message-ID: <4EC740A6.8010803@linux.vnet.ibm.com>
+Date: Sat, 19 Nov 2011 11:07:42 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118233840.GC6408@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] PM/Hibernation: Fix the early termination of test
+ modes
+References: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com> <4EC6250F.4010501@linux.vnet.ibm.com> <4EC62956.8060608@linux.vnet.ibm.com> <201111182300.44173.rjw@sisk.pl>
+In-Reply-To: <201111182300.44173.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111819-9264-0000-0000-0000003B387F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 03:38:40PM -0800, Matt Helsley wrote:
-...
-> > 
-> > Well, in case of hw-rng it should not be that easy, still of course
-> > there is no 100% guarantee that there is absolutely no way to predict
-> > this mask (espec since it's generated once at lives here forever). But
+On 11/19/2011 03:30 AM, Rafael J. Wysocki wrote:
+> On Friday, November 18, 2011, Srivatsa S. Bhat wrote:
+>> On 11/18/2011 02:57 PM, Srivatsa S. Bhat wrote:
+>>> On 11/18/2011 02:50 PM, Rafael J. Wysocki wrote:
+>>>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+>>>>> index b4511b6..257e8e7 100644
+>>>>> --- a/kernel/power/hibernate.c
+>>>>> +++ b/kernel/power/hibernate.c
+>>>>> @@ -55,6 +55,8 @@ enum {
+>>>>>  
+>>>>>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
+>>>>>  
+>>>>> +static bool freezer_test_done;
+>>>>> +
+>>>>>  static const struct platform_hibernation_ops *hibernation_ops;
+>>>>>  
+>>>>>  /**
+>>>>> @@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
+>>>>>  	if (error)
+>>>>>  		goto Close;
+>>>>>  
+>>>>> +	if (hibernation_test(TEST_FREEZER) ||
+>>>>> +		hibernation_testmode(HIBERNATION_TESTPROC)) {
+>>>>> +
+>>>>> +		/*
+>>>>> +		 * Indicate to the caller that we are returning due to a
+>>>>> +		 * successful freezer test.
+>>>>> +		 */
+>>>>> +		freezer_test_done = true;
+>>>>> +		goto Close;
+>>>>> +	}
+>>>>> +
+>>>>>  	error = dpm_prepare(PMSG_FREEZE);
+>>>>>  	if (error)
+>>>>>  		goto Complete_devices;
+>>>>> @@ -641,15 +654,13 @@ int hibernate(void)
+>>>>>  	if (error)
+>>>>>  		goto Finish;
+>>>>>  
+>>>>> -	if (hibernation_test(TEST_FREEZER))
+>>>>> -		goto Thaw;
+>>>>> -
+>>>>> -	if (hibernation_testmode(HIBERNATION_TESTPROC))
+>>>>> -		goto Thaw;
+>>>>> -
+>>>>>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+>>>>>  	if (error)
+>>>>>  		goto Thaw;
+>>>>> +	if (freezer_test_done) {
+>>>>> +		freezer_test_done = false;
+>>>>> +		goto Thaw;
+>>>>> +	}
+>>>>
+>>>> What happens if hibernation_snapshot() and freezer_test_done is 'true'?
+>>>> Won't that leek freezer_test_done to the next hibernation cycle?
+>>>>
+>>>
+>>> Oh yes, thanks for catching that! I'll fix that and send an updated patch.
+>>>
+>>
+>> Sorry, I think I hit reply too soon.
+>> To restate your question, you are asking if freezer_test_done was set in
+>> hibernation_snapshot() and then there was a genuine error in
+>> hibernation_snapshot() which it returned, then won't freezer_test_done
+>> leak to the next cycle.., right?
+>>
+>> If there is a genuine error before hibernation_test(TEST_FREEZER)... is
+>> done, then we will never set freezer_test_done flag to true.
+>>
+>> And whenever freezer_test_done is set (inside hibernation_snapshot) there
+>> is no way it will continue further executing normal code. It will jump to
+>> the Close label and come out, so that here in hibernate(), the first
+>> check for error will fail (because it returned 0) and the subsequent
+>> check for freezer_test_done will succeed. So I don't see how it can leak.
+>>
+>> Or, am I missing something?
 > 
-> The random number itself could be of the best quality and the obfuscation
-> could still be completely broken from a security standpoint. Put another
-> way, we don't need to attack the method the random number was generated.
-> We could probably utilize information we have about how the addresses
-> themselves are generated.
+> No, that's fine, I just wasn't sure. :-)
+> 
+> I'm going to apply your patch without the documentation changes.
 > 
 
-Agreed.
+Great! Thanks a lot!
 
-> > whatever makes attacker life harder -- is a good thing. After all we might
-> > simply take some hash on kernel address here (such as sha256) since it's
-> > not a time-critical operation and as far as I know collision is not found
-> > for it yet (??).
-> 
-> Yes, cryptographic hashing seems much better than a highly suspect ad-hoc
-> scheme which has barely been analyzed.
->
+Thanks,
+Srivatsa S. Bhat
 
-I'm surely fine with using crypto-hashes here.
-
-> > 
-> > > b) If we can export these addresses only to CAP_SYS_ADMIN tasks then
-> > >    we don't need to obfuscate them anyway.
-> > > 
-> > >    Which takes me back to again asking: why not make c/r root-only?
-> > >    And provide non-root access via a carefully-written setuid
-> > >    front-end?
-> > > 
-> > 
-> > I think non-root approach is a win in a long term (even if it requires
-> 
-> You could go with the root approach for now and make things more
-> permissive later.
-> 
-
-Root-only makes all things easier, but I fear if we don't start with
-non-root from the very beginning it'll remain root-only forever ;)
-
-	Cyrill
