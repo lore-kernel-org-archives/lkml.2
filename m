@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab1KSIG5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 03:06:57 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58667 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab1KSIG4 convert rfc822-to-8bit (ORCPT
+	id S1752535Ab1KSIMj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 03:12:39 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65063 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab1KSIMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 03:06:56 -0500
+	Sat, 19 Nov 2011 03:12:38 -0500
+Date: Sat, 19 Nov 2011 12:10:12 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
+ that can be shared between tasks
+Message-ID: <20111119081012.GC2675@albatros>
+References: <4EC4DA15.7090106@parallels.com>
+ <20111117124831.688adbeb.akpm@linux-foundation.org>
+ <4EC6246A.6020807@parallels.com>
+ <20111118110716.c854b4bd.akpm@linux-foundation.org>
+ <20111119075733.GB2675@albatros>
 MIME-Version: 1.0
-In-Reply-To: <1321688059-3844-1-git-send-email-levinsasha928@gmail.com>
-References: <1321688059-3844-1-git-send-email-levinsasha928@gmail.com>
-Date: Sat, 19 Nov 2011 10:06:55 +0200
-X-Google-Sender-Auth: zmpEgGiIG2Gc7TI4cT28P2LpdBo
-Message-ID: <CAOJsxLFvVUbnHrCKGL-kuN_JYQ6qwtU_kzvncrAmWAdjP2RvQw@mail.gmail.com>
-Subject: Re: [PATCH v2] pipe: Fail cleanly when root tries F_SETPIPE_SZ with
- big size
-From: Pekka Enberg <penberg@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111119075733.GB2675@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 9:34 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> When a user with the CAP_SYS_RESOURCE cap tries to F_SETPIPE_SZ a pipe with
-> size bigger than what kmalloc() can alloc it spits out an ugly warning:
+On Sat, Nov 19, 2011 at 11:57 +0400, Vasiliy Kulikov wrote:
+> Doing something like hash(cookie1 ++ obj ++ cookie) would leak only the
+> equation of two objects, but it can be still dangerous - learn hashes of
+> (a) objects created at boot time (their addresses are known) and (b)
+> some objects, which allocation scheme is known (i.e. we know
+> kmem_cache_alloc() gives us specific addresses with high probability),
+> and then compare the hashes against other objects after (a) and (b)
+> objects are kfree'd.
+> 
+> 
+> What is the highest timeframe which must maintain the property of unique
+> ids?  Is it the whole system lifetime or probably [dump start; dump
+> end] and we can change the cookie many times?  Can we probably shorten
+> the time even?  Can we ensure that during this timeframe no new kernel
+> objects will be created (unrealistic, but would be great)?
+> 
+> Also, I didn't understand from the quoted text who will use it - only
+> the dumper or this interface is exposed to all userspace processes and
+> anybody may learn hash(&kern_obj) for any kern_obj he may reference?
 
-[snip]
+Also, if one should have an ability to learn IDs of specific object
+types and the set of types is very limited, it's much safer to have one
+increasing u64 counter for each created object of one of these types.
+The exposed to userspace data will be:
 
-> Instead, make kcalloc() handle the overflow case and fail quietly.
->
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: linux-fsdevel@vger.kernel.org
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+    ID = hash(counter ^ cookie)
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+    cookie is generated at boot time, once.  counter is a single
+    variable, one for all exposed kernel object types.
 
-> ---
->  fs/pipe.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/pipe.c b/fs/pipe.c
-> index 4065f07..3e38dc6 100644
-> --- a/fs/pipe.c
-> +++ b/fs/pipe.c
-> @@ -1137,7 +1137,7 @@ static long pipe_set_size(struct pipe_inode_info *pipe, unsigned long nr_pages)
->        if (nr_pages < pipe->nrbufs)
->                return -EBUSY;
->
-> -       bufs = kcalloc(nr_pages, sizeof(struct pipe_buffer), GFP_KERNEL);
-> +       bufs = kcalloc(nr_pages, sizeof(struct pipe_buffer), GFP_KERNEL | __GFP_NOWARN);
->        if (unlikely(!bufs))
->                return -ENOMEM;
->
-> --
-> 1.7.8.rc1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ID will be unpredictable if hash() is cryptographically secure, and
+counter is not duplicated.  So, for each newly created object the ID is
+the new random value, which is unique and says nothing to userspace about
+either kernel object addresses or the counter itself.
+
+The cost:
+
+1) counter storing for each kernel object exposed through this interface.
+
+2) object creation will be slowed down by hash().
+
+
+Also, one thought - is it safe to say two kernel objects are the same to
+userspace? :)  I don't see anything obviously dangerous, though.
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
