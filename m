@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758481Ab1KSAJz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:09:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38687 "EHLO mx2.suse.de"
+	id S932212Ab1KSAKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:10:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38777 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758448Ab1KSAJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:09:53 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:29 2011
-Message-Id: <20111119000329.509568923@clark.kroah.org>
+	id S932165Ab1KSAKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:10:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:28 2011
+Message-Id: <20111119000328.483236643@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 16:02:54 -0800
+Date: Fri, 18 Nov 2011 16:02:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Weber <weber@corscience.de>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: [18/26] mfd: Fix twl4030 dependencies for audio codec
+        alan@lxorguk.ukuu.org.uk, Eric Anholt <eric@anholt.net>,
+        Keith Packard <keithp@keithp.com>
+Subject: [07/26] drm/i915: Fix object refcount leak on mmappable size limit error path.
 In-Reply-To: <20111119000336.GA8452@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Weber <weber@corscience.de>
+From: Eric Anholt <eric@anholt.net>
 
-commit f09ee0451a44a4e913a7c3cec3805508f7de6c54 upstream.
+commit 14660ccd599dc7bd6ecef17408bd76dc853f9b77 upstream.
 
-The codec for Devkit8000 (TWL4030)  was not detected except
-when build with CONFIG_SND_SOC_ALL_CODECS.
+I've been seeing memory leaks on my system in the form of large
+(300-400MB) GEM objects created by now-dead processes laying around
+clogging up memory.  I usually notice when it gets to about 1.2GB of
+them.  Hopefully this clears up the issue, but I just found this bug
+by inspection.
 
-twl-core.c still uses the CONFIG_TWL4030_CODEC for
-twl_has_codec().
-
-In commit 57fe7251f5bfc4332f24479376de48a1e8ca6211
-the CONFIG_TWL4030_CODEC was renamed
-into CONFIG_MFD_TWL4030_AUDIO, thatswhy the codec
-was not detected.
-
-This patch renames the CONFIG_ TWL4030_CODEC into
-CONFIG_MFD_TWL4030_AUDIO in twl-core.c.
-
-Signed-off-by: Thomas Weber <weber@corscience.de>
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mfd/twl-core.c |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -109,7 +109,7 @@
- #define twl_has_watchdog()        false
- #endif
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1475,7 +1475,7 @@ i915_gem_mmap_gtt(struct drm_file *file,
  
--#if defined(CONFIG_TWL4030_CODEC) || defined(CONFIG_TWL4030_CODEC_MODULE) ||\
-+#if defined(CONFIG_MFD_TWL4030_AUDIO) || defined(CONFIG_MFD_TWL4030_AUDIO_MODULE) ||\
- 	defined(CONFIG_TWL6040_CORE) || defined(CONFIG_TWL6040_CORE_MODULE)
- #define twl_has_codec()	true
- #else
+ 	if (obj->base.size > dev_priv->mm.gtt_mappable_end) {
+ 		ret = -E2BIG;
+-		goto unlock;
++		goto out;
+ 	}
+ 
+ 	if (obj->madv != I915_MADV_WILLNEED) {
 
 
