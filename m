@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1KSScs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 13:32:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40841 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab1KSScq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 13:32:46 -0500
-Date: Sat, 19 Nov 2011 10:32:40 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
-Message-ID: <20111119183240.GA17252@google.com>
-References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+	id S1753086Ab1KSSeW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 13:34:22 -0500
+Received: from home.keithp.com ([63.227.221.253]:34896 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab1KSSeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 13:34:21 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Mack <zonque@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, harald@redhat.com,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Fix invalid backpanel values for GEN3 or older chips
+In-Reply-To: <s5hr5144ecu.wl%tiwai@suse.de>
+References: <s5hlirgm1kg.wl%tiwai@suse.de> <yunsjlnl1f6.fsf@aiko.keithp.com> <s5hlirelndd.wl%tiwai@suse.de> <861ut5mdvn.fsf@sumi.keithp.com> <s5hr5144ecu.wl%tiwai@suse.de>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 19 Nov 2011 10:34:12 -0800
+Message-ID: <867h2wklln.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Srivatsa.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Nov 17, 2011 at 02:00:50PM +0530, Srivatsa S. Bhat wrote:
-> @@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
->  
->  static inline void lock_system_sleep(void)
->  {
-> -	mutex_lock(&pm_mutex);
-> +	/*
-> +	 * "To sleep, or not to sleep, that is the question!"
-> +	 *
-> +	 * We should not use mutex_lock() here because, in case we fail to
-> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
-> +	 * state, which would lead to task freezing failures. As a
-> +	 * consequence, hibernation would fail (even though it had acquired
-> +	 * the 'pm_mutex' lock).
-> +	 * Using mutex_lock_interruptible() in a loop is not a good idea,
-> +	 * because we could end up treating non-freezing signals badly.
-> +	 * So we use mutex_trylock() in a loop instead.
-> +	 *
-> +	 * Also, we add try_to_freeze() to the loop, to co-operate with the
-> +	 * freezer, to avoid task freezing failures due to busy-looping.
-> +	 *
-> +	 * But then, since it is not guaranteed that we will get frozen
-> +	 * rightaway, we could keep spinning for some time, breaking the
-> +	 * expectation that we go to sleep when we fail to acquire the lock.
-> +	 * So we add an msleep() to the loop, to dampen the spin (but we are
-> +	 * careful enough not to sleep for too long at a stretch, lest the
-> +	 * freezer whine and give up again!).
-> +	 *
-> +	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
-> +	 * more important, due to a subtle reason: if we don't cooperate with
-> +	 * the freezer at this point, we could end up in a situation very
-> +	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
-> +	 * uninterruptibly).
-> +	 *
-> +	 * Phew! What a delicate balance!
-> +	 */
-> +	while (!mutex_trylock(&pm_mutex)) {
-> +		try_to_freeze();
-> +		msleep(10);
-> +	}
+On Sat, 19 Nov 2011 11:05:05 +0100, Takashi Iwai <tiwai@suse.de> wrote:
 
-I tried to think about a better way to do it but couldn't, so I
-suppose this is what we should go with for now.  That said, I think
-the comment is a bit too umm.... verbose.  What we want here is
-freezable but !interruptible mutex_lock() and while I do appreciate
-the detailed comment, I think it makes it look a lot more complex than
-it actually is.  Other than that,
+> Maybe it'd be better to mention that actually setting bit-0 caused a
+> blank screen on some machines.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+Was that caused by *just* setting bit zero? Or was it caused by setting
+the duty cycle to 0xffff, in which case it would be larger than the
+maximum value?
 
-Thank you very much.
+I'll clean up the commit log message with your answer and then push this ou=
+t.
 
--- 
-tejun
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTsf2pDYtFsjWk68qAQhPihAA2FVSknKtbpTbMF7xjt2fRQ1L0/03HpiV
+7edZvtHpYIQSjmhywg0vv9p8+KaPaoRszrE2EZj8tmnuc1iLdu+xoYqeG4Nkyh6d
+l3cgXVLpJtF4Nf2596TM7+Fc+MjUFBeUZQRy6RBN8r5ylbviX8NzmwQhK1TMkCz1
+HpDCUiPd74JtMkKyPIhIYGxSfeAczQaHL0WUffCyMi6/lCq+WpDknT5uwf8p5swM
+4xmwKA3UcNMcPCIJUrtzp2Yc9y6y9UYb+IUfT7KIG7H061QltLEXLT9nLajkBZLC
++b0Hk4FAbbRRa4I5DFBqWbWG6HegOnCyXRGgv/cpwyAkf7kVvrhzB+ASqXprJzVx
++HZIo5PVRqY25c1VsnZGayE1k8tPS0knE6k16kvTOpUfagZcDf8tmloH/kkWtSOV
+TOJX1hm6r9sz+xhdkSDRIPhwTwogCjWnKWZGTijnrB67zxgbG2Vi5op7BDrDrX8Q
+2zZDO0Z9k51uajktHt33pUp8QZZA+hUNYXM0G0/5DNjIb/nR6yqMq+064MPAqRSC
+yYSS9sn3Mwrd5PiZ3fNIJrBjl44xy4Li7QbZGwREMdW24jwCSEoWGwsVw/HiuoIZ
++JeAM1El3qW6TpwoFbgYEOV8Lkqvc8Yc8MG01cmi48kdAeZPXN9ZUA4O/ekCQjgF
+aFaM08ZQsU8=
+=mYpT
+-----END PGP SIGNATURE-----
+--=-=-=--
