@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1KSSc3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 13:32:29 -0500
-Received: from home.keithp.com ([63.227.221.253]:34861 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab1KSSc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 13:32:28 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Eugeni Dodonov <eugeni@dodonov.net>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: By default, enable RC6 on IVB and SNB when reasonable
-In-Reply-To: <CAC7LmnuWLA1LFQa-Vg4StOryo_wd1KjwaQ7m+Yb8Nhek7f=Qjw@mail.gmail.com>
-References: <1321684889-18691-1-git-send-email-keithp@keithp.com> <CAC7LmnuWLA1LFQa-Vg4StOryo_wd1KjwaQ7m+Yb8Nhek7f=Qjw@mail.gmail.com>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sat, 19 Nov 2011 10:32:19 -0800
-Message-ID: <86aa7sklos.fsf@sumi.keithp.com>
+	id S1753285Ab1KSScs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 13:32:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40841 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab1KSScq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 13:32:46 -0500
+Date: Sat, 19 Nov 2011 10:32:40 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+Message-ID: <20111119183240.GA17252@google.com>
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hello, Srivatsa.
 
-On Sat, 19 Nov 2011 07:25:09 -0200, Eugeni Dodonov <eugeni@dodonov.net> wro=
-te:
+On Thu, Nov 17, 2011 at 02:00:50PM +0530, Srivatsa S. Bhat wrote:
+> @@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
+>  
+>  static inline void lock_system_sleep(void)
+>  {
+> -	mutex_lock(&pm_mutex);
+> +	/*
+> +	 * "To sleep, or not to sleep, that is the question!"
+> +	 *
+> +	 * We should not use mutex_lock() here because, in case we fail to
+> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
+> +	 * state, which would lead to task freezing failures. As a
+> +	 * consequence, hibernation would fail (even though it had acquired
+> +	 * the 'pm_mutex' lock).
+> +	 * Using mutex_lock_interruptible() in a loop is not a good idea,
+> +	 * because we could end up treating non-freezing signals badly.
+> +	 * So we use mutex_trylock() in a loop instead.
+> +	 *
+> +	 * Also, we add try_to_freeze() to the loop, to co-operate with the
+> +	 * freezer, to avoid task freezing failures due to busy-looping.
+> +	 *
+> +	 * But then, since it is not guaranteed that we will get frozen
+> +	 * rightaway, we could keep spinning for some time, breaking the
+> +	 * expectation that we go to sleep when we fail to acquire the lock.
+> +	 * So we add an msleep() to the loop, to dampen the spin (but we are
+> +	 * careful enough not to sleep for too long at a stretch, lest the
+> +	 * freezer whine and give up again!).
+> +	 *
+> +	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
+> +	 * more important, due to a subtle reason: if we don't cooperate with
+> +	 * the freezer at this point, we could end up in a situation very
+> +	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
+> +	 * uninterruptibly).
+> +	 *
+> +	 * Phew! What a delicate balance!
+> +	 */
+> +	while (!mutex_trylock(&pm_mutex)) {
+> +		try_to_freeze();
+> +		msleep(10);
+> +	}
 
-> Just one question I caught on 2nd read. Shouldn't we have #else within
-> this #ifdef block, to return 1? Otherwise, if CONFIG_INTEL_IOMMU is
-> not defined, we'll always disable rc6.
+I tried to think about a better way to do it but couldn't, so I
+suppose this is what we should go with for now.  That said, I think
+the comment is a bit too umm.... verbose.  What we want here is
+freezable but !interruptible mutex_lock() and while I do appreciate
+the detailed comment, I think it makes it look a lot more complex than
+it actually is.  Other than that,
 
-Oops! Thanks for catching this. Here's a new version of that function
-(the rest of the patch is the same). This one has explicit conditions
-for Ironlake and Sandybridge (when CONFIG_INTEL_IOMMU is set), allowing
-the Ivybridge and Sandybridge-without-IOMMU cases to take the default
-path. This will also cause all future chips to enable rc6 by default.
-=20
-+static bool intel_enable_rc6(struct drm_device *dev)
-+{
-+	/*
-+	 * Respect the kernel parameter if it is set
-+	 */
-+	if (i915_enable_rc6 >=3D 0)
-+		return i915_enable_rc6;
-+
-+	/*
-+	 * Disable RC6 on Ironlake
-+	 */
-+	if (INTEL_INFO(dev)->gen =3D=3D 5)
-+		return 0;
-+
-+#ifdef CONFIG_INTEL_IOMMU
-+	/*
-+	 * Enable rc6 on Sandybridge if DMA remapping is disabled
-+	 */
-+	if (INTEL_INFO(dev)->gen =3D=3D 6)
-+		return no_iommu || dmar_disabled;
-+#endif
-+	return 1;
-+}
-+
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-=2D-=20
-keith.packard@intel.com
+Thank you very much.
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTsf2MzYtFsjWk68qAQimkA/+PHQuw1bwykPAajUbKmr8KF4Kt8FQGatY
-SglrUTDTZoH5jIQcCXZjWuZUL6laMyUYkcPTxfKyHSA26XwCVP9V7Z26zPzG1fFl
-t9kuUvsShx90x4mlPXQmBFfH3ppS/yclkur5jvgd0jVXKdhLLDY1vRq9L7ro6VGK
-VxtmA8mnX95d6u3Nc9gX1buYhMq1C6yGJUB4Mku/a4rbEgj0Ti0u+/8D1OG2KGB4
-Rzu9qhpTTNSRZ4sSqxUXsGteZPIGolXdo23+sLdLT53d/Du04dgbg39vPobpRg1s
-PlNndJi6JfXaUGSIdr4UAvGw9ixySJ6bMyajCARo2Lfjkrb4kc8ZBA6IIXS3Qpbj
-WuW9sb0eiTTvUTZg1i4HxuMEgaxA8IsyV1ZPCNtVBRDQNA3aASCF2PgR7cHS7oU+
-lDJ2XHfXvA1N88CL0uMQc9vIy3E5mcKvZsCAyH6lzD/KyFBJC1Th+KCQWHyXI2sw
-REB5ZUvzsBPq7ayVCduG8sHmyzT3RWF2O9IAhC06R9kLiSgbdVi3hXgdVZkzl3Aa
-dRqjKUbTeQRP9YE3ifIERfkwvG213h536W5xi4UBcxLpNjw5OhWTi3wfFAii3xhN
-GQsB6wepp8eSpZ/wxRhqBC2IqhPx9iO872bgPBsF8daiaqI1eKq/oueVcHgyBYxh
-5tdvPE0gIyU=
-=HW9U
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+tejun
