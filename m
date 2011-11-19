@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179Ab1KSEma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:42:30 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58249 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757933Ab1KSEh2 (ORCPT
+	id S1757708Ab1KSEsd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:48:33 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab1KSEsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:37:28 -0500
-From: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 04/25] Staging: comedi: fix printk issue in cb_das16_cs.c
-Date: Sat, 19 Nov 2011 10:06:36 +0530
-Message-Id: <1321677417-2415-4-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
+	Fri, 18 Nov 2011 23:48:31 -0500
+X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=h72xEATfbg4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=ankguWfssnWlHO32Y0EA:9 a=QEXdDO2ut3YA:10 a=U62fhAwekXMA:10 a=Gh8-idXl3amKeleTa_cA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111119044510.811163517@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 18 Nov 2011 23:45:10 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH 0/5] [ANNOUNCE] v3.0.9-rt26-rc1
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_das16_cs.c file that fixes up a printk
-warning found by the checkpatch.pl tool.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Converted printks to dev_printk.
+Dear RT Folks,
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+This is the RT stable review cycle. As I am just starting to manage the
+3.0-rt stable tree, I'm in the process of creating scripts and such to
+send out patches. I will always send out a -rc1 to give people a chance
+to yell at me for something stupid I did. It will also allow others
+to run this under their own tests as I have a limited testing that I do.
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index e171c56..9beb34c 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -150,7 +150,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
- 			return das16cs_boards + i;
- 	}
- 
--	printk("unknown board!\n");
-+	dev_dbg(dev->hw_dev, "unknown board!\n");
- 
- 	return NULL;
- }
-@@ -163,20 +163,19 @@ static int das16cs_attach(struct comedi_device *dev,
- 	int ret;
- 	int i;
- 
--	printk("comedi%d: cb_das16_cs: ", dev->minor);
-+	dev_dbg(dev->hw_dev, "comedi%d: cb_das16_cs: attached\n", dev->minor);
- 
- 	link = cur_dev;		/* XXX hack */
- 	if (!link)
- 		return -EIO;
- 
- 	dev->iobase = link->resource[0]->start;
--	printk("I/O base=0x%04lx ", dev->iobase);
-+	dev_dbg(dev->hw_dev, "I/O base=0x%04lx\n", dev->iobase);
- 
--	printk("fingerprint:\n");
-+	dev_dbg(dev->hw_dev, "fingerprint:\n");
- 	for (i = 0; i < 48; i += 2)
--		printk("%04x ", inw(dev->iobase + i));
-+		dev_dbg(dev->hw_dev, "%04x\n", inw(dev->iobase + i));
- 
--	printk("\n");
- 
- 	ret = request_irq(link->irq, das16cs_interrupt,
- 			  IRQF_SHARED, "cb_das16_cs", dev);
-@@ -185,7 +184,7 @@ static int das16cs_attach(struct comedi_device *dev,
- 
- 	dev->irq = link->irq;
- 
--	printk("irq=%u ", dev->irq);
-+	dev_dbg(dev->hw_dev, "irq=%u\n", dev->irq);
- 
- 	dev->board_ptr = das16cs_probe(dev, link);
- 	if (!dev->board_ptr)
-@@ -252,14 +251,13 @@ static int das16cs_attach(struct comedi_device *dev,
- 		s->type = COMEDI_SUBD_UNUSED;
- 	}
- 
--	printk("attached\n");
- 
- 	return 1;
- }
- 
- static int das16cs_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: das16cs: remove\n", dev->minor);
-+	dev_dbg(dev->hw_dev, "comedi%d: das16cs: remove\n", dev->minor);
- 
- 	if (dev->irq)
- 		free_irq(dev->irq, dev);
-@@ -312,7 +310,7 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
- 				break;
- 		}
- 		if (to == TIMEOUT) {
--			printk("cb_das16_cs: ai timeout\n");
-+			dev_dbg(dev->hw_dev, "cb_das16_cs: ai timeout\n");
- 			return -ETIME;
- 		}
- 		data[i] = (unsigned short)inw(dev->iobase + 0);
--- 
-1.7.0.4
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candida=
+te).
 
+I will also be updating the git tree on kernel.org with the final release
+but the pre releases will not be in the public tree. The final release
+will also include the full broken out patches.
+
+to build a 3.0.9-rt26-rc1 tree, the following patches should be applied:
+
+http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.9.xz
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.9-rt26-rc1=
+.patch.xz
+
+
+You can also build from 3.0.9-rt25 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.9-rt2=
+5-rt26-rc1.patch.xz
+
+If all goes well, this patch will be converted to the main release
+next Tuesday: 11/22/2011
+
+Enjoy,
+
+-- Steve
+
+
+John Kacur (2):
+      softirq: Export in_serving_softirq()
+      rcu: Fix macro substitution for synchronize_rcu_bh() on RT
+
+Peter Zijlstra (1):
+      x86: crypto: Reduce preempt disabled regions
+
+Thomas Gleixner (1):
+      dm: Make rt aware
+
+----
+ arch/x86/crypto/aesni-intel_glue.c |   24 +++++++++++++-----------
+ drivers/md/dm.c                    |    4 ++--
+ include/linux/rcutree.h            |    2 +-
+ kernel/softirq.c                   |    1 +
+ 4 files changed, 17 insertions(+), 14 deletions(-)
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJOxzUUAAoJEIy3vGnGbaoAG/MP/RVtai5EO8gWD7BYsXt66tHI
+Y8bvyx+L+izp5FkwSRF8urWoe40hqE+Suc0iJ3FvBhb/ZyLeOuhSv7oAHnsmkPCc
+AO1QdIOTHR//HWEpiCmF+8jwR32hA/8CUEwsPNcLHP9drAJGVUPsKXs+y8F/2ZlG
+JwOjO/q+sEEFYqY58BgTWb0EpfGZTzdfqYfAIlqNmm1ZqOuPANbKtCrWbHIPCYDR
+aNgfKd0SMerPnEGuArdLbDKU6OGiF7iTHNPmy1EUFVkbPPMGLRoME3kgfuWPrqes
+R6IU2n/Qh5RGyBA7CO0GtpIFxKyPhma0NQaBCb21UCjCmbr6FHpLAhha2yc+OczV
+Jr8sMoa0FCMiB7jZgiEXVsUDoUvCaQrg7PkmmtzrJnObn1zQ3wzXRkTMCp0ue3R3
+Mh6ZezwAv6eVmLgQsPgjEyPI/gkl/09pDVeRaN38N0ZfeLXDuQVEynnxHtI4g5F+
+urnJt1z9+oq/ivfHYH5WLUo+h7P7Zp7JBU22P4b8ICQ3c9De8KtAQ+ksEhTSvgaW
+/DneDiObyRD7zW/Lwyh6Dvsw+MVHsHuWMLmAjWu962/8HPXPrfrlFSvu9v1un8Zl
+XtQu7YzXFk2OzsF/W0kjvfNen/ipa1bsv+ZkZSyz0rgVzuSEJ11l6lxfyFkQRgk1
+2BNa2bBIebzw+BRAZEI3
+=ZiNk
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
