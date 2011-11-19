@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab1KSFiB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 00:38:01 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39491 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab1KSFh7 (ORCPT
+	id S1751492Ab1KSGPx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 01:15:53 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:63452 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab1KSGPv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 00:37:59 -0500
-Message-ID: <4EC740A6.8010803@linux.vnet.ibm.com>
-Date: Sat, 19 Nov 2011 11:07:42 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Sat, 19 Nov 2011 01:15:51 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net, tj@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2] PM/Hibernation: Fix the early termination of test
- modes
-References: <20111118031623.32591.73677.stgit@srivatsabhat.in.ibm.com> <4EC6250F.4010501@linux.vnet.ibm.com> <4EC62956.8060608@linux.vnet.ibm.com> <201111182300.44173.rjw@sisk.pl>
-In-Reply-To: <201111182300.44173.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111819-9264-0000-0000-0000003B387F
+In-Reply-To: <1321625774-12749-1-git-send-email-konrad@gaisler.com>
+References: <1321625774-12749-1-git-send-email-konrad@gaisler.com>
+Date: Sat, 19 Nov 2011 01:15:50 -0500
+Message-ID: <CACqU3MXPWvfThDmLMrK+ne+_hDXOU=atJpC98hUHL04DXUPAxw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] kconfig: Add a configuration subtree command to kconfig
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Konrad Eisele <konrad@gaisler.com>
+Cc: linux-kernel@vger.kernel.org, linux-config@vger.kernel.org, mmarek@suse.cz,
+        pefoley2@verizon.net, yann.morin.1998@anciens.enib.fr,
+        sam@ravnborg.org, zippel@linux-m68k.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2011 03:30 AM, Rafael J. Wysocki wrote:
-> On Friday, November 18, 2011, Srivatsa S. Bhat wrote:
->> On 11/18/2011 02:57 PM, Srivatsa S. Bhat wrote:
->>> On 11/18/2011 02:50 PM, Rafael J. Wysocki wrote:
->>>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->>>>> index b4511b6..257e8e7 100644
->>>>> --- a/kernel/power/hibernate.c
->>>>> +++ b/kernel/power/hibernate.c
->>>>> @@ -55,6 +55,8 @@ enum {
->>>>>  
->>>>>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
->>>>>  
->>>>> +static bool freezer_test_done;
->>>>> +
->>>>>  static const struct platform_hibernation_ops *hibernation_ops;
->>>>>  
->>>>>  /**
->>>>> @@ -347,6 +349,17 @@ int hibernation_snapshot(int platform_mode)
->>>>>  	if (error)
->>>>>  		goto Close;
->>>>>  
->>>>> +	if (hibernation_test(TEST_FREEZER) ||
->>>>> +		hibernation_testmode(HIBERNATION_TESTPROC)) {
->>>>> +
->>>>> +		/*
->>>>> +		 * Indicate to the caller that we are returning due to a
->>>>> +		 * successful freezer test.
->>>>> +		 */
->>>>> +		freezer_test_done = true;
->>>>> +		goto Close;
->>>>> +	}
->>>>> +
->>>>>  	error = dpm_prepare(PMSG_FREEZE);
->>>>>  	if (error)
->>>>>  		goto Complete_devices;
->>>>> @@ -641,15 +654,13 @@ int hibernate(void)
->>>>>  	if (error)
->>>>>  		goto Finish;
->>>>>  
->>>>> -	if (hibernation_test(TEST_FREEZER))
->>>>> -		goto Thaw;
->>>>> -
->>>>> -	if (hibernation_testmode(HIBERNATION_TESTPROC))
->>>>> -		goto Thaw;
->>>>> -
->>>>>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
->>>>>  	if (error)
->>>>>  		goto Thaw;
->>>>> +	if (freezer_test_done) {
->>>>> +		freezer_test_done = false;
->>>>> +		goto Thaw;
->>>>> +	}
->>>>
->>>> What happens if hibernation_snapshot() and freezer_test_done is 'true'?
->>>> Won't that leek freezer_test_done to the next hibernation cycle?
->>>>
->>>
->>> Oh yes, thanks for catching that! I'll fix that and send an updated patch.
->>>
->>
->> Sorry, I think I hit reply too soon.
->> To restate your question, you are asking if freezer_test_done was set in
->> hibernation_snapshot() and then there was a genuine error in
->> hibernation_snapshot() which it returned, then won't freezer_test_done
->> leak to the next cycle.., right?
->>
->> If there is a genuine error before hibernation_test(TEST_FREEZER)... is
->> done, then we will never set freezer_test_done flag to true.
->>
->> And whenever freezer_test_done is set (inside hibernation_snapshot) there
->> is no way it will continue further executing normal code. It will jump to
->> the Close label and come out, so that here in hibernate(), the first
->> check for error will fail (because it returned 0) and the subsequent
->> check for freezer_test_done will succeed. So I don't see how it can leak.
->>
->> Or, am I missing something?
-> 
-> No, that's fine, I just wasn't sure. :-)
-> 
-> I'm going to apply your patch without the documentation changes.
-> 
+Hi,
 
-Great! Thanks a lot!
+On Fri, Nov 18, 2011 at 9:16 AM, Konrad Eisele <konrad@gaisler.com> wrote:
+> New kconfig command "subsource":
+> subsource "<kconfig>" "<cwd>" "<.config>" "<title>"  <internal_prefix> <.config_prefix>
+> Allocates <kconfig> as a configuration subtree using <.config> as the configuration
+> file to save and load from. <cwd> is the directory path to switch to for "source" to
+> work, "<title>" is the Menu tile of the subtree, <internal_prefix> is a internal prefix,
+> and <.config_prefix> is the prefix to append/remove when saving/loading <.config>.
+>
+Please break this down in logical change!
+
+There is very good stuff in this patch but it need to be digested slowly :)
+
+I'd see it as:
+ - introduce the config structure
+ - convert all globals reference to use structure members
+ - get rid of these `_level' prefix and NULL pointer passing.
+ - then introduce the subsource logic (and please separate parser
+update and regen of shipped file)
+
+There is no need for the `_level' prefixing, NULL pointer passing, and
+conditionally select the structure or the global. The sub-tree should
+be treated the same way as the global tree. Basically:
+
+-   if (!sym_defconfig_list) {
++   if (!(l ? l->sym_defconfig_list : sym_defconfig_list)) {
+
+should just be:
+
+-   if (!sym_defconfig_list) {
++   if (!l->sym_defconfig_list) {
+
+no extra complexity/un-maintainability. You may not even need to
+change function prototypes if the current tree never expect to use
+anything but `current_config'.
+
+On a performance p.o.v., you may want to have one commit caching the
+prefix length, to avoid all the strlen(...).
+
+on a pure stylistic side
+ - don't pass 0 when you mean NULL (well, you will no longer need that actually)
+ - loop with 6 level of indentation are hideous, especially for
+condition where you can just `break;' early
 
 Thanks,
-Srivatsa S. Bhat
+ - Arnaud
 
+> Signed-off-by: Konrad Eisele <konrad@gaisler.com>
+> ---
+>  scripts/kconfig/conf.c               |    6 +-
+>  scripts/kconfig/confdata.c           |   83 ++-
+>  scripts/kconfig/expr.h               |   16 +
+>  scripts/kconfig/gconf.c              |    3 +
+>  scripts/kconfig/lkc.h                |    1 +
+>  scripts/kconfig/lkc_proto.h          |   12 +-
+>  scripts/kconfig/mconf.c              |   13 +-
+>  scripts/kconfig/menu.c               |   18 +-
+>  scripts/kconfig/nconf.c              |   13 +-
+>  scripts/kconfig/qconf.cc             |    3 +
+>  scripts/kconfig/symbol.c             |   50 ++-
+>  scripts/kconfig/util.c               |   49 ++
+>  scripts/kconfig/zconf.gperf          |    1 +
+>  scripts/kconfig/zconf.hash.c_shipped |  252 +++++-----
+>  scripts/kconfig/zconf.l              |   50 ++-
+>  scripts/kconfig/zconf.lex.c_shipped  |   52 ++-
+>  scripts/kconfig/zconf.tab.c_shipped  |  985 ++++++++++++++++++----------------
+>  scripts/kconfig/zconf.y              |   23 +-
+>  18 files changed, 991 insertions(+), 639 deletions(-)
