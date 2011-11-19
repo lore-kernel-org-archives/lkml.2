@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab1KSP2q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 10:28:46 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:58565 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751555Ab1KSP2p (ORCPT
+	id S1752281Ab1KSPeR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 10:34:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36876 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab1KSPeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 10:28:45 -0500
-Date: Sat, 19 Nov 2011 10:28:44 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: NamJae Jeon <linkinjeon@gmail.com>
-cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Greg KH <greg@kroah.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] NLS: improve UTF8 -> UTF16 string conversion routine
-In-Reply-To: <CAKYAXd8q+crqi9oAX84SJmkBEwWj2ycQ+kie0OSxmtdWB7v3Zg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1111191021390.995-100000@netrider.rowland.org>
+	Sat, 19 Nov 2011 10:34:16 -0500
+Date: Sat, 19 Nov 2011 19:34:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2 0/4] Checkpoint/Restore: Show in proc IDs of objects
+ that can be shared between tasks
+Message-ID: <20111119153410.GB1722@moon>
+References: <4EC4DA15.7090106@parallels.com>
+ <20111117124831.688adbeb.akpm@linux-foundation.org>
+ <4EC6246A.6020807@parallels.com>
+ <20111118110716.c854b4bd.akpm@linux-foundation.org>
+ <20111119075733.GB2675@albatros>
+ <20111119081012.GC2675@albatros>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111119081012.GC2675@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Nov 2011, NamJae Jeon wrote:
+On Sat, Nov 19, 2011 at 12:10:12PM +0400, Vasiliy Kulikov wrote:
+> On Sat, Nov 19, 2011 at 11:57 +0400, Vasiliy Kulikov wrote:
+> > Doing something like hash(cookie1 ++ obj ++ cookie) would leak only the
+> > equation of two objects, but it can be still dangerous - learn hashes of
+> > (a) objects created at boot time (their addresses are known) and (b)
+> > some objects, which allocation scheme is known (i.e. we know
+> > kmem_cache_alloc() gives us specific addresses with high probability),
+> > and then compare the hashes against other objects after (a) and (b)
+> > objects are kfree'd.
+> > 
 
-> >> > +int utf8s_to_utf16s(const u8 *s, int len, enum utf16_endian endian,
-> >> > +               wchar_t *pwcs, int maxlen)
-> >> >  {
-> >> >        u16 *op;
-> >> >        int size;
-> >> >        unicode_t u;
-> >> >
-> >> >        op = pwcs;
-> >> > -       while (*s && len > 0) {
-> >> > +       while (len > 0 && maxlen > 0 && *s) {
-> >> >                if (*s & 0x80) {
-> >> >                        size = utf8_to_utf32(s, len, &u);
-> >> >                        if (size < 0)
-> >> >                                return -EINVAL;
-> >> > +                       s += size;
-> >> > +                       len -= size;
-...
-> >> >                        if (u >= PLANE_SIZE) {
-> >> > +                               if (maxlen < 2)
-> >> > +                                       break;
-> >> >                                u -= PLANE_SIZE;
-> >> > -                               *op++ = (wchar_t) (SURROGATE_PAIR |
-> >> > -                                               ((u >> 10) & SURROGATE_BITS));
-> >> > -                               *op++ = (wchar_t) (SURROGATE_PAIR |
-> >> > +                               put_utf16(op++, SURROGATE_PAIR |
-> >> > +                                               ((u >> 10) & SURROGATE_BITS),
-> >> > +                                               endian);
-> >> > +                               put_utf16(op++, SURROGATE_PAIR |
-> >> >                                                SURROGATE_LOW |
-> >> > -                                               (u & SURROGATE_BITS));
-> >> > +                                               (u & SURROGATE_BITS),
-> >> > +                                               endian);
-> >> > +                               maxlen -= 2;
-> >>
-> >> Why did you use contants value(-2) instead of maxlen -= size; value ?
-> >
-> > "maxlen -= size" would be completely wrong, because size is the length
-> > of the utf8 input and maxlen is the number of 16-bit slots remaining
-> > in the output buffer.  A surrogate pair uses two 16-bit values,
-> > therefore maxlen has to be decreased by 2.
-> If so, len should also be minus -2 constant value like maxlen ?
+First of all, thanks a *huge* for comments Vasiliy! Yes, agreed that plain
+single xor is not sufficient here.
 
-You seem to be confused.  "len" refers to the input string and "maxlen" 
-refers to the output string.  They have no connection to one another.  
-Would it help if "maxlen" were named "maxout" instead?
+> > 
+> > What is the highest timeframe which must maintain the property of unique
+> > ids?  Is it the whole system lifetime or probably [dump start; dump
+> > end] and we can change the cookie many times?  Can we probably shorten
 
-> and why does this code(if (maxlen < 2)) is needed ? If len is smaller than 2 ?
+Yes, dump-start/dump-end is a mininum timeframe.
 
-If maxlen < 2 then there is room in the output buffer for only one more
-data value -- but a surrogate pair occupies two data values.  Hence
-there isn't room to store the pair in the output buffer, so the loop
-must terminate.
+> > the time even?  Can we ensure that during this timeframe no new kernel
+> > objects will be created (unrealistic, but would be great)?
+> > 
 
-> >> >                        } else {
-> >> > -                               *op++ = (wchar_t) u;
-> >> > +                               put_utf16(op++, u, endian);
-> >> > +                               maxlen--;
-> >> >                        }
-> >> > -                       s += size;
-> >> > -                       len -= size;
-> >> >                } else {
-> >> > -                       *op++ = *s++;
-> >> > +                       put_utf16(op++, *s++, endian);
-> >> >                        len--;
-> >> > +                       maxlen--;
-> >> >                }
-> >> >        }
-> >> >        return op - pwcs;
-> >> > Index: usb-3.2/fs/fat/namei_vfat.c
-> >> > ===================================================================
-> >> > --- usb-3.2.orig/fs/fat/namei_vfat.c
-> >> > +++ usb-3.2/fs/fat/namei_vfat.c
-> >> > @@ -512,7 +512,8 @@ xlate_to_uni(const unsigned char *name,
-> >> >        int charlen;
-> >> >
-> >> >        if (utf8) {
-> >> > -               *outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
-> >> > +               *outlen = utf8s_to_utf16s(name, len, UTF16_HOST_ENDIAN,
-> >> > +                               (wchar_t *) outname, FAT_LFN_LEN + 2);
-> >> Is there the reason why you plus 2 to FAT_LFN_LEN ?
-> >
-> > So that the "(*outlen > FAT_LFN_LEN)" test below will work correctly.
-> > If the maximum length were set to FAT_LFN_LEN then the test would
-> > always fail.  If the maximum length were set to FAT_LFN_LEN + 1 then
-> > the test would fail when the next character to be stored was a
-> > surrogate pair.
-> Although we are using maxlen, I don't know why do we check case that
-> outlen is bigger than FAT_LFN_LEN.
+We might use PT_SEIZED as such flag and don't allow to allocate new kernel
+objects but it will bring too much complexity into kernel code I think,
+which is not what we want eventually ;)
 
-Probably because the filesystem code requires that the UTF16 string fit 
-into a certain amount of space.  If *outlen > FAT_LFN_LEN then the 
-string doesn't fit.
+> > Also, I didn't understand from the quoted text who will use it - only
+> > the dumper or this interface is exposed to all userspace processes and
+> > anybody may learn hash(&kern_obj) for any kern_obj he may reference?
+> 
 
-Alan Stern
+It's limited to /proc/$pid/
 
+> Also, if one should have an ability to learn IDs of specific object
+> types and the set of types is very limited, it's much safer to have one
+> increasing u64 counter for each created object of one of these types.
+> The exposed to userspace data will be:
+> 
+>     ID = hash(counter ^ cookie)
+> 
+>     cookie is generated at boot time, once.  counter is a single
+>     variable, one for all exposed kernel object types.
+> 
+> ID will be unpredictable if hash() is cryptographically secure, and
+> counter is not duplicated.  So, for each newly created object the ID is
+> the new random value, which is unique and says nothing to userspace about
+> either kernel object addresses or the counter itself.
+> 
+> The cost:
+> 
+> 1) counter storing for each kernel object exposed through this interface.
+> 
+
+Yes, this is main concern.
+
+> 2) object creation will be slowed down by hash().
+> 
+
+This is not that important I think, since it's not a time-critical operation.
+
+> Also, one thought - is it safe to say two kernel objects are the same to
+> userspace? :)  I don't see anything obviously dangerous, though.
+> 
+
+	Cyrill
