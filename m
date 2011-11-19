@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab1KSPFv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 10:05:51 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:52278 "EHLO smtp6-g21.free.fr"
+	id S1752657Ab1KSPDd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 10:03:33 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:51556 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab1KSPDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 10:03:55 -0500
+	id S1752303Ab1KSPDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 10:03:31 -0500
 From: Robert Jarzmik <robert.jarzmik@free.fr>
 To: dwmw2@infradead.org, dedekind1@gmail.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v3 09/16] mtd/docg3: add OOB buffer to device structure
-Date: Sat, 19 Nov 2011 16:02:51 +0100
-Message-Id: <1321714978-24543-10-git-send-email-robert.jarzmik@free.fr>
+Subject: [PATCH v3 03/16] mtd/docg3: fix protection areas reading
+Date: Sat, 19 Nov 2011 16:02:45 +0100
+Message-Id: <1321714978-24543-4-git-send-email-robert.jarzmik@free.fr>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1321714978-24543-1-git-send-email-robert.jarzmik@free.fr>
 References: <1321714978-24543-1-git-send-email-robert.jarzmik@free.fr>
@@ -20,41 +20,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OOB buffer area to store the OOB data until the actual
-page is written, so that it can be completed by hardware ECC
-generator.
+The protection areas boundaries were on 16bit registers, not
+8bit. This is consistent with block numbers, which can
+extend up to 4096 on bigger chips (and is 2048 on the
+docg3).
 
 Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 ---
- drivers/mtd/devices/docg3.h |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/mtd/devices/docg3.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mtd/devices/docg3.h b/drivers/mtd/devices/docg3.h
-index e9967ab..397e461 100644
---- a/drivers/mtd/devices/docg3.h
-+++ b/drivers/mtd/devices/docg3.h
-@@ -243,6 +243,11 @@
-  * @device_id: number of the cascaded DoCG3 device (0, 1, 2 or 3)
-  * @if_cfg: if true, reads are on 16bits, else reads are on 8bits
-  * @bbt: bad block table cache
-+ * @oob_write_ofs: offset of the MTD where this OOB should belong (ie. in next
-+ *                 page_write)
-+ * @oob_autoecc: if 1, use only bytes 0-7, 15, and fill the others with HW ECC
-+ *               if 0, use all the 16 bytes.
-+ * @oob_write_buf: prepared OOB for next page_write
-  * @debugfs_root: debugfs root node
-  */
- struct docg3 {
-@@ -252,6 +257,9 @@ struct docg3 {
- 	unsigned int if_cfg:1;
- 	int max_block;
- 	u8 *bbt;
-+	loff_t oob_write_ofs;
-+	int oob_autoecc;
-+	u8 oob_write_buf[DOC_LAYOUT_OOB_SIZE];
- 	struct dentry *debugfs_root;
- };
+diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
+index 8942a75..5834e6e 100644
+--- a/drivers/mtd/devices/docg3.c
++++ b/drivers/mtd/devices/docg3.c
+@@ -852,13 +852,15 @@ static int dbg_protection_show(struct seq_file *s, void *p)
+ {
+ 	struct docg3 *docg3 = (struct docg3 *)s->private;
+ 	int pos = 0;
+-	int protect = doc_register_readb(docg3, DOC_PROTECTION);
+-	int dps0 = doc_register_readb(docg3, DOC_DPS0_STATUS);
+-	int dps0_low = doc_register_readb(docg3, DOC_DPS0_ADDRLOW);
+-	int dps0_high = doc_register_readb(docg3, DOC_DPS0_ADDRHIGH);
+-	int dps1 = doc_register_readb(docg3, DOC_DPS1_STATUS);
+-	int dps1_low = doc_register_readb(docg3, DOC_DPS1_ADDRLOW);
+-	int dps1_high = doc_register_readb(docg3, DOC_DPS1_ADDRHIGH);
++	int protect, dps0, dps0_low, dps0_high, dps1, dps1_low, dps1_high;
++
++	protect = doc_register_readb(docg3, DOC_PROTECTION);
++	dps0 = doc_register_readb(docg3, DOC_DPS0_STATUS);
++	dps0_low = doc_register_readw(docg3, DOC_DPS0_ADDRLOW);
++	dps0_high = doc_register_readw(docg3, DOC_DPS0_ADDRHIGH);
++	dps1 = doc_register_readb(docg3, DOC_DPS1_STATUS);
++	dps1_low = doc_register_readw(docg3, DOC_DPS1_ADDRLOW);
++	dps1_high = doc_register_readw(docg3, DOC_DPS1_ADDRHIGH);
  
+ 	pos += seq_printf(s, "Protection = 0x%02x (",
+ 			 protect);
 -- 
 1.7.5.4
 
