@@ -1,105 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab1KSRWd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 12:22:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57788 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743Ab1KSRWc (ORCPT
+	id S1753035Ab1KSR1K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 12:27:10 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50456 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab1KSR1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 12:22:32 -0500
-Message-ID: <1321723330.2885.145.camel@deadeye>
-Subject: Re: [17/26] b43: refuse to load unsupported firmware
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, greg@kroah.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-wireless@vger.kernel.org,
-        b43-dev@lists.infradead.org, roman-vl@meta.ua,
-        =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Date: Sat, 19 Nov 2011 17:22:10 +0000
-In-Reply-To: <20111119000329.419617905@clark.kroah.org>
-References: <20111119000329.419617905@clark.kroah.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-7pTkfw2jr7NOBXYU6h1w"
-X-Mailer: Evolution 3.0.3-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 19 Nov 2011 12:27:08 -0500
+From: Michal Nazarewicz <mpn@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Felipe Balbi <balbi@ti.com>
+Cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Ben Dooks <ben@simtec.co.uk>, Heiko Stubner <heiko@sntech.de>,
+        Thomas Abraham <thomas.ab@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 1/3] usb: udc: Fix gadget driver's speed check in various UDC drivers
+Date: Sat, 19 Nov 2011 18:26:25 +0100
+Message-Id: <12833fb1f3db020248c582c1f947724056a34fe2.1321719300.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <Pine.LNX.4.44L0.1111161624570.3443-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1111161624570.3443-100000@iolanthe.rowland.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Michal Nazarewicz <mina86@mina86.com>
 
---=-7pTkfw2jr7NOBXYU6h1w
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Several UDC drivers had a gadget driver's speed sanity check of the
+form of:
 
-On Fri, 2011-11-18 at 16:02 -0800, Greg KH wrote:
-> 3.1-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> [This patch is supposed to be applied in 3.1 (and maybe older) branches o=
-nly.]
->=20
-> New kernels support newer firmware that users may try to incorrectly use
-> with older kernels. Display error and explain the problem in such a case
->=20
-> Signed-off-by: Rafa=C3=85=C2=82 Mi=C3=85=C2=82ecki <zajec5@gmail.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->=20
-> ---
->  drivers/net/wireless/b43/main.c |    7 +++++++
->  1 file changed, 7 insertions(+)
->=20
-> --- a/drivers/net/wireless/b43/main.c
-> +++ b/drivers/net/wireless/b43/main.c
-> @@ -2508,6 +2508,13 @@ static int b43_upload_microcode(struct b
->  		b43_print_fw_helptext(dev->wl, 1);
->  		err =3D -EOPNOTSUPP;
->  		goto error;
-> +	} else if (fwrev >=3D 598) {
-> +		b43err(dev->wl, "YOUR FIRMWARE IS TOO NEW. Support for "
-> +		       "firmware 598 and up requires kernel 3.2 or newer. You "
-> +		       "have to install older firmware or upgrade kernel.\n");
-> +		b43_print_fw_helptext(dev->wl, 1);
-> +		err =3D -EOPNOTSUPP;
-> +		goto error;
-[...]
+	driver->speed != USB_SPEED_HIGH
 
-Again, I strongly object to this way of handling the incompatibility.
-The revision check is fine, but the solution must be to assign a
-different filename for the newer revisions.  The changes to 3.0/3.1
-should be deferred until this is resolved.
+or:
 
-Ben.
+	driver->speed != USB_SPEED_HIGH && driver->speed != USB_SPEED_FULL
 
---=20
-Ben Hutchings
-The world is coming to an end.	Please log off.
+As more and more gadget drivers support USB SuperSpeed, driver->speed
+may be set to USB_SPEED_SUPER and UDC driver should handle such gadget
+correctly.  The above checks however fail to recognise USB_SPEED_SUPER
+as a valid speed.
 
---=-7pTkfw2jr7NOBXYU6h1w
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+This commit changes the two checks to:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	driver->speed < USB_SPEED_HIGH
 
-iQIVAwUATsflwue/yOyVhhEJAQoCxQ/+LyPm8CYGaZS2PqwImKx0IVIi8yo8FHr+
-Ylsf6YqJKwA80dsXqdXS/DHVEzhIuaO1KZl9eJdxoQSN1fSfLzEdPuA+8fIquqVd
-Ms3AviWpwkXzRX2tkrVcjKoaVlrfkAczkubmto3O3Xj7rRtCfayJhXuI6zuhWHVw
-7TlDOX8CFTKYMglYyIZgFG+w89HF7eXKmm8pPhE+G80aULbfe/GpD9adjw7/n2Jn
-17LcuslbaP6OSwx0CvgIfE5elXtlblcsiYzRktiQZaZKL0vWptfHNxGExfjpHl3O
-K0HXBakNvuFsMaxmNsrdpMz9GK3iTzfOdjW2x9ZAJXLAnZiszoI4ALPqdHgnEJrY
-qTFJjH4Y7tQ+DB8t+dqWT3bDiJTz2exHN4blGc1z+YowJ5uuw54iM5SgpYREn8fc
-Bc/nZrDoSOUYHzqq0htcxtYeQm8GxjzS+a/qFZnP5bm8CW56fDDEFvJdH04todR6
-oYSskXZHSTQbUvzmi1EtsWukVBC8YBltBBE3J6VNlhHBraFx1qXomUz1IMwjqM4c
-CmuZpWDJfawskOGPqsYy5qOrNFaEZsRt37htB33hEvHZzuast5Ig2GyrhYG5+yH6
-sVbfpNYMhIxT63Wel3oCFqwbWGe0QJhMx7WWbgl/4OBlrWXn1RdD1mFq0tvGRWXP
-J3D0IcIKKe4=
-=pv0H
------END PGP SIGNATURE-----
+or:
 
---=-7pTkfw2jr7NOBXYU6h1w--
+	driver->speed < USB_SPEED_FULL
+
+respectively.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+---
+
+I had no way of testing those changes but it appears that those UDC
+drivers check gadget driver's speed only on the entry point and then
+nothing is really dependent on it.
+
+The only thing that makes me wonder a little is that
+USB_SPEED_WIRELESS will be allowed by the above checks and I'm not
+entirely sure if that's desired (even though that's probably not an
+issue right now).
+
+Nonetheless, this patch needs to get merged to 3.2 as without it
+file_storage won't work on UDC drivers this patch updates.
+
+The next two patches that follow this one are replacements for
+[291a72f8: usb: gadget: replace usb_gadget::is_dualspeed with
+max_speed] and [d93bb846: usb: gadget: rename usb_gadget_driver::speed
+to max_speed] from Felipe's gadget tree, which did not apply correctly
+on top of this patch.
+
+The whole series is based on Greg's for-linus tree.
+
+ drivers/usb/gadget/amd5536udc.c   |    2 +-
+ drivers/usb/gadget/fsl_qe_udc.c   |    3 +--
+ drivers/usb/gadget/fsl_udc_core.c |    3 +--
+ drivers/usb/gadget/m66592-udc.c   |    2 +-
+ drivers/usb/gadget/net2280.c      |    2 +-
+ drivers/usb/gadget/r8a66597-udc.c |    2 +-
+ drivers/usb/gadget/s3c-hsotg.c    |    4 +---
+ drivers/usb/gadget/s3c-hsudc.c    |    3 +--
+ drivers/usb/musb/musb_gadget.c    |    2 +-
+ 9 files changed, 9 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
+index 4730016..45f422a 100644
+--- a/drivers/usb/gadget/amd5536udc.c
++++ b/drivers/usb/gadget/amd5536udc.c
+@@ -1959,7 +1959,7 @@ static int amd5536_start(struct usb_gadget_driver *driver,
+ 	u32 tmp;
+ 
+ 	if (!driver || !bind || !driver->setup
+-			|| driver->speed != USB_SPEED_HIGH)
++			|| driver->speed < USB_SPEED_HIGH)
+ 		return -EINVAL;
+ 	if (!dev)
+ 		return -ENODEV;
+diff --git a/drivers/usb/gadget/fsl_qe_udc.c b/drivers/usb/gadget/fsl_qe_udc.c
+index 2a03e4d..e00cf92 100644
+--- a/drivers/usb/gadget/fsl_qe_udc.c
++++ b/drivers/usb/gadget/fsl_qe_udc.c
+@@ -2336,8 +2336,7 @@ static int fsl_qe_start(struct usb_gadget_driver *driver,
+ 	if (!udc_controller)
+ 		return -ENODEV;
+ 
+-	if (!driver || (driver->speed != USB_SPEED_FULL
+-			&& driver->speed != USB_SPEED_HIGH)
++	if (!driver || driver->speed < USB_SPEED_FULL
+ 			|| !bind || !driver->disconnect || !driver->setup)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
+index b3b3d83..1482b12 100644
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -1938,8 +1938,7 @@ static int fsl_start(struct usb_gadget_driver *driver,
+ 	if (!udc_controller)
+ 		return -ENODEV;
+ 
+-	if (!driver || (driver->speed != USB_SPEED_FULL
+-				&& driver->speed != USB_SPEED_HIGH)
++	if (!driver || driver->speed < USB_SPEED_FULL
+ 			|| !bind || !driver->disconnect || !driver->setup)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/usb/gadget/m66592-udc.c b/drivers/usb/gadget/m66592-udc.c
+index 91d0af2..9aa1cbb 100644
+--- a/drivers/usb/gadget/m66592-udc.c
++++ b/drivers/usb/gadget/m66592-udc.c
+@@ -1472,7 +1472,7 @@ static int m66592_start(struct usb_gadget_driver *driver,
+ 	int retval;
+ 
+ 	if (!driver
+-			|| driver->speed != USB_SPEED_HIGH
++			|| driver->speed < USB_SPEED_HIGH
+ 			|| !bind
+ 			|| !driver->setup)
+ 		return -EINVAL;
+diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+index 7f1bc9a..da2b9d0 100644
+--- a/drivers/usb/gadget/net2280.c
++++ b/drivers/usb/gadget/net2280.c
+@@ -1881,7 +1881,7 @@ static int net2280_start(struct usb_gadget *_gadget,
+ 	 * (dev->usb->xcvrdiag & FORCE_FULL_SPEED_MODE)
+ 	 * "must not be used in normal operation"
+ 	 */
+-	if (!driver || driver->speed != USB_SPEED_HIGH
++	if (!driver || driver->speed < USB_SPEED_HIGH
+ 			|| !driver->setup)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
+index 24f84b2..fc719a3 100644
+--- a/drivers/usb/gadget/r8a66597-udc.c
++++ b/drivers/usb/gadget/r8a66597-udc.c
+@@ -1746,7 +1746,7 @@ static int r8a66597_start(struct usb_gadget *gadget,
+ 	struct r8a66597 *r8a66597 = gadget_to_r8a66597(gadget);
+ 
+ 	if (!driver
+-			|| driver->speed != USB_SPEED_HIGH
++			|| driver->speed < USB_SPEED_HIGH
+ 			|| !driver->setup)
+ 		return -EINVAL;
+ 	if (!r8a66597)
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index a552453..b314482 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -2586,10 +2586,8 @@ static int s3c_hsotg_start(struct usb_gadget_driver *driver,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (driver->speed != USB_SPEED_HIGH &&
+-	    driver->speed != USB_SPEED_FULL) {
++	if (driver->speed < USB_SPEED_FULL)
+ 		dev_err(hsotg->dev, "%s: bad speed\n", __func__);
+-	}
+ 
+ 	if (!bind || !driver->setup) {
+ 		dev_err(hsotg->dev, "%s: missing entry points\n", __func__);
+diff --git a/drivers/usb/gadget/s3c-hsudc.c b/drivers/usb/gadget/s3c-hsudc.c
+index 8d54f89..20a553b 100644
+--- a/drivers/usb/gadget/s3c-hsudc.c
++++ b/drivers/usb/gadget/s3c-hsudc.c
+@@ -1142,8 +1142,7 @@ static int s3c_hsudc_start(struct usb_gadget_driver *driver,
+ 	int ret;
+ 
+ 	if (!driver
+-		|| (driver->speed != USB_SPEED_FULL &&
+-			driver->speed != USB_SPEED_HIGH)
++		|| driver->speed < USB_SPEED_FULL
+ 		|| !bind
+ 		|| !driver->unbind || !driver->disconnect || !driver->setup)
+ 		return -EINVAL;
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index d51043a..922148f 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1903,7 +1903,7 @@ static int musb_gadget_start(struct usb_gadget *g,
+ 	unsigned long		flags;
+ 	int			retval = -EINVAL;
+ 
+-	if (driver->speed != USB_SPEED_HIGH)
++	if (driver->speed < USB_SPEED_HIGH)
+ 		goto err0;
+ 
+ 	pm_runtime_get_sync(musb->controller);
+-- 
+1.7.3.1
+
