@@ -1,128 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab1KSEl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:41:29 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:45827 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758200Ab1KSEl0 (ORCPT
+	id S1758277Ab1KSEmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:42:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757983Ab1KSEhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:41:26 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19Ir29D47hIw7BoiarSCAybBMzU1FrwPwz9LaEhKH
-	q1uGCHynmmD3qY
-Subject: Re: [patch 5/6] sched: disable sched feature TTWU_QUEUE by default
-From: Mike Galbraith <efault@gmx.de>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com
-In-Reply-To: <1321677009.6307.13.camel@marge.simson.net>
-References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
-	 <20111118230554.105376150@sbsiddha-desk.sc.intel.com>
-	 <1321677009.6307.13.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 19 Nov 2011 05:41:20 +0100
-Message-ID: <1321677680.6307.15.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Fri, 18 Nov 2011 23:37:31 -0500
+From: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 05/25] Staging: comedi: fix brace coding style issue in pcl818.c
+Date: Sat, 19 Nov 2011 10:06:37 +0530
+Message-Id: <1321677417-2415-5-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
+References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-11-19 at 05:30 +0100, Mike Galbraith wrote:
-> On Fri, 2011-11-18 at 15:03 -0800, Suresh Siddha wrote:
-> > plain text document attachment (disable_sched_ttwu_queue.patch)
-> > Context-switch intensive microbenchmark on a 8-socket system had
-> > ~600K times more resched IPI's on each logical CPU with this feature enabled
-> > by default. Disabling this features makes that microbenchmark perform 5 times
-> > better.
-> > 
-> > Also disabling this feature showed 2% performance improvement on a 8-socket
-> > OLTP workload.
-> > 
-> > More heurestics are needed when and how to use this feature by default.
-> > For now, disable it by default.
-> 
-> Yeah, the overhead for very hefty switchers is high enough to increase
-> TCP_RR latency up to 13% in my testing.  I used a trylock() to generally
-> not eat that, but leave the contended case improvement intact.
-> 
-> Peter suggested trying doing the IPI only when crossing cache
-> boundaries, which worked for me as well.
+This is a patch to the pcl818.c file that fixes up a brace
+coding style warning found by the checkpatch.pl tool.
 
-On a related TTWU_QUEUE note, I was pondering idle_balance().
- 
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- kernel/sched_fair.c |   25 ++++++++++++++++---------
- 1 file changed, 16 insertions(+), 9 deletions(-)
+ drivers/staging/comedi/drivers/pcl818.c |   63 +++++++++++++------------------
+ 1 files changed, 26 insertions(+), 37 deletions(-)
 
-Index: linux-3.0/kernel/sched_fair.c
-===================================================================
---- linux-3.0.orig/kernel/sched_fair.c
-+++ linux-3.0/kernel/sched_fair.c
-@@ -3500,8 +3500,7 @@ out:
- static void idle_balance(int this_cpu, struct rq *this_rq)
- {
- 	struct sched_domain *sd;
--	int pulled_task = 0;
--	unsigned long next_balance = jiffies + HZ;
-+	unsigned long next_balance;
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index b45a9bd..ca033de 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -463,9 +463,8 @@ static int pcl818_ao_insn_read(struct comedi_device *dev,
+ 	int n;
+ 	int chan = CR_CHAN(insn->chanspec);
  
- 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
- 		return;
-@@ -3512,33 +3511,41 @@ static void idle_balance(int this_cpu, s
- 	raw_spin_unlock(&this_rq->lock);
+-	for (n = 0; n < insn->n; n++) {
++	for (n = 0; n < insn->n; n++)
+ 		data[n] = devpriv->ao_readback[chan];
+-	}
  
- 	update_shares(this_cpu);
-+	next_balance = jiffies + HZ;
- 	rcu_read_lock();
- 	for_each_domain(this_cpu, sd) {
- 		unsigned long interval;
- 		int balance = 1;
- 
-+		if (this_rq->nr_running || this_rq->wake_list)
-+			break;
+ 	return n;
+ }
+@@ -571,9 +570,9 @@ conv_finish:
+ 		return IRQ_HANDLED;
+ 	}
+ 	devpriv->act_chanlist_pos++;
+-	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
++	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
+ 		devpriv->act_chanlist_pos = 0;
+-	}
 +
- 		if (!(sd->flags & SD_LOAD_BALANCE))
- 			continue;
+ 	s->async->cur_chan++;
+ 	if (s->async->cur_chan >= devpriv->ai_n_chan) {
+ 		/*  printk("E"); */
+@@ -645,9 +644,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_dma(int irq, void *d)
+ 		comedi_buf_put(s->async, ptr[bufptr++] >> 4);	/*  get one sample */
  
--		if (sd->flags & SD_BALANCE_NEWIDLE) {
--			/* If we've pulled tasks over stop searching: */
--			pulled_task = load_balance(this_cpu, this_rq,
--						   sd, CPU_NEWLY_IDLE, &balance);
+ 		devpriv->act_chanlist_pos++;
+-		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
++		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
+ 			devpriv->act_chanlist_pos = 0;
 -		}
-+		if (!(sd->flags & SD_BALANCE_NEWIDLE))
-+			continue;
 +
-+		load_balance(this_cpu, this_rq, sd, CPU_NEWLY_IDLE, &balance);
+ 		s->async->cur_chan++;
+ 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
+ 			s->async->cur_chan = 0;
+@@ -805,11 +804,10 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
+ 		return IRQ_HANDLED;
+ 	}
  
- 		interval = msecs_to_jiffies(sd->balance_interval);
- 		if (time_after(next_balance, sd->last_balance + interval))
- 			next_balance = sd->last_balance + interval;
--		if (pulled_task) {
-+		if (this_rq->nr_running || this_rq->wake_list) {
- 			this_rq->idle_stamp = 0;
- 			break;
+-	if (lo & 2) {
++	if (lo & 2)
+ 		len = 512;
+-	} else {
++	else
+ 		len = 0;
+-	}
+ 
+ 	for (i = 0; i < len; i++) {
+ 		lo = inb(dev->iobase + PCL818_FI_DATALO);
+@@ -827,9 +825,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
+ 		comedi_buf_put(s->async, (lo >> 4) | (inb(dev->iobase + PCL818_FI_DATAHI) << 4));	/*  get one sample */
+ 
+ 		devpriv->act_chanlist_pos++;
+-		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
++		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
+ 			devpriv->act_chanlist_pos = 0;
+-		}
++
+ 		s->async->cur_chan++;
+ 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
+ 			s->async->cur_chan = 0;
+@@ -1309,11 +1307,9 @@ static void setup_channel_list(struct comedi_device *dev,
+ */
+ static int check_single_ended(unsigned int port)
+ {
+-	if (inb(port + PCL818_STATUS) & 0x20) {
++	if (inb(port + PCL818_STATUS) & 0x20)
+ 		return 1;
+-	} else {
+-		return 0;
+-	}
++	return 0;
+ }
+ 
+ /*
+@@ -1352,9 +1348,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	if (!cmd->stop_src || tmp != cmd->stop_src)
+ 		err++;
+ 
+-	if (err) {
++	if (err)
+ 		return 1;
+-	}
+ 
+ 	/* step 2: make sure trigger sources are unique and mutually compatible */
+ 
+@@ -1377,9 +1372,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	if (cmd->stop_src != TRIG_NONE && cmd->stop_src != TRIG_COUNT)
+ 		err++;
+ 
+-	if (err) {
++	if (err)
+ 		return 2;
+-	}
+ 
+ 	/* step 3: make sure arguments are trivially compatible */
+ 
+@@ -1421,9 +1415,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
  		}
  	}
- 	rcu_read_unlock();
  
-+	/* IPI in flighht?  Let the it happen */
-+	if (unlikely(this_rq->wake_list)) {
-+		local_irq_enable();
-+		local_irq_disable();
-+	}
- 	raw_spin_lock(&this_rq->lock);
+-	if (err) {
++	if (err)
+ 		return 3;
+-	}
  
--	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
-+	if (this_rq->nr_running || time_after(jiffies, this_rq->next_balance)) {
- 		/*
- 		 * We are going idle. next_balance may be set based on
- 		 * a busy processor. So reset next_balance.
-
-
+ 	/* step 4: fix up any arguments */
+ 
+@@ -1438,9 +1431,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 			err++;
+ 	}
+ 
+-	if (err) {
++	if (err)
+ 		return 4;
+-	}
+ 
+ 	/* step 5: complain about special chanlist considerations */
+ 
+@@ -1470,11 +1462,10 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	devpriv->ai_timer1 = 0;
+ 	devpriv->ai_timer2 = 0;
+ 
+-	if (cmd->stop_src == TRIG_COUNT) {
++	if (cmd->stop_src == TRIG_COUNT)
+ 		devpriv->ai_scans = cmd->stop_arg;
+-	} else {
++	else
+ 		devpriv->ai_scans = 0;
+-	}
+ 
+ 	if (cmd->scan_begin_src == TRIG_FOLLOW) {	/*  mode 1, 3 */
+ 		if (cmd->convert_src == TRIG_TIMER) {	/*  mode 1 */
+@@ -1633,11 +1624,11 @@ static int set_rtc_irq_bit(unsigned char bit)
+ 	save_flags(flags);
+ 	cli();
+ 	val = CMOS_READ(RTC_CONTROL);
+-	if (bit) {
++	if (bit)
+ 		val |= RTC_PIE;
+-	} else {
++	else
+ 		val &= ~RTC_PIE;
+-	}
++
+ 	CMOS_WRITE(val, RTC_CONTROL);
+ 	CMOS_READ(RTC_INTR_FLAGS);
+ 	restore_flags(flags);
+@@ -1800,12 +1791,11 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
+ 
+ 	dev->irq = irq;
+-	if (irq) {
+-		devpriv->irq_free = 1;
+-	} /* 1=we have allocated irq */
+-	else {
++	if (irq)
++		devpriv->irq_free = 1;   /* 1=we have allocated irq */
++	else
+ 		devpriv->irq_free = 0;
+-	}
++
+ 	devpriv->irq_blocked = 0;	/* number of subdevice which use IRQ */
+ 	devpriv->ai_mode = 0;	/* mode of irq */
+ 
+@@ -2017,11 +2007,10 @@ no_dma:
+ 	}
+ 
+ 	/* select 1/10MHz oscilator */
+-	if ((it->options[3] == 0) || (it->options[3] == 10)) {
++	if ((it->options[3] == 0) || (it->options[3] == 10))
+ 		devpriv->i8253_osc_base = 100;
+-	} else {
++	else
+ 		devpriv->i8253_osc_base = 1000;
+-	}
+ 
+ 	/* max sampling speed */
+ 	devpriv->ns_min = this_board->ns_min;
+-- 
+1.7.0.4
 
