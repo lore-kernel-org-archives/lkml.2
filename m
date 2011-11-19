@@ -1,116 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab1KSTfh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 14:35:37 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:54693 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab1KSTff (ORCPT
+	id S1753242Ab1KSTt0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 14:49:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58758 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752159Ab1KSTtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 14:35:35 -0500
-Message-ID: <4EC804FC.9000109@linux.vnet.ibm.com>
-Date: Sun, 20 Nov 2011 01:05:24 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: rjw@sisk.pl, pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
-References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <20111119183240.GA17252@google.com>
-In-Reply-To: <20111119183240.GA17252@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111909-6102-0000-0000-000000337093
+	Sat, 19 Nov 2011 14:49:25 -0500
+Message-ID: <1321732145.2885.163.camel@deadeye>
+Subject: Re: [17/26] b43: refuse to load unsupported firmware
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, greg@kroah.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, linux-wireless@vger.kernel.org,
+        b43-dev@lists.infradead.org, roman-vl@meta.ua,
+        =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Date: Sat, 19 Nov 2011 19:49:05 +0000
+In-Reply-To: <20111119190559.GC30197@suse.de>
+References: <20111119000329.419617905@clark.kroah.org>
+	 <1321723330.2885.145.camel@deadeye> <20111119190559.GC30197@suse.de>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ngTtci1XnwPyCQAxnVG6"
+X-Mailer: Evolution 3.0.3-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
 
-On 11/20/2011 12:02 AM, Tejun Heo wrote:
-> Hello, Srivatsa.
-> 
-> On Thu, Nov 17, 2011 at 02:00:50PM +0530, Srivatsa S. Bhat wrote:
->> @@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
->>  
->>  static inline void lock_system_sleep(void)
->>  {
->> -	mutex_lock(&pm_mutex);
->> +	/*
->> +	 * "To sleep, or not to sleep, that is the question!"
->> +	 *
->> +	 * We should not use mutex_lock() here because, in case we fail to
->> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
->> +	 * state, which would lead to task freezing failures. As a
->> +	 * consequence, hibernation would fail (even though it had acquired
->> +	 * the 'pm_mutex' lock).
->> +	 * Using mutex_lock_interruptible() in a loop is not a good idea,
->> +	 * because we could end up treating non-freezing signals badly.
->> +	 * So we use mutex_trylock() in a loop instead.
->> +	 *
->> +	 * Also, we add try_to_freeze() to the loop, to co-operate with the
->> +	 * freezer, to avoid task freezing failures due to busy-looping.
->> +	 *
->> +	 * But then, since it is not guaranteed that we will get frozen
->> +	 * rightaway, we could keep spinning for some time, breaking the
->> +	 * expectation that we go to sleep when we fail to acquire the lock.
->> +	 * So we add an msleep() to the loop, to dampen the spin (but we are
->> +	 * careful enough not to sleep for too long at a stretch, lest the
->> +	 * freezer whine and give up again!).
->> +	 *
->> +	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
->> +	 * more important, due to a subtle reason: if we don't cooperate with
->> +	 * the freezer at this point, we could end up in a situation very
->> +	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
->> +	 * uninterruptibly).
->> +	 *
->> +	 * Phew! What a delicate balance!
->> +	 */
->> +	while (!mutex_trylock(&pm_mutex)) {
->> +		try_to_freeze();
->> +		msleep(10);
->> +	}
-> 
-> I tried to think about a better way to do it but couldn't, so I
-> suppose this is what we should go with for now.  That said, I think
-> the comment is a bit too umm.... verbose.  
+--=-ngTtci1XnwPyCQAxnVG6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hehe, I grabbed the opportunity to add some custom-modified Shakespearean
-quotes and stuff to make the long story interesting ;-)
+On Sat, 2011-11-19 at 11:05 -0800, Greg KH wrote:
+> On Sat, Nov 19, 2011 at 05:22:10PM +0000, Ben Hutchings wrote:
+> > On Fri, 2011-11-18 at 16:02 -0800, Greg KH wrote:
+> > > 3.1-stable review patch.  If anyone has any objections, please let me=
+ know.
+> > >=20
+> > > ------------------
+> > >=20
+> > > [This patch is supposed to be applied in 3.1 (and maybe older) branch=
+es only.]
+> > >=20
+> > > New kernels support newer firmware that users may try to incorrectly =
+use
+> > > with older kernels. Display error and explain the problem in such a c=
+ase
+> > >=20
+> > > Signed-off-by: Rafa=C3=85=C2=82 Mi=C3=85=C2=82ecki <zajec5@gmail.com>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > >=20
+> > > ---
+> > >  drivers/net/wireless/b43/main.c |    7 +++++++
+> > >  1 file changed, 7 insertions(+)
+> > >=20
+> > > --- a/drivers/net/wireless/b43/main.c
+> > > +++ b/drivers/net/wireless/b43/main.c
+> > > @@ -2508,6 +2508,13 @@ static int b43_upload_microcode(struct b
+> > >  		b43_print_fw_helptext(dev->wl, 1);
+> > >  		err =3D -EOPNOTSUPP;
+> > >  		goto error;
+> > > +	} else if (fwrev >=3D 598) {
+> > > +		b43err(dev->wl, "YOUR FIRMWARE IS TOO NEW. Support for "
+> > > +		       "firmware 598 and up requires kernel 3.2 or newer. You "
+> > > +		       "have to install older firmware or upgrade kernel.\n");
+> > > +		b43_print_fw_helptext(dev->wl, 1);
+> > > +		err =3D -EOPNOTSUPP;
+> > > +		goto error;
+> > [...]
+> >=20
+> > Again, I strongly object to this way of handling the incompatibility.
+> > The revision check is fine, but the solution must be to assign a
+> > different filename for the newer revisions.  The changes to 3.0/3.1
+> > should be deferred until this is resolved.
+>=20
+> You can object, however the driver author and maintainer wants it done
+> this way for now, so that's a valid solution that I have to accept.  It
+> solves real bugs that people have already hit when running the 3.0 and
+> 3.1 kernels.
 
-> What we want here is
-> freezable but !interruptible mutex_lock() and while I do appreciate
-> the detailed comment, I think it makes it look a lot more complex than
-> it actually is.  
+The revision check fixes a bug, yes.  What I'm concerned about is the
+cop-out error message: 'We didn't deal with versioning properly, so you
+get to solve the problem.'  It should be possible to reboot between
+multiple installed kernel versions without modifying files.
 
-Yes, the overall requirement we have here could be explained in those simple
-words, as you said, but that is only because we already know the background
-and the problems involved (due to the discussions on this thread and our
-knowledge of how the freezer works).
+> Propagating a userspace tool change for those systems
+> would be much harder, if not impossible, don't you think? It would also
+> require a much more intrusive change to the driver infrastructure to
+> handle such a proposed change.
 
-But for someone reading it from purely a memory-hotplug point of view, IMHO,
-all the constraints we are handling here might not be that intuitive..
-So I felt I needed to document the workaround very well (including the
-thought process used to develop it), so that nobody messes with it without
-knowing what each line of that workaround does, and why it does it, since
-it is already quite delicate and hacky.
+It is the new kernel version and firmware files that should be changed,
+not the old ones.
 
-So, I would rather prefer retaining that comment verbosity until we have
-a real, better fix...
+There is another option which is to use the /lib/firmware/<kernel-ver>
+directories to separate incompatible firmware versions.  That is not
+nearly as good as using a API/ABI number in the filename, but it would
+work and the error message could suggest it.
 
-At the same time, I wouldn't want to make it feel so scary that nobody
-even dares to contribute a real fix! ;-) So, considering all this, could
-you let me know if you feel it is better to cut it short and make it look
-simpler or just retain it as it is?
+Ben.
 
-> Other than that,
-> 
->  Acked-by: Tejun Heo <tj@kernel.org>
-> 
+--=20
+Ben Hutchings
+The world is coming to an end.	Please log off.
 
-Thanks a lot for your review and Ack!
+--=-ngTtci1XnwPyCQAxnVG6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Thanks,
-Srivatsa S. Bhat
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIVAwUATsgIMee/yOyVhhEJAQp6uA//dQfTB+UIad1X9f5L6revzcYaZQZ+ahrP
+U0XobRanGvioeghnwMcDv8qQUaW6xjGuUmCjpySAjdwsjY00+2KDfAfTy+nMwuHl
+r4KY4KmD6iV77fyPsHDrCzcgCpY32tkVion+DM0JYUHljBxlHUNoTxvgtZqjXgW/
+JOBHojTJTXBtF9Y3ffner91wBgz3CIvdt8KSacxahVrhcDqh3db2c/R2Uupsngpe
+UDZVI4Sqh9pcCO/0fJl+fMO+2BEYxCzPfTQtJ+x4Sp/OaWSWy5sRIDit/kAQcjyf
+4eAb+DQWZGykacPmlUqgiU5ZKRFEZwk+gdydWQmKHkoki7BgiPiuZn3FYMj6H6gM
+Q2M6Ek/Dd0EbhocBRozZM43n89DCVvLH04fxcc8qG/CbSqIJ3DVkW0GspHkrAlCU
+O0dxy4QLEoYYUeFu01j+n8TtuEEgO0mP4Q3MKhTqB32I/hteEpNwi/hsfiijlsYP
+aejCRYnx8304UiSnQKybJvdh21/642kYY3m2/y/6cojQOhVFX8BgAA0F6Zhxj4co
+Z8ZQwE1YLqnMY5XETUFFYYfQy+F1+H56sjpNc8DImUI6RcTdaFI+vFYEzSClEKxv
+egzrHzcyH6uU9c0aTsBPiZvfG8xRL+hgl6js+rZdI0RaXkBhO4Pj9wUnIr21HcBf
+4RoHoYA8pNo=
+=nIhd
+-----END PGP SIGNATURE-----
+
+--=-ngTtci1XnwPyCQAxnVG6--
