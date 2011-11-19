@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab1KSRRl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 12:17:41 -0500
-Received: from adsl-66-120-108-250.dsl.sndg02.pacbell.net ([66.120.108.250]:42957
-	"EHLO mail.atsionline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab1KSRRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 12:17:40 -0500
-X-Greylist: delayed 2227 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Nov 2011 12:17:40 EST
-Reply-To: <AmericanExpress@welcome.aexp.com>
-From: "American Express" <AmericanExpress@welcome.aexp.com>
-To: linuxcpa@netscape.net, linux-events-travel@yahoogroups.com,
-        linuxiskolen@skolelinux.no, linux-kernel@vger.kernel.org,
-        linuxogen@mail.ru, linuxpapers@bitmover.com,
-        linux-questions-only@ssc.com, linux-security@redhat.com,
-        linuxtag@travel.to, linux-users@lugwash.org, linux-xfs@oss.sgi.com,
-        linverity@msn.com, linville@garfield.catt.ncsu.edu, linvillewv@cs.com,
-        linwdtsf@aol.com
-Subject: Important !
-Date: Sat, 19 Nov 2011 16:14:35 -0000
+	id S1752819Ab1KSRVc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 12:21:32 -0500
+Received: from ackle.nomi.cz ([81.31.33.35]:48842 "EHLO ackle.nomi.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab1KSRVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 12:21:31 -0500
+Date: Sat, 19 Nov 2011 18:21:27 +0100
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-pci@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: DMAR:[fault reason 02] Present bit in context entry is clear
+	(firewire-ohci)
+Message-ID: <20111119172127.GA31915@nomi.cz>
+References: <4BF7B147.9020502@s5r6.in-berlin.de> <20100522121212.GQ10452@parisc-linux.org> <1274553643.11551.17300.camel@macbook.infradead.org> <20100522120905.154ff932@jbarnes-x201>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-Message-ID: <SBS2003Ucnx05lbvTvC00000c2c@mail.atsionline.com>
-X-OriginalArrivalTime: 19 Nov 2011 16:14:36.0766 (UTC) FILETIME=[55169FE0:01CCA6D6]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100522120905.154ff932@jbarnes-x201>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear American Express costumer,
- 
-We detected irregular activity on your American Express card. For your protection, you must verify your account before you can continue using your card.
- 
-Please use the link below to verify your account immediately:
- 
-http://www.kidstoryhouse.com.tw/img/www.americanexpres.com
- 
-We will review the activity on your account with you and upon verification, we will remove any restrictions placed on your account.
+Hello guys,
+
+On Sat, May 22, 2010 at 12:09:05PM -0700, Jesse Barnes wrote:
+> On Sat, 22 May 2010 19:40:43 +0100
+> David Woodhouse <dwmw2@infradead.org> wrote:
+> > [...]
+> > Yeah, the DMAR looks at the source-id in the PCIe transactions, and it
+> > sounds like those are all 04:00.0. But we've probably set up the DMAR to
+> > allow the transactions from 04:00.4, and then it naturally faults when a
+> > "different" device actually ends up doing the transaction.
+> > 
+> > If you make the pci_find_upstream_pcie_bridge() function do the
+> > appropriate thing for this device, does it then work as expected?
+> > 
+> > Whether that's a _sane_ thing to do or not is possibly more of a Jesse
+> > question...
+> 
+> Well, if cardbus bridges tend to behave this way in general it would
+> make sense to simply use the cardbus bride id everywhere, rather than
+> the specific functions of the device.  Cc'ing Dominik.
+
+Any news on this one? It is still an issue with current kernel on current
+hardware (like my ThinkPad T420). :-(
+
+Regards,
+-- 
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
