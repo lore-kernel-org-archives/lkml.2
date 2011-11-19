@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1KSEJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:09:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47547 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab1KSEJB (ORCPT
+	id S1756935Ab1KSEPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:15:08 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:34409 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752084Ab1KSEPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:09:01 -0500
-Date: Sat, 19 Nov 2011 12:08:37 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Jeff Ohlstein <johlstei@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hrtimer: Fix extra wakeups from __remove_hrtimer()
-Message-ID: <20111119040836.GA1885@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1321660030-8520-1-git-send-email-johlstei@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1321660030-8520-1-git-send-email-johlstei@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 Nov 2011 23:15:07 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19Aa6EExwtAu0MZ5riAdiAfziL1KSWC2HT26yQiDk
+	ZI9qvEIXFOc2XT
+Subject: RE: [patch 3/6] sched: use rq->avg_event to resurrect nohz
+ ratelimiting
+From: Mike Galbraith <efault@gmx.de>
+To: "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+In-Reply-To: <26E9B811E137AB4B95200FD4C950886BFF9781E8@orsmsx507.amr.corp.intel.com>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629562.7080.17.camel@marge.simson.net>
+	 <1321630619.2197.16.camel@twins>
+	 <1321638146.6238.20.camel@marge.simson.net>
+	 <26E9B811E137AB4B95200FD4C950886BFF9781E8@orsmsx507.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Nov 2011 05:15:01 +0100
+Message-ID: <1321676101.6307.3.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 03:47:10PM -0800, Jeff Ohlstein wrote:
-> __remove_hrtimer() attempts to reprogram the clockevent device when
-> the timer being removed is the next to expire. However,
-> __remove_hrtimer() reprograms the clockevent *before* removing the
-> timer from the timerqueue and thus when hrtimer_force_reprogram()
-> finds the next timer to expire it finds the timer we're trying to
-> remove.
+On Fri, 2011-11-18 at 16:51 -0800, Van De Ven, Arjan wrote:
+> > > Arjan, can we do something smart with the idle governor which already
+> > > guestimates the idle duration for us?
+> > 
+> > That would be great.  Won't help my Intel Q6600 though, the intel_idle
+> > governor doesn't support it.  Other idle_governor gizmos really need to
+> > get smarter too.
 > 
-> This is especially noticeable when the system switches to NOHz mode
-> and the system tick is removed. The timer tick is removed from the
-> system but the clockevent is programmed to wakeup in another HZ
-> anyway.
-
-Reduced one needless call of hrtimer_interrupt() indeed.
-
 > 
-> Silence the extra wakeup by removing the timer from the timerqueue
-> before calling hrtimer_force_reprogram() so that we actually program
-> the clockevent for the next timer to expire.
-> 
-> This was broken by 998adc3 "hrtimers: Convert hrtimers to use
-> timerlist infrastructure".
+> you're confusing the governor (menu) and the low level hardware driver.
 
-The issue also exists before 998adc3.
+Ok, I just saw that intel_idle_probe() says go away.
 
-Apart from that.
+[    2.479695] intel_idle: MWAIT substates: 0x20
+[    2.484144] intel_idle: does not run on family 6 model 15
 
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+	-Mike
 
-> 
-> Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
-> ---
->  kernel/hrtimer.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 422e567..ae34bf5 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -885,10 +885,13 @@ static void __remove_hrtimer(struct hrtimer *timer,
->  			     struct hrtimer_clock_base *base,
->  			     unsigned long newstate, int reprogram)
->  {
-> +	struct timerqueue_node *next_timer;
->  	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
->  		goto out;
->  
-> -	if (&timer->node == timerqueue_getnext(&base->active)) {
-> +	next_timer = timerqueue_getnext(&base->active);
-> +	timerqueue_del(&base->active, &timer->node);
-> +	if (&timer->node == next_timer) {
->  #ifdef CONFIG_HIGH_RES_TIMERS
->  		/* Reprogram the clock event device. if enabled */
->  		if (reprogram && hrtimer_hres_active()) {
-> @@ -901,7 +904,6 @@ static void __remove_hrtimer(struct hrtimer *timer,
->  		}
->  #endif
->  	}
-> -	timerqueue_del(&base->active, &timer->node);
->  	if (!timerqueue_getnext(&base->active))
->  		base->cpu_base->active_bases &= ~(1 << base->index);
->  out:
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
