@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab1KSOA7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 09:00:59 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:47393 "EHLO ogre.sisk.pl"
+	id S1755579Ab1KSOAj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 09:00:39 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:47368 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756129Ab1KSOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 09:00:44 -0500
+	id S1754340Ab1KSOA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 09:00:28 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [Update 2x][PATCH 7/7] PM / Domains: Automatically update overoptimistic latency information
-Date: Sat, 19 Nov 2011 15:02:51 +0100
+Subject: [Update 2x][PATCH 4/7] PM / Runtime: Use device PM QoS constraints
+Date: Sat, 19 Nov 2011 15:00:34 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Linux-sh list" <linux-sh@vger.kernel.org>,
@@ -22,127 +22,289 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111191502.51686.rjw@sisk.pl>
+Message-Id: <201111191500.34517.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Measure the time of execution of the .stop(), .start(), .save_state()
-and .restore_state() PM domain device callbacks and if the result
-is greater than the corresponding latency value stored in the
-device's struct generic_pm_domain_data object, replace the inaccurate
-value with the measured time.
+Make the runtime PM core use device PM QoS constraints to check if
+it is allowed to suspend a given device, so that an error code is
+returned if the device's own PM QoS constraint is negative or one of
+its children has already been suspended for too long.  If this is
+not the case, the maximum estimated time the device is allowed to be
+suspended, computed as the minimum of the device's PM QoS constraint
+and the PM QoS constraints of its children (reduced by the difference
+between the current time and their suspend times) is stored in a new
+device's PM field power.max_time_suspended_ns that can be used by
+the device's subsystem or PM domain to decide whether or not to put
+the device into lower-power (and presumably higher-latency) states
+later (if the constraint is 0, which means "no constraint", the
+power.max_time_suspended_ns is set to -1).
 
-Do analogously for the PM domains' .power_off() and .power_off()
-callbacks.
+Additionally, the time of execution of the subsystem-level
+.runtime_suspend() callback for the device is recorded in the new
+power.suspend_time field for later use by the device's subsystem or
+PM domain along with power.max_time_suspended_ns (it also is used
+by the core code when the device's parent is suspended).
+
+Introduce a new helper function,
+pm_runtime_update_max_time_suspended(), allowing subsystems and PM
+domains (or device drivers) to update the power.max_time_suspended_ns
+field, for example after changing the power state of a suspended
+device.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   43 +++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 39 insertions(+), 4 deletions(-)
+ drivers/base/power/qos.c     |   24 +++++++---
+ drivers/base/power/runtime.c |   94 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pm.h           |    2 
+ include/linux/pm_qos.h       |    3 +
+ include/linux/pm_runtime.h   |    5 ++
+ 5 files changed, 120 insertions(+), 8 deletions(-)
 
-Index: linux/drivers/base/power/domain.c
+Index: linux/include/linux/pm.h
 ===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -33,6 +33,20 @@
- 	__ret;							\
- })
- 
-+#define GENPD_DEV_TIMED_CALLBACK(genpd, type, callback, dev, field, name)	\
-+({										\
-+	ktime_t __start = ktime_get();						\
-+	type __retval = GENPD_DEV_CALLBACK(genpd, type, callback, dev);		\
-+	s64 __elapsed = ktime_to_ns(ktime_sub(ktime_get(), __start));		\
-+	struct generic_pm_domain_data *__gpd_data = dev_gpd_data(dev);		\
-+	if (__elapsed > __gpd_data->td.field) {					\
-+		__gpd_data->td.field = __elapsed;				\
-+		dev_warn(dev, name " latency exceeded, new value %lld ns\n",	\
-+			__elapsed);						\
-+	}									\
-+	__retval;								\
-+})
-+
- static LIST_HEAD(gpd_list);
- static DEFINE_MUTEX(gpd_list_lock);
- 
-@@ -48,22 +62,27 @@ struct generic_pm_domain *dev_to_genpd(s
- 
- static int genpd_stop_dev(struct generic_pm_domain *genpd, struct device *dev)
- {
--	return GENPD_DEV_CALLBACK(genpd, int, stop, dev);
-+	return GENPD_DEV_TIMED_CALLBACK(genpd, int, stop, dev,
-+					stop_latency_ns, "stop");
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -482,6 +482,8 @@ struct dev_pm_info {
+ 	unsigned long		active_jiffies;
+ 	unsigned long		suspended_jiffies;
+ 	unsigned long		accounting_timestamp;
++	ktime_t			suspend_time;
++	s64			max_time_suspended_ns;
+ #endif
+ 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
+ 	struct pm_qos_constraints *constraints;
+Index: linux/drivers/base/power/runtime.c
+===================================================================
+--- linux.orig/drivers/base/power/runtime.c
++++ linux/drivers/base/power/runtime.c
+@@ -279,6 +279,47 @@ static int rpm_callback(int (*cb)(struct
+ 	return retval != -EACCES ? retval : -EIO;
  }
  
- static int genpd_start_dev(struct generic_pm_domain *genpd, struct device *dev)
++struct rpm_qos_data {
++	ktime_t time_now;
++	s64 constraint_ns;
++};
++
++/**
++ * rpm_update_qos_constraint - Update a given PM QoS constraint data.
++ * @dev: Device whose timing data to use.
++ * @data: PM QoS constraint data to update.
++ *
++ * Use the suspend timing data of @dev to update PM QoS constraint data pointed
++ * to by @data.
++ */
++static int rpm_update_qos_constraint(struct device *dev, void *data)
++{
++	struct rpm_qos_data *qos = data;
++	unsigned long flags;
++	s64 delta_ns;
++	int ret = 0;
++
++	spin_lock_irqsave_nested(&dev->power.lock, flags, SINGLE_DEPTH_NESTING);
++
++	if (dev->power.max_time_suspended_ns < 0)
++		goto out;
++
++	delta_ns = dev->power.max_time_suspended_ns -
++		ktime_to_ns(ktime_sub(qos->time_now, dev->power.suspend_time));
++	if (delta_ns <= 0) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	if (qos->constraint_ns > delta_ns || qos->constraint_ns == 0)
++		qos->constraint_ns = delta_ns;
++
++ out:
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++
++	return ret;
++}
++
+ /**
+  * rpm_suspend - Carry out runtime suspend of given device.
+  * @dev: Device to suspend.
+@@ -305,6 +346,7 @@ static int rpm_suspend(struct device *de
  {
--	return GENPD_DEV_CALLBACK(genpd, int, start, dev);
-+	return GENPD_DEV_TIMED_CALLBACK(genpd, int, start, dev,
-+					start_latency_ns, "start");
+ 	int (*callback)(struct device *);
+ 	struct device *parent = NULL;
++	struct rpm_qos_data qos;
+ 	int retval;
+ 
+ 	trace_rpm_suspend(dev, rpmflags);
+@@ -400,6 +442,25 @@ static int rpm_suspend(struct device *de
+ 		goto out;
+ 	}
+ 
++	qos.constraint_ns = __dev_pm_qos_read_value(dev);
++	if (qos.constraint_ns < 0) {
++		/* Negative constraint means "never suspend". */
++		retval = -EPERM;
++		goto out;
++	}
++	qos.constraint_ns *= NSEC_PER_USEC;
++	qos.time_now = ktime_get();
++
++	if (!dev->power.ignore_children) {
++		retval = device_for_each_child(dev, &qos,
++					       rpm_update_qos_constraint);
++		if (retval)
++			goto out;
++	}
++
++	dev->power.suspend_time = qos.time_now;
++	dev->power.max_time_suspended_ns = qos.constraint_ns ? : -1;
++
+ 	__update_runtime_status(dev, RPM_SUSPENDING);
+ 
+ 	if (dev->pm_domain)
+@@ -416,6 +477,8 @@ static int rpm_suspend(struct device *de
+ 	retval = rpm_callback(callback, dev);
+ 	if (retval) {
+ 		__update_runtime_status(dev, RPM_ACTIVE);
++		dev->power.suspend_time = ktime_set(0, 0);
++		dev->power.max_time_suspended_ns = -1;
+ 		dev->power.deferred_resume = false;
+ 		if (retval == -EAGAIN || retval == -EBUSY) {
+ 			dev->power.runtime_error = 0;
+@@ -620,6 +683,9 @@ static int rpm_resume(struct device *dev
+ 	if (dev->power.no_callbacks)
+ 		goto no_callback;	/* Assume success. */
+ 
++	dev->power.suspend_time = ktime_set(0, 0);
++	dev->power.max_time_suspended_ns = -1;
++
+ 	__update_runtime_status(dev, RPM_RESUMING);
+ 
+ 	if (dev->pm_domain)
+@@ -1279,6 +1345,9 @@ void pm_runtime_init(struct device *dev)
+ 	setup_timer(&dev->power.suspend_timer, pm_suspend_timer_fn,
+ 			(unsigned long)dev);
+ 
++	dev->power.suspend_time = ktime_set(0, 0);
++	dev->power.max_time_suspended_ns = -1;
++
+ 	init_waitqueue_head(&dev->power.wait_queue);
  }
  
- static int genpd_save_dev(struct generic_pm_domain *genpd, struct device *dev)
- {
--	return GENPD_DEV_CALLBACK(genpd, int, save_state, dev);
-+	return GENPD_DEV_TIMED_CALLBACK(genpd, int, save_state, dev,
-+					save_state_latency_ns, "state save");
+@@ -1296,3 +1365,28 @@ void pm_runtime_remove(struct device *de
+ 	if (dev->power.irq_safe && dev->parent)
+ 		pm_runtime_put_sync(dev->parent);
  }
++
++/**
++ * pm_runtime_update_max_time_suspended - Update device's suspend time data.
++ * @dev: Device to handle.
++ * @delta_ns: Value to subtract from the device's max_time_suspended_ns field.
++ *
++ * Update the device's power.max_time_suspended_ns field by subtracting
++ * @delta_ns from it.  The resulting value of power.max_time_suspended_ns is
++ * never negative.
++ */
++void pm_runtime_update_max_time_suspended(struct device *dev, s64 delta_ns)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&dev->power.lock, flags);
++
++	if (delta_ns > 0 && dev->power.max_time_suspended_ns > 0) {
++		if (dev->power.max_time_suspended_ns > delta_ns)
++			dev->power.max_time_suspended_ns -= delta_ns;
++		else
++			dev->power.max_time_suspended_ns = 0;
++	}
++
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++}
+Index: linux/include/linux/pm_runtime.h
+===================================================================
+--- linux.orig/include/linux/pm_runtime.h
++++ linux/include/linux/pm_runtime.h
+@@ -45,6 +45,8 @@ extern void pm_runtime_irq_safe(struct d
+ extern void __pm_runtime_use_autosuspend(struct device *dev, bool use);
+ extern void pm_runtime_set_autosuspend_delay(struct device *dev, int delay);
+ extern unsigned long pm_runtime_autosuspend_expiration(struct device *dev);
++extern void pm_runtime_update_max_time_suspended(struct device *dev,
++						 s64 delta_ns);
  
- static int genpd_restore_dev(struct generic_pm_domain *genpd, struct device *dev)
+ static inline bool pm_children_suspended(struct device *dev)
  {
--	return GENPD_DEV_CALLBACK(genpd, int, restore_state, dev);
-+	return GENPD_DEV_TIMED_CALLBACK(genpd, int, restore_state, dev,
-+					restore_state_latency_ns,
-+					"state restore");
- }
+@@ -148,6 +150,9 @@ static inline void pm_runtime_set_autosu
+ static inline unsigned long pm_runtime_autosuspend_expiration(
+ 				struct device *dev) { return 0; }
  
- static bool genpd_sd_counter_dec(struct generic_pm_domain *genpd)
-@@ -182,9 +201,16 @@ int __pm_genpd_poweron(struct generic_pm
- 	}
- 
- 	if (genpd->power_on) {
-+		ktime_t time_start = ktime_get();
-+		s64 elapsed_ns;
++static inline void pm_runtime_update_max_time_suspended(struct device *dev,
++							s64 delta_ns) {}
 +
- 		ret = genpd->power_on(genpd);
- 		if (ret)
- 			goto err;
-+
-+		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-+		if (elapsed_ns > genpd->power_on_latency_ns)
-+			genpd->power_on_latency_ns = elapsed_ns;
- 	}
+ #endif /* !CONFIG_PM_RUNTIME */
  
- 	genpd_set_active(genpd);
-@@ -377,11 +403,16 @@ static int pm_genpd_poweroff(struct gene
- 	}
+ static inline int pm_runtime_idle(struct device *dev)
+Index: linux/drivers/base/power/qos.c
+===================================================================
+--- linux.orig/drivers/base/power/qos.c
++++ linux/drivers/base/power/qos.c
+@@ -47,21 +47,29 @@ static DEFINE_MUTEX(dev_pm_qos_mtx);
+ static BLOCKING_NOTIFIER_HEAD(dev_pm_notifiers);
  
- 	if (genpd->power_off) {
-+		ktime_t time_start;
-+		s64 elapsed_ns;
+ /**
+- * dev_pm_qos_read_value - Get PM QoS constraint for a given device.
++ * __dev_pm_qos_read_value - Get PM QoS constraint for a given device.
++ * @dev: Device to get the PM QoS constraint value for.
++ *
++ * This routine must be called with dev->power.lock held.
++ */
++s32 __dev_pm_qos_read_value(struct device *dev)
++{
++	struct pm_qos_constraints *c = dev->power.constraints;
 +
- 		if (atomic_read(&genpd->sd_count) > 0) {
- 			ret = -EBUSY;
- 			goto out;
- 		}
++	return c ? pm_qos_read_value(c) : 0;
++}
++
++/**
++ * dev_pm_qos_read_value - Get PM QoS constraint for a given device (locked).
+  * @dev: Device to get the PM QoS constraint value for.
+  */
+ s32 dev_pm_qos_read_value(struct device *dev)
+ {
+-	struct pm_qos_constraints *c;
+ 	unsigned long flags;
+-	s32 ret = 0;
++	s32 ret;
  
-+		time_start = ktime_get();
-+
- 		/*
- 		 * If sd_count > 0 at this point, one of the subdomains hasn't
- 		 * managed to call pm_genpd_poweron() for the master yet after
-@@ -395,6 +426,10 @@ static int pm_genpd_poweroff(struct gene
- 			genpd_set_active(genpd);
- 			goto out;
- 		}
-+
-+		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-+		if (elapsed_ns > genpd->power_off_latency_ns)
-+			genpd->power_off_latency_ns = elapsed_ns;
- 	}
+ 	spin_lock_irqsave(&dev->power.lock, flags);
+-
+-	c = dev->power.constraints;
+-	if (c)
+-		ret = pm_qos_read_value(c);
+-
++	ret = __dev_pm_qos_read_value(dev);
+ 	spin_unlock_irqrestore(&dev->power.lock, flags);
  
- 	genpd->status = GPD_STATE_POWER_OFF;
+ 	return ret;
+Index: linux/include/linux/pm_qos.h
+===================================================================
+--- linux.orig/include/linux/pm_qos.h
++++ linux/include/linux/pm_qos.h
+@@ -78,6 +78,7 @@ int pm_qos_remove_notifier(int pm_qos_cl
+ int pm_qos_request_active(struct pm_qos_request *req);
+ s32 pm_qos_read_value(struct pm_qos_constraints *c);
+ 
++s32 __dev_pm_qos_read_value(struct device *dev);
+ s32 dev_pm_qos_read_value(struct device *dev);
+ int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+ 			   s32 value);
+@@ -119,6 +120,8 @@ static inline int pm_qos_request_active(
+ static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
+ 			{ return 0; }
+ 
++static inline s32 __dev_pm_qos_read_value(struct device *dev)
++			{ return 0; }
+ static inline s32 dev_pm_qos_read_value(struct device *dev)
+ 			{ return 0; }
+ static inline int dev_pm_qos_add_request(struct device *dev,
 
