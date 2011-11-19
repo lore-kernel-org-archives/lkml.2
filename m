@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab1KSSl1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 13:41:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39869 "EHLO mx1.redhat.com"
+	id S1752510Ab1KSSut (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 13:50:49 -0500
+Received: from home.keithp.com ([63.227.221.253]:58405 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959Ab1KSSl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 13:41:26 -0500
-Date: Sat, 19 Nov 2011 20:39:07 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+	id S1751275Ab1KSSus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 13:50:48 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Marcos Paulo de Souza <marcos.mage@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] perf tool: Introducing perf_mmap object
-Message-ID: <20111120013907.GB2248@krava.redhat.com>
-References: <1321624005-6889-1-git-send-email-jolsa@redhat.com>
- <1321624005-6889-4-git-send-email-jolsa@redhat.com>
- <20111118143740.GD13052@ghostprotocols.net>
+Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org
+Subject: Re: max PWM is zero
+In-Reply-To: <alpine.LNX.2.00.1111191124350.5248@darkstar.example.net>
+References: <alpine.LNX.2.00.1111151301410.2693@darkstar.example.net> <alpine.LNX.2.00.1111191124350.5248@darkstar.example.net>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 19 Nov 2011 10:50:39 -0800
+Message-ID: <864ny0kku8.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118143740.GD13052@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 12:37:40PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Nov 18, 2011 at 02:46:43PM +0100, Jiri Olsa escreveu:
-> > +++ b/tools/perf/builtin-test.c
-> > @@ -476,6 +477,7 @@ static int test__basic_mmap(void)
-> >  		     expected_nr_events[nsyscalls], i, j;
-> >  	struct perf_evsel *evsels[nsyscalls], *evsel;
-> >  	int sample_size = __perf_evsel__sample_size(attr.sample_type);
-> > +	struct perf_mmap *md;
-> >  
-> >  	for (i = 0; i < nsyscalls; ++i) {
-> >  		char name[64];
-> > @@ -551,7 +553,9 @@ static int test__basic_mmap(void)
-> >  			++foo;
-> >  		}
-> >  
-> > -	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
-> > +	md = &evlist->mmap[0];
-> > +
-> > +	while ((event = perf_mmap__read(md)) != NULL) {
-> >  		struct perf_sample sample;
-> >  
-> >  		if (event->header.type != PERF_RECORD_SAMPLE) {
-> 
-> Please keep perf_evlist__mmap_read() as just a wrapper for the above
-> operation, that way you reduce the patch size by not touching the
-> functions that use perf_evlist__mmap_read().
-> 
-> Later, if we think this is the right thing to do, i.e. to open code it
-> like you're doing above, we can elliminate it, but I think its better to
-> keep it as perf_evlist__mmap_read(evlist, 0) as it uses just one line
-> instead of the 4 above :-)
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-right, I'll sent v2 shortly
+On Sat, 19 Nov 2011 11:26:07 +0000 (Local time zone must be set--see zic ma=
+nual page), Marcos Paulo de Souza <marcos.mage@gmail.com> wrote:
+> So, anybody gets the same message?
+>=20
+> I'm trying the 3.2-rc2 and it gives the same message.
+>=20
+> Again, if you need someone to make tests, or test some patches, I'm=20
+> able to do this.
 
-> 
-> > diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> > index 8e02027..032f70d 100644
-> > --- a/tools/perf/builtin-top.c
-> > +++ b/tools/perf/builtin-top.c
-> > @@ -38,6 +38,7 @@
+Is your machine even using the intel backlight device? You can test this
+by:
 
-SNIP
+# cd /sys/class/backlight/intel_backlight
 
-> >  void perf_evlist__munmap(struct perf_evlist *evlist)
-> >  {
-> >  	int i;
-> >  
-> >  	for (i = 0; i < evlist->nr_mmaps; i++) {
-> > -		if (evlist->mmap[i].base != NULL) {
-> > -			munmap(evlist->mmap[i].base, evlist->mmap_len);
-> > -			evlist->mmap[i].base = NULL;
-> > -		}
-> > +		struct perf_mmap *m = &evlist->mmap[i];
-> > +		if (m->base != NULL)
-> > +			perf_mmap__close(m);
-> 
-> Wouldn't it be perf_mmap__munmap() ? 
-> 
-> >  	}
-> >  
-> >  	free(evlist->mmap);
-> > @@ -292,20 +225,18 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
-> >  }
-> >  
-> >  static int __perf_evlist__mmap(struct perf_evlist *evlist,
-> > -			       int idx, int prot, int mask, int fd)
-> > +			       int idx, int fd)
-> >  {
-> > -	evlist->mmap[idx].prev = 0;
-> > -	evlist->mmap[idx].mask = mask;
-> > -	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
-> > -				      MAP_SHARED, fd, 0);
-> > -	if (evlist->mmap[idx].base == MAP_FAILED)
-> > +	struct perf_mmap *m = &evlist->mmap[idx];
-> > +
-> > +	if (perf_mmap__open(m, fd, evlist->overwrite, evlist->pages))
-> 
-> And here perf_mmap__mmap or at least perf_mmap__map and the other
-> perf_mmap__unmap?
+Then look at 'max_brightness' and try echoing a range of numbers from 0
+to max_brightness into the brightness file and see if it changes the
+backlight.
 
-not sure, perf_mmap__open and perf_mmap__close actually does map/umap..
-maybe we can rename them ;)
+It's more than possible that your machine is simply using some other
+hardware to drive the backlight and that the integrated backlight
+controller is simply disabled.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTsf6fzYtFsjWk68qAQhIVQ/+LHiK5jMzmf1DfDMIChU42klsGSbBwlP3
+eJ47W6UcnydeQxsdS+KNp0Kob039IXnA0arfYk+67DEl2hjUC08VaG86miHR5TTe
+n30xLfNaA3wRzG4+3b834/0ddxsTU9aPgT4Vh5A8YAfYg3MscffvgFfQO/bsMezx
+RxqfUr8z2t9W7nJaceSq1Bi3JXfA3xDxe8SsqBjQAxR/ppMsfTfqPsP43D+Mbqun
+YyAlW5aS9an0zxSu9XQxwv86aQln0GLnrhi0lcmR9gaobJ+BkCUmCLNwzP5poeMv
+Aph3PWa5LDbQaN5map2dXbEUZBFQi/SbUtP3W/lCwQN0fGqYrcDplWPi2mMCHWff
+CFjhYDXD/SkYaEDb+4mmL3p5XdUpblZLi0lcKqpeFWn+eLtP187q35SC04rE0ksf
+KkmUWixzO6ZFWhASVhb/oPqlyzP+5/xYjCdEa3DyvfGoBs5UfCjwU5xmnz0+guu+
+xd9zfsa20uRYUhFxK9jgIcLKBb+GnrNpk0xQ/q8L5auiqv2j1pVcffvf/ZlW689Z
+yvgVbNlPZhDqHuQrrBr6fGcg8wwAeGtYnI4bJGFFp1IKnmhQEDbJXDyfJ4ygxfxJ
+B0rIoX/w/YOFA4ibt0r5s1PKPMMHrsdPRlXnfR0F+d4J7Ali5m2uk/suSDIvxNRd
+qVZDbn79Ya0=
+=cCjc
+-----END PGP SIGNATURE-----
+--=-=-=--
