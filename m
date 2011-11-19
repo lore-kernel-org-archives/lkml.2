@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277Ab1KSEmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:42:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757983Ab1KSEhb (ORCPT
+	id S1758179Ab1KSEma (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:42:30 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58249 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933Ab1KSEh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:37:31 -0500
+	Fri, 18 Nov 2011 23:37:28 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 05/25] Staging: comedi: fix brace coding style issue in pcl818.c
-Date: Sat, 19 Nov 2011 10:06:37 +0530
-Message-Id: <1321677417-2415-5-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 04/25] Staging: comedi: fix printk issue in cb_das16_cs.c
+Date: Sat, 19 Nov 2011 10:06:36 +0530
+Message-Id: <1321677417-2415-4-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,197 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the pcl818.c file that fixes up a brace
-coding style warning found by the checkpatch.pl tool.
+This is a patch to the cb_das16_cs.c file that fixes up a printk
+warning found by the checkpatch.pl tool.
+
+Converted printks to dev_printk.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/pcl818.c |   63 +++++++++++++------------------
- 1 files changed, 26 insertions(+), 37 deletions(-)
+ drivers/staging/comedi/drivers/cb_das16_cs.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index b45a9bd..ca033de 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -463,9 +463,8 @@ static int pcl818_ao_insn_read(struct comedi_device *dev,
- 	int n;
- 	int chan = CR_CHAN(insn->chanspec);
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index e171c56..9beb34c 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -150,7 +150,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
+ 			return das16cs_boards + i;
+ 	}
  
--	for (n = 0; n < insn->n; n++) {
-+	for (n = 0; n < insn->n; n++)
- 		data[n] = devpriv->ao_readback[chan];
--	}
+-	printk("unknown board!\n");
++	dev_dbg(dev->hw_dev, "unknown board!\n");
  
- 	return n;
+ 	return NULL;
  }
-@@ -571,9 +570,9 @@ conv_finish:
- 		return IRQ_HANDLED;
+@@ -163,20 +163,19 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	int ret;
+ 	int i;
+ 
+-	printk("comedi%d: cb_das16_cs: ", dev->minor);
++	dev_dbg(dev->hw_dev, "comedi%d: cb_das16_cs: attached\n", dev->minor);
+ 
+ 	link = cur_dev;		/* XXX hack */
+ 	if (!link)
+ 		return -EIO;
+ 
+ 	dev->iobase = link->resource[0]->start;
+-	printk("I/O base=0x%04lx ", dev->iobase);
++	dev_dbg(dev->hw_dev, "I/O base=0x%04lx\n", dev->iobase);
+ 
+-	printk("fingerprint:\n");
++	dev_dbg(dev->hw_dev, "fingerprint:\n");
+ 	for (i = 0; i < 48; i += 2)
+-		printk("%04x ", inw(dev->iobase + i));
++		dev_dbg(dev->hw_dev, "%04x\n", inw(dev->iobase + i));
+ 
+-	printk("\n");
+ 
+ 	ret = request_irq(link->irq, das16cs_interrupt,
+ 			  IRQF_SHARED, "cb_das16_cs", dev);
+@@ -185,7 +184,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 
+ 	dev->irq = link->irq;
+ 
+-	printk("irq=%u ", dev->irq);
++	dev_dbg(dev->hw_dev, "irq=%u\n", dev->irq);
+ 
+ 	dev->board_ptr = das16cs_probe(dev, link);
+ 	if (!dev->board_ptr)
+@@ -252,14 +251,13 @@ static int das16cs_attach(struct comedi_device *dev,
+ 		s->type = COMEDI_SUBD_UNUSED;
  	}
- 	devpriv->act_chanlist_pos++;
--	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 		devpriv->act_chanlist_pos = 0;
--	}
-+
- 	s->async->cur_chan++;
- 	if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 		/*  printk("E"); */
-@@ -645,9 +644,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_dma(int irq, void *d)
- 		comedi_buf_put(s->async, ptr[bufptr++] >> 4);	/*  get one sample */
  
- 		devpriv->act_chanlist_pos++;
--		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 			devpriv->act_chanlist_pos = 0;
--		}
-+
- 		s->async->cur_chan++;
- 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 			s->async->cur_chan = 0;
-@@ -805,11 +804,10 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
- 		return IRQ_HANDLED;
- 	}
+-	printk("attached\n");
  
--	if (lo & 2) {
-+	if (lo & 2)
- 		len = 512;
--	} else {
-+	else
- 		len = 0;
--	}
+ 	return 1;
+ }
  
- 	for (i = 0; i < len; i++) {
- 		lo = inb(dev->iobase + PCL818_FI_DATALO);
-@@ -827,9 +825,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
- 		comedi_buf_put(s->async, (lo >> 4) | (inb(dev->iobase + PCL818_FI_DATAHI) << 4));	/*  get one sample */
- 
- 		devpriv->act_chanlist_pos++;
--		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 			devpriv->act_chanlist_pos = 0;
--		}
-+
- 		s->async->cur_chan++;
- 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 			s->async->cur_chan = 0;
-@@ -1309,11 +1307,9 @@ static void setup_channel_list(struct comedi_device *dev,
- */
- static int check_single_ended(unsigned int port)
+ static int das16cs_detach(struct comedi_device *dev)
  {
--	if (inb(port + PCL818_STATUS) & 0x20) {
-+	if (inb(port + PCL818_STATUS) & 0x20)
- 		return 1;
--	} else {
--		return 0;
--	}
-+	return 0;
- }
+-	printk("comedi%d: das16cs: remove\n", dev->minor);
++	dev_dbg(dev->hw_dev, "comedi%d: das16cs: remove\n", dev->minor);
  
- /*
-@@ -1352,9 +1348,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (!cmd->stop_src || tmp != cmd->stop_src)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 1;
--	}
- 
- 	/* step 2: make sure trigger sources are unique and mutually compatible */
- 
-@@ -1377,9 +1372,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (cmd->stop_src != TRIG_NONE && cmd->stop_src != TRIG_COUNT)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 2;
--	}
- 
- 	/* step 3: make sure arguments are trivially compatible */
- 
-@@ -1421,9 +1415,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+@@ -312,7 +310,7 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
+ 				break;
  		}
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 3;
--	}
- 
- 	/* step 4: fix up any arguments */
- 
-@@ -1438,9 +1431,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 			err++;
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 4;
--	}
- 
- 	/* step 5: complain about special chanlist considerations */
- 
-@@ -1470,11 +1462,10 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	devpriv->ai_timer1 = 0;
- 	devpriv->ai_timer2 = 0;
- 
--	if (cmd->stop_src == TRIG_COUNT) {
-+	if (cmd->stop_src == TRIG_COUNT)
- 		devpriv->ai_scans = cmd->stop_arg;
--	} else {
-+	else
- 		devpriv->ai_scans = 0;
--	}
- 
- 	if (cmd->scan_begin_src == TRIG_FOLLOW) {	/*  mode 1, 3 */
- 		if (cmd->convert_src == TRIG_TIMER) {	/*  mode 1 */
-@@ -1633,11 +1624,11 @@ static int set_rtc_irq_bit(unsigned char bit)
- 	save_flags(flags);
- 	cli();
- 	val = CMOS_READ(RTC_CONTROL);
--	if (bit) {
-+	if (bit)
- 		val |= RTC_PIE;
--	} else {
-+	else
- 		val &= ~RTC_PIE;
--	}
-+
- 	CMOS_WRITE(val, RTC_CONTROL);
- 	CMOS_READ(RTC_INTR_FLAGS);
- 	restore_flags(flags);
-@@ -1800,12 +1791,11 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	}
- 
- 	dev->irq = irq;
--	if (irq) {
--		devpriv->irq_free = 1;
--	} /* 1=we have allocated irq */
--	else {
-+	if (irq)
-+		devpriv->irq_free = 1;   /* 1=we have allocated irq */
-+	else
- 		devpriv->irq_free = 0;
--	}
-+
- 	devpriv->irq_blocked = 0;	/* number of subdevice which use IRQ */
- 	devpriv->ai_mode = 0;	/* mode of irq */
- 
-@@ -2017,11 +2007,10 @@ no_dma:
- 	}
- 
- 	/* select 1/10MHz oscilator */
--	if ((it->options[3] == 0) || (it->options[3] == 10)) {
-+	if ((it->options[3] == 0) || (it->options[3] == 10))
- 		devpriv->i8253_osc_base = 100;
--	} else {
-+	else
- 		devpriv->i8253_osc_base = 1000;
--	}
- 
- 	/* max sampling speed */
- 	devpriv->ns_min = this_board->ns_min;
+ 		if (to == TIMEOUT) {
+-			printk("cb_das16_cs: ai timeout\n");
++			dev_dbg(dev->hw_dev, "cb_das16_cs: ai timeout\n");
+ 			return -ETIME;
+ 		}
+ 		data[i] = (unsigned short)inw(dev->iobase + 0);
 -- 
 1.7.0.4
 
