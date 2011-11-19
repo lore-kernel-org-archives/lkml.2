@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758464Ab1KSAJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 19:09:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38669 "EHLO mx2.suse.de"
+	id S1758513Ab1KSAKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 19:10:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38715 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758380Ab1KSAJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 19:09:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:29 2011
-Message-Id: <20111119000329.419617905@clark.kroah.org>
+	id S1758446Ab1KSAKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Nov 2011 19:10:00 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Nov 18 16:03:28 2011
+Message-Id: <20111119000328.034824118@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Fri, 18 Nov 2011 16:02:53 -0800
+Date: Fri, 18 Nov 2011 16:02:38 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-wireless@vger.kernel.org,
-        b43-dev@lists.infradead.org, roman-vl@meta.ua,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
-Subject: [17/26] b43: refuse to load unsupported firmware
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [02/26] ALSA: hda - Dont add elements of other codecs to vmaster slave
 In-Reply-To: <20111119000336.GA8452@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +24,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-[This patch is supposed to be applied in 3.1 (and maybe older) branches only.]
+From: Takashi Iwai <tiwai@suse.de>
 
-New kernels support newer firmware that users may try to incorrectly use
-with older kernels. Display error and explain the problem in such a case
+commit aeb4b88ec0a948efce8e3a23a8f964d3560a7308 upstream.
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+When a virtual mater control is created, the driver looks for slave
+elements from the assigned card instance.  But this may include the
+elements of other codecs when multiple codecs are on the same HD-audio
+bus.  This works at the first time, but it'll give Oops when it's once
+freed and re-created via reconfig sysfs.
+
+This patch changes the element-look-up strategy to limit only to the
+mixer elements of the same codec.
+
+Reported-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/b43/main.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ sound/pci/hda/hda_codec.c |   60 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 39 insertions(+), 21 deletions(-)
 
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2508,6 +2508,13 @@ static int b43_upload_microcode(struct b
- 		b43_print_fw_helptext(dev->wl, 1);
- 		err = -EOPNOTSUPP;
- 		goto error;
-+	} else if (fwrev >= 598) {
-+		b43err(dev->wl, "YOUR FIRMWARE IS TOO NEW. Support for "
-+		       "firmware 598 and up requires kernel 3.2 or newer. You "
-+		       "have to install older firmware or upgrade kernel.\n");
-+		b43_print_fw_helptext(dev->wl, 1);
-+		err = -EOPNOTSUPP;
-+		goto error;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2296,6 +2296,39 @@ int snd_hda_codec_reset(struct hda_codec
+ 	return 0;
+ }
+ 
++typedef int (*map_slave_func_t)(void *, struct snd_kcontrol *);
++
++/* apply the function to all matching slave ctls in the mixer list */
++static int map_slaves(struct hda_codec *codec, const char * const *slaves,
++		      map_slave_func_t func, void *data)
++{
++	struct hda_nid_item *items;
++	const char * const *s;
++	int i, err;
++
++	items = codec->mixers.list;
++	for (i = 0; i < codec->mixers.used; i++) {
++		struct snd_kcontrol *sctl = items[i].kctl;
++		if (!sctl || !sctl->id.name ||
++		    sctl->id.iface != SNDRV_CTL_ELEM_IFACE_MIXER)
++			continue;
++		for (s = slaves; *s; s++) {
++			if (!strcmp(sctl->id.name, *s)) {
++				err = func(data, sctl);
++				if (err)
++					return err;
++				break;
++			}
++		}
++	}
++	return 0;
++}
++
++static int check_slave_present(void *data, struct snd_kcontrol *sctl)
++{
++	return 1;
++}
++
+ /**
+  * snd_hda_add_vmaster - create a virtual master control and add slaves
+  * @codec: HD-audio codec
+@@ -2316,12 +2349,10 @@ int snd_hda_add_vmaster(struct hda_codec
+ 			unsigned int *tlv, const char * const *slaves)
+ {
+ 	struct snd_kcontrol *kctl;
+-	const char * const *s;
+ 	int err;
+ 
+-	for (s = slaves; *s && !snd_hda_find_mixer_ctl(codec, *s); s++)
+-		;
+-	if (!*s) {
++	err = map_slaves(codec, slaves, check_slave_present, NULL);
++	if (err != 1) {
+ 		snd_printdd("No slave found for %s\n", name);
+ 		return 0;
  	}
- 	dev->fw.rev = fwrev;
- 	dev->fw.patch = fwpatch;
+@@ -2332,23 +2363,10 @@ int snd_hda_add_vmaster(struct hda_codec
+ 	if (err < 0)
+ 		return err;
+ 
+-	for (s = slaves; *s; s++) {
+-		struct snd_kcontrol *sctl;
+-		int i = 0;
+-		for (;;) {
+-			sctl = _snd_hda_find_mixer_ctl(codec, *s, i);
+-			if (!sctl) {
+-				if (!i)
+-					snd_printdd("Cannot find slave %s, "
+-						    "skipped\n", *s);
+-				break;
+-			}
+-			err = snd_ctl_add_slave(kctl, sctl);
+-			if (err < 0)
+-				return err;
+-			i++;
+-		}
+-	}
++	err = map_slaves(codec, slaves, (map_slave_func_t)snd_ctl_add_slave,
++			 kctl);
++	if (err < 0)
++		return err;
+ 	return 0;
+ }
+ EXPORT_SYMBOL_HDA(snd_hda_add_vmaster);
 
 
