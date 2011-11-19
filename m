@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1KSEjw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:39:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758322Ab1KSEi3 (ORCPT
+	id S932224Ab1KSEkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:40:14 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63254 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab1KSEiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:38:29 -0500
+	Fri, 18 Nov 2011 23:38:23 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 19/25] Staging: comedi: fix brace coding style issue in daqboard2000.c
-Date: Sat, 19 Nov 2011 10:06:51 +0530
-Message-Id: <1321677417-2415-19-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 17/25] Staging: comedi: fix printk issue in adv_pci_dio.c
+Date: Sat, 19 Nov 2011 10:06:49 +0530
+Message-Id: <1321677417-2415-17-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,69 +23,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the daqboard2000.c file that fixes up a brace
+This is a patch to the adv_pci_dio.c file that fixes up a printk
 warning found by the checkpatch.pl tool.
+
+converted printks to dev_version.
+Removed unnecessary printk statements.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/daqboard2000.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci_dio.c |   23 +++++++----------------
+ 1 files changed, 7 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index 82be77d..aef336f 100644
---- a/drivers/staging/comedi/drivers/daqboard2000.c
-+++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -430,16 +430,14 @@ static int daqboard2000_ai_insn_read(struct comedi_device *dev,
- 		/* Enable reading from the scanlist FIFO */
- 		fpga->acqControl = DAQBOARD2000_SeqStartScanList;
- 		for (timeout = 0; timeout < 20; timeout++) {
--			if (fpga->acqControl & DAQBOARD2000_AcqConfigPipeFull) {
-+			if (fpga->acqControl & DAQBOARD2000_AcqConfigPipeFull)
- 				break;
--			}
- 			/* udelay(2); */
- 		}
- 		fpga->acqControl = DAQBOARD2000_AdcPacerEnable;
- 		for (timeout = 0; timeout < 20; timeout++) {
--			if (fpga->acqControl & DAQBOARD2000_AcqLogicScanning) {
-+			if (fpga->acqControl & DAQBOARD2000_AcqLogicScanning)
- 				break;
--			}
- 			/* udelay(2); */
- 		}
- 		for (timeout = 0; timeout < 20; timeout++) {
-@@ -465,10 +463,8 @@ static int daqboard2000_ao_insn_read(struct comedi_device *dev,
- 	int i;
- 	int chan = CR_CHAN(insn->chanspec);
+diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
+index 69334f6..537e585 100644
+--- a/drivers/staging/comedi/drivers/adv_pci_dio.c
++++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
+@@ -1106,13 +1106,10 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 	unsigned long iobase;
+ 	struct pci_dev *pcidev = NULL;
  
--	for (i = 0; i < insn->n; i++) {
-+	for (i = 0; i < insn->n; i++)
- 		data[i] = devpriv->ao_readback[chan];
+-	printk("comedi%d: adv_pci_dio: ", dev->minor);
+ 
+ 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
+-	if (ret < 0) {
+-		printk(", Error: Cann't allocate private memory!\n");
++	if (ret < 0)
+ 		return -ENOMEM;
+-	}
+ 
+ 	for_each_pci_dev(pcidev) {
+ 		/*  loop through cards supported by this driver */
+@@ -1140,19 +1137,18 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	if (!dev->board_ptr) {
+-		printk(", Error: Requested type of the card was not found!\n");
++		dev_err(dev->hw_dev, "Error: Requested type of the card was not found!\n");
+ 		return -EIO;
+ 	}
+ 
+ 	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
+-		printk
+-		    (", Error: Can't enable PCI device and request regions!\n");
++		dev_err(dev->hw_dev, "Error: Can't enable PCI device and request regions!\n");
+ 		return -EIO;
+ 	}
+ 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
+-	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
+-	       PCI_FUNC(pcidev->devfn), iobase);
++	dev_dbg(dev->hw_dev, "b:s:f=%d:%d:%d, io=0x%4lx\n",
++		pcidev->bus->number, PCI_SLOT(pcidev->devfn),
++		PCI_FUNC(pcidev->devfn), iobase);
+ 
+ 	dev->iobase = iobase;
+ 	dev->board_name = this_board->name;
+@@ -1177,15 +1173,10 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	ret = alloc_subdevices(dev, n_subdevices);
+-	if (ret < 0) {
+-		printk(", Error: Cann't allocate subdevice memory!\n");
++	if (ret < 0)
+ 		return ret;
 -	}
 -
- 	return i;
- }
+-	printk(".\n");
  
-@@ -490,9 +486,8 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
- 		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001; udelay(1000); */
- 		fpga->dacSetting[chan] = data[i];
- 		for (timeout = 0; timeout < 20; timeout++) {
--			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0) {
-+			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0)
- 				break;
--			}
- 			/* udelay(2); */
- 		}
- 		devpriv->ao_readback[chan] = data[i];
-@@ -605,7 +600,7 @@ static int initialize_daqboard2000(struct comedi_device *dev,
- 			for (; i < len; i += 2) {
- 				int data =
- 				    (cpld_array[i] << 8) + cpld_array[i + 1];
--				if (!daqboard2000_writeCPLD(dev, data)) {
-+				if (!daqboard2000_writeCPLD(dev, data))
- 					break;
- 				}
- 			}
+ 	subdev = 0;
+-
+ 	for (i = 0; i < MAX_DI_SUBDEVS; i++)
+ 		if (this_board->sdi[i].chans) {
+ 			s = dev->subdevices + subdev;
 -- 
 1.7.0.4
 
