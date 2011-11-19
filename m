@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab1KSVC0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 16:02:26 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:49069 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753438Ab1KSVCZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 16:02:25 -0500
-Date: Sat, 19 Nov 2011 16:02:24 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Michal Nazarewicz <mpn@google.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, Felipe Balbi <balbi@ti.com>,
-        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Anatolij Gustschin <agust@denx.de>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Ben Dooks <ben@simtec.co.uk>, Heiko Stubner <heiko@sntech.de>,
-        Thomas Abraham <thomas.ab@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/3] usb: udc: Fix gadget driver's speed check in various
- UDC drivers
-In-Reply-To: <12833fb1f3db020248c582c1f947724056a34fe2.1321719300.git.mina86@mina86.com>
-Message-ID: <Pine.LNX.4.44L0.1111191559240.6165-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753759Ab1KSVHH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 16:07:07 -0500
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:45430 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753308Ab1KSVHF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 16:07:05 -0500
+X-AuditID: 12074423-b7f266d0000008b8-21-4ec81a77944e
+Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=US-ASCII
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
+Date: Sat, 19 Nov 2011 16:06:58 -0500
+Cc: Theodore Tso <tytso@MIT.EDU>, David Rientjes <rientjes@google.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <710B9EAE-A4C8-4E8F-9AA1-F6CBDC84FD54@mit.edu>
+References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com> <47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu> <alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com> <CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
+To: Amit Sahrawat <amit.sahrawat83@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsUixCmqrFsudcLP4E2fmkXz6gdMFtfv3mK2
+	mDnvDpvF5V1z2CzalmxkcmD12DnrLrvHgk2lHp83yQUwR3HZpKTmZJalFunbJXBltHY+Zyvo
+	4a64fLGHvYHxE0cXIyeHhICJxKV3MxghbDGJC/fWs3UxcnEICexjlPh58gojhLOBUeL27ves
+	EM5pJolrs/6wgLQIC7hIPPr2GqydV8BYYs2td2BxZgEdiZ1b77CB2GwCShJ3Pu0Hi3MKBEos
+	efyQGcRmEVCV6Ly4gh1kKLPANkaJ3ed/MkI0a0ssW/iaGWKolcSOb5+hzvjOKLHwWyc7SEJE
+	QFdi0sdmFojD5SVavt5hm8AoOAvJIbOQHDILydwFjMyrGGVTcqt0cxMzc4pTk3WLkxPz8lKL
+	dM30cjNL9FJTSjcxgkKd3UV5B+Ofg0qHGAU4GJV4eAtnHPMTYk0sK67MPcQoycGkJMrbL3bC
+	T4gvKT+lMiOxOCO+qDQntfgQowQHs5IIbxQHUI43JbGyKrUoHyYlzcGiJM4rs9PBT0ggPbEk
+	NTs1tSC1CCYrw8GhJME7VxKoUbAoNT21Ii0zpwQhzcTBCTKcB2j4AZAa3uKCxNzizHSI/ClG
+	Y45t0zecZuTYOXfzaUYhlrz8vFQpcd7FIKUCIKUZpXlw02Dp6hWjONBzwrzNIFU8wFQHN+8V
+	0ComoFW5e46ArCpJREhJNTD6ranfeOLmyXyOQ+6cklN2TdTcxLgsU66r8UfgMt9cty/J7ed3
+	rPW7UMjp/XzfG5GSy1Y39+8691F7sqtKj1humKa423PL+RFnNX+5ulpJ8Tyd+XafQ29Nena/
+	S7zgdP47u77Waj6f2zY3Y6fv1ZTp896tqHM//2PRamXXfUJbHfdOXH1RLjdKiaU4I9FQi7mo
+	OBEAqoZXajIDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Nov 2011, Michal Nazarewicz wrote:
 
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> Several UDC drivers had a gadget driver's speed sanity check of the
-> form of:
-> 
-> 	driver->speed != USB_SPEED_HIGH
-> 
-> or:
-> 
-> 	driver->speed != USB_SPEED_HIGH && driver->speed != USB_SPEED_FULL
-> 
-> As more and more gadget drivers support USB SuperSpeed, driver->speed
-> may be set to USB_SPEED_SUPER and UDC driver should handle such gadget
-> correctly.  The above checks however fail to recognise USB_SPEED_SUPER
-> as a valid speed.
-> 
-> This commit changes the two checks to:
-> 
-> 	driver->speed < USB_SPEED_HIGH
-> 
-> or:
-> 
-> 	driver->speed < USB_SPEED_FULL
-> 
-> respectively.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Reported-by: Alan Stern <stern@rowland.harvard.edu>
-> ---
-> 
-> I had no way of testing those changes but it appears that those UDC
-> drivers check gadget driver's speed only on the entry point and then
-> nothing is really dependent on it.
+On Nov 17, 2011, at 12:11 AM, Amit Sahrawat wrote:
+> We looked for the details regarding the introduction of
+> SLAB_MEM_SHARED(http://linux.derkeiler.com/Mailing-Lists/Kernel/2006-02/msg01409.html
+> - provide the slab cache infrastructure to support cpuset memory
+> spreading), and further the changes were introduced across all
+> filesystems - http://lwn.net/Articles/173654/.
 
-That's right; the idea is merely to avoid connecting at a speed that's
-too fast for the gadget driver to handle.
+The main thing I see when I look at this list was it was focused only on the file system's inode structures, or other structures which were long lived and likely to be accessed from many NUMA nodes other than the one where it was originally allocated.
 
-> The only thing that makes me wonder a little is that
-> USB_SPEED_WIRELESS will be allowed by the above checks and I'm not
-> entirely sure if that's desired (even though that's probably not an
-> issue right now).
+It's unfortunate that this has gotten turned into a much broader generalization that all slab caches should have this flag set.   Perhaps it might be interesting to reflect on the fact that if it was always good to do this, that a flag wouldn't be used to control this behavior, but rather it would be done conditionally?
 
-I agree, wireless will eventually pose a problem.  Let's not worry 
-about it for now, though.
+It's all very good to send  lots of clean up patches, perhaps as a way to learn how to submit kernel patches.   But I would ask people who do this to understand a bit more deeply what is going on.  What's most important for people who are getting started with kernel development is not so much the mechanics of submitting patches, but understanding why things work the way they do.
 
-> Nonetheless, this patch needs to get merged to 3.2 as without it
-> file_storage won't work on UDC drivers this patch updates.
-> 
-> The next two patches that follow this one are replacements for
-> [291a72f8: usb: gadget: replace usb_gadget::is_dualspeed with
-> max_speed] and [d93bb846: usb: gadget: rename usb_gadget_driver::speed
-> to max_speed] from Felipe's gadget tree, which did not apply correctly
-> on top of this patch.
+Best regards,
 
-This all looks very good.  Thanks for doing the work.
-
-Alan Stern
+-- Ted
 
