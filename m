@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1KST40 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 14:56:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56462 "EHLO mx1.redhat.com"
+	id S1753605Ab1KST4Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 14:56:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4675 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831Ab1KSTzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753147Ab1KSTzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 19 Nov 2011 14:55:06 -0500
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org
 Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
         Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
         Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] Revert "vmscan: abort reclaim/compaction if compaction can proceed"
-Date: Sat, 19 Nov 2011 20:54:19 +0100
-Message-Id: <1321732460-14155-8-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 3/8] mm: check if we isolated a compound page during lumpy scan
+Date: Sat, 19 Nov 2011 20:54:15 +0100
+Message-Id: <1321732460-14155-4-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1321635524-8586-1-git-send-email-mgorman@suse.de>
 References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit e0c23279c9f800c403f37511484d9014ac83adec.
-
-If reclaim runs with an high order allocation, it means compaction
-failed. That means something went wrong with compaction so we can't
-stop reclaim too. We can't assume it failed and was deferred because
-of the too low watermarks in compaction_suitable only, it may have
-failed for other reasons.
+Properly take into account if we isolated a compound page during the
+lumpy scan in reclaim and break the loop if we've isolated enough.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/vmscan.c |   32 +++++++++++---------------------
- 1 files changed, 11 insertions(+), 21 deletions(-)
+ mm/vmscan.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3421746..b1a3cb0 100644
+index a1893c0..3421746 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2106,19 +2106,14 @@ restart:
-  *
-  * If a zone is deemed to be full of pinned pages then just give it a light
-  * scan then give up on it.
-- *
-- * This function returns true if a zone is being reclaimed for a costly
-- * high-order allocation and compaction is either ready to begin or deferred.
-- * This indicates to the caller that it should retry the allocation or fail.
-  */
--static bool shrink_zones(int priority, struct zonelist *zonelist,
-+static void shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
--	bool should_abort_reclaim = false;
+@@ -1183,13 +1183,16 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 				break;
  
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2135,20 +2130,19 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				continue;	/* Let kswapd poll it */
- 			if (COMPACTION_BUILD) {
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
++				unsigned int isolated_pages;
+ 				list_move(&cursor_page->lru, dst);
+ 				mem_cgroup_del_lru(cursor_page);
+-				nr_taken += hpage_nr_pages(page);
+-				nr_lumpy_taken++;
++				isolated_pages = hpage_nr_pages(page);
++				nr_taken += isolated_pages;
++				nr_lumpy_taken += isolated_pages;
+ 				if (PageDirty(cursor_page))
+-					nr_lumpy_dirty++;
++					nr_lumpy_dirty += isolated_pages;
+ 				scan++;
++				pfn += isolated_pages-1;
+ 			} else {
  				/*
--				 * If we already have plenty of memory free for
--				 * compaction in this zone, don't free any more.
--				 * Even though compaction is invoked for any
--				 * non-zero order, only frequent costly order
--				 * reclamation is disruptive enough to become a
--				 * noticable problem, like transparent huge page
--				 * allocations.
-+				 * If we already have plenty of memory
-+				 * free for compaction, don't free any
-+				 * more.  Even though compaction is
-+				 * invoked for any non-zero order,
-+				 * only frequent costly order
-+				 * reclamation is disruptive enough to
-+				 * become a noticable problem, like
-+				 * transparent huge page allocations.
- 				 */
- 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
- 					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
--					should_abort_reclaim = true;
-+					 compaction_deferred(zone)))
- 					continue;
--				}
- 			}
- 			/*
- 			 * This steals pages from memory cgroups over softlimit
-@@ -2167,8 +2161,6 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 
- 		shrink_zone(priority, zone, sc);
- 	}
--
--	return should_abort_reclaim;
- }
- 
- static bool zone_reclaimable(struct zone *zone)
-@@ -2233,9 +2225,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token(sc->mem_cgroup);
--		if (shrink_zones(priority, zonelist, sc))
--			break;
--
-+		shrink_zones(priority, zonelist, sc);
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
+ 				 * Check if the page is freed already.
