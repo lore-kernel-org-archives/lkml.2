@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab1KSWWb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 17:22:31 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42930 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab1KSWWa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 17:22:30 -0500
+	id S1754563Ab1KSWkV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 17:40:21 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:47773 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752782Ab1KSWkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 17:40:20 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] PM / Sleep: Simplify device_suspend_noirq()
+Date: Sat, 19 Nov 2011 23:43:03 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <2F5A5082-690F-4C74-A92F-6CC157489B46@mit.edu>
-References: <1321455848-1929-1-git-send-email-linkinjeon@gmail.com>
-	<47270FB7-96AC-4F41-98D3-9AD469080DBE@mit.edu>
-	<alpine.DEB.2.00.1111161347000.16596@chino.kir.corp.google.com>
-	<CADDb1s1pLddZ4TQciL=yO-17WwQDyLmzP1E8U0UsyiQqez8Q8A@mail.gmail.com>
-	<CAKYAXd9wCJFuJZ8uxHESuq92G9EUc0Dq0ejAwbJk0OrwhCcVCA@mail.gmail.com>
-	<8343168C-D5F7-43E4-B614-45FBAF5B29A7@mit.edu>
-	<A5A56693-9C4C-4957-AAA5-3D1BD8AA7DCE@mit.edu>
-	<CAKYAXd99NrOC77=p31nax223UOxOONv3_JcLXUpXign8=58Vxw@mail.gmail.com>
-	<0912364C-C313-4BCA-9EE2-73F55FE012E6@mit.edu>
-	<CAKYAXd91gcPbfAqRRkW7HhxRDXstzGVRbwqzve40z6BTDEj4_w@mail.gmail.com>
-	<2F5A5082-690F-4C74-A92F-6CC157489B46@mit.edu>
-Date: Sun, 20 Nov 2011 07:22:29 +0900
-Message-ID: <CAKYAXd-pT9aW3UA5Wby=X0N0s52jzwfmsdWCvoO3-n4bbJbSyQ@mail.gmail.com>
-Subject: Re: [PATCH] ext4: slab caches set to SLAB_MEM_SPREAD flags.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Theodore Tso <tytso@mit.edu>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111192343.03677.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/20 Theodore Tso <tytso@mit.edu>:
->
-> On Nov 19, 2011, at 10:40 AM, NamJae Jeon wrote:
->
->> Thanks for your opinion.
->> Have you thought that mem spread flags is not needed in group info
->> caches same with page_io and mballoc ?
->
-> The group info structures are long lived structures that live a long time and will likely be accessed by many NUMA nodes.   So setting the men spread flag for the group info cache is more likely to be useful.   My guess is that any benefit will be extremely hard to measure (especially since the amount of memory used by the group info structures is a pittance compared to the memory used by the inode cache), but at least theoretically it would be sound to have that flag set with the group info slab cache.
-You're right. I will post the new patch included spread flags about
-group info caches again.
-Thanks ted.
-> Regards,
->
-> -- Ted
->
->
+From: Rafael J. Wysocki <rjw@sisk.pl>
+
+Remove a few if () and return statements in device_suspend_noirq()
+that aren't really necessary.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/main.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+Index: linux/drivers/base/power/main.c
+===================================================================
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -763,31 +763,23 @@ static pm_message_t resume_event(pm_mess
+  */
+ static int device_suspend_noirq(struct device *dev, pm_message_t state)
+ {
+-	int error;
++	int error = 0;
+ 
+ 	if (dev->pm_domain) {
+ 		pm_dev_dbg(dev, state, "LATE power domain ");
+ 		error = pm_noirq_op(dev, &dev->pm_domain->ops, state);
+-		if (error)
+-			return error;
+ 	} else if (dev->type && dev->type->pm) {
+ 		pm_dev_dbg(dev, state, "LATE type ");
+ 		error = pm_noirq_op(dev, dev->type->pm, state);
+-		if (error)
+-			return error;
+ 	} else if (dev->class && dev->class->pm) {
+ 		pm_dev_dbg(dev, state, "LATE class ");
+ 		error = pm_noirq_op(dev, dev->class->pm, state);
+-		if (error)
+-			return error;
+ 	} else if (dev->bus && dev->bus->pm) {
+ 		pm_dev_dbg(dev, state, "LATE ");
+ 		error = pm_noirq_op(dev, dev->bus->pm, state);
+-		if (error)
+-			return error;
+ 	}
+ 
+-	return 0;
++	return error;
+ }
+ 
+ /**
