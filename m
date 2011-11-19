@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab1KSLMB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 06:12:01 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:49715 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753461Ab1KSLL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 06:11:59 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Tabi Timur-B04825" <B04825@freescale.com>
-Subject: Re: [PATCH v3.1] [resend] Resurrect Intel740 driver: i740fb
-Date: Sat, 19 Nov 2011 12:11:02 +0100
-User-Agent: KMail/1.9.10
-Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201111182154.45139.linux@rainbow-software.org> <CAOZdJXVx88nEAQkL13n1QXVw=kOe03QsD=pffHoZ8gecL7u8dA@mail.gmail.com>
-In-Reply-To: <CAOZdJXVx88nEAQkL13n1QXVw=kOe03QsD=pffHoZ8gecL7u8dA@mail.gmail.com>
+	id S1753809Ab1KSLRo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 06:17:44 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56097 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab1KSLRm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 06:17:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201111191211.08704.linux@rainbow-software.org>
+In-Reply-To: <20111118190233.GA16136@elf.ucw.cz>
+References: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
+ <20111105182244.GB6772@elf.ucw.cz> <CAGsJ_4xU28APFEcALAzuB2jAACa8FbOR6iSvOaEeGZa=JyjNeA@mail.gmail.com>
+ <CAGsJ_4xm05N4UZ94kvUtUGLGkcDnxesojV0fL9hQQnZBOFvohg@mail.gmail.com> <20111118190233.GA16136@elf.ucw.cz>
+From: Barry Song <21cnbao@gmail.com>
+Date: Sat, 19 Nov 2011 19:17:20 +0800
+Message-ID: <CAGsJ_4zDNH-a==E=OcGaaKmMzMwRCxJk9SVW0=bzScvisNGPsg@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH] PM: HIBERNATION: skip the swap size check if
+ the snapshot image size is anticipative
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Barry Song <Barry.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>,
+        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 November 2011 00:53:27 Tabi Timur-B04825 wrote:
-> On Fri, Nov 18, 2011 at 2:54 PM, Ondrej Zary <linux@rainbow-software.org> 
-wrote:
-> > Hello,
-> > this is an v3 attempt to resurrect an old (like 2.4.19) out-of-tree
-> > driver for Intel740 graphics cards and modify it for recent kernels. The
-> > old driver is located at:
-> > http://sourceforge.net/projects/i740fbdev/files/
+2011/11/19 Pavel Machek <pavel@ucw.cz>:
+> On Mon 2011-11-07 09:31:10, Barry Song wrote:
+>> 2011/11/6 Barry Song <21cnbao@gmail.com>:
+>> > 2011/11/6 Pavel Machek <pavel@ucw.cz>:
+>> >> Hi!
+>> >>
+>> >>> From: Barry Song <Baohua.Song@csr.com>
+>> >>>
+>> >>> Current swsusp requires swap partitions even larger than real saved pages
+>> >>> due to the worst compress ratio:
+>> >>> but for an embedded system, which has limited storage space, then it might
+>> >>> can't give the big size partition to save snapshot.
+>> >>> In the another way, some embedded systems can definitely know the most size
+>> >>> needed for snapshot since they run some specific application lists.
+>> >>> So this patch provides the possibility for bootloader to tell kernel even
+>> >>> the system has a little snapshot partition, but it is still enough.
+>> >>> For example, if the system need to save 120MB memory, origin swsusp will require
+>> >>> a 130MB partition to save snapshot. but if users know 30MB is enough for them(
+>> >>> compressed image will be less than 30MB), they just make a 30MB
+>> >>> partition.
+>> >>
+>> >> Would it be better to have /sys/power/... entry which would allow
+>> >> configuring expected compression ratio at runtime?
+>> >
+>> > i think it is better to have a sys node than add another kernel param.
+>> > but the point is i only care about the final image size but not
+>> > compression ratio. i don't care how well lzo will do for me since i
+>> > only have limited disk space and know how many pages want to be saved.
+>> > there has been a image_size node, will we have a expected_image_size node?
+>>
+>> or will we have just a node named /sys/power/check_size, if
+>> 1(default), check, otherwise(0 set by users), skip checking?
 >
-> Would you please run checkpatch.pl on the patch and fix the complaints
-> it has?  I get this:
->
-> total: 45 errors, 67 warnings, 1619 lines checked
->
-> This patch has tons of style problems.
+> Or just avoid the check at all, since it no longer makes sense with
+> compression?
 
-The 45 errors are in i740_calc_fifo(), which now looks good and is readable. 
-Reformatting according to checkpatch makes it look bad and unredable. This 
-was already discussed before.
-The warnings are lines over 80 characters, which are common in most fb 
-drivers. Splitting them makes code hard to read.
+current early check just makes the failure happen earier. in the
+check, it requires more space than uncompressed data due to the worst
+compress ratio. some users might have big space and complex scenerios,
+they might want the earlier check. but it is really a big waste
+considering text, data sections of programs are actually data which
+can be compressed in a big ratio.
 
--- 
-Ondrej Zary
+but for some other embedded system users, they have limited storage
+and known sw list, then they know their little space is enough for
+compressed image.
+
+i think we can make the function as a option for users. provide a node
+/sys/power/check_swap_size, if users set it to 0, ignore the check.
+otherwise, check by the worst compress ratio.
+
+>
+> What is the failure scenario? Hibernation still fails, but it takes
+> longer to fail?
+
+it will fail some later. but i still expect the system can restore to
+be normal even it fails in the saving stage. i can give a test.
+
+>
+>                                                                        Pavel
+> --
+-barry
