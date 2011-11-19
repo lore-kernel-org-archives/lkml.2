@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab1KSEkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 23:40:14 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63254 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758292Ab1KSEiX (ORCPT
+	id S1758247Ab1KSEiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 23:38:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab1KSEiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 23:38:23 -0500
+	Fri, 18 Nov 2011 23:38:06 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 17/25] Staging: comedi: fix printk issue in adv_pci_dio.c
-Date: Sat, 19 Nov 2011 10:06:49 +0530
-Message-Id: <1321677417-2415-17-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 13/25] Staging: comedi: fix printk issue in cb_pcimdas.c
+Date: Sat, 19 Nov 2011 10:06:45 +0530
+Message-Id: <1321677417-2415-13-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1321677417-2415-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,78 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the adv_pci_dio.c file that fixes up a printk
+This is a patch to the cb_pcimdas.c file that fixes up a printk
 warning found by the checkpatch.pl tool.
 
 converted printks to dev_version.
-Removed unnecessary printk statements.
+Removed ifdef CBPCIMDAS_DEBUG.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/adv_pci_dio.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcimdas.c |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index 69334f6..537e585 100644
---- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -1106,13 +1106,10 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	unsigned long iobase;
- 	struct pci_dev *pcidev = NULL;
+diff --git a/drivers/staging/comedi/drivers/cb_pcimdas.c b/drivers/staging/comedi/drivers/cb_pcimdas.c
+index 321af6d..5d25e78 100644
+--- a/drivers/staging/comedi/drivers/cb_pcimdas.c
++++ b/drivers/staging/comedi/drivers/cb_pcimdas.c
+@@ -274,13 +274,11 @@ found:
+ 	devpriv->BADR3 = pci_resource_start(devpriv->pci_dev, 3);
+ 	devpriv->BADR4 = pci_resource_start(devpriv->pci_dev, 4);
  
--	printk("comedi%d: adv_pci_dio: ", dev->minor);
+-#ifdef CBPCIMDAS_DEBUG
+-	printk("devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
+-	printk("devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
+-	printk("devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
+-	printk("devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
+-	printk("devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
+-#endif
++	dev_dbg(dev->hw_dev, "devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
++	dev_dbg(dev->hw_dev, "devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
++	dev_dbg(dev->hw_dev, "devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
++	dev_dbg(dev->hw_dev, "devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
++	dev_dbg(dev->hw_dev, "devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
  
- 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
--	if (ret < 0) {
--		printk(", Error: Cann't allocate private memory!\n");
-+	if (ret < 0)
- 		return -ENOMEM;
--	}
- 
- 	for_each_pci_dev(pcidev) {
- 		/*  loop through cards supported by this driver */
-@@ -1140,19 +1137,18 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	}
- 
- 	if (!dev->board_ptr) {
--		printk(", Error: Requested type of the card was not found!\n");
-+		dev_err(dev->hw_dev, "Error: Requested type of the card was not found!\n");
- 		return -EIO;
- 	}
- 
- 	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
--		printk
--		    (", Error: Can't enable PCI device and request regions!\n");
-+		dev_err(dev->hw_dev, "Error: Can't enable PCI device and request regions!\n");
- 		return -EIO;
- 	}
- 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
--	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
--	       PCI_FUNC(pcidev->devfn), iobase);
-+	dev_dbg(dev->hw_dev, "b:s:f=%d:%d:%d, io=0x%4lx\n",
-+		pcidev->bus->number, PCI_SLOT(pcidev->devfn),
-+		PCI_FUNC(pcidev->devfn), iobase);
- 
- 	dev->iobase = iobase;
- 	dev->board_name = this_board->name;
-@@ -1177,15 +1173,10 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	}
- 
- 	ret = alloc_subdevices(dev, n_subdevices);
--	if (ret < 0) {
--		printk(", Error: Cann't allocate subdevice memory!\n");
-+	if (ret < 0)
- 		return ret;
--	}
--
--	printk(".\n");
- 
- 	subdev = 0;
--
- 	for (i = 0; i < MAX_DI_SUBDEVS; i++)
- 		if (this_board->sdi[i].chans) {
- 			s = dev->subdevices + subdev;
+ /* Dont support IRQ yet */
+ /*  get irq */
 -- 
 1.7.0.4
 
