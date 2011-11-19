@@ -1,145 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1KSJdV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 04:33:21 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53203 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab1KSJdQ convert rfc822-to-8bit (ORCPT
+	id S1753470Ab1KSJeK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 04:34:10 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:44503 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab1KSJeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 04:33:16 -0500
+	Sat, 19 Nov 2011 04:34:07 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, agruen@kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20111019222021.GB1874@fieldses.org>
+	<87k4805alx.fsf@linux.vnet.ibm.com>
+	<20111020091434.GC5444@fieldses.org>
+	<20111020091946.GA23773@infradead.org>
+	<87aa8w53kj.fsf@linux.vnet.ibm.com>
+	<20111020174915.GA9987@fieldses.org>
+	<E394C0CC-6124-42FD-9962-A061DC4784E3@dilger.ca>
+Date: Sat, 19 Nov 2011 01:35:11 -0800
+In-Reply-To: <E394C0CC-6124-42FD-9962-A061DC4784E3@dilger.ca> (Andreas
+	Dilger's message of "Thu, 20 Oct 2011 13:49:33 -0600")
+Message-ID: <m1lircxxo0.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <861ut5mdvn.fsf@sumi.keithp.com>
-References: <s5hlirgm1kg.wl%tiwai@suse.de>
-	<yunsjlnl1f6.fsf@aiko.keithp.com>
-	<s5hlirelndd.wl%tiwai@suse.de>
-	<861ut5mdvn.fsf@sumi.keithp.com>
-Date: Sat, 19 Nov 2011 10:33:16 +0100
-Message-ID: <CACTFLAMuPQ6ycmrByT-XxN5RgY6MLbUMhwEMup8o0qBJdwY4iQ@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: Fix invalid backpanel values for GEN3 or older chips
-From: Daniel Mack <zonque@gmail.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, harald@redhat.com,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/n9FfNZ8oVKZ2GyHExUkFw/Bu6l5zMq7o=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andreas Dilger <adilger@dilger.ca>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 8:25 PM, Keith Packard <keithp@keithp.com> wrote:
-> On Thu, 17 Nov 2011 17:33:50 +0100, Takashi Iwai <tiwai@suse.de> wrote:
->
->> If it's only with 915GM, we'll just need to change IS_PINEVEW() to
->> IS_PINEVIEW() || IS_I915GM().  This might be a safer option at this
->> moment unless we check all cases or specs...
->
-> I read through the hardware docs yesterday and figured out what was
-> going on. On all pre-gen4 hardware, the maximum backlight value has the
-> lowest bit (of 16) hard-wired to zero. This means that the possible
-> backlight duty cycle values are limited to 0 .. 0xfffe.
->
-> On older hardware, this was managed by reporting this true range. This
-> meant that the set_backlight path didn't need any special code; simply
-> setting the values as provided should have worked just fine.
->
-> On Pineview, this was changed (for reasons unknown) to use only 15 bits
-> for backlight levels. The range of possible values is then
-> 0 .. 0x7fff. In this case, values have to be shifted by one to convert
-> between the advertised range of 0 .. 0x7fff and the hardware range of
-> 0 .. 0xfffe.
->
-> Exposing the range of 0 .. 0xfffe introduces a potential problem --
-> write a value of 0xffff and the hardware gets mightily confused,
-> and probably ends up turning the backlight off. Using the range of
-> 0 .. 0x7fff avoids this issue completely.
->
-> Using the narrower range does limit the precision of the backlight level
-> setting, but it seems like 32767 possible values is more than sufficient...
->
-> Here's a patch which just uses the pineview version everywhere (and
-> cleans that up at the same time).
->
-> From e06789f688dc7ab1331f5f15ad3d60326b5139b4 Mon Sep 17 00:00:00 2001
-> From: Keith Packard <keithp@keithp.com>
-> Date: Fri, 18 Nov 2011 11:09:24 -0800
-> Subject: [PATCH] drm/i915: Treat pre-gen4 backlight duty cycle value
->  consistently
->
-> For i945 and earlier chips, the backlight frequency value had the low
-> bit (of 16) fixed to zero. The Pineview code path handled this by just
-> exposing the backlight range as 15 bits while other chips had the
-> backlight range limited to 0 .. 0xfffe.
->
-> This patch makes everyone take the pineview code path, providing 15
-> bits of backlight duty cycle range which seems more than sufficient to me.
->
-> Signed-off-by: Keith Packard <keithp@keithp.com>
+Andreas Dilger <adilger@dilger.ca> writes:
 
-Yep, that works as well. Thanks.
+> Just as an FYI, from back when we were trying to port Lustre to Solaris,
+> Solaris itself uses a 64-bit "FUID" (32-bit UID + 32-bit namespace) to
+> handle this.
+>
+> It has a table for arbitrary mapping of 128-bit Windows domains to a
+> 32-bit FUID namespace (don't know much detail here, sorry), and it is
+> (reasonably) expected that a single system will not be in more than
+> 2^32 namespaces at once.  This keeps the datatypes sane (u64 or 2x u32)
+> and doesn't put much complexity into the filesystem/kernel.  For most
+> uses, the high 32-bit value is 0 (local Unix domain).
 
-Reported-and-tested-by: Daniel Mack <zonque@gmail.com>
-Cc: stable@kernel.org
+Interesting.  For now it looks to me like a fixed partitions of a uid
+into a namespace identifier and a normal uid is a brittle path to walk.
 
+I am looking at using something slightly more dynamic.  Here for your
+user namespace you get this range of uids.  That nests better and
+allows for more flexibility in the future.
 
-> ---
->  drivers/gpu/drm/i915/intel_panel.c |   16 +++++-----------
->  1 files changed, 5 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index 21f60b7..04d79fd 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -178,13 +178,10 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
->        if (HAS_PCH_SPLIT(dev)) {
->                max >>= 16;
->        } else {
-> -               if (IS_PINEVIEW(dev)) {
-> +               if (INTEL_INFO(dev)->gen < 4)
->                        max >>= 17;
-> -               } else {
-> +               else
->                        max >>= 16;
-> -                       if (INTEL_INFO(dev)->gen < 4)
-> -                               max &= ~1;
-> -               }
->
->                if (is_backlight_combination_mode(dev))
->                        max *= 0xff;
-> @@ -203,13 +200,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
->                val = I915_READ(BLC_PWM_CPU_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
->        } else {
->                val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
-> -               if (IS_PINEVIEW(dev))
-> +               if (INTEL_INFO(dev)->gen < 4)
->                        val >>= 1;
->
->                if (is_backlight_combination_mode(dev)) {
->                        u8 lbpc;
->
-> -                       val &= ~1;
->                        pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
->                        val *= lbpc;
->                }
-> @@ -246,11 +242,9 @@ static void intel_panel_actually_set_backlight(struct drm_device *dev, u32 level
->        }
->
->        tmp = I915_READ(BLC_PWM_CTL);
-> -       if (IS_PINEVIEW(dev)) {
-> -               tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
-> +       if (INTEL_INFO(dev)->gen < 4)
->                level <<= 1;
-> -       } else
-> -               tmp &= ~BACKLIGHT_DUTY_CYCLE_MASK;
-> +       tmp &= ~BACKLIGHT_DUTY_CYCLE_MASK;
->        I915_WRITE(BLC_PWM_CTL, tmp | level);
->  }
->
-> --
-> 1.7.7.3
->
->
->
-> --
-> keith.packard@intel.com
->
+I think I can mostly keep filesystems where they don't care.  With just
+a few places changes where we take the filesystem uid and map it into
+what we store in the vfs cache.  And when we read the uid value out
+of the vfs cache and map it into the id value that the filesystem
+needs.
+
+Eric
