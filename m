@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab1KTIld (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 03:41:33 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48251 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab1KTIlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 03:41:32 -0500
-Date: Sun, 20 Nov 2011 08:41:11 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        bryanh@codeaurora.org, David Brown <davidb@codeaurora.org>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: Add condition code check to SWP emulator
-Message-ID: <20111120084111.GM9581@n2100.arm.linux.org.uk>
-References: <CAHkRjk6Ynfh9+UbTuAtyiXCOF-yDbTNxi0ikF5ttwHViisZRZA@mail.gmail.com> <1321751070-7932-1-git-send-email-stepanm@codeaurora.org>
+	id S1752177Ab1KTJTr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 04:19:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788Ab1KTJTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 04:19:42 -0500
+Message-ID: <4EC8C629.40705@redhat.com>
+Date: Sun, 20 Nov 2011 11:19:37 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321751070-7932-1-git-send-email-stepanm@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: KVM updates for 3.2-rc2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 05:04:30PM -0800, Stepan Moskovchenko wrote:
-> +static int check_condition(struct pt_regs *regs, unsigned int insn)
-> +{
-> +	unsigned int base_cond, neg, cond = 0;
-> +	unsigned int cpsr_z, cpsr_c, cpsr_n, cpsr_v;
-> +
-> +	cpsr_n = (regs->ARM_cpsr & PSR_N_BIT) ? 1 : 0;
-> +	cpsr_z = (regs->ARM_cpsr & PSR_Z_BIT) ? 1 : 0;
-> +	cpsr_c = (regs->ARM_cpsr & PSR_C_BIT) ? 1 : 0;
-> +	cpsr_v = (regs->ARM_cpsr & PSR_V_BIT) ? 1 : 0;
-> +
-> +	/* Upper 3 bits indicate condition, lower bit incicates negation */
-> +	base_cond = insn >> 29;
-> +	neg = insn & BIT(28) ? 1 : 0;
-> +
-> +	switch (base_cond) {
-> +	case 0x0:	/* equal */
-> +		cond = cpsr_z;
-> +		break;
-> +
-> +	case 0x1:	/* carry set */
-> +		cond = cpsr_c;
-> +		break;
-> +
-> +	case 0x2:	/* minus / negative */
-> +		cond = cpsr_n;
-> +		break;
-> +
-> +	case 0x3:	/* overflow */
-> +		cond = cpsr_v;
-> +		break;
-> +
-> +	case 0x4:	/* unsigned higher */
-> +		cond = (cpsr_c == 1) && (cpsr_z == 0);
-> +		break;
-> +
-> +	case 0x5:	/* signed greater / equal */
-> +		cond = (cpsr_n == cpsr_v);
-> +		break;
-> +
-> +	case 0x6:	/* signed greater */
-> +		cond = (cpsr_z == 0) && (cpsr_n == cpsr_v);
-> +		break;
-> +
-> +	case 0x7:	/* always */
-> +		cond = 1;
-> +		break;
-> +	};
-> +
-> +	return cond && !neg;
+Linus, please pull from:
 
-There's a much better algorithm to check this.  See the bottom of
-arch/arm/nwfpe/fpopcode.c.
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.2
 
-It would probably be best for there to be a common function for doing
-this kind of check, rather than having several implementations of it
-scattered around the kernel.
+This includes a ppc ABI breakage fix, s390 fixes, a tracing/kvmclock
+conflict fix, and the implementation of guest-only/host-only profiling
+for Intel.  The latter is not strictly a fix, and missed the merge
+window due to a combination of a dependency on tip.git, kernel.org being
+offline, and me forgetting all about it.  However it would be good to
+have the feature implemented fully instead of just on AMD as it is at
+present.
+
+Alexander Graf (1):
+      Revert "KVM: PPC: Add support for explicit HIOR setting"
+
+Avi Kivity (1):
+      KVM guest: prevent tracing recursion with kvmclock
+
+Christian Borntraeger (2):
+      KVM: s390: Fix tprot locking
+      KVM: s390: announce SYNC_MMU
+
+Cornelia Huck (2):
+      KVM: s390: Fix RUNNING flag misinterpretation
+      KVM: s390: handle SIGP sense running intercepts
+
+Gleb Natapov (3):
+      KVM: VMX: add support for switching of PERF_GLOBAL_CTRL
+      KVM: VMX: Add support for guest/host-only profiling
+      KVM: VMX: Check for automatic switch msr table overflow
+
+ arch/powerpc/include/asm/kvm.h        |    8 --
+ arch/powerpc/include/asm/kvm_book3s.h |    2 -
+ arch/powerpc/kvm/book3s_pr.c          |   14 +---
+ arch/powerpc/kvm/powerpc.c            |    1 -
+ arch/s390/include/asm/kvm_host.h      |    3 +-
+ arch/s390/kvm/diag.c                  |    2 +-
+ arch/s390/kvm/intercept.c             |    3 +-
+ arch/s390/kvm/interrupt.c             |    1 +
+ arch/s390/kvm/kvm-s390.c              |   12 ++-
+ arch/s390/kvm/priv.c                  |   10 ++-
+ arch/s390/kvm/sigp.c                  |   45 +++++++++++-
+ arch/x86/kernel/kvmclock.c            |    5 +-
+ arch/x86/kvm/vmx.c                    |  131
+++++++++++++++++++++++++++++++---
+ include/linux/kvm.h                   |    1 -
+ 14 files changed, 189 insertions(+), 49 deletions(-)
+
+-- 
+error compiling committee.c: too many arguments to function
+
