@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1KTL2E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 06:28:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13410 "EHLO mx1.redhat.com"
+	id S1753511Ab1KTL3U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 06:29:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63555 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753147Ab1KTL2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 06:28:02 -0500
-Message-ID: <4EC8E43E.1040902@redhat.com>
-Date: Sun, 20 Nov 2011 13:27:58 +0200
+	id S1753085Ab1KTL3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 06:29:19 -0500
+Message-ID: <4EC8E48B.9080204@redhat.com>
+Date: Sun, 20 Nov 2011 13:29:15 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 5/6] KVM: sort memslots by its size and use line search
-References: <4EC6226B.3080408@linux.vnet.ibm.com> <4EC62336.7040505@linux.vnet.ibm.com> <4EC8E3FB.7020108@redhat.com>
-In-Reply-To: <4EC8E3FB.7020108@redhat.com>
+Subject: Re: [PATCH v2 0/6] KVM: optimize memslots searching
+References: <4EC6226B.3080408@linux.vnet.ibm.com>
+In-Reply-To: <4EC6226B.3080408@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2011 01:26 PM, Avi Kivity wrote:
-> >
-> >  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
-> >  void kvm_vcpu_uninit(struct kvm_vcpu *vcpu);
-> > @@ -335,7 +340,14 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
-> >  static inline struct kvm_memory_slot *
-> >  id_to_memslot(struct kvm_memslots *slots, int id)
-> >  {
-> > -	return &slots->memslots[id];
-> > +	int i;
-> > +
-> > +	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-> > +		if (slots->memslots[i].id == id)
-> > +			return &slots->memslots[i];
-> > +
+On 11/18/2011 11:16 AM, Xiao Guangrong wrote:
+> This is the more work base on my v1 patchset which is posted some months ago,
+> it can be found at:
+> https://lkml.org/lkml/2011/2/22/68
 >
-> Is that in any hot path?  we could make an array for doing this translation.
+> Change log:
+> - sort memslots base on its size and do the line search instead of binary
+>   search base on gfn, it is from Avi's idea.
+> - in order to reduce cache footprint, memslots are sorted in the array of
+>   kvm->memslots->memslots[] and introduce a table to map slot id to index in
+>   the array
+>
+> There is the performance result:
+>
+> autotest for RHEL.6.1 setup/boot/reboot/shutdown(average):
+> ept=1:	before: 449.5	after: 447.8
+> ept=0:	before: 532.7	after: 529.8
+>
+> kernbench(average):
+> ept=1:	before: 127.94	after: 126.98
+> ept=0:	before: 196.85	after: 189.66
 
-Never mind, I see patch 6.  I should have known you wouldn't leave it
-like that.
+Looks good, had a couple of comments but they're really minor.
 
 -- 
 error compiling committee.c: too many arguments to function
