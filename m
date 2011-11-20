@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1KTXbn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 18:31:43 -0500
-Received: from trent.utfs.org ([194.246.123.103]:41634 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754294Ab1KTXbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 18:31:42 -0500
-Date: Sun, 20 Nov 2011 15:31:38 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linuxppc-dev@lists.ozlabs.org
-Subject: Re: 3.2.0-rc1 panic on PowerPC
-In-Reply-To: <alpine.DEB.2.01.1111150035560.8000@trent.utfs.org>
-Message-ID: <alpine.DEB.2.01.1111201529070.8000@trent.utfs.org>
-References: <alpine.DEB.2.01.1111150035560.8000@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1754676Ab1KTXeL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 18:34:11 -0500
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:35339 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab1KTXeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 18:34:09 -0500
+Message-ID: <4EC98EE6.8070101@snapgear.com>
+Date: Mon, 21 Nov 2011 09:36:06 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68k: Wire up process_vm_{read,write}v
+References: <1321823420-14893-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1321823420-14893-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Nov 2011 at 00:44, Christian Kujau wrote:
-> I noticed a few crashes on this PowerBook G4 lately, starting somewhere in 
-> 3.2.0-rc1. The crashes are really rare and as I'm not on the system all 
-> the time I did not notice most of them. By the time I did, the screen was 
-> blank already and I had to hard-reset the box. But not this time:
-> 
->   http://nerdbynature.de/bits/3.2.0-rc1/oops/
-> 
-> When the crash occured, the system was failry loaded (CPU and disk I/O 
-> wise), so that may have triggered it. I tried to type off the stack trace, 
-> I hope there are not too many typos, see below.
-> 
-> The machine is fairly old, so maybe it's "just" bad RAM or something, I 
-> wouldn't be suprised. But maybe not, the box us pretty stable most of the 
-> time and only now I notice these rare crashes.
+Hi Geert,
 
-Happened again with 3.2.0-rc2-00027-gff0ff78, this time with netconsole 
-enabled. But this time the machine just stopped, w/o any output on the 
-screen or on netconsole :(
+On 21/11/11 07:10, Geert Uytterhoeven wrote:
+> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
 
-Christian.
+Looks good.
 
-> If anyone could take a quick look...?
-> 
-> Thank you,
-> Christian.
-> 
-> Instruction dump:
-> 92c40008 68000001 0f000000 80040000 5400003c 90040000 817f000c 380bffff
-> 901f000c 2f090000 81640018 81440014 <916a0004> 914b0000 92840014 92a49918
-> Kernel panic - not syncing: Fatal exception in interrupt
-> Call Trace:
-> show_stack+0x70/0x1bc (unreliable)
-> panic+0xc8/0x220
-> die+0x2ac/0x2b8
-> bad_page_fault+0xbc/0x104
-> handle_page_fault+0x7c/0x80
-> Exception: 300 at T.975+0x3f4/0x570
-> LR = T.957+0x300/0x570
-> kmem_cache_alloc+0x150/0x150
-> __aloc_skb+0x50/0x148
-> tcp_send_ack+0x35/0x138
-> tcp_delay_timer+0x140/0x244
-> run_timer_softirq+0x1a0/0x2ec
-> __do_softirq+0xf4/0x1bc
-> call_do_softirq+0x14/0x24
-> do_softirq+0xfc/0x128
-> irq_exit+0xa0/0xa4
-> timer_interrupt+0x148/0x180
-> ret_from_except+0x0/0x14
-> cpu_idle+0xa0/0x118
-> rest_init+0xf0/0x114
-> start_kernel+0x2d0/0x2f0
-> 0x3444
-> Rebooting in 180 seconds..
-> 
-> -- 
-> BOFH excuse #184:
-> 
-> loop found in loop in redundant loopback
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+
+Regards
+Greg
+
+
+>   arch/m68k/include/asm/unistd.h  |    4 +++-
+>   arch/m68k/kernel/syscalltable.S |    2 ++
+>   2 files changed, 5 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+> index d97234b..ea0b502 100644
+> --- a/arch/m68k/include/asm/unistd.h
+> +++ b/arch/m68k/include/asm/unistd.h
+> @@ -350,10 +350,12 @@
+>   #define __NR_clock_adjtime	342
+>   #define __NR_syncfs		343
+>   #define __NR_setns		344
+> +#define __NR_process_vm_readv	345
+> +#define __NR_process_vm_writev	346
+>
+>   #ifdef __KERNEL__
+>
+> -#define NR_syscalls		345
+> +#define NR_syscalls		347
+>
+>   #define __ARCH_WANT_IPC_PARSE_VERSION
+>   #define __ARCH_WANT_OLD_READDIR
+> diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
+> index c468f2e..ce827b3 100644
+> --- a/arch/m68k/kernel/syscalltable.S
+> +++ b/arch/m68k/kernel/syscalltable.S
+> @@ -365,4 +365,6 @@ ENTRY(sys_call_table)
+>   	.long sys_clock_adjtime
+>   	.long sys_syncfs
+>   	.long sys_setns
+> +	.long sys_process_vm_readv	/* 345 */
+> +	.long sys_process_vm_writev
+>
+
 
 -- 
-BOFH excuse #387:
-
-Your computer's union contract is set to expire at midnight.
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
