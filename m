@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab1KTHrj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 02:47:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62448 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab1KTHrh (ORCPT
+	id S1752035Ab1KTIld (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 03:41:33 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48251 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab1KTIlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 02:47:37 -0500
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Lasse Collin <lasse.collin@tukaani.org>
-Subject: [PATCH] lib: fix potential memory free failure on unlzo()
-Date: Sun, 20 Nov 2011 16:47:31 +0900
-Message-Id: <1321775251-3274-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Sun, 20 Nov 2011 03:41:32 -0500
+Date: Sun, 20 Nov 2011 08:41:11 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        bryanh@codeaurora.org, David Brown <davidb@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: Add condition code check to SWP emulator
+Message-ID: <20111120084111.GM9581@n2100.arm.linux.org.uk>
+References: <CAHkRjk6Ynfh9+UbTuAtyiXCOF-yDbTNxi0ikF5ttwHViisZRZA@mail.gmail.com> <1321751070-7932-1-git-send-email-stepanm@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321751070-7932-1-git-send-email-stepanm@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in_buf is dynamically allocated if @input is not given,
-and adjusted as processing data on every loop. However
-if block metadata is corrupted it will bail out the loop
-in the middle, thus in_buf will point out wrong memory.
-Fix it by freeing in_buf_save instead.
+On Sat, Nov 19, 2011 at 05:04:30PM -0800, Stepan Moskovchenko wrote:
+> +static int check_condition(struct pt_regs *regs, unsigned int insn)
+> +{
+> +	unsigned int base_cond, neg, cond = 0;
+> +	unsigned int cpsr_z, cpsr_c, cpsr_n, cpsr_v;
+> +
+> +	cpsr_n = (regs->ARM_cpsr & PSR_N_BIT) ? 1 : 0;
+> +	cpsr_z = (regs->ARM_cpsr & PSR_Z_BIT) ? 1 : 0;
+> +	cpsr_c = (regs->ARM_cpsr & PSR_C_BIT) ? 1 : 0;
+> +	cpsr_v = (regs->ARM_cpsr & PSR_V_BIT) ? 1 : 0;
+> +
+> +	/* Upper 3 bits indicate condition, lower bit incicates negation */
+> +	base_cond = insn >> 29;
+> +	neg = insn & BIT(28) ? 1 : 0;
+> +
+> +	switch (base_cond) {
+> +	case 0x0:	/* equal */
+> +		cond = cpsr_z;
+> +		break;
+> +
+> +	case 0x1:	/* carry set */
+> +		cond = cpsr_c;
+> +		break;
+> +
+> +	case 0x2:	/* minus / negative */
+> +		cond = cpsr_n;
+> +		break;
+> +
+> +	case 0x3:	/* overflow */
+> +		cond = cpsr_v;
+> +		break;
+> +
+> +	case 0x4:	/* unsigned higher */
+> +		cond = (cpsr_c == 1) && (cpsr_z == 0);
+> +		break;
+> +
+> +	case 0x5:	/* signed greater / equal */
+> +		cond = (cpsr_n == cpsr_v);
+> +		break;
+> +
+> +	case 0x6:	/* signed greater */
+> +		cond = (cpsr_z == 0) && (cpsr_n == cpsr_v);
+> +		break;
+> +
+> +	case 0x7:	/* always */
+> +		cond = 1;
+> +		break;
+> +	};
+> +
+> +	return cond && !neg;
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
-Cc: Lasse Collin <lasse.collin@tukaani.org>
----
- lib/decompress_unlzo.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+There's a much better algorithm to check this.  See the bottom of
+arch/arm/nwfpe/fpopcode.c.
 
-diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
-index 5a7a2adf4c4c..4531294fa62f 100644
---- a/lib/decompress_unlzo.c
-+++ b/lib/decompress_unlzo.c
-@@ -279,7 +279,7 @@ STATIC inline int INIT unlzo(u8 *input, int in_len,
- 	ret = 0;
- exit_2:
- 	if (!input)
--		free(in_buf);
-+		free(in_buf_save);
- exit_1:
- 	if (!output)
- 		free(out_buf);
---
-1.7.6
-
+It would probably be best for there to be a common function for doing
+this kind of check, rather than having several implementations of it
+scattered around the kernel.
