@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1KTBEP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 20:04:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab1KTBEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 20:04:14 -0500
-Date: Sat, 19 Nov 2011 23:03:58 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] perf tool: Initialize events IDs in a single
-	function
-Message-ID: <20111120010358.GE13052@ghostprotocols.net>
-References: <1321624005-6889-1-git-send-email-jolsa@redhat.com> <1321624005-6889-3-git-send-email-jolsa@redhat.com> <20111118142255.GB13052@ghostprotocols.net> <20111120013621.GA2248@krava.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111120013621.GA2248@krava.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754775Ab1KTBF1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 20:05:27 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:4026 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab1KTBF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 20:05:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6535"; a="136948449"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Leif Lindholm <leif.lindholm@arm.com>, bryanh@codeaurora.org,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH] arm: Add condition code check to SWP emulator
+Date: Sat, 19 Nov 2011 17:04:30 -0800
+Message-Id: <1321751070-7932-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <CAHkRjk6Ynfh9+UbTuAtyiXCOF-yDbTNxi0ikF5ttwHViisZRZA@mail.gmail.com>
+References: <CAHkRjk6Ynfh9+UbTuAtyiXCOF-yDbTNxi0ikF5ttwHViisZRZA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Nov 19, 2011 at 08:36:21PM -0500, Jiri Olsa escreveu:
-> On Fri, Nov 18, 2011 at 12:22:55PM -0200, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Nov 18, 2011 at 02:46:42PM +0100, Jiri Olsa escreveu:
-> > > Currently events' IDs initialization is scattered among the
-> > > code. Adding function 'perf_evlist__init_ids' to allocate
-> > > and retrive events' IDs in one place.
+When emulating a SWP/SWPB instruction, check the condition
+code of the instruction and compare it against CPSR status
+bits rather than relying on the architecture to only raise
+an undefined instruction exception if the condition checks
+are passing.
 
-> > I'm ok with this one, will merge it in my perf/core branch together with
-> > a fix for a bug I noticed in the original code and that remains with
-> > your changes: consider what happens if we do a second perf_evlist__mmap,
-> > we will call perf_evlist__id_add_fd again and thus bump evsel->ids++
-> > over nr_threads * nr_cpus, overflowing it.
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+Hello
 
-> is there a valid scenario for this function to be called more than once?
-> I'd think that just ensuring this is called once is enough
+I already had a version prepared, so here it is.
 
-I don't know, I just don't want to preclude that, crystal balls are not
-that reliable :-)
+Steve
 
-- Arnaldo
+ arch/arm/kernel/swp_emulate.c |   57 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 57 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/kernel/swp_emulate.c b/arch/arm/kernel/swp_emulate.c
+index 40ee7e5..7669848 100644
+--- a/arch/arm/kernel/swp_emulate.c
++++ b/arch/arm/kernel/swp_emulate.c
+@@ -173,6 +173,57 @@ static int emulate_swpX(unsigned int address, unsigned int *data,
+ 	return res;
+ }
+ 
++static int check_condition(struct pt_regs *regs, unsigned int insn)
++{
++	unsigned int base_cond, neg, cond = 0;
++	unsigned int cpsr_z, cpsr_c, cpsr_n, cpsr_v;
++
++	cpsr_n = (regs->ARM_cpsr & PSR_N_BIT) ? 1 : 0;
++	cpsr_z = (regs->ARM_cpsr & PSR_Z_BIT) ? 1 : 0;
++	cpsr_c = (regs->ARM_cpsr & PSR_C_BIT) ? 1 : 0;
++	cpsr_v = (regs->ARM_cpsr & PSR_V_BIT) ? 1 : 0;
++
++	/* Upper 3 bits indicate condition, lower bit incicates negation */
++	base_cond = insn >> 29;
++	neg = insn & BIT(28) ? 1 : 0;
++
++	switch (base_cond) {
++	case 0x0:	/* equal */
++		cond = cpsr_z;
++		break;
++
++	case 0x1:	/* carry set */
++		cond = cpsr_c;
++		break;
++
++	case 0x2:	/* minus / negative */
++		cond = cpsr_n;
++		break;
++
++	case 0x3:	/* overflow */
++		cond = cpsr_v;
++		break;
++
++	case 0x4:	/* unsigned higher */
++		cond = (cpsr_c == 1) && (cpsr_z == 0);
++		break;
++
++	case 0x5:	/* signed greater / equal */
++		cond = (cpsr_n == cpsr_v);
++		break;
++
++	case 0x6:	/* signed greater */
++		cond = (cpsr_z == 0) && (cpsr_n == cpsr_v);
++		break;
++
++	case 0x7:	/* always */
++		cond = 1;
++		break;
++	};
++
++	return cond && !neg;
++}
++
+ /*
+  * swp_handler logs the id of calling process, dissects the instruction, sanity
+  * checks the memory location, calls emulate_swpX for the actual operation and
+@@ -191,6 +242,12 @@ static int swp_handler(struct pt_regs *regs, unsigned int instr)
+ 		previous_pid = current->pid;
+ 	}
+ 
++	/* Ignore the instruction if it fails its condition code check */
++	if (!check_condition(regs, instr)) {
++		regs->ARM_pc += 4;
++		return 0;
++	}
++
+ 	address = regs->uregs[EXTRACT_REG_NUM(instr, RN_OFFSET)];
+ 	data	= regs->uregs[EXTRACT_REG_NUM(instr, RT2_OFFSET)];
+ 	destreg = EXTRACT_REG_NUM(instr, RT_OFFSET);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
