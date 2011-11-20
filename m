@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1KTB6A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 20:58:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:62513 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753010Ab1KTB56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 20:57:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,540,1315206000"; 
-   d="scan'208";a="77190479"
-Date: Sun, 20 Nov 2011 09:57:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jim Rees <rees@umich.edu>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH] nfs: writeback pages wait queue
-Message-ID: <20111120015755.GA7161@localhost>
-References: <20111119125253.GA5483@localhost>
- <20111119134412.GA5853@umich.edu>
+	id S1754817Ab1KTCGa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 21:06:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51078 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab1KTCG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 21:06:29 -0500
+Date: Sat, 19 Nov 2011 18:06:26 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Petr Holasek <pholasek@redhat.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH 1/2] NUMA emulation x86_64: numa=fake parameter for custom
+ nodes distance
+In-Reply-To: <1321617308-4998-1-git-send-email-pholasek@redhat.com>
+Message-ID: <alpine.DEB.2.00.1111191800030.25103@chino.kir.corp.google.com>
+References: <1321617308-4998-1-git-send-email-pholasek@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111119134412.GA5853@umich.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jim,
+On Fri, 18 Nov 2011, Petr Holasek wrote:
 
-On Sat, Nov 19, 2011 at 09:44:12PM +0800, Jim Rees wrote:
-> Wu Fengguang wrote:
+> As default, when numa emulation is turned on, node distance table
+> uses physical distance, so for 4 nodes emulated on 1 physical table is
 > 
->   The generic writeback routines are departing from congestion_wait()
->   in preference of get_request_wait(), aka. waiting on the block queues.
->   
->   Introduce the missing writeback wait queue for NFS, otherwise its
->   writeback pages will grow greedily, exhausting all PG_dirty pages.
->   
->   Tests show that it can effectively reduce stalls in the disk-network
->   pipeline, improve performance and reduce delays.
+> node   0   1   2   3
+> 0:  10  10  10  10
+> 1:  10  10  10  10
+> 2:  10  10  10  10
+> 3:  10  10  10  10
 > 
-> This is great stuff.  Did you do any tests on long delay paths?  I did some
-> work on this a few years ago and made some progress but not enough.
 
-Good question! I didn't test fat pipelines, which sure asks for reasonably high
-nfs_congestion_kb to work well.
+That should only be true if you're booting on a system with one physical 
+node and an SRAT, otherwise the distance between fake nodes should be 
+representative of their physical distance.  For example, if you boot 
+with numa=fake=4 on a two symmetrical two-node box, you should get 
+something like
 
-However we have good chances.
+	10 10 20 20
+	10 10 20 20
+	20 20 10 10
+	20 20 10 10
 
-The nfs_congestion_kb is computed at module loading time in
-nfs_init_writepagecache():
+It's done like this intentionally so you can test NUMA without having many 
+nodes.  What you're doing is changing the distance even though there is no 
+actual difference in latency on the hardware so it's an incorrect 
+representation.
 
-        /*
-         * NFS congestion size, scale with available memory.
-         *
-         *  64MB:    8192k
-         * 128MB:   11585k
-         * 256MB:   16384k
-         * 512MB:   23170k
-         *   1GB:   32768k
-         *   2GB:   46340k
-         *   4GB:   65536k
-         *   8GB:   92681k
-         *  16GB:  131072k
-         *
-         * This allows larger machines to have larger/more transfers.
-         * Limit the default to 256M
-         */
+> This patch adds new [distance] argument to
+> 
+> numa=fake=<number/size of nodes>[,distance]
+> 
+> When distance argument is used, it sets linear distance between nodes
+> like that:
+> 
+>     __distance__
+> ___|___     ____|___     ________     ________
+> |       |   |        |   |        |   |        |
+> | node1 |---| node 2 |---| node 3 |---| node 4 |
+> |_______|   |________|   |________|   |________|
+> |                        |             |
+> |                        |             |
+> |____distance * 2________|             |
+> |                                      |
+> |____________distance * 3______________|
+> 
+> This feature might be useful for testing some numa awareness features in
+> both user and kernel spaces.
+> 
 
-For a typical mem=4GB client, nfs_congestion_kb=64MB, which is enough
-to fill a 100ms*100MB/s=10MB network pipeline.
+I don't see any use case for this other than testing if code can actually 
+order nodes correctly or not.  The distances that you're now adding are, 
+by definition, incorrect since they aren't the same as exported by the 
+true SLIT (which is what happens by default now) so nothing other than 
+functional testing of node ordering is achieved with this patch.
 
-There may be more demanding ones, however that's rare case and its
-user should be fully aware of the specialness and the need to do some
-hand tuning, for example:
+So nack on this approach.
 
-        echo $(300<<10) > /proc/sys/fs/nfs/nfs_congestion_kb
-
-Thanks,
-Fengguang
+What you could do, however, and would be generally useful even outside of 
+NUMA emulation, is to add fake SLIT functionality so that you can define 
+it yourself on the command line.  You could use that either with or 
+without NUMA emulation if you know the physical SLIT is incorrect in some 
+way.  Then, you get the same functionality as your patch here by using it 
+in combination with numa=fake and the added bonus is that you don't need 
+any of the "distance * 2" or "distance * 3" limitations.
