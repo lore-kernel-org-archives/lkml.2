@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab1KTVHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 16:07:13 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10811 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab1KTVHL (ORCPT
+	id S1754022Ab1KTVK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 16:10:27 -0500
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:60298 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532Ab1KTVKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 16:07:11 -0500
-Date: Sun, 20 Nov 2011 22:07:09 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-can@vger.kernel.org, netdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: [PATCH] net, sja1000: Don't include version.h in peak_pci.c when
- not needed
-Message-ID: <alpine.LNX.2.00.1111202204480.17195@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 20 Nov 2011 16:10:24 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k: Wire up process_vm_{read,write}v
+Date: Sun, 20 Nov 2011 22:10:20 +0100
+Message-Id: <1321823420-14893-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was pointed out by "make versioncheck" that we do not need to include
-version.h in drivers/net/can/sja1000/peak_pci.c
-This patch removes the unneeded include.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/net/can/sja1000/peak_pci.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/m68k/include/asm/unistd.h  |    4 +++-
+ arch/m68k/kernel/syscalltable.S |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
- note: patch is compile tested only.
-
-diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
-index 905bce0..2c7f503 100644
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -20,7 +20,6 @@
-  */
+diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+index d97234b..ea0b502 100644
+--- a/arch/m68k/include/asm/unistd.h
++++ b/arch/m68k/include/asm/unistd.h
+@@ -350,10 +350,12 @@
+ #define __NR_clock_adjtime	342
+ #define __NR_syncfs		343
+ #define __NR_setns		344
++#define __NR_process_vm_readv	345
++#define __NR_process_vm_writev	346
  
- #include <linux/kernel.h>
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/netdevice.h>
+ #ifdef __KERNEL__
+ 
+-#define NR_syscalls		345
++#define NR_syscalls		347
+ 
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
+index c468f2e..ce827b3 100644
+--- a/arch/m68k/kernel/syscalltable.S
++++ b/arch/m68k/kernel/syscalltable.S
+@@ -365,4 +365,6 @@ ENTRY(sys_call_table)
+ 	.long sys_clock_adjtime
+ 	.long sys_syncfs
+ 	.long sys_setns
++	.long sys_process_vm_readv	/* 345 */
++	.long sys_process_vm_writev
+ 
 -- 
-1.7.7.3
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.0.4
 
