@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab1KTDgJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 22:36:09 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:60928 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755117Ab1KTDgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 22:36:08 -0500
-Date: Sat, 19 Nov 2011 22:35:34 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: David Rientjes <rientjes@google.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH] ext4: group info caches set to SLAB_MEM_SPREAD flags.
-Message-ID: <20111120033534.GH4130@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	David Rientjes <rientjes@google.com>,
-	Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org,
-	Amit Sahrawat <amit.sahrawat83@gmail.com>
-References: <1321742924-3189-1-git-send-email-linkinjeon@gmail.com>
- <alpine.DEB.2.00.1111191524200.5986@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1111191524200.5986@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755304Ab1KTEe4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 23:34:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60557 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755138Ab1KTEez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 23:34:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="78047950"
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+From: wwguy <wey-yi.w.guy@intel.com>
+To: =?UTF-8?Q?Tom=C3=A1=C5=A1_Janou=C5=A1ek?= <tomi@nomi.cz>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+In-Reply-To: <20111120032016.GA14520@nomi.cz>
+References: <20111110091816.GA2247@nomi.cz>
+	 <20111110114732.GA2217@redhat.com> <20111110125347.GA29415@nomi.cz>
+	 <20111110160703.GA2775@redhat.com> <20111110163051.GA24533@nomi.cz>
+	 <20111111054731.GA2292@redhat.com> <20111111150105.GA25437@nomi.cz>
+	 <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz>
+	 <1321755233.22510.1.camel@wwguy-ubuntu>  <20111120032016.GA14520@nomi.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Nov 2011 20:28:34 -0800
+Message-ID: <1321763314.22510.4.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 03:29:34PM -0800, David Rientjes wrote:
-> If there is convincing data that suggests it's helpful on your hardware, 
-> then it would make a good case to merge your patch so users don't need to 
-> set their own mempolicies that do this.  They'll just need to mount 
-> cpusets and enable cpuset.memory_spread_slab.
+On Sat, 2011-11-19 at 19:20 -0800, Tomáš Janoušek wrote:
+> Hi,
+> 
+> On Sat, Nov 19, 2011 at 06:13:53PM -0800, wwguy wrote:
+> > hmm, I don't have any IOMMU supported system, I guess it is the time to
+> > get one :-)
+> 
+> Well, the bug manifests itself regardless of whether IOMMU is used or not...
+> 
+> Anyway, did you have time to try to reproduce it with the .config I sent?
+> (It may take hours, sometimes. :-/)
+> 
+Yes, I will try your configuration when I get back  to the office Monday
 
->From Namjae and Amit have stated, they don't have access to any NUMA
-hardware.  If I had to guess they are students or people who are
-trying to start a Linux development team at some company or research
-institute, and have decided to start by sending cleanup patches.
+Thanks
 
-	       	    	       	     	- Ted
+Wey
+
+
