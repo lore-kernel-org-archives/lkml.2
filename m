@@ -1,34 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab1KTJag (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 04:30:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60625 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab1KTJab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 04:30:31 -0500
+	id S1752504Ab1KTJg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 04:36:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab1KTJg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 04:36:26 -0500
+Message-ID: <4EC8CA17.60901@redhat.com>
+Date: Sun, 20 Nov 2011 11:36:23 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <4EC7AFDF.6030009@gmail.com>
-References: <4EC7AFDF.6030009@gmail.com>
-Date: Sun, 20 Nov 2011 17:30:30 +0800
-Message-ID: <CAM_iQpWru-yPVNVLSi1CnSKtDDEtUhyWJD=WOmTkmcYQXFHDqg@mail.gmail.com>
-Subject: Re: [PATCH] Fixed use of rounddown_pow_of_two in ramoops
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [GIT PULL] KVM updates for 3.2-rc2
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 9:32 PM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
->
-> The return value of rounddown_pow_of_two wasn't evaluated, so the
-> operation was a no-op.
->
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+(now with [GIT PULL] for filters)
 
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Linus, please pull from:
+
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.2
+
+This includes a ppc ABI breakage fix, s390 fixes, a tracing/kvmclock
+conflict fix, and the implementation of guest-only/host-only profiling
+for Intel.  The latter is not strictly a fix, and missed the merge
+window due to a combination of a dependency on tip.git, kernel.org being
+offline, and me forgetting all about it.  However it would be good to
+have the feature implemented fully instead of just on AMD as it is at
+present.
+
+Alexander Graf (1):
+      Revert "KVM: PPC: Add support for explicit HIOR setting"
+
+Avi Kivity (1):
+      KVM guest: prevent tracing recursion with kvmclock
+
+Christian Borntraeger (2):
+      KVM: s390: Fix tprot locking
+      KVM: s390: announce SYNC_MMU
+
+Cornelia Huck (2):
+      KVM: s390: Fix RUNNING flag misinterpretation
+      KVM: s390: handle SIGP sense running intercepts
+
+Gleb Natapov (3):
+      KVM: VMX: add support for switching of PERF_GLOBAL_CTRL
+      KVM: VMX: Add support for guest/host-only profiling
+      KVM: VMX: Check for automatic switch msr table overflow
+
+ arch/powerpc/include/asm/kvm.h        |    8 --
+ arch/powerpc/include/asm/kvm_book3s.h |    2 -
+ arch/powerpc/kvm/book3s_pr.c          |   14 +---
+ arch/powerpc/kvm/powerpc.c            |    1 -
+ arch/s390/include/asm/kvm_host.h      |    3 +-
+ arch/s390/kvm/diag.c                  |    2 +-
+ arch/s390/kvm/intercept.c             |    3 +-
+ arch/s390/kvm/interrupt.c             |    1 +
+ arch/s390/kvm/kvm-s390.c              |   12 ++-
+ arch/s390/kvm/priv.c                  |   10 ++-
+ arch/s390/kvm/sigp.c                  |   45 +++++++++++-
+ arch/x86/kernel/kvmclock.c            |    5 +-
+ arch/x86/kvm/vmx.c                    |  131
+++++++++++++++++++++++++++++++---
+ include/linux/kvm.h                   |    1 -
+ 14 files changed, 189 insertions(+), 49 deletions(-)
+
+-- 
+error compiling committee.c: too many arguments to function
+
