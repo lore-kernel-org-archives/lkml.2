@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab1KTB5M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 20:57:12 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57474 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab1KTB5L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 20:57:11 -0500
-From: Edward Donovan <edward.donovan@numble.net>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, maciej.rutecki@gmail.com
-Subject: [PATCH] genirq: fix second 2.6.39 regression in irqfixup, irqpoll
-Date: Sat, 19 Nov 2011 20:54:23 -0500
-Message-Id: <1321754063-2887-2-git-send-email-edward.donovan@numble.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1321754063-2887-1-git-send-email-edward.donovan@numble.net>
-References: <1321754063-2887-1-git-send-email-edward.donovan@numble.net>
+	id S1754856Ab1KTB6A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Nov 2011 20:58:00 -0500
+Received: from mga03.intel.com ([143.182.124.21]:62513 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010Ab1KTB56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Nov 2011 20:57:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,540,1315206000"; 
+   d="scan'208";a="77190479"
+Date: Sun, 20 Nov 2011 09:57:55 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jim Rees <rees@umich.edu>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>
+Subject: Re: [PATCH] nfs: writeback pages wait queue
+Message-ID: <20111120015755.GA7161@localhost>
+References: <20111119125253.GA5483@localhost>
+ <20111119134412.GA5853@umich.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111119134412.GA5853@umich.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit fa2727("genirq: Fixup poll handling") introduced a
-regression that broke irqfixup/irqpoll for some hardware
-configurations.  That patch removed a test that checked for
-'action->handler' returning IRQ_HANDLED, before acting on the
-IRQ.  Putting this test back restores the functionality lost
-since 2.6.39.  In the current set of tests after 'action' is set,
-it must precede '!action->next' to take effect.
+Hi Jim,
 
-With this and the previous patch to spurious.c, c75d720fca8a, all
-IRQ regressions that I have encountered are fixed.
+On Sat, Nov 19, 2011 at 09:44:12PM +0800, Jim Rees wrote:
+> Wu Fengguang wrote:
+> 
+>   The generic writeback routines are departing from congestion_wait()
+>   in preference of get_request_wait(), aka. waiting on the block queues.
+>   
+>   Introduce the missing writeback wait queue for NFS, otherwise its
+>   writeback pages will grow greedily, exhausting all PG_dirty pages.
+>   
+>   Tests show that it can effectively reduce stalls in the disk-network
+>   pipeline, improve performance and reduce delays.
+> 
+> This is great stuff.  Did you do any tests on long delay paths?  I did some
+> work on this a few years ago and made some progress but not enough.
 
-Signed-off-by: Edward Donovan <edward.donovan@numble.net>
----
- kernel/irq/spurious.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Good question! I didn't test fat pipelines, which sure asks for reasonably high
+nfs_congestion_kb to work well.
 
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index b5f4742..dc813a9 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -84,7 +84,9 @@ static int try_one_irq(int irq, struct irq_desc *desc, bool force)
- 	 */
- 	action = desc->action;
- 	if (!action || !(action->flags & IRQF_SHARED) ||
--	    (action->flags & __IRQF_TIMER) || !action->next)
-+	    (action->flags & __IRQF_TIMER) ||
-+	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
-+	    !action->next)
- 		goto out;
- 
- 	/* Already running on another processor */
--- 
-1.7.5.4
+However we have good chances.
 
+The nfs_congestion_kb is computed at module loading time in
+nfs_init_writepagecache():
+
+        /*
+         * NFS congestion size, scale with available memory.
+         *
+         *  64MB:    8192k
+         * 128MB:   11585k
+         * 256MB:   16384k
+         * 512MB:   23170k
+         *   1GB:   32768k
+         *   2GB:   46340k
+         *   4GB:   65536k
+         *   8GB:   92681k
+         *  16GB:  131072k
+         *
+         * This allows larger machines to have larger/more transfers.
+         * Limit the default to 256M
+         */
+
+For a typical mem=4GB client, nfs_congestion_kb=64MB, which is enough
+to fill a 100ms*100MB/s=10MB network pipeline.
+
+There may be more demanding ones, however that's rare case and its
+user should be fully aware of the specialness and the need to do some
+hand tuning, for example:
+
+        echo $(300<<10) > /proc/sys/fs/nfs/nfs_congestion_kb
+
+Thanks,
+Fengguang
