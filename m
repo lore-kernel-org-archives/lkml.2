@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab1KTQyg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 11:54:36 -0500
-Received: from smtp24.mail.ru ([94.100.176.177]:56070 "EHLO smtp24.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab1KTQyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 11:54:33 -0500
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org
-Subject: [PATCH] [media] omap3isp: fix compilation of ispvideo.c
-Date: Sun, 20 Nov 2011 20:54:26 +0400
-Message-Id: <1321808066-1791-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.4.rc3
-X-Spam: Not detected
-X-Mras: Ok
+	id S1753841Ab1KTSiu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 13:38:50 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:33897 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753780Ab1KTSit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 13:38:49 -0500
+Date: Sun, 20 Nov 2011 13:38:46 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: NamJae Jeon <linkinjeon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH v2] ext4: group info caches set to SLAB_MEM_SPREAD
+ flags.
+Message-ID: <20111120183846.GB12868@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	NamJae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org,
+	Amit Sahrawat <amit.sahrawat83@gmail.com>
+References: <1321747359-1919-1-git-send-email-linkinjeon@gmail.com>
+ <CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following build error by explicitely including <linux/module.h>
-header file.
+On Sun, Nov 20, 2011 at 02:45:32PM +0900, NamJae Jeon wrote:
+> This patch is not really meaningful ? or you need to see performance
+> data although cpuset mem spread flags patch is proved before.
+> I am waiting for your decision.
 
-  CC      drivers/media/video/omap3isp/ispvideo.o
-drivers/media/video/omap3isp/ispvideo.c:1267: error: 'THIS_MODULE' undeclared here (not in a function)
-make[4]: *** [drivers/media/video/omap3isp/ispvideo.o] Error 1
-make[3]: *** [drivers/media/video/omap3isp] Error 2
-make[2]: *** [drivers/media/video] Error 2
-make[1]: *** [drivers/media] Error 2
-make: *** [drivers] Error 2
+I don't think it's really going to make much of a difference, to be
+honest.  It's probably technically a little better, but at the end of
+the day, it's not really worth the tiny amount of effort to process
+the patch.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- drivers/media/video/omap3isp/ispvideo.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I put it in the same category as people who like to remove whitespaces
+from files or remove unused variables.  It marginally makes the code a
+tiny amount better, but at the moment, review bandwidth in the ext4
+subsystem is a critically tight resource, and in terms of the grand
+scheme of things, there are higher priority things that I need to
+worry about, as opposed to people constantly resending trivial patches
+and demanding a decision.
 
-diff --git a/drivers/media/video/omap3isp/ispvideo.c b/drivers/media/video/omap3isp/ispvideo.c
-index d100072..f229057 100644
---- a/drivers/media/video/omap3isp/ispvideo.c
-+++ b/drivers/media/video/omap3isp/ispvideo.c
-@@ -26,6 +26,7 @@
- #include <asm/cacheflush.h>
- #include <linux/clk.h>
- #include <linux/mm.h>
-+#include <linux/module.h>
- #include <linux/pagemap.h>
- #include <linux/scatterlist.h>
- #include <linux/sched.h>
--- 
-1.7.4.rc3
+So let me ask a counter question --- why are you sending these
+patches?  Especially when you don't even have a system that would
+benefit from such changes?  Is it just ego to have your name in the
+kernel, or to be counted amongst kernel developers?  Is this a warm up
+because you'd like to do more substantive work in ext4, or other parts
+of the kernel?  Is this a University exercise?  And if you're from a
+company, which company, and what's your interest in ext4?  I
+understand how Whamcloud uses ext4, and how the Android folks are
+using ext4, and to a lesser extent how Tao Bao is using ext4, and that
+helps me understand where they are going with ext4 and why they submit
+the kind of patches that they do.
 
+But I don't understand why *you* are submitting these sorts of
+patches.  If there's substantive work that you plan to do with ext4,
+then the investment I might make in helping you become more proficient
+ext4 developers is quite different from say, the sort of attention I
+might give someone who is working on ext4 for a class project or for
+ego reasons.
+
+Best regards,
+
+						- Ted
