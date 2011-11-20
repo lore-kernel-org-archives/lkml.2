@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab1KTEe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Nov 2011 23:34:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60557 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab1KTEez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Nov 2011 23:34:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="78047950"
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-From: wwguy <wey-yi.w.guy@intel.com>
-To: =?UTF-8?Q?Tom=C3=A1=C5=A1_Janou=C5=A1ek?= <tomi@nomi.cz>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20111120032016.GA14520@nomi.cz>
-References: <20111110091816.GA2247@nomi.cz>
-	 <20111110114732.GA2217@redhat.com> <20111110125347.GA29415@nomi.cz>
-	 <20111110160703.GA2775@redhat.com> <20111110163051.GA24533@nomi.cz>
-	 <20111111054731.GA2292@redhat.com> <20111111150105.GA25437@nomi.cz>
-	 <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz>
-	 <1321755233.22510.1.camel@wwguy-ubuntu>  <20111120032016.GA14520@nomi.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 19 Nov 2011 20:28:34 -0800
-Message-ID: <1321763314.22510.4.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1750948Ab1KTFpg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 00:45:36 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55957 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab1KTFpf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 00:45:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <1321747359-1919-1-git-send-email-linkinjeon@gmail.com>
+References: <1321747359-1919-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 20 Nov 2011 14:45:32 +0900
+Message-ID: <CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
+Subject: Re: [PATCH v2] ext4: group info caches set to SLAB_MEM_SPREAD flags.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-11-19 at 19:20 -0800, Tomáš Janoušek wrote:
-> Hi,
-> 
-> On Sat, Nov 19, 2011 at 06:13:53PM -0800, wwguy wrote:
-> > hmm, I don't have any IOMMU supported system, I guess it is the time to
-> > get one :-)
-> 
-> Well, the bug manifests itself regardless of whether IOMMU is used or not...
-> 
-> Anyway, did you have time to try to reproduce it with the .config I sent?
-> (It may take hours, sometimes. :-/)
-> 
-Yes, I will try your configuration when I get back  to the office Monday
-
-Thanks
-
-Wey
-
-
+2011/11/20 Namjae Jeon <linkinjeon@gmail.com>:
+> I try to set to SLAB_MEM_SPREAD flags in groups info caches accoding to http://lwn.net/Articles/173654/.
+> And other filesystems have already set to this flags when using slab caches in fs.
+> I believe that it is useful by original Paul jackson's patch and other fs is currently using this flags.
+> Ted's opinion is that theoretically it would be sound to have that flag set with groups info slab cache.
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> ---
+>  fs/ext4/mballoc.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index e2d8be8..7aacbbe 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -2407,7 +2407,8 @@ static int ext4_groupinfo_create_slab(size_t size)
+>                                bb_counters[blocksize_bits + 2]);
+>
+>        cachep = kmem_cache_create(ext4_groupinfo_slab_names[cache_index],
+> -                                       slab_size, 0, SLAB_RECLAIM_ACCOUNT,
+> +                                       slab_size, 0, SLAB_RECLAIM_ACCOUNT |
+> +                                       SLAB_MEM_SPREAD,
+>                                        NULL);
+>
+>        ext4_groupinfo_caches[cache_index] = cachep;
+> --
+> 1.7.4.4
+>
+>
+Hi. Ted.
+This patch is not really meaningful ? or you need to see performance
+data although cpuset mem spread flags patch is proved before.
+I am waiting for your decision.
+Thanks.
