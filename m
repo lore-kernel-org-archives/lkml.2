@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1KTPxi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 10:53:38 -0500
-Received: from gate.crashing.org ([63.228.1.57]:36740 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab1KTPxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 10:53:35 -0500
-Subject: Re: [PATCH] powerpc/p3060qds: Fix select of 'MPC8xxx_GPIO'
-Mime-Version: 1.0 (Apple Message framework v1251.1)
+	id S1753163Ab1KTQRg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 11:17:36 -0500
+Received: from vamos2c.informatik.uni-erlangen.de ([131.188.42.15]:38331 "EHLO
+	vamos2c.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752241Ab1KTQRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 11:17:33 -0500
+X-Greylist: delayed 1255 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Nov 2011 11:17:33 EST
+From: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        Jean Sacren <sakiwit@gmail.com>, linux-kernel@vger.kernel.org,
+        vamos-dev@lists.informatik.uni-erlangen.de
+Subject: Re: [PATCH] kconfig: Fix checking return value of 'fwrite'
+Organization: Uni Erlangen, Informatik 4, Lehrstuhl =?utf-8?Q?f=C3=BCr?=
+ Betriebs- und verteilte Systeme
+References: <87lisype1v.fsf@faui43f.informatik.uni-erlangen.de>
+	<CACqU3MWZuqgpxG7FSvr2LkqTqwF-gQM8hQSnTTpHpcWT2LHGNA@mail.gmail.com>
+	<4EC8FF93.7010706@suse.cz>
+X-Url: http://www4.informatik.uni-erlangen.de/~tartler
+Date: Sun, 20 Nov 2011 16:53:23 +0100
+In-Reply-To: <4EC8FF93.7010706@suse.cz> (Michal Marek's message of "Sun, 20
+	Nov 2011 14:24:35 +0100")
+Message-ID: <87zkfq6b9o.fsf@faui43f.informatik.uni-erlangen.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1321141830.20271.22.camel@x61.thuisdomein>
-Date: Sun, 20 Nov 2011 09:53:16 -0600
-Cc: Shengzhou Liu <Shengzhou.Liu@freescale.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Anatolij Gustschin <agust@denx.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <8FD955D3-D7DE-45DF-B9F5-247209532B4B@kernel.crashing.org>
-References: <1321141830.20271.22.camel@x61.thuisdomein>
-To: Paul Bolle <pebolle@tiscali.nl>
-X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On So, Nov 20, 2011 at 14:24:35 (CET), Michal Marek wrote:
 
-On Nov 12, 2011, at 5:50 PM, Paul Bolle wrote:
+> On 7.10.2011 05:29, Arnaud Lacombe wrote:
+>> Hi,
+>> 
+>> 2011/10/6 Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>:
+>>> fwrite indicates '1' written member if a zero-length string is written.
+>> you forgot the "Signed-off-by: " part :)
+>
+> Reinhard, can I assume
+>
+> Signed-off-by: Reinhard Tartler
+> <Reinhard.Tartler@informatik.uni-erlangen.de>
+>
+> ? The patch is otherwise correct.
 
-> The driver for the Freescale P3060 QDS got added by commit 96cc017c5b
-> ("[...] Add support for P3060QDS board"). Its Kconfig entry selects
-> MPC8xxx_GPIO. But at the time that driver got added MPC8xxx_GPIO was
-> already renamed to GPIO_MPC8XXX, by commit c68308dd50c ("gpio: move
-> mpc8xxx/512x gpio driver to drivers/gpio").
-> 
-> So make this driver select GPIO_MPC8XXX.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Bravely untested: I haven't got the hardware nor the PPC toolchain
-> needed to build this. And it seems this needs (build) testing anyhow.
-> 
-> 1) Sent to the people who wrote the two patches mentioned in the commit
-> explanation and CC'd the non-authors who signed-off these patches.
-> 
-> 2) The config tools do not complain about selects that cannot be met
-> because they concern a Kconfig symbol that doesn't even exist. Shouldn't
-> they be made to complain in that case?
-> 
-> arch/powerpc/platforms/85xx/Kconfig |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
+I merely forgot to add that part. I fully agree with the (legal)
+implications.
 
-applied to merge
+Cheers,
+Reinhard,
 
-- k
+-- 
+Reinhard Tartler                     Department of Computer Science IV
+Martensstr 1, 91058 Erlangen Germany, University of Erlangen-Nuremberg
+            http://www4.informatik.uni-erlangen.de/~tartler
