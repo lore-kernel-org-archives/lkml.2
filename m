@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab1KTUTG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 15:19:06 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39916 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab1KTUTE (ORCPT
+	id S1753179Ab1KTUVa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 15:21:30 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:44453 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751471Ab1KTUV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 15:19:04 -0500
+	Sun, 20 Nov 2011 15:21:29 -0500
+Message-ID: <4EC960C3.7040305@xenotime.net>
+Date: Sun, 20 Nov 2011 12:19:15 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Date: Mon, 21 Nov 2011 00:19:02 +0400
-Message-ID: <CAHjqzy7dhqi22yPJX=DP4x916hVXDY2WaDbdmnTEQ54n6qpMXw@mail.gmail.com>
-Subject: [bug] af_unix: Reading from a stream socket may lock the concurrent
- poll() call
-From: Alexey Moiseytsev <himeraster@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, mtk.manpages@gmail.com, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+CC: jidanni@jidanni.org, linux-kernel@vger.kernel.org
+Subject: Re: Documentation/input/input.txt.gz has a bug
+References: <8762im2n5f.fsf@jidanni.org> <4EC2BEF6.7070906@xenotime.net> <1321447814.22548.18.camel@thorin>
+In-Reply-To: <1321447814.22548.18.camel@thorin>
+Content-Type: text/plain; charset=windows-1251
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/16/2011 04:50 AM, Bernd Petrovitsch wrote:
+> On Die, 2011-11-15 at 11:35 -0800, Randy Dunlap wrote:
+> [...]
+>>   Doing a "cat /dev/input/mouse0" (char device 13,32) will verify that
+>> a mouse is also emulated; characters should appear if you move it.
+>>   Doing a
+>> $ cat /dev/input/mouse
+> 
+> Hmm, how is this written in the other documentation?
 
-The following program shows how the poll() call hangs on a non-empty
-stream socket.
+There is very little consistency among all of the Documentation/ files
+(hopefully there is some consistency within any one file).
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <poll.h>
+I found many of:
 
-int sockets[2];
+a. using a prompt, e.g.:
+	$ cat /dev/input/mouse
 
-int poll_socket(void) {
-    struct pollfd pfd = {
-        .fd = sockets[1],
-        .events = POLLIN
-    };
-    return poll(&pfd, 1, -1);
-}
+b. using backquotes:
+	`cat /dev/input/mouse`
 
+c. using double quotes:
+	"cat /dev/input/mouse"
 
-/* observer routine doesn't modify amount of data available in the
-socket buffer */
-void* observer(void* arg) {
-    char buffer;
-    for (int j = 0; j < 2000; j++) {
-        recv(sockets[1], &buffer, sizeof(buffer), MSG_PEEK);
-        sched_yield();
-    }
-    return NULL;
-}
-
-int main(void) {
-    if (socketpair(PF_UNIX, SOCK_STREAM, 0, sockets) == -1)
-        return 1;
-    int rc, data[250] = {0};
-    if ((rc = send(sockets[0], &data, sizeof(data), MSG_DONTWAIT)) <= 0)
-        return 2;
-    poll_socket();
-/* If the first poll_socket() call didn't hang then the following
-message will be printed */
-    fprintf(stderr, "%d bytes available in input buffer\n", rc);
-    pthread_t observer_thread;
-    pthread_create(&observer_thread, NULL, observer, NULL);
-    for (int j = 0; j < 20000; j++) {
-/* If the first poll_socket() call didn't hang then all the following
-calls should do the same */
-        poll_socket();
-    }
-    fprintf(stderr, "Well done\n");
-    pthread_join(observer_thread, NULL);
-    close(sockets[0]);
-    close(sockets[1]);
-    return 0;
-}
+d. using a colon:
+	type (or enter): cat /dev/input/mouse
 
 
-Expected output: two lines or nothing (in case of error).
-Observed output: only the first line (and the process never exits).
+> Both are fine with me. FWIW in emails and the like, I use backquotes
+> usually as in
+> ----  snip  ----
+> Doing a `cat /dev/input/mouse0` (char device 13,32) will verify that
+> a mouse is also emulated; characters should appear if you move it.
+> ----  snip  ----
 
-So the first poll() said that there is some data available in the
-socket. And one of the following poll() said that there is no data
-available in the socket. But this is false because the observer thread
-didn't actually consume any data from then socket.
-
-I assume that this bug can be eliminated by adding
-sk->sk_data_ready(...) call right after each call to
-skb_queue_head(..) in the unix_stream_recvmsg(...) routine
-(net/unix/af_unix.c)
-
-Other info:
-$ uname -srmo
-Linux 2.6.32-5-amd64 x86_64 GNU/Linux
+Yes, that's OK also.
 
 -- 
-Alexey
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
