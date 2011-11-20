@@ -1,47 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab1KTVUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 16:20:39 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44621 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab1KTVUg (ORCPT
+	id S1754066Ab1KTVWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 16:22:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42564 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab1KTVWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 16:20:36 -0500
+	Sun, 20 Nov 2011 16:22:18 -0500
+Date: Sun, 20 Nov 2011 13:22:10 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Cong Wang <amwang@redhat.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org
+Subject: Re: [V2 PATCH] tmpfs: add fallocate support
+In-Reply-To: <1321612791-4764-1-git-send-email-amwang@redhat.com>
+Message-ID: <alpine.LSU.2.00.1111201300340.1264@sister.anvils>
+References: <1321612791-4764-1-git-send-email-amwang@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <86aa7sklos.fsf@sumi.keithp.com>
-References: <1321684889-18691-1-git-send-email-keithp@keithp.com>
- <CAC7LmnuWLA1LFQa-Vg4StOryo_wd1KjwaQ7m+Yb8Nhek7f=Qjw@mail.gmail.com> <86aa7sklos.fsf@sumi.keithp.com>
-From: Eugeni Dodonov <eugeni@dodonov.net>
-Date: Sun, 20 Nov 2011 19:19:55 -0200
-X-Google-Sender-Auth: CQIREXbdL8vGJ0FRCG3BxZAIDIc
-Message-ID: <CAC7Lmnv=bHN+QVDh7PWWEY0s41fNTgxo4eQFBORs3ky48Av6XA@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: By default, enable RC6 on IVB and SNB when reasonable
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 16:32, Keith Packard <keithp@keithp.com> wrote:
-> On Sat, 19 Nov 2011 07:25:09 -0200, Eugeni Dodonov <eugeni@dodonov.net> wrote:
->
->> Just one question I caught on 2nd read. Shouldn't we have #else within
->> this #ifdef block, to return 1? Otherwise, if CONFIG_INTEL_IOMMU is
->> not defined, we'll always disable rc6.
->
-> Oops! Thanks for catching this. Here's a new version of that function
-> (the rest of the patch is the same). This one has explicit conditions
-> for Ironlake and Sandybridge (when CONFIG_INTEL_IOMMU is set), allowing
-> the Ivybridge and Sandybridge-without-IOMMU cases to take the default
-> path. This will also cause all future chips to enable rc6 by default.
+On Fri, 18 Nov 2011, Cong Wang wrote:
 
-Great, I think it catches all cases now.
+> It seems that systemd needs tmpfs to support fallocate,
+> see http://lkml.org/lkml/2011/10/20/275. This patch adds
+> fallocate support to tmpfs.
+> 
+> As we already have shmem_truncate_range(), it is also easy
+> to add FALLOC_FL_PUNCH_HOLE support too.
 
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Thank you, this version looks much much nicer.
 
-Thanks!
+I wouldn't call it bug-free (don't you need a page_cache_release
+after the unlock_page?), and I won't be reviewing it and testing it
+for a week or two - there's a lot about the semantics of fallocate
+and punch-hole that's not obvious, and I'll have to study the mail
+threads discussing them before checking your patch.
 
--- 
-Eugeni Dodonov
+First question that springs to mind (to which I shall easily find
+an answer): is it actually acceptable for fallocate() to return
+-ENOSPC when it has already completed a part of the work?
+
+But so long as the details don't end up complicating this
+significantly, since we anyway want to regularize the punch-hole
+situation by giving tmpfs the same interface to it as other filesystems,
+I now think it would be a bit perverse to disallow the original
+fallocate functionality that you implement here in-kernel.
+
+Thanks,
+Hugh
+
+> 
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Lennart Poettering <lennart@poettering.net>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> 
+> ---
+>  mm/shmem.c |   43 +++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 43 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index d672250..96bf619 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/export.h>
+>  #include <linux/swap.h>
+> +#include <linux/falloc.h>
+>  
+>  static struct vfsmount *shm_mnt;
+>  
+> @@ -1431,6 +1432,47 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
+>  	return error;
+>  }
+>  
+> +static long shmem_fallocate(struct file *file, int mode,
+> +				loff_t offset, loff_t len)
+> +{
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+> +	pgoff_t start = offset >> PAGE_CACHE_SHIFT;
+> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
+> +	pgoff_t index = start;
+> +	loff_t i_size = i_size_read(inode);
+> +	struct page *page = NULL;
+> +	int ret = 0;
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
+> +		if (!(offset > i_size || (end << PAGE_CACHE_SHIFT) > i_size))
+> +			shmem_truncate_range(inode, offset,
+> +					     (end << PAGE_CACHE_SHIFT) - 1);
+> +		goto unlock;
+> +	}
+> +
+> +	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
+> +		ret = inode_newsize_ok(inode, (offset + len));
+> +		if (ret)
+> +			goto unlock;
+> +	}
+> +
+> +	while (index < end) {
+> +		ret = shmem_getpage(inode, index, &page, SGP_WRITE, NULL);
+> +		if (ret)
+> +			goto unlock;
+> +		if (page)
+> +			unlock_page(page);
+> +		index++;
+> +	}
+> +	if (!(mode & FALLOC_FL_KEEP_SIZE) && (index << PAGE_CACHE_SHIFT) > i_size)
+> +		i_size_write(inode, index << PAGE_CACHE_SHIFT);
+> +
+> +unlock:
+> +	mutex_unlock(&inode->i_mutex);
+> +	return ret;
+> +}
+> +
+>  static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+>  {
+>  	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
+> @@ -2286,6 +2328,7 @@ static const struct file_operations shmem_file_operations = {
+>  	.fsync		= noop_fsync,
+>  	.splice_read	= shmem_file_splice_read,
+>  	.splice_write	= generic_file_splice_write,
+> +	.fallocate	= shmem_fallocate,
+>  #endif
+>  };
+>  
