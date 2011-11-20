@@ -1,142 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab1KTVWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 16:22:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42564 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab1KTVWS (ORCPT
+	id S1754022Ab1KTV3x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 16:29:53 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:46195 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1KTV3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 16:22:18 -0500
-Date: Sun, 20 Nov 2011 13:22:10 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Cong Wang <amwang@redhat.com>
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org
-Subject: Re: [V2 PATCH] tmpfs: add fallocate support
-In-Reply-To: <1321612791-4764-1-git-send-email-amwang@redhat.com>
-Message-ID: <alpine.LSU.2.00.1111201300340.1264@sister.anvils>
-References: <1321612791-4764-1-git-send-email-amwang@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 20 Nov 2011 16:29:52 -0500
+Date: Sun, 20 Nov 2011 15:29:46 -0600
+From: David Fries <david@fries.net>
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org
+Subject: [PATH] pci_has_legacy_pm_support add driver and device to WARN
+Message-ID: <20111120212945.GA1781@spacedout.fries.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sun, 20 Nov 2011 15:29:47 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011, Cong Wang wrote:
+From: David Fries <David@Fries.net>
 
-> It seems that systemd needs tmpfs to support fallocate,
-> see http://lkml.org/lkml/2011/10/20/275. This patch adds
-> fallocate support to tmpfs.
-> 
-> As we already have shmem_truncate_range(), it is also easy
-> to add FALLOC_FL_PUNCH_HOLE support too.
+Include the driver name and device in warning when a pci driver
+supports both legacy pm and new framework as just the stack trace
+gives no way to identify the driver.
 
-Thank you, this version looks much much nicer.
+Signed-off-by: David Fries <David@Fries.net>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/pci/pci-driver.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I wouldn't call it bug-free (don't you need a page_cache_release
-after the unlock_page?), and I won't be reviewing it and testing it
-for a week or two - there's a lot about the semantics of fallocate
-and punch-hole that's not obvious, and I'll have to study the mail
-threads discussing them before checking your patch.
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 12d1e81..3623d65 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -604,7 +604,8 @@ static bool pci_has_legacy_pm_support(struct pci_dev *pci_dev)
+ 	 * supported as well.  Drivers are supposed to support either the
+ 	 * former, or the latter, but not both at the same time.
+ 	 */
+-	WARN_ON(ret && drv->driver.pm);
++	WARN(ret && drv->driver.pm, "driver %s device %04x:%04x\n",
++		drv->name, pci_dev->vendor, pci_dev->device);
+ 
+ 	return ret;
+ }
+-- 
+1.7.7.1
 
-First question that springs to mind (to which I shall easily find
-an answer): is it actually acceptable for fallocate() to return
--ENOSPC when it has already completed a part of the work?
-
-But so long as the details don't end up complicating this
-significantly, since we anyway want to regularize the punch-hole
-situation by giving tmpfs the same interface to it as other filesystems,
-I now think it would be a bit perverse to disallow the original
-fallocate functionality that you implement here in-kernel.
-
-Thanks,
-Hugh
-
-> 
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-> Cc: Lennart Poettering <lennart@poettering.net>
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
-> ---
->  mm/shmem.c |   43 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index d672250..96bf619 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -30,6 +30,7 @@
->  #include <linux/mm.h>
->  #include <linux/export.h>
->  #include <linux/swap.h>
-> +#include <linux/falloc.h>
->  
->  static struct vfsmount *shm_mnt;
->  
-> @@ -1431,6 +1432,47 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
->  	return error;
->  }
->  
-> +static long shmem_fallocate(struct file *file, int mode,
-> +				loff_t offset, loff_t len)
-> +{
-> +	struct inode *inode = file->f_path.dentry->d_inode;
-> +	pgoff_t start = offset >> PAGE_CACHE_SHIFT;
-> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
-> +	pgoff_t index = start;
-> +	loff_t i_size = i_size_read(inode);
-> +	struct page *page = NULL;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&inode->i_mutex);
-> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
-> +		if (!(offset > i_size || (end << PAGE_CACHE_SHIFT) > i_size))
-> +			shmem_truncate_range(inode, offset,
-> +					     (end << PAGE_CACHE_SHIFT) - 1);
-> +		goto unlock;
-> +	}
-> +
-> +	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
-> +		ret = inode_newsize_ok(inode, (offset + len));
-> +		if (ret)
-> +			goto unlock;
-> +	}
-> +
-> +	while (index < end) {
-> +		ret = shmem_getpage(inode, index, &page, SGP_WRITE, NULL);
-> +		if (ret)
-> +			goto unlock;
-> +		if (page)
-> +			unlock_page(page);
-> +		index++;
-> +	}
-> +	if (!(mode & FALLOC_FL_KEEP_SIZE) && (index << PAGE_CACHE_SHIFT) > i_size)
-> +		i_size_write(inode, index << PAGE_CACHE_SHIFT);
-> +
-> +unlock:
-> +	mutex_unlock(&inode->i_mutex);
-> +	return ret;
-> +}
-> +
->  static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
->  {
->  	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
-> @@ -2286,6 +2328,7 @@ static const struct file_operations shmem_file_operations = {
->  	.fsync		= noop_fsync,
->  	.splice_read	= shmem_file_splice_read,
->  	.splice_write	= generic_file_splice_write,
-> +	.fallocate	= shmem_fallocate,
->  #endif
->  };
->  
