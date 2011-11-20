@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1KTVjV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 16:39:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57965 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab1KTVjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 16:39:19 -0500
-Date: Sun, 20 Nov 2011 13:39:12 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Kay Sievers <kay.sievers@vrfy.org>
-cc: Christoph Hellwig <hch@infradead.org>, Cong Wang <amwang@redhat.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [V2 PATCH] tmpfs: add fallocate support
-In-Reply-To: <CAPXgP10q8Fba3vr0zf-XBBaRPwjP7MyJ=-QRL45_8WC-vtotOg@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1111201322310.1264@sister.anvils>
-References: <1321612791-4764-1-git-send-email-amwang@redhat.com> <20111119100326.GA27967@infradead.org> <CAPXgP10q8Fba3vr0zf-XBBaRPwjP7MyJ=-QRL45_8WC-vtotOg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1754180Ab1KTW2i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 17:28:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48367 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753588Ab1KTW2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 17:28:37 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: David Fries <david@fries.net>
+Subject: Re: [PATH] pci_has_legacy_pm_support add driver and device to WARN
+Date: Sun, 20 Nov 2011 23:31:00 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org
+References: <20111120212945.GA1781@spacedout.fries.net>
+In-Reply-To: <20111120212945.GA1781@spacedout.fries.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-594298835-1321825155=:1264"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111202331.00548.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sunday, November 20, 2011, David Fries wrote:
+> From: David Fries <David@Fries.net>
+> 
+> Include the driver name and device in warning when a pci driver
+> supports both legacy pm and new framework as just the stack trace
+> gives no way to identify the driver.
+> 
+> Signed-off-by: David Fries <David@Fries.net>
 
---8323584-594298835-1321825155=:1264
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-On Sat, 19 Nov 2011, Kay Sievers wrote:
-> On Sat, Nov 19, 2011 at 11:03, Christoph Hellwig <hch@infradead.org> wrot=
-e:
-> > On Fri, Nov 18, 2011 at 06:39:50PM +0800, Cong Wang wrote:
-> >> It seems that systemd needs tmpfs to support fallocate,
-> >> see http://lkml.org/lkml/2011/10/20/275. This patch adds
-> >> fallocate support to tmpfs.
-> >
-> > What for exactly? =C2=A0Please explain why preallocating on tmpfs would
-> > make any sense.
->=20
-> To be able to safely use mmap(), regarding SIGBUS, on files on the
-> /dev/shm filesystem. The glibc fallback loop for -ENOSYS on fallocate
-> is just ugly.
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/pci/pci-driver.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 12d1e81..3623d65 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -604,7 +604,8 @@ static bool pci_has_legacy_pm_support(struct pci_dev *pci_dev)
+>  	 * supported as well.  Drivers are supposed to support either the
+>  	 * former, or the latter, but not both at the same time.
+>  	 */
+> -	WARN_ON(ret && drv->driver.pm);
+> +	WARN(ret && drv->driver.pm, "driver %s device %04x:%04x\n",
+> +		drv->name, pci_dev->vendor, pci_dev->device);
+>  
+>  	return ret;
+>  }
+> 
 
-The fallback for -EOPNOTSUPP?
-
-Being unfamiliar with glibc, I failed to find the internal_fallocate()
-that it appears to use when the filesystem doesn't support the call;
-so I don't know if I would agree with you that it's uglier than doing
-the same(?) in the kernel.
-
-But since the present situation is that tmpfs has one interface to
-punching holes, madvise(MADV_REMOVE), that IBM were pushing 5 years ago;
-but ext4 (and others) now a fallocate(FALLOC_FL_PUNCH_HOLE) interface
-which IBM have been pushing this year: we do want to normalize that
-situation and make them all behave the same way.
-
-And if tmpfs is going to support fallocate(FALLOC_FL_PUNCH_HOLE),
-looking at Amerigo's much more attractive V2 patch, it would seem
-to me perverse to permit the deallocation but fail the allocation.
-
-The principle of least surprise argues that we grant your wish:
-provided it doesn't grow much more complicated once I look more
-closely.
-
-Hugh
---8323584-594298835-1321825155=:1264--
