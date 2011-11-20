@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab2DRAVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Apr 2012 20:21:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19276 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab2DRAVG (ORCPT
+	id S1753869Ab2DRAVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Apr 2012 20:21:17 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56159 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab2DRAVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Apr 2012 20:21:06 -0400
-Message-Id: <6e201a$5e4isk@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6684"; a="182602644"
-From: Thomas Meyer <thomas@m3y3r.de>
-Date: Tue, 8 Nov 2011 19:49:30 +0100
-Subject: [PATCH 01/10] Hexagon: Use resource_size function
+	Tue, 17 Apr 2012 20:21:13 -0400
+Message-Id: <8675ae$5bugrn@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6684"; a="180306807"
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sun, 20 Nov 2011 21:59:55 +0100
+Subject: [PATCH 03/10] Remove unneeded include of version.h from arch/hexagon/include/asm/spinlock_types.h
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Use resource_size function on resource object
- instead of explicit computation.
+"make versioncheck" points out that arch/hexagon/include/asm/spinlock_types.h
+does not need to include version.h .
+A quick look at the file seems to confirm its findings, so here's a patch that
+removes the include.
 
- The semantic patch that makes this change is available
- in scripts/coccinelle/api/resource_size.cocci.
-
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 ---
- arch/hexagon/kernel/time.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ arch/hexagon/include/asm/spinlock_types.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/hexagon/kernel/time.c b/arch/hexagon/kernel/time.c
-index 6bee15c..ea9e34f 100644
---- a/arch/hexagon/kernel/time.c
-+++ b/arch/hexagon/kernel/time.c
-@@ -200,12 +200,10 @@ void __init time_init_deferred(void)
- 		resource = rtos_timer_device.resource;
+diff --git a/arch/hexagon/include/asm/spinlock_types.h b/arch/hexagon/include/asm/spinlock_types.h
+index 5e937af..99b5a75 100644
+--- a/arch/hexagon/include/asm/spinlock_types.h
++++ b/arch/hexagon/include/asm/spinlock_types.h
+@@ -21,8 +21,6 @@
+ #ifndef _ASM_SPINLOCK_TYPES_H
+ #define _ASM_SPINLOCK_TYPES_H
  
- 	/*  ioremap here means this has to run later, after paging init  */
--	rtos_timer = ioremap(resource->start, resource->end
--		- resource->start + 1);
-+	rtos_timer = ioremap(resource->start, resource_size(resource));
- 
- 	if (!rtos_timer) {
--		release_mem_region(resource->start, resource->end
--			- resource->start + 1);
-+		release_mem_region(resource->start, resource_size(resource));
- 	}
- 	clocksource_register_khz(&hexagon_clocksource, pcycle_freq_mhz * 1000);
- 
+-#include <linux/version.h>
+-
+ #ifndef __LINUX_SPINLOCK_TYPES_H
+ # error "please don't include this file directly"
+ #endif
 -- 
 1.7.1
 
