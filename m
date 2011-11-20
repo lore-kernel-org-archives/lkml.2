@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab1KTU77 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 15:59:59 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10779 "EHLO
+	id S1754008Ab1KTVHN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 16:07:13 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10811 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab1KTU75 (ORCPT
+	with ESMTP id S1753534Ab1KTVHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 15:59:57 -0500
-Date: Sun, 20 Nov 2011 21:59:55 +0100 (CET)
+	Sun, 20 Nov 2011 16:07:11 -0500
+Date: Sun, 20 Nov 2011 22:07:09 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: linux-hexagon@vger.kernel.org
-cc: Richard Kuo <rkuo@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Remove unneeded include of version.h from
- arch/hexagon/include/asm/spinlock_types.h
-Message-ID: <alpine.LNX.2.00.1111202157170.17195@swampdragon.chaosbits.net>
+To: linux-can@vger.kernel.org, netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: [PATCH] net, sja1000: Don't include version.h in peak_pci.c when
+ not needed
+Message-ID: <alpine.LNX.2.00.1111202204480.17195@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,33 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"make versioncheck" points out that arch/hexagon/include/asm/spinlock_types.h
-does not need to include version.h .
-A quick look at the file seems to confirm its findings, so here's a patch that
-removes the include.
+It was pointed out by "make versioncheck" that we do not need to include
+version.h in drivers/net/can/sja1000/peak_pci.c
+This patch removes the unneeded include.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- arch/hexagon/include/asm/spinlock_types.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/net/can/sja1000/peak_pci.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
- Please note: I've not done any compile tests or other tests to confirm 
-              this patch since I have no way to build stuff for this 
-              architecture, so please review carefully before applying.
+ note: patch is compile tested only.
 
-diff --git a/arch/hexagon/include/asm/spinlock_types.h b/arch/hexagon/include/asm/spinlock_types.h
-index 5e937af..99b5a75 100644
---- a/arch/hexagon/include/asm/spinlock_types.h
-+++ b/arch/hexagon/include/asm/spinlock_types.h
-@@ -21,8 +21,6 @@
- #ifndef _ASM_SPINLOCK_TYPES_H
- #define _ASM_SPINLOCK_TYPES_H
+diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
+index 905bce0..2c7f503 100644
+--- a/drivers/net/can/sja1000/peak_pci.c
++++ b/drivers/net/can/sja1000/peak_pci.c
+@@ -20,7 +20,6 @@
+  */
  
+ #include <linux/kernel.h>
 -#include <linux/version.h>
--
- #ifndef __LINUX_SPINLOCK_TYPES_H
- # error "please don't include this file directly"
- #endif
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/netdevice.h>
 -- 
 1.7.7.3
 
