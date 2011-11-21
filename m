@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab1KUJv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 04:51:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48464 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab1KUJvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 04:51:24 -0500
-Message-ID: <4ECA1F13.4080204@pengutronix.de>
-Date: Mon, 21 Nov 2011 10:51:15 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH] net, sja1000: Don't include version.h in peak_pci.c when
- not needed
-References: <alpine.LNX.2.00.1111202204480.17195@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1111202204480.17195@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigFC063C355B825F3AA1560730"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755670Ab1KUJxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:53:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:17084 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752355Ab1KUJxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 04:53:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
+   d="scan'208";a="87660571"
+Subject: Re: [PATCH 2/3] kvm: use this_cpu_xxx replace percpu_xxx funcs
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Christoph Lameter <cl@gentwo.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <4ECA17EC.5050803@redhat.com>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+	 <alpine.DEB.2.00.1110120910540.26610@router.home>
+	 <1318908091.23426.52.camel@debian>
+	 <alpine.DEB.2.00.1110180932330.687@router.home>
+	 <1319016218.23426.104.camel@debian>  <4E9E97D2.1040807@redhat.com>
+	 <1319096041.23426.182.camel@debian> <1319424608.5061.25.camel@debian>
+	 <4EA54694.5070703@redhat.com> <1321866128.30341.567.camel@debian>
+	 <4ECA17EC.5050803@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Nov 2011 17:52:49 +0800
+Message-ID: <1321869169.30341.576.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigFC063C355B825F3AA1560730
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+> > > > > percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
+> > > > > for further code clean up.
+> > > > > 
+> > > > > And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
+> > > > > performance since __this_cpu_xxx has no redundant preempt_disable()
+> > > > > 
+> > > >
+> > > > Avi: 
+> > > > Would you like to give some comments of this? 
+> > > >
+> > > 
+> > > Sorry, was travelling:
+> > > 
+> > > Acked-by: Avi Kivity <avi@redhat.com>
+> > > 
+> >
+> > And this one, picking up or comments are all appreciated. :) 
+> 
+> Just to be clear, you want this applied in kvm.git?
+> 
 
-On 11/20/2011 10:07 PM, Jesper Juhl wrote:
-> It was pointed out by "make versioncheck" that we do not need to includ=
-e
-> version.h in drivers/net/can/sja1000/peak_pci.c
-> This patch removes the unneeded include.
->=20
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Glad to be there! :) 
 
-
---------------enigFC063C355B825F3AA1560730
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk7KHxYACgkQjTAFq1RaXHMS/QCfaT5o1gzpvYtEw4CVhOHLbs4Y
-NqsAnRIOPuEbu63MLKswXSuOW0PDDjsy
-=odzp
------END PGP SIGNATURE-----
-
---------------enigFC063C355B825F3AA1560730--
