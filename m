@@ -1,165 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab1KUTU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:20:58 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45079 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab1KUTU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:20:57 -0500
-Date: Mon, 21 Nov 2011 11:20:41 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH UPDATED] dmatest: don't use set_freezable_with_signal()
-Message-ID: <20111121192041.GB25776@google.com>
-References: <20111121184316.GH15314@google.com>
+	id S1754944Ab1KUTYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:24:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab1KUTYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 14:24:06 -0500
+Date: Mon, 21 Nov 2011 20:19:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Q: tracing: can we change trace_signal_generate() signature?
+Message-ID: <20111121191920.GA24883@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111121184316.GH15314@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 981ed70d8e (dmatest: make dmatest threads freezable) made
-dmatest kthread use set_freezable_with_signal(); however, the
-interface is scheduled to be removed in the next merge window.
+Hello,
 
-The problem is that unlike userland tasks there's no default place
-which handles signal pending state and it isn't clear who owns and/or
-is responsible for clearing TIF_SIGPENDING.  For example, in the
-current code, try_to_freeze() clears TIF_SIGPENDING but it isn't sure
-whether it actually owns the TIF_SIGPENDING nor is it race-free -
-ie. the task may continue to run with TIF_SIGPENDING set after the
-freezable section.
+Is it possible to change trace_signal_generate()'s args or this
+is the part of the kernel ABI?
 
-Unfortunately, we don't have wait_for_completion_freezable_timeout().
-This patch open codes it and uses wait_event_freezable_timeout()
-instead and removes timeout reloading - wait_event_freezable_timeout()
-won't return across freezing events (currently racy but fix scheduled)
-and timer doesn't decrement while the task is in freezer.  Although
-this does lose timer-reset-over-freezing, given that timeout is
-supposed to be long enough and failure to finish inside is considered
-irrecoverable, I don't think this is worth the complexity.
+We have the "feature request". The customer wants to know was the
+signal delivered or not, and why. We could add another trace_()
+into __send_signal() but this looks ugly to me.
 
-While at it, move completion to outer scope and explain that we're
-ignoring dangling pointer problem after timeout.  This should give
-slightly better chance at avoiding oops after timeout.
+So. Can't we add
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-Oops, forgot to replace set_freezable_with_signal() with
-set_freezable().  Updated.
+	enum {
+		TRACE_SIGNAL_DELIVERED,
+		TRACE_SIGNAL_IGNORED_OR_BLOCKED,
+		TRACE_SIGNAL_ALREADY_PENDING,
+	}
 
-Thank you.
+and move trace_signal_generate() to the end of __send_signal()
+with the additional argument(s) to avoid the new tracepoint?
 
- drivers/dma/dmatest.c |   46 +++++++++++++++++++++++++++-------------------
- 1 file changed, 27 insertions(+), 19 deletions(-)
+If yes, then can't we also kill trace_signal_overflow_fail()
+and trace_signal_lose_info()? We can simply add more
+TRACE_SIGNAL_'s instead, this certainly looks better imho.
 
-Index: work/drivers/dma/dmatest.c
-===================================================================
---- work.orig/drivers/dma/dmatest.c
-+++ work/drivers/dma/dmatest.c
-@@ -214,9 +214,18 @@ static unsigned int dmatest_verify(u8 **
- 	return error_count;
+IOW. Ignoring the changes in include/trace/events/signal.h,
+can the patch below work or the changes like this are not
+allowed?
+
+See also https://bugzilla.redhat.com/show_bug.cgi?id=738720
+
+Thanks,
+
+Oleg.
+
+
+--- x/kernel/signal.c
++++ x/kernel/signal.c
+@@ -1019,19 +1019,27 @@ static inline int legacy_queue(struct sigpending *signals, int sig)
+ 	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
  }
  
--static void dmatest_callback(void *completion)
-+/* poor man's completion - we want to use wait_event_freezable() on it */
-+struct dmatest_done {
-+	bool			done;
-+	wait_queue_head_t	*wait;
++enum {
++	TRACE_SIGNAL_DELIVERED,
++	TRACE_SIGNAL_IGNORED_OR_BLOCKED,
++	TRACE_SIGNAL_ALREADY_PENDING,
++	TRACE_SIGNAL_OVERFLOW_FAIL,
++	TRACE_SIGNAL_LOSE_INFO,
 +};
 +
-+static void dmatest_callback(void *arg)
+ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 			int group, int from_ancestor_ns)
  {
--	complete(completion);
-+	struct dmatest_done *done = arg;
+ 	struct sigpending *pending;
+ 	struct sigqueue *q;
+ 	int override_rlimit;
+-
+-	trace_signal_generate(sig, info, t);
++	int ret = 0, result;
+ 
+ 	assert_spin_locked(&t->sighand->siglock);
+ 
++	result = TRACE_SIGNAL_IGNORED_OR_BLOCKED;
+ 	if (!prepare_signal(sig, t, from_ancestor_ns))
+-		return 0;
++		goto ret;
+ 
+ 	pending = group ? &t->signal->shared_pending : &t->pending;
+ 	/*
+@@ -1039,8 +1047,11 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 	 * exactly one non-rt signal, so that we can get more
+ 	 * detailed information about the cause of the signal.
+ 	 */
++	result = TRACE_SIGNAL_ALREADY_PENDING;
+ 	if (legacy_queue(pending, sig))
+-		return 0;
++		goto ret;
 +
-+	done->done = true;
-+	wake_up_all(done->wait);
++	result = TRACE_SIGNAL_DELIVERED;
+ 	/*
+ 	 * fast-pathed signals for kernel-internal things like SIGSTOP
+ 	 * or SIGKILL.
+@@ -1095,14 +1106,15 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 			 * signal was rt and sent by user using something
+ 			 * other than kill().
+ 			 */
+-			trace_signal_overflow_fail(sig, group, info);
+-			return -EAGAIN;
++			result = TRACE_SIGNAL_OVERFLOW_FAIL;
++			ret = -EAGAIN;
++			goto ret;
+ 		} else {
+ 			/*
+ 			 * This is a silent loss of information.  We still
+ 			 * send the signal, but the *info bits are lost.
+ 			 */
+-			trace_signal_lose_info(sig, group, info);
++			result = TRACE_SIGNAL_LOSE_INFO;
+ 		}
+ 	}
+ 
+@@ -1110,7 +1122,9 @@ out_set:
+ 	signalfd_notify(t, sig);
+ 	sigaddset(&pending->signal, sig);
+ 	complete_signal(sig, t, group);
+-	return 0;
++ret:
++	trace_signal_generate(sig, info, t, group, result);
++	return ret;
  }
  
- /*
-@@ -235,7 +244,9 @@ static void dmatest_callback(void *compl
-  */
- static int dmatest_func(void *data)
- {
-+	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(done_wait);
- 	struct dmatest_thread	*thread = data;
-+	struct dmatest_done	done = { .wait = &done_wait };
- 	struct dma_chan		*chan;
- 	const char		*thread_name;
- 	unsigned int		src_off, dst_off, len;
-@@ -252,7 +263,7 @@ static int dmatest_func(void *data)
- 	int			i;
- 
- 	thread_name = current->comm;
--	set_freezable_with_signal();
-+	set_freezable();
- 
- 	ret = -ENOMEM;
- 
-@@ -306,9 +317,6 @@ static int dmatest_func(void *data)
- 		struct dma_async_tx_descriptor *tx = NULL;
- 		dma_addr_t dma_srcs[src_cnt];
- 		dma_addr_t dma_dsts[dst_cnt];
--		struct completion cmp;
--		unsigned long start, tmo, end = 0 /* compiler... */;
--		bool reload = true;
- 		u8 align = 0;
- 
- 		total_tests++;
-@@ -391,9 +399,9 @@ static int dmatest_func(void *data)
- 			continue;
- 		}
- 
--		init_completion(&cmp);
-+		done.done = false;
- 		tx->callback = dmatest_callback;
--		tx->callback_param = &cmp;
-+		tx->callback_param = &done;
- 		cookie = tx->tx_submit(tx);
- 
- 		if (dma_submit_error(cookie)) {
-@@ -407,20 +415,20 @@ static int dmatest_func(void *data)
- 		}
- 		dma_async_issue_pending(chan);
- 
--		do {
--			start = jiffies;
--			if (reload)
--				end = start + msecs_to_jiffies(timeout);
--			else if (end <= start)
--				end = start + 1;
--			tmo = wait_for_completion_interruptible_timeout(&cmp,
--								end - start);
--			reload = try_to_freeze();
--		} while (tmo == -ERESTARTSYS);
-+		wait_event_freezable_timeout(done_wait, done.done,
-+					     msecs_to_jiffies(timeout));
- 
- 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
- 
--		if (tmo == 0) {
-+		if (!done.done) {
-+			/*
-+			 * We're leaving the timed out dma operation with
-+			 * dangling pointer to done_wait.  To make this
-+			 * correct, we'll need to allocate wait_done for
-+			 * each test iteration and perform "who's gonna
-+			 * free it this time?" dancing.  For now, just
-+			 * leave it dangling.
-+			 */
- 			pr_warning("%s: #%u: test timed out\n",
- 				   thread_name, total_tests - 1);
- 			failed_tests++;
+ static int send_signal(int sig, struct siginfo *info, struct task_struct *t,
+
