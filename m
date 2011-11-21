@@ -1,156 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab1KURsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:48:09 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:60529 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752036Ab1KURsH (ORCPT
+	id S1756153Ab1KURwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:52:49 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64815 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab1KURwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:48:07 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-ext4@vger.kernel.org
-Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        adilger@dilger.ca
-Subject: [PATCH V2 14/19] ext4: let ext4_find_entry handle inline data.
-Date: Tue, 22 Nov 2011 00:39:52 +0800
-Message-Id: <1321893597-11024-14-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
-References: <4ECA7DB3.9040605@tao.ma>
- <1321893597-11024-1-git-send-email-tm@tao.ma>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
+	Mon, 21 Nov 2011 12:52:47 -0500
+Date: Mon, 21 Nov 2011 09:52:42 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, lenb@kernel.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+Message-ID: <20111121175242.GE15314@google.com>
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+ <201111192257.19763.rjw@sisk.pl>
+ <4EC8984E.30005@linux.vnet.ibm.com>
+ <201111201124.17528.rjw@sisk.pl>
+ <4EC9D557.9090008@linux.vnet.ibm.com>
+ <20111121164006.GB15314@google.com>
+ <4ECA84A8.5030005@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECA84A8.5030005@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+Hello,
 
-Create a new ext4_find_inline_entry to handle the case
-of inline data.
+On Mon, Nov 21, 2011 at 10:34:40PM +0530, Srivatsa S. Bhat wrote:
+> >> I haven't tested this solution yet. Let me know if this solution looks
+> >> good and I'll send it out as a patch after testing and analyzing some
+> >> corner cases, if any.
+> 
+> I tested this, and it works great! I'll send the patch in some time.
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- fs/ext4/inline.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- fs/ext4/namei.c  |   10 +++++++++-
- fs/ext4/xattr.h  |   12 ++++++++++++
- 3 files changed, 68 insertions(+), 1 deletions(-)
+Awesome.
 
-diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
-index a6b6593..c76ae3b 100644
---- a/fs/ext4/inline.c
-+++ b/fs/ext4/inline.c
-@@ -1308,6 +1308,53 @@ out:
- 	return ret;
- }
- 
-+struct buffer_head *ext4_find_inline_entry(struct inode *dir,
-+					const struct qstr *d_name,
-+					struct ext4_dir_entry_2 **res_dir,
-+					int *has_inline_data)
-+{
-+	int ret;
-+	struct ext4_iloc iloc;
-+	void *inline_start;
-+	int inline_size;
-+
-+	if (ext4_get_inode_loc(dir, &iloc))
-+		return NULL;
-+
-+	down_read(&EXT4_I(dir)->xattr_sem);
-+	if (!ext4_has_inline_data(dir)) {
-+		*has_inline_data = 0;
-+		goto out;
-+	}
-+
-+	inline_start = ext4_raw_inode(&iloc)->i_block;
-+	inline_size = EXT4_MIN_INLINE_DATA_SIZE;
-+	ret = search_dir(iloc.bh, inline_start, inline_size,
-+			 dir, d_name, 0, res_dir);
-+	if (ret == 1)
-+		goto out_find;
-+	if (ret < 0)
-+		goto out;
-+
-+	if (ext4_get_inline_size(dir) == EXT4_MIN_INLINE_DATA_SIZE)
-+		goto out;
-+
-+	inline_start = ext4_get_inline_xattr_pos(dir, &iloc);
-+	inline_size = ext4_get_max_inline_size(dir);
-+
-+	ret = search_dir(iloc.bh, inline_start, inline_size,
-+			 dir, d_name, 0, res_dir);
-+	if (ret == 1)
-+		goto out_find;
-+
-+out:
-+	brelse(iloc.bh);
-+	iloc.bh = NULL;
-+out_find:
-+	up_read(&EXT4_I(dir)->xattr_sem);
-+	return iloc.bh;
-+}
-+
- int ext4_destroy_inline_data(handle_t *handle, struct inode *inode)
- {
- 	int ret;
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 6e97dd2..92f7b67 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -844,7 +844,6 @@ static inline int search_dirblock(struct buffer_head *bh,
- 			  d_name, offset, res_dir);
- }
- 
--
- /*
-  *	ext4_find_entry()
-  *
-@@ -879,6 +878,15 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
- 	namelen = d_name->len;
- 	if (namelen > EXT4_NAME_LEN)
- 		return NULL;
-+
-+	if (ext4_has_inline_data(dir)) {
-+		int has_inline_data = 1;
-+		ret = ext4_find_inline_entry(dir, d_name, res_dir,
-+					     &has_inline_data);
-+		if (has_inline_data)
-+			return ret;
-+	}
-+
- 	if ((namelen <= 2) && (name[0] == '.') &&
- 	    (name[1] == '.' || name[1] == '\0')) {
- 		/*
-diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
-index 1e042b4..f4d4cb1 100644
---- a/fs/ext4/xattr.h
-+++ b/fs/ext4/xattr.h
-@@ -170,6 +170,10 @@ extern int ext4_try_create_inline_dir(handle_t *handle,
- 				      struct inode *inode);
- extern int ext4_read_inline_dir(struct file *filp,
- 				void *dirent, filldir_t filldir);
-+extern struct buffer_head *ext4_find_inline_entry(struct inode *dir,
-+					const struct qstr *d_name,
-+					struct ext4_dir_entry_2 **res_dir,
-+					int *has_inline_data);
- # else  /* CONFIG_EXT4_FS_XATTR */
- 
- static inline int
-@@ -358,6 +362,14 @@ static inline int ext4_read_inline_dir(struct file *filp,
- {
- 	return 0;
- }
-+
-+struct buffer_head *ext4_find_inline_entry(struct inode *dir,
-+					const struct qstr *d_name,
-+					struct ext4_dir_entry_2 **res_dir,
-+					int *has_inline_data)
-+{
-+	return NULL;
-+}
- # endif  /* CONFIG_EXT4_FS_XATTR */
- 
- #ifdef CONFIG_EXT4_FS_SECURITY
+> > * I think it would be better to remove direct access to pm_mutex and
+> >   use [un]lock_system_sleep() universally.  I don't think hinging it
+> >   on CONFIG_HIBERNATE_CALLBACKS buys us anything.
+> > 
+> 
+> Which direct access to pm_mutex are you referring to?
+> Other than suspend/hibernation call paths, I think mem-hotplug is the only
+> subsystem trying to access pm_mutex. I haven't checked thoroughly though. 
+> 
+> But yes, using lock_system_sleep() for mutually excluding some code path
+> from suspend/hibernation is good, and that is one reason why I wanted
+> to fix this API ASAP. But as long as memory hotplug is the only direct user
+> of pm_mutex, is it justified to remove the CONFIG_HIBERNATE_CALLBACKS
+> restriction and make it generic? I don't know...
+> 
+> Or, are you saying that we should use these APIs even in suspend/hibernate
+> call paths? That's not such a bad idea either...
+
+Yeap, all.  It's just confusing to have two different types of access
+to a single lock and I don't believe CONFIG_HIBERNATE_CALLBACKS is a
+meaningful optimization in this case.
+
+Thank you.
+
 -- 
-1.7.0.4
-
+tejun
