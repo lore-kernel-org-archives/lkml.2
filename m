@@ -1,129 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab1KUVsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:48:38 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38599 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757120Ab1KUVsg (ORCPT
+	id S1757317Ab1KUVtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:49:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40631 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757161Ab1KUVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:48:36 -0500
-Message-ID: <4ECAC738.5030605@kernel.org>
-Date: Mon, 21 Nov 2011 21:48:40 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH] iio: Don't OOPS if dummy evgen failed init
-References: <1321909894-1352-1-git-send-email-levinsasha928@gmail.com>
-In-Reply-To: <1321909894-1352-1-git-send-email-levinsasha928@gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Nov 2011 16:47:59 -0500
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=oExj5NFNAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=ZJ4H0Wm7EEmHzjUgDusA:9 a=MkRGjL1ZTNgiexsqep4A:7 a=QEXdDO2ut3YA:10 a=Zh68SRI7RUMA:10 a=r0HesoeFUbUA:10 a=jeBq3FmKZ4MA:10 a=33_AH1Q-f3xCRiH1Q6YA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111121214757.011122160@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 21 Nov 2011 16:44:24 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
+Subject: [PATCH 4/6] dm: Make rt aware
+References: <20111121214420.124907956@goodmis.org>
+Content-Disposition: inline; filename=0004-dm-Make-rt-aware.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2011 09:11 PM, Sasha Levin wrote:
-> If the dummy evgen failed init, the irq allocation functions which assume
-> init succeeded may still be called - causing an OOPS due to wrong assumption.
-> 
-> Here's the oops:
-> 
-> [    3.914332] BUG: unable to handle kernel NULL pointer dereference at 0000000000000148
-> [    3.915310] IP: [<ffffffff810b3008>] __lock_acquire+0xac/0xe50
-> [    3.915310] PGD 0
-> [    3.915310] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [    3.915310] CPU 1
-> [    3.915310] Pid: 1, comm: swapper Not tainted 3.2.0-rc2-sasha-00279-gd7bfb12-dirty #20
-> [    3.915310] RIP: 0010:[<ffffffff810b3008>]  [<ffffffff810b3008>] __lock_acquire+0xac/0xe50
-> [    3.915310] RSP: 0018:ffff880012499bc0  EFLAGS: 00010046
-> [    3.915310] RAX: 0000000000000086 RBX: ffff880012490000 RCX: 0000000000000000
-> [    3.915310] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000148
-> [    3.915310] RBP: ffff880012499c90 R08: 0000000000000002 R09: 0000000000000000
-> [    3.915310] R10: 0000000000000148 R11: 0000000000000000 R12: 0000000000000148
-> [    3.915310] R13: 0000000000000002 R14: 0000000000000000 R15: 0000000000000000
-> [    3.915310] FS:  0000000000000000(0000) GS:ffff880013c00000(0000) knlGS:0000000000000000
-> [    3.915310] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    3.915310] CR2: 0000000000000148 CR3: 0000000002605000 CR4: 00000000000406e0
-> [    3.915310] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [    3.915310] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [    3.915310] Process swapper (pid: 1, threadinfo ffff880012498000, task ffff880012490000)
-> [    3.915310] Stack:
-> [    3.915310]  ffff880012490000 ffffffff81e6fd38 ffffffff00000000 0000000000000000
-> [    3.915310]  0000000000000148 0000000012499c08 ffffffff00000000 000000000000002e
-> [    3.915310]  0000000000000001 ffff880012499ce0 ffffffff8161620e 0000000000000000
-> [    3.915310] Call Trace:
-> [    3.915310]  [<ffffffff81e6fd38>] ? retint_restore_args+0x13/0x13
-> [    3.915310]  [<ffffffff8161620e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [    3.915310]  [<ffffffff81e6fd38>] ? retint_restore_args+0x13/0x13
-> [    3.915310]  [<ffffffff81af8883>] ? iio_dummy_evgen_get_irq+0x33/0x8a
-> [    3.915310]  [<ffffffff810b4255>] lock_acquire+0x8a/0xa7
-> [    3.915310]  [<ffffffff81af8883>] ? iio_dummy_evgen_get_irq+0x33/0x8a
-> [    3.915310]  [<ffffffff81e6db81>] __mutex_lock_common+0x63/0x491
-> [    3.915310]  [<ffffffff81af8883>] ? iio_dummy_evgen_get_irq+0x33/0x8a
-> [    3.915310]  [<ffffffff810b474d>] ? debug_check_no_locks_freed+0x135/0x14a
-> [    3.915310]  [<ffffffff810b2c3a>] ? lock_is_held+0x92/0x9d
-> [    3.915310]  [<ffffffff81e6dfe5>] mutex_lock_nested+0x36/0x3b
-> [    3.915310]  [<ffffffff81af8883>] iio_dummy_evgen_get_irq+0x33/0x8a
-> [    3.915310]  [<ffffffff81af8594>] iio_simple_dummy_events_register+0x1b/0x69
-> [    3.915310]  [<ffffffff82ad4a91>] iio_dummy_init+0x105/0x18d
-> [    3.915310]  [<ffffffff82ad498c>] ? iio_init+0x7d/0x7d
-> [    3.915310]  [<ffffffff82a8dc02>] do_one_initcall+0x7a/0x135
-> [    3.915310]  [<ffffffff82a8dda7>] kernel_init+0xea/0x16f
-> [    3.915310]  [<ffffffff81e727c4>] kernel_thread_helper+0x4/0x10
-> [    3.915310]  [<ffffffff81e6fd38>] ? retint_restore_args+0x13/0x13
-> [    3.915310]  [<ffffffff82a8dcbd>] ? do_one_initcall+0x135/0x135
-> [    3.915310]  [<ffffffff81e727c0>] ? gs_change+0x13/0x13
-> [    3.915310] Code: 95 50 ff ff ff 74 24 e8 1f 3f 56 00 85 c0 0f 84 4e 0d 00 00 be cf 0b 00 00 83 3d 63 7c 58 02 00 0f 85 3c 0d 00 00 e9 c1 0c 00 00
-> [    3.915310]  81 3a a0 17 ca 82 b8 01 00 00 00 44 0f 44 e8 83 fe 01 77 0c
-> [    3.915310] RIP  [<ffffffff810b3008>] __lock_acquire+0xac/0xe50
-> [    3.915310]  RSP <ffff880012499bc0>
-> [    3.915310] CR2: 0000000000000148
-> 
-Thanks.  Dealing with the first one should make the second impossible to
-hit (as one shouldn't be trying to free irq's if they weren't
-successfully gotten in the first place.)
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Just for clarity of code, I'd prefer without the release change.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk> for the get change.
+Use the BUG_ON_NONRT variant for the irq_disabled() checks. RT has
+interrupts legitimately enabled here as we cant deadlock against the
+irq thread due to the "sleeping spinlocks" conversion.
 
-Thanks,
-> Cc: Jonathan Cameron <jic23@cam.ac.uk>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: linux-iio@vger.kernel.org
-> Cc: devel@driverdev.osuosl.org
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  drivers/staging/iio/iio_dummy_evgen.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/iio_dummy_evgen.c b/drivers/staging/iio/iio_dummy_evgen.c
-> index da657d1..74d8d94 100644
-> --- a/drivers/staging/iio/iio_dummy_evgen.c
-> +++ b/drivers/staging/iio/iio_dummy_evgen.c
-> @@ -102,6 +102,10 @@ static int iio_dummy_evgen_create(void)
->  int iio_dummy_evgen_get_irq(void)
->  {
->  	int i, ret = 0;
-> +
-> +	if (iio_evgen == NULL)
-> +		return -ENODEV;
-> +
->  	mutex_lock(&iio_evgen->lock);
->  	for (i = 0; i < IIO_EVENTGEN_NO; i++)
->  		if (iio_evgen->inuse[i] == false) {
-> @@ -124,6 +128,9 @@ EXPORT_SYMBOL_GPL(iio_dummy_evgen_get_irq);
->   */
->  int iio_dummy_evgen_release_irq(int irq)
->  {
-> +	if (iio_evgen == NULL)
-> +		return -ENODEV;
-> +
->  	mutex_lock(&iio_evgen->lock);
->  	iio_evgen->inuse[irq - iio_evgen->base] = false;
->  	mutex_unlock(&iio_evgen->lock);
+Reported-by: Luis Claudio R. Goncalves <lclaudio@uudg.org>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/md/dm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 41abc6d..67207d6 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1644,14 +1644,14 @@ static void dm_request_fn(struct request_queue *q)
+ 		if (map_request(ti, clone, md))
+ 			goto requeued;
+=20
+-		BUG_ON(!irqs_disabled());
++		BUG_ON_NONRT(!irqs_disabled());
+ 		spin_lock(q->queue_lock);
+ 	}
+=20
+ 	goto out;
+=20
+ requeued:
+-	BUG_ON(!irqs_disabled());
++	BUG_ON_NONRT(!irqs_disabled());
+ 	spin_lock(q->queue_lock);
+=20
+ delay_and_out:
+--=20
+1.7.7.1
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJOyscNAAoJEIy3vGnGbaoArT0QAMCOfUGTII7e/zGSTAlJU39H
+IJEBnrMoa3+vwQLf6q9nImKKXG0JKNd9sRq5a95BQGFze/gvADy90XxULyIMVSWs
+7BG9djvT7eI57IWrmfwF1SioSzhblmdBZWt+embm7lkuvU7EkQbWUR+mQrtgpxhS
+ZeHgJOrZv6giymRjCi7jq4JqMy3Rbozqa7iiSyK+YbIJx/C7DNfN4exjvsOYMLmQ
+GLy6SyfJxawZHSeIWSA5Yl8czHV9Xzfr/UDk3o2PuMwjdFpjN5TKbl3WB7ioxzil
+Tpjg/amOjx3IPROh3qwexiXEZ2O0JXNhxq+xRmMYCaDNGwXxmBSSlqIducm46xUN
+eKMr02UlrdwxivxbBXuEIPCyXDFXrdbdNBCsgw8phb0MHpiRNipeSSpXs9O0bmWV
+Z2xPj2wIEnaIu41yf/D8g8gCJqeUkhn2wOE4G7r5djPU1FIU5tGg3UkWSjWdqtLX
+clwmghPmzVY3ouOr99n1zwfzqjD/P5E0eVYKnrXufOmJ6ENEn8w+KrlnoJen+A/l
+K7E58B3R53q/0tY/OfMSwwBKkrjqcKjDMQmmy4zARBUTP33hRWDkJ6wgV6yJH5Zm
+9p3NxA5GcgZt6ZIfkORGEGXpwwllhznJ/fhZwQSZfYC8urekdIFSdaoxb4GbH2C8
+lasMS9ljWpLhWibFGbYt
+=eyKO
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
