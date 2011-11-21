@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1KUW3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:29:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50534 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab1KUW3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:29:49 -0500
-Date: Mon, 21 Nov 2011 16:29:45 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-wmi: Change debug statements from pr_info to
- pr_debug
-Message-ID: <20111121222945.GA14306@thinkpad-t410>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1321908536-5163-1-git-send-email-seth.forshee@canonical.com>
- <20111121205230.GA14467@srcf.ucam.org>
- <20111121211438.GH6736@thinkpad-t410>
- <20111121211809.GA14950@srcf.ucam.org>
+	id S1755396Ab1KUWaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:30:25 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50416 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752612Ab1KUWaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 17:30:23 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 5] PM: Update comments describing device power management callbacks
+Date: Mon, 21 Nov 2011 23:33:07 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <Pine.LNX.4.44L0.1111211717500.1848-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1111211717500.1848-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121211809.GA14950@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111212333.07799.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 09:18:09PM +0000, Matthew Garrett wrote:
-> On Mon, Nov 21, 2011 at 03:14:38PM -0600, Seth Forshee wrote:
-> > On Mon, Nov 21, 2011 at 08:52:30PM +0000, Matthew Garrett wrote:
-> > > They're intended to be there, in the same way that the keyboard code 
-> > > generates unknown scancode errors. We want to know when users have keys 
-> > > that don't work.
-> > 
-> > All right, but what about the unknown WMI events? Those are the bigger
-> > problem anyway, as at least one machine (the Latitude XT2) can generate
-> > a lot of these messages for unknown reasons. It doesn't appear that
-> > anyone has been making use of these messages since we still only support
-> > one event. Would you object to demoting that one?
+On Monday, November 21, 2011, Alan Stern wrote:
+> On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
 > 
-> Those can probably be ignored, but again it would be nice to find out 
-> what they actually mean so we know whether we can do anything with them. 
-> Any chance of you being able to work with Dell on that?
+> > > > I said "Analogous to @suspend()" instead.  I'm not sure why this is not
+> > > > sufficient?
+> > > 
+> > > Because @suspend() is very different!  Its description basically says 
+> > > to do three things:
+> > > 
+> > > 	Quiesce the device,
+> > > 
+> > > 	Put it into a low-power state,
+> > > 
+> > > 	And enable wakeup events.
+> > 
+> > No, it doesn't any more.  It's being changed by the proposed patch too. :-)
+> 
+> I must have missed reading that part.  Okay...  but it seems weird that
+> none of the new descriptions says anything about changing the power
+> state.  Shouldn't the description of @suspend say something like "For
+> many platforms and subsystems, the device should be put in a low-power
+> state"?
 
-I'll see what I can do.
+Hmm.  I'm not really sure, actually, because I'd recommend that subsystems
+rather than drivers change power states of devices and this description
+is targeted at driver writers mostly.
+
+> > > @freeze() is supposed to do the first but not the second or third.  
+> > > This makes it only 33% similar to @suspend().  :-)
+> > > 
+> > > Also, the description of @suspend() says nothing about having a
+> > > consistent memory image.
+> > 
+> > Because that is irrelevant.  The state of the device after the resume
+> > has to be consistent, regardless of whether the resume is from RAM or
+> > from an on-disk image.
+> 
+> Sure, the device's state will be consistent.  But will the contents of
+> memory image be consistent?  Not if the device was doing DMA writes
+> during the time when the image was created.
+
+Well, since .suspend() is also expected to stop DMA, that's rather moot.
+
+Thanks,
+Rafael
