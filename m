@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab1KUN4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:56:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42531 "EHLO
+	id S1755162Ab1KUN4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:56:31 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64006 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1KUN4X (ORCPT
+	with ESMTP id S1753808Ab1KUN40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:56:23 -0500
+	Mon, 21 Nov 2011 08:56:26 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv1 1/9] xshm: Shared Memory layout for ST-E M7400 driver.
-Date: Mon, 21 Nov 2011 14:55:56 +0100
-Message-Id: <1321883764-1958-2-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [RFCv1 4/9] xshm: geni/geno driver interface.
+Date: Mon, 21 Nov 2011 14:55:59 +0100
+Message-Id: <1321883764-1958-5-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -24,184 +24,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add structures defining the channel configuration and the
-shared memory layout used for ST-Ericsson M7400.
+The Shared Memory driver is using two paired registers called
+GENI and GENO in for triggering events/interrupts on modem and Linux host.
 
-These data structures are shared between the Linux host and the
-M7400 modem.
+It's primary use is notification about read and write indexes changes
+on each channel. But GENI/GENO are also used for communicating the
+address of the shared memory upon modem boot and to notify about start-up
+event such as when IPC channels and CAIF is ready for use.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- include/linux/xshm/xshm_ipctoc.h |  160 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/xshm/xshm_ipctoc.h
+ include/linux/xshm/genio.h |  195 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 195 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/xshm/genio.h
 
-diff --git a/include/linux/xshm/xshm_ipctoc.h b/include/linux/xshm/xshm_ipctoc.h
+diff --git a/include/linux/xshm/genio.h b/include/linux/xshm/genio.h
 new file mode 100644
-index 0000000..73ea25b
+index 0000000..e7a846e
 --- /dev/null
-+++ b/include/linux/xshm/xshm_ipctoc.h
-@@ -0,0 +1,160 @@
++++ b/include/linux/xshm/genio.h
+@@ -0,0 +1,195 @@
 +/*
-+ * Copyright (C) ST-Ericsson AB 2010
++ * Copyright (C) ST-Ericsson AB 2011
 + * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
++ *
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
-+#ifndef XSHM_TOC
-+#define XSHM_TOC
++#ifndef __INC_GENIO_H
++#define __INC_GENIO_H
++#include <linux/types.h>
 +
 +/**
-+ * DOC: XSHM Shared Memory Layout
++ * DOC: C2C GENI/GENO interface.
 + *
-+ * XSHM defines a set of structures describing the memory layout used
-+ * for the Shared Memory IPC. In short &toc_entry points out &ipc_toc,
-+ * which points out the &xshm_ipctoc_channel. &xshm_ipctoc_channel defines
-+ * the channels used to communicate between host and external device (modem).
-+ *
-+ *  &xshm_ipctoc_channel can be used in packet-mode or stream-mode,
-+ *  and points out &xshm_bufidx holding information about cirular
-+ *  buffers, andtheir read/write indices etc.
++ * This API defines the API for the C2C driver and the GENI/GENO registers.
 + */
-+
-+#pragma pack(1)
-+struct _xshm_offsets {
-+	__le32 rx;
-+	__le32 tx;
-+};
 +
 +/**
-+ * struct xshm_ipctoc - Table Of Content definition for IPC.
++ * enum GENIO_BITS - Definition of special GENIO BITS.
++ * @READY_FOR_IPC_BIT:  Remote side is ready for IPC.
++ * This GENI/GENO bit is triggered when ring-buffer protocol
++ * is enabled from the remote end (modem)
 + *
-+ * @magic:	Magic shall always be set to Ascii coded string "TC" (2 bytes)
-+ * @version:	Main version of the TOC header.
-+ * @subver:	Sub version of the TOC header.
-+ * @channel_offsets: Offset to both rx and tx direction must be set.
-+ *			The array must be terminated by a zero value.
-+ *
-+ * This struct is stored at the start of the External Shared memory, and
-+ * serves as a extended table of contents defining the channel configurations
-+ * for the external shared memory protocol between a modem and host.
-+ *
-+ * This extended table of content (ipctoc) is written to a predefine memory
-+ * location and the modem will read this ipctoc during start-up and use this
-+ * for setting up the IPC channels and it's buffers.
-+ *
++ * @READY_FOR_CAIF_BIT: Remote side is ready for CAIF.
++ * This GENI/GENO bit is triggered when CAIF protocol
++ * is enabled from the remote end (modem)
 + */
-+
-+struct xshm_ipctoc {
-+	__u8 magic[2];
-+	__u8 version;
-+	__u8 subver;
-+	struct _xshm_offsets channel_offsets[8];
-+};
-+#define XSHM_PACKET_MODE 0x1
-+#define XSHM_STREAM_MODE 0x2
-+#define XSHM_LOOP_MODE	 0x4
-+#define XSHM_PAIR_MODE	 0x8
-+#define XSHM_MODE_MASK	 0x3
-+
-+#define XSHM_IPCTOC_MAGIC1 'T'
-+#define XSHM_IPCTOC_MAGIC2 'C'
-+
-+/**
-+ * struct xshm_ipctoc_channel - Channel descriptor for External Shared memory.
-+ *
-+ * @offset: Relative address to channel data area.
-+ * @size: Total size of a SHM channel area partition.
-+ * @mtu: Maximum Transfer Unit for packets in a buffer (packet mode).
-+ * @packets: Maximum Number of packets in a buffer (packet mode).
-+ * @mode: Mode of channel: Packet mode=1, Stream mode (shm_channel_mode = 2).
-+ * @buffers: Number of buffers for the channel.
-+ * @ipc: Offset to IPC message location (of type struct xshm_bufidx).
-+ * @read_bit: GENI/O bit used to indicate update of the read pointer for
-+ *	this channel (at offset ipc).
-+ * @write_bit: GENI/O bit used to indicate update of the write pointer for
-+ *	this channel (at offset ipc).
-+ * @alignment: Protocol specific options for the protocol,
-+ *	e.g. packet alignment.
-+ *
-+ * This struct defines the channel configuration for a single direction.
-+ *
-+ * This structure is pointed out by the &xshm_toc and is written by
-+ * host during start-up and read by modem at firmware boot.
-+ *
-+ */
-+
-+struct xshm_ipctoc_channel {
-+	__le32 offset;
-+	__le32 size;
-+/* private: */
-+	__u8 unused[3];
-+/* public: */
-+	__u8 mode;
-+	__le32 buffers;
-+	__le32 ipc;
-+	__le16 write_bit;
-+	__le16 read_bit;
-+	__u16 mtu;
-+	__u8 packets;
-+	__u8 alignment;
++enum GENIO_BITS {
++	READY_FOR_CAIF_BIT = 28,
++	READY_FOR_IPC_BIT = 29
 +};
 +
 +/**
-+ * struct xshm_bufidx - Indices's for a uni-directional xshm channel.
++ * genio_subscribe - Subscribe for notifications on bit-change of GENI/O bits.
 + *
-+ * @read_index: Specify the read index for a channel. This field can
-+ *	have value in range of [0.. xshm_ipctoc_channel.buffers -1].
-+ *	In stream mode - this is the read index in the ringbuffer.
-+ *	In packet mode - this index will at any time refer to the next
-+ *	buffer available for read.
++ * @bit:	The GENI/O bit where we want to be called back when it changes.
 + *
-+ * @write_index: Specify the write index for a channel.
-+ *	This field can have value in range of [0.. buffers -1].
-+ *	In stream mode - this is the write index in the ringbuffer.
-+ *	In packet mode - this index will at any time refer to the next
-+ *	buffer available for write.
++ * @bit_set_cb:	Callback function to be called when the requested GENI/O bit
++ *		is set by the external device (modem).
 + *
-+ * @size: The actual number of bytes for a buffer at each index.
-+ *	  This array has xshm_ipctoc_channel.buffers slots, one for each buffer.
-+ *	  The size is updated every time data is written to the buffer.
++ * @data: Client data to be provided in the callback function.
 + *
-+ * @state: The state of the channel, 0 - Closed, 1 - Open
++ * Install a callback function for a GENI/O bit. Returns negative upon error.
 + *
++ * The genio driver is expected to handle the 4-state handshake for geni/geno
++ * update, for the bit this function subscribe to. This function may block,
++ * and cannot be called from IRQ context.
 + *
-+ * This structure contains data for the ring-buffer used in packet and stream
-+ * mode, for the external shared memory protocol.
-+ * Note that the read_buf_index and the write_buf_index
-+ * refer to two different channels. So for a ring buffer used to communicate
-+ * from modem, the modem will update the write_buf_index while Linux host
-+ * will update read_buf_index.
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition: This function is called after genio_set_shm_addr() and
++ * genio_bit_alloc(). @bit must be defined as as getter in genio_bit_alloc().
++ *
++ * Callback context:
++ *		The "bit_set_cb" callback must be called from the
++ *		IRQ context. The callback function is not allowed to block
++ *		or spend much CPU time in the callback, It must defer
++ *		work to soft-IRQ or work queues.
 + */
-+struct xshm_bufidx {
-+	__le32 state;
-+	__le32 read_index;
-+	__le32 write_index;
-+	__le32 size[0];
-+};
++int genio_subscribe(int bit, void (*bit_set_cb)(void *data), void *data);
 +
-+/** struct toc_entry - Points out the boot imiages
++/**
++ * genio_unsubscribe - Unsubscribe for callback  GENI/O bit.
++ * @bit:       The GENI/O bit to we want release.
 + *
-+ * @start: Offset counting from start of memory area to the image data.
-+ * @size:  Size of the images in bytes.
-+ * @flags: Use 0 if no flags are in use.
-+ * @entry: Where to jump to start exeuting. Only applicable
-+ *		when using SDRAM. Set to 0xffffffff if unused.
-+ * @load_addr: Location in SDRAM to move image. Set to 0xffffffff if
-+ *		not applicable.
-+ * @name: Name of image.
++ * This function may block. It returns zero on success, and negative upon error.
++ *
++ * Precondition: @bit must be defined as as getter in genio_bit_alloc().
 + */
-+struct toc_entry {
-+	__le32 start;
-+	__le32 size;
-+	__le32 flags;
-+	__le32 entry_point;
-+	__le32 load_addr;
-+	char name[12];
-+};
-+#pragma pack()
++int genio_unsubscribe(int bit);
 +
-+#endif
++/**
++ * genio_bit_alloc - Allocate the usage of GENI/O bits.
++ *
++ * @setter_mask:	Bit-mask defining the bits that can be set by
++ *			genio_set_bit()
++ * @getter_mask:	Bit-mask defining the bits that can be subscribed by
++ *			genio_subscribe().
++ *
++ * The @getter_mask defines the bit for RX direction, i.e. bits that can
++ * be subscribed by the function genio_subscribe().
++ * The @setter_mask defines the bit for TX direction, i.e. bits that can
++ * be set by the function genio_set_bit().
++ * This function may block.
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition:
++ * This function cannot be called before ipc_ready_cb() has been called,
++ * and must be called prior to any call on genio_subscribe() or genio_set_bit().
++ *
++ */
++int genio_bit_alloc(u32 setter_mask, u32 getter_mask);
++
++/**
++ * genio_set_shm_addr - Inform remote device about the shared memory address.
++ * @addr:		The shared memory address.
++ * @ipc_ready_cb:	The callback function indicating IPC is ready.
++ *
++ * Description:
++ * Implements the setting of shared memory address involving the
++ * READY_FOR_IPC GENIO bits, and READY_FOR_IPC handshaking.
++ * When handshaking is done ipc_ready_cb is called.
++ * The usage of this bit is during start/restart.
++ * This function may block.
++ *
++ * When the ipc_ready_cb() with @ready=%true, Stream channels can be opened.
++ *
++ * Sequence:
++ * (1) Write the address to the GENO register,
++ *
++ * (2) wait for interrupt on IPC_READY (set to one in GENI register)
++ *
++ * (3) write zero to the GENO register
++ *
++ * (4) wait for interrupt on IPC_READY (set to zero)
++ *
++ * (5) call the callback function for IPC_READY
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition:
++ * This function must be called initially upon start, or after remote device
++ * has been reset.
++ */
++int genio_set_shm_addr(u32 addr, void (*ipc_ready_cb) (void));
++
++/**
++ * genio_subscribe_caif_ready - Notify that CAIF channels can be
++ * opened.
++ *
++ * @caif_ready_cb: is called with @ready = %true in the start up sequence,
++ * when the remote side is ready for CAIF enumeration. Upon reset,
++ * caif_ready_cb() will be called with @ready = %false.
++ *
++ * The %READY_FOR_CAIF_BIT is set to %one as long as the
++ * modem is able to run CAIF traffic. Upon modem restart/crash it will
++ * be set back to %zero.
++ * This function may block.
++ *
++ * Returns zero on success, and negative upon error.
++ */
++int genio_subscribe_caif_ready(void (*caif_ready_cb) (bool ready));
++
++/**
++ * genio_register_errhandler - Register an error handler.
++ *
++ * @errhandler: error handler called from driver upon severe errors
++ *		that requires reset of the remote device.
++ */
++void genio_register_errhandler(void (*errhandler)(int errno));
++
++/**
++ * genio_reset() - Reset the C2C driver
++ *
++ * Reset the C2C Driver due to remote device restart.
++ * This shall reset state back to initial state, and should only
++ * be used when remote device (modem) has reset.
++ *
++ * All settings, subscriptions and state information in the driver must
++ * be reset. GENIO client must do all subscriptions again.
++ * This function may block.
++ *
++ * Returns zero on success, and negative upon error.
++ */
++int genio_reset(void);
++
++/**
++ * genio_set_bit() -	Set a single GENI/O bit.
++ *
++ * @bit:	The GENI/O bit to set
++ *
++ * This function is used to signal over GENI/GENO the driver must
++ * perform the 4-state protocol to signal the change to remote device.
++ * This function is non-blocking, and can be called from Soft-IRQ context.
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition: @bit must be defined as as setter in genio_bit_alloc().
++ */
++int genio_set_bit(int bit);
++
++/**
++ * genio_power_req() -	Request power on on remote C2C block.
++ *
++ * @state:	1 - power-on request , 0 - power-off request
++ *
++ * This function will request power on of remote C2C block.
++ * This function is non-blocking, and can be called from Soft-IRQ context.
++ *
++ * Returns zero on success, and negative upon error.
++ */
++int genio_power_req(int state);
++
++#endif /*INC_GENIO_H*/
 -- 
 1.7.1
 
