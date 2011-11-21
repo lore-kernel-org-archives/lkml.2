@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab1KUWSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:18:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11085 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab1KUWSv convert rfc822-to-8bit (ORCPT
+	id S1757472Ab1KUWS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:18:56 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55569 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab1KUWSx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:18:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Nov 2011 14:18:47 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Date: Mon, 21 Nov 2011 14:18:45 -0800
-Subject: RE: [PATCH] pinctrl: GPIO direction support for muxing
-Thread-Topic: [PATCH] pinctrl: GPIO direction support for muxing
-Thread-Index: AcyoTYmBb+I5gvNPT1C+649ezKCXQQATQ1Fg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C25F@HQMAIL01.nvidia.com>
-References: <1321880398-12605-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1321880398-12605-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Nov 2011 17:18:53 -0500
 MIME-Version: 1.0
+In-Reply-To: <201111212249.31196.rjw@sisk.pl>
+References: <lx6sezwGldO.A.IhF.UBpWOB@chimera> <201111212249.31196.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 Nov 2011 14:18:29 -0800
+X-Google-Sender-Auth: O8gTSl7UkMRuUIQ32xqYgUhcbbs
+Message-ID: <CA+55aFygSFt+O5KLoiE_0V+o45eKfsoDDV5ML8EF=J0n9z_D-Q@mail.gmail.com>
+Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Monday, November 21, 2011 6:00 AM:
-> When requesting a single GPIO pin to be muxed in, some controllers
-> will need to poke a different value into the control register
-> depending on whether the pin will be used for GPIO output or GPIO
-> input. So create pinmux counterparts to gpio_direction_[input|output]
-> in the pinctrl framework.
+On Mon, Nov 21, 2011 at 1:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Subject    : hugetlb oops on 3.1.0-rc8-devel
+> Submitter  : Andy Lutomirski <luto@amacapital.net>
+> Date       : 2011-11-01 22:20
+> Message-ID : CALCETrW1mpVCz2tO5roaz1r6vnno+srHR-dHA6_pkRi2qiCfdw@mail.gmail.com
+> References : http://marc.info/?l=linux-kernel&m=132018604426692&w=2
 
-Just a few very minor typos below. Otherwise,
+Despite the subject line, that's not an oops, it's a BUG_ON().
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+And it *should* be fixed by commit ea4039a34c4c ("hugetlb: release
+pages in the error path of hugetlb_cow()") although I don't think Andy
+ever confirmed that (since it was hard to trigger).
 
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-...
-> +NOTE that platforms and individual driver shall *NOT* request GPIO pins to be
-                                           ^s
-> +muxed in. Instead, implement a proper gpiolib driver hand have that driver
-                                                        ^ and
-
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-...
-> @@ -360,7 +421,7 @@ static int acquire_pins(struct pinctrl_dev *pctldev,
-> 
->  	/* Try to allocate all pins in this group, one by one */
->  	for (i = 0; i < num_pins; i++) {
-> -		ret = pin_request(pctldev, pins[i], func, NULL);
-> +	  ret = pin_request(pctldev, pins[i], func, NULL);
-
-Looks like a mistake.
-
-> diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
-
-> + * @gpio_set_direction: Since controllers may be needing different
-
-s/be needing/need/
-
--- 
-nvpublic
-
+                     Linus
