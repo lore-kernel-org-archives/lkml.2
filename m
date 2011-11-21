@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1KUWuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:50:00 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49593 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1KUWt7 (ORCPT
+	id S1754341Ab1KUWu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:50:27 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47218 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab1KUWuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:49:59 -0500
-Message-ID: <4ECAD613.3030605@solonet.org.ua>
-Date: Tue, 22 Nov 2011 00:52:03 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Mon, 21 Nov 2011 17:50:25 -0500
+Date: Mon, 21 Nov 2011 14:50:19 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
+ given pids
+Message-ID: <20111121225019.GQ25776@google.com>
+References: <4EC4F2FB.408@parallels.com>
+ <20111117154936.GB12325@redhat.com>
+ <4EC52FBF.1010407@parallels.com>
+ <20111118233055.GA29378@google.com>
+ <4ECA1696.5060500@parallels.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-References: <4EC572E1.1020209@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com> <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com> <4EC6DD8F.9070904@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com> <4EC6E75E.2080200@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF174F08C135@HQMAIL01.nvidia.com> <4ECAA894.4050500@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF174F08C246@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF174F08C246@HQMAIL01.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECA1696.5060500@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 12:03 AM, Stephen Warren wrote:
-> Denis Kuzmenko wrote at Monday, November 21, 2011 12:38 PM:
->> On 11/21/2011 08:07 PM, Stephen Warren wrote:
->>> Denis Kuzmenko wrote at Friday, November 18, 2011 4:17 PM:
->>>> On 11/19/2011 12:44 AM, Stephen Warren wrote:
-> ...
->>>>> OK, I see the need for a pull of some kind (although aren't there meant
->>>>> to be ESD protection diodes for this purpose; relying on what are probably
->>>>> pretty weak pullup/down resistors doesn't seem like it will provide much
->>>>> protection at all).
->>>>
->>>> I don't mean pull as any kind of good protection. But it's much better
->>>> to have it than not.
->>>
->>> Hmm. I'm not entirely convinced. If the board already has a pull-up/down,
->>> it seems like it won't really make much difference to ESD, and you can't
->>> make any assumptions in the core driver about whether such an external
->>> resistor is already present. In fact, adding another pull resistor inside
->>> the SoC in parallel will reduce the overall resistance, and increase wasted
->>> power.
->>>
->>
->> 	I don't think it's a real protection. It's rather "mistake-proofing"
->> (Poka-Yoke).
->> 	You are right, I didn't considered additional pulls (however I can't
->> imagine tristate LED usage with additional external pull) and power
->> consumptions.
->> 	I was just wondering, why was pull needed in previous implementation.
->> Additional ESD protection was the only thing I could imagine. I don't
->> think it's needed there and I'm OK to remove pull-related code.
->> 	So I'll remove it, test and send patch V3?
+Hello, Pavel.
+
+On Mon, Nov 21, 2011 at 01:15:02PM +0400, Pavel Emelyanov wrote:
+> Then I introduce the kernel.ns_last_pid sysctl that is allows for MAY_OPEN | MAP_WRITE for
+> the namespace's init only and allows for MAY_WRITE for anyone else. Thus, if we want to
+> write to this file from non-init task it must have the respective fd inherited from the init
+> on fork. It works OK for checkpoint/restore.
 > 
-> I don't see any pulls being configured in the original code at all,
-> unless some of the s3c2410_* function have unexpected side-effect. The
-> only related thing is in probe:
+> The patch is:
 > 
->         /* no point in having a pull-up if we are always driving */
 > 
->         if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
-> ..
->         } else {
->                 s3c2410_gpio_pullup(pdata->gpio, 0);
-> 
-> which I assume disables an pull in the case where the pin is always driven.
-> 
-> So, yes, I'd say submit v3 without any pull manipulation at all.
-> 
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index e9c9adc..3686a07 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/acct.h>
+>  #include <linux/slab.h>
+>  #include <linux/proc_fs.h>
+> +#include <linux/sysctl.h>
+>  
+>  #define BITS_PER_PAGE		(PAGE_SIZE*8)
+>  
+> @@ -191,9 +192,54 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+>  	return;
+>  }
+>  
+> +static int pid_ns_ctl_permissions(struct nsproxy *namespaces,
+> +			struct ctl_table *table, int op)
+> +{
+> +	int mode = 0644;
+> +
+> +	if ((op & MAY_OPEN) &&
+> +			current != namespaces->pid_ns->child_reaper)
+> +		/*
+> +		 * Writing to this sysctl is allowed only for init
+> +		 * and to whoever it grands the open file
+> +		 */
+> +		mode &= ~0222;
+> +
+> +	return sysctl_test_perm(mode, op);
+> +}
+> +
+> +static struct ctl_table_root pid_ns_root = {
+> +	.permissions = pid_ns_ctl_permissions,
+> +};
 
-Actually, "s3c2410_gpio_pullup(pdata->gpio, 0);" enables pull in the
-same way I've done that. Here is it's code:
+Hmmm... I hope this could be prettier.  I'm having trouble following
+where the MAY_OPEN comes from.  Can you please explain?  Can't we for
+now allow this for root and then later allow CAP_CHECKPOINT that
+Cyrill suggested?  Or do we want to allow setting pids even w/o CR for
+NS creator?
 
-/* gpiolib wrappers until these are totally eliminated */
+> +static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+> +		     void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	struct ctl_table tmp = *table;
+> +	tmp.data = &current->nsproxy->pid_ns->last_pid;
+> +	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
+> +}
 
-void s3c2410_gpio_pullup(unsigned int pin, unsigned int to)
-{
-	int ret;
+Probably better to call set_last_pid() on write path instead?
 
-	WARN_ON(to);	/* should be none of these left */
+> Well, after a bit more thinking I found one more pros for this
+> sysctl - when restoring a container we'll have the possibility to
+> set the last_pid to what we want to prevent the pids reuse after the
+> restore.
 
-	if (!to) {
-		/* if pull is enabled, try first with up, and if that
-		 * fails, try using down */
+Hmmm... I personally like this one better.  Restoring multilevel pids
+would be more tedious but should still be possible and I really like
+that it's staying out of clone path and all modifications are to ns
+and pid code.  Oleg, what do you think?
 
-		ret = s3c_gpio_setpull(pin, S3C_GPIO_PULL_UP);
-		if (ret)
-			s3c_gpio_setpull(pin, S3C_GPIO_PULL_DOWN);
-	} else {
-		s3c_gpio_setpull(pin, S3C_GPIO_PULL_NONE);
-	}
-}
-
-So pull is enabled in same "random" way as I did but for *opposite*
-state of S3C24XX_LEDF_TRISTATE flag.
-And again:
-
->> 	I was just wondering, why was pull needed in previous implementation.
->> Additional ESD protection was the only thing I could imagine. I don't
->> think it's needed there and I'm OK to remove pull-related code.
->> 	So I'll remove it, test and send patch V3?
+Thank you.
 
 -- 
-Best regards, Denis Kuzmenko.
+tejun
