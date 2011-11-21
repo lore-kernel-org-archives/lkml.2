@@ -1,121 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab1KUEQT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 23:16:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57838 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123Ab1KUEQS (ORCPT
+	id S1755267Ab1KUEU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 23:20:27 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:33158 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751782Ab1KUEUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 23:16:18 -0500
-Date: Sun, 20 Nov 2011 20:16:06 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Hillf Danton <dhillf@gmail.com>
-cc: Michel Lespinasse <walken@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] ksm: use FAULT_FLAG_ALLOW_RETRY in breaking COW
-In-Reply-To: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1111201923330.1806@sister.anvils>
-References: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 20 Nov 2011 23:20:25 -0500
+Message-ID: <4EC9D175.2070008@st.com>
+Date: Mon, 21 Nov 2011 09:50:05 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rabin Vincent <rabin@rab.in>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V2 5/5] gpio/gpio-stmpe: ADD support for stmpe variant
+ 801
+References: <cover.1321507421.git.viresh.kumar@st.com> <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com> <CAH+eYFCLauXusdDs75qm2rGB5Y0==bhTbxPJD+gyaaZQVbvsVw@mail.gmail.com>
+In-Reply-To: <CAH+eYFCLauXusdDs75qm2rGB5Y0==bhTbxPJD+gyaaZQVbvsVw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Nov 2011, Hillf Danton wrote:
-
-> The flag, FAULT_FLAG_ALLOW_RETRY, was introduced by the patch,
+On 11/18/2011 5:29 PM, Rabin Vincent wrote:
+> On Thu, Nov 17, 2011 at 11:02, Viresh Kumar <viresh.kumar@st.com> wrote:
+>> diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+>> index 4c980b5..000b019 100644
+>> --- a/drivers/gpio/gpio-stmpe.c
+>> +++ b/drivers/gpio/gpio-stmpe.c
+>> @@ -65,7 +65,15 @@ static void stmpe_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+>> +       if (!val && (stmpe->regs[STMPE_IDX_GPSR_LSB] ==
+>> +                               stmpe->regs[STMPE_IDX_GPCR_LSB]))
+>> +               stmpe_set_bits(stmpe, reg, mask, ~mask);
+>> +       else
+>> +               stmpe_set_bits(stmpe, reg, mask, mask);
+>>  }
 > 
-> 	mm: retry page fault when blocking on disk transfer
-> 	commit: d065bd810b6deb67d4897a14bfe21f8eb526ba99
+> This code,
 > 
-> for reducing mmap_sem hold times that are caused by waiting for disk
-> transfers when accessing file mapped VMAs.
+>  (1) for 801, when clearing one GPIO, sets all the others.
+
+I assumed stmpe_set_bits will only affect bits which are 1
+in mask and i was wrong. :(
+
+>  (2) for other devices, adds an an unnecessary read (within stmpe_set_bits()),
+>      which wasn't there before.
 > 
-> To break COW, handle_mm_fault() is repeated with mmap_sem held, where
-> the introduced flag could be used again.
+
+Correct.
+
+> Please rework to something like:
 > 
-> The straight way is to add changes in break_ksm(), but the function could be
-> under write-mode mmap_sem, so it has to be dupilcated.
+> 	if (stmpe->regs[...)
+> 		stmpe_set_bits(stmpe, reg, mask, val ? mask : 0);
+> 	else
+> 		stmpe_reg_write(stmpe, reg, mask);
 > 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-Thank you for making the patch; but unless I'm mistaken - please
-correct me if so - I think it's better to keep break_cow() simple
-than add special FAULT_FLAG_ALLOW_RETRY handling there.  Do you
-have any evidence that its down_read of mmap_sem is a problem in
-some workload?  I sense that you're using it "because it's there".
+Sure.
 
-I'm sceptical on several grounds.
-
-One, break_cow() is itself only called on an "error" path: not
-really an error, but when KSM's bet that it can merge pages turns
-out to be wrong before it can complete the merge; not a rare case,
-but not on the hot path.
-
-Two, break_ksm()'s loop is required for correctness, but it
-is a rare case that it actually needs to go round a second time.
-The typical case it's needed (am I forgetting a more common one?)
-is when userspace access flips a pte bit in between handle_pte_fault()
-noting faulting pte, and the chosen fault handler checking pte_same()
-before committing to its action.  With the page marked PageKsm, yet
-not in the stable tree, even page reclaim is unable to interfere.
-
-Three, FAULT_FLAG_ALLOW_RETRY is acted upon only in lock_page_or_retry(),
-which is called only from filemap_fault() (not the case here since we
-don't consider file pages for conversion to PageKsm) or do_swap_page();
-yet the fault we're provoking would be handled by do_wp_page().
-
-Four, lock_page_or_retry() is called in those places when there's a
-possibility that the page is being read in from disk, to drop the
-mmap_sem across the slow I/O.  There is no precedent for dropping
-mmap_sem here while allocating a new page, nor when pte_same() fails:
-in the former case it could only be a win when the system is already
-slowed by memory pressure, in the latter case there's little point,
-since mmap_sem would be reacquired in a moment.
-
-I think that amounts to a genial Nack!
-
-Hugh
-
-> ---
+>>
+>>  static int stmpe_gpio_direction_output(struct gpio_chip *chip,
+>> @@ -125,10 +133,19 @@ static struct gpio_chip template_chip = {
+>>  static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+>>  {
+>>        struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
+>> +       struct stmpe *stmpe = stmpe_gpio->stmpe;
+>>        int offset = d->irq - stmpe_gpio->irq_base;
+>>        int regoffset = offset / 8;
+>>        int mask = 1 << (offset % 8);
+>>
+>> +       /* STMPE801 doesn't have RE and FE registers */
+>> +       if (stmpe->partnum == STMPE801) {
+>> +               if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_LEVEL_HIGH)
+>> +                       return 0;
 > 
-> --- a/mm/ksm.c	Sat Nov 19 16:08:10 2011
-> +++ b/mm/ksm.c	Sat Nov 19 19:33:49 2011
-> @@ -394,7 +394,31 @@ static void break_cow(struct rmap_item *
->  		goto out;
->  	if (!(vma->vm_flags & VM_MERGEABLE) || !vma->anon_vma)
->  		goto out;
-> -	break_ksm(vma, addr);
-> +	for (;;) {
-> +		struct page *page;
-> +		int ret;
-> +
-> +		page = follow_page(vma, addr, FOLL_GET);
-> +		if (IS_ERR_OR_NULL(page))
-> +			break;
-> +
-> +		if (PageKsm(page))
-> +			ret = handle_mm_fault(mm, vma, addr,
-> +				FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_WRITE);
-> +		else
-> +			ret = VM_FAULT_WRITE;
-> +
-> +		put_page(page);
-> +
-> +		if (!(ret & (VM_FAULT_WRITE|VM_FAULT_SIGBUS|VM_FAULT_OOM))) {
-> +			if (ret & VM_FAULT_RETRY)
-> +				down_read(&mm->mmap_sem);
-> +		} else {
-> +			if (ret & VM_FAULT_RETRY)
-> +				return;
-> +			break;
-> +		}
-> +	}
->  out:
->  	up_read(&mm->mmap_sem);
->  }
+> This looks wrong.  From the datasheet I see that it supports edges only,
+> so perhaps you meant to say IRQ_TYPE_EDGE_* above.
+> 
+
+I meant to say IRQ_TYPE_LEVEL* only, but i was wrong. I didn't read the manual
+correctly. :(
+
+> In that case please reorganize this to add the return 0 after the
+> existing check which excludes levels (below).
+> 
+
+Sure
+
+-- 
+viresh
