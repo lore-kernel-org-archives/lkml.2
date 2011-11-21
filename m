@@ -1,238 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab1KUJma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 04:42:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31444 "EHLO mga02.intel.com"
+	id S1755795Ab1KUJmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:42:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:63814 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755100Ab1KUJk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 04:40:59 -0500
+	id S1752591Ab1KUJk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 04:40:58 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="78289938"
-Message-Id: <20111121093846.121502745@intel.com>
+X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
+   d="scan'208";a="93515260"
+Message-Id: <20111121093847.015852579@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 21 Nov 2011 17:18:20 +0800
+Date: Mon, 21 Nov 2011 17:18:27 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, Li Shaohua <shaohua.li@intel.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Jens Axboe <jens.axboe@oracle.com>, Rik van Riel <riel@redhat.com>,
+        <linux-fsdevel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Wu Fengguang <fengguang.wu@intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
 cc: Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 1/8] block: limit default readahead size for small devices
+Subject: [PATCH 8/8] readahead: dont do start-of-file readahead after lseek()
 References: <20111121091819.394895091@intel.com>
-Content-Disposition: inline; filename=readahead-size-for-tiny-device.patch
+Content-Disposition: inline; filename=readahead-lseek.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus reports a _really_ small & slow (505kB, 15kB/s) USB device,
-on which blkid runs unpleasantly slow. He manages to optimize the blkid
-reads down to 1kB+16kB, but still kernel read-ahead turns it into 48kB.
+Some applications (eg. blkid, id3tool etc.) seek around the file
+to get information. For example, blkid does
 
-     lseek 0,    read 1024   => readahead 4 pages (start of file)
-     lseek 1536, read 16384  => readahead 8 pages (page contiguous)
+	     seek to	0
+	     read	1024
+	     seek to	1536
+	     read	16384
 
-The readahead heuristics involved here are reasonable ones in general.
-So it's good to fix blkid with fadvise(RANDOM), as Linus already did.
+The start-of-file readahead heuristic is wrong for them, whose
+access pattern can be identified by lseek() calls.
 
-For the kernel part, Linus suggests:
-  So maybe we could be less aggressive about read-ahead when the size of
-  the device is small? Turning a 16kB read into a 64kB one is a big deal,
-  when it's about 15% of the whole device!
+So test-and-set a READAHEAD_LSEEK flag on lseek() and don't
+do start-of-file readahead on seeing it. Proposed by Linus.
 
-This looks reasonable: smaller device tend to be slower (USB sticks as
-well as micro/mobile/old hard disks).
-
-Given that the non-rotational attribute is not always reported, we can
-take disk size as a max readahead size hint. This patch uses a formula
-that generates the following concrete limits:
-
-        disk size    readahead size
-     (scale by 4)      (scale by 2)
-               1M                8k
-               4M               16k
-              16M               32k
-              64M               64k
-             256M              128k
-        --------------------------- (*)
-               1G              256k
-               4G              512k
-              16G             1024k
-              64G             2048k
-             256G             4096k
-
-(*) Since the default readahead size is 128k, this limit only takes
-effect for devices whose size is less than 256M.
-
-The formula is determined on the following data, collected by script:
-
-	#!/bin/sh
-
-	# please make sure BDEV is not mounted or opened by others
-	BDEV=sdb
-
-	for rasize in 4 16 32 64 128 256 512 1024 2048 4096 8192
-	do
-		echo $rasize > /sys/block/$BDEV/queue/read_ahead_kb
-		time dd if=/dev/$BDEV of=/dev/null bs=4k count=102400
-	done
-
-The principle is, the formula shall not limit readahead size to such a
-degree that will impact some device's sequential read performance.
-
-The Intel SSD is special in that its throughput increases steadily with
-larger readahead size. However it may take years for Linux to increase
-its default readahead size to 2MB, so we don't take it seriously in the
-formula.
-
-SSD 80G Intel x25-M SSDSA2M080 (reported by Li Shaohua)
-
-	rasize	1st run		2nd run
-	----------------------------------
-	  4k	123 MB/s	122 MB/s
-	 16k  	153 MB/s	153 MB/s
-	 32k	161 MB/s	162 MB/s
-	 64k	167 MB/s	168 MB/s
-	128k	197 MB/s	197 MB/s
-	256k	217 MB/s	217 MB/s
-	512k	238 MB/s	234 MB/s
-	  1M	251 MB/s	248 MB/s
-	  2M	259 MB/s	257 MB/s
-==>	  4M	269 MB/s	264 MB/s
-	  8M	266 MB/s	266 MB/s
-
-Note that ==> points to the readahead size that yields plateau throughput.
-
-SSD 22G MARVELL SD88SA02 MP1F (reported by Jens Axboe)
-
-	rasize  1st             2nd
-	--------------------------------
-	  4k     41 MB/s         41 MB/s
-	 16k     85 MB/s         81 MB/s
-	 32k    102 MB/s        109 MB/s
-	 64k    125 MB/s        144 MB/s
-	128k    183 MB/s        185 MB/s
-	256k    216 MB/s        216 MB/s
-	512k    216 MB/s        236 MB/s
-	1024k   251 MB/s        252 MB/s
-	  2M    258 MB/s        258 MB/s
-==>       4M    266 MB/s        266 MB/s
-	  8M    266 MB/s        266 MB/s
-
-SSD 30G SanDisk SATA 5000
-
-	  4k	29.6 MB/s	29.6 MB/s	29.6 MB/s
-	 16k	52.1 MB/s	52.1 MB/s	52.1 MB/s
-	 32k	61.5 MB/s	61.5 MB/s	61.5 MB/s
-	 64k	67.2 MB/s	67.2 MB/s	67.1 MB/s
-	128k	71.4 MB/s	71.3 MB/s	71.4 MB/s
-	256k	73.4 MB/s	73.4 MB/s	73.3 MB/s
-==>	512k	74.6 MB/s	74.6 MB/s	74.6 MB/s
-	  1M	74.7 MB/s	74.6 MB/s	74.7 MB/s
-	  2M	76.1 MB/s	74.6 MB/s	74.6 MB/s
-
-USB stick 32G Teclast CoolFlash idVendor=1307, idProduct=0165
-
-	  4k	7.9 MB/s 	7.9 MB/s 	7.9 MB/s
-	 16k	17.9 MB/s	17.9 MB/s	17.9 MB/s
-	 32k	24.5 MB/s	24.5 MB/s	24.5 MB/s
-	 64k	28.7 MB/s	28.7 MB/s	28.7 MB/s
-	128k	28.8 MB/s	28.9 MB/s	28.9 MB/s
-==>	256k	30.5 MB/s	30.5 MB/s	30.5 MB/s
-	512k	30.9 MB/s	31.0 MB/s	30.9 MB/s
-	  1M	31.0 MB/s	30.9 MB/s	30.9 MB/s
-	  2M	30.9 MB/s	30.9 MB/s	30.9 MB/s
-
-USB stick 4G SanDisk  Cruzer idVendor=0781, idProduct=5151
-
-	  4k	6.4 MB/s 	6.4 MB/s 	6.4 MB/s
-	 16k	13.4 MB/s	13.4 MB/s	13.2 MB/s
-	 32k	17.8 MB/s	17.9 MB/s	17.8 MB/s
-	 64k	21.3 MB/s	21.3 MB/s	21.2 MB/s
-	128k	21.4 MB/s	21.4 MB/s	21.4 MB/s
-==>	256k	23.3 MB/s	23.2 MB/s	23.2 MB/s
-	512k	23.3 MB/s	23.8 MB/s	23.4 MB/s
-	  1M	23.8 MB/s	23.4 MB/s	23.3 MB/s
-	  2M	23.4 MB/s	23.2 MB/s	23.4 MB/s
-
-USB stick 2G idVendor=0204, idProduct=6025 SerialNumber: 08082005000113
-
-	  4k	6.7 MB/s 	6.9 MB/s 	6.7 MB/s
-	 16k	11.7 MB/s	11.7 MB/s	11.7 MB/s
-	 32k	12.4 MB/s	12.4 MB/s	12.4 MB/s
-   	 64k	13.4 MB/s	13.4 MB/s	13.4 MB/s
-	128k	13.4 MB/s	13.4 MB/s	13.4 MB/s
-==>	256k	13.6 MB/s	13.6 MB/s	13.6 MB/s
-	512k	13.7 MB/s	13.7 MB/s	13.7 MB/s
-	  1M	13.7 MB/s	13.7 MB/s	13.7 MB/s
-	  2M	13.7 MB/s	13.7 MB/s	13.7 MB/s
-
-64 MB, USB full speed (collected by Clemens Ladisch)
-Bus 003 Device 003: ID 08ec:0011 M-Systems Flash Disk Pioneers DiskOnKey
-
-	4KB:    139.339 s, 376 kB/s
-	16KB:   81.0427 s, 647 kB/s
-	32KB:   71.8513 s, 730 kB/s
-==>	64KB:   67.3872 s, 778 kB/s
-	128KB:  67.5434 s, 776 kB/s
-	256KB:  65.9019 s, 796 kB/s
-	512KB:  66.2282 s, 792 kB/s
-	1024KB: 67.4632 s, 777 kB/s
-	2048KB: 69.9759 s, 749 kB/s
-
-An unnamed SD card (Yakui):
-
-         4k     195.873 s,  5.5 MB/s
-         8k     123.425 s,  8.7 MB/s
-         16k    86.6425 s, 12.4 MB/s
-         32k    66.7519 s, 16.1 MB/s
-==>      64k    58.5262 s, 18.3 MB/s
-         128k   59.3847 s, 18.1 MB/s
-         256k   59.3188 s, 18.1 MB/s
-         512k   59.0218 s, 18.2 MB/s
-
-CC: Li Shaohua <shaohua.li@intel.com>
-CC: Clemens Ladisch <clemens@ladisch.de>
-Acked-by: Jens Axboe <jens.axboe@oracle.com>
 Acked-by: Rik van Riel <riel@redhat.com>
-Tested-by: Vivek Goyal <vgoyal@redhat.com>
-Tested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- block/genhd.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ fs/read_write.c    |    4 ++++
+ include/linux/fs.h |    1 +
+ mm/readahead.c     |    3 +++
+ 3 files changed, 8 insertions(+)
 
---- linux-next.orig/block/genhd.c	2011-10-31 00:13:51.000000000 +0800
-+++ linux-next/block/genhd.c	2011-11-18 11:27:08.000000000 +0800
-@@ -623,6 +623,26 @@ void add_disk(struct gendisk *disk)
- 	WARN_ON(retval);
+--- linux-next.orig/mm/readahead.c	2011-11-20 22:02:01.000000000 +0800
++++ linux-next/mm/readahead.c	2011-11-20 22:02:03.000000000 +0800
+@@ -629,6 +629,8 @@ ondemand_readahead(struct address_space 
+ 	 * start of file
+ 	 */
+ 	if (!offset) {
++		if ((ra->ra_flags & READAHEAD_LSEEK) && req_size < max)
++			goto random_read;
+ 		ra_set_pattern(ra, RA_PATTERN_INITIAL);
+ 		goto initial_readahead;
+ 	}
+@@ -707,6 +709,7 @@ ondemand_readahead(struct address_space 
+ 	if (try_context_readahead(mapping, ra, offset, req_size, max))
+ 		goto readit;
  
- 	disk_add_events(disk);
++random_read:
+ 	/*
+ 	 * standalone, small random read
+ 	 */
+--- linux-next.orig/fs/read_write.c	2011-11-20 22:02:01.000000000 +0800
++++ linux-next/fs/read_write.c	2011-11-20 22:02:03.000000000 +0800
+@@ -47,6 +47,10 @@ static loff_t lseek_execute(struct file 
+ 		file->f_pos = offset;
+ 		file->f_version = 0;
+ 	}
 +
-+	/*
-+	 * Limit default readahead size for small devices.
-+	 *        disk size    readahead size
-+	 *               1M                8k
-+	 *               4M               16k
-+	 *              16M               32k
-+	 *              64M               64k
-+	 *             256M              128k
-+	 *               1G              256k
-+	 *               4G              512k
-+	 *              16G             1024k
-+	 *              64G             2048k
-+	 *             256G             4096k
-+	 */
-+	if (get_capacity(disk)) {
-+		unsigned long size = get_capacity(disk) >> 9;
-+		size = 1UL << (ilog2(size) / 2);
-+		bdi->ra_pages = min(bdi->ra_pages, size);
-+	}
++	if (!(file->f_ra.ra_flags & READAHEAD_LSEEK))
++		file->f_ra.ra_flags |= READAHEAD_LSEEK;
++
+ 	return offset;
  }
- EXPORT_SYMBOL(add_disk);
  
+--- linux-next.orig/include/linux/fs.h	2011-11-20 22:02:01.000000000 +0800
++++ linux-next/include/linux/fs.h	2011-11-20 22:02:03.000000000 +0800
+@@ -952,6 +952,7 @@ struct file_ra_state {
+ /* ra_flags bits */
+ #define	READAHEAD_MMAP_MISS	0x000003ff /* cache misses for mmap access */
+ #define	READAHEAD_MMAP		0x00010000
++#define	READAHEAD_LSEEK		0x00020000 /* be conservative after lseek() */
+ 
+ #define READAHEAD_PATTERN_SHIFT	28
+ #define READAHEAD_PATTERN	0xf0000000
 
 
