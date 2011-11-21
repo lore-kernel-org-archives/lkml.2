@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab1KUAOF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 19:14:05 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52489 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab1KUAOC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 19:14:02 -0500
-Date: Mon, 21 Nov 2011 10:43:13 +1030
-From: Christopher Yeoh <cyeoh@au1.ibm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        linux-arch@vger.kernel.org, "Linux/m68k" <linux-m68k@vger.kernel.org>
-Subject: Re: Cross Memory Attach v3
-Message-ID: <20111121104313.63c7f796@cyeoh-System-Product-Name>
-In-Reply-To: <CAMuHMdWAhn7M8o0qY4pz3W1tyyKEcNY_YQL_6JuAPCcjL5vS1A@mail.gmail.com>
-References: <20110719003537.16b189ae@lilo>
-	<CAMuHMdWAhn7M8o0qY4pz3W1tyyKEcNY_YQL_6JuAPCcjL5vS1A@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754678Ab1KUAnw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 19:43:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:11701 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754566Ab1KUAnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 19:43:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,544,1315206000"; 
+   d="scan'208";a="87557790"
+Message-ID: <1321836227.13860.121.camel@yhuang-dev>
+Subject: RE: [RFC][PATCH]ACPI,APEI,ERST, back end driver for NVRAM
+From: Huang Ying <ying.huang@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, "Chen, Gong" <gong.chen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 21 Nov 2011 08:43:47 +0800
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57B4FA66@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C57AC8046@USINDEVS01.corp.hds.com>
+	 <1321581563.13860.111.camel@yhuang-dev>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57B4FA66@USINDEVS01.corp.hds.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-2 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112014-6102-0000-0000-000000346C6C
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Sun, 20 Nov 2011 11:16:17 +0100
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Mon, Jul 18, 2011 at 17:05, Christopher Yeoh <cyeoh@au1.ibm.com>
-> wrote:
-> > For arch maintainers there are some simple tests to be able to
-> > quickly verify that the syscalls are working correctly here:
+On Sat, 2011-11-19 at 07:04 +0800, Seiji Aguchi wrote:
+> Hi,
 > 
-> I'm wiring up these new syscalls on m68k.
+> >According to ACPI 4.0a spec:
+> >
+> >"""
+> >17.5.2.4.1 Error Log Address Range Resides in NVRAM
+> >
 > 
-> > http://ozlabs.org/~cyeoh/cma/cma-test-20110718.tgz
+> Thank you for giving me the information.
+> Let me clarify one thing.
 > 
-> The included README talks about:
+> If the busy bit can be cleared immediately, we don't need to
+> check busy bit with CHECK_BUSY_STATUS.
+> So, we should simply execute OSPM operations as follows.
 > 
->     setup_process_readv_simple
->     setup_process_readv_iovec
->    setup_process_writev
+>  - Writing
+>    1. BEGIN_WRITE
+>    2. SET_RECORD_OFFSET
+>    3. EXECUTE_OPERATION
+>    4. END
 > 
-> while the actual test executables are called:
+>  - Reading
+>    1. BEGIN_READ
+>    2. SET_RECORD_OFFSET
+>    3. SET_RECORD_ID
+>    4. EXECUTE_OPERATION
+>    (END operation is not needed because OSPM requires no platform 
+>     support to read.)
 > 
->     setup_process_vm_readv_simple
->     setup_process_vm_readv_iovec
->     setup_process_vm_writev
-
-Oops. Have fixed this and uploaded a new version
-
- http://ozlabs.org/~cyeoh/cma/cma-test-20111121.tgz
-
-It also includes another minor change (see below)
-
-> On m68k (ARAnyM), the first and third test succeed. The second one
-> fails, though:
+>  - Clearing
+>    1. BEGIN_CLEAR
+>    2. SET_RECORD_ID
+>    3. EXECUTE_OPERATION
+>    (END operation is not needed because OSPM requires no platform 
+>     support to clear.)
 > 
-> # Setting up target with num iovecs 10, test buffer size 100000
-> Target process is setup
-> Run the following to test:
-> ./t_process_vm_readv_iovec 1574 10 0x800030b0 89 0x80003110 38302
-> 0x8000c6b8 22423 0x80011e58 18864 0x80016810 583 0x80016a60 8054
-> 0x800189e0 3417 0x80019740 368 0x800198b8 897 0x80019c40 7003
-> 
-> and in the other window:
-> 
-> # ./t_process_vm_readv_iovec 1574 10 0x800030b0 89 0x80003110 38302
-> 0x8000c6b8 22423 0x80011e58 18864 0x80016810 583 0x80016a60 8054
-> 0x800189e0 3417 0x80019740 368 0x800198b8 897 0x80019c40 7003
-> copy_from_process failed: Invalid argument
+> Is this what you expected?
 
-That should say process_vm_readv instead of copy_from_process. The
-error message is fixed in the just updated test.
+No.  I have different understanding.
 
-> error code: 29
-> #
-> 
-> Any suggestions?
-> 
+Because error log address range resides in NVRAM, the contents will be
+reserved even after reboot.  So we do not need read/clear operations at
+all, and should place all records in error log address range.
 
-Given that the first and third tests succeed, I think the problem is
-with the iovec parameters. The -EINVAL is most likely coming from
-rw_copy_check_uvector. Any chance that something bad is
-happening to lvec/liovcnt or rvec/riovcnt in the wireup? 
+Best Regards,
+Huang Ying
 
-The iovecs are checked in process_vm_rw before the core of the
-process_vm_readv/writev code is called so should be easy to confirm if
-this is the problem.
-
-The other couple of places where it could possibly come from is that
-for some reason the flags parameter ends up being non zero or when
-looking up the task the mm is NULL. But given that the first and second
-tests succeed I think its unlikely that either of these is the cause.
-
-Regards,
-
-Chris
--- 
-cyeoh@au.ibm.com
 
