@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1KUCDh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 21:03:37 -0500
-Received: from trent.utfs.org ([194.246.123.103]:42789 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab1KUCDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 21:03:35 -0500
-Date: Sun, 20 Nov 2011 18:03:32 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: 3.2.0-rc1 panic on PowerPC
-In-Reply-To: <1321840301.13860.9.camel@pasglop>
-Message-ID: <alpine.DEB.2.01.1111201759500.8000@trent.utfs.org>
-References: <alpine.DEB.2.01.1111150035560.8000@trent.utfs.org>  <alpine.DEB.2.01.1111201529070.8000@trent.utfs.org>  <1321837101.13860.6.camel@pasglop>  <alpine.DEB.2.01.1111201701000.8000@trent.utfs.org>  <1321838742.13860.8.camel@pasglop>
- <1321840301.13860.9.camel@pasglop>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1755048Ab1KUCRX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 21:17:23 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:42771 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab1KUCRW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 21:17:22 -0500
+Date: Mon, 21 Nov 2011 13:17:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: linux-next: build warning after merge of the Linus' tree
+Message-Id: <20111121131701.44b49fc7da28170c9ee6b524@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_Nov_2011_13_17_01_+1100_EjYAxwxitb7niML6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011 at 12:51, Benjamin Herrenschmidt wrote:
-> BTW. SLUB or SLAB ? Mine was SLUB with SLUB_DEBUG enabled (tho the debug
-> didn't seem to catch anything).
+--Signature=_Mon__21_Nov_2011_13_17_01_+1100_EjYAxwxitb7niML6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-SLUB, and SLUB_DEBUG=y (but w/o SLUB_DEBUG_ON and SLUB_STATS). Full config 
-here: http://nerdbynature.de/bits/3.2.0-rc1/oops/config.txt
+Hi all,
 
-I'm compiling today's git checkout (mainline) with more debug settings 
-enabled[0], let's see if this helps anything.
+Building Linus' tree today linux-next (x86_64_allmodconfig)
+produced quite a few of these warnings:
 
-Christian.
+include/media/soc_camera.h: In function 'soc_camera_i2c_to_vdev':
+include/media/soc_camera.h:257:34: warning: cast to pointer from integer of=
+ different size [-Wint-to-pointer-cast]
 
-[0] diff to old config
-+CONFIG_RT_MUTEX_TESTER=y
-+CONFIG_DEBUG_LOCKDEP=y
-+CONFIG_DEBUG_HIGHMEM=y
-+CONFIG_DEBUG_INFO=y
-+CONFIG_DEBUG_VM=y
-+CONFIG_DEBUG_WRITECOUNT=y
-+CONFIG_DEBUG_LIST=y
-+CONFIG_ATOMIC64_SELFTEST=y
-+CONFIG_XMON=y
-+CONFIG_XMON_DEFAULT=y
-+CONFIG_XMON_DISASSEMBLY=y
-+CONFIG_DEBUGGER=y
+This was introduced by commit 2f0babb7e432 ("[media] V4L: soc-camera:
+make (almost) all client drivers re-usable outside of the framework").
 
--- 
-BOFH excuse #242:
+This warning is caused by the "grp_id" member of "struct v4l2_subdev" -
+which is a u32 - being cast to a pointer.  That pointer is dereferenced,
+so I have no idea how that is supposed to work on any 64 bit platform.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Software uses US measurements, but the OS is in metric...
+--Signature=_Mon__21_Nov_2011_13_17_01_+1100_EjYAxwxitb7niML6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOybSdAAoJEECxmPOUX5FEgJQP/1CtTBXGty19o/NUpXOsPgPN
+lnxPuaqsfE1WvESV7fn1sr0D2zBCq0tgbkSk9bUz1xIyNMTW/i/TXHLCYwph3oH/
+LjVm6YZWIztEbhnsr1yUoZTPOz8BoR69hHnhZ4j9fcspDRdOkon0sj8ryJtH4Dhc
+ip/9ljJi2LZ16YzwO3ObogirKRRJs7snTIhiXBD48xFV6oUHL4IkCdT8XR5dOwv7
+NSQXTAR6/3mV0GY9Fy2xHyWjBce9yAJUSKsTHHvFdJ0ZCWU0BN6g/6gu/mhXCZAt
+zEgHUDohgeFxRsCjXzEkb0o1R3Dvg+aI180X4BQ57NPZwoFAnbCBehxwiibA/9Ry
+yPBxomhh44iPaYjhCwl/GQIsiELaTH9kIY7CxfYSyGCwyGM67KdF5KE9XC3rQraA
+b0INznmC521mA2teCTYzY22wEM9YLi4DnHKGtHEwIWwsiBG5X97qCBxKo6nbLOIN
+hSV49ITw3hPGK1Z/1C5vht5rWw9iMN+ALisQRKrAOH813n0QfNQQroCV3pfI84N2
+xOpORQ48AI2Z8hlPF6FNWdm8ba2barfRpT4e0dQijEAloJd+KpF2Sr/Sd42hIPDW
+lC87CB5g/L0gD7aZU85TALAN5vcytkL+tvC2YdzcGLeuHRK1ctF7WCH7psD8Ognm
+N+vy1FfJw+mq8w1+g+Op
+=uT6r
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Nov_2011_13_17_01_+1100_EjYAxwxitb7niML6--
