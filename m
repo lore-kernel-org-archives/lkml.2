@@ -1,154 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab1KULLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:11:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46574 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755234Ab1KULLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:11:07 -0500
-Date: Mon, 21 Nov 2011 12:09:54 +0100
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Yong Zhang <yong.zhang0@gmail.com>,
-        Luis Henriques <henrix@camandro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcg: shorten preempt-disabled section around event
- checks
-Message-ID: <20111121110954.GE1771@redhat.com>
+	id S1756051Ab1KULLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:11:23 -0500
+Received: from mail202c2.megamailservers.com ([69.49.111.103]:56827 "EHLO
+	mail202c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755234Ab1KULLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 06:11:22 -0500
+X-Authenticated-User: konrad.gaisler.com
+Message-ID: <4ECA2FF6.2090708@gaisler.com>
+Date: Mon, 21 Nov 2011 12:03:18 +0100
+From: Konrad Eisele <konrad@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110928 Firefox/7.0.1 SeaMonkey/2.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Michal Marek <mmarek@suse.cz>
+CC: Arnaud Lacombe <lacombar@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org,
+        linux kbuild list <linux-kbuild@vger.kernel.org>, pefoley2@verizon.net,
+        yann.morin.1998@anciens.enib.fr, sam@ravnborg.org,
+        zippel@linux-m68k.org
+Subject: Re: [PATCH 1/1] kconfig: Add a configuration subtree command to kconfig
+References: <1321625774-12749-1-git-send-email-konrad@gaisler.com> <4EC69F65.20207@xenotime.net> <4EC6E179.1030703@gaisler.com> <CACqU3MV=XzNUv70vP7QtQwC2xgqnY0bX+orDA+aErmJGwdEA_w@mail.gmail.com> <4EC76049.8020508@gaisler.com> <4EC9024A.7070807@suse.cz>
+In-Reply-To: <4EC9024A.7070807@suse.cz>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-CSC: 0
+X-CHA: v=1.1 cv=t6P6ZnH7F4B+FTDzBT2sv7Wly1PyMf9jGdjNuUfj6/c= c=1 sm=1
+		a=CIB-vgOadyEA:10 a=wd-vcygihCUA:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
+		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=ebG-ZW-8AAAA:8 a=CG28bE0e01zX-QE1ZqEA:9
+		a=wPNLvfGTeEIA:10 a=cCYF7-FHeg4A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--rt ran into a problem with the soft limit spinlock inside the
-non-preemptible section, because that is sleeping inside an atomic
-context.  But I think it makes sense for vanilla, too, to keep the
-non-preemptible section as short as possible.  Also, -3 lines.
+Michal Marek wrote:
+> On 19.11.2011 08:52, konrad.gaisler wrote:
+>> On 11/19/2011 07:23 AM, Arnaud Lacombe wrote:
+>>> On Fri, Nov 18, 2011 at 5:51 PM, konrad.gaisler<konrad@gaisler.com>  wrote:
+>>>> As an example, apply the patch, then add to<top>/Kconfig the lines:
+>>>>
+>>>> subsource "arch/sparc/Kconfig" "." ".config_sparc" "SPARC config" SPARC_
+>>>> CONFIG_
+>>>> subsource "arch/mips/Kconfig" "." ".config_mips" "MIPS config" MIPS_ CONFIG_
+>>>>
+>>> ETOOMUCHARGUMENT!
+>>>
+>>> I wonder if we could not get all these parameters specified
+>>> dynamically in the Kconfig. This would replace the `mainmenu' entry
+>>> ala:
+>>>
+>>> config
+>>>      title "Linux ..."
+>>>      prefix "CONFIG_"
+>>>      file .config
+>>> endconfig
+>> Yes maybe it can be done that way. Personally I think it is
+>> more difficult.
+> 
+> A <command> <argument> syntax fits well into the existing Kconfig
+> language and it more readable, as you don't have to count the position
+> of the arguments and check their meaning in the documentation.
+> 
+> Michal
+> 
+> 
 
-Yong, Luis, could you add your Tested-bys?
-
----
-Only the ratelimit checks themselves have to run with preemption
-disabled, the resulting actions - checking for usage thresholds,
-updating the soft limit tree - can and should run with preemption
-enabled.
-
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Reported-by: Yong Zhang <yong.zhang0@gmail.com>
-Reported-by: Luis Henriques <henrix@camandro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- mm/memcontrol.c |   73 ++++++++++++++++++++++++++----------------------------
- 1 files changed, 35 insertions(+), 38 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..8e62d3e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -683,37 +683,32 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
- 	return total;
- }
- 
--static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
-+static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
-+				       enum mem_cgroup_events_target target)
- {
- 	unsigned long val, next;
- 
- 	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
- 	next = __this_cpu_read(memcg->stat->targets[target]);
- 	/* from time_after() in jiffies.h */
--	return ((long)next - (long)val < 0);
--}
--
--static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
--{
--	unsigned long val, next;
--
--	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
--
--	switch (target) {
--	case MEM_CGROUP_TARGET_THRESH:
--		next = val + THRESHOLDS_EVENTS_TARGET;
--		break;
--	case MEM_CGROUP_TARGET_SOFTLIMIT:
--		next = val + SOFTLIMIT_EVENTS_TARGET;
--		break;
--	case MEM_CGROUP_TARGET_NUMAINFO:
--		next = val + NUMAINFO_EVENTS_TARGET;
--		break;
--	default:
--		return;
-+	if ((long)next - (long)val < 0) {
-+		switch (target) {
-+		case MEM_CGROUP_TARGET_THRESH:
-+			next = val + THRESHOLDS_EVENTS_TARGET;
-+			break;
-+		case MEM_CGROUP_TARGET_SOFTLIMIT:
-+			next = val + SOFTLIMIT_EVENTS_TARGET;
-+			break;
-+		case MEM_CGROUP_TARGET_NUMAINFO:
-+			next = val + NUMAINFO_EVENTS_TARGET;
-+			break;
-+		default:
-+			break;
-+		}
-+		__this_cpu_write(memcg->stat->targets[target], next);
-+		return true;
- 	}
--
--	__this_cpu_write(memcg->stat->targets[target], next);
-+	return false;
- }
- 
- /*
-@@ -724,25 +719,27 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
- {
- 	preempt_disable();
- 	/* threshold event is triggered in finer grain than soft limit */
--	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
-+	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_THRESH))) {
-+		bool do_softlimit, do_numainfo;
-+
-+		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_SOFTLIMIT);
-+#if MAX_NUMNODES > 1
-+		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_NUMAINFO);
-+#endif
-+		preempt_enable();
-+
- 		mem_cgroup_threshold(memcg);
--		__mem_cgroup_target_update(memcg, MEM_CGROUP_TARGET_THRESH);
--		if (unlikely(__memcg_event_check(memcg,
--			     MEM_CGROUP_TARGET_SOFTLIMIT))) {
-+		if (unlikely(do_softlimit))
- 			mem_cgroup_update_tree(memcg, page);
--			__mem_cgroup_target_update(memcg,
--						   MEM_CGROUP_TARGET_SOFTLIMIT);
--		}
- #if MAX_NUMNODES > 1
--		if (unlikely(__memcg_event_check(memcg,
--			MEM_CGROUP_TARGET_NUMAINFO))) {
-+		if (unlikely(do_numainfo))
- 			atomic_inc(&memcg->numainfo_events);
--			__mem_cgroup_target_update(memcg,
--				MEM_CGROUP_TARGET_NUMAINFO);
--		}
- #endif
--	}
--	preempt_enable();
-+	} else
-+		preempt_enable();
- }
- 
- static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+Ok, I'll do it with "Config" and type "title". It will
+take a while until I have a new patch...
+-- Konrad
