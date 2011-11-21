@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab1KUWQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:16:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40407 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755692Ab1KUWQf (ORCPT
+	id S1757445Ab1KUWQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:16:42 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60636 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755692Ab1KUWQj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:16:35 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf tool: reset use_browser when compiled without NEWT
-Date: Mon, 21 Nov 2011 15:16:28 -0700
-Message-Id: <1321913788-2867-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.7.1
+	Mon, 21 Nov 2011 17:16:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <87lira9ii7.fsf@rustcorp.com.au>
+References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
+	<20111108214504.28884.61814.stgit@miche.sea.corp.google.com>
+	<874nybqo0o.fsf@rustcorp.com.au>
+	<CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
+	<87lira9ii7.fsf@rustcorp.com.au>
+Date: Mon, 21 Nov 2011 14:16:38 -0800
+Message-ID: <CAB8Rdaqno9kVHB8wsbH5=zs_ppUkd1G=siywFFfH3Ud21qK3FA@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] hvc_init(): Enforce one-time initialization.
+From: Miche Baker-Harvey <miche@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Anton Blanchard <anton@samba.org>, Amit Shah <amit.shah@redhat.com>,
+        Mike Waychison <mikew@google.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Eric Northrup <digitaleric@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-e.g.,  when using
-  make NO_NEWT=yes ...
-or if newt-devel is not installed
+Thanks, Rusty.  I'm not using QEMU though, just KVM.   I create the device, wait
+for the message from the guest that the device is ready, and then add ports.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/cache.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Miche
 
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index fc5e5a0..9d7612a 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -36,6 +36,7 @@ extern int use_browser;
- #ifdef NO_NEWT_SUPPORT
- static inline void setup_browser(bool fallback_to_pager)
- {
-+	use_browser = 0;
- 	if (fallback_to_pager)
- 		setup_pager();
- }
--- 
-1.7.7.1
-
+On Sun, Nov 20, 2011 at 9:01 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Thu, 17 Nov 2011 10:57:37 -0800, Miche Baker-Harvey <miche@google.com> wrote:
+>> Rusty, Michael, Stephen, et al,
+>>
+>> Thanks for your comments on these patches.
+>>
+>> For what I'm trying to do, all three patches are necessary, but maybe
+>> I'm going about it the wrong way. Your input would be appreciated.
+>> I'm in no way claiming that these patches are "right", just that it's
+>> working for me, and that what's in the current pool is not.
+>
+> We have to *understand* the code.  If we don't, we need to rewrite the
+> code so we *do* understand it, or make way for someone who does.
+>
+> I'm looking at the kvm man page to try to figure out how to have virtio
+> console, and it's deeply unclear.  What kvm commandline are you using?
+> I'll try to debug it here, and see what I learn about hvc_console.
+>
+> Cheers,
+> Rusty.
+>
