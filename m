@@ -1,61 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab1KUJjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 04:39:08 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43124 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab1KUJjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 04:39:05 -0500
-Date: Mon, 21 Nov 2011 17:38:01 +0800
-From: wangyanqing <udknight@gmail.com>
-To: warns@pre-sense.de
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
-        warns@pre-sense.de, jaxboe@fusionio.com
-Subject: [PATCH] fs:partitions:efi.c: bugfix a issue in find_valid_gpt
-Message-ID: <20111121093801.GA1062@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>, warns@pre-sense.de,
-	akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-	tj@kernel.org, jaxboe@fusionio.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755543Ab1KUJlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:41:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:63814 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754157Ab1KUJk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 04:40:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
+   d="scan'208";a="93515263"
+Message-Id: <20111121093846.510441032@intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 21 Nov 2011 17:18:23 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Linux Memory Management List <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+cc: Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 4/8] readahead: record readahead patterns
+References: <20111121091819.394895091@intel.com>
+Content-Disposition: inline; filename=readahead-tracepoints.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I meet a 3T disk, which partitioned by Windows 7,
-and linux report unknow partition table. But it can been
-detected the partition table when I add gpt to boot
-parameter.
+Record the readahead pattern in ra_flags and extend the ra_submit()
+parameters, to be used by the next readahead tracing/stats patches.
 
-This issue caused by the find_valid_gpt function will fail
-out when check the legacy mbr failed if there is no gpt boot
-parameter.
+7 patterns are defined:
 
-if boot without gpt, we should fail back to check the guid
-partition table when check the legacy mbr failed instead of
-fail out.
+      	pattern			readahead for
+-----------------------------------------------------------
+	RA_PATTERN_INITIAL	start-of-file read
+	RA_PATTERN_SUBSEQUENT	trivial sequential read
+	RA_PATTERN_CONTEXT	interleaved sequential read
+	RA_PATTERN_OVERSIZE	oversize read
+	RA_PATTERN_MMAP_AROUND	mmap fault
+	RA_PATTERN_FADVISE	posix_fadvise()
+	RA_PATTERN_RANDOM	random read
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
+Note that random reads will be recorded in file_ra_state now.
+This won't deteriorate cache bouncing because the ra->prev_pos update
+in do_generic_file_read() already pollutes the data cache, and
+filemap_fault() will stop calling into us after MMAP_LOTSAMISS.
+
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Jens Axboe <jens.axboe@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/partitions/efi.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ include/linux/fs.h |   33 +++++++++++++++++++++++++++++++++
+ include/linux/mm.h |    4 +++-
+ mm/filemap.c       |    9 +++++++--
+ mm/readahead.c     |   30 +++++++++++++++++++++++-------
+ 4 files changed, 66 insertions(+), 10 deletions(-)
 
-diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
-index 6296b40..302631e 100644
---- a/fs/partitions/efi.c
-+++ b/fs/partitions/efi.c
-@@ -543,8 +543,6 @@ static int find_valid_gpt(struct parsed_partitions *state, gpt_header **gpt,
-                         good_pmbr = is_pmbr_valid(legacymbr);
-                         kfree(legacymbr);
-                 }
--                if (!good_pmbr)
--                        goto fail;
-         }
+--- linux-next.orig/include/linux/fs.h	2011-11-20 20:10:48.000000000 +0800
++++ linux-next/include/linux/fs.h	2011-11-20 20:18:29.000000000 +0800
+@@ -951,6 +951,39 @@ struct file_ra_state {
  
- 	good_pgpt = is_gpt_valid(state, GPT_PRIMARY_PARTITION_TABLE_LBA,
--- 
-1.7.3.4
+ /* ra_flags bits */
+ #define	READAHEAD_MMAP_MISS	0x000003ff /* cache misses for mmap access */
++#define	READAHEAD_MMAP		0x00010000
++
++#define READAHEAD_PATTERN_SHIFT	28
++#define READAHEAD_PATTERN	0xf0000000
++
++/*
++ * Which policy makes decision to do the current read-ahead IO?
++ */
++enum readahead_pattern {
++	RA_PATTERN_INITIAL,
++	RA_PATTERN_SUBSEQUENT,
++	RA_PATTERN_CONTEXT,
++	RA_PATTERN_MMAP_AROUND,
++	RA_PATTERN_FADVISE,
++	RA_PATTERN_OVERSIZE,
++	RA_PATTERN_RANDOM,
++	RA_PATTERN_ALL,		/* for summary stats */
++	RA_PATTERN_MAX
++};
++
++static inline unsigned int ra_pattern(unsigned int ra_flags)
++{
++	unsigned int pattern = ra_flags >> READAHEAD_PATTERN_SHIFT;
++
++	return min_t(unsigned int, pattern, RA_PATTERN_ALL);
++}
++
++static inline void ra_set_pattern(struct file_ra_state *ra,
++				  unsigned int pattern)
++{
++	ra->ra_flags = (ra->ra_flags & ~READAHEAD_PATTERN) |
++			    (pattern << READAHEAD_PATTERN_SHIFT);
++}
+ 
+ /*
+  * Don't do ra_flags++ directly to avoid possible overflow:
+--- linux-next.orig/mm/readahead.c	2011-11-20 20:10:48.000000000 +0800
++++ linux-next/mm/readahead.c	2011-11-20 20:18:14.000000000 +0800
+@@ -268,13 +268,17 @@ unsigned long max_sane_readahead(unsigne
+  * Submit IO for the read-ahead request in file_ra_state.
+  */
+ unsigned long ra_submit(struct file_ra_state *ra,
+-		       struct address_space *mapping, struct file *filp)
++			struct address_space *mapping,
++			struct file *filp,
++			pgoff_t offset,
++			unsigned long req_size)
+ {
+ 	int actual;
+ 
+ 	actual = __do_page_cache_readahead(mapping, filp,
+ 					ra->start, ra->size, ra->async_size);
+ 
++	ra->ra_flags &= ~READAHEAD_MMAP;
+ 	return actual;
+ }
+ 
+@@ -401,6 +405,7 @@ static int try_context_readahead(struct 
+ 	if (size >= offset)
+ 		size *= 2;
+ 
++	ra_set_pattern(ra, RA_PATTERN_CONTEXT);
+ 	ra->start = offset;
+ 	ra->size = get_init_ra_size(size + req_size, max);
+ 	ra->async_size = ra->size;
+@@ -422,8 +427,10 @@ ondemand_readahead(struct address_space 
+ 	/*
+ 	 * start of file
+ 	 */
+-	if (!offset)
++	if (!offset) {
++		ra_set_pattern(ra, RA_PATTERN_INITIAL);
+ 		goto initial_readahead;
++	}
+ 
+ 	/*
+ 	 * It's the expected callback offset, assume sequential access.
+@@ -431,6 +438,7 @@ ondemand_readahead(struct address_space 
+ 	 */
+ 	if ((offset == (ra->start + ra->size - ra->async_size) ||
+ 	     offset == (ra->start + ra->size))) {
++		ra_set_pattern(ra, RA_PATTERN_SUBSEQUENT);
+ 		ra->start += ra->size;
+ 		ra->size = get_next_ra_size(ra, max);
+ 		ra->async_size = ra->size;
+@@ -453,6 +461,7 @@ ondemand_readahead(struct address_space 
+ 		if (!start || start - offset > max)
+ 			return 0;
+ 
++		ra_set_pattern(ra, RA_PATTERN_CONTEXT);
+ 		ra->start = start;
+ 		ra->size = start - offset;	/* old async_size */
+ 		ra->size += req_size;
+@@ -464,14 +473,18 @@ ondemand_readahead(struct address_space 
+ 	/*
+ 	 * oversize read
+ 	 */
+-	if (req_size > max)
++	if (req_size > max) {
++		ra_set_pattern(ra, RA_PATTERN_OVERSIZE);
+ 		goto initial_readahead;
++	}
+ 
+ 	/*
+ 	 * sequential cache miss
+ 	 */
+-	if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL)
++	if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL) {
++		ra_set_pattern(ra, RA_PATTERN_INITIAL);
+ 		goto initial_readahead;
++	}
+ 
+ 	/*
+ 	 * Query the page cache and look for the traces(cached history pages)
+@@ -482,9 +495,12 @@ ondemand_readahead(struct address_space 
+ 
+ 	/*
+ 	 * standalone, small random read
+-	 * Read as is, and do not pollute the readahead state.
+ 	 */
+-	return __do_page_cache_readahead(mapping, filp, offset, req_size, 0);
++	ra_set_pattern(ra, RA_PATTERN_RANDOM);
++	ra->start = offset;
++	ra->size = req_size;
++	ra->async_size = 0;
++	goto readit;
+ 
+ initial_readahead:
+ 	ra->start = offset;
+@@ -502,7 +518,7 @@ readit:
+ 		ra->size += ra->async_size;
+ 	}
+ 
+-	return ra_submit(ra, mapping, filp);
++	return ra_submit(ra, mapping, filp, offset, req_size);
+ }
+ 
+ /**
+--- linux-next.orig/include/linux/mm.h	2011-11-20 20:10:48.000000000 +0800
++++ linux-next/include/linux/mm.h	2011-11-20 20:10:49.000000000 +0800
+@@ -1456,7 +1456,9 @@ void page_cache_async_readahead(struct a
+ unsigned long max_sane_readahead(unsigned long nr);
+ unsigned long ra_submit(struct file_ra_state *ra,
+ 			struct address_space *mapping,
+-			struct file *filp);
++			struct file *filp,
++			pgoff_t offset,
++			unsigned long req_size);
+ 
+ /* Generic expand stack which grows the stack according to GROWS{UP,DOWN} */
+ extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+--- linux-next.orig/mm/filemap.c	2011-11-20 20:10:48.000000000 +0800
++++ linux-next/mm/filemap.c	2011-11-20 20:10:49.000000000 +0800
+@@ -1592,6 +1592,7 @@ static void do_sync_mmap_readahead(struc
+ 		return;
+ 
+ 	if (VM_SequentialReadHint(vma)) {
++		ra->ra_flags |= READAHEAD_MMAP;
+ 		page_cache_sync_readahead(mapping, ra, file, offset,
+ 					  ra->ra_pages);
+ 		return;
+@@ -1607,11 +1608,13 @@ static void do_sync_mmap_readahead(struc
+ 	/*
+ 	 * mmap read-around
+ 	 */
++	ra->ra_flags |= READAHEAD_MMAP;
++	ra_set_pattern(ra, RA_PATTERN_MMAP_AROUND);
+ 	ra_pages = max_sane_readahead(ra->ra_pages);
+ 	ra->start = max_t(long, 0, offset - ra_pages / 2);
+ 	ra->size = ra_pages;
+ 	ra->async_size = ra_pages / 4;
+-	ra_submit(ra, mapping, file);
++	ra_submit(ra, mapping, file, offset, 1);
+ }
+ 
+ /*
+@@ -1630,9 +1633,11 @@ static void do_async_mmap_readahead(stru
+ 	if (VM_RandomReadHint(vma))
+ 		return;
+ 	ra_mmap_miss_dec(ra);
+-	if (PageReadahead(page))
++	if (PageReadahead(page)) {
++		ra->ra_flags |= READAHEAD_MMAP;
+ 		page_cache_async_readahead(mapping, ra, file,
+ 					   page, offset, ra->ra_pages);
++	}
+ }
+ 
+ /**
+
 
