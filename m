@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab1KUIYt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 03:24:49 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:49769 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1KUIYs (ORCPT
+	id S1755369Ab1KUIZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 03:25:26 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:65236 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab1KUIZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 03:24:48 -0500
-Date: Mon, 21 Nov 2011 09:24:45 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111121082445.GD1625@x4.trippels.de>
-References: <20111118072519.GA1615@x4.trippels.de>
- <20111118075521.GB1615@x4.trippels.de>
- <1321605837.30341.551.camel@debian>
- <20111118085436.GC1615@x4.trippels.de>
- <20111118120201.GA1642@x4.trippels.de>
- <1321836285.30341.554.camel@debian>
- <20111121080554.GB1625@x4.trippels.de>
+	Mon, 21 Nov 2011 03:25:23 -0500
+Date: Mon, 21 Nov 2011 09:25:06 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the Linus' tree
+In-Reply-To: <20111121131701.44b49fc7da28170c9ee6b524@canb.auug.org.au>
+Message-ID: <Pine.LNX.4.64.1111210922090.10414@axis700.grange>
+References: <20111121131701.44b49fc7da28170c9ee6b524@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121080554.GB1625@x4.trippels.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:qZbiRjy58qq3xaT0bBAHTL1TUrCHz7OFWbAz75tI6u8
+ HCAxgFdBwax7p/TX0rpx3CKse3Y5nvcwuyYPc7tUSIDWro97rt
+ aMBPrQC/g2Dy6KtNig5jOedWu6f+1Dfk79kkxgwcrlF4W+ghUl
+ +oxRPi49LLr4wwUggYNw3MOnygtG74pmqEZZ6yWYHrf+jbgvnF
+ SZevG8VD+36CW4vvBM50RotKQXMZH+u1faCnHNexJ99L9D91ns
+ amHjGaBefoVOiwbJSrFBuF1nyklmg6z//6jGzsQgVl+Wzg6DE8
+ NIRRZlyzK8FzCX8odvC7qV9xuCg8gdcuzc6j2JKdAg4UjkU4yJ
+ WDqV/Yp/Qx7tczG8GOICmaNX55dUzzQMthIDrMJV3nFSYh3aId
+ +hsJpFPVaCekQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.21 at 09:05 +0100, Markus Trippelsdorf wrote:
-> On 2011.11.21 at 08:44 +0800, Alex,Shi wrote:
-> > On Fri, 2011-11-18 at 20:02 +0800, Markus Trippelsdorf wrote:
-> > > On 2011.11.18 at 09:54 +0100, Markus Trippelsdorf wrote:
-> > > > On 2011.11.18 at 16:43 +0800, Alex,Shi wrote:
-> > > > > > > 
-> > > > > > > The dirty flag comes from a bunch of unrelated xfs patches from Christoph, that
-> > > > > > > I'm testing right now.
-> > > > > 
-> > > > > Where is the xfs patchset? I am wondering if it is due to slub code. 
-> > > 
-> > > I begin to wonder if this might be the result of a compiler bug. 
-> > > The kernel in question was compiled with gcc version 4.7.0 20111117. And
-> > > there was commit to the gcc repository today that looks suspicious:
-> > > http://gcc.gnu.org/viewcvs?view=revision&revision=181466
-> > > 
-> > 
-> > Tell us if it is still there and you can reproduce it.
+Hi Stephen
+
+On Mon, 21 Nov 2011, Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> Hm, just noticed the "3.2.0-rc1 panic on PowerPC" thread:
-> http://thread.gmane.org/gmane.linux.kernel/1215584
+> Building Linus' tree today linux-next (x86_64_allmodconfig)
+> produced quite a few of these warnings:
 > 
-> The backtraces look suspiciously similar to mine.
+> include/media/soc_camera.h: In function 'soc_camera_i2c_to_vdev':
+> include/media/soc_camera.h:257:34: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> 
+> This was introduced by commit 2f0babb7e432 ("[media] V4L: soc-camera:
+> make (almost) all client drivers re-usable outside of the framework").
+> 
+> This warning is caused by the "grp_id" member of "struct v4l2_subdev" -
+> which is a u32 - being cast to a pointer.  That pointer is dereferenced,
+> so I have no idea how that is supposed to work on any 64 bit platform.
 
-So everything points to commit 87fb4b7b533:
-"net: more accurate skb truesize"
+soc-camera atm supports 7 platforms (if I haven't forgotten anyone), none 
+of them is 64-bit. But you're right, it shall compile cleanly on 64 bits 
+too, I'm working on a patch. Unfortunately, while working on it I came 
+across other regressions, that blocked my tests... But a solution will be 
+found.
 
-Can you take a look Eric?
-
--- 
-Markus
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
