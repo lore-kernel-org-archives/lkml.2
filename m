@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab1KUKgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 05:36:46 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:45980 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab1KUKgp (ORCPT
+	id S1755865Ab1KUKhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 05:37:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64088 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755139Ab1KUKhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 05:36:45 -0500
-X-IronPort-AV: E=Sophos;i="4.69,546,1315180800"; 
-   d="scan'208";a="9035893"
-Subject: Re: [Xen-devel] [PATCH 1/3] xen/granttable: Introducing grant table
- V2 stucture
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: ANNIE LI <annie.li@oracle.com>
-CC: "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Date: Mon, 21 Nov 2011 10:36:36 +0000
-In-Reply-To: <4ECA1F0D.5070303@oracle.com>
-References: <4EC3B62F.6080702@oracle.com>
-	 <1321451304-13559-1-git-send-email-annie.li@oracle.com>
-	 <4EC62E77.7090007@oracle.com>
-	 <1321613689.3664.305.camel@zakaz.uk.xensource.com>
-	 <4EC6818B.3010904@oracle.com>
-	 <1321632271.3664.367.camel@zakaz.uk.xensource.com>
-	 <4ECA1F0D.5070303@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321871797.3664.376.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
+	Mon, 21 Nov 2011 05:37:22 -0500
+From: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 1/8] Staging: comedi: fix initialise statics to 0 or NULL issue in ni_daq_dio24.c
+Date: Mon, 21 Nov 2011 16:06:59 +0530
+Message-Id: <1321871826-13581-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 09:51 +0000, ANNIE LI wrote:
-> This patch changes two places from the last one,
-> * removing gnttab_v1_ops
-> * change update_grant_entry_v1 into gnttab_update_entry_v1
+This is a patch to the ni_daq_dio24.c file that fixes up a initialise
+statics to 0 or NULL warning found by the checkpatch.pl tool.
 
-The attached patch didn't have those changes.
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/ni_daq_dio24.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Ian.
-
-> 
-> Thanks
-> Annie
-> 
-> On 2011-11-19 0:04, Ian Campbell wrote:
-> >>>> +static struct gnttab_ops gnttab_v1_ops = {
-> >>>> +       .map_frames                     = gnttab_map_frames_v1,
-> >>>> +       .unmap_frames                   = gnttab_unmap_frames_v1,
-> >>>> +       .update_entry                   = update_grant_entry_v1,
-> >>>>
-> >>> Any reason this one is not gnttab_foo?
-> >>>
-> >> Actually no, just keep the original name of this function. I'd like to
-> >> change it, maybe gnttab_update_entry_v1 is better?
-> > I think so. Similarly for the v2 variant.
-> >
-> > Ian.
-> >
-> >
-
+diff --git a/drivers/staging/comedi/drivers/ni_daq_dio24.c b/drivers/staging/comedi/drivers/ni_daq_dio24.c
+index 49b824c..381ea6c 100644
+--- a/drivers/staging/comedi/drivers/ni_daq_dio24.c
++++ b/drivers/staging/comedi/drivers/ni_daq_dio24.c
+@@ -52,7 +52,7 @@ the PCMCIA interface.
+ #include <pcmcia/cisreg.h>
+ #include <pcmcia/ds.h>
+ 
+-static struct pcmcia_device *pcmcia_cur_dev = NULL;
++static struct pcmcia_device *pcmcia_cur_dev;
+ 
+ #define DIO24_SIZE 4		/*  size of io region used by board */
+ 
+-- 
+1.7.0.4
 
