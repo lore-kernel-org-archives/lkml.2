@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1KUNeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:34:18 -0500
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:51319 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab1KUNeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:34:17 -0500
-Message-ID: <1321882445.32195.3.camel@x61.thuisdomein>
-Subject: [PATCH] ARM: imx: drop 'ARCH_MX31' and 'ARCH_MX35'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 21 Nov 2011 14:34:05 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754644Ab1KUNfl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:35:41 -0500
+Received: from fieldses.org ([174.143.236.118]:55636 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753610Ab1KUNfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 08:35:39 -0500
+Date: Mon, 21 Nov 2011 08:35:21 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, agruen@kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+Message-ID: <20111121133521.GB656@fieldses.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20111019222021.GB1874@fieldses.org>
+ <87k4805alx.fsf@linux.vnet.ibm.com>
+ <20111020091434.GC5444@fieldses.org>
+ <20111020091946.GA23773@infradead.org>
+ <87aa8w53kj.fsf@linux.vnet.ibm.com>
+ <20111020174915.GA9987@fieldses.org>
+ <m1y5vcxxzp.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1y5vcxxzp.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 27ad4bf72a ("ARM: imx: move mx3 support to mach-imx") kept
-ARCH_MX31 and ARCH_MX35 'for compatibility'. Now that they aren't
-actually used anymore, they can be dropped entirely.
+On Sat, Nov 19, 2011 at 01:28:10AM -0800, Eric W. Biederman wrote:
+> Thanks for the cc.  After looking at the user namespace issues it looks
+> like the sane thing is really to map the user namespace uids into
+> appropriate uids for storing on the filesystem.  Anything else
+> seems to be a lot of pain for very little gain.
+> 
+> If a filesystem went as far as storing string ids.  I think I would
+> be happy to use different domains for different user namespaces, but
+> for anything else I just don't see the point.
+> 
+> What it does look like to me is that at some point we will want to
+> support > 32bit uids.  There are 7 billion people on the planet and we
+> only have 4 billion user ids.  The biggest individual organization have
+> 3 million users, which keeps us safe for now.  However my forecast is
+> each user namespace is going to wind up giving each user a bunch of
+> uids.  That will accelerate the point at which we find 32bit uids tight.
+> How fast being generous and assigning 10k uids per user is going to get
+> us into trouble I don't know. 
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-"git grep" tested only.
+Yes, bigger uid's make sense to me.
 
- arch/arm/mach-imx/Kconfig |   13 -------------
- 1 files changed, 0 insertions(+), 13 deletions(-)
+But at the point when we make that transition I think updating the ACL
+format will be the least of our troubles.  So I think we'll leave it
+alone rather than try to guess the right type now.
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 5f7f9c2..c44aa97 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -10,11 +10,6 @@ config HAVE_IMX_MMDC
- config HAVE_IMX_SRC
- 	bool
- 
--#
--# ARCH_MX31 and ARCH_MX35 are left for compatibility
--# Some usages assume that having one of them implies not having (e.g.) ARCH_MX2.
--# To easily distinguish good and reviewed from unreviewed usages new (and IMHO
--# more sensible) names are used: SOC_IMX31 and SOC_IMX35
- config ARCH_MX1
- 	bool
- 
-@@ -27,12 +22,6 @@ config ARCH_MX25
- config MACH_MX27
- 	bool
- 
--config ARCH_MX31
--	bool
--
--config ARCH_MX35
--	bool
--
- config SOC_IMX1
- 	bool
- 	select ARCH_MX1
-@@ -72,7 +61,6 @@ config SOC_IMX31
- 	select CPU_V6
- 	select IMX_HAVE_PLATFORM_MXC_RNGA
- 	select ARCH_MXC_AUDMUX_V2
--	select ARCH_MX31
- 	select MXC_AVIC
- 	select SMP_ON_UP if SMP
- 
-@@ -82,7 +70,6 @@ config SOC_IMX35
- 	select ARCH_MXC_IOMUX_V3
- 	select ARCH_MXC_AUDMUX_V2
- 	select HAVE_EPIT
--	select ARCH_MX35
- 	select MXC_AVIC
- 	select SMP_ON_UP if SMP
- 
--- 
-1.7.7.3
-
+--b.
