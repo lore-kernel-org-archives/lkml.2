@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab1KUVuC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:50:02 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40631 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757147Ab1KUVr4 (ORCPT
+	id S1757151Ab1KUVvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:51:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49648 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab1KUVvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:47:56 -0500
-X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=pY0Wj9W4qgsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=1BvyPUWsSLuwEhnMVCYA:9 a=YbXqbSzh4CYrLm4cuMYA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=1qODZev7S_EqOaUt1mEA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20111121214752.916778529@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 21 Nov 2011 16:44:22 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
-Subject: [PATCH 2/6] rcu: Fix macro substitution for synchronize_rcu_bh() on RT
-References: <20111121214420.124907956@goodmis.org>
-Content-Disposition: inline; filename=0002-rcu-Fix-macro-substitution-for-synchronize_rcu_bh-on.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 21 Nov 2011 16:51:47 -0500
+Date: Mon, 21 Nov 2011 13:51:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] writeback: fix dirtied pages accounting on redirty
+Message-Id: <20111121135146.0fc7e3a7.akpm@linux-foundation.org>
+In-Reply-To: <20111121131216.032489128@intel.com>
+References: <20111121130342.211953629@intel.com>
+	<20111121131216.032489128@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 21 Nov 2011 21:03:46 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-From: John Kacur <jkacur@redhat.com>
+> De-account the accumulative dirty counters on page redirty.
+> 
+> Page redirties (very common in ext4) will introduce mismatch between
+> counters (a) and (b)
+> 
+> a) NR_DIRTIED, BDI_DIRTIED, tsk->nr_dirtied
+> b) NR_WRITTEN, BDI_WRITTEN
+> 
+> This will introduce systematic errors in balanced_rate and result in
+> dirty page position errors (ie. the dirty pages are no longer balanced
+> around the global/bdi setpoints).
+> 
+> ...
+>
+> --- linux-next.orig/mm/page-writeback.c	2011-11-17 20:57:15.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-11-17 20:57:16.000000000 +0800
+> @@ -1792,6 +1792,17 @@ int __set_page_dirty_nobuffers(struct pa
+>  }
+>  EXPORT_SYMBOL(__set_page_dirty_nobuffers);
+>  
+> +void account_page_redirty(struct page *page)
+> +{
+> +	struct address_space *mapping = page->mapping;
+> +	if (mapping && mapping_cap_account_dirty(mapping)) {
+> +		current->nr_dirtied--;
+> +		dec_zone_page_state(page, NR_DIRTIED);
+> +		dec_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+> +	}
+> +}
 
-kernel/rcutorture.c:492: error: =E2=80=98synchronize_rcu_bh=E2=80=99 undecl=
-ared here (not in a function)
+Again, writeback doesn't seem to be the best place to be adding
+undocumented code.
 
-synchronize_rcu_bh() is not just called as a normal function, but can
-also be referenced as a function pointer. When CONFIG_PREEMPT_RT_FULL
-is enabled, synchronize_rcu_bh() is defined as synchronize_rcu(), but
-needs to be defined without the parenthesis because the compiler will
-complain when synchronize_rcu_bh is referenced as a function pointer
-and not a function.
+> +EXPORT_SYMBOL(account_page_redirty);
 
-Link: http://lkml.kernel.org/r/1321235083-21756-1-git-send-email-jkacur@red=
-hat.com
-
-Cc: stable-rt@vger.kernel.org
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: John Kacur <jkacur@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/rcutree.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 7a25aea..3bf47dc 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -60,7 +60,7 @@ static inline void exit_rcu(void)
- #ifndef CONFIG_PREEMPT_RT_FULL
- extern void synchronize_rcu_bh(void);
- #else
--# define synchronize_rcu_bh()	synchronize_rcu()
-+# define synchronize_rcu_bh	synchronize_rcu
- #endif
- extern void synchronize_sched_expedited(void);
- extern void synchronize_rcu_expedited(void);
---=20
-1.7.7.1
+The export is unneeded?
 
 
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOyscJAAoJEIy3vGnGbaoAl7AP/3IdHRkPQfwow35ViDmFSdv1
-UqJE6HEEN2K4IjJNlwwdYkTc4l/16m3Yqd7C2m2+ahXc4A+6SFhI0Kxjcr6PEgxc
-Ena7oGItiALeW5QP7uH/EmDtlhaO6f89W3HnGii3+DTzSPdS0gcs94lR+08l5hFj
-qHXzcPytsWSA4P1ZHdWEa6A3WMqZaeQlHmr5x9p+LKvdSNKtuPSCgeomaEIu7fGe
-lerUxipSOcQnaWc/0bbB/a54nqdR2mWXMkGQcxCy8EKWZyi/djbJBtPGcbkuz/LO
-b72tqVFc5kdqBDhZE6hyeJU0x85HwHcMju9lHqxIrYd6Js7jk6tFIDRdqj/MpCv1
-XdLoAXMq7kAkDBLckEs8rY4mxJgzaTph49hP4nNz1daFDojAUHVE4g44IxG7cdiF
-N/PrwPEf2Tr6pxB5/CylJ29qBcEdrl3i0X/ER39X+d1fM2JXGR1WOlPG8H+B9CWY
-rNS3OUysvnfJXf9O2uWYd9ADlzVwRpQQzlbKjPYtF3ycOo8iENCN4xJOkifLueWS
-QpZhBVdp8ERIBuyGZZ3MPYL1B7H++tTOE57yzbz522Dqk7e81jVHqBY3HSugoAST
-HYoNVMMMnQgjqD4m7jAtxpV1oW02KQfD1n2NVUOQ8U5Zo46FnFqjRqzjke9ErVB/
-iZyIAV+Fb0nQ5rQgZfop
-=bil1
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
