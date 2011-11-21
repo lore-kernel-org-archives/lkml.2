@@ -1,108 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab1KUXBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:01:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33833 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab1KUXBR (ORCPT
+	id S1754108Ab1KUXEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:04:32 -0500
+Received: from imr-ma03.mx.aol.com ([64.12.206.41]:35354 "EHLO
+	imr-ma03.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1KUXEb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:01:17 -0500
-Date: Mon, 21 Nov 2011 15:01:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] readahead: replace ra->mmap_miss with ra->ra_flags
-Message-Id: <20111121150116.094cf194.akpm@linux-foundation.org>
-In-Reply-To: <20111121093846.378529145@intel.com>
-References: <20111121091819.394895091@intel.com>
-	<20111121093846.378529145@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Nov 2011 18:04:31 -0500
+To: hubschrauber.manipulation@widerstandnord.com
+Content-Transfer-Encoding: 8BIT
+Subject: You don't know me %7717353
+X-MB-Message-Source: WebUI
+MIME-Version: 1.0
+From: Annika <nelda.shattuck@aol.com>
+X-MB-Message-Type: User
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: AOL Webmail 34561-BASIC
+Message-Id: <8CE76B8FFE155C9-1528-DB06@web-mmc-d04.sysops.aol.com>
+X-Originating-IP: [172.29.51.24]
+Date: Mon, 21 Nov 2011 18:04:04 -0500 (EST)
+x-aol-global-disposition: G
+X-AOL-SCOLL-SCORE: 0:2:145029664:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d33ca4ecad8e44bd5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011 17:18:22 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
-
-> Introduce a readahead flags field and embed the existing mmap_miss in it
-> (mainly to save space).
-
-What an ugly patch.
-
-> It will be possible to lose the flags in race conditions, however the
-> impact should be limited.  For the race to happen, there must be two
-> threads sharing the same file descriptor to be in page fault or
-> readahead at the same time.
-> 
-> Note that it has always been racy for "page faults" at the same time.
-> 
-> And if ever the race happen, we'll lose one mmap_miss++ or mmap_miss--.
-> Which may change some concrete readahead behavior, but won't really
-> impact overall I/O performance.
-> 
-> CC: Andi Kleen <andi@firstfloor.org>
-> CC: Steven Whitehouse <swhiteho@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/linux/fs.h |   31 ++++++++++++++++++++++++++++++-
->  mm/filemap.c       |    9 ++-------
->  2 files changed, 32 insertions(+), 8 deletions(-)
-> 
-> --- linux-next.orig/include/linux/fs.h	2011-11-20 11:30:55.000000000 +0800
-> +++ linux-next/include/linux/fs.h	2011-11-20 11:48:53.000000000 +0800
-> @@ -945,10 +945,39 @@ struct file_ra_state {
->  					   there are only # of pages ahead */
->  
->  	unsigned int ra_pages;		/* Maximum readahead window */
-> -	unsigned int mmap_miss;		/* Cache miss stat for mmap accesses */
-> +	unsigned int ra_flags;
-
-And it doesn't actually save any space, unless ra_flags gets used for
-something else in a subsequent patch.  And if it does, perhaps ra_flags
-should be ulong, which is compatible with the bitops.h code.
-
-Or perhaps we should use a bitfield and let the compiler do the work.
-
->  	loff_t prev_pos;		/* Cache last read() position */
->  };
->  
-> +/* ra_flags bits */
-> +#define	READAHEAD_MMAP_MISS	0x000003ff /* cache misses for mmap access */
-> +
-> +/*
-> + * Don't do ra_flags++ directly to avoid possible overflow:
-> + * the ra fields can be accessed concurrently in a racy way.
-> + */
-> +static inline unsigned int ra_mmap_miss_inc(struct file_ra_state *ra)
-> +{
-> +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
-> +
-> +	/* the upper bound avoids banging the cache line unnecessarily */
-> +	if (miss < READAHEAD_MMAP_MISS) {
-> +		miss++;
-> +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
-> +	}
-> +	return miss;
-> +}
-> +
-> +static inline void ra_mmap_miss_dec(struct file_ra_state *ra)
-> +{
-> +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
-> +
-> +	if (miss) {
-> +		miss--;
-> +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
-> +	}
-> +}
-
-It's strange that ra_mmap_miss_inc() returns the new value whereas
-ra_mmap_miss_dec() returns void.
+Hello)))
+How r you? I am Annika!
+I wanna to know you better.
+I saw ur profile on a dating site, I don't remember exact name of it.
+I am looking for smart and intellectual man.
+I wanna know u closer, so write me something.:P
+Annika
 
 
