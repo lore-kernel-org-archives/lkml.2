@@ -1,119 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab1KUXZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:25:46 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55184 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab1KUXZp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:25:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321891800.20742.11.camel@frodo>
-References: <1321707028-12487-1-git-send-email-jkacur@redhat.com>
-	<1321707028-12487-4-git-send-email-jkacur@redhat.com>
-	<1321891800.20742.11.camel@frodo>
-Date: Tue, 22 Nov 2011 00:18:59 +0100
-X-Google-Sender-Auth: dr5b3S80SKtF1__ZQhQKAw0Fj5Q
-Message-ID: <CAONaPpGz3NoKs9TfDHgNR5YcnfX-j0AT_bVttxPYXLRq5Y=SSg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] rcu: Drive configuration directly from SMP and PREEMPT
-From: John Kacur <jkacur@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755164Ab1KUX2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:28:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:23098 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753523Ab1KUX2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 18:28:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,550,1315206000"; 
+   d="scan'208";a="77746365"
+Subject: Re: softirq oops from b44_poll
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Xander Hover <lkml@hover.be>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+In-Reply-To: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
+References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Nov 2011 15:17:33 -0800
+Message-ID: <1321917453.10276.3.camel@pjaxe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 5:10 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sat, 2011-11-19 at 13:50 +0100, John Kacur wrote:
->> From: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>
->> This commit eliminates the possibility of running TREE_PREEMPT_RCU
->> when SMP=n and of running TINY_RCU when PREEMPT=y.  People who really
->> want these combinations can hand-edit init/Kconfig, but eliminating
->> them as choices for production systems reduces the amount of testing
->> required.  It will also allow cutting out a few #ifdefs.
->>
->> Note that running TREE_RCU and TINY_RCU on single-CPU systems using
->> SMP-built kernels is still supported.
->
-> With this patch, I can see the need for the first patch (although
-> there's things broken even for that), but is this really a stable fix?
->
-> This looks more of an added feature than a bug fix. It's a bug fix if we
-> consider running tree_rcu on UP a bug. Or better stated, will it break
-> anything if we do that?
->
-> -- Steve
->
->>
->> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>
->> commit 8008e129dc90ff4f7a56cb033d6bd042afe3ed52 upstream
->> Cherry-picked for v3.0-rt and fixed-up merge conflicts
->> Note: This makes the depends lines for these options in init/Kconfig for v3.0-rt
->> match those for v3.2-rc2-rt3
->> Signed-off-by: John Kacur <jkacur@redhat.com>
->> ---
->>  init/Kconfig |    6 +++---
->>  1 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/init/Kconfig b/init/Kconfig
->> index 89e40a4..5c1147e 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -391,7 +391,7 @@ config TREE_RCU
->>
->>  config TREE_PREEMPT_RCU
->>       bool "Preemptible tree-based hierarchical RCU"
->> -     depends on PREEMPT
->> +     depends on PREEMPT && SMP
->>       help
->>         This option selects the RCU implementation that is
->>         designed for very large SMP systems with hundreds or
->> @@ -401,7 +401,7 @@ config TREE_PREEMPT_RCU
->>
->>  config TINY_RCU
->>       bool "UP-only small-memory-footprint RCU"
->> -     depends on !SMP && !PREEMPT_RT_FULL
->> +     depends on !PREEMPT && !SMP
->>       help
->>         This option selects the RCU implementation that is
->>         designed for UP systems from which real-time response
->> @@ -410,7 +410,7 @@ config TINY_RCU
->>
->>  config TINY_PREEMPT_RCU
->>       bool "Preemptible UP-only small-memory-footprint RCU"
->> -     depends on !SMP && PREEMPT && !PREEMPT_RT_FULL
->> +     depends on PREEMPT && !SMP
->>       help
->>         This option selects the RCU implementation that is designed
->>         for real-time UP systems.  This option greatly reduces the
->
+On Mon, 2011-11-21 at 05:58 -0800, Xander Hover wrote:
+> Hi all,
+> 
+> I noticed the small discussion about the b44_poll OOPS and
+> I also have a uni-processor PC with a broadcom network device (b44)
+> that causes similar kernel OOPSes.
+> 
+> Here is a (reproducible) trace that still shows up in kernel 3.1.1:
+> 
+>  ------------[ cut here ]------------
+>     WARNING: at kernel/softirq.c:159 local_bh_enable+0x32/0x79()
+>     Hardware name: Dimension 2400
+>     Modules linked in: snd_seq_midi snd_emu10k1_synth snd_emux_synth
+> snd_seq_virmidi snd_seq_midi_emul snd_seq_oss snd_seq_midi_event
+> snd_seq snd_pcm_oss snd_mixer_oss bnep rfcomm cryptd aes_i586
+> aes_generic ecb btusb bluetooth rfkill ppdev snd_emu10k1 snd_rawmidi
+> snd_ac97_codec ac97_bus snd_pcm snd_seq_device snd_timer
+> snd_page_alloc dcdbas snd_util_mem parport_pc snd_hwdep snd parport
+> emu10k1_gp rtc_cmos gameport i2c_i801
+>     Pid: 0, comm: swapper Not tainted 3.1.1-gentoo #1
+>     Call Trace:
+>      [<c1022970>] warn_slowpath_common+0x65/0x7a
+>      [<c102699e>] ? local_bh_enable+0x32/0x79
+>      [<c1022994>] warn_slowpath_null+0xf/0x13
+>      [<c102699e>] local_bh_enable+0x32/0x79
+>      [<c134bfd8>] destroy_conntrack+0x7c/0x9b
+>      [<c134890b>] nf_conntrack_destroy+0x1f/0x26
+>      [<c132e3a6>] skb_release_head_state+0x74/0x83
+>      [<c132e286>] __kfree_skb+0xb/0x6b
+>      [<c132e30a>] consume_skb+0x24/0x26
+>      [<c127c925>] b44_poll+0xaa/0x449
+>      [<c1333ca1>] net_rx_action+0x3f/0xea
+>      [<c1026a44>] __do_softirq+0x5f/0xd5
+>      [<c10269e5>] ? local_bh_enable+0x79/0x79
+>      <IRQ>  [<c1026c32>] ? irq_exit+0x34/0x8d
+>      [<c1003628>] ? do_IRQ+0x74/0x87
+>      [<c13f5329>] ? common_interrupt+0x29/0x30
+>      [<c1006e18>] ? default_idle+0x29/0x3e
+>      [<c10015a7>] ? cpu_idle+0x2f/0x5d
+>      [<c13e91c5>] ? rest_init+0x79/0x7b
+>      [<c15c66a9>] ? start_kernel+0x297/0x29c
+>      [<c15c60b0>] ? i386_start_kernel+0xb0/0xb7
+>     ---[ end trace 583f33bb1aa207a9 ]---
+> 
+> 
+> However if I apply the following patch this error does not show up anymore:
+> 
+> 
+> diff --git a/drivers/net/ethernet/broadcom/b44.c
+> b/drivers/net/ethernet/broadcom/b44.c
+> index 4cf835d..3fb66d0 100644
+> --- a/drivers/net/ethernet/broadcom/b44.c
+> +++ b/drivers/net/ethernet/broadcom/b44.c
+> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
+>                                  skb->len,
+>                                  DMA_TO_DEVICE);
+>                 rp->skb = NULL;
+> -               dev_kfree_skb(skb);
+> +               dev_kfree_skb_irq(skb);
 
-Imagine you have a uni-processor system and want to do real-time.
-According to the descriptions in init/Kconfig, you would want to
-select TINY_PREEMPT_RCU. The description is
+I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
+instead, since that will handle the in-interrupt case if that's where
+we're stuck.
 
-	  This option selects the RCU implementation that is designed
-	  for real-time UP systems.  This option greatly reduces the
-	  memory footprint of RCU.
+Can you try this patch (compile-tested only) and see if fixes the issue
+you're seeing:
 
-Without this patch, you cannot choose this option because of the &&
-!PREEMPT_RT_FULL
-So, that is a bug, and makes this patch appropriate for stable.
+commit e36ef2c1a2b6b517ed43254eb89768794a049b1c
+Author: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Date:   Mon Nov 21 15:14:18 2011 -0800
 
-I suppose if you want to be really conservative, you can say we only
-need that third hunk.
-However, this upstream patch, makes these options in v3.0-rt match the
-options in v3.2-rc2-rt3.
+b44: Use dev_kfree_skb_any() in b44_tx()
 
-Furthermore, it doesn't seem like a good idea to me to support
-configurations in a stable branch that are not supported upstream.
+Reported issues when using dev_kfree_skb() on UP systems and
+systems with low numbers of cores.  dev_kfree_skb_any() will
+properly save IRQ state before freeing the skb, depending on
+how b44_tx() is invoked.
 
-Thanks
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+---
 
-John
+ drivers/net/ethernet/broadcom/b44.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+diff --git a/drivers/net/ethernet/broadcom/b44.c
+b/drivers/net/ethernet/broadcom/b44.c
+index 4cf835d..6a7c39b 100644
+--- a/drivers/net/ethernet/broadcom/b44.c
++++ b/drivers/net/ethernet/broadcom/b44.c
+@@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
+ 				 skb->len,
+ 				 DMA_TO_DEVICE);
+ 		rp->skb = NULL;
+-		dev_kfree_skb(skb);
++		dev_kfree_skb_any(skb);
+ 	}
+ 
+ 	bp->tx_cons = cons;
+
