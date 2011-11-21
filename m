@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab1KUTsr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:48:47 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:53430 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755934Ab1KUTsp (ORCPT
+	id S1756625Ab1KUTsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:48:52 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:43556 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756583Ab1KUTst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:48:45 -0500
+	Mon, 21 Nov 2011 14:48:49 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: Stephen Warren <swarren@nvidia.com>,
@@ -16,9 +16,9 @@ Cc: Stephen Warren <swarren@nvidia.com>,
         Dong Aisheng <dong.aisheng@linaro.org>,
         Rajendra Nayak <rajendra.nayak@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/8] ARM: u300: localize GPIO assignments
-Date: Mon, 21 Nov 2011 20:48:06 +0100
-Message-ID: <1321904887-32311-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 4/8] pinctrl: u300-pinmux: register proper GPIO ranges
+Date: Mon, 21 Nov 2011 20:48:27 +0100
+Message-ID: <1321904907-32377-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,278 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-Move the GPIO assignments for the U300 variants down to a local
-header file in the mach-u300 directory. There is no point in
-broadcasting this across the entire kernel.
+This register the actual GPIO ranges used by the COH901XXX GPIO
+driver.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-u300/include/mach/gpio-u300.h |  115 ---------------------------
- arch/arm/mach-u300/mmc.c                    |    2 +-
- arch/arm/mach-u300/u300-gpio.h              |  114 ++++++++++++++++++++++++++
- 3 files changed, 115 insertions(+), 116 deletions(-)
- create mode 100644 arch/arm/mach-u300/u300-gpio.h
+ drivers/pinctrl/pinmux-u300.c |   40 +++++++++++++++++++++++++++++-----------
+ 1 files changed, 29 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-u300/include/mach/gpio-u300.h b/arch/arm/mach-u300/include/mach/gpio-u300.h
-index 0c2b202..bf4c793 100644
---- a/arch/arm/mach-u300/include/mach/gpio-u300.h
-+++ b/arch/arm/mach-u300/include/mach/gpio-u300.h
-@@ -9,121 +9,6 @@
- #ifndef __MACH_U300_GPIO_U300_H
- #define __MACH_U300_GPIO_U300_H
+diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
+index bcf61be..7e89b36 100644
+--- a/drivers/pinctrl/pinmux-u300.c
++++ b/drivers/pinctrl/pinmux-u300.c
+@@ -1019,15 +1019,29 @@ static struct pinmux_ops u300_pmx_ops = {
+ };
  
--/*
-- * Individual pin assignments for the B26/S26. Notice that the
-- * actual usage of these pins depends on the PAD MUX settings, that
-- * is why the same number can potentially appear several times.
-- * In the reference design each pin is only used for one purpose.
-- * These were determined by inspecting the B26/S26 schematic:
-- * 2/1911-ROA 128 1603
-- */
--#ifdef CONFIG_MACH_U300_BS2X
--#define U300_GPIO_PIN_UART_RX		0
--#define U300_GPIO_PIN_UART_TX		1
--#define U300_GPIO_PIN_GPIO02		2  /* Unrouted */
--#define U300_GPIO_PIN_GPIO03		3  /* Unrouted */
--#define U300_GPIO_PIN_CAM_SLEEP		4
--#define U300_GPIO_PIN_CAM_REG_EN	5
--#define U300_GPIO_PIN_GPIO06		6  /* Unrouted */
--#define U300_GPIO_PIN_GPIO07		7  /* Unrouted */
--
--#define U300_GPIO_PIN_GPIO08		8  /* Service point SP2321 */
--#define U300_GPIO_PIN_GPIO09		9  /* Service point SP2322 */
--#define U300_GPIO_PIN_PHFSENSE		10 /* Headphone jack sensing */
--#define U300_GPIO_PIN_MMC_CLKRET	11 /* Clock return from MMC/SD card */
--#define U300_GPIO_PIN_MMC_CD		12 /* MMC Card insertion detection */
--#define U300_GPIO_PIN_FLIPSENSE		13 /* Mechanical flip sensing */
--#define U300_GPIO_PIN_GPIO14		14 /* DSP JTAG Port RTCK */
--#define U300_GPIO_PIN_GPIO15		15 /* Unrouted */
--
--#define U300_GPIO_PIN_GPIO16		16 /* Unrouted */
--#define U300_GPIO_PIN_GPIO17		17 /* Unrouted */
--#define U300_GPIO_PIN_GPIO18		18 /* Unrouted */
--#define U300_GPIO_PIN_GPIO19		19 /* Unrouted */
--#define U300_GPIO_PIN_GPIO20		20 /* Unrouted */
--#define U300_GPIO_PIN_GPIO21		21 /* Unrouted */
--#define U300_GPIO_PIN_GPIO22		22 /* Unrouted */
--#define U300_GPIO_PIN_GPIO23		23 /* Unrouted */
--#endif
--
--/*
-- * Individual pin assignments for the B330/S330 and B365/S365.
-- * Notice that the actual usage of these pins depends on the
-- * PAD MUX settings, that is why the same number can potentially
-- * appear several times. In the reference design each pin is only
-- * used for one purpose. These were determined by inspecting the
-- * S365 schematic.
-- */
--#if defined(CONFIG_MACH_U300_BS330) || defined(CONFIG_MACH_U300_BS365) || \
--    defined(CONFIG_MACH_U300_BS335)
--#define U300_GPIO_PIN_UART_RX		0
--#define U300_GPIO_PIN_UART_TX		1
--#define U300_GPIO_PIN_UART_CTS		2
--#define U300_GPIO_PIN_UART_RTS		3
--#define U300_GPIO_PIN_CAM_MAIN_STANDBY	4 /* Camera MAIN standby */
--#define U300_GPIO_PIN_GPIO05		5 /* Unrouted */
--#define U300_GPIO_PIN_MS_CD		6 /* Memory Stick Card insertion */
--#define U300_GPIO_PIN_GPIO07		7 /* Test point TP2430 */
--
--#define U300_GPIO_PIN_GPIO08		8 /* Test point TP2437 */
--#define U300_GPIO_PIN_GPIO09		9 /* Test point TP2431 */
--#define U300_GPIO_PIN_GPIO10		10 /* Test point TP2432 */
--#define U300_GPIO_PIN_MMC_CLKRET	11 /* Clock return from MMC/SD card */
--#define U300_GPIO_PIN_MMC_CD		12 /* MMC Card insertion detection */
--#define U300_GPIO_PIN_CAM_SUB_STANDBY	13 /* Camera SUB standby */
--#define U300_GPIO_PIN_GPIO14		14 /* Test point TP2436 */
--#define U300_GPIO_PIN_GPIO15		15 /* Unrouted */
--
--#define U300_GPIO_PIN_GPIO16		16 /* Test point TP2438 */
--#define U300_GPIO_PIN_PHFSENSE		17 /* Headphone jack sensing */
--#define U300_GPIO_PIN_GPIO18		18 /* Test point TP2439 */
--#define U300_GPIO_PIN_GPIO19		19 /* Routed somewhere */
--#define U300_GPIO_PIN_GPIO20		20 /* Unrouted */
--#define U300_GPIO_PIN_GPIO21		21 /* Unrouted */
--#define U300_GPIO_PIN_GPIO22		22 /* Unrouted */
--#define U300_GPIO_PIN_GPIO23		23 /* Unrouted */
--
--#define U300_GPIO_PIN_GPIO24		24 /* Unrouted */
--#define U300_GPIO_PIN_GPIO25		25 /* Unrouted */
--#define U300_GPIO_PIN_GPIO26		26 /* Unrouted */
--#define U300_GPIO_PIN_GPIO27		27 /* Unrouted */
--#define U300_GPIO_PIN_GPIO28		28 /* Unrouted */
--#define U300_GPIO_PIN_GPIO29		29 /* Unrouted */
--#define U300_GPIO_PIN_GPIO30		30 /* Unrouted */
--#define U300_GPIO_PIN_GPIO31		31 /* Unrouted */
--
--#define U300_GPIO_PIN_GPIO32		32 /* Unrouted */
--#define U300_GPIO_PIN_GPIO33		33 /* Unrouted */
--#define U300_GPIO_PIN_GPIO34		34 /* Unrouted */
--#define U300_GPIO_PIN_GPIO35		35 /* Unrouted */
--#define U300_GPIO_PIN_GPIO36		36 /* Unrouted */
--#define U300_GPIO_PIN_GPIO37		37 /* Unrouted */
--#define U300_GPIO_PIN_GPIO38		38 /* Unrouted */
--#define U300_GPIO_PIN_GPIO39		39 /* Unrouted */
--
--#ifdef CONFIG_MACH_U300_BS335
--
--#define U300_GPIO_PIN_GPIO40		40 /* Unrouted */
--#define U300_GPIO_PIN_GPIO41		41 /* Unrouted */
--#define U300_GPIO_PIN_GPIO42		42 /* Unrouted */
--#define U300_GPIO_PIN_GPIO43		43 /* Unrouted */
--#define U300_GPIO_PIN_GPIO44		44 /* Unrouted */
--#define U300_GPIO_PIN_GPIO45		45 /* Unrouted */
--#define U300_GPIO_PIN_GPIO46		46 /* Unrouted */
--#define U300_GPIO_PIN_GPIO47		47 /* Unrouted */
--
--#define U300_GPIO_PIN_GPIO48		48 /* Unrouted */
--#define U300_GPIO_PIN_GPIO49		49 /* Unrouted */
--#define U300_GPIO_PIN_GPIO50		50 /* Unrouted */
--#define U300_GPIO_PIN_GPIO51		51 /* Unrouted */
--#define U300_GPIO_PIN_GPIO52		52 /* Unrouted */
--#define U300_GPIO_PIN_GPIO53		53 /* Unrouted */
--#define U300_GPIO_PIN_GPIO54		54 /* Unrouted */
--#define U300_GPIO_PIN_GPIO55		55 /* Unrouted */
--#endif
--
--#endif
--
- /**
-  * enum u300_gpio_variant - the type of U300 GPIO employed
+ /*
+- * FIXME: this will be set to sane values as this driver engulfs
+- * drivers/gpio/gpio-u300.c and we really know this stuff.
++ * GPIO ranges handled by the application-side COH901XXX GPIO controller
++ * Very many pins can be converted into GPIO pins, but we only list those
++ * that are useful in practice to cut down on tables.
   */
-diff --git a/arch/arm/mach-u300/mmc.c b/arch/arm/mach-u300/mmc.c
-index 4d482aa..05abd6a 100644
---- a/arch/arm/mach-u300/mmc.c
-+++ b/arch/arm/mach-u300/mmc.c
-@@ -18,8 +18,8 @@
- #include <linux/slab.h>
- #include <mach/coh901318.h>
- #include <mach/dma_channels.h>
--#include <mach/gpio-u300.h>
+-static struct pinctrl_gpio_range u300_gpio_range = {
+-	.name = "COH901*",
+-	.id = 0,
+-	.base = 0,
+-	.pin_base = 0,
+-	.npins = 64,
++#define U300_GPIO_RANGE(a, b, c) { .name = "COH901XXX", .id = a, .base= a, \
++			.pin_base = b, .npins = c }
++
++static struct pinctrl_gpio_range u300_gpio_ranges[] = {
++	U300_GPIO_RANGE(10, 426, 1),
++	U300_GPIO_RANGE(11, 180, 1),
++	U300_GPIO_RANGE(12, 165, 1), /* MS/MMC card insertion */
++	U300_GPIO_RANGE(13, 179, 1),
++	U300_GPIO_RANGE(14, 178, 1),
++	U300_GPIO_RANGE(16, 194, 1),
++	U300_GPIO_RANGE(17, 193, 1),
++	U300_GPIO_RANGE(18, 192, 1),
++	U300_GPIO_RANGE(19, 191, 1),
++	U300_GPIO_RANGE(20, 186, 1),
++	U300_GPIO_RANGE(21, 185, 1),
++	U300_GPIO_RANGE(22, 184, 1),
++	U300_GPIO_RANGE(23, 183, 1),
++	U300_GPIO_RANGE(24, 182, 1),
++	U300_GPIO_RANGE(25, 181, 1),
+ };
  
-+#include "u300-gpio.h"
- #include "mmc.h"
+ static struct pinctrl_desc u300_pmx_desc = {
+@@ -1042,9 +1056,10 @@ static struct pinctrl_desc u300_pmx_desc = {
  
- static struct mmci_platform_data mmc0_plat_data = {
-diff --git a/arch/arm/mach-u300/u300-gpio.h b/arch/arm/mach-u300/u300-gpio.h
-new file mode 100644
-index 0000000..847dc25
---- /dev/null
-+++ b/arch/arm/mach-u300/u300-gpio.h
-@@ -0,0 +1,114 @@
-+/*
-+ * Individual pin assignments for the B26/S26. Notice that the
-+ * actual usage of these pins depends on the PAD MUX settings, that
-+ * is why the same number can potentially appear several times.
-+ * In the reference design each pin is only used for one purpose.
-+ * These were determined by inspecting the B26/S26 schematic:
-+ * 2/1911-ROA 128 1603
-+ */
-+#ifdef CONFIG_MACH_U300_BS2X
-+#define U300_GPIO_PIN_UART_RX		0
-+#define U300_GPIO_PIN_UART_TX		1
-+#define U300_GPIO_PIN_GPIO02		2  /* Unrouted */
-+#define U300_GPIO_PIN_GPIO03		3  /* Unrouted */
-+#define U300_GPIO_PIN_CAM_SLEEP		4
-+#define U300_GPIO_PIN_CAM_REG_EN	5
-+#define U300_GPIO_PIN_GPIO06		6  /* Unrouted */
-+#define U300_GPIO_PIN_GPIO07		7  /* Unrouted */
-+
-+#define U300_GPIO_PIN_GPIO08		8  /* Service point SP2321 */
-+#define U300_GPIO_PIN_GPIO09		9  /* Service point SP2322 */
-+#define U300_GPIO_PIN_PHFSENSE		10 /* Headphone jack sensing */
-+#define U300_GPIO_PIN_MMC_CLKRET	11 /* Clock return from MMC/SD card */
-+#define U300_GPIO_PIN_MMC_CD		12 /* MMC Card insertion detection */
-+#define U300_GPIO_PIN_FLIPSENSE		13 /* Mechanical flip sensing */
-+#define U300_GPIO_PIN_GPIO14		14 /* DSP JTAG Port RTCK */
-+#define U300_GPIO_PIN_GPIO15		15 /* Unrouted */
-+
-+#define U300_GPIO_PIN_GPIO16		16 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO17		17 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO18		18 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO19		19 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO20		20 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO21		21 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO22		22 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO23		23 /* Unrouted */
-+#endif
-+
-+/*
-+ * Individual pin assignments for the B330/S330 and B365/S365.
-+ * Notice that the actual usage of these pins depends on the
-+ * PAD MUX settings, that is why the same number can potentially
-+ * appear several times. In the reference design each pin is only
-+ * used for one purpose. These were determined by inspecting the
-+ * S365 schematic.
-+ */
-+#if defined(CONFIG_MACH_U300_BS330) || defined(CONFIG_MACH_U300_BS365) || \
-+    defined(CONFIG_MACH_U300_BS335)
-+#define U300_GPIO_PIN_UART_RX		0
-+#define U300_GPIO_PIN_UART_TX		1
-+#define U300_GPIO_PIN_UART_CTS		2
-+#define U300_GPIO_PIN_UART_RTS		3
-+#define U300_GPIO_PIN_CAM_MAIN_STANDBY	4 /* Camera MAIN standby */
-+#define U300_GPIO_PIN_GPIO05		5 /* Unrouted */
-+#define U300_GPIO_PIN_MS_CD		6 /* Memory Stick Card insertion */
-+#define U300_GPIO_PIN_GPIO07		7 /* Test point TP2430 */
-+
-+#define U300_GPIO_PIN_GPIO08		8 /* Test point TP2437 */
-+#define U300_GPIO_PIN_GPIO09		9 /* Test point TP2431 */
-+#define U300_GPIO_PIN_GPIO10		10 /* Test point TP2432 */
-+#define U300_GPIO_PIN_MMC_CLKRET	11 /* Clock return from MMC/SD card */
-+#define U300_GPIO_PIN_MMC_CD		12 /* MMC Card insertion detection */
-+#define U300_GPIO_PIN_CAM_SUB_STANDBY	13 /* Camera SUB standby */
-+#define U300_GPIO_PIN_GPIO14		14 /* Test point TP2436 */
-+#define U300_GPIO_PIN_GPIO15		15 /* Unrouted */
-+
-+#define U300_GPIO_PIN_GPIO16		16 /* Test point TP2438 */
-+#define U300_GPIO_PIN_PHFSENSE		17 /* Headphone jack sensing */
-+#define U300_GPIO_PIN_GPIO18		18 /* Test point TP2439 */
-+#define U300_GPIO_PIN_GPIO19		19 /* Routed somewhere */
-+#define U300_GPIO_PIN_GPIO20		20 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO21		21 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO22		22 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO23		23 /* Unrouted */
-+
-+#define U300_GPIO_PIN_GPIO24		24 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO25		25 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO26		26 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO27		27 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO28		28 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO29		29 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO30		30 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO31		31 /* Unrouted */
-+
-+#define U300_GPIO_PIN_GPIO32		32 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO33		33 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO34		34 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO35		35 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO36		36 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO37		37 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO38		38 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO39		39 /* Unrouted */
-+
-+#ifdef CONFIG_MACH_U300_BS335
-+
-+#define U300_GPIO_PIN_GPIO40		40 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO41		41 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO42		42 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO43		43 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO44		44 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO45		45 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO46		46 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO47		47 /* Unrouted */
-+
-+#define U300_GPIO_PIN_GPIO48		48 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO49		49 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO50		50 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO51		51 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO52		52 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO53		53 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO54		54 /* Unrouted */
-+#define U300_GPIO_PIN_GPIO55		55 /* Unrouted */
-+#endif
-+
-+#endif
+ static int __init u300_pmx_probe(struct platform_device *pdev)
+ {
+-	int ret;
+ 	struct u300_pmx *upmx;
+ 	struct resource *res;
++	int ret;
++	int i;
+ 
+ 	/* Create state holders etc for this driver */
+ 	upmx = devm_kzalloc(&pdev->dev, sizeof(*upmx), GFP_KERNEL);
+@@ -1081,7 +1096,8 @@ static int __init u300_pmx_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* We will handle a range of GPIO pins */
+-	pinctrl_add_gpio_range(upmx->pctl, &u300_gpio_range);
++	for (i = 0; i < ARRAY_SIZE(u300_gpio_ranges); i++)
++		pinctrl_add_gpio_range(upmx->pctl, &u300_gpio_ranges[i]);
+ 
+ 	platform_set_drvdata(pdev, upmx);
+ 
+@@ -1103,8 +1119,10 @@ out_no_resource:
+ static int __exit u300_pmx_remove(struct platform_device *pdev)
+ {
+ 	struct u300_pmx *upmx = platform_get_drvdata(pdev);
++	int i;
+ 
+-	pinctrl_remove_gpio_range(upmx->pctl, &u300_gpio_range);
++	for (i = 0; i < ARRAY_SIZE(u300_gpio_ranges); i++)
++		pinctrl_remove_gpio_range(upmx->pctl, &u300_gpio_ranges[i]);
+ 	pinctrl_unregister(upmx->pctl);
+ 	iounmap(upmx->virtbase);
+ 	release_mem_region(upmx->phybase, upmx->physize);
 -- 
 1.7.3.2
 
