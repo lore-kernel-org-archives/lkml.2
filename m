@@ -1,159 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab1KUWqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:46:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904Ab1KUWqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:46:17 -0500
-Date: Mon, 21 Nov 2011 23:45:45 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] mm: compaction: Determine if dirty pages can be
- migreated without blocking within ->migratepage
-Message-ID: <20111121224545.GC8397@redhat.com>
-References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
- <1321635524-8586-5-git-send-email-mgorman@suse.de>
- <20111118213530.GA6323@redhat.com>
- <20111121111726.GA19415@suse.de>
+	id S1753918Ab1KUWsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:48:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60013 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab1KUWsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 17:48:10 -0500
+Date: Mon, 21 Nov 2011 14:48:07 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: David Daney <ddaney.cavm@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        linux-arch@vger.kernel.org, Robin Holt <holt@sgi.com>
+Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and
+ HPAGE_SIZE
+In-Reply-To: <4ECACF68.3020701@gmail.com>
+Message-ID: <alpine.DEB.2.00.1111211445470.5318@chino.kir.corp.google.com>
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com> <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com> <4ECACF68.3020701@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121111726.GA19415@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 11:17:26AM +0000, Mel Gorman wrote:
-> On Fri, Nov 18, 2011 at 10:35:30PM +0100, Andrea Arcangeli wrote:
-> > folks who wants low latency or no memory overhead should simply
-> > disable compaction.
+On Mon, 21 Nov 2011, David Daney wrote:
+
+> > So, just remove the dummy and dangerous definitions since they are no
+> > longer needed and reveals the correct dependencies.  Tested on
+> > architectures using the definitions with allyesconfig: x86 (even with
+> > thp), hppa, mips, powerpc, s390, sh3, sh4, sparc, and sparc64, and
+> > with defconfig on ia64.
+> > 
 > 
-> That strikes me as being somewhat heavy handed. Compaction should be as
-> low latency as possible.
-
-Yes I was meaning in the very short term. Optimizations are always
-possible :) we've just to sort out some issues (as previous part of
-the email discussed).
-
-> There might be some confusion on what commits were for. Commit
-> [e0887c19: vmscan: limit direct reclaim for higher order allocations]
-> was not about low latency but more about reclaim/compaction reclaiming
-> too much memory. IIRC, Rik's main problem was that there was too much
-> memory free on his machine when THP was enabled.
+> This whole comment strikes me as somewhat dishonest, as at the time David
+> Rientjes wrote it, he knew that there were dependencies on these symbols in
+> the linux-next tree.
 > 
-> > the __GFP_NO_KSWAPD check too should be dropped I think,
-> 
-> Only if we can get rid of the major stalls. I haven't looked closely at
-> your series yet but I'll be searching for a replacment for patch 3 of
-> this series in it.
 
-I reduced the migrate loops, for both async and sync compactions. I
-doubt it'll be very effective but it may help a bit.
+I was referring to Linus' tree at the time the patch was merged, not 
+linux-next.  However, yes, I was aware of the build breakage it caused in 
+Ralf's mips tree and I sent a patch to fix that breakage to the mips 
+folks:
 
-Also this one I also suggest it in the short term.
+	http://marc.info/?l=linux-mips&m=132175788803677
 
-I mean until async migrate can deal with all type of pages (the issues
-you're trying to fix) the __GFP_NO_KSWAPD check would not be reliable
-enough as part of the movable zone wouldn't be movable. It'd defeat
-the reliability from the movable pageblock in compaction context. And
-I doubt a more advanced async compaction will be ok for 3.2, so I
-don't think 3.2 should have the __GFP_NO_KSWAPD and I tend to back
-Andrew's argument. My patch OTOH that only reduces the loops and
-doesn't alter the movable pageblock semantics in compaction context,
-sounds safer. It won't help equally well though.
-
-> Ok. It's not even close to what I was testing but I can move to this
-> test so we're looking at the same thing for allocation success rates.
-
-Note I guess we also need the below. This also should fix by practical
-means Rik's trouble (he was using KVM without O_DIRECT on raw
-blkdev). That explains why he experienced too much reclaim, the VM had
-no choice but to do reclaim because the blkdev cache was not staying
-in the movable pageblocks preventing compaction effectiveness (and
-likely they used lots of ram).
-
-We may still have to limit reclaim but not like the patch that went
-upstream implements. When compaction_suitable is happy about the
-wmarks, the compaction loop isn't still as reliable as it could be in
-the movable zone, and doing more reclaim helps a lot, the more free
-pages the more compaction goes ahead and has a change to compact more
-stuff before the two scans meets in the middle. With Rik we thought
-about a way to do just a no-swapping reclaim to shrink caches like
-slab.
-
-I mean the cp /dev/sda /dev/null scenario that happens without the
-below patch can still materialize in a fileserver with very large slab
-caches. We still have to invoke reclaim, maybe not too heavy, we
-shouldn't end up swapping, basically it should be a light reclaim (the
-opposite of lumpy reclaim). But with the current check upstream
-reclaim practically won't run at all if compaction fails, so it's
-normal the success rate goes down a lot. (btw I didn't verify yet at
-runtime if migration succeeds on the blkdev pagecache)
-
-====
-mm: block_dev pagecache is movable
-
-Allow block_dev pagecache to go in movable pageblocks. If compaction
-fails reclaim is invoked. So with raw devices being used without
-O_DIRECT, reclaim would run too much and because the cache pages would
-get mixed with slab and other not movable entities, the compaction
-reliability would decrease.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- fs/block_dev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index b07f1da..f7111c4 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -565,7 +565,7 @@ struct block_device *bdget(dev_t dev)
- 		inode->i_rdev = dev;
- 		inode->i_bdev = bdev;
- 		inode->i_data.a_ops = &def_blk_aops;
--		mapping_set_gfp_mask(&inode->i_data, GFP_USER);
-+		mapping_set_gfp_mask(&inode->i_data, GFP_USER|__GFP_MOVABLE);
- 		inode->i_data.backing_dev_info = &default_backing_dev_info;
- 		spin_lock(&bdev_lock);
- 		list_add(&bdev->bd_list, &all_bdevs);
-===
-
-
-> +		if (!trylock_buffer(bh)) {
-> +			/*
-> +			 * We failed to lock the buffer and cannot stall in
-> +			 * async migration. Release the taken locks
-> +			 */
-> +			struct buffer_head *failed_bh = bh;
-> +			put_bh(failed_bh);
-> +			bh = head;
-> +			while (bh != failed_bh) {
-> +				unlock_buffer(bh);
-> +				put_bh(bh);
-> +				bh = bh->b_this_page;
-> +			}
-> +			return false;
-
-Ok!
-
-> +	/* In the async case, migrate_page_move_mapping locked the buffers
-> +	 * with an IRQ-safe spinlock held. In the sync case, the buffers
-> +	 * need to be locked now
-> +	 */
-> +	if (sync)
-> +		BUG_ON(!buffer_migrate_lock_buffers(head, sync));
-
-I seem to recall Andrew said we're ok with this now, but I generally
-still prefer stuff that shouldn't be optimized away to be outside of
-the BUG checks. No big deal.
-
-Patch looks better now thanks, I'll try to do a closer review tomorrow
-and test it.
-
-Thanks!
+Thanks.
