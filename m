@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1KUJBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 04:01:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56944 "EHLO mga02.intel.com"
+	id S1755555Ab1KUJCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:02:05 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:63659 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755032Ab1KUJBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 04:01:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="78279617"
-Subject: Re: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-In-Reply-To: <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1318237851.27949.190.camel@debian>
-	 <alpine.DEB.2.00.1110101026080.16264@router.home>
-	 <1318324774.27949.693.camel@debian>
-	 <alpine.DEB.2.00.1110110910480.3388@router.home>
-	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
-	 <alpine.DEB.2.00.1110120910540.26610@router.home>
-	 <1318908091.23426.52.camel@debian>
-	 <alpine.DEB.2.00.1110180932330.687@router.home>
-	 <1319016218.23426.104.camel@debian>
-	 <alpine.DEB.2.00.1110191033480.24001@router.home>
-	 <1319078687.23426.146.camel@debian>
-	 <1319087281.8416.45.camel@edumazet-laptop>
-	 <1319095929.23426.180.camel@debian>
-	 <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Nov 2011 17:00:51 +0800
-Message-ID: <1321866051.30341.565.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1755054Ab1KUJCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 04:02:03 -0500
+Date: Mon, 21 Nov 2011 10:01:40 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: sfr@canb.auug.org.au
+Cc: greg@kroah.com, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] debugfs: bugfix: include <linux/io.h> in file.c
+Message-ID: <20111121090140.GA17821@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20111121125703.fbb955c4fc468ba176086168@canb.auug.org.au>
+References: <20111121125703.fbb955c4fc468ba176086168@canb.auug.org.au> 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 16:38 +0800, Eric Dumazet wrote:
-> Le jeudi 20 octobre 2011 à 15:32 +0800, Alex,Shi a écrit :
-> > percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-> > for further code clean up.
-> > 
-> > And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-> > performance since __this_cpu_xxx has no redundant preempt_disable()
-> > 
-> > Signed-off-by: Alex Shi <alex.shi@intel.com>
-> > ---
-> >  net/netfilter/xt_TEE.c |   12 ++++++------
-> >  net/socket.c           |    4 ++--
-> >  2 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> 
-> Thanks !
+The regs32 machinery uses readl. I forgot the mandatory include
+and the code was not compiling on all archs.
 
-Anyone like to pick up this patch? or more comments for this? 
-> 
-> 
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+---
 
+> After merging the driver-core tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> fs/debugfs/file.c: In function 'debugfs_print_regs32':
+> fs/debugfs/file.c:560:7: error: implicit declaration of function 'readl' [-
+> Werror=implicit-function-declaration]
 
+I'm learning the lesson. I'll be more careful next time.
+Sorry for your patience.
+
+/alessandro
+
+ fs/debugfs/file.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index fc98ec9..e0a3a59 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -19,6 +19,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/namei.h>
+ #include <linux/debugfs.h>
++#include <linux/io.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+-- 
+1.6.0.2
