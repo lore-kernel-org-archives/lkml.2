@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1KUXvy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:51:54 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47900 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab1KUXvw convert rfc822-to-8bit (ORCPT
+	id S1754322Ab1KUXxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:53:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59249 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab1KUXxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:51:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321919169.20742.30.camel@frodo>
-References: <1321707028-12487-1-git-send-email-jkacur@redhat.com>
-	<1321707028-12487-4-git-send-email-jkacur@redhat.com>
-	<1321891800.20742.11.camel@frodo>
-	<CAONaPpGz3NoKs9TfDHgNR5YcnfX-j0AT_bVttxPYXLRq5Y=SSg@mail.gmail.com>
-	<1321919169.20742.30.camel@frodo>
-Date: Tue, 22 Nov 2011 00:51:51 +0100
-X-Google-Sender-Auth: 23kOZZvZ2Zf872krCrFv1LVPsHQ
-Message-ID: <CAONaPpGf0Xw80mStLtx4pMfvOxKoBH0MNyrHwUyp9d4=EdAFPw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] rcu: Drive configuration directly from SMP and PREEMPT
-From: John Kacur <jkacur@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Nov 2011 18:53:32 -0500
+Date: Mon, 21 Nov 2011 15:53:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>, linux-arch@vger.kernel.org,
+        Robin Holt <holt@sgi.com>
+Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and
+ HPAGE_SIZE
+Message-Id: <20111121155331.a1726ffe.akpm@linux-foundation.org>
+In-Reply-To: <4ECAE314.9060209@gmail.com>
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
+	<alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com>
+	<4ECACF68.3020701@gmail.com>
+	<CA+55aFwZxqHfEOemj+OJNKCj2toqGf3rkK-9iuS39L7iZsoH1Q@mail.gmail.com>
+	<4ECAE314.9060209@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 12:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-11-22 at 00:18 +0100, John Kacur wrote:
->
->> Imagine you have a uni-processor system and want to do real-time.
->> According to the descriptions in init/Kconfig, you would want to
->> select TINY_PREEMPT_RCU. The description is
->>
->>         This option selects the RCU implementation that is designed
->>         for real-time UP systems.  This option greatly reduces the
->>         memory footprint of RCU.
->>
->> Without this patch, you cannot choose this option because of the &&
->> !PREEMPT_RT_FULL
->> So, that is a bug, and makes this patch appropriate for stable.
->
->
-> 3.0-rt never supported rcutiny, which means adding it now is not a bug
-> fix but a new feature. Sure, it may have been a mistake that Thomas kept
-> rcutiny out for 3.0-rt, but because 3.0-rt never supported it, and
-> 3.0-rt can fully support rcutree with !SMP, there is no bug to be fixed
-> here. You're adding a new feature to stable, not fixing someones
-> problem.
->
->>
->> I suppose if you want to be really conservative, you can say we only
->> need that third hunk.
->> However, this upstream patch, makes these options in v3.0-rt match the
->> options in v3.2-rc2-rt3.
->>
->> Furthermore, it doesn't seem like a good idea to me to support
->> configurations in a stable branch that are not supported upstream.
->
-> No, upstream changed the game, in which the configuration can't be
-> supported. But the stable release can fully support this configuration.
-> there's no reason to this change just because the latest tree can't
-> support it. It's like we have to deprecate everything in stable that has
-> been deprecated in upstream.
->
-> Stable is not a mirror of upstream, it's a snapshot in time. Only if we
-> discover something that crashes, or causes huge latencies do we want to
-> update stable. Not when we realized that a feature wasn't supported by
-> -rt.
->
+On Mon, 21 Nov 2011 15:47:32 -0800
+David Daney <ddaney.cavm@gmail.com> wrote:
 
-Okay, I get that and I agree with you - will try to be more careful
-about that in the future. However, in this particular case, I don't
-think there is a viable rcu choice for UP real-time. Perhaps we can
-revisit this again in the future if anyone cares about it.
+> Just to expand on this lovely topic...
+> 
+> On 11/21/2011 02:43 PM, Linus Torvalds wrote:
+> > On Mon, Nov 21, 2011 at 2:23 PM, David Daney<ddaney.cavm@gmail.com>  wrote:
+> >>
+> >> This whole comment strikes me as somewhat dishonest, as at the time David
+> >> Rientjes wrote it, he knew that there were dependencies on these symbols in
+> >> the linux-next tree.
+> >>
+> >> Now we can add these:
+> >> +#define HPAGE_SHIFT    ({ BUG(); 0; })
+> >> +#define HPAGE_SIZE     ({ BUG(); 0; })
+> >> +#define HPAGE_MASK     ({ BUG(); 0; })
+> >
+> > Hell no.
+> >
+> > We don't do run-time BUG() things. No way, no how.
+> >
+> 
+> These symbols are on dead code paths, so they are eliminated by the 
+> compiler's Dead Code Elimination (DCE) optimizations, and the BUG() code 
+> never gets emitted to the final executable.
+> 
+> I agree that it is not the best thing to do, but given the current state 
+> of the art in build bug macros, it is the best we could have done.
+> 
+> What I think we need instead, and for which I will send a patch soon, is 
+> something like this:
+> 
+> extern void you_are_screwed() __attribute__ ((error("BUILD_BUG_ON_USED 
+> failed")));
+> #define BUILD_BUG_ON_USED() you_are_screwed()
+> #define HPAGE_SHIFT    ({ BUILD_BUG_ON_USED(); 0; })
+> 
+> This allows us to use the symbols in straight line C code without a ton 
+> of ugly #ifdefery, but give us build time error checking.
 
-Thanks
+The way we usually handle that is to emit a call to a
+this_function_does_not_exist(), so it fails at link time.
+
+I guess we should do that to all those follow_hugetlb_page() and
+friends.
+
+gcc has had issues at times where it incorrectly emits references to
+this_function_does_not_exist(), but that hasn't happened in a couple of
+years as far as I know.
+
