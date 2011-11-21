@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab1KUWiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:38:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50439 "EHLO ogre.sisk.pl"
+	id S1753333Ab1KUWma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:42:30 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53851 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab1KUWiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:38:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v4] PM / Memory-hotplug: Avoid task freezing failures
-Date: Mon, 21 Nov 2011 23:41:39 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, pavel@ucw.cz,
-        lenb@kernel.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        Chen Gong <gong.chen@linux.intel.com>
-References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <4ECA94A6.90500@linux.vnet.ibm.com> <20111121182319.GG15314@google.com>
-In-Reply-To: <20111121182319.GG15314@google.com>
+	id S1750904Ab1KUWm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 17:42:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,549,1315206000"; 
+   d="scan'208";a="39892885"
+Message-ID: <4ECAD3D4.4070306@intel.com>
+Date: Mon, 21 Nov 2011 14:42:28 -0800
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Stefan Priebe <s.priebe@profihost.ag>
+CC: Stable Tree <stable@kernel.org>, stable@vger.kernel.org,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Jesse Brandeburg <jesse.brandeburg@intel.com> Bruce Allan" 
+	<bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        John Ronciak <john.ronciak@intel.com>
+Subject: Re: Kernel v3.0.8 igb driver dies when pulling network cable
+References: <4ECA4362.2050307@profihost.ag> <4ECA884C.5010706@intel.com> <4ECA936E.8060301@profihost.ag>
+In-Reply-To: <4ECA936E.8060301@profihost.ag>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111212341.39359.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 21, 2011, Tejun Heo wrote:
-> On Mon, Nov 21, 2011 at 11:42:54PM +0530, Srivatsa S. Bhat wrote:
-> > The lock_system_sleep() function is used in the memory hotplug code at
-> > several places in order to implement mutual exclusion with hibernation.
-> > However, this function tries to acquire the 'pm_mutex' lock using
-> > mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
-> > get the lock. This would lead to task freezing failures and hence
-> > hibernation failure as a consequence, even though the hibernation call path
-> > successfully acquired the lock.
-> > 
-> > But it is to be noted that, since this task tries to acquire pm_mutex, if it
-> > blocks due to this, we are *100% sure* that this task is not going to run
-> > as long as hibernation sequence is in progress, since hibernation releases
-> > 'pm_mutex' only at the very end, when everything is done.
-> > And this means, this task is going to be anyway blocked for much more longer
-> > than what the freezer intends to achieve; which means, freezing and thawing
-> > doesn't really make any difference to this task!
-> > 
-> > So, to fix freezing failures, we just ask the freezer to skip freezing this
-> > task, since it is already "frozen enough".
-> > 
-> > But instead of calling freezer_do_not_count() and freezer_count() as it is,
-> > we use only the relevant parts of those functions, because restrictions
-> > such as 'the task should be a userspace one' etc., might not be relevant in
-> > this scenario.
-> > 
-> > v4: Redesigned the whole fix, to ask the freezer to skip freezing the task
-> >     which is blocked trying to acquire 'pm_mutex' lock.
-> > 
-> > v3: Tejun suggested avoiding busy-looping by adding an msleep() since
-> >     it is not guaranteed that we will get frozen immediately.
-> > 
-> > v2: Tejun pointed problems with using mutex_lock_interruptible() in a
-> >     while loop, when signals not related to freezing are involved.
-> >     So, replaced it with mutex_trylock().
-> > 
-> > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks a lot. :)
+On 11/21/2011 10:07 AM, Stefan Priebe wrote:
+>> You are going to need to clarify some things since as far as I know we
+>> never released a v3.0.8 driver, and the kernel in the bug below is a
+>> version 2.6.40.8 which sounds more like a modified and possibly
+>> backported Linux kernel since as far as I know Linus never released a
+>> 2.6.40 kernel version.
+> Sorry that my description was so inaccurate. I'm talking about a
+> vanilla v3.0.8 linux kernel. Just renamed to 2.6.40.8.
+>
+>> In order to be able to assist you we will need some additional
+>> information.  What Linux distro are your running?  Do you have the
+>> latest updates from them?  Also have you tried running the latest
+>> out-of-tree driver we provide at e1000.sf.net in order to verify if the
+>> same issue occurs with that driver?
+> Linux Distri is Debian Lenny but we're running a self compiled vanilla
+> 3.0.X kernel. I haven't tried to use the up2date e1000.sf.net driver
+> as 3.0 is a long time supported kernel by greg - so all needed fixes
+> should be backported or at least send to stable@ so that greg can have
+> a look at them.
+>
+> Thanks!
+>
+> Stefan
+Stefan,
 
-Applied to linux-pm/linux-next.
+It would be useful if you could try the latest driver from e1000.sf.net
+just to verify  if this is a bug in the upstream kernel or if it is also
+present in our e1000.sf.net.driver.  This way we can figure out if this
+is an issue where a patch wasn't pushed into the stable kernel or if it
+is an issue that still exists in our latest release.
+
+Also could you provide us with the part number you are currently using. 
+If you could provide us with the device ID for the part via lspci we can
+start narrowing down the root cause for the issue as currently we don't
+have any information about what hardware you are experiencing this issue on.
 
 Thanks,
-Rafael
+
+Alex
