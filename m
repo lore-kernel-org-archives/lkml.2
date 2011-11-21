@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab1KUSKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:10:45 -0500
-Received: from home.keithp.com ([63.227.221.253]:45320 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab1KUSKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:10:44 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Mack <zonque@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, harald@redhat.com,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Fix invalid backpanel values for GEN3 or older chips
-In-Reply-To: <s5hd3cn3unp.wl%tiwai@suse.de>
-References: <s5hlirgm1kg.wl%tiwai@suse.de> <yunsjlnl1f6.fsf@aiko.keithp.com> <s5hlirelndd.wl%tiwai@suse.de> <861ut5mdvn.fsf@sumi.keithp.com> <s5hr5144ecu.wl%tiwai@suse.de> <867h2wklln.fsf@sumi.keithp.com> <s5hd3cn3unp.wl%tiwai@suse.de>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 21 Nov 2011 10:10:38 -0800
-Message-ID: <86zkfpgxcx.fsf@sumi.keithp.com>
+	id S1754724Ab1KUSLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:11:03 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58723 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab1KUSLC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:11:02 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+In-Reply-To: <4EC77605.5090605@gmail.com>
+References: <1321644698-13677-1-git-send-email-keescook@chromium.org>
+	<1321644698-13677-3-git-send-email-keescook@chromium.org>
+	<4EC77605.5090605@gmail.com>
+Date: Mon, 21 Nov 2011 10:11:00 -0800
+X-Google-Sender-Auth: 8npzLKY3FCum-ssBOLhj1JEPYX0
+Message-ID: <CAGXu5j+Dh2jbAymcreOwX_T6=7FA8bOuwUFnwshdsVonAD5_EA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ramoops: remove module parameters
+From: Kees Cook <keescook@chromium.org>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Sat, Nov 19, 2011 at 1:25 AM, Marco Stornelli
+<marco.stornelli@gmail.com> wrote:
+> Il 18/11/2011 20:31, Kees Cook ha scritto:
+>>
+>> The ramoops driver is intended to be used with platforms that define
+>> persistent memory regions. If memory regions were configurable with
+>> module parameters, it would be possible to read some RAM regions via
+>> the pstore interface without access to /dev/mem (which would result
+>> in a loss of kernel memory privacy when a system is built with
+>> STRICT_DEVMEM), so remove this ability completely.
+>>
+>
+> I don't like it very much. The loss of module parameters give us less
+> flexibility. The main goal of this driver is debug, so I think it should be
+> fast to use. I mean it's not more possible reserve a memory region and load
+> the module "on-the-fly", it needs a platform device, it's ok but I think
+> it's a little bit more complicated, (without talking about platforms without
+> a device tree source).
+> I don't understand the problem of strict devmem. We shouldn't use kernel
+> memory region but only reserved ones and the driver doesn't use the
+> request_mem_region_exclusive, am I wrong?
 
-On Sun, 20 Nov 2011 12:22:50 +0100, Takashi Iwai <tiwai@suse.de> wrote:
+Hmmm, maybe I'm reading it backwards, but I think we want it to use
+..._exclusive().
 
-> So, writing bit-0 caused a problem, as it seems.
+int devmem_is_allowed(unsigned long pagenr)
+{
+        if (pagenr <= 256)
+                return 1;
+        if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
+                return 0;
+        if (!page_is_ram(pagenr))
+                return 1;
+        return 0;
+}
 
-Thanks. I've noted that in the patch message.
+If the region is exclusive, access is not allowed (return 0). ramoops
+currently uses request_mem_region() instead of
+request_mem_region_exclusive(). If we made that switch, I think I'd be
+happy. Would this create some problem I'm not seeing?
 
-=2D-=20
-keith.packard@intel.com
+-Kees
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTsqUHjYtFsjWk68qAQgmGA//VAZYhC5pcDk73iU32uSQuKPnt36yg8T6
-z671LTDETr1LC+lPRsW2xnhzPz1di5C+i+nQGdAujUCtSo9tIJLccJDtgYHuAkwO
-cbs9ik4Xy1sLh7t4L+aub8YGcXZgTxbn5rxtr5bB+8RZ/xrOfA6Y6rKXQZhn/iKH
-CIPGfIFffomNE+Ybt7g75k2wU00qiC9PJNVFPqgG2ovRtm9BkcHWA913VCLGMkFl
-f0c3TSg/euFsK+296YJxPc1xIgel9vUNr1/ejn5fIV6i7QEliO17Fe4s8xfHrPS4
-PxJikq5LhUkKF6BtrDD6+M/t4KJWdsdm/VbKf4CwVLEuXpLovty3S6VENlUVo7sp
-8K2ylK4dLSYMS6qi5+2SCNjxHevo3glLqBaUxw76KRI+FCyqO9JzMEHbXmk4v4Ot
-LRKeG6qvX3bmzrc2sQIjmdiUD0kSZiNpvoZddieFevmxpMIsaJ4sEzXBdhWLlJn+
-8J2fgsLk+j0/zQ8bU6fznGlSrivO1VdyZddGsal2Z+Wj9SSHogCmjtzZPlkXn0x7
-duavKbopZL6YnMfcpM7aDGPR7yi+8+m/pWFMfj78rqMYZzsAqJ6RHRqsQTZHuH9C
-UCzpVveyg6XAmaZJO4rdtft9PCxhcEz/U1zdy2eCCM/CSeaK0LAYaTso+/PomqGI
-1/gbgsvO+I8=
-=HTsT
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+Kees Cook
+ChromeOS Security
