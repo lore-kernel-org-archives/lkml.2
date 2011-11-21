@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab1KUN5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:57:51 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42531 "EHLO
+	id S1755428Ab1KUN6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:58:15 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64006 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985Ab1KUN42 (ORCPT
+	with ESMTP id S1753417Ab1KUN4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:56:28 -0500
+	Mon, 21 Nov 2011 08:56:23 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv1 5/9] xshm: genio dummy driver
-Date: Mon, 21 Nov 2011 14:56:00 +0100
-Message-Id: <1321883764-1958-6-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [RFCv1 2/9] xshm: Channel config definitions for ST-E M7400 driver.
+Date: Mon, 21 Nov 2011 14:55:57 +0100
+Message-Id: <1321883764-1958-3-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -24,82 +24,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dummy driver for genio. A proper driver for Nova A9540 will be
-contributed at a later stage.
+Netlink parameters used for configuring channels from user space.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/xshm/genio_dummy.c |   61 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 61 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xshm/genio_dummy.c
+ include/linux/xshm/xshm_netlink.h |   94 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 94 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/xshm/xshm_netlink.h
 
-diff --git a/drivers/xshm/genio_dummy.c b/drivers/xshm/genio_dummy.c
+diff --git a/include/linux/xshm/xshm_netlink.h b/include/linux/xshm/xshm_netlink.h
 new file mode 100644
-index 0000000..8ef3615
+index 0000000..d7ff6b7
 --- /dev/null
-+++ b/drivers/xshm/genio_dummy.c
-@@ -0,0 +1,61 @@
++++ b/include/linux/xshm/xshm_netlink.h
+@@ -0,0 +1,94 @@
 +/*
-+ * Copyright (C) ST-Ericsson AB 2010
-+ * Author:	Sjur Brendeland / sjur.brandeland@stericsson.com
++ * Copyright (C) ST-Ericsson AB 2011
++ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
-+/* This is a dummy implementation of GENIO */
++#ifndef XSHM_NL_H_
++#define XSHM_NL_H_
 +
-+#include <linux/xshm/genio.h>
-+int genio_subscribe(int bit, void (*bit_set_cb)(void *data), void *data)
-+{
-+	return 0;
-+}
++#define XSHM_PROTO_VERSION 1
++#define XSHM_PROTO_SUB_VERSION 0
++#define XSHM_NETLINK_VERSION 1
++/**
++ * enum XSHM_COMMANDS - Attributes used for configuring XSHM device.
++ *
++ * @XSHM_C_ADD_STREAM_CHANNEL: Adds a Stream Channel.
++ * This will cause an instance of XSHM-CHR to be created.
++ * @XSHM_C_ADD_PACKET_CHANNEL: Adds a Packet Channel.
++ * This will cause an instance of CAIF-SHM to be created.
++ * @XSHM_C_COMMIT: formats and write Channel configuration data to
++ *	Shared Memory.
++ * @XSHM_C_SET_ADDR: Writes the TOC address to GENO register.
++ * @XSHM_C_REGISTER:  Initiates registration of the channel devices.
++ *	This will cause xshm - character devices or
++ *	CAIF network instances to be created.
++ * @XSHM_C_RESET:  Reset the configuration data and removes the
++ *	platform devices and their associated channel configuration.
++ *	ipc_ready and caif_ready is set to false.
++ *
++ * A normal sequence of events is: [XSHM_C_RESET], [XSHM_C_ADD_X_CHANNEL],
++ *	XSHM_C_COMMIT, XSHM_C_REGISTER, XSHM_C_SET_ADDR.
++ */
++enum XSHM_COMMANDS {
++	XSHM_C_ADD_STREAM_CHANNEL = 1,
++	XSHM_C_ADD_PACKET_CHANNEL,
++	XSHM_C_RESET,
++	XSHM_C_SET_ADDR,
++	XSHM_C_COMMIT,
++	XSHM_C_REGISTER,
++	__XSHM_C_MAX
++};
 +
-+int genio_unsubscribe(int bit)
-+{
-+	return 0;
-+}
++/**
++ * enum XSHM_ATTRIBUTES - Attributes used for configuring XSHM device.
++ * @XSHM_A_VERSION: Version of XSHM netlink protocol. Type NLA_U8
++ * @XSHM_A_SUB_VERSION: Sub-version of XSHM netlink protocol. Type NLA_U8
++ * @XSHM_A_NAME: Name of the channel, max 15 characters. Type NLA_NUL_STRING
++ * @XSHM_A_EXCL_GROUP: Devices may be part of a group. Devices from the
++ *	same group are allowed to be open simultaneously,
++ *	but devices from different groups cannot be opened
++ *	at the same time. Type NLA_U8.
++ * @XSHM_A_RX_CHANNEL: The RX direction attributes. Type NLA_NESTED.
++ *	Each channel may contain the attributes - XSHM_A_CHANNEL_SIZE,
++ *	XSHM_A_CHANNEL_BUFFERS, XSHM_A_ALIGNMENT, XSHM_A_MTU.
++ *
++ * @XSHM_A_TX_CHANNEL: The TX direction attributes. Type NLA_NESTED.
++ *
++ * @XSHM_A_CHANNEL_SIZE: Size of the data area for a channel. Specified
++ *	for RX, TX. Type NLA_U32,
++ * @XSHM_A_CHANNEL_BUFFERS: Numer of buffers for a packet channel.
++ *	This attribute is only used for packet channels.  Specified for RX, TX.
++ *	Type NLA_U32,
++ * @XSHM_A_ALIGNMENT: Alignment for each packet in a buffer. This attribute
++ *	 is only used for packet channels.  Specified for RX, TX.Type NLA_U8,
++ * @XSHM_A_MTU: Maximum Transfer Unit for packets in a buffer.
++ *	This is only appplicable for packet channels.
++ *	Specified for RX, TX.Type NLA_U16,
++ * @XSHM_A_PACKETS: Maximum number of packets in a buffer. Type NLA_U8
++ * @XSHM_A_PRIORITY: Priority of the channel, legal range is 0-7 where
++ *	0 is lowest priority. Type NLA_U8.
++ * @XSHM_A_LATENCY: Latency for channel, value:0 means low latency
++ *	 and low bandwidth,
++ *	 value 1 means high latency and high bandwidth.
++ */
++enum XSHM_ATTRIBUTES {
++	__XSHM_A_FLAGS = 1,		/* Test flags: NLA_U32 */
++	XSHM_A_VERSION,
++	XSHM_A_SUB_VERSION,
++	XSHM_A_NAME,
++	XSHM_A_EXCL_GROUP,
++	XSHM_A_RX_CHANNEL,
++	XSHM_A_TX_CHANNEL,
++	XSHM_A_CHANNEL_SIZE,
++	XSHM_A_CHANNEL_BUFFERS,
++	XSHM_A_ALIGNMENT,
++	XSHM_A_MTU,
++	XSHM_A_PACKETS,
++	XSHM_A_PRIORITY,
++	XSHM_A_LATENCY,
++	__XSHM_A_MAX,
++};
++#define XSHM_A_MAX (__XSHM_A_MAX - 1)
 +
-+int genio_set_bit(int bit)
-+{
-+	return 0;
-+}
-+
-+int genio_init(void)
-+{
-+	return 0;
-+}
-+
-+void genio_exit(void)
-+{
-+}
-+
-+int genio_reset(void)
-+{
-+	return 0;
-+}
-+
-+int genio_subscribe_caif_ready(void (*caif_ready_cb) (bool ready))
-+{
-+	return 0;
-+}
-+
-+int genio_set_shm_addr(u32 addr, void (*ipc_ready_cb) (void))
-+{
-+	return 0;
-+}
-+
-+int genio_bit_alloc(u32 setter_mask, u32 getter_mask)
-+{
-+	return 0;
-+}
-+
-+void genio_register_errhandler(void (*errhandler)(int errno))
-+{
-+}
-+
-+int genio_power_req(int state)
-+{
-+	return 0;
-+}
++#endif /* XSHM_NL_H_ */
 -- 
 1.7.1
 
