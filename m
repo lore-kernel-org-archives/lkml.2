@@ -1,112 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab1KUC4c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 21:56:32 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:46516 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755044Ab1KUC4b (ORCPT
+	id S1755249Ab1KUDD1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 22:03:27 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:60302 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab1KUDDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 21:56:31 -0500
-Date: Sun, 20 Nov 2011 21:56:30 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 5] PM: Update comments describing device power management
- callbacks
-In-Reply-To: <201111210038.41490.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1111202139080.26314-100000@netrider.rowland.org>
+	Sun, 20 Nov 2011 22:03:25 -0500
+Date: Mon, 21 Nov 2011 12:03:12 +0900
+From: Norbert Preining <preining@logic.at>
+To: Richard Yao <ryao@cs.stonybrook.edu>
+Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: iwlagn is getting very shaky
+Message-ID: <20111121030312.GH32505@gamma.logic.tuwien.ac.at>
+References: <20111102031345.GA10851@gamma.logic.tuwien.ac.at> <1320204101.31823.140.camel@wwguy-huron> <20111104045817.GA25778@gamma.logic.tuwien.ac.at> <20111107123812.GB23508@gamma.logic.tuwien.ac.at> <1320709047.31823.188.camel@wwguy-huron> <20111108043233.GA21171@gamma.logic.tuwien.ac.at> <CANUX_P0Q0wve4D6fZPsMv2Zw=02gb9u+3C2cjRv7UAmWqXnjzw@mail.gmail.com> <CANUX_P06ww42p6N1k_P-Y1KMKOd1QgR_DxVWe19qtsEX2rfWpw@mail.gmail.com> <20111109051152.GA16006@gamma.logic.tuwien.ac.at> <CABDyM6SGveC+65WRKDBEgTDLo8EzSb8RBUBHynssSW5-fWB0bA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABDyM6SGveC+65WRKDBEgTDLo8EzSb8RBUBHynssSW5-fWB0bA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+On Mi, 16 Nov 2011, Richard Yao wrote:
+> Would your university by any chance be using wireless network hardware
+> from Aruba Networks?
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> The comments describing device power management callbacks in
-> include/pm.h are outdated and somewhat confusing, so make them
-> reflect the reality more accurately.
+No, I its Cisco.
 
-A few comments below...
+Best wishes
 
->   * @freeze: Hibernation-specific, executed before creating a hibernation image.
-> - *	Quiesce operations so that a consistent image can be created, but do NOT
-> - *	otherwise put the device into a low power device state and do NOT emit
-> - *	system wakeup events.  Save in main memory the device settings to be
-> - *	used by @restore() during the subsequent resume from hibernation or by
-> - *	the subsequent @thaw(), if the creation of the image or the restoration
-> - *	of main memory contents from it fails.
-> + *	Analogous to @suspend(), but it should not enable the device to signal
-> + *	wakeup events.  The majority of subsystems (with the notable exception
-> + *	of the PCI bus type) expect the driver-level @freeze() to save the
-> + *	device settings in memory to be used by @restore() during the subsequent
-> + *	resume from hibernation.
-> + *	Subsystem-level @freeze() is executed for all devices after invoking
-> + *	subsystem-level @prepare() for all of them.
-
-The first three lines you removed contain some important points which I
-think should be retained.
-
-> @@ -174,29 +198,32 @@ typedef struct pm_message {
->   * their children.
->   *
->   * It is allowed to unregister devices while the above callbacks are being
-> - * executed.  However, it is not allowed to unregister a device from within any
-> - * of its own callbacks.
-> + * executed.  However, it is NOT allowed to unregister a device from within any
-> + * of its driver's callbacks.
-
-Please be a little more precise here.  If driver D manages two devices,
-A and B, then D _is_ allowed to unregister A from within a callback for
-B (except if A is an ancestor of B or something like that).  It's just
-not allowed to unregister B from within a callback for B.
-
-> - * There also are the following callbacks related to run-time power management
-> - * of devices:
-> + * There also are callbacks related to runtime power management of devices.
-> + * Again, these callbacks are executed by the PM core only for subsystems
-> + * (PM domains, device types, classes and bus types) and the subsystem-level
-> + * callbacks are supposed to invoke the driver callbacks.  Moreover, the exact
-> + * actions to be performed by a device driver's callbacks generally depend on
-> + * the platform and subsystem the device belongs to.
->   *
->   * @runtime_suspend: Prepare the device for a condition in which it won't be
->   *	able to communicate with the CPU(s) and RAM due to power management.
-> - *	This need not mean that the device should be put into a low power state.
-> + *	This need not mean that the device should be put into a low-power state.
->   *	For example, if the device is behind a link which is about to be turned
->   *	off, the device may remain at full power.  If the device does go to low
-> - *	power and is capable of generating run-time wake-up events, remote
-> - *	wake-up (i.e., a hardware mechanism allowing the device to request a
-> - *	change of its power state via a wake-up event, such as PCI PME) should
-> - *	be enabled for it.
-> + *	power and is capable of generating runtime wakeup events, remote wakeup
-> + *	(i.e., a hardware mechanism allowing the device to request a change of
-> + *	its power state via an interrupt) should be enabled for it.
->   *
->   * @runtime_resume: Put the device into the fully active state in response to a
-> - *	wake-up event generated by hardware or at the request of software.  If
-> - *	necessary, put the device into the full power state and restore its
-> + *	wakeup event generated by hardware or at the request of software.  If
-> + *	necessary, put the device into the full-power state and restore its
->   *	registers, so that it is fully operational.
->   *
-> - * @runtime_idle: Device appears to be inactive and it might be put into a low
-> - *	power state if all of the necessary conditions are satisfied.  Check
-> + * @runtime_idle: Device appears to be inactive and it might be put into a
-> + *	low-power state if all of the necessary conditions are satisfied.  Check
->   *	these conditions and handle the device as appropriate, possibly queueing
->   *	a suspend request for it.  The return value is ignored by the PM core.
->   */
-
-Somewhere in here the text should tell people to find more information 
-in Documentation/power/runtime_pm.txt.  Likewise for .../devices.txt, 
-although that should be added at the appropriate spot higher up.
-
-Alan Stern
-
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+BOTLEY
+The prominent stain on a man's trouser crotch seen on his return from
+the lavatory. A botley proper is caused by an accident with the push
+taps, and should not be confused with any stain caused by insufficient
+waggling of the willy.
+			--- Douglas Adams, The Meaning of Liff
