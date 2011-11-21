@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1KUMrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 07:47:19 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:42171 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab1KUMrS (ORCPT
+	id S1753563Ab1KUMrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 07:47:25 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54429 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab1KUMrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 07:47:18 -0500
-Date: Mon, 21 Nov 2011 13:47:15 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Jens Axboe <jens.axboe@oracle.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/8] block: limit default readahead size for small devices
-Message-ID: <20111121124715.GD24062@one.firstfloor.org>
-References: <20111121091819.394895091@intel.com> <20111121093846.121502745@intel.com> <20111121100004.GB5084@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121100004.GB5084@infradead.org>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 21 Nov 2011 07:47:22 -0500
+Message-ID: <4ECA484F.5000107@linux.vnet.ibm.com>
+Date: Mon, 21 Nov 2011 18:17:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / Sleep: Simplify device_suspend_noirq()
+References: <201111192343.03677.rjw@sisk.pl>
+In-Reply-To: <201111192343.03677.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112112-8256-0000-0000-0000003AA47B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 05:00:04AM -0500, Christoph Hellwig wrote:
-> On Mon, Nov 21, 2011 at 05:18:20PM +0800, Wu Fengguang wrote:
-> > Given that the non-rotational attribute is not always reported, we can
-> > take disk size as a max readahead size hint. This patch uses a formula
-> > that generates the following concrete limits:
+On 11/20/2011 04:13 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Given that you mentioned the rotational flag and device size in this
-> mail, as well as benchmarking with an intel SSD  -  did you measure
-> how useful large read ahead sizes still are with highend Flash device
-> that have extremly high read IOP rates?
+> Remove a few if () and return statements in device_suspend_noirq()
+> that aren't really necessary.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-The more the IOPs the larger the "window" you need to keep everything
-going I suspect.
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks,
+Srivatsa S. Bhat
+
+> ---
+>  drivers/base/power/main.c |   12 ++----------
+>  1 file changed, 2 insertions(+), 10 deletions(-)
+> 
+> Index: linux/drivers/base/power/main.c
+> ===================================================================
+> --- linux.orig/drivers/base/power/main.c
+> +++ linux/drivers/base/power/main.c
+> @@ -763,31 +763,23 @@ static pm_message_t resume_event(pm_mess
+>   */
+>  static int device_suspend_noirq(struct device *dev, pm_message_t state)
+>  {
+> -	int error;
+> +	int error = 0;
+> 
+>  	if (dev->pm_domain) {
+>  		pm_dev_dbg(dev, state, "LATE power domain ");
+>  		error = pm_noirq_op(dev, &dev->pm_domain->ops, state);
+> -		if (error)
+> -			return error;
+>  	} else if (dev->type && dev->type->pm) {
+>  		pm_dev_dbg(dev, state, "LATE type ");
+>  		error = pm_noirq_op(dev, dev->type->pm, state);
+> -		if (error)
+> -			return error;
+>  	} else if (dev->class && dev->class->pm) {
+>  		pm_dev_dbg(dev, state, "LATE class ");
+>  		error = pm_noirq_op(dev, dev->class->pm, state);
+> -		if (error)
+> -			return error;
+>  	} else if (dev->bus && dev->bus->pm) {
+>  		pm_dev_dbg(dev, state, "LATE ");
+>  		error = pm_noirq_op(dev, dev->bus->pm, state);
+> -		if (error)
+> -			return error;
+>  	}
+> 
+> -	return 0;
+> +	return error;
+>  }
+> 
+>  /**
+
