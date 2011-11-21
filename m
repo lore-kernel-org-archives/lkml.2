@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab1KUQ4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:56:33 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:45049 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873Ab1KUQ4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:56:31 -0500
-Date: Mon, 21 Nov 2011 11:56:26 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Hugh Dickins <hughd@google.com>
-Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
-        Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bug with "fix partial page writes"
-Message-ID: <20111121165626.GD14568@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
-	Allison Henderson <achender@linux.vnet.ibm.com>,
-	Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
- <alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+	id S1755811Ab1KUQ4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:56:38 -0500
+Received: from home.keithp.com ([63.227.221.253]:59236 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767Ab1KUQ4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 11:56:36 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Wu Fengguang <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
+Cc: "Wang\, Zhenyu Z" <zhenyu.z.wang@intel.com>,
+        "dri-devel\@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] drm/i915: hot removal notification to HDMI audio driver
+In-Reply-To: <20111121110538.GB6519@localhost>
+References: <20111116132004.299754849@intel.com> <20111116132221.374839261@intel.com> <20111116133548.GA23804@localhost> <20111118093740.GA2799@localhost> <86aa7tmigr.fsf@sumi.keithp.com> <20111121015809.GA25148@localhost> <s5haa7plv4l.wl%tiwai@suse.de> <20111121110538.GB6519@localhost>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 21 Nov 2011 08:56:30 -0800
+Message-ID: <86ehx1ifcx.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1111201121120.1264@sister.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
-> We've seen no response to this, so Cc'ing Ted and linux-kernel,
-> and I'll fill in some more detail below.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Hugh,
+On Mon, 21 Nov 2011 19:05:38 +0800, Wu Fengguang <fengguang.wu@intel.com> w=
+rote:
 
-Thanks for reminding us about this.  Unfortunately bugzilla is still
-down, so we'll have to track this via e-mail.
+> Ah I got it. I'm running debian+fluxbox w/o those fancy features...
 
-I mentioned this issue on the weekly ext4 call, and though there will
-be a delay due to the Thanksgiving break, Allison said she would try
-to take a look at this.  Hopefully other folks will as well.
+Then you can manually run the 'xrandr' command to configure the new
+monitor as desired, at which point the kernel mode_set function will be
+called.
 
-> I did not reproduce either problem above with that.  Instead I found
-> that backing out 02fac1297eb3 made fsx on 3.2-rc1 fail in a few minutes.
-> But leaving 02fac1297eb3 in, fsx still failed in 20 minutes or an hour.
-> On 3.1, fsx failed in a few minutes.  On 3.0, fsx failed in half an hour.
-> On 2.6.39, fsx failed in a few minutes.  I had to go back to 2.6.38 for
-> fsx to run successfully under memory pressure for more than two hours.
-> 
-> It looks as if ext4 testing has not been running fsx under memory
-> pressure recently.  And although I didn't reproduce my main problems
-> that way, it could well be that getting fsx to run reliably again
-> under memory pressure will be the way to fix those problems.
+=2D-=20
+keith.packard@intel.com
 
-Yes, I think we've been relying mostly on xfstests, and not
-necessarily under extreme memory pressures.  Out of curiosity, what
-sort of configuration were you using when you did the above tests?
-(memory, swap, fs bock size, etc.)  Was it the same as you did with
-your make -j20 kernel stress test?  And where you using any special
-fsx options?
+--=-=-=
+Content-Type: application/pgp-signature
 
-I agree that we should add better memory pressure testing to ext4.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Regards,
-
-						- Ted
+iQIVAwUBTsqCvjYtFsjWk68qAQggKRAAteIvOKUwISbuG74URp5jGyzr2T/KM4E7
+eUezwMUekmGnXJhEvc5JumkMBZmdkSPQQmi/HVVP4rqYfQxLScrWJMh4lRl9aS3k
+oKy3VAqNb8Fxx35jFqTIwlMYm3bdfW7Yykx6HDUx8NtaGukuONPo7yZHykJ1hR9x
+6XTpxhkgV63Nq/7wMJAbYRev9H1wd+XOcxBvAcaec8psXXrklCU6J5+qzAeZZmQi
+x8RcRtdthTBflZYNzj8ZZ21+Cf/IS7oePWgbAU2oBu6a0euhnwKUH2gyo8vwrAdT
+nl82l4ySOifB/YI2R0NCtunF7En3REHMIfYdwFS2sWLJo6zgC6eztKVUDT86FAxz
+ps59Xv4yn9YT53AgXkKB3D3f9/KwD2KExFA4RNVSPtqTNxPQoLJE2WEPV43+vWL0
+UUl95bBsSBzxe/IHwuAAfMBaWyMy/5BkZnQgI4c6Q4rTFH9nZWkQXpstELfAtA/e
+/GAt62nuviBKL+Kc/hmB3ne9u4jbQIigSq4CK+JbQqtE4XKOXn7wDVp2ezsbIULq
+HkSWqWmHMLsQrmjGrMGnK0QXA5d89cWH+be+tl/RYxEwc+ygoX2jV9iRyg5ppyNT
+9LZ873HHwcoMDyqMGUxZDjfZ9pNd8OSneLIiDlNjkYuddqfEiC8X7H5ToSRbLw3c
+MdIAVC5mJb8=
+=myDT
+-----END PGP SIGNATURE-----
+--=-=-=--
