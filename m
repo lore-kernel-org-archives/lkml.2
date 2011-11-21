@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1KULp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:45:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42778 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750850Ab1KULp1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:45:27 -0500
-Date: Mon, 21 Nov 2011 11:45:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 3/3] sound/soc/lapis: add platform driver
-Message-ID: <20111121114524.GE3784@opensource.wolfsonmicro.com>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
- <1321848532-8784-3-git-send-email-tomoya.rohm@gmail.com>
+	id S1754596Ab1KULvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:51:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58517 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752855Ab1KULvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 06:51:35 -0500
+Date: Mon, 21 Nov 2011 11:51:31 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] mm: check if we isolated a compound page during
+ lumpy scan
+Message-ID: <20111121115131.GC19415@suse.de>
+References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
+ <1321732460-14155-4-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1321848532-8784-3-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: Don't get to bragging.
+In-Reply-To: <1321732460-14155-4-git-send-email-aarcange@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 01:08:52PM +0900, Tomoya MORINAGA wrote:
+On Sat, Nov 19, 2011 at 08:54:15PM +0100, Andrea Arcangeli wrote:
+> Properly take into account if we isolated a compound page during the
+> lumpy scan in reclaim and break the loop if we've isolated enough.
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+>  1 files changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a1893c0..3421746 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1183,13 +1183,16 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>  				break;
+>  
+>  			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> +				unsigned int isolated_pages;
+>  				list_move(&cursor_page->lru, dst);
+>  				mem_cgroup_del_lru(cursor_page);
+> -				nr_taken += hpage_nr_pages(page);
 
-> +/* =================== I2S CH0 config =================== */
-> +#define	I2S_CH0_MCLK		(12288000) /* Master Clock Frequency[Hz] */
+nr_taken was already being updated correctly.
 
-This looks like it should be board specific?
+> -				nr_lumpy_taken++;
+> +				isolated_pages = hpage_nr_pages(page);
+> +				nr_taken += isolated_pages;
+> +				nr_lumpy_taken += isolated_pages;
 
-> +  #if IOH_I2S_USE_PARAM
-> +	#define	I2S_CH0_FS_16000	16000
-> +	#define	I2S_CH0_FS_32000	32000
-> +	#define	I2S_CH0_FS_48000	48000
-> +  #else
-> +	#define	I2S_CH0_FS_8000		8000
-> +	#define	I2S_CH0_FS_11025	11025
-> +	#define	I2S_CH0_FS_22050	22050
-> +	#define	I2S_CH0_FS_44100	44100
-> +  #endif
+nr_lumpy_taken was not, and this patch corrects it.
 
-What are these ifdefs for?  This should be configured at runtime.
+>  				if (PageDirty(cursor_page))
+> -					nr_lumpy_dirty++;
+> +					nr_lumpy_dirty += isolated_pages;
 
-> +/* select master or slave. The value is ioh_mssel_t */
-> +#define	I2S_CH0_MSSEL			(ioh_mssel_master)
-> +/* select MCLK or MLBCLK into Master Clock. The value is enum ioh_masterclk_t */
-> +#define	I2S_CH0_MASTERCLKSEL		(ioh_masterclksel_mclk)
+nr_lumpy_dirty was not, and this patch corrects it.
 
-This and most of the following defines also look like compile time
-configuration for things that should be runtime configured.  As with
-the previous patches in the series the big picture issue here is that
-you need to update your code to reflect the practices of modern
-mainline Linux code - here the major issue is that you appear to be
-doing all your configuration with #defines rather than by using runtime
-configuration from the machine driver as is normal for ASoC code.
+However, the nr_lumpy_* variables here are not of critical importance
+as they only are used by a trace point. Fixing them is nice but
+functionally changes nothing.
 
-I got through a bunch more defines but stopped reviewing at some point
-as there was so much of this issue.
+>  				scan++;
+> +				pfn += isolated_pages-1;
+
+This is more important. With the current code the next page encountered
+after a THP page is isolated will be a tail page, not on the LRU
+and will cause the loop to break as __isolate_lru_page will return
+EINVAL. With this change, the next PFN encountered will really be
+the next PFN of interest.
+
+That said, the impact of this change is low. For THP allocations,
+pfn += isolated_pages-1 will bring pfn past end_pfn so with or without
+the page, we break the loop after isolating a THP. For lower-order
+allocations, pfn+= isolated_pages-1 will also bring pfn past end_pfn.
+This patch does help the case where the allocation is for a page larger
+than a THP but that is very rare.
+
+Hence, while I think the patch is correct, the changelog is misleading
+as it does not have a large impact on breaking the loop if we've
+isolated enough. To really break if we've isolated enough, you'd also
+need 
+
+scan += isolated_pages-1
+
+-- 
+Mel Gorman
+SUSE Labs
