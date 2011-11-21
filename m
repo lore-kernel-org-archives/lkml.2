@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab1KUQjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:39:20 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:46104 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab1KUQjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:39:19 -0500
-Date: Mon, 21 Nov 2011 08:37:45 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] nohz: Remove tick_nohz_idle_enter_norcu() /
- tick_nohz_idle_exit_norcu()
-Message-ID: <20111121163745.GA2323@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1321552094-20237-1-git-send-email-fweisbec@gmail.com>
- <20111117201134.GB1865@leaf>
- <20111118010344.GI2429@linux.vnet.ibm.com>
- <20111119005003.GA1791@linux.vnet.ibm.com>
- <CAFTL4hx9m546KRPZX-dH+_ETyLY+WAR5cpOKoCoyECnSX2iHkA@mail.gmail.com>
- <20111121052819.GI17982@linux.vnet.ibm.com>
- <20111121152345.GA25088@somewhere.redhat.com>
+	id S1755268Ab1KUQkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:40:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53916 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab1KUQkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 11:40:11 -0500
+Date: Mon, 21 Nov 2011 08:40:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, lenb@kernel.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+Message-ID: <20111121164006.GB15314@google.com>
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com>
+ <201111192257.19763.rjw@sisk.pl>
+ <4EC8984E.30005@linux.vnet.ibm.com>
+ <201111201124.17528.rjw@sisk.pl>
+ <4EC9D557.9090008@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111121152345.GA25088@somewhere.redhat.com>
+In-Reply-To: <4EC9D557.9090008@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112116-3534-0000-0000-0000026404E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 04:23:51PM +0100, Frederic Weisbecker wrote:
-> On Sun, Nov 20, 2011 at 09:28:19PM -0800, Paul E. McKenney wrote:
-> > On Mon, Nov 21, 2011 at 02:46:58AM +0100, Frederic Weisbecker wrote:
-> > > 2011/11/19 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > > > On Thu, Nov 17, 2011 at 05:03:44PM -0800, Paul E. McKenney wrote:
-> > > >> On Thu, Nov 17, 2011 at 12:11:34PM -0800, Josh Triplett wrote:
+Hello, Srivatsa.
 
-[ . . . ]
-
-> > 4.	Task A invokes a system call.  If the system-call entry
-> > 	code were to again invoke rcu_idle_enter(), then my patch
-> > 	is required.  If you check and avoid invoking rcu_idle_enter()
-> > 	in this case, then my patch is not required.
+On Mon, Nov 21, 2011 at 10:06:39AM +0530, Srivatsa S. Bhat wrote:
+> void lock_system_sleep(void)
+> {
+> 	/* simplified freezer_do_not_count() */
+> 	current->flags |= PF_FREEZER_SKIP;
 > 
-> You mean rcu_idle_exit()? So yeah, since we have the tick running
-> and thus RCU not in extended QS, we won't call rcu_idle_exit() on syscall
-> entry.
+> 	mutex_lock(&pm_mutex);
+> 
+> }
+> 
+> void unlock_system_sleep(void)
+> {
+> 	mutex_unlock(&pm_mutex);
+> 
+> 	/* simplified freezer_count() */
+> 	current->flags &= ~PF_FREEZER_SKIP;
+> 
+> }
+> 
+> We probably don't want the restriction that freezer_do_not_count() and
+> freezer_count() work only for userspace tasks. So I have open coded
+> the relevant parts of those functions here.
+> 
+> I haven't tested this solution yet. Let me know if this solution looks
+> good and I'll send it out as a patch after testing and analyzing some
+> corner cases, if any.
 
-OK, then I will drop my patch.  ;-)
+Ooh ooh, I definitely like this one much better.  Oleg did something
+similar w/ wait_event_freezekillable() too.  On related notes,
 
-							Thanx, Paul
+* I think it would be better to remove direct access to pm_mutex and
+  use [un]lock_system_sleep() universally.  I don't think hinging it
+  on CONFIG_HIBERNATE_CALLBACKS buys us anything.
 
+* In the longer term, we should be able to toggle PF_NOFREEZE instead
+  as SKIP doesn't mean anything different.  We'll probably need a
+  better API tho.  But for now SKIP should work fine.
+
+Thank you.
+
+-- 
+tejun
