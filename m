@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab1KUSwe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:52:34 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2627 "EHLO mms1.broadcom.com"
+	id S1756035Ab1KUSyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:54:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755946Ab1KUSwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:52:33 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4ECA9DE0.4080202@broadcom.com>
-Date: Mon, 21 Nov 2011 10:52:16 -0800
-From: "Franky Lin" <frankyl@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929
- Thunderbird/7.0.1
+	id S1752824Ab1KUSyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:54:03 -0500
+From: Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH -v2 0/3] PCI: Convert maintaining FW-assigned BIOS BAR values
+	to a list of temporary entries
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 21 Nov 2011 11:54:01 -0700
+Message-ID: <20111121185401.9603.34587.stgit@amt.stowe>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: "Thomas Meyer" <thomas@m3y3r.de>
-cc: "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcm80211: smac: Use kmemdup rather than
- duplicating its implementation
-References: <1321569820.1624.289.camel@localhost.localdomain>
-In-Reply-To: <1321569820.1624.289.camel@localhost.localdomain>
-X-WSS-ID: 62D440495WO1587936-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2011 02:43 PM, Thomas Meyer wrote:
-> The semantic patch that makes this change is available
-> in scripts/coccinelle/api/memdup.cocci.
->
-> Signed-off-by: Thomas Meyer<thomas@m3y3r.de>
-> ---
+In commit 58c84eda075 functionality was introduced that attempts to
+reinstate the original, FW-assigned, BAR addresses of a PCI device when
+normal resource assignment fails.  To keep track of the BIOS BAR
+addresses, struct pci_dev was augmented with an array to hold the device's
+BAR addresses: 'resource_size_t fw_addr[DEVICE_COUNT_RESOURCE]'.
 
-Thanks Thomas.
+The reinstatement of BAR addresses is an uncommon event leaving the
+'fw_addr' array unused under normal circumstances.  As the use of struct
+pci_dev is so prevalent, this seems wasteful.
 
-Acked-by: Franky Lin <frankyl@broadcom.com>
+This patch series introduces a stand alone data structure and
+corresponding interface routine that is used in converting the
+underlying aspects of the existing maintanence scheme to a list of
+temporary BIOS BAR value entries.
 
-Franky
+[v2]
+ - Simplified list maintenance by adding a routine, and call to such,
+   to delete the entire list once PCI enumeration is complete (as opposed
+   to keeping reference counters and deleting entries as the reference
+   counts go to 0).
+ - Reinstatement of FW-assigned BAR addresses is currently only
+   implemented for x86 so I relocated the stand alone data structure and
+   maintenance routines within an x86 architecture specific file and
+   introduced a '__weak' attribute generic interface routine -
+   'pcibios_retrieve_fw_addr()' which returns a failure condition - into
+   the PCI core that resolves the interface for all other architectures.
 
+---
+
+Myron Stowe (3):
+      x86/PCI: Convert maintaining FW-assigned BIOS BAR values to use a list
+      x86/PCI: Infrastructure to maintain a list of FW-assigned BIOS BAR values
+      PCI: Fix starting basis for resource requests
+
+
+ arch/x86/pci/i386.c     |   83 ++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/pci/setup-res.c |   36 ++++++++++++++++----
+ include/linux/pci.h     |    2 +
+ 3 files changed, 112 insertions(+), 9 deletions(-)
+
+-- 
