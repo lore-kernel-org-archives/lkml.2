@@ -1,206 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1KUIfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 03:35:50 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64115 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab1KUIfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 03:35:47 -0500
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: zhzhl555@gmail.com, peppe.cavallaro@st.com, wuzhangjin@gmail.com,
-        r0bertz@gentoo.org, Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V4 3/4] MIPS: Add Makefile and Kconfig for Loongson1B
-Date: Mon, 21 Nov 2011 16:34:51 +0800
-Message-Id: <1321864492-1278-3-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1321864492-1278-1-git-send-email-keguang.zhang@gmail.com>
-References: <1321864492-1278-1-git-send-email-keguang.zhang@gmail.com>
+	id S1755555Ab1KUIgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 03:36:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:3363 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab1KUIf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 03:35:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
+   d="scan'208";a="93498914"
+Subject: Re: [PATCH v2 1/5] dmaengine: add ep93xx DMA support
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: Rafal Prylowski <prylowski@metasoft.pl>, rmallon@gmail.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, hsweeten@visionengravers.com,
+        dan.j.williams@intel.com, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20111121080158.GA2713@mwesterb-mobl.ger.corp.intel.com>
+References: <cover.1306662317.git.mika.westerberg@iki.fi>
+	 <3ea8d56034f25cbe3fd8a4c31d7d0d1540b6ac7e.1306662317.git.mika.westerberg@iki.fi>
+	 <4EC27EED.4030108@metasoft.pl>
+	 <20111116065512.GB2703@mwesterb-mobl.ger.corp.intel.com>
+	 <4EC374F0.8000400@metasoft.pl>
+	 <20111119123837.GA2711@mwesterb-mobl.ger.corp.intel.com>
+	 <4ECA0147.4020806@metasoft.pl>
+	 <20111121080158.GA2713@mwesterb-mobl.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Nov 2011 14:02:06 +0530
+Message-ID: <1321864326.1516.211.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Makefile and Kconfig related to Loongson1B.
+On Mon, 2011-11-21 at 10:01 +0200, Mika Westerberg wrote:
+> On Mon, Nov 21, 2011 at 08:44:07AM +0100, Rafal Prylowski wrote:
+> > 
+> > I'm calling dma_terminate_all from interrupt. It seems that tasklet_kill is not
+> > allowed to be called from this context.
+> 
+> Ah, right.
+> 
+> One more try - this time we set a flag which prevents the tasktlet from
+> referencing an empty list.
+Rather than this why not actually check for list_empty and process only
+when it is not empty?
+Also you should check the return of the ep93xx_dma_get_active() which
+should return NULL if it didn't find anything in active list
+> 
+> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+> index 6181811..f7244b3 100644
+> --- a/drivers/dma/ep93xx_dma.c
+> +++ b/drivers/dma/ep93xx_dma.c
+> @@ -155,6 +155,8 @@ struct ep93xx_dma_chan {
+>  	unsigned long			flags;
+>  /* Channel is configured for cyclic transfers */
+>  #define EP93XX_DMA_IS_CYCLIC		0
+> +/* Channel is enabled */
+> +#define EP93xx_DMA_IS_RUNNING		1
+>  
+>  	int				buffer;
+>  	dma_cookie_t			last_completed;
+> @@ -673,6 +675,9 @@ static void ep93xx_dma_tasklet(unsigned long data)
+>  	void *callback_param;
+>  	LIST_HEAD(list);
+>  
+> +	if (!test_bit(EP93XX_DMA_IS_RUNNING, &edmac->flags))
+> +		return;
+> +
+>  	spin_lock_irq(&edmac->lock);
+>  	desc = ep93xx_dma_get_active(edmac);
+>  	if (desc->complete) {
+> @@ -758,6 +763,8 @@ static dma_cookie_t ep93xx_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+>  	edmac->chan.cookie = cookie;
+>  	desc->txd.cookie = cookie;
+>  
+> +	set_bit(EP93XX_DMA_IS_RUNNING, &edmac->flags);
+> +
+>  	/*
+>  	 * If nothing is currently prosessed, we push this descriptor
+>  	 * directly to the hardware. Otherwise we put the descriptor
+> @@ -1106,6 +1113,7 @@ static int ep93xx_dma_terminate_all(struct ep93xx_dma_chan *edmac)
+>  	spin_lock_irqsave(&edmac->lock, flags);
+>  	/* First we disable and flush the DMA channel */
+>  	edmac->edma->hw_shutdown(edmac);
+> +	clear_bit(EP93XX_DMA_IS_RUNNING, &edmac->flags);
+>  	clear_bit(EP93XX_DMA_IS_CYCLIC, &edmac->flags);
+>  	list_splice_init(&edmac->active, &list);
+>  	list_splice_init(&edmac->queue, &list);
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
----
- arch/mips/Kbuild.platforms          |    1 +
- arch/mips/Kconfig                   |   31 +++++++++++++++++++++++++++++++
- arch/mips/loongson1/Kconfig         |   21 +++++++++++++++++++++
- arch/mips/loongson1/Makefile        |   11 +++++++++++
- arch/mips/loongson1/Platform        |    7 +++++++
- arch/mips/loongson1/common/Makefile |    5 +++++
- arch/mips/loongson1/ls1b/Makefile   |    5 +++++
- 7 files changed, 81 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/loongson1/Kconfig
- create mode 100644 arch/mips/loongson1/Makefile
- create mode 100644 arch/mips/loongson1/Platform
- create mode 100644 arch/mips/loongson1/common/Makefile
- create mode 100644 arch/mips/loongson1/ls1b/Makefile
 
-diff --git a/arch/mips/Kbuild.platforms b/arch/mips/Kbuild.platforms
-index 5ce8029..d64786d 100644
---- a/arch/mips/Kbuild.platforms
-+++ b/arch/mips/Kbuild.platforms
-@@ -14,6 +14,7 @@ platforms += jz4740
- platforms += lantiq
- platforms += lasat
- platforms += loongson
-+platforms += loongson1
- platforms += mipssim
- platforms += mti-malta
- platforms += netlogic
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index d9b8ea8..4c6ad4f 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -262,6 +262,17 @@ config MACH_LOONGSON
- 	  Chinese Academy of Sciences (CAS) in the People's Republic
- 	  of China. The chief architect is Professor Weiwu Hu.
- 
-+config MACH_LOONGSON1
-+	bool "Loongson1 family of machines"
-+	select SYS_SUPPORTS_ZBOOT
-+	help
-+	  This enables the support of Loongson1 family of machines.
-+
-+	  Loongson1 is a family of 32-bit MIPS-compatible SoCs.
-+	  developed at Institute of Computing Technology (ICT),
-+	  Chinese Academy of Sciences (CAS) in the People's Republic
-+	  of China.
-+
- config MIPS_MALTA
- 	bool "MIPS Malta board"
- 	select ARCH_MAY_HAVE_PC_FDC
-@@ -808,6 +819,7 @@ source "arch/mips/txx9/Kconfig"
- source "arch/mips/vr41xx/Kconfig"
- source "arch/mips/cavium-octeon/Kconfig"
- source "arch/mips/loongson/Kconfig"
-+source "arch/mips/loongson1/Kconfig"
- source "arch/mips/netlogic/Kconfig"
- 
- endmenu
-@@ -1201,6 +1213,14 @@ config CPU_LOONGSON2F
- 	  have a similar programming interface with FPGA northbridge used in
- 	  Loongson2E.
- 
-+config CPU_LOONGSON1B
-+	bool "Loongson 1B"
-+	depends on SYS_HAS_CPU_LOONGSON1B
-+	select CPU_LOONGSON1
-+	help
-+	  The Loongson 1B is a 32-bit SoC, which implements the MIPS32
-+	  release 2 instruction set.
-+
- config CPU_MIPS32_R1
- 	bool "MIPS32 Release 1"
- 	depends on SYS_HAS_CPU_MIPS32_R1
-@@ -1529,6 +1549,14 @@ config CPU_LOONGSON2
- 	select CPU_SUPPORTS_64BIT_KERNEL
- 	select CPU_SUPPORTS_HIGHMEM
- 
-+config CPU_LOONGSON1
-+	bool
-+	select CPU_MIPS32
-+	select CPU_MIPSR2
-+	select CPU_HAS_PREFETCH
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select CPU_SUPPORTS_HIGHMEM
-+
- config SYS_HAS_CPU_LOONGSON2E
- 	bool
- 
-@@ -1538,6 +1566,9 @@ config SYS_HAS_CPU_LOONGSON2F
- 	select CPU_SUPPORTS_ADDRWINCFG if 64BIT
- 	select CPU_SUPPORTS_UNCACHED_ACCELERATED
- 
-+config SYS_HAS_CPU_LOONGSON1B
-+	bool
-+
- config SYS_HAS_CPU_MIPS32_R1
- 	bool
- 
-diff --git a/arch/mips/loongson1/Kconfig b/arch/mips/loongson1/Kconfig
-new file mode 100644
-index 0000000..237fa21
---- /dev/null
-+++ b/arch/mips/loongson1/Kconfig
-@@ -0,0 +1,21 @@
-+if MACH_LOONGSON1
-+
-+choice
-+	prompt "Machine Type"
-+
-+config LOONGSON1_LS1B
-+	bool "Loongson LS1B board"
-+	select CEVT_R4K
-+	select CSRC_R4K
-+	select SYS_HAS_CPU_LOONGSON1B
-+	select DMA_NONCOHERENT
-+	select BOOT_ELF32
-+	select IRQ_CPU
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select SYS_SUPPORTS_HIGHMEM
-+	select SYS_HAS_EARLY_PRINTK
-+
-+endchoice
-+
-+endif # MACH_LOONGSON1
-diff --git a/arch/mips/loongson1/Makefile b/arch/mips/loongson1/Makefile
-new file mode 100644
-index 0000000..e9123c2
---- /dev/null
-+++ b/arch/mips/loongson1/Makefile
-@@ -0,0 +1,11 @@
-+#
-+# Common code for all Loongson1 based systems
-+#
-+
-+obj-$(CONFIG_MACH_LOONGSON1) += common/
-+
-+#
-+# Loongson LS1B board
-+#
-+
-+obj-$(CONFIG_LOONGSON1_LS1B)  += ls1b/
-diff --git a/arch/mips/loongson1/Platform b/arch/mips/loongson1/Platform
-new file mode 100644
-index 0000000..92804c6
---- /dev/null
-+++ b/arch/mips/loongson1/Platform
-@@ -0,0 +1,7 @@
-+cflags-$(CONFIG_CPU_LOONGSON1)  += \
-+	$(call cc-option,-march=mips32r2,-mips32r2 -U_MIPS_ISA -D_MIPS_ISA=_MIPS_ISA_MIPS32) \
-+	-Wa,-mips32r2 -Wa,--trap
-+
-+platform-$(CONFIG_MACH_LOONGSON1)	+= loongson1/
-+cflags-$(CONFIG_MACH_LOONGSON1)		+= -I$(srctree)/arch/mips/include/asm/mach-loongson1
-+load-$(CONFIG_LOONGSON1_LS1B)		+= 0xffffffff80010000
-diff --git a/arch/mips/loongson1/common/Makefile b/arch/mips/loongson1/common/Makefile
-new file mode 100644
-index 0000000..b279770
---- /dev/null
-+++ b/arch/mips/loongson1/common/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for common code of loongson1 based machines.
-+#
-+
-+obj-y	+= clock.o irq.o platform.o prom.o reset.o setup.o
-diff --git a/arch/mips/loongson1/ls1b/Makefile b/arch/mips/loongson1/ls1b/Makefile
-new file mode 100644
-index 0000000..891eac4
---- /dev/null
-+++ b/arch/mips/loongson1/ls1b/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for loongson1B based machines.
-+#
-+
-+obj-y += board.o
 -- 
-1.7.1
+~Vinod
 
