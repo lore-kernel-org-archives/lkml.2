@@ -1,109 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab1KUVyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:54:40 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50292 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab1KUVyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:54:39 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 5] PM: Update comments describing device power management callbacks
-Date: Mon, 21 Nov 2011 22:57:25 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-References: <Pine.LNX.4.44L0.1111211642060.1848-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1111211642060.1848-100000@iolanthe.rowland.org>
+	id S1757254Ab1KUVyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:54:44 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15737 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab1KUVyl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 16:54:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 21 Nov 2011 13:54:36 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>
+Date: Mon, 21 Nov 2011 13:54:33 -0800
+Subject: RE: [PATCH] pinctrl: indicate GPIO direction on single GPIO request
+Thread-Topic: [PATCH] pinctrl: indicate GPIO direction on single GPIO request
+Thread-Index: AcyolrvSw7DLYQ3sRGmFm1SkcBG4iAAAEFjw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C239@HQMAIL01.nvidia.com>
+References: <1321261837-31320-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805AAE@HQMAIL01.nvidia.com>
+	<CAJuYYwTKNLh0NxfUBubGJuyLFDgkD6qPc=brd8dLObUW9p0tgA@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740805E0A@HQMAIL01.nvidia.com>
+	<CACRpkdYz_gOP22cHgtdo5GqY6P_DeCbykFm1MS6Kua_ERVKEpQ@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1740D74BC3@HQMAIL01.nvidia.com>
+	<CACRpkdapm2cx=QJkPinwteCPZFNNnxVcKqR4f0D8_ikWMTea_g@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF174F08C17B@HQMAIL01.nvidia.com>
+ <CACRpkdZsYrCJoEFM5_mrMCns_2AXYFxCxQc=97-1pJVvrGpiiw@mail.gmail.com>
+In-Reply-To: <CACRpkdZsYrCJoEFM5_mrMCns_2AXYFxCxQc=97-1pJVvrGpiiw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111212257.26071.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 21, 2011, Alan Stern wrote:
-> On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+Linus Walleij wrote at Monday, November 21, 2011 2:44 PM:
+> On Mon, Nov 21, 2011 at 8:00 PM, Stephen Warren <swarren@nvidia.com> wrote:
+...
+> > I thought I'd sent this on Friday, but perhaps I only thought it up over
+> > the weekend... Here's my proposal:
+> >
+> > 1)
+> >
+> > Add a new gpiolib API:
+> >
+> > int gpio_request_at(unsigned gpio, const char *label, unsigned at);
 > 
-> > On Monday, November 21, 2011, Alan Stern wrote:
-> > > On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
-> > > 
-> > > > > >   * @freeze: Hibernation-specific, executed before creating a hibernation image.
-> > > > > > - *	Quiesce operations so that a consistent image can be created, but do NOT
-> > > > > > - *	otherwise put the device into a low power device state and do NOT emit
-> > > > > > - *	system wakeup events.  Save in main memory the device settings to be
-> > > > > > - *	used by @restore() during the subsequent resume from hibernation or by
-> > > > > > - *	the subsequent @thaw(), if the creation of the image or the restoration
-> > > > > > - *	of main memory contents from it fails.
-> > > > > > + *	Analogous to @suspend(), but it should not enable the device to signal
-> > > > > > + *	wakeup events.  The majority of subsystems (with the notable exception
-> > > > > > + *	of the PCI bus type) expect the driver-level @freeze() to save the
-> > > > > > + *	device settings in memory to be used by @restore() during the subsequent
-> > > > > > + *	resume from hibernation.
-> > > > > > + *	Subsystem-level @freeze() is executed for all devices after invoking
-> > > > > > + *	subsystem-level @prepare() for all of them.
-> > > > > 
-> > > > > The first three lines you removed contain some important points which I
-> > > > > think should be retained.
-> > > > 
-> > > > Well, not really, because in fact what the callback is supposed to do depends
-> > > > on the subsystem.  For example, on PCI freeze is not supposed to save the
-> > > > the device state even and generally those routines don't emit any events.
-> > > 
-> > > But you removed the part saying that the freeze callback should quiesce
-> > > the device but doesn't necessarily have to put the device into a
-> > > low-power state (in fact, it should avoid changing the power state if
-> > > possible).  And you removed the explanation that this is needed in
-> > > order to guarantee a consistent memory image.  These two points are
-> > > true for all subsystems, including PCI.
-> > 
-> > I said "Analogous to @suspend()" instead.  I'm not sure why this is not
-> > sufficient?
+> This has a nice look to it, I must admit.
 > 
-> Because @suspend() is very different!  Its description basically says 
-> to do three things:
-> 
-> 	Quiesce the device,
-> 
-> 	Put it into a low-power state,
-> 
-> 	And enable wakeup events.
+> Since the pinctrl number space is per-controller this signature
+> will not work. It would have to pass in a pin controller reference
+> too, preferably as struct device * or a string. Else "at" is just
+> a number without meaning. "At *which* controller?"
 
-No, it doesn't any more.  It's being changed by the proposed patch too. :-)
+I'm assuming that each (physical) chip will have one pinctrl driver.
+Therefore, for any GPIO driver (and hence any GPIO number) on that chip,
+there is a single pinctrl driver that's relevant, and hence pinctrl
+driver can be determined directly and internally from the GPIO ID.
 
-> @freeze() is supposed to do the first but not the second or third.  
-> This makes it only 33% similar to @suspend().  :-)
+Now that I say it though, I wonder if that assumption is totally valid;
+after all, we're talking about having multiple GPIO controller drivers
+within a (physical) chip, so perhaps having multiple pinctrl drivers
+for different subsets of the pins wouldn't be impossible, albeit pretty
+unlikely and bizarre. Should we just ignore that case? We could deal
+with it by internally creating an aggregate driver if it ever happened.
+
+...
+> Yes letting gpio_chip hold a reference to the pin controller
+> is equivalent to the pin controller GPIO range holding a
+> reference to the struct gpio_chip * as it can do today.
+
+Yes, those are pretty much the same thing.
+
+Assuming my assumption above is correct, then each GPIO (and GPIO chip)
+maps to a single pinctrl, which makes storing the data easy and static,
+but each pinctrl range might map to different GPIO chips and IDs which
+makes things harder, so I still see some value pushing the data storage
+into GPIO.
+
+> Any solution like the above needs to be anchored with the
+> GPIO maintainer anyway.
 > 
-> Also, the description of @suspend() says nothing about having a
-> consistent memory image.
+> My past attempts to patch gpio_chip have been shot down,
+> pinctrl was created to get away from having to introduce any kind of
+> control or muxing in gpiolib drivers. The current ranges are
+> totally encapsulated in the pinctrl subsystem and that's a pretty
+> nice feature I suspect.
 
-Because that is irrelevant.  The state of the device after the resume
-has to be consistent, regardless of whether the resume is from RAM or
-from an on-disk image.
+Yes, that's all true.
 
-> > > "A callback routine must NOT try to unregister the device for which it
-> > > was called, however it may unregister children of that device (for
-> > > example, if it detects that a child was hot-unplugged while the system
-> > > was asleep)."
-> > 
-> > That sounds good, thanks!
-> >  
-> > > > Do you know any situation in which that matters?
-> > > 
-> > > Not offhand, but I'm not familiar with too many subsystems.
-> > 
-> > Well, it seems quite extreme to me to be honest. :-)
-> 
-> It would matter for the USB subsystem, except that USB registers and
-> unregisters all its devices from a freezable kernel thread.  It's not
-> hard to imagine that other subsystems might want to unregister devices
-> as soon as they are found to be missing, which means during the
-> parent's resume routine.
+-- 
+nvpublic
 
-I see.
-
-Thanks,
-Rafael
