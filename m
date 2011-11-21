@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab1KUUbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 15:31:50 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62038 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753178Ab1KUUbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 15:31:49 -0500
-Date: Mon, 21 Nov 2011 20:31:45 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
+	id S1756325Ab1KUUdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 15:33:10 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55304 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab1KUUdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 15:33:08 -0500
+Message-ID: <1321907275.13860.12.camel@pasglop>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Cree <mcree@orcon.net.nz>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>
-Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-Message-ID: <20111121203145.GA7301@mudshark.cambridge.arm.com>
-References: <20111121145114.049265181@chello.nl>
- <20111121145337.533322271@chello.nl>
- <20111121172323.GH20611@mudshark.cambridge.arm.com>
- <1321903090.28118.21.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321903090.28118.21.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Christian Kujau <lists@nerdbynature.de>
+Date: Tue, 22 Nov 2011 07:27:55 +1100
+In-Reply-To: <20111121195113.GA1678@x4.trippels.de>
+References: <20111121131531.GA1679@x4.trippels.de>
+	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121153621.GA1678@x4.trippels.de>
+	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121161036.GA1679@x4.trippels.de>
+	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121173556.GA1673@x4.trippels.de>
+	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121185215.GA1673@x4.trippels.de>
+	 <20111121195113.GA1678@x4.trippels.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 07:18:10PM +0000, Peter Zijlstra wrote:
-> But does ARM have a read PMU counter from userspace
-> instruction/capability?
+On Mon, 2011-11-21 at 20:51 +0100, Markus Trippelsdorf wrote:
+> On 2011.11.21 at 19:52 +0100, Markus Trippelsdorf wrote:
+> > On 2011.11.21 at 19:39 +0100, Eric Dumazet wrote:
+> > > Le lundi 21 novembre 2011 à 18:35 +0100, Markus Trippelsdorf a écrit :
+> > > 
+> > > > New one:
+> > > 
+> > > ...
+> > > 
+> > > I was just wondering if you were using CONFIG_CGROUPS=y, and if yes, if
+> > > you could try to disable it.
+> > 
+> > # CONFIG_CGROUPS is not set
+> > 
+> > (I never enable CGROUPS on my machines)
+> 
+> Just for the record, I've attached full dmesg and my .config.
+> (Will continue testing tomorrow)
 
-In ARMv7, you can enable user access to the performance counters but the
-access is R/W so I don't think it's something we want to do (could interfere
-with another task doing system-wide profiling).
+Note that I hit a similar looking crash (sorry, I couldn't capture a
+backtrace back then) on a PowerMac G5 (ppc64) while doing a large rsync
+transfer yesterday with -rc2-something (cfcfc9ec) and 
+Christian Kujau (CC) seems to be able to reproduce something similar on
+some other ppc platform (Christian, what is your setup ?)
 
-> Lacking that its all moot of course. If it does, it would be nice to
-> have an ARM version of patch 6.
+We haven't hit the poison checks, more like bad pointer derefs, almost
+always in SLUB coming from skb alloc or free.
 
-Well we'd need a way to get around the all-or-nothing user access to the PMU
-and also the fact that we don't always have a user-readable clocksource.
+In my case, it's not easy to reproduce, so a bisection would be
+error-prone.
 
-Either way, the event counters are indexed from 0 on ARMv7 so we should
-use perf_event_idx_default.
+Cheers,
+Ben.
 
-Will
+
