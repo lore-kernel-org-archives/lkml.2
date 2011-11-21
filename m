@@ -1,53 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab1KULK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:10:27 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46585 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab1KULK0 (ORCPT
+	id S1755985Ab1KULKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:10:52 -0500
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:58254 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab1KULKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:10:26 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Frank Arnold <frank.arnold@amd.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH RESEND] x86, AMD: Correct align_va_addr documentation
-Date: Mon, 21 Nov 2011 12:10:19 +0100
-Message-Id: <1321873819-29541-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.8.rc0
+	Mon, 21 Nov 2011 06:10:51 -0500
+MIME-Version: 1.0
+Reply-To: richard_ungrant@hotmail.com
+Date: Mon, 21 Nov 2011 03:10:42 -0800
+Message-ID: <CAAt-rKj4h3wO3wSgLoGGYDYaL3cY50ss4pqzb_fK=-oww0SrBQ@mail.gmail.com>
+Subject: Dear Beneficiary,
+From: Mr Richard Daniels <292611@soas.ac.uk>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Dear Beneficiary,
 
-dfb09f9b7ab0 ("x86, amd: Avoid cache aliasing penalties on AMD family
-15h") introduced a kernel command line parameter called 'align_va_addr'
-which still refers to arguments used in an earlier version of the patch
-and which got changed without updating the documentation. Correct that
-omission.
+We wish to inform you that you have been selected as one of the
+recipients of a cash donation for the growth of your economy and
+personal development.You are to receive the sum of 500,000.00 Pound
+Sterling as developmental aid from the United Nations
+Foundation.Please contact UNDP Secertary Mr Richard Daniels E-mail:
+richard_ungrant@hotmail.com
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- Documentation/kernel-parameters.txt |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..5e22c3f 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -315,8 +315,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			CPU-intensive style benchmark, and it can vary highly in
- 			a microbenchmark depending on workload and compiler.
- 
--			1: only for 32-bit processes
--			2: only for 64-bit processes
-+			32: only for 32-bit processes
-+			64: only for 64-bit processes
- 			on: enable for both 32- and 64-bit processes
- 			off: disable for both 32- and 64-bit processes
- 
--- 
-1.7.8.rc0
 
+Regards,
+Le Minh Tuan
+Chairman Grant Programme
