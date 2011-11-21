@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab1KUXUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:20:39 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:44204 "EHLO
+	id S1755558Ab1KUXUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:20:37 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:39859 "EHLO
 	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab1KUXUa (ORCPT
+	with ESMTP id S1751409Ab1KUXUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Nov 2011 18:20:30 -0500
 From: David Decotigny <david.decotigny@google.com>
@@ -23,55 +23,139 @@ Cc: David Decotigny <david.decotigny@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Ian Campbell <ian.campbell@citrix.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <zenczykowski@gmail.com>
-Subject: [PATCH net-next v1 4/4] net-e1000e: Report carrier in loopback mode
-Date: Mon, 21 Nov 2011 15:20:00 -0800
-Message-Id: <48f59d610f896ece906e0e03491fd51ceeb4b43a.1321917278.git.david.decotigny@google.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH net-next v1 2/4] net-e1000e: enable ethtool loopback support
+Date: Mon, 21 Nov 2011 15:19:58 -0800
+Message-Id: <7a42f87c88b8db7ab5050fd318dfe08189f6281c.1321917278.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <cover.1321917278.git.david.decotigny@google.com>
 References: <cover.1321917278.git.david.decotigny@google.com>
 In-Reply-To: <cover.1321917278.git.david.decotigny@google.com>
 References: <cover.1321917278.git.david.decotigny@google.com>
 Organization: Google, Inc.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maciej Żenczykowski <zenczykowski@gmail.com>
+This allows ethtool to activate loopback via the get/set_features API.
 
-When interface is configured in loopback mode, force carrier check
-positive.  This is useful when interface does not have carrier and
-test puts the interface in loopback mode.
+Tested:
+  - HW = 80003ES2LAN (copper), x86_64
+  - incoming external 200Mbps, loopback on/off, verified that incoming
+    stream resumed
+  - incoming external 200Mbps, ifconfig down, loopback on/off,
+    ifconfig up, verified that incoming stream resumed
+  - incoming external 200Mbps, loopback on, ifconfig down, loopback
+    off, ifconfig up, verified that incoming stream resumed
+  - the same with a pktgen when loopback is enabled: verifying that
+    tx_packets = rx_packets + rx_missed_errors, and that tx_packets is
+    very close to pktgen_packets (1 or 2 packets difference, not
+    more). Note that rx_missed_errors >> 0
+  - artificially simulated failure of enabling loopback -> reported by
+    set_features and kept loopback feature marked as not configured.
 
-Tested: pktgen loopback on 80003ES2LAN
 
 
 Signed-off-by: David Decotigny <david.decotigny@google.com>
 ---
- drivers/net/ethernet/intel/e1000e/phy.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/intel/e1000e/e1000.h   |    2 ++
+ drivers/net/ethernet/intel/e1000e/ethtool.c |    6 +++---
+ drivers/net/ethernet/intel/e1000e/netdev.c  |   21 ++++++++++++++++++++-
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/phy.c b/drivers/net/ethernet/intel/e1000e/phy.c
-index f487a7f..9476c8f 100644
---- a/drivers/net/ethernet/intel/e1000e/phy.c
-+++ b/drivers/net/ethernet/intel/e1000e/phy.c
-@@ -1781,6 +1781,11 @@ s32 e1000e_phy_has_link_generic(struct e1000_hw *hw, u32 iterations,
- 	u16 phy_reg;
- 	int good_reads_phy_status = 0;
+diff --git a/drivers/net/ethernet/intel/e1000e/e1000.h b/drivers/net/ethernet/intel/e1000e/e1000.h
+index 9fe18d1..786cf31 100644
+--- a/drivers/net/ethernet/intel/e1000e/e1000.h
++++ b/drivers/net/ethernet/intel/e1000e/e1000.h
+@@ -485,6 +485,8 @@ extern const char e1000e_driver_version[];
  
-+	/* If loopback is enabled, we claim the link is up */
-+	if ((0 == e1e_rphy(hw, PHY_CONTROL, &phy_reg))
-+	    && (phy_reg & MII_CR_LOOPBACK)) {
-+		*success = true;
-+		return 0;
- 	}
+ extern void e1000e_check_options(struct e1000_adapter *adapter);
+ extern void e1000e_set_ethtool_ops(struct net_device *netdev);
++extern int e1000_loopback_setup(struct e1000_adapter *adapter);
++extern void e1000_loopback_cleanup(struct e1000_adapter *adapter);
  
- 	/*
+ extern int e1000e_up(struct e1000_adapter *adapter);
+ extern void e1000e_down(struct e1000_adapter *adapter);
+diff --git a/drivers/net/ethernet/intel/e1000e/ethtool.c b/drivers/net/ethernet/intel/e1000e/ethtool.c
+index fb2c28e..259add2 100644
+--- a/drivers/net/ethernet/intel/e1000e/ethtool.c
++++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
+@@ -1410,7 +1410,7 @@ static int e1000_set_es2lan_mac_loopback(struct e1000_adapter *adapter)
+ 	return 0;
+ }
+ 
+-static int e1000_setup_loopback_test(struct e1000_adapter *adapter)
++int e1000_loopback_setup(struct e1000_adapter *adapter)
+ {
+ 	struct e1000_hw *hw = &adapter->hw;
+ 	u32 rctl;
+@@ -1438,7 +1438,7 @@ static int e1000_setup_loopback_test(struct e1000_adapter *adapter)
+ 	return 7;
+ }
+ 
+-static void e1000_loopback_cleanup(struct e1000_adapter *adapter)
++void e1000_loopback_cleanup(struct e1000_adapter *adapter)
+ {
+ 	struct e1000_hw *hw = &adapter->hw;
+ 	u32 rctl;
+@@ -1593,7 +1593,7 @@ static int e1000_loopback_test(struct e1000_adapter *adapter, u64 *data)
+ 	if (*data)
+ 		goto out;
+ 
+-	*data = e1000_setup_loopback_test(adapter);
++	*data = e1000_loopback_setup(adapter);
+ 	if (*data)
+ 		goto err_loopback;
+ 
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index b63f316..25102e6 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -3256,6 +3256,14 @@ static void e1000_configure(struct e1000_adapter *adapter)
+ 	e1000_configure_rx(adapter);
+ 	adapter->alloc_rx_buf(adapter, e1000_desc_unused(adapter->rx_ring),
+ 			      GFP_KERNEL);
++
++	if (adapter->netdev->features & NETIF_F_LOOPBACK) {
++		if (e1000_loopback_setup(adapter)) {
++			e_warn("Could not activate loopback mode\n");
++			adapter->netdev->features &= ~NETIF_F_LOOPBACK;
++		} else
++			e_info("Loopback mode activated\n");
++	}
+ }
+ 
+ /**
+@@ -5914,9 +5922,17 @@ static int e1000_set_features(struct net_device *netdev,
+ 		adapter->flags |= FLAG_TSO_FORCE;
+ 
+ 	if (!(changed & (NETIF_F_HW_VLAN_RX | NETIF_F_HW_VLAN_TX |
+-			 NETIF_F_RXCSUM)))
++			 NETIF_F_RXCSUM | NETIF_F_LOOPBACK)))
+ 		return retval;
+ 
++	/* disable loopback if requested */
++	if ((changed & NETIF_F_LOOPBACK) && (!(features & NETIF_F_LOOPBACK))) {
++		netdev_dbg(netdev, "Disabling loopback mode\n");
++		e1000_loopback_cleanup(adapter);
++	}
++	/* otherwise loopback is enabled via e1000e_reinit_locked
++	 * below and each time the device is up'ed */
++
+ 	if (netif_running(netdev))
+ 		e1000e_reinit_locked(adapter);
+ 	else
+@@ -6113,6 +6129,9 @@ static int __devinit e1000_probe(struct pci_dev *pdev,
+ 	/* Set user-changeable features (subset of all device features) */
+ 	netdev->hw_features = netdev->features;
+ 
++	/* Add capabilities, disabled by default */
++	netdev->hw_features |= NETIF_F_LOOPBACK;
++
+ 	if (adapter->flags & FLAG_HAS_HW_VLAN_FILTER)
+ 		netdev->features |= NETIF_F_HW_VLAN_FILTER;
+ 
 -- 
 1.7.3.1
 
