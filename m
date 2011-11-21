@@ -1,208 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab1KUTUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:20:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42895 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab1KUTUn (ORCPT
+	id S1756468Ab1KUTU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:20:58 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45079 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1KUTU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:20:43 -0500
-Date: Mon, 21 Nov 2011 23:18:11 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: [RFC] Make Yama pid_ns aware
-Message-ID: <20111121191811.GA24039@albatros>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+	Mon, 21 Nov 2011 14:20:57 -0500
+Date: Mon, 21 Nov 2011 11:20:41 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH UPDATED] dmatest: don't use set_freezable_with_signal()
+Message-ID: <20111121192041.GB25776@google.com>
+References: <20111121184316.GH15314@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+In-Reply-To: <20111121184316.GH15314@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit 981ed70d8e (dmatest: make dmatest threads freezable) made
+dmatest kthread use set_freezable_with_signal(); however, the
+interface is scheduled to be removed in the next merge window.
 
-As Yama's sysctls are about defining a security policy for the system,
-it is reasonable to define it per container in case of LXC containers
-(or out-of-tree alternatives like OpenVZ).  In my opinion they belong
-to pid namespace.  With per-pid_ns sysctls it is possible to create
-multiple containers with different ptrace, /tmp, etc. policies.
+The problem is that unlike userland tasks there's no default place
+which handles signal pending state and it isn't clear who owns and/or
+is responsible for clearing TIF_SIGPENDING.  For example, in the
+current code, try_to_freeze() clears TIF_SIGPENDING but it isn't sure
+whether it actually owns the TIF_SIGPENDING nor is it race-free -
+ie. the task may continue to run with TIF_SIGPENDING set after the
+freezable section.
 
-As Yama is not merged yet, I post the patch in this thread.
+Unfortunately, we don't have wait_for_completion_freezable_timeout().
+This patch open codes it and uses wait_event_freezable_timeout()
+instead and removes timeout reloading - wait_event_freezable_timeout()
+won't return across freezing events (currently racy but fix scheduled)
+and timer doesn't decrement while the task is in freezer.  Although
+this does lose timer-reset-over-freezing, given that timeout is
+supposed to be long enough and failure to finish inside is considered
+irrecoverable, I don't think this is worth the complexity.
 
-The patch is straightforward:
+While at it, move completion to outer scope and explain that we're
+ignoring dangling pointer problem after timeout.  This should give
+slightly better chance at avoiding oops after timeout.
 
-1) all sysctl variables are moved from global vars to pid_namespace
-fields.
-
-2) each cloned pid ns gets the settings of the parent.
-
-3) the variables of current pid ns are visible through sysctl interface.
-
-proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
-ipc/ipc_sysctl.c.
-
-(The patch is not tested.)
-
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index 38d1032..46edaf8 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -30,6 +30,11 @@ struct pid_namespace {
- #ifdef CONFIG_BSD_PROCESS_ACCT
- 	struct bsd_acct_struct *bacct;
- #endif
-+#ifdef CONFIG_SECURITY_YAMA
-+	int ptrace_scope;
-+	int protected_sticky_symlinks;
-+	int protected_nonaccess_hardlinks;
-+#endif
- };
- 
- extern struct pid_namespace init_pid_ns;
-diff --git a/kernel/pid.c b/kernel/pid.c
-index fa5f722..0cd8926 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
- 	.last_pid = 0,
- 	.level = 0,
- 	.child_reaper = &init_task,
-+#ifdef CONFIG_SECURITY_YAMA
-+	.ptrace_scope = 1,
-+	.protected_sticky_symlinks = 1,
-+	.protected_nonaccess_hardlinks = 1,
-+#endif
- };
- EXPORT_SYMBOL_GPL(init_pid_ns);
- 
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index e9c9adc..73d47c4 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
- 	if (err)
- 		goto out_put_parent_pid_ns;
- 
-+#ifdef CONFIG_SECURITY_YAMA
-+	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
-+	ns->protected_sticky_symlinks =
-+		parent_pid_ns->protected_sticky_symlinks;
-+	ns->protected_nonaccess_hardlinks =
-+		parent_pid_ns->protected_nonaccess_hardlinks;
-+#endif
-+
- 	return ns;
- 
- out_put_parent_pid_ns:
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-index a92538c..cf99a8c 100644
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -16,10 +16,7 @@
- #include <linux/ptrace.h>
- #include <linux/prctl.h>
- #include <linux/ratelimit.h>
--
--static int ptrace_scope = 1;
--static int protected_sticky_symlinks = 1;
--static int protected_nonaccess_hardlinks = 1;
-+#include <linux/pid_namespace.h>
- 
- /* describe a PTRACE relationship for potential exception */
- struct ptrace_relation {
-@@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
- 
- 	/* require ptrace target be a child of ptracer on attach */
- 	if (mode == PTRACE_MODE_ATTACH &&
--	    ptrace_scope &&
-+	    current->nsproxy->pid_ns->ptrace_scope &&
- 	    !capable(CAP_SYS_PTRACE) &&
- 	    !task_is_descendant(current, child) &&
- 	    !ptracer_exception_found(current, child))
-@@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
- 	const struct inode *inode;
- 	const struct cred *cred;
- 
--	if (!protected_sticky_symlinks)
-+	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
- 		return 0;
- 
- 	/* if inode isn't a symlink, don't try to evaluate blocking it */
-@@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
- 	const int mode = inode->i_mode;
- 	const struct cred *cred = current_cred();
- 
--	if (!protected_nonaccess_hardlinks)
-+	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
- 		return 0;
- 
- 	if (cred->fsuid != inode->i_uid &&
-@@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
- static int zero;
- static int one = 1;
- 
-+static void *get_pid_data(ctl_table *table)
-+{
-+	char *which = table->data;
-+	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
-+	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
-+	return which;
-+}
-+
-+static int proc_pid_dointvec_minmax(ctl_table *table, int write,
-+	void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	struct ctl_table pid_table;
-+
-+	memcpy(&pid_table, table, sizeof(pid_table));
-+	pid_table.data = get_pid_data(table);
-+
-+	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
-+}
-+
-+
- struct ctl_path yama_sysctl_path[] = {
- 	{ .procname = "kernel", },
- 	{ .procname = "yama", },
-@@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
- static struct ctl_table yama_sysctl_table[] = {
- 	{
- 		.procname       = "protected_sticky_symlinks",
--		.data           = &protected_sticky_symlinks,
-+		.data           = &init_pid_ns.protected_sticky_symlinks,
- 		.maxlen         = sizeof(int),
- 		.mode           = 0644,
--		.proc_handler   = proc_dointvec_minmax,
-+		.proc_handler   = proc_pid_dointvec_minmax,
- 		.extra1         = &zero,
- 		.extra2         = &one,
- 	},
- 	{
- 		.procname       = "protected_nonaccess_hardlinks",
--		.data           = &protected_nonaccess_hardlinks,
-+		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
- 		.maxlen         = sizeof(int),
- 		.mode           = 0644,
--		.proc_handler   = proc_dointvec_minmax,
-+		.proc_handler   = proc_pid_dointvec_minmax,
- 		.extra1         = &zero,
- 		.extra2         = &one,
- 	},
- 	{
- 		.procname       = "ptrace_scope",
--		.data           = &ptrace_scope,
-+		.data           = &init_pid_ns.ptrace_scope,
- 		.maxlen         = sizeof(int),
- 		.mode           = 0644,
--		.proc_handler   = proc_dointvec_minmax,
-+		.proc_handler   = proc_pid_dointvec_minmax,
- 		.extra1         = &zero,
- 		.extra2         = &one,
- 	},
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
+Oops, forgot to replace set_freezable_with_signal() with
+set_freezable().  Updated.
+
+Thank you.
+
+ drivers/dma/dmatest.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 27 insertions(+), 19 deletions(-)
+
+Index: work/drivers/dma/dmatest.c
+===================================================================
+--- work.orig/drivers/dma/dmatest.c
++++ work/drivers/dma/dmatest.c
+@@ -214,9 +214,18 @@ static unsigned int dmatest_verify(u8 **
+ 	return error_count;
+ }
+ 
+-static void dmatest_callback(void *completion)
++/* poor man's completion - we want to use wait_event_freezable() on it */
++struct dmatest_done {
++	bool			done;
++	wait_queue_head_t	*wait;
++};
++
++static void dmatest_callback(void *arg)
+ {
+-	complete(completion);
++	struct dmatest_done *done = arg;
++
++	done->done = true;
++	wake_up_all(done->wait);
+ }
+ 
+ /*
+@@ -235,7 +244,9 @@ static void dmatest_callback(void *compl
+  */
+ static int dmatest_func(void *data)
+ {
++	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(done_wait);
+ 	struct dmatest_thread	*thread = data;
++	struct dmatest_done	done = { .wait = &done_wait };
+ 	struct dma_chan		*chan;
+ 	const char		*thread_name;
+ 	unsigned int		src_off, dst_off, len;
+@@ -252,7 +263,7 @@ static int dmatest_func(void *data)
+ 	int			i;
+ 
+ 	thread_name = current->comm;
+-	set_freezable_with_signal();
++	set_freezable();
+ 
+ 	ret = -ENOMEM;
+ 
+@@ -306,9 +317,6 @@ static int dmatest_func(void *data)
+ 		struct dma_async_tx_descriptor *tx = NULL;
+ 		dma_addr_t dma_srcs[src_cnt];
+ 		dma_addr_t dma_dsts[dst_cnt];
+-		struct completion cmp;
+-		unsigned long start, tmo, end = 0 /* compiler... */;
+-		bool reload = true;
+ 		u8 align = 0;
+ 
+ 		total_tests++;
+@@ -391,9 +399,9 @@ static int dmatest_func(void *data)
+ 			continue;
+ 		}
+ 
+-		init_completion(&cmp);
++		done.done = false;
+ 		tx->callback = dmatest_callback;
+-		tx->callback_param = &cmp;
++		tx->callback_param = &done;
+ 		cookie = tx->tx_submit(tx);
+ 
+ 		if (dma_submit_error(cookie)) {
+@@ -407,20 +415,20 @@ static int dmatest_func(void *data)
+ 		}
+ 		dma_async_issue_pending(chan);
+ 
+-		do {
+-			start = jiffies;
+-			if (reload)
+-				end = start + msecs_to_jiffies(timeout);
+-			else if (end <= start)
+-				end = start + 1;
+-			tmo = wait_for_completion_interruptible_timeout(&cmp,
+-								end - start);
+-			reload = try_to_freeze();
+-		} while (tmo == -ERESTARTSYS);
++		wait_event_freezable_timeout(done_wait, done.done,
++					     msecs_to_jiffies(timeout));
+ 
+ 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+ 
+-		if (tmo == 0) {
++		if (!done.done) {
++			/*
++			 * We're leaving the timed out dma operation with
++			 * dangling pointer to done_wait.  To make this
++			 * correct, we'll need to allocate wait_done for
++			 * each test iteration and perform "who's gonna
++			 * free it this time?" dancing.  For now, just
++			 * leave it dangling.
++			 */
+ 			pr_warning("%s: #%u: test timed out\n",
+ 				   thread_name, total_tests - 1);
+ 			failed_tests++;
