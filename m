@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab1KUWFj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:05:39 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63595 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757155Ab1KUWFi (ORCPT
+	id S1757065Ab1KUWHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:07:15 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59854 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab1KUWHN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:05:38 -0500
-Date: Mon, 21 Nov 2011 13:58:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 03/10] threadgroup: extend threadgroup_lock() to cover
- exit and exec
-Message-ID: <20111121215839.GL25776@google.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
- <20111113164426.GB9446@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111113164426.GB9446@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 21 Nov 2011 17:07:13 -0500
+Message-ID: <1321913111.28118.40.camel@twins>
+Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
+ offcore events
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Stephane Eranian <eranian@google.com>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+Date: Mon, 21 Nov 2011 23:05:11 +0100
+In-Reply-To: <alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
+	 <tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
+	 <alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
+	 <1321901536.28118.20.camel@twins>
+	 <alpine.DEB.2.00.1111211358570.23676@cl320.eecs.utk.edu>
+	 <CABPqkBRHW0ZmeqADptvBySLZpi6jc_bEFKoukkA6rtd5o04ziQ@mail.gmail.com>
+	 <alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Frederic.
+On Mon, 2011-11-21 at 16:04 -0500, Vince Weaver wrote:
 
-On Sun, Nov 13, 2011 at 05:44:32PM +0100, Frederic Weisbecker wrote:
-> > The next patch will update cgroup so that it can take full advantage
-> > of this change.
+> The PAPI code currently uses FORMAT_GROUP and puts as many events as 
+> possible in a group.  The way we maximize events in a group is to
+> add events until perf_events indicates a failure.
 > 
-> I don't want to nitpick really,
-
-Heh, please go ahead and nitpick.  That's one of the main purposes of
-LKML after all. :)
-
-> but IMHO the races involved in exit and exec
-> are too different, specific and complicated on their own to be solved in a
-> single one patch. This should be split in two things.
+> When NMI watchdog is enabled, a counter is stolen.  Yet the perf_events
+> code does not account for this.
 > 
-> The specific problems and their fix need to be described more in detail
-> in the changelog because the issues are very tricky.
+> So say on an AMD machine with 4 counters (3 after one is stolen) 
+> perf_events lets you add 4 events to an event group, even though only 3 
+> are available.  It does not report failure upon open or start, only at 
+> read.  By then it's too late.
 > 
-> The exec case:
-> 
-> IIUC, the race in exec is about the group leader that can be changed
-> to become the exec'ing thread, making while_each_thread() unsafe.
+> We have to work around this, by doing an extra read at open time to verify 
+> that the event group actually is valid, adding overhead.
 
-Not only that, pid changes, sighand struct may get swapped, and other
-weird things which aren't usually expected for a live task happen.
-It's basically semi-killed and then resurrected.
+So strictly speaking this is a starvation case, we create a group that
+requires the entire PMU but then run a higher priority event that won't
+yield resulting in the group never getting scheduled.
 
-> We also have other things happening there like all the other threads
-> in the group that get killed, but that should be handled by the threadgroup_change_begin()
-> you put in the exit path.
-> The old leader is also killed but release_task() -> __unhash_process() is called
-> for it manually from the exec path. However this thread too should be covered by your
-> synchronisation in exit().
-> 
-> So after your protection in the exit path, the only thing to protect against in exec
-> is that group_leader that can change concurrently. But I may be missing something in the picture.
+Now fully agreed that starvation sucks, but I'm not exactly sure what to
+do about it.
 
-Hmm... an exec'ing task goes through transitions which usually aren't
-allowed to happen.  It assumes exclusive access to group-shared data
-structures and may ditch the current one and create a new one.
-
-Sure, it's possible to make every cgroup method correct w.r.t. all
-those via explicit locking or by being more careful but I don't see
-much point in such excercise.  If the code is sitting in some hot path
-and the added exclusion is gonna add significant amount of contention,
-sure, we should trade off easiness for better performance /
-scalability but this is for cgroup modifications, a fundamentally cold
-path, and the added locking is per-task or per-threadgroup.  I don't
-see any reason not to be easy here.
-
-Please read on.
-
-> Also note this is currently protected by the tasklist readlock. Cred
-> guard mutex is certainly better, I just don't remember if you remove
-> the tasklist lock in a further patch.
-
-I don't remove tasklist_lock.
-
-> The exit case:
-> 
-> There the issue is about racing against cgroup_exit() where the task can be
-> assigned to the root cgroup. Is this really a problem in fact? I don't know
-> if subsystems care about that. Perhaps some of them are buggy in that
-> regard. At least the task counter handles that and it needs a
-> ->cancel_attach_task() for this purpose in the case the migration fails due to exit.
-> Not sure about others. A real synchronization against exit is less error prone for sure.
-> In the end that's probably a win.
-
-This is the same story.  Yes, we can narrow the locking and try to
-make sure everyone handles partially destroyed tasks properly in all
-methods, but for what?  If we can give stable threadgroups to all
-cgroup methods without introducing performance or scalability
-bottleneck, that's the right thing to do.  Please also note that bugs
-stemming from failure to handle those corner cases properly will be
-subtle, difficult to reproduce and track down.
-
-In general, for any subsystem with pluggable interface, I think it's
-best to put as much complexity as possible into the core layer to make
-things eaiser for its customers.  It becomes excruciatingly painful if
-the API invites subtle corner case bugs and the subsystem grows
-several dozen clients down the road.
-
-So, to me, what seems more important is how to make it easier for each
-cgroup client instead of what's the minimal that's necessary right
-now.
-
-Heh, did I make any sense? :)
-
-Thanks.
-
--- 
-tejun
+What isn't helping either is that all this scheduling code is per
+arch :/
