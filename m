@@ -1,171 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab1KUQ54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:57:56 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:36424 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754907Ab1KUQ5y (ORCPT
+	id S1755918Ab1KUQ5z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:57:55 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52219 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab1KUQ5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:57:54 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-ext4@vger.kernel.org
-Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        adilger@dilger.ca
-Subject: [PATCH V2 18/19] ext4: let ext4_rename handle inline dir.
-Date: Tue, 22 Nov 2011 00:39:56 +0800
-Message-Id: <1321893597-11024-18-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
-References: <4ECA7DB3.9040605@tao.ma>
- <1321893597-11024-1-git-send-email-tm@tao.ma>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
+	Mon, 21 Nov 2011 11:57:53 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH v2] perf script: Add comm filtering option
+Date: Mon, 21 Nov 2011 09:57:46 -0700
+Message-Id: <1321894666-23909-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+Allows collecting events system wide and then pulling out events
+for a specific task name(s). e.g,
 
-In case of we rename a dir, ext4_rename has to read the dir block
-and change its dotdot's information. The old ext4_rename encapsulated
-the dir_block read into itself. So this patch try to add a new function
-ext4_get_dir_block which get the dir buffer information so the
-ext4_rename can handle it properly.
+    perf script -c gnome-shell,gnome-terminal
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Applies on top of:
+    https://lkml.org/lkml/2011/11/13/74
+
+v1->v2
+- use comm_list from symbol_conf
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
- fs/ext4/inline.c |   15 +++++++++++++++
- fs/ext4/namei.c  |   38 ++++++++++++++++++++++++++++++++------
- fs/ext4/xattr.h  |   12 ++++++++++++
- 3 files changed, 59 insertions(+), 6 deletions(-)
+ tools/perf/builtin-script.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
-index 4930e2e..d73585e 100644
---- a/fs/ext4/inline.c
-+++ b/fs/ext4/inline.c
-@@ -1476,6 +1476,21 @@ out:
- 	return ret;
- }
- 
-+struct buffer_head *ext4_get_first_inline_block(struct inode *inode,
-+				void **buf, int *buf_size, int *retval)
-+{
-+	struct ext4_iloc iloc;
-+
-+	*retval = ext4_get_inode_loc(inode, &iloc);
-+	if (*retval)
-+		return NULL;
-+
-+	*buf = ext4_raw_inode(&iloc)->i_block;
-+	*buf_size = EXT4_MIN_INLINE_DATA_SIZE;
-+
-+	return iloc.bh;
-+}
-+
- int ext4_destroy_inline_data(handle_t *handle, struct inode *inode)
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 01329ca..c170d39 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -440,6 +440,7 @@ static int process_sample_event(union perf_event *event,
+ 				struct perf_session *session)
  {
- 	int ret;
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 24cdb61..cc4db68 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2507,6 +2507,31 @@ retry:
- 	(ext4_next_entry((struct ext4_dir_entry_2 *)(buffer), size)->inode)
+ 	struct thread *thread = perf_session__findnew(session, event->ip.pid);
++	struct addr_location al;
  
- /*
-+ * Try to find buffer head where contains the parent block.
-+ * It should be the inode block if it is inlined or the 1st block
-+ * if it is a normal dir.
-+ */
-+static struct buffer_head *ext4_get_first_dir_block(handle_t *handle,
-+						    struct inode *inode,
-+						    void **buf,
-+						    int *buf_size,
-+						    int *retval)
-+{
-+	struct buffer_head *bh;
-+
-+	if (!ext4_has_inline_data(inode)) {
-+		bh = ext4_bread(handle, inode, 0, 0, retval);
-+		if (!bh)
-+			return NULL;
-+		*buf = bh->b_data;
-+		*buf_size = inode->i_sb->s_blocksize;
-+		return bh;
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+@@ -458,6 +459,15 @@ static int process_sample_event(union perf_event *event,
+ 		return 0;
+ 	}
+ 
++	if (perf_event__preprocess_sample(event, session, &al, sample, 0) < 0) {
++		pr_err("problem processing %d event, skipping it.\n",
++		       event->header.type);
++		return -1;
 +	}
 +
-+	return ext4_get_first_inline_block(inode, buf, buf_size, retval);
-+}
++	if (al.filtered)
++		return 0;
 +
-+/*
-  * Anybody can rename anything with this: the permission checks are left to the
-  * higher-level routines.
-  */
-@@ -2517,7 +2542,8 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	struct inode *old_inode, *new_inode;
- 	struct buffer_head *old_bh, *new_bh, *dir_bh;
- 	struct ext4_dir_entry_2 *old_de, *new_de;
--	int retval, force_da_alloc = 0;
-+	int buf_size, retval, force_da_alloc = 0;
-+	void *dir_buf = NULL;
+ 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+ 		return 0;
  
- 	dquot_initialize(old_dir);
- 	dquot_initialize(new_dir);
-@@ -2564,11 +2590,12 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 				goto end_rename;
- 		}
- 		retval = -EIO;
--		dir_bh = ext4_bread(handle, old_inode, 0, 0, &retval);
-+		dir_bh = ext4_get_first_dir_block(handle, old_inode,
-+						  &dir_buf, &buf_size, &retval);
- 		if (!dir_bh)
- 			goto end_rename;
--		if (le32_to_cpu(PARENT_INO(dir_bh->b_data,
--				old_dir->i_sb->s_blocksize)) != old_dir->i_ino)
-+		if (le32_to_cpu(PARENT_INO(dir_buf,
-+					   buf_size)) != old_dir->i_ino)
- 			goto end_rename;
- 		retval = -EMLINK;
- 		if (!new_inode && new_dir != old_dir &&
-@@ -2648,8 +2675,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	old_dir->i_ctime = old_dir->i_mtime = ext4_current_time(old_dir);
- 	ext4_update_dx_flag(old_dir);
- 	if (dir_bh) {
--		PARENT_INO(dir_bh->b_data, new_dir->i_sb->s_blocksize) =
--						cpu_to_le32(new_dir->i_ino);
-+		PARENT_INO(dir_buf, buf_size) = cpu_to_le32(new_dir->i_ino);
- 		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
- 		retval = ext4_handle_dirty_metadata(handle, old_inode, dir_bh);
- 		if (retval) {
-diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
-index d889582..5300206 100644
---- a/fs/ext4/xattr.h
-+++ b/fs/ext4/xattr.h
-@@ -179,6 +179,10 @@ extern int ext4_delete_inline_entry(handle_t *handle,
- 				    struct ext4_dir_entry_2 *de_del,
- 				    struct buffer_head *bh);
- extern int empty_inline_dir(struct inode *dir, int *has_inline_data);
-+extern struct buffer_head *ext4_get_first_inline_block(struct inode *inode,
-+						       void **buf,
-+						       int *buf_size,
-+						       int *retval);
- # else  /* CONFIG_EXT4_FS_XATTR */
- 
- static inline int
-@@ -387,6 +391,14 @@ static inline int empty_inline_dir(struct inode *dir, int *has_inline_data)
- {
- 	return 0;
- }
-+
-+static inline struct buffer_head *
-+ext4_get_first_inline_block(struct inode *inode,
-+			    void **buf, int *buf_size,
-+			    int *retval)
-+{
-+	return NULL;
-+}
- # endif  /* CONFIG_EXT4_FS_XATTR */
- 
- #ifdef CONFIG_EXT4_FS_SECURITY
+@@ -1084,6 +1094,8 @@ static const struct option options[] = {
+ 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
+ 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
++		   "only display events for these comms"),
+ 	OPT_BOOLEAN('I', "show-info", &show_full_info,
+ 		    "display extended information from perf.data file"),
+ 	OPT_END()
 -- 
-1.7.0.4
+1.7.7.1
 
