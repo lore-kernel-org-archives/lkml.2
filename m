@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab1KUXHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:07:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32902 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab1KUXHp convert rfc822-to-8bit (ORCPT
+	id S1755132Ab1KUXIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:08:36 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:56754 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752950Ab1KUXIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:07:45 -0500
+	Mon, 21 Nov 2011 18:08:34 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18qs8JCRDsqPzNE0x21swLs8RBDCLwFfo6kSySXvI
+	pyL5lKiVHfLTOL
+Message-ID: <4ECAD9F0.9050508@gmx.de>
+Date: Mon, 21 Nov 2011 23:08:32 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd_4a9qDkuA6eTS5V0NfDnorRAUyh9T5=bSxzgqpmfcL=w@mail.gmail.com>
-References: <CAKYAXd-sZrF0DD=cuRVAX3Uoivi6fYhpM5P=awaUUU=oQ8ZVow@mail.gmail.com>
-	<Pine.LNX.4.44L0.1111211012550.1848-100000@iolanthe.rowland.org>
-	<CAKYAXd_4a9qDkuA6eTS5V0NfDnorRAUyh9T5=bSxzgqpmfcL=w@mail.gmail.com>
-Date: Tue, 22 Nov 2011 08:07:44 +0900
-Message-ID: <CAKYAXd-X1gAF2gyYxk2wPk2Qw=Qw+Y7rX_F6yQzZn_esOZj+QQ@mail.gmail.com>
-Subject: Re: [PATCH] NLS: raname "maxlen" to "maxout" in UTF conversion routines
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Joonyoung Shim <jy0922.shim@samsung.com>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: Fix return value of fb_notifier_call_chain
+References: <1321858524-19368-1-git-send-email-jy0922.shim@samsung.com>
+In-Reply-To: <1321858524-19368-1-git-send-email-jy0922.shim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/22 NamJae Jeon <linkinjeon@gmail.com>:
-> 2011/11/22 Alan Stern <stern@rowland.harvard.edu>:
->> As requested by NamJae Jeon, this patch (as1503) changes the name of
->> the "maxlen" parameters to "maxout" in the various UTF conversion
->> routines.  This should make the role of that parameter more clear.
->>
->> The patch also renames the "len" parameters to "inlen", for the same
->> reason.
->>
->> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> Reviewed-by: NamJae Jeon <linkinjeon@gmail.com>
->>
->> ---
->>
->> NamJae, I hope you like this better.  Since Greg has already accepted
->> the first patch, I decided it was easier to write a new patch to change
->> the variable names.
->>
-Hi, Alan.
-Thanks a lot.
->>
->
+On 11/21/2011 06:55 AM, Joonyoung Shim wrote:
+> The return value of blocking_notifier_call_chain isn't errno value, it
+> is just notify return value. The ret of fb_notifier_call_chain should is
+> restored to error value from notify return value using
+> notifier_to_errno().
+
+If I'm not wrong this patch would rather break things than fix them. As I
+understand the notifier_calls would be required to encode the return value with
+notifier_from_errno. This does not happen at the moment for fb clients, for
+example fbcon_event_notify in drivers/video/console/fbcon.c, so this patch would
+screw up the return values, I think.
+
+
+Best regards,
+
+Florian Tobias Schandinat
+
+> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+> ---
+>  drivers/video/fb_notify.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/fb_notify.c b/drivers/video/fb_notify.c
+> index 74c2da5..49a64a3 100644
+> --- a/drivers/video/fb_notify.c
+> +++ b/drivers/video/fb_notify.c
+> @@ -42,6 +42,8 @@ EXPORT_SYMBOL(fb_unregister_client);
+>   */
+>  int fb_notifier_call_chain(unsigned long val, void *v)
+>  {
+> -	return blocking_notifier_call_chain(&fb_notifier_list, val, v);
+> +	int ret = blocking_notifier_call_chain(&fb_notifier_list, val, v);
+> +
+> +	return notifier_to_errno(ret);
+>  }
+>  EXPORT_SYMBOL_GPL(fb_notifier_call_chain);
+
