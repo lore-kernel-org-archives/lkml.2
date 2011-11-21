@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab1KUIF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 03:05:59 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:33369 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab1KUIF5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 03:05:57 -0500
-Date: Mon, 21 Nov 2011 09:05:54 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111121080554.GB1625@x4.trippels.de>
-References: <20111118072519.GA1615@x4.trippels.de>
- <20111118075521.GB1615@x4.trippels.de>
- <1321605837.30341.551.camel@debian>
- <20111118085436.GC1615@x4.trippels.de>
- <20111118120201.GA1642@x4.trippels.de>
- <1321836285.30341.554.camel@debian>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755383Ab1KUIIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 03:08:35 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44295 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab1KUIId convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:2>);
+	Mon, 21 Nov 2011 03:08:33 -0500
+Message-Id: <4ECA150C0200007800062072@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 21 Nov 2011 08:08:28 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Kevin Cernekee" <cernekee@gmail.com>,
+        "Rusty Russell" <rusty@rustcorp.com.au>
+Cc: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/2] module: Fix performance regression on
+ modules with large symbol tables
+References: <4EC0E4040200007800060B1C@nat28.tlf.novell.com>
+ <63fcc782681c8b3bd330164871ad4785@localhost>
+ <87ipme9i9o.fsf@rustcorp.com.au>
+In-Reply-To: <87ipme9i9o.fsf@rustcorp.com.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1321836285.30341.554.camel@debian>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.21 at 08:44 +0800, Alex,Shi wrote:
-> On Fri, 2011-11-18 at 20:02 +0800, Markus Trippelsdorf wrote:
-> > On 2011.11.18 at 09:54 +0100, Markus Trippelsdorf wrote:
-> > > On 2011.11.18 at 16:43 +0800, Alex,Shi wrote:
-> > > > > > 
-> > > > > > The dirty flag comes from a bunch of unrelated xfs patches from Christoph, that
-> > > > > > I'm testing right now.
-> > > > 
-> > > > Where is the xfs patchset? I am wondering if it is due to slub code. 
-> > 
-> > I begin to wonder if this might be the result of a compiler bug. 
-> > The kernel in question was compiled with gcc version 4.7.0 20111117. And
-> > there was commit to the gcc repository today that looks suspicious:
-> > http://gcc.gnu.org/viewcvs?view=revision&revision=181466
-> > 
+>>> On 21.11.11 at 06:06, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Thu, 17 Nov 2011 19:15:02 -0800, Kevin Cernekee <cernekee@gmail.com> wrote:
+>> Potential memory savings from reusing EXACT strtab matches: 36,475 bytes
+>> total; 35,432 from nvidia.ko.  For comparison, discarding non-core
+>> strtab entries saved about 91KB on my system.
+> ...
+>> Original scheme: 1.230s
+>> With patch V2: 0.280s
+>> With naive copying: 0.058s
 > 
-> Tell us if it is still there and you can reproduce it.
+> I'm deeply tempted.  It's very simple, 46 lines shorter, preserves exact
+> matches, and doesn't have any strange slowdowns on corner cases.
+> 
+> But like Kevin, I could be convinced either way.  Jan?
 
-Hm, just noticed the "3.2.0-rc1 panic on PowerPC" thread:
-http://thread.gmane.org/gmane.linux.kernel/1215584
+I'd be fine with the simpler solution, as long it is clearly understood
+(and marked as intended to be that was for the time being) that it
+has room for improvement, should it ever turn out to yield more
+significant savings in other contexts.
 
-The backtraces look suspiciously similar to mine.
+Jan
 
--- 
-Markus
