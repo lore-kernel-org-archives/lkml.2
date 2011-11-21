@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab1KUSyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:54:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56123 "EHLO mx1.redhat.com"
+	id S1756385Ab1KUSyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:54:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25529 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756397Ab1KUSyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:54:21 -0500
+	id S1752824Ab1KUSyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:54:16 -0500
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 3/3] x86/PCI: Convert maintaining FW-assigned BIOS BAR
-	values to use a list
+Subject: [PATCH -v2 2/3] x86/PCI: Infrastructure to maintain a list of
+	FW-assigned BIOS BAR values
 To: jbarnes@virtuousgeek.org
 Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
         linux-kernel@vger.kernel.org
-Date: Mon, 21 Nov 2011 11:54:19 -0700
-Message-ID: <20111121185419.9603.27982.stgit@amt.stowe>
+Date: Mon, 21 Nov 2011 11:54:13 -0700
+Message-ID: <20111121185413.9603.12314.stgit@amt.stowe>
 In-Reply-To: <20111121185401.9603.34587.stgit@amt.stowe>
 References: <20111121185401.9603.34587.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -26,100 +26,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Myron Stowe <mstowe@redhat.com>
 
-This patch converts the underlying maintenance aspects of FW-assigned
-BIOS BAR values from a statically allocated array within struct pci_dev
-to a list of temporary, stand alone, entries.
+Commit 58c84eda075 introduced functionality to try and reinstate the
+original BIOS BAR addresses of a PCI device when normal resource
+assignment attempts fail.  To keep track of the BIOS BAR addresses,
+struct pci_dev was augmented with an array to hold the BAR addresses
+of the PCI device: 'resource_size_t fw_addr[DEVICE_COUNT_RESOURCE]'.
+
+The reinstatement of BAR addresses is an uncommon event leaving the
+'fw_addr' array unused under normal circumstances.  This functionality
+is also currently architecture specific with an implementation limited
+to x86.  As the use of struct pci_dev is so prevalent, having the
+'fw_addr' array residing within such seems somewhat wasteful.
+
+This patch introduces a stand alone data structure and interfacing
+routines for maintaining a list of FW-assigned BIOS BAR value entries.
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- arch/x86/pci/i386.c     |    4 +++-
- drivers/pci/setup-res.c |   24 +++++++++++++++++++++---
- include/linux/pci.h     |    1 -
- 3 files changed, 24 insertions(+), 5 deletions(-)
+ arch/x86/pci/i386.c |   79 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    1 +
+ 2 files changed, 80 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index bfb9d6a..f9bfd19 100644
+index 494f2e7..bfb9d6a 100644
 --- a/arch/x86/pci/i386.c
 +++ b/arch/x86/pci/i386.c
-@@ -260,7 +260,8 @@ static void __init pcibios_allocate_resources(int pass)
- 					idx, r, disabled, pass);
- 				if (pci_claim_resource(dev, idx) < 0) {
- 					/* We'll assign a new address later */
--					dev->fw_addr[idx] = r->start;
-+					pcibios_save_fw_addr(dev,
-+							idx, r->start);
- 					r->end -= r->start;
- 					r->start = 0;
- 				}
-@@ -306,6 +307,7 @@ static int __init pcibios_assign_resources(void)
- 	}
+@@ -38,6 +38,85 @@
+ #include <asm/io_apic.h>
  
- 	pci_assign_unassigned_resources();
-+	pcibios_fw_addr_list_del();
- 
- 	return 0;
- }
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index cdfed4f..b28750e 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -157,16 +157,34 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
- 	return ret;
- }
  
 +/*
-+ * Generic function that returns a value indicating that the device's
-+ * original BIOS BAR address was not saved and so is not available for
-+ * reinstatement.
-+ *
-+ * Can be over-ridden by architecture specific code that implements
-+ * reinstatement functionality rather than leaving it disabled when
-+ * normal allocation attempts fail.
++ * This list of dynamic mappings is for temporarily maintaining
++ * original BIOS BAR addresses for possible reinstatement.
 + */
-+resource_size_t __weak pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
++struct pcibios_fwaddrmap {
++	struct list_head list;
++	struct pci_dev *dev;
++	resource_size_t fw_addr[DEVICE_COUNT_RESOURCE];
++};
++
++static LIST_HEAD(pcibios_fwaddrmappings);
++static DEFINE_SPINLOCK(pcibios_fwaddrmap_lock);
++
++/* Must be called with 'pcibios_fwaddrmap_lock' lock held. */
++static struct pcibios_fwaddrmap *pcibios_fwaddrmap_lookup(struct pci_dev *dev)
 +{
-+	return 0;
++	struct pcibios_fwaddrmap *map;
++
++	list_for_each_entry(map, &pcibios_fwaddrmappings, list)
++		if (map->dev == dev)
++			return map;
++
++	return NULL;
 +}
 +
- static int pci_revert_fw_address(struct resource *res, struct pci_dev *dev, 
- 		int resno, resource_size_t size)
- {
- 	struct resource *root, *conflict;
--	resource_size_t start, end;
-+	resource_size_t fw_addr, start, end;
- 	int ret = 0;
- 
-+	fw_addr = pcibios_retrieve_fw_addr(dev, resno);
-+	if (!fw_addr)
-+		return 1;
++static void
++pcibios_save_fw_addr(struct pci_dev *dev, int idx, resource_size_t fw_addr)
++{
++	unsigned long flags;
++	struct pcibios_fwaddrmap *map;
 +
- 	start = res->start;
- 	end = res->end;
--	res->start = dev->fw_addr[resno];
-+	res->start = fw_addr;
- 	res->end = res->start + size - 1;
++	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
++	map = pcibios_fwaddrmap_lookup(dev);
++	if (!map) {
++		spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
++		map = kzalloc(sizeof(*map), GFP_KERNEL);
++		if (!map)
++			return;
++
++		map->dev = pci_dev_get(dev);
++		map->fw_addr[idx] = fw_addr;
++		INIT_LIST_HEAD(&map->list);
++
++		spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
++		list_add_tail(&map->list, &pcibios_fwaddrmappings);
++	} else
++		map->fw_addr[idx] = fw_addr;
++	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
++}
++
++resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
++{
++	unsigned long flags;
++	struct pcibios_fwaddrmap *map;
++	resource_size_t fw_addr = 0;
++
++	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
++	map = pcibios_fwaddrmap_lookup(dev);
++	if (map)
++		fw_addr = map->fw_addr[idx];
++	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
++
++	return fw_addr;
++}
++
++static void pcibios_fw_addr_list_del(void)
++{
++	unsigned long flags;
++	struct pcibios_fwaddrmap *entry, *next;
++
++	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
++	list_for_each_entry_safe(entry, next, &pcibios_fwaddrmappings, list) {
++		list_del(&entry->list);
++		pci_dev_put(entry->dev);
++		kfree(entry);
++	}
++	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
++}
++
+ static int
+ skip_isa_ioresource_align(struct pci_dev *dev) {
  
- 	root = pci_find_parent_resource(dev, res);
-@@ -270,7 +288,7 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
- 	 * where firmware left it.  That at least has a chance of
- 	 * working, which is better than just leaving it disabled.
- 	 */
--	if (ret < 0 && dev->fw_addr[resno])
-+	if (ret < 0)
- 		ret = pci_revert_fw_address(res, dev, resno, size);
- 
- 	if (!ret) {
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 4545d23..273539b 100644
+index 84225c7..4545d23 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -299,7 +299,6 @@ struct pci_dev {
- 	 */
- 	unsigned int	irq;
- 	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
--	resource_size_t	fw_addr[DEVICE_COUNT_RESOURCE]; /* FW-assigned addr */
+@@ -889,6 +889,7 @@ ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void
+ int pci_vpd_truncate(struct pci_dev *dev, size_t size);
  
- 	/* These fields are used by common fixups */
- 	unsigned int	transparent:1;	/* Transparent PCI bridge */
+ /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
++resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
+ void pci_bus_assign_resources(const struct pci_bus *bus);
+ void pci_bus_size_bridges(struct pci_bus *bus);
+ int pci_claim_resource(struct pci_dev *, int);
 
