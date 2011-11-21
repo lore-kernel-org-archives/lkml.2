@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab1KUXfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:35:43 -0500
-Received: from sous-sol.org ([216.99.217.87]:45066 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752242Ab1KUXfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:35:41 -0500
-Date: Mon, 21 Nov 2011 15:35:05 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        iommu@lists.linux-foundation.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
- iommu groups
-Message-ID: <20111121233505.GG3344@sequoia.sous-sol.org>
-References: <20111117170800.3125.84150.stgit@bling.home>
- <20111118104651.GJ5627@amd.com>
- <1321628190.26410.63.camel@bling.home>
- <20111118152710.GA5098@amd.com>
- <1321633956.26410.126.camel@bling.home>
- <20111120120043.GB20535@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111120120043.GB20535@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756102Ab1KUXgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:36:25 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43880 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab1KUXgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 18:36:23 -0500
+From: Alexey Moiseytsev <himeraster@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Moiseytsev <himeraster@gmail.com>
+Subject: [PATCH 1/1] AF_UNIX: Fix poll locking problem when reading from a stream socket
+Date: Tue, 22 Nov 2011 03:35:25 +0400
+Message-Id: <1321918525-5078-1-git-send-email-himeraster@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joerg Roedel (joro@8bytes.org) wrote:
-> >From device standpoint a MSI transaction is always a DMA memory write
-> to a given address range. The IOMMU-API should export a feature flag
-> whether it supports filtering on those transaction or not. We have that
-> today with the IOMMU_CAP_INTR_REMAP. I agree that the interface to get
-> this information is ugly because a domain is needed. But the interface
-> can be fixed. While doing this I suggest to rename that feature
-> IOMMU_CAP_INTR_ISOLATION or something like that.
-> VFIO can then check for this flag on module-load and refuse to load if
-> it is not available.
+poll() call may be locked by concurrent reading from the same stream
+socket.
 
-I can see that the native grouping (the typical pci bridge type) is
-really more a property of the topology.
+Signed-off-by: Alexey Moiseytsev <himeraster@gmail.com>
+---
+ net/unix/af_unix.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-The isolation properties of a group (arguably the whole point of the
-group) is subtly different.
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 466fbcc..b595a3d 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1957,6 +1957,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
+ 			    (UNIXCB(skb).cred != siocb->scm->cred)) {
+ 				skb_queue_head(&sk->sk_receive_queue, skb);
++				sk->sk_data_ready(sk, skb->len);
+ 				break;
+ 			}
+ 		} else {
+@@ -1974,6 +1975,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		chunk = min_t(unsigned int, skb->len, size);
+ 		if (memcpy_toiovec(msg->msg_iov, skb->data, chunk)) {
+ 			skb_queue_head(&sk->sk_receive_queue, skb);
++			sk->sk_data_ready(sk, skb->len);
+ 			if (copied == 0)
+ 				copied = -EFAULT;
+ 			break;
+@@ -1991,6 +1993,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			/* put the skb back if we didn't use it up.. */
+ 			if (skb->len) {
+ 				skb_queue_head(&sk->sk_receive_queue, skb);
++				sk->sk_data_ready(sk, skb->len);
+ 				break;
+ 			}
+ 
+@@ -2006,6 +2009,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 
+ 			/* put message back and return */
+ 			skb_queue_head(&sk->sk_receive_queue, skb);
++			sk->sk_data_ready(sk, skb->len);
+ 			break;
+ 		}
+ 	} while (size);
+-- 
+1.7.2.5
 
-Leaves the questions:
-
-What is the value of a group w/out complete isolation?
-Is there a practical problem w/ conflating the subtleties above?
-
-thanks,
--chris
