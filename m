@@ -1,152 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1KULzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:55:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2964 "EHLO mx1.redhat.com"
+	id S1754376Ab1KUMAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 07:00:34 -0500
+Received: from mga14.intel.com ([143.182.124.37]:4843 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753045Ab1KULzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:55:50 -0500
-Date: Mon, 21 Nov 2011 13:57:04 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
-Message-ID: <20111121115702.GA27580@redhat.com>
-References: <patchbomb.1320306168@localhost6.localdomain6>
- <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
- <20111113210256.GA31621@redhat.com>
- <20111114065606.GA3779@redhat.com>
- <871ut8q5mh.fsf@rustcorp.com.au>
- <20111116071838.GE5433@redhat.com>
- <8739dib5z6.fsf@rustcorp.com.au>
+	id S1751988Ab1KUMAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 07:00:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,547,1315206000"; 
+   d="scan'208";a="77517383"
+Date: Mon, 21 Nov 2011 20:00:27 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/8] readahead stats/tracing, backwards prefetching and
+ more
+Message-ID: <20111121120027.GD8895@localhost>
+References: <20111121091819.394895091@intel.com>
+ <20111121095638.GA5084@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8739dib5z6.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111121095638.GA5084@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 12:18:45PM +1030, Rusty Russell wrote:
-> On Wed, 16 Nov 2011 09:18:38 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > My unlocked kick patches will trip this warning: they make
-> > virtio-net do add + get without kick.
-> 
-> Heh, it's a good sign if they do, since that means you're running really
-> well :)
-
-They don't in fact, in my testing :(. But I think they can with luck.
-
-> > I think block with unlocked kick can trip it too:
-> > add, lock is dropped and then an interrupt can get.
+On Mon, Nov 21, 2011 at 05:56:38PM +0800, Christoph Hellwig wrote:
+> On Mon, Nov 21, 2011 at 05:18:19PM +0800, Wu Fengguang wrote:
+> > Andrew,
 > > 
-> > We also don't need a kick each num - each 2^15 is enough.
-> > Why don't we do this at start of add_buf:
-> > if (vq->num_added >= 0x7fff)
-> > 	return -ENOSPC;
+> > I'm getting around to pick up the readahead works again :-)
+> > 
+> > This first series is mainly to add some debug facilities, to support the long
+> > missed backwards prefetching capability, and some old patches that somehow get
+> > delayed (shame me).
+> > 
+> > The next step would be to better handle the readahead thrashing situations.
+> > That would require rewriting part of the algorithms, this is why I'd like to
+> > keep the backwards prefetching simple and stupid for now.
+> > 
+> > When (almost) free of readahead thrashing, we'll be in a good position to lift
+> > the default readahead size. Which I suspect would be the single most efficient
+> > way to improve performance for the large volumes of casually maintained Linux
+> > file servers.
 > 
-> The warning was there in case a driver is never doing a kick, and
-> getting away with it (mostly) because the device is polling.  Let's not
-> penalize good drivers to catch bad ones.
-> 
-> How about we do this properly, like so:
+> Btw, if you work actively in that area I have a todo list item I was
+> planning to look into sooner or later:  instead of embedding the ra
+> state into the struct file allocate it dynamically.  That way files that
+> either don't use the pagecache, or aren't read from won't need have to
+> pay the price for increasing struct file size, and if we have to we
+> could enlarge it more easily.
 
-Absolutely. But I think we also need to handle num_added
-overflow of a 15 bit counter, no? Otherwise the
-vring_need_event logic might give us false negatives ....
-I'm guessing we can just assume we need a kick in that case.
+Agreed. That's good to have, please allow me to move it into my todo list :)
 
-> From: Rusty Russell <rusty@rustcorp.com.au>
-> Subject: virtio: add debugging if driver doesn't kick.
-> 
-> Under the existing #ifdef DEBUG, check that they don't have more than
-> 1/10 of a second between an add_buf() and a
-> virtqueue_notify()/virtqueue_kick_prepare() call.
-> 
-> We could get false positives on a really busy system, but good for
-> development.
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  drivers/virtio/virtio_ring.c |   31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-> 
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -22,6 +22,7 @@
->  #include <linux/device.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> +#include <linux/hrtimer.h>
->  
->  /* virtio guest is communicating with a virtual "device" that actually runs on
->   * a host processor.  Memory barriers are used to control SMP effects. */
-> @@ -102,6 +103,10 @@ struct vring_virtqueue
->  #ifdef DEBUG
->  	/* They're supposed to lock for us. */
->  	unsigned int in_use;
-> +
-> +	/* Figure out if their kicks are too delayed. */
-> +	bool last_add_time_valid;
-> +	ktime_t last_add_time;
->  #endif
->  
->  	/* Tokens for callbacks. */
-> @@ -192,6 +197,19 @@ int virtqueue_add_buf(struct virtqueue *
->  
->  	BUG_ON(data == NULL);
->  
-> +#ifdef DEBUG
-> +	{
-> +		ktime_t now = ktime_get();
-> +
-> +		/* No kick or get, with .1 second between?  Warn. */
-> +		if (vq->last_add_time_valid)
-> +			WARN_ON(ktime_to_ms(ktime_sub(now, vq->last_add_time))
-> +					    > 100);
-> +		vq->last_add_time = now;
-> +		vq->last_add_time_valid = true;
-> +	}
-> +#endif
-> +
->  	/* If the host supports indirect descriptor tables, and we have multiple
->  	 * buffers, then go indirect. FIXME: tune this threshold */
->  	if (vq->indirect && (out + in) > 1 && vq->num_free) {
-> @@ -291,6 +309,14 @@ bool virtqueue_kick_prepare(struct virtq
->  	new = vq->vring.avail->idx;
->  	vq->num_added = 0;
->  
-> +#ifdef DEBUG
-> +	if (vq->last_add_time_valid) {
-> +		WARN_ON(ktime_to_ms(ktime_sub(ktime_get(),
-> +					      vq->last_add_time)) > 100);
-> +	}
-> +	vq->last_add_time_valid = false;
-> +#endif
-> +
->  	if (vq->event) {
->  		needs_kick = vring_need_event(vring_avail_event(&vq->vring),
->  					      new, old);
-> @@ -428,6 +454,10 @@ void *virtqueue_get_buf(struct virtqueue
->  		virtio_mb();
->  	}
->  
-> +#ifdef DEBUG
-> +	vq->last_add_time_valid = false;
-> +#endif
-> +
->  	END_USE(vq);
->  	return ret;
->  }
-> @@ -611,6 +641,7 @@ struct virtqueue *vring_new_virtqueue(un
->  	list_add_tail(&vq->vq.list, &vdev->vqs);
->  #ifdef DEBUG
->  	vq->in_use = false;
-> +	vq->last_add_time_valid = false;
->  #endif
->  
->  	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+> Besides removing f_version in the common
+> struct file and also allocting f_owner separately that seem to be the
+> easiest ways to get struct file size down.
+
+Yeah, there seems no much code accessing fown_struct.
+I may consider that when I'm at file_ra_state, but no promise ;)
+
+Thanks,
+Fengguang
