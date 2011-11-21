@@ -1,66 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab1KURjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:39:14 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:36207 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab1KURjM convert rfc822-to-8bit (ORCPT
+	id S1756064Ab1KURjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:39:22 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:51878 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754135Ab1KURjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:39:12 -0500
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275ch8275bhz2ei2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
-Date: Mon, 21 Nov 2011 12:38:44 -0500
-From: Chad Dupuis <chad.dupuis@qlogic.com>
-To: Jesper Juhl <jj@chaosbits.net>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Driver <Linux-Driver@qlogic.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [PATCH][TRIVIAL] SCSI, qla2xxx: remove redundant semicolon
-In-Reply-To: <alpine.LNX.2.00.1111202231550.17395@swampdragon.chaosbits.net>
-Message-ID: <alpine.WNT.2.00.1111211237510.5992@N5102REMCQXM4BS.qlogic.org>
-References: <alpine.LNX.2.00.1111202231550.17395@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-X-X-Sender: cdupuis@qlm.qlogic.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: qlogic.com
+	Mon, 21 Nov 2011 12:39:20 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-ext4@vger.kernel.org
+Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        adilger@dilger.ca
+Subject: [PATCH V2 15/19] ext4: make ext4_delete_entry generic.
+Date: Tue, 22 Nov 2011 00:39:53 +0800
+Message-Id: <1321893597-11024-15-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
+References: <4ECA7DB3.9040605@tao.ma>
+ <1321893597-11024-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes sense.
+From: Tao Ma <boyu.mt@taobao.com>
 
-Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Currently ext4_delete_entry is used only for dir entry
+removing from a dir block. So let us create a new function
+ext4_generic_delete_entry and this function takes a entry_buf
+and a buf_size so that it can be used for inline data.
 
-On Sun, 20 Nov 2011, Jesper Juhl wrote:
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/ext4/ext4.h  |    6 +++++
+ fs/ext4/namei.c |   62 ++++++++++++++++++++++++++++++++++++------------------
+ 2 files changed, 47 insertions(+), 21 deletions(-)
 
-> One ';' at the end of the return statement is enough.
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
-> drivers/scsi/qla2xxx/qla_nx.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/scsi/qla2xxx/qla_nx.c b/drivers/scsi/qla2xxx/qla_nx.c
-> index 94bded5..b9b3e5a 100644
-> --- a/drivers/scsi/qla2xxx/qla_nx.c
-> +++ b/drivers/scsi/qla2xxx/qla_nx.c
-> @@ -1055,7 +1055,7 @@ ql82xx_rom_lock_d(struct qla_hw_data *ha)
->                   "ROM lock failed.\n");
->               return -1;
->       }
-> -     return 0;;
-> +     return 0;
-> }
->
-> static int
->
-
-This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 9776c06..a88bc00 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1972,6 +1972,12 @@ extern int search_dir(struct buffer_head *bh,
+ 		      const struct qstr *d_name,
+ 		      unsigned int offset,
+ 		      struct ext4_dir_entry_2 **res_dir);
++extern int ext4_generic_delete_entry(handle_t *handle,
++				     struct inode *dir,
++				     struct ext4_dir_entry_2 *de_del,
++				     struct buffer_head *bh,
++				     void *entry_buf,
++				     int buf_size);
+ 
+ /* resize.c */
+ extern int ext4_group_add(struct super_block *sb,
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 92f7b67..f706b0f 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1693,32 +1693,28 @@ cleanup:
+ }
+ 
+ /*
+- * ext4_delete_entry deletes a directory entry by merging it with the
+- * previous entry
++ * ext4_generic_delete_entry deletes a directory entry by merging it
++ * with the previous entry
+  */
+-static int ext4_delete_entry(handle_t *handle,
+-			     struct inode *dir,
+-			     struct ext4_dir_entry_2 *de_del,
+-			     struct buffer_head *bh)
++int ext4_generic_delete_entry(handle_t *handle,
++			      struct inode *dir,
++			      struct ext4_dir_entry_2 *de_del,
++			      struct buffer_head *bh,
++			      void *entry_buf,
++			      int buf_size)
+ {
+ 	struct ext4_dir_entry_2 *de, *pde;
+ 	unsigned int blocksize = dir->i_sb->s_blocksize;
+-	int i, err;
++	int i;
+ 
+ 	i = 0;
+ 	pde = NULL;
+-	de = (struct ext4_dir_entry_2 *) bh->b_data;
+-	while (i < bh->b_size) {
++	de = (struct ext4_dir_entry_2 *)entry_buf;
++	while (i < buf_size) {
+ 		if (ext4_check_dir_entry(dir, NULL, de, bh,
+ 					 bh->b_data, bh->b_size, i))
+ 			return -EIO;
+ 		if (de == de_del)  {
+-			BUFFER_TRACE(bh, "get_write_access");
+-			err = ext4_journal_get_write_access(handle, bh);
+-			if (unlikely(err)) {
+-				ext4_std_error(dir->i_sb, err);
+-				return err;
+-			}
+ 			if (pde)
+ 				pde->rec_len = ext4_rec_len_to_disk(
+ 					ext4_rec_len_from_disk(pde->rec_len,
+@@ -1729,12 +1725,6 @@ static int ext4_delete_entry(handle_t *handle,
+ 			else
+ 				de->inode = 0;
+ 			dir->i_version++;
+-			BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
+-			err = ext4_handle_dirty_metadata(handle, dir, bh);
+-			if (unlikely(err)) {
+-				ext4_std_error(dir->i_sb, err);
+-				return err;
+-			}
+ 			return 0;
+ 		}
+ 		i += ext4_rec_len_from_disk(de->rec_len, blocksize);
+@@ -1744,6 +1734,36 @@ static int ext4_delete_entry(handle_t *handle,
+ 	return -ENOENT;
+ }
+ 
++static int ext4_delete_entry(handle_t *handle,
++			     struct inode *dir,
++			     struct ext4_dir_entry_2 *de_del,
++			     struct buffer_head *bh)
++{
++	int err;
++
++	BUFFER_TRACE(bh, "get_write_access");
++	err = ext4_journal_get_write_access(handle, bh);
++	if (unlikely(err))
++		goto out;
++
++	err = ext4_generic_delete_entry(handle, dir, de_del,
++					bh, bh->b_data,
++					dir->i_sb->s_blocksize);
++	if (err)
++		goto out;
++
++	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
++	err = ext4_handle_dirty_metadata(handle, dir, bh);
++	if (unlikely(err))
++		goto out;
++
++	return 0;
++out:
++	if (err != -ENOENT)
++		ext4_std_error(dir->i_sb, err);
++	return err;
++}
++
+ /*
+  * DIR_NLINK feature is set if 1) nlinks > EXT4_LINK_MAX or 2) nlinks == 2,
+  * since this indicates that nlinks count was previously 1.
+-- 
+1.7.0.4
 
