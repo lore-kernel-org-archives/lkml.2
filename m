@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1KUTSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:18:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39370 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab1KUTSs convert rfc822-to-8bit (ORCPT
+	id S1756072Ab1KUTUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:20:21 -0500
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:36874 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab1KUTUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:18:48 -0500
-Message-ID: <1321903090.28118.21.camel@twins>
-Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Cree <mcree@orcon.net.nz>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>
-Date: Mon, 21 Nov 2011 20:18:10 +0100
-In-Reply-To: <20111121172323.GH20611@mudshark.cambridge.arm.com>
-References: <20111121145114.049265181@chello.nl>
-	 <20111121145337.533322271@chello.nl>
-	 <20111121172323.GH20611@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 21 Nov 2011 14:20:20 -0500
+From: Thieu Le <thieule@chromium.org>
+To: tyhicks@canonical.com, viro@zeniv.linux.org.uk, hch@infradead.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thieu Le <thieule@chromium.org>
+Subject: Re: [PATCH] vfs: Export fallocate facility to kernel modules
+Date: Mon, 21 Nov 2011 10:55:41 -0800
+Message-Id: <1321901741-3647-1-git-send-email-thieule@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20111118195338.GC9869@boyd>
+References: <20111118195338.GC9869@boyd>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 17:23 +0000, Will Deacon wrote:
-> Hi Peter,
-> 
-> On Mon, Nov 21, 2011 at 02:51:16PM +0000, Peter Zijlstra wrote:
-> > Put the logic to compute the event index into a per pmu method. This
-> > is required because the x86 rules are weird and wonderful and don't
-> > match the capabilities of the current scheme.
-> > 
-> > AFAIK only powerpc actually has a usable userspace read of the PMCs
-> > but I'm not at all sure anybody actually used that.
-> > 
-> > ARM looks like it cared, but I really wouldn't know, Will?
-> 
-> It used to care, but it doesn't anymore. Feel free to make the offset 0 and
-> use the (now) generic codepath.
-> 
-> With that:
-> 
-> Acked-by: Will Deacon <will.deacon@arm.com>
+Export fallocate facility so layered file systems such as ecryptfs can
+take advantage of this feature.  One example of the need for fallocate
+is by ecryptfs.  ecryptfs has recently switched to a writeback cache
+model so its dirty pages are not written to the lower file system
+immediately.  In order to ensure that space is available when the page
+is later written, ecryptfs can efficiently preallocate that space using
+vfs_fallocate().
 
+vfs_fallocate() does not perform all of the checkings of do_fallocate()
+because those checks are done higher in the stack.  Checking of offset and
+len are done by rw_verify_area() and generic_write_checks().  These
+functions are called by VFS before ecryptfs invokes vfs_fallocate() in its
+ecryptfs_write_end() function.  And since ecryptfs directly opens the lower
+file, it ensures that the file is opened with the proper flags and mode.
 
-But does ARM have a read PMU counter from userspace
-instruction/capability?
+Signed-off-by: Thieu Le <thieule@chromium.org>
+Reviewed-by: Tyler Hicks <tyhicks@canonical.com>
+---
+ fs/open.c          |   32 ++++++++++++++++++++------------
+ include/linux/fs.h |    2 ++
+ 2 files changed, 22 insertions(+), 12 deletions(-)
 
-Lacking that its all moot of course. If it does, it would be nice to
-have an ARM version of patch 6.
+diff --git a/fs/open.c b/fs/open.c
+index 22c41b5..65c0049 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -214,13 +214,9 @@ SYSCALL_ALIAS(sys_ftruncate64, SyS_ftruncate64);
+ #endif /* BITS_PER_LONG == 32 */
+ 
+ 
+-int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
++int vfs_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ {
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+-	long ret;
+-
+-	if (offset < 0 || len <= 0)
+-		return -EINVAL;
+ 
+ 	/* Return error if mode is not supported */
+ 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+@@ -231,13 +227,28 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	    !(mode & FALLOC_FL_KEEP_SIZE))
+ 		return -EOPNOTSUPP;
+ 
+-	if (!(file->f_mode & FMODE_WRITE))
+-		return -EBADF;
+-
+ 	/* It's not possible punch hole on append only file */
+ 	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
+ 		return -EPERM;
+ 
++	if (!file->f_op->fallocate)
++		return -EOPNOTSUPP;
++
++	return file->f_op->fallocate(file, mode, offset, len);
++}
++EXPORT_SYMBOL(vfs_fallocate);
++
++int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
++{
++	struct inode *inode = file->f_path.dentry->d_inode;
++	long ret;
++
++	if (offset < 0 || len <= 0)
++		return -EINVAL;
++
++	if (!(file->f_mode & FMODE_WRITE))
++		return -EBADF;
++
+ 	if (IS_IMMUTABLE(inode))
+ 		return -EPERM;
+ 
+@@ -263,10 +274,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
+ 		return -EFBIG;
+ 
+-	if (!file->f_op->fallocate)
+-		return -EOPNOTSUPP;
+-
+-	return file->f_op->fallocate(file, mode, offset, len);
++	return vfs_fallocate(file, mode, offset, len);
+ }
+ 
+ SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0c4df26..e7d26ee 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1524,6 +1524,8 @@ extern int vfs_link(struct dentry *, struct inode *, struct dentry *);
+ extern int vfs_rmdir(struct inode *, struct dentry *);
+ extern int vfs_unlink(struct inode *, struct dentry *);
+ extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *);
++extern int vfs_fallocate(struct file *file, int mode, loff_t offset,
++			 loff_t len);
+ 
+ /*
+  * VFS dentry helper functions.
+-- 
+1.7.3.1
+
