@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab1KULeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:34:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44332 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756078Ab1KULeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:34:36 -0500
-Date: Mon, 21 Nov 2011 11:34:33 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
-Message-ID: <20111121113433.GD3784@opensource.wolfsonmicro.com>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
- <1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
+	id S1756078Ab1KULfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:35:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55165 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478Ab1KULfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 06:35:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
+   d="scan'208";a="77510414"
+Date: Mon, 21 Nov 2011 19:35:40 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ankit Jain <radical@gmail.com>, Dave Chinner <david@fromorbit.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 2/8] readahead: make default readahead size a kernel
+ parameter
+Message-ID: <20111121113540.GB8895@localhost>
+References: <20111121091819.394895091@intel.com>
+ <20111121093846.251104145@intel.com>
+ <20111121100137.GC5084@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: Don't get to bragging.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111121100137.GC5084@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 01:08:51PM +0900, Tomoya MORINAGA wrote:
-> Add machine driver for LAPIS Semiconductor ML7213 IOH.
+On Mon, Nov 21, 2011 at 06:01:37PM +0800, Christoph Hellwig wrote:
+> On Mon, Nov 21, 2011 at 05:18:21PM +0800, Wu Fengguang wrote:
+> > From: Nikanth Karthikesan <knikanth@suse.de>
+> > 
+> > Add new kernel parameter "readahead=", which allows user to override
+> > the static VM_MAX_READAHEAD=128kb.
+> 
+> Is a boot-time paramter really such a good idea?  I would at least
 
-This needs to come after you add the base platform support in the series
-- clearly this won't work without the CPU side drivers it depends on.
+It's most convenient to set at boot time, because the default size
+will be used to initialize all the block devices.
 
-As with the CODEC driver you really should be looking at the standards
-for modern drivers and following them.
+> make it a sysctl so that it's run-time controllable, including
+> beeing able to set it from initscripts.
 
-> @@ -60,6 +60,7 @@ source "sound/soc/s6000/Kconfig"
->  source "sound/soc/sh/Kconfig"
->  source "sound/soc/tegra/Kconfig"
->  source "sound/soc/txx9/Kconfig"
-> +source "sound/soc/lapis/Kconfig"
+Once boot up, it's more natural to set the size one by one, for
+example
 
-Keep the Makefile and Kconfig entries sorted.
+        blockdev --setra 1024 /dev/sda2
+or
+        echo 512 > /sys/block/sda/queue/read_ahead_kb
 
-> +static struct snd_soc_dai_link ioh_i2s_dai = {
-> +	.name = "I2S",
-> +	.stream_name = "I2S HiFi",
-> +	.cpu_dai_name = "ml7213ioh-i2s",
-> +	.codec_dai_name = "ml7213ioh-hifi",
+And you still have the chance to modify the global default, but the
+change will only be inherited by newly created devices thereafter:
 
-I'm very surprised this works...  If nothing else I'd expec the CODEC
-DAI to have a different name to the CPU.
+        echo 512 > /sys/devices/virtual/bdi/default/read_ahead_kb
 
-> +static int __init ioh_i2s_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +
-> +	soc_pdev = platform_device_alloc("soc-audio", -1);
-> +	if (!soc_pdev)
-> +		return -ENOMEM;
+The above command is very suitable for use in initscripts.  However
+there are no natural way to do sysctl as there is no such a global
+value.
 
-You should register the card as a standard platform device for new
-drivers and use snd_soc_register_card().
-
-> +static struct platform_driver ioh_i2s_driver = {
-> +	.remove = ioh_i2s_remove,
-> +	.driver = {
-> +		.name = "ml7213ioh-machine",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-
-You're already doing the platform device bit so it should be be a case
-of changing the body of probe() and remove().
-
-> +static int __init ioh_i2s_init(void)
-> +{
-> +	return platform_driver_probe(&ioh_i2s_driver,
-> +				     ioh_i2s_probe);
-> +}
-
-Just make this a standard platform_driver_register().
+Thanks,
+Fengguang
