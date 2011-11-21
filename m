@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1KUOqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 09:46:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387Ab1KUOqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 09:46:34 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, Li Shaohua <shaohua.li@intel.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Jens Axboe <jens.axboe@oracle.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/8] block: limit default readahead size for small devices
-References: <20111121091819.394895091@intel.com>
-	<20111121093846.121502745@intel.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 21 Nov 2011 09:46:10 -0500
-In-Reply-To: <20111121093846.121502745@intel.com> (Wu Fengguang's message of
-	"Mon, 21 Nov 2011 17:18:20 +0800")
-Message-ID: <x49bos5fs99.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754711Ab1KUOvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 09:51:13 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:20675 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab1KUOvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 09:51:12 -0500
+Date: Mon, 21 Nov 2011 17:50:56 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] mpi/mpi-mpow: NULL dereference on allocation failure
+Message-ID: <20111121145056.GB19092@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4ECA655F.008C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu Fengguang <fengguang.wu@intel.com> writes:
+We can't call mpi_free() on the elements if the first kzalloc() fails.
 
-> Linus reports a _really_ small & slow (505kB, 15kB/s) USB device,
-> on which blkid runs unpleasantly slow. He manages to optimize the blkid
-> reads down to 1kB+16kB, but still kernel read-ahead turns it into 48kB.
->
->      lseek 0,    read 1024   => readahead 4 pages (start of file)
->      lseek 1536, read 16384  => readahead 8 pages (page contiguous)
->
-> The readahead heuristics involved here are reasonable ones in general.
-> So it's good to fix blkid with fadvise(RANDOM), as Linus already did.
->
-> For the kernel part, Linus suggests:
->   So maybe we could be less aggressive about read-ahead when the size of
->   the device is small? Turning a 16kB read into a 64kB one is a big deal,
->   when it's about 15% of the whole device!
->
-> This looks reasonable: smaller device tend to be slower (USB sticks as
-> well as micro/mobile/old hard disks).
->
-> Given that the non-rotational attribute is not always reported, we can
-> take disk size as a max readahead size hint. This patch uses a formula
-> that generates the following concrete limits:
->
->         disk size    readahead size
->      (scale by 4)      (scale by 2)
->                1M                8k
->                4M               16k
->               16M               32k
->               64M               64k
->              256M              128k
->         --------------------------- (*)
->                1G              256k
->                4G              512k
->               16G             1024k
->               64G             2048k
->              256G             4096k
->
-> (*) Since the default readahead size is 128k, this limit only takes
-> effect for devices whose size is less than 256M.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Scaling readahead by the size of the device may make sense up to a
-point.  But really, that shouldn't be the only factor considered.  Just
-because you have a big disk, it doesn't mean it's fast, and it sure
-doesn't mean that you should waste memory with readahead data that may
-not be used before it's evicted (whether due to readahead on data that
-isn't needed or thrashing of the page cache).
-
-So, I think reducing the readahead size for smaller devices is fine.
-I'm not a big fan of going the other way.
-
-Cheers,
-Jeff
+diff --git a/lib/mpi/mpi-mpow.c b/lib/mpi/mpi-mpow.c
+index 4cc7593..7328d0d 100644
+--- a/lib/mpi/mpi-mpow.c
++++ b/lib/mpi/mpi-mpow.c
+@@ -73,7 +73,7 @@ int mpi_mulpowm(MPI res, MPI *basearray, MPI *exparray, MPI m)
+ 
+ 	G = kzalloc((1 << k) * sizeof *G, GFP_KERNEL);
+ 	if (!G)
+-		goto nomem;
++		goto err_out;
+ 
+ 	/* and calculate */
+ 	tmp = mpi_alloc(mpi_get_nlimbs(m) + 1);
+@@ -129,5 +129,6 @@ nomem:
+ 	for (i = 0; i < (1 << k); i++)
+ 		mpi_free(G[i]);
+ 	kfree(G);
++err_out:
+ 	return rc;
+ }
