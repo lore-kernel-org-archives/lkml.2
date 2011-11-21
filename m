@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab1KUTEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:04:07 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53201 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab1KUTED (ORCPT
+	id S1756320Ab1KUTEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:04:44 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56606 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab1KUTEn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:04:03 -0500
+	Mon, 21 Nov 2011 14:04:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1111211358570.23676@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
-	<tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
-	<alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
-	<1321901536.28118.20.camel@twins>
-	<alpine.DEB.2.00.1111211358570.23676@cl320.eecs.utk.edu>
-Date: Mon, 21 Nov 2011 20:04:02 +0100
-Message-ID: <CABPqkBRHW0ZmeqADptvBySLZpi6jc_bEFKoukkA6rtd5o04ziQ@mail.gmail.com>
-Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
- offcore events
-From: Stephane Eranian <eranian@google.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+In-Reply-To: <CAA6KcBC0DXTaTHb-opd_HyTa91=XeuuHi-PFi+gqKxOurY9W1g@mail.gmail.com>
+References: <3530313B48D5704B86CF382E8866C7F9AE0F34D0B4@IRVEXCHCCR02.corp.ad.broadcom.com>
+ <CAA6KcBC6AgZJYZtCWcZ1aS6xACSOWy_8GVzq9sEr8Ozou8oT_A@mail.gmail.com>
+ <3530313B48D5704B86CF382E8866C7F9AE0F58E420@IRVEXCHCCR02.corp.ad.broadcom.com>
+ <CAA6KcBC0DXTaTHb-opd_HyTa91=XeuuHi-PFi+gqKxOurY9W1g@mail.gmail.com>
+From: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Date: Mon, 21 Nov 2011 11:04:21 -0800
+Message-ID: <CAA6KcBBdFrm3kKXO9t7tTSxF4S=jkypZfU-REQv7rKGhN0Wbiw@mail.gmail.com>
+Subject: Re: [PATCH] usb: noted broken URL link in usb.c description
+To: Michael Lewis <miclewis@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vince,
+The page is back up, so we can discard this patch completely.
 
-On Mon, Nov 21, 2011 at 8:01 PM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-> On Mon, 21 Nov 2011, Peter Zijlstra wrote:
->> On Mon, 2011-11-21 at 13:24 -0500, Vince Weaver wrote:
+Matt
+
+On Mon, Nov 14, 2011 at 12:31 PM, Matthew Dharm
+<mdharm-usb@one-eyed-alien.net> wrote:
+> Well, it hasn't been updated since 2008, but it still used to get hit
+> periodically before I shutdown the server several months ago.
 >
->> > Now I'll have to find something else
->> > to complain about, probably the scedulability issue introduced with the
->> > NMI watchdog.
->>
->> But you can disable that thing, right?
->>
->> echo 0 > /proc/sys/kernel/nmi_watchdog;
->>
->> or so should do the trick.
+> Let me see about moving the whopping 2 HTML files, one TXT file, and
+> one PNG to a different server within the organization... if it doesn't
+> happen in a few days, we should just take out all references to that
+> URL, not just mark it as a dead link.
 >
-> yes, if the user running PAPI has root.
+> Matt
 >
-> That's unfortunately not always the case, and sometimes people want to
-> have both the NMI watchdog operating and use PAPI simultaneously.
+> On Mon, Nov 14, 2011 at 12:28 PM, Michael Lewis <miclewis@broadcom.com> wrote:
+>> Sure, that's fine. I didn't know if you were still actively maintaining it or not.
+>>
+>> Thanks,
+>> - Mike
+>>
+>>
+>> -----Original Message-----
+>> From: Matthew Dharm [mailto:mdharm-usb@one-eyed-alien.net]
+>> Sent: Monday, November 14, 2011 12:25 PM
+>> To: Michael Lewis
+>> Cc: linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] usb: noted broken URL link in usb.c description
+>>
+>> A fair point.  I should get around to fixing that.  Why don't we
+>> hold-off on the patch and let me work on this for a couple of days?
+>>
+>> Matt
+>>
+>> On Mon, Nov 14, 2011 at 12:14 PM, Michael Lewis <miclewis@broadcom.com> wrote:
+>>> From ca036284fdc2a6801fab566c2218307235518876 Mon Sep 17 00:00:00 2001
+>>> From: Michael Lewis <miclewis@broadcom.com>
+>>> Date: Mon, 14 Nov 2011 11:47:42 -0800
+>>> Subject: [PATCH] usb: noted broken URL link in usb.c description
+>>>
+>>>
+>>> Signed-off-by: Michael Lewis <miclewis@broadcom.com>
+>>> ---
+>>>  drivers/usb/storage/usb.c |    3 ++-
+>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+>>> index aa84b3d..33cf6ad 100644
+>>> --- a/drivers/usb/storage/usb.c
+>>> +++ b/drivers/usb/storage/usb.c
+>>> @@ -28,7 +28,8 @@
+>>>  * status of a command.
+>>>  *
+>>>  * Please see http://www.one-eyed-alien.net/~mdharm/linux-usb for more
+>>> - * information about this driver.
+>>> + * information about this driver. Note, URL link is dead and needs
+>>> + * to be fixed.
+>>>  *
+>>>  * This program is free software; you can redistribute it and/or modify it
+>>>  * under the terms of the GNU General Public License as published by the
+>>> --
+>>> 1.7.1
+>>>
+>>>
+>>
+>>
+>>
+>> --
+>> Matthew Dharm
+>> Maintainer, USB Mass Storage driver for Linux
+>>
+>>
+>>
+>
+>
+>
+> --
+> Matthew Dharm
+> Maintainer, USB Mass Storage driver for Linux
 >
 
-I don't understand why you have a problem with NMI watchdog. Multiplexing
-allows you to still measure more events than there are counters.
 
-> We have a workaround, but it currently disables kernel multiplexing and a
-> few other nice features.
->
-> Vince
-> vweaver1@eecs.utk.edu
->
->
+
+-- 
+Matthew Dharm
+Maintainer, USB Mass Storage driver for Linux
