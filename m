@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab1KUXIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:08:36 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:56754 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752950Ab1KUXIe (ORCPT
+	id S1754613Ab1KUXKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:10:48 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40891 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1KUXKr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:08:34 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18qs8JCRDsqPzNE0x21swLs8RBDCLwFfo6kSySXvI
-	pyL5lKiVHfLTOL
-Message-ID: <4ECAD9F0.9050508@gmx.de>
-Date: Mon, 21 Nov 2011 23:08:32 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+	Mon, 21 Nov 2011 18:10:47 -0500
 MIME-Version: 1.0
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: Fix return value of fb_notifier_call_chain
-References: <1321858524-19368-1-git-send-email-jy0922.shim@samsung.com>
-In-Reply-To: <1321858524-19368-1-git-send-email-jy0922.shim@samsung.com>
+In-Reply-To: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com>
+References: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com>
+Date: Mon, 21 Nov 2011 15:10:39 -0800
+Message-ID: <CANN689EDDy9PTSvt10Gk3jiW-QjQpsZmCnrqoTwmPecEQYT2Ew@mail.gmail.com>
+Subject: Re: [PATCH] ksm: use FAULT_FLAG_ALLOW_RETRY in breaking COW
+From: Michel Lespinasse <walken@google.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2011 06:55 AM, Joonyoung Shim wrote:
-> The return value of blocking_notifier_call_chain isn't errno value, it
-> is just notify return value. The ret of fb_notifier_call_chain should is
-> restored to error value from notify return value using
-> notifier_to_errno().
+On Sat, Nov 19, 2011 at 3:50 AM, Hillf Danton <dhillf@gmail.com> wrote:
+> The flag, FAULT_FLAG_ALLOW_RETRY, was introduced by the patch,
+>
+>        mm: retry page fault when blocking on disk transfer
+>        commit: d065bd810b6deb67d4897a14bfe21f8eb526ba99
+>
+> for reducing mmap_sem hold times that are caused by waiting for disk
+> transfers when accessing file mapped VMAs.
+>
+> To break COW, handle_mm_fault() is repeated with mmap_sem held, where
+> the introduced flag could be used again.
+>
+> The straight way is to add changes in break_ksm(), but the function could be
+> under write-mode mmap_sem, so it has to be dupilcated.
+>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-If I'm not wrong this patch would rather break things than fix them. As I
-understand the notifier_calls would be required to encode the return value with
-notifier_from_errno. This does not happen at the moment for fb clients, for
-example fbcon_event_notify in drivers/video/console/fbcon.c, so this patch would
-screw up the return values, I think.
+I have to concur with Hugh here - FAULT_FLAG_ALLOW_RETRY was
+introduced to avoid holding mmap_sem while we block on a disk read,
+but you shouldn't hit this case in the break COW case, so there seems
+to be little point in adding the flag there.
 
-
-Best regards,
-
-Florian Tobias Schandinat
-
-> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
-> ---
->  drivers/video/fb_notify.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/video/fb_notify.c b/drivers/video/fb_notify.c
-> index 74c2da5..49a64a3 100644
-> --- a/drivers/video/fb_notify.c
-> +++ b/drivers/video/fb_notify.c
-> @@ -42,6 +42,8 @@ EXPORT_SYMBOL(fb_unregister_client);
->   */
->  int fb_notifier_call_chain(unsigned long val, void *v)
->  {
-> -	return blocking_notifier_call_chain(&fb_notifier_list, val, v);
-> +	int ret = blocking_notifier_call_chain(&fb_notifier_list, val, v);
-> +
-> +	return notifier_to_errno(ret);
->  }
->  EXPORT_SYMBOL_GPL(fb_notifier_call_chain);
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
