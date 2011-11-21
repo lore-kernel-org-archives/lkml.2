@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab1KUVbs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:31:48 -0500
-Received: from marge.uochb.cas.cz ([147.231.129.3]:37291 "EHLO
-	marge.uochb.cas.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628Ab1KUVbq (ORCPT
+	id S1755274Ab1KUVgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:36:54 -0500
+Received: from vms173013pub.verizon.net ([206.46.173.13]:40012 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab1KUVgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:31:46 -0500
-Message-ID: <4ECAC340.8090908@atlas.cz>
-Date: Mon, 21 Nov 2011 22:31:44 +0100
-From: Jiri Polach <clarinet@atlas.cz>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Jiri Polach <clarinet@atlas.cz>, 647095@bugs.debian.org,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: Re: CPU hyperthreading turned on after soft power-cycle
-References: <20111030110543.5872.61279.reportbug@supermicro.uochb.cas.cz>	 <1319988329.6759.88.camel@deadeye> <4EAE9D3A.7000108@atlas.cz>	 <4EB92181.5030500@seznam.cz> <20111110015212.GB2399@elie.gateway.2wire.net>	 <4EBD2825.6050806@atlas.cz> <4EC43DF7.4010902@atlas.cz>	 <1321561946.25715.16.camel@work-vm> <4EC59BCE.6050902@atlas.cz>	 <1321574019.25715.52.camel@work-vm> <4ECA51B9.3010707@seznam.cz> <1321905728.6445.2.camel@work-vm>
-In-Reply-To: <1321905728.6445.2.camel@work-vm>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Nov 2011 16:36:53 -0500
+X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Nov 2011 16:36:53 EST
+Date: Mon, 21 Nov 2011 14:36:24 -0600
+From: cminyard <minyard@acm.org>
+To: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: ipmi_watchdog: IPMI Watchdog: response: Error 80 on cmd 22
+Message-id: <20111121203411.GA20992@mvista.com>
+Reply-to: minyard@acm.org
+References: <201111191422.17555.a.miskiewicz@gmail.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-disposition: inline
+Content-transfer-encoding: 8bit
+In-reply-to: <201111191422.17555.a.miskiewicz@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 19, 2011 at 02:22:17PM +0100, Arkadiusz Miśkiewicz wrote:
+> 
+> Hello,
+> 
+> I have few machines where ipmi_watchdog (from 3.0.9 kernel currently)
+> reports after some time:
+> 
+> IPMI Watchdog: response: Error 80 on cmd 22
+> 
+> In less than a week
+> # grep "Error 80 on cmd 22" /var/log/kernel |wc -l
+> 378681
+> 
+> #define IPMI_WDOG_RESET_TIMER           0x22
+> but no idea what error 80 is.
 
->>> Yea. My rough guess is that the BIOS is somehow sensitive to how the
->>> CMOS RTC is touched.
->>>
->>> Does disabling CONFIG_HPET_EMULATE_RTC change the behavior?
->>
->> But how do I do it? :-)
->>
->> I have not found a way to disable it in "menuconfig". If I comment it
->> out manually in .config, it is automatically set back to "y" as soon as
->> compilation starts ...
->
-> Good point. I forgot on x86_64 you can't disable HPET_TIMER.
->
-> Could you then use the following patch (and run make oldconfig before
-> building).
->
-> thanks
-> -john
->
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cb9a104..77b5273 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -640,7 +640,7 @@ config HPET_TIMER
->   	  Choose N to continue using the legacy 8254 timer.
->
->   config HPET_EMULATE_RTC
-> -	def_bool y
-> +	def_bool n
->   	depends on HPET_TIMER&&  (RTC=y || RTC=m || RTC_DRV_CMOS=m || RTC_DRV_CMOS=y)
->
->   config APB_TIMER
+That error is a command-specific error, and it means: Attempt to start
+un-initialized watchdog
 
-Applying this patch does not change anything, this kernel is "bad".
+I'm guessing that the IPMI controller gets reset somehow and then thinks
+it's watchdog timer is not initialized, and thus the reset command causes
+an issue.
 
-Jiri Polach
+A fix should be pretty easy, if you get a 0x80 response from a reset,
+re-initialize the timer.
+
+Can you try the following patch?
+
+>From 4467601416e23740fc940c31b1fffacbcb69b4a0 Mon Sep 17 00:00:00 2001
+From: Corey Minyard <cminyard@mvista.com>
+Date: Mon, 21 Nov 2011 14:26:20 -0600
+Subject: [PATCH] ipmi_watchdog: Restore settings when BMC reset
+
+If the BMC gets reset, it will return 0x80 response errors.  In this case,
+it is probably a good idea to restore the IPMI settings.
+---
+ drivers/char/ipmi/ipmi_watchdog.c |   41 ++++++++++++++++++++++++++++++++++--
+ 1 files changed, 38 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
+index c2917ffa..34767a6 100644
+--- a/drivers/char/ipmi/ipmi_watchdog.c
++++ b/drivers/char/ipmi/ipmi_watchdog.c
+@@ -139,6 +139,8 @@
+ #define IPMI_WDOG_SET_TIMER		0x24
+ #define IPMI_WDOG_GET_TIMER		0x25
+ 
++#define IPMI_WDOG_TIMER_NOT_INIT_RESP	0x80
++
+ /* These are here until the real ones get into the watchdog.h interface. */
+ #ifndef WDIOC_GETTIMEOUT
+ #define	WDIOC_GETTIMEOUT        _IOW(WATCHDOG_IOCTL_BASE, 20, int)
+@@ -596,6 +598,7 @@ static int ipmi_heartbeat(void)
+ 	struct kernel_ipmi_msg            msg;
+ 	int                               rv;
+ 	struct ipmi_system_interface_addr addr;
++	int				  timeout_retries = 0;
+ 
+ 	if (ipmi_ignore_heartbeat)
+ 		return 0;
+@@ -616,6 +619,7 @@ static int ipmi_heartbeat(void)
+ 
+ 	mutex_lock(&heartbeat_lock);
+ 
++restart:
+ 	atomic_set(&heartbeat_tofree, 2);
+ 
+ 	/*
+@@ -653,7 +657,33 @@ static int ipmi_heartbeat(void)
+ 	/* Wait for the heartbeat to be sent. */
+ 	wait_for_completion(&heartbeat_wait);
+ 
+-	if (heartbeat_recv_msg.msg.data[0] != 0) {
++	if (heartbeat_recv_msg.msg.data[0] == IPMI_WDOG_TIMER_NOT_INIT_RESP)  {
++		timeout_retries++;
++		if (timeout_retries > 3) {
++			printk(KERN_ERR PFX ": Unable to restore the IPMI"
++			       " watchdog's settings, giving up.\n");
++			rv = -EIO;
++			goto out_unlock;
++		}
++
++		/*
++		 * The timer was not initialized, that means the BMC was
++		 * probably reset and lost the watchdog information.  Attempt
++		 * to restore the timer's info.  Note that we still hold
++		 * the heartbeat lock, to keep a heartbeat from happening
++		 * in this process, so must say no heartbeat to avoid a
++		 * deadlock on this mutex.
++		 */
++		rv = ipmi_set_timeout(IPMI_SET_TIMEOUT_NO_HB);
++		if (rv) {
++			printk(KERN_ERR PFX ": Unable to send the command to"
++			       " set the watchdog's settings, giving up.\n");
++			goto out_unlock;
++		}
++
++		/* We might need a new heartbeat, so do it now */
++		goto restart;
++	} else if (heartbeat_recv_msg.msg.data[0] != 0) {
+ 		/*
+ 		 * Got an error in the heartbeat response.  It was already
+ 		 * reported in ipmi_wdog_msg_handler, but we should return
+@@ -662,6 +692,7 @@ static int ipmi_heartbeat(void)
+ 		rv = -EINVAL;
+ 	}
+ 
++out_unlock:
+ 	mutex_unlock(&heartbeat_lock);
+ 
+ 	return rv;
+@@ -922,11 +953,15 @@ static struct miscdevice ipmi_wdog_miscdev = {
+ static void ipmi_wdog_msg_handler(struct ipmi_recv_msg *msg,
+ 				  void                 *handler_data)
+ {
+-	if (msg->msg.data[0] != 0) {
++	if (msg->msg.cmd == IPMI_WDOG_RESET_TIMER &&
++			msg->msg.data[0] == IPMI_WDOG_TIMER_NOT_INIT_RESP)
++		printk(KERN_INFO PFX "response: The IPMI controller appears"
++		       " to have been reset, will attempt to reinitialize"
++		       " the watchdog timer\n");
++	else if (msg->msg.data[0] != 0)
+ 		printk(KERN_ERR PFX "response: Error %x on cmd %x\n",
+ 		       msg->msg.data[0],
+ 		       msg->msg.cmd);
+-	}
+ 
+ 	ipmi_free_recv_msg(msg);
+ }
+-- 
+1.7.4.1
 
