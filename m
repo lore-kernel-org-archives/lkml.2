@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab1KUSoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:44:08 -0500
-Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:53142
-	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754165Ab1KUSoH (ORCPT
+	id S1755233Ab1KUStw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:49:52 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60142 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab1KUStu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:44:07 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Date: Mon, 21 Nov 2011 10:43:57 -0800
-From: Ben Widawsky <ben@bwidawsk.net>
-To: intel-gfx <intel-gfx@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 02/13] drm/i915: rewrite shmem_pwrite_slow to
- use copy_from_user
-Message-ID: <20111121184356.GB18843@bolo_yeung.jf.intel.com>
-References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
- <1320606840-21132-3-git-send-email-daniel.vetter@ffwll.ch>
- <20111120215632.6982c55c@bwidawsk.net>
- <20111121160244.GA3807@phenom.ffwll.local>
- <20111121175503.GA18843@bolo_yeung.jf.intel.com>
+	Mon, 21 Nov 2011 13:49:50 -0500
+Date: Mon, 21 Nov 2011 10:49:39 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] dmatest: don't use set_freezable_with_signal()
+Message-ID: <20111121184939.GA25776@google.com>
+References: <20111121184316.GH15314@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111121175503.GA18843@bolo_yeung.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111121184316.GH15314@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 09:55:07AM -0800, Ben Widawsky wrote:
-> On Mon, Nov 21, 2011 at 05:02:44PM +0100, Daniel Vetter wrote:
-> > On Sun, Nov 20, 2011 at 09:56:32PM -0800, Ben Widawsky wrote:
-> > [snip the patch]
-> > > Bikeshed, but I would much prefer a #define for the swizzle
-> > > bit/cacheline size.
-> > 
-> > I've looked at this stuff way too long, so I'm biased, but 64 = cacheline
-> > = dram fetch size = 1 << 64 feels about as natural for me as 4096 =
-> > PAGE_SIZE ...
-> > 
-> > [snip the patch]
-> > 
-> > > I must be missing something obvious here...
-> > > Can you explain how this can possibly be considered safe without holding
-> > > struct_mutex?
-> > 
-> > That's the reason why the commit msg goes through every case and explains
-> > why I think it's safe. The large thing here is that we need to drop the
-> > mutex when calling copy_*_user (at least in the non-atomic slow-paths)
-> > because otherwise we might deadlock with our own pagefault handler.
-> > -Daniel
+On Mon, Nov 21, 2011 at 10:43:16AM -0800, Tejun Heo wrote:
+> Commit 981ed70d8e (dmatest: make dmatest threads freezable) made
+> dmatest kthread use set_freezable_with_signal(); however, the
+> interface is scheduled to be removed in the next merge window.
 > 
-> The part about dropping struct_mutex is clear to me.
+> The problem is that unlike userland tasks there's no default place
+> which handles signal pending state and it isn't clear who owns and/or
+> is responsible for clearing TIF_SIGPENDING.  For example, in the
+> current code, try_to_freeze() clears TIF_SIGPENDING but it isn't sure
+> whether it actually owns the TIF_SIGPENDING nor is it race-free -
+> ie. the task may continue to run with TIF_SIGPENDING set after the
+> freezable section.
 > 
-> The bit that I'm missing, I just don't see how you guarantee the page
-> you're reading from (assuming it's a GTT mmapped page) doesn't get moved
-> from out under you. For instance if the page isn't there when you do the
-> initial __copy_from_user, it will get faulted in... cool - but what if
-> somewhere in that loop the object gets swapped out and something else is
-> put in it's place? How is that prevented?
+> Unfortunately, we don't have wait_for_completion_freezable_timeout().
+> This patch open codes it and uses wait_event_freezable_timeout()
+> instead and removes timeout reloading - wait_event_freezable_timeout()
+> won't return across freezing events (currently racy but fix scheduled)
+> and timer doesn't decrement while the task is in freezer.  Although
+> this does lose timer-reset-over-freezing, given that timeout is
+> supposed to be long enough and failure to finish inside is considered
+> irrecoverable, I don't think this is worth the complexity.
 > 
-> Sorry if it's a stupid question, I just don't get it.
-> Ben
+> While at it, move completion to outer scope and explain that we're
+> ignoring dangling pointer problem after timeout.  This should give
+> slightly better chance at avoiding oops after timeout.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+> Guennadi, Dan, how does this look?  If it's okay, do you guys mind
+> routing this through pm tree?  I have some patches stacked on top
+> removal of freezable_with_signal and it would be much easier to route
+> these together.
 
-Okay, I got what I was missing from IRC. Anytime the object is unmapped
-we shoot down the userspace mapping. I couldn't find it in the code, but
-it turned out to be right in front of me.
+Ooh, forgot to mention that it's only compile tested.
 
-Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
+Thanks.
 
+-- 
+tejun
