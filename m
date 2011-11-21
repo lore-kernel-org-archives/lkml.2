@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab1KUJy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 04:54:27 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60446 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab1KUJy0 (ORCPT
+	id S1755808Ab1KUJ4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:56:45 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39108
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754745Ab1KUJ4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 04:54:26 -0500
-Date: Mon, 21 Nov 2011 15:24:05 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vivek Goyal <vgoyal@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
-Subject: [RFC Patch 0/2] Slimdump framework using CRASH_REASON - v2
-Message-ID: <20111121095405.GA2289@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
+	Mon, 21 Nov 2011 04:56:44 -0500
+Date: Mon, 21 Nov 2011 04:56:38 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/8] readahead stats/tracing, backwards prefetching and
+ more
+Message-ID: <20111121095638.GA5084@infradead.org>
+References: <20111121091819.394895091@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20111121091819.394895091@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11112023-7014-0000-0000-0000001D67D8
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-	In furtherance of the previous discussion regarding 'slimdump'
-(refer: http://article.gmane.org/gmane.linux.kernel/1204967), it was
-decided that,
+On Mon, Nov 21, 2011 at 05:18:19PM +0800, Wu Fengguang wrote:
+> Andrew,
+> 
+> I'm getting around to pick up the readahead works again :-)
+> 
+> This first series is mainly to add some debug facilities, to support the long
+> missed backwards prefetching capability, and some old patches that somehow get
+> delayed (shame me).
+> 
+> The next step would be to better handle the readahead thrashing situations.
+> That would require rewriting part of the algorithms, this is why I'd like to
+> keep the backwards prefetching simple and stupid for now.
+> 
+> When (almost) free of readahead thrashing, we'll be in a good position to lift
+> the default readahead size. Which I suspect would be the single most efficient
+> way to improve performance for the large volumes of casually maintained Linux
+> file servers.
 
-- An entry in VMCOREINFO elf-note be added to denote the cause of crash,
-  instead of creating a new elf-note.
-
-- Upstream tools such as 'makedumpfile' and 'crash' be modified to
-  recognise this string and inform the user accordingly.
-
-Accordingly, this new version of the patchset makes the following
-changes 
-
-Changelog - version 2
------------------------
-(First version posted here:
-http://article.gmane.org/gmane.linux.kernel/1198435)
-
-- Append VMCOREINFO elf-note with a new variable CRASH_REASON whose
-  value will be populated using arch_add_crash_reason() function.
-
-- Define arch_add_crash_reason() in the x86 MCE path to return "PANIC_MCE"
-  in the panic path of MCE.
-
-- 'makedumpfile' tool is taught to recognise PANIC_MCE string as one
-  value of CRASH_REASON for which 'slimdump' must be captured.
-
-- Changes to 'crash' tool are not included, and is deferred till there's
-  consensus to the kernel and makedumpfile patches.
-
-Let me know your comments on this.
-
-Thanks,
-K.Prasad
+Btw, if you work actively in that area I have a todo list item I was
+planning to look into sooner or later:  instead of embedding the ra
+state into the struct file allocate it dynamically.  That way files that
+either don't use the pagecache, or aren't read from won't need have to
+pay the price for increasing struct file size, and if we have to we
+could enlarge it more easily.  Besides removing f_version in the common
+struct file and also allocting f_owner separately that seem to be the
+easiest ways to get struct file size down.
 
