@@ -1,156 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1KULmq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:42:46 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4539 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab1KULmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753172Ab1KULm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:42:59 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45025 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab1KULmp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Nov 2011 06:42:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
-   d="scan'208";a="77512606"
-Date: Mon, 21 Nov 2011 19:42:39 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] readahead: replace ra->mmap_miss with ra->ra_flags
-Message-ID: <20111121114239.GC8895@localhost>
-References: <20111121091819.394895091@intel.com>
- <20111121093846.378529145@intel.com>
- <1321873467.2710.17.camel@menhir>
+Message-ID: <4ECA3914.4050401@oracle.com>
+Date: Mon, 21 Nov 2011 19:42:12 +0800
+From: annie li <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Thunderbird 1.5.0.9 (Windows/20061207)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321873467.2710.17.camel@menhir>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Subject: Re: [Xen-devel] Re: [PATCH 2/3] xen/granttable: Grant tables V2 implementation
+References: <4EC3B62F.6080702@oracle.com>	 <1321451372-13596-1-git-send-email-annie.li@oracle.com>	 <4EC62FE5.2080608@oracle.com>	 <1321614166.3664.311.camel@zakaz.uk.xensource.com>	 <20111118135221.GC12433@phenom.dumpdata.com>	 <1321624845.3664.354.camel@zakaz.uk.xensource.com>	 <4EC6837F.1050201@oracle.com> <20111118180500.GA19469@phenom.dumpdata.com>	 <4ECA1F13.3060903@oracle.com> <1321871748.3664.375.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1321871748.3664.375.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4ECA392E.013B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
 
-On Mon, Nov 21, 2011 at 07:04:27PM +0800, Steven Whitehouse wrote:
-> Hi,
-> 
-> I'm not quite sure why you copied me in to this patch, but I've had a
+> Neither of these changes are in the attached patch, did you resend an
+> old one by mistake?
+>   
+Sorry, I sent the old ones by mistake. :(
+> I think a fresh reposting of the series is in order, at least I've
+> rather lost track of which patches are the most recent ones in this
+> thread.
+>   
+OK, I will repost the patches in a new thread.
 
-Yeah it's such an old patch that I've forgotten why I added CC to you ;)
-
-> look at it and it seems ok to me. Some of the other patches in this
-> series look as if they might be rather useful for the GFS2 dir readahead
-> code though, so I'll be keeping an eye on developments in this area,
-> 
-> Acked-by: Steven Whitehouse <swhiteho@redhat.com>
-
-Thanks! That reminds me of the "metadata readahead". It should be
-possible to do more metadata readahead in future, hence we might add a
-"meta_io" column in the readahead stats file :)
-
-Thanks,
-Fengguang
-
-> On Mon, 2011-11-21 at 17:18 +0800, Wu Fengguang wrote:
-> > plain text document attachment (readahead-flags.patch)
-> > Introduce a readahead flags field and embed the existing mmap_miss in it
-> > (mainly to save space).
-> > 
-> > It will be possible to lose the flags in race conditions, however the
-> > impact should be limited.  For the race to happen, there must be two
-> > threads sharing the same file descriptor to be in page fault or
-> > readahead at the same time.
-> > 
-> > Note that it has always been racy for "page faults" at the same time.
-> > 
-> > And if ever the race happen, we'll lose one mmap_miss++ or mmap_miss--.
-> > Which may change some concrete readahead behavior, but won't really
-> > impact overall I/O performance.
-> > 
-> > CC: Andi Kleen <andi@firstfloor.org>
-> > CC: Steven Whitehouse <swhiteho@redhat.com>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  include/linux/fs.h |   31 ++++++++++++++++++++++++++++++-
-> >  mm/filemap.c       |    9 ++-------
-> >  2 files changed, 32 insertions(+), 8 deletions(-)
-> > 
-> > --- linux-next.orig/include/linux/fs.h	2011-11-20 11:30:55.000000000 +0800
-> > +++ linux-next/include/linux/fs.h	2011-11-20 11:48:53.000000000 +0800
-> > @@ -945,10 +945,39 @@ struct file_ra_state {
-> >  					   there are only # of pages ahead */
-> >  
-> >  	unsigned int ra_pages;		/* Maximum readahead window */
-> > -	unsigned int mmap_miss;		/* Cache miss stat for mmap accesses */
-> > +	unsigned int ra_flags;
-> >  	loff_t prev_pos;		/* Cache last read() position */
-> >  };
-> >  
-> > +/* ra_flags bits */
-> > +#define	READAHEAD_MMAP_MISS	0x000003ff /* cache misses for mmap access */
-> > +
-> > +/*
-> > + * Don't do ra_flags++ directly to avoid possible overflow:
-> > + * the ra fields can be accessed concurrently in a racy way.
-> > + */
-> > +static inline unsigned int ra_mmap_miss_inc(struct file_ra_state *ra)
-> > +{
-> > +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
-> > +
-> > +	/* the upper bound avoids banging the cache line unnecessarily */
-> > +	if (miss < READAHEAD_MMAP_MISS) {
-> > +		miss++;
-> > +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
-> > +	}
-> > +	return miss;
-> > +}
-> > +
-> > +static inline void ra_mmap_miss_dec(struct file_ra_state *ra)
-> > +{
-> > +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
-> > +
-> > +	if (miss) {
-> > +		miss--;
-> > +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
-> > +	}
-> > +}
-> > +
-> >  /*
-> >   * Check if @index falls in the readahead windows.
-> >   */
-> > --- linux-next.orig/mm/filemap.c	2011-11-20 11:30:55.000000000 +0800
-> > +++ linux-next/mm/filemap.c	2011-11-20 11:48:29.000000000 +0800
-> > @@ -1597,15 +1597,11 @@ static void do_sync_mmap_readahead(struc
-> >  		return;
-> >  	}
-> >  
-> > -	/* Avoid banging the cache line if not needed */
-> > -	if (ra->mmap_miss < MMAP_LOTSAMISS * 10)
-> > -		ra->mmap_miss++;
-> > -
-> >  	/*
-> >  	 * Do we miss much more than hit in this file? If so,
-> >  	 * stop bothering with read-ahead. It will only hurt.
-> >  	 */
-> > -	if (ra->mmap_miss > MMAP_LOTSAMISS)
-> > +	if (ra_mmap_miss_inc(ra) > MMAP_LOTSAMISS)
-> >  		return;
-> >  
-> >  	/*
-> > @@ -1633,8 +1629,7 @@ static void do_async_mmap_readahead(stru
-> >  	/* If we don't want any read-ahead, don't bother */
-> >  	if (VM_RandomReadHint(vma))
-> >  		return;
-> > -	if (ra->mmap_miss > 0)
-> > -		ra->mmap_miss--;
-> > +	ra_mmap_miss_dec(ra);
-> >  	if (PageReadahead(page))
-> >  		page_cache_async_readahead(mapping, ra, file,
-> >  					   page, offset, ra->ra_pages);
-> > 
-> > 
-> 
-> 
+Thanks
+Annie
+> Ian.
+>   
