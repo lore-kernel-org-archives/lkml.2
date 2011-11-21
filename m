@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab1KUVtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:49:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40631 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161Ab1KUVr7 (ORCPT
+	id S1757330Ab1KUVtR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:49:17 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:47679 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757313Ab1KUVtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:47:59 -0500
-X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=oExj5NFNAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=ZJ4H0Wm7EEmHzjUgDusA:9 a=MkRGjL1ZTNgiexsqep4A:7 a=QEXdDO2ut3YA:10 a=Zh68SRI7RUMA:10 a=r0HesoeFUbUA:10 a=jeBq3FmKZ4MA:10 a=33_AH1Q-f3xCRiH1Q6YA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20111121214757.011122160@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 21 Nov 2011 16:44:24 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
-Subject: [PATCH 4/6] dm: Make rt aware
-References: <20111121214420.124907956@goodmis.org>
-Content-Disposition: inline; filename=0004-dm-Make-rt-aware.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 21 Nov 2011 16:49:09 -0500
+Date: Mon, 21 Nov 2011 16:49:09 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 5] PM: Update comments describing device power management
+ callbacks
+In-Reply-To: <201111212223.15878.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1111211642060.1848-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
 
-From: Thomas Gleixner <tglx@linutronix.de>
+> On Monday, November 21, 2011, Alan Stern wrote:
+> > On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+> > 
+> > > > >   * @freeze: Hibernation-specific, executed before creating a hibernation image.
+> > > > > - *	Quiesce operations so that a consistent image can be created, but do NOT
+> > > > > - *	otherwise put the device into a low power device state and do NOT emit
+> > > > > - *	system wakeup events.  Save in main memory the device settings to be
+> > > > > - *	used by @restore() during the subsequent resume from hibernation or by
+> > > > > - *	the subsequent @thaw(), if the creation of the image or the restoration
+> > > > > - *	of main memory contents from it fails.
+> > > > > + *	Analogous to @suspend(), but it should not enable the device to signal
+> > > > > + *	wakeup events.  The majority of subsystems (with the notable exception
+> > > > > + *	of the PCI bus type) expect the driver-level @freeze() to save the
+> > > > > + *	device settings in memory to be used by @restore() during the subsequent
+> > > > > + *	resume from hibernation.
+> > > > > + *	Subsystem-level @freeze() is executed for all devices after invoking
+> > > > > + *	subsystem-level @prepare() for all of them.
+> > > > 
+> > > > The first three lines you removed contain some important points which I
+> > > > think should be retained.
+> > > 
+> > > Well, not really, because in fact what the callback is supposed to do depends
+> > > on the subsystem.  For example, on PCI freeze is not supposed to save the
+> > > the device state even and generally those routines don't emit any events.
+> > 
+> > But you removed the part saying that the freeze callback should quiesce
+> > the device but doesn't necessarily have to put the device into a
+> > low-power state (in fact, it should avoid changing the power state if
+> > possible).  And you removed the explanation that this is needed in
+> > order to guarantee a consistent memory image.  These two points are
+> > true for all subsystems, including PCI.
+> 
+> I said "Analogous to @suspend()" instead.  I'm not sure why this is not
+> sufficient?
 
-Use the BUG_ON_NONRT variant for the irq_disabled() checks. RT has
-interrupts legitimately enabled here as we cant deadlock against the
-irq thread due to the "sleeping spinlocks" conversion.
+Because @suspend() is very different!  Its description basically says 
+to do three things:
 
-Reported-by: Luis Claudio R. Goncalves <lclaudio@uudg.org>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/md/dm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+	Quiesce the device,
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 41abc6d..67207d6 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1644,14 +1644,14 @@ static void dm_request_fn(struct request_queue *q)
- 		if (map_request(ti, clone, md))
- 			goto requeued;
-=20
--		BUG_ON(!irqs_disabled());
-+		BUG_ON_NONRT(!irqs_disabled());
- 		spin_lock(q->queue_lock);
- 	}
-=20
- 	goto out;
-=20
- requeued:
--	BUG_ON(!irqs_disabled());
-+	BUG_ON_NONRT(!irqs_disabled());
- 	spin_lock(q->queue_lock);
-=20
- delay_and_out:
---=20
-1.7.7.1
+	Put it into a low-power state,
+
+	And enable wakeup events.
+
+@freeze() is supposed to do the first but not the second or third.  
+This makes it only 33% similar to @suspend().  :-)
+
+Also, the description of @suspend() says nothing about having a
+consistent memory image.
 
 
+> > "A callback routine must NOT try to unregister the device for which it
+> > was called, however it may unregister children of that device (for
+> > example, if it detects that a child was hot-unplugged while the system
+> > was asleep)."
+> 
+> That sounds good, thanks!
+>  
+> > > Do you know any situation in which that matters?
+> > 
+> > Not offhand, but I'm not familiar with too many subsystems.
+> 
+> Well, it seems quite extreme to me to be honest. :-)
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+It would matter for the USB subsystem, except that USB registers and
+unregisters all its devices from a freezable kernel thread.  It's not
+hard to imagine that other subsystems might want to unregister devices
+as soon as they are found to be missing, which means during the
+parent's resume routine.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Alan Stern
 
-iQIcBAABAgAGBQJOyscNAAoJEIy3vGnGbaoArT0QAMCOfUGTII7e/zGSTAlJU39H
-IJEBnrMoa3+vwQLf6q9nImKKXG0JKNd9sRq5a95BQGFze/gvADy90XxULyIMVSWs
-7BG9djvT7eI57IWrmfwF1SioSzhblmdBZWt+embm7lkuvU7EkQbWUR+mQrtgpxhS
-ZeHgJOrZv6giymRjCi7jq4JqMy3Rbozqa7iiSyK+YbIJx/C7DNfN4exjvsOYMLmQ
-GLy6SyfJxawZHSeIWSA5Yl8czHV9Xzfr/UDk3o2PuMwjdFpjN5TKbl3WB7ioxzil
-Tpjg/amOjx3IPROh3qwexiXEZ2O0JXNhxq+xRmMYCaDNGwXxmBSSlqIducm46xUN
-eKMr02UlrdwxivxbBXuEIPCyXDFXrdbdNBCsgw8phb0MHpiRNipeSSpXs9O0bmWV
-Z2xPj2wIEnaIu41yf/D8g8gCJqeUkhn2wOE4G7r5djPU1FIU5tGg3UkWSjWdqtLX
-clwmghPmzVY3ouOr99n1zwfzqjD/P5E0eVYKnrXufOmJ6ENEn8w+KrlnoJen+A/l
-K7E58B3R53q/0tY/OfMSwwBKkrjqcKjDMQmmy4zARBUTP33hRWDkJ6wgV6yJH5Zm
-9p3NxA5GcgZt6ZIfkORGEGXpwwllhznJ/fhZwQSZfYC8urekdIFSdaoxb4GbH2C8
-lasMS9ljWpLhWibFGbYt
-=eyKO
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
