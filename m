@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1KUDwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 22:52:25 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38414 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782Ab1KUDwY (ORCPT
+	id S1755301Ab1KUDyo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 22:54:44 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50238 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824Ab1KUDyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 22:52:24 -0500
-Date: Mon, 21 Nov 2011 03:52:18 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: [patch] fix braino in um patchset (mea culpa)
-Message-ID: <20111121035218.GE2203@ZenIV.linux.org.uk>
+	Sun, 20 Nov 2011 22:54:41 -0500
+Message-ID: <4EC9CB79.9030905@linux.vnet.ibm.com>
+Date: Mon, 21 Nov 2011 11:54:33 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 0/6] KVM: optimize memslots searching
+References: <4EC6226B.3080408@linux.vnet.ibm.com> <4EC8E48B.9080204@redhat.com> <4EC8EECB.7070706@redhat.com>
+In-Reply-To: <4EC8EECB.7070706@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112103-5816-0000-0000-0000001FFE06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wrong register returned...
-    
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+On 11/20/2011 08:12 PM, Avi Kivity wrote:
 
-diff --git a/arch/x86/um/asm/processor.h b/arch/x86/um/asm/processor.h
-index 936d7ac..04f82e0 100644
---- a/arch/x86/um/asm/processor.h
-+++ b/arch/x86/um/asm/processor.h
-@@ -11,7 +11,7 @@
- #endif
- 
- #define KSTK_EIP(tsk) KSTK_REG(tsk, HOST_IP)
--#define KSTK_ESP(tsk) KSTK_REG(tsk, HOST_IP)
-+#define KSTK_ESP(tsk) KSTK_REG(tsk, HOST_SP)
- #define KSTK_EBP(tsk) KSTK_REG(tsk, HOST_BP)
- 
- #define ARCH_IS_STACKGROW(address) \
+> On 11/20/2011 01:29 PM, Avi Kivity wrote:
+>> On 11/18/2011 11:16 AM, Xiao Guangrong wrote:
+>>> This is the more work base on my v1 patchset which is posted some months ago,
+>>> it can be found at:
+>>> https://lkml.org/lkml/2011/2/22/68
+>>>
+>>> Change log:
+>>> - sort memslots base on its size and do the line search instead of binary
+>>>   search base on gfn, it is from Avi's idea.
+>>> - in order to reduce cache footprint, memslots are sorted in the array of
+>>>   kvm->memslots->memslots[] and introduce a table to map slot id to index in
+>>>   the array
+>>>
+>>> There is the performance result:
+>>>
+>>> autotest for RHEL.6.1 setup/boot/reboot/shutdown(average):
+>>> ept=1:	before: 449.5	after: 447.8
+>>> ept=0:	before: 532.7	after: 529.8
+>>>
+>>> kernbench(average):
+>>> ept=1:	before: 127.94	after: 126.98
+>>> ept=0:	before: 196.85	after: 189.66
+>>
+>> Looks good, had a couple of comments but they're really minor.
+>>
+> 
+> btw, this patchset touches a lot of common code.  Did you crossbuild for
+> other kvm archs?
+> 
+
+
+No :-), but i will build cross compilation environment and test it next time,
+thanks!
+
