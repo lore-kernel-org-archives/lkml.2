@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1KUOSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 09:18:08 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54013 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab1KUOSF (ORCPT
+	id S1755457Ab1KUOSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 09:18:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44343 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab1KUOSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 09:18:05 -0500
-Date: Mon, 21 Nov 2011 15:17:59 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 5/8] readahead: add /debug/readahead/stats
-Message-ID: <20111121141759.GE24062@one.firstfloor.org>
-References: <20111121091819.394895091@intel.com> <20111121093846.636765408@intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 21 Nov 2011 09:18:22 -0500
+Date: Mon, 21 Nov 2011 14:18:17 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org
+Subject: Re: [PATCH 2/2] ARM: amba: Auto-generate AMBA driver module aliases
+ during modpost
+Message-ID: <20111121141817.GB14679@localhost.localdomain>
+References: <1321872510-2562-1-git-send-email-dave.martin@linaro.org>
+ <1321872510-2562-3-git-send-email-dave.martin@linaro.org>
+ <20111121131022.GE30612@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111121093846.636765408@intel.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111121131022.GE30612@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static unsigned long ra_stats[RA_PATTERN_MAX][RA_ACCOUNT_MAX];
+On Mon, Nov 21, 2011 at 02:10:22PM +0100, Uwe Kleine-König wrote:
+> Hello Dave,
+> 
+> On Mon, Nov 21, 2011 at 10:48:30AM +0000, Dave Martin wrote:
+> > --- a/drivers/amba/bus.c
+> > +++ b/drivers/amba/bus.c
+> > @@ -52,7 +52,14 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
+> >  	int retval = 0;
+> >  
+> >  	retval = add_uevent_var(env, "AMBA_ID=%08x", pcdev->periphid);
+> > -	return retval;
+> > +	if (retval)
+> > +		return retval;
+> > +
+> > +	retval = add_uevent_var(env, "MODALIAS=amba:d%08X", pcdev->periphid);
+> > +	if (retval)
+> > +		return retval;
+> > +
+> > +	return 0;
+> Just return retval here?
 
-Why not make it per cpu?  That should get the overhead down, probably
-even enough that it can be enabled by default.
+Hmmm, yes -- I'm not sure why I did things that way.
+I'll get rid of the final if () and do as you suggest.
 
-BTW I have an older framework to make it really easy to add per
-cpu stats counters to debugfs. Will repost, that would simplify
-it even more.
-
--Andi
+Cheers
+---Dave
