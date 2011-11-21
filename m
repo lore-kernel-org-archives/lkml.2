@@ -1,70 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab1KUWnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:43:52 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41880 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750997Ab1KUWnu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:43:50 -0500
-Date: Mon, 21 Nov 2011 22:43:43 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Cree <mcree@orcon.net.nz>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>
-Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-Message-ID: <20111121224343.GA7862@mudshark.cambridge.arm.com>
-References: <20111121145114.049265181@chello.nl>
- <20111121145337.533322271@chello.nl>
- <20111121172323.GH20611@mudshark.cambridge.arm.com>
- <1321903090.28118.21.camel@twins>
- <20111121203145.GA7301@mudshark.cambridge.arm.com>
- <1321907755.28118.30.camel@twins>
+	id S1753506Ab1KUWqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:46:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750904Ab1KUWqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 17:46:17 -0500
+Date: Mon, 21 Nov 2011 23:45:45 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] mm: compaction: Determine if dirty pages can be
+ migreated without blocking within ->migratepage
+Message-ID: <20111121224545.GC8397@redhat.com>
+References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
+ <1321635524-8586-5-git-send-email-mgorman@suse.de>
+ <20111118213530.GA6323@redhat.com>
+ <20111121111726.GA19415@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321907755.28118.30.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111121111726.GA19415@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 08:35:55PM +0000, Peter Zijlstra wrote:
-> On Mon, 2011-11-21 at 20:31 +0000, Will Deacon wrote:
-> > On Mon, Nov 21, 2011 at 07:18:10PM +0000, Peter Zijlstra wrote:
-> > > But does ARM have a read PMU counter from userspace
-> > > instruction/capability?
-> > 
-> > In ARMv7, you can enable user access to the performance counters but the
-> > access is R/W so I don't think it's something we want to do (could interfere
-> > with another task doing system-wide profiling).
+On Mon, Nov 21, 2011 at 11:17:26AM +0000, Mel Gorman wrote:
+> On Fri, Nov 18, 2011 at 10:35:30PM +0100, Andrea Arcangeli wrote:
+> > folks who wants low latency or no memory overhead should simply
+> > disable compaction.
 > 
-> Yeah, write access is pushing it a bit.. 
+> That strikes me as being somewhat heavy handed. Compaction should be as
+> low latency as possible.
 
-Perhaps we could disable it while per-cpu events are running, although I
-think this will probably just lead to SIGILL central for anybody trying to
-use the counters in userspace.
+Yes I was meaning in the very short term. Optimizations are always
+possible :) we've just to sort out some issues (as previous part of
+the email discussed).
 
-> > > Lacking that its all moot of course. If it does, it would be nice to
-> > > have an ARM version of patch 6.
-> > 
-> > Well we'd need a way to get around the all-or-nothing user access to the PMU
-> > and also the fact that we don't always have a user-readable clocksource.
-> > 
-> > Either way, the event counters are indexed from 0 on ARMv7 so we should
-> > use perf_event_idx_default.
+> There might be some confusion on what commits were for. Commit
+> [e0887c19: vmscan: limit direct reclaim for higher order allocations]
+> was not about low latency but more about reclaim/compaction reclaiming
+> too much memory. IIRC, Rik's main problem was that there was too much
+> memory free on his machine when THP was enabled.
 > 
-> Ok, done. Thanks!
+> > the __GFP_NO_KSWAPD check too should be dropped I think,
+> 
+> Only if we can get rid of the major stalls. I haven't looked closely at
+> your series yet but I'll be searching for a replacment for patch 3 of
+> this series in it.
 
-Brill.
+I reduced the migrate loops, for both async and sync compactions. I
+doubt it'll be very effective but it may help a bit.
 
-Will
+Also this one I also suggest it in the short term.
+
+I mean until async migrate can deal with all type of pages (the issues
+you're trying to fix) the __GFP_NO_KSWAPD check would not be reliable
+enough as part of the movable zone wouldn't be movable. It'd defeat
+the reliability from the movable pageblock in compaction context. And
+I doubt a more advanced async compaction will be ok for 3.2, so I
+don't think 3.2 should have the __GFP_NO_KSWAPD and I tend to back
+Andrew's argument. My patch OTOH that only reduces the loops and
+doesn't alter the movable pageblock semantics in compaction context,
+sounds safer. It won't help equally well though.
+
+> Ok. It's not even close to what I was testing but I can move to this
+> test so we're looking at the same thing for allocation success rates.
+
+Note I guess we also need the below. This also should fix by practical
+means Rik's trouble (he was using KVM without O_DIRECT on raw
+blkdev). That explains why he experienced too much reclaim, the VM had
+no choice but to do reclaim because the blkdev cache was not staying
+in the movable pageblocks preventing compaction effectiveness (and
+likely they used lots of ram).
+
+We may still have to limit reclaim but not like the patch that went
+upstream implements. When compaction_suitable is happy about the
+wmarks, the compaction loop isn't still as reliable as it could be in
+the movable zone, and doing more reclaim helps a lot, the more free
+pages the more compaction goes ahead and has a change to compact more
+stuff before the two scans meets in the middle. With Rik we thought
+about a way to do just a no-swapping reclaim to shrink caches like
+slab.
+
+I mean the cp /dev/sda /dev/null scenario that happens without the
+below patch can still materialize in a fileserver with very large slab
+caches. We still have to invoke reclaim, maybe not too heavy, we
+shouldn't end up swapping, basically it should be a light reclaim (the
+opposite of lumpy reclaim). But with the current check upstream
+reclaim practically won't run at all if compaction fails, so it's
+normal the success rate goes down a lot. (btw I didn't verify yet at
+runtime if migration succeeds on the blkdev pagecache)
+
+====
+mm: block_dev pagecache is movable
+
+Allow block_dev pagecache to go in movable pageblocks. If compaction
+fails reclaim is invoked. So with raw devices being used without
+O_DIRECT, reclaim would run too much and because the cache pages would
+get mixed with slab and other not movable entities, the compaction
+reliability would decrease.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ fs/block_dev.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index b07f1da..f7111c4 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -565,7 +565,7 @@ struct block_device *bdget(dev_t dev)
+ 		inode->i_rdev = dev;
+ 		inode->i_bdev = bdev;
+ 		inode->i_data.a_ops = &def_blk_aops;
+-		mapping_set_gfp_mask(&inode->i_data, GFP_USER);
++		mapping_set_gfp_mask(&inode->i_data, GFP_USER|__GFP_MOVABLE);
+ 		inode->i_data.backing_dev_info = &default_backing_dev_info;
+ 		spin_lock(&bdev_lock);
+ 		list_add(&bdev->bd_list, &all_bdevs);
+===
+
+
+> +		if (!trylock_buffer(bh)) {
+> +			/*
+> +			 * We failed to lock the buffer and cannot stall in
+> +			 * async migration. Release the taken locks
+> +			 */
+> +			struct buffer_head *failed_bh = bh;
+> +			put_bh(failed_bh);
+> +			bh = head;
+> +			while (bh != failed_bh) {
+> +				unlock_buffer(bh);
+> +				put_bh(bh);
+> +				bh = bh->b_this_page;
+> +			}
+> +			return false;
+
+Ok!
+
+> +	/* In the async case, migrate_page_move_mapping locked the buffers
+> +	 * with an IRQ-safe spinlock held. In the sync case, the buffers
+> +	 * need to be locked now
+> +	 */
+> +	if (sync)
+> +		BUG_ON(!buffer_migrate_lock_buffers(head, sync));
+
+I seem to recall Andrew said we're ok with this now, but I generally
+still prefer stuff that shouldn't be optimized away to be outside of
+the BUG checks. No big deal.
+
+Patch looks better now thanks, I'll try to do a closer review tomorrow
+and test it.
+
+Thanks!
