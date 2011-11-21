@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab1KURX1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:23:27 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41431 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751623Ab1KURX0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:23:26 -0500
-Date: Mon, 21 Nov 2011 17:23:24 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Cree <mcree@orcon.net.nz>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>
-Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-Message-ID: <20111121172323.GH20611@mudshark.cambridge.arm.com>
-References: <20111121145114.049265181@chello.nl>
- <20111121145337.533322271@chello.nl>
+	id S1755670Ab1KURYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:24:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50493 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752895Ab1KURYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 12:24:48 -0500
+Message-ID: <4ECA8991.20302@suse.cz>
+Date: Mon, 21 Nov 2011 18:25:37 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121145337.533322271@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, kbuild@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 2/8] kbuild: Add support for an "archheaders" target
+References: <1321569446-20433-1-git-send-email-hpa@linux.intel.com> <1321569446-20433-3-git-send-email-hpa@linux.intel.com>
+In-Reply-To: <1321569446-20433-3-git-send-email-hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Dne 17.11.2011 23:37, H. Peter Anvin napsal(a):
+> -__headers: include/linux/version.h scripts_basic asm-generic FORCE
+> +__headers: include/linux/version.h scripts_basic asm-generic archheaders FORCE
+>  	$(Q)$(MAKE) $(build)=scripts build_unifdef
+>  
+>  PHONY += headers_install_all
+> diff --git a/scripts/headers.sh b/scripts/headers.sh
+> index 978b42b..af1ed88 100755
+> --- a/scripts/headers.sh
+> +++ b/scripts/headers.sh
+> @@ -7,6 +7,7 @@ set -e
+>  do_command()
+>  {
+>  	if [ -f ${srctree}/arch/$2/include/asm/Kbuild ]; then
+> +		make ARCH=$2 KBUILD_HEADERS=$1 archheaders
+>  		make ARCH=$2 KBUILD_HEADERS=$1 headers_$1
 
-On Mon, Nov 21, 2011 at 02:51:16PM +0000, Peter Zijlstra wrote:
-> Put the logic to compute the event index into a per pmu method. This
-> is required because the x86 rules are weird and wonderful and don't
-> match the capabilities of the current scheme.
-> 
-> AFAIK only powerpc actually has a usable userspace read of the PMCs
-> but I'm not at all sure anybody actually used that.
-> 
-> ARM looks like it cared, but I really wouldn't know, Will?
+I don't think we need the explicit make archheaders call here, it's
+handled by the __headers dependency above.
 
-It used to care, but it doesn't anymore. Feel free to make the offset 0 and
-use the (now) generic codepath.
-
-With that:
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
+Michal
