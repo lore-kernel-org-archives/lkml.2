@@ -1,243 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab1KUGlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 01:41:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37421 "EHLO mga11.intel.com"
+	id S1754596Ab1KUGsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 01:48:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34077 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab1KUGlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 01:41:01 -0500
+	id S1753408Ab1KUGsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 01:48:14 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,545,1315206000"; 
-   d="scan'208";a="93470844"
-Date: Mon, 21 Nov 2011 14:37:49 +0800
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="78274106"
+Date: Mon, 21 Nov 2011 14:48:11 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3 v2] drm/i915: hot plug/unplug notification to HDMI
- audio driver
-Message-ID: <20111121063749.GA23450@localhost>
+Subject: Re: [PATCH 2/3] hda - delayed ELD repoll
+Message-ID: <20111121064811.GA24027@localhost>
+References: <20111116082945.414733231@intel.com>
+ <20111116083514.568265053@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20111116083514.568265053@intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On monitor hot plug/unplug, update ELD and set/clear SDVO_AUDIO_ENABLE
-or DP_AUDIO_OUTPUT_ENABLE accordingly.  So that the audio driver will
-receive hot plug events and take action to refresh its device state and
-ELD contents.
+On Wed, Nov 16, 2011 at 04:29:47PM +0800, Wu, Fengguang wrote:
+> The Intel HDMI chips (ironlake at least) are found to have ~250ms delay
+> between the ELD_Valid=1 hotplug event is send and the ELD buffer becomes
+> actually readable. During the time the ELD buffer is mysteriously all 0.
+> 
+> Fix it by scheduling a delayed work to re-read ELD buffer after 300ms.
 
-A new callback ->hotplug() is added to struct drm_connector_funcs which
-will be called immediately after ->detect() knowing that the monitor is
-either plugged or unplugged.
+Just FYI.
 
-It's noticed that X may not call ->mode_set() at monitor hot plug, so it's
-necessary to call drm_edid_to_eld() earlier at ->detect() time rather than
-in intel_ddc_get_modes(), so that intel_write_eld() can see the new ELD
-in ->hotplug.
+Up to now the 300ms looks sufficient. But if ever there comes longer
+delays, I've already prepared a patch for retrying it for several times ;)
 
-The call sequence on hot plug is
-(the difference part lies in ->mode_set vs ->hotplug)
+Thanks,
+Fengguang
 
-- KMS console
-	->detect
-	  drm_edid_to_eld
-	->mode_set
-	  intel_write_eld
-	  set SDVO_AUDIO_ENABLE/DP_AUDIO_OUTPUT_ENABLE
-- X
-	->detect
-	  drm_edid_to_eld
-	->hotplug
-	  intel_write_eld
-	  set SDVO_AUDIO_ENABLE/DP_AUDIO_OUTPUT_ENABLE
-
-On hot remove, the call sequence is
-
-	->hotplug
-	  clear SDVO_AUDIO_ENABLE/DP_AUDIO_OUTPUT_ENABLE
-
-cc: Wang Zhenyu <zhenyu.z.wang@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- drivers/gpu/drm/drm_crtc_helper.c  |    5 ++-
- drivers/gpu/drm/i915/intel_dp.c    |   44 +++++++++++++++++++++------
- drivers/gpu/drm/i915/intel_hdmi.c  |   31 +++++++++++++++++++
- drivers/gpu/drm/i915/intel_modes.c |    2 -
- include/drm/drm_crtc.h             |    1 
- 5 files changed, 71 insertions(+), 12 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- linux.orig/drivers/gpu/drm/i915/intel_dp.c	2011-11-21 11:26:09.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_dp.c	2011-11-21 14:12:21.000000000 +0800
-@@ -28,6 +28,7 @@
- #include <linux/i2c.h>
- #include <linux/slab.h>
- #include <linux/export.h>
-+#include <drm/drm_edid.h>
- #include "drmP.h"
- #include "drm.h"
- #include "drm_crtc.h"
-@@ -1970,20 +1971,44 @@ intel_dp_detect(struct drm_connector *co
- 	if (status != connector_status_connected)
- 		return status;
- 
--	if (intel_dp->force_audio) {
--		intel_dp->has_audio = intel_dp->force_audio > 0;
--	} else {
--		edid = intel_dp_get_edid(connector, &intel_dp->adapter);
--		if (edid) {
--			intel_dp->has_audio = drm_detect_monitor_audio(edid);
--			connector->display_info.raw_edid = NULL;
--			kfree(edid);
--		}
-+	edid = intel_dp_get_edid(connector, &intel_dp->adapter);
-+	if (edid) {
-+		intel_dp->has_audio = drm_detect_monitor_audio(edid);
-+		drm_edid_to_eld(connector, edid);
-+		connector->display_info.raw_edid = NULL;
-+		kfree(edid);
- 	}
- 
-+	if (intel_dp->force_audio)
-+		intel_dp->has_audio = intel_dp->force_audio > 0;
-+
- 	return connector_status_connected;
- }
- 
-+static void intel_dp_hotplug(struct drm_connector *connector)
-+{
-+	struct intel_dp *intel_dp = intel_attached_dp(connector);
-+	struct drm_device *dev = intel_dp->base.base.dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct drm_crtc *crtc = intel_dp->base.base.crtc;
-+
-+	DRM_DEBUG_DRIVER("DisplayPort hotplug status %d crtc %p eld %#x\n",
-+			 connector->status,
-+			 crtc,
-+			 (unsigned int)connector->eld[0]);
-+
-+	if (connector->status == connector_status_disconnected) {
-+		intel_dp->DP &= ~DP_AUDIO_OUTPUT_ENABLE;
-+	} else if (connector->status == connector_status_connected && crtc) {
-+		intel_write_eld(&intel_dp->base.base, &crtc->mode);
-+		intel_dp->DP |= DP_AUDIO_OUTPUT_ENABLE;
-+	} else {
-+		return;
-+	}
-+	I915_WRITE(intel_dp->output_reg, intel_dp->DP);
-+	POSTING_READ(intel_dp->output_reg);
-+}
-+
- static int intel_dp_get_modes(struct drm_connector *connector)
- {
- 	struct intel_dp *intel_dp = intel_attached_dp(connector);
-@@ -2143,6 +2168,7 @@ static const struct drm_connector_funcs 
- 	.detect = intel_dp_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.set_property = intel_dp_set_property,
-+	.hotplug = intel_dp_hotplug,
- 	.destroy = intel_dp_destroy,
+--- linux.orig/sound/pci/hda/patch_hdmi.c	2011-11-18 17:05:44.000000000 +0800
++++ linux/sound/pci/hda/patch_hdmi.c	2011-11-21 10:45:22.000000000 +0800
+@@ -69,6 +69,7 @@ struct hdmi_spec_per_pin {
+ 	struct hda_codec *codec;
+ 	struct hdmi_eld sink_eld;
+ 	struct delayed_work work;
++	int repoll_count;
  };
  
---- linux.orig/drivers/gpu/drm/i915/intel_hdmi.c	2011-11-21 11:26:09.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_hdmi.c	2011-11-21 14:12:26.000000000 +0800
-@@ -337,6 +337,7 @@ intel_hdmi_detect(struct drm_connector *
- 			status = connector_status_connected;
- 			intel_hdmi->has_hdmi_sink = drm_detect_hdmi_monitor(edid);
- 			intel_hdmi->has_audio = drm_detect_monitor_audio(edid);
-+			drm_edid_to_eld(connector, edid);
+ struct hdmi_spec {
+@@ -748,7 +749,7 @@ static void hdmi_setup_audio_infoframe(s
+  * Unsolicited events
+  */
+ 
+-static void hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, bool retry);
++static void hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll);
+ 
+ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+ {
+@@ -766,7 +767,7 @@ static void hdmi_intrinsic_event(struct 
+ 	if (pin_idx < 0)
+ 		return;
+ 
+-	hdmi_present_sense(&spec->pins[pin_idx], true);
++	hdmi_present_sense(&spec->pins[pin_idx], 1);
+ }
+ 
+ static void hdmi_non_intrinsic_event(struct hda_codec *codec, unsigned int res)
+@@ -960,7 +961,7 @@ static int hdmi_read_pin_conn(struct hda
+ 	return 0;
+ }
+ 
+-static void hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, bool retry)
++static void hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
+ {
+ 	struct hda_codec *codec = per_pin->codec;
+ 	struct hdmi_eld *eld = &per_pin->sink_eld;
+@@ -989,10 +990,9 @@ static void hdmi_present_sense(struct hd
+ 	if (eld_valid) {
+ 		if (!snd_hdmi_get_eld(eld, codec, pin_nid))
+ 			snd_hdmi_show_eld(eld);
+-		else if (retry) {
++		else if (repoll) {
+ 			queue_delayed_work(codec->bus->workq,
+-					   &per_pin->work,
+-					   msecs_to_jiffies(300));
++					   &per_pin->work, repoll * HZ / 3);
  		}
- 		connector->display_info.raw_edid = NULL;
- 		kfree(edid);
-@@ -350,6 +351,35 @@ intel_hdmi_detect(struct drm_connector *
- 	return status;
+ 	}
+ 
+@@ -1004,7 +1004,10 @@ static void hdmi_repoll_eld(struct work_
+ 	struct hdmi_spec_per_pin *per_pin =
+ 	container_of(to_delayed_work(work), struct hdmi_spec_per_pin, work);
+ 
+-	hdmi_present_sense(per_pin, false);
++	if (per_pin->repoll_count++ > 3)
++		per_pin->repoll_count = 0;
++
++	hdmi_present_sense(per_pin, per_pin->repoll_count);
  }
  
-+static void intel_hdmi_hotplug(struct drm_connector *connector)
-+{
-+	struct intel_hdmi *intel_hdmi = intel_attached_hdmi(connector);
-+	struct drm_i915_private *dev_priv = connector->dev->dev_private;
-+	struct drm_crtc *crtc = intel_hdmi->base.base.crtc;
-+	u32 temp;
-+
-+	DRM_DEBUG_DRIVER("HDMI hotplug status %d crtc %p eld %#x\n",
-+			 connector->status,
-+			 crtc,
-+			 (unsigned int)connector->eld[0]);
-+
-+	if (connector->status == connector_status_disconnected) {
-+		temp = I915_READ(intel_hdmi->sdvox_reg) & ~SDVO_AUDIO_ENABLE;
-+	} else if (connector->status == connector_status_connected && crtc) {
-+		/*
-+		 * It's for X only, which may not call ->mode_set on hot plug.
-+		 * KMS console has NULL crtc at this time and will
-+		 * call ->mode_set to enable HDMI audio a bit later.
-+		 */
-+		intel_write_eld(&intel_hdmi->base.base, &crtc->mode);
-+		temp = I915_READ(intel_hdmi->sdvox_reg) | SDVO_AUDIO_ENABLE;
-+	} else {
-+		return;
-+	}
-+	I915_WRITE(intel_hdmi->sdvox_reg, temp);
-+	POSTING_READ(intel_hdmi->sdvox_reg);
-+}
-+
- static int intel_hdmi_get_modes(struct drm_connector *connector)
- {
- 	struct intel_hdmi *intel_hdmi = intel_attached_hdmi(connector);
-@@ -459,6 +489,7 @@ static const struct drm_connector_funcs 
- 	.detect = intel_hdmi_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.set_property = intel_hdmi_set_property,
-+	.hotplug = intel_hdmi_hotplug,
- 	.destroy = intel_hdmi_destroy,
- };
+ static int hdmi_add_pin(struct hda_codec *codec, hda_nid_t pin_nid)
+@@ -1235,7 +1238,7 @@ static int generic_hdmi_build_jack(struc
+ 	if (err < 0)
+ 		return err;
  
---- linux.orig/drivers/gpu/drm/drm_crtc_helper.c	2011-11-21 11:26:09.000000000 +0800
-+++ linux/drivers/gpu/drm/drm_crtc_helper.c	2011-11-21 11:26:14.000000000 +0800
-@@ -903,8 +903,11 @@ static void output_poll_execute(struct w
- 			      connector->base.id,
- 			      drm_get_connector_name(connector),
- 			      old_status, connector->status);
--		if (old_status != connector->status)
-+		if (old_status != connector->status) {
- 			changed = true;
-+			connector->funcs->hotplug(connector);
-+		}
-+
- 	}
+-	hdmi_present_sense(per_pin, false);
++	hdmi_present_sense(per_pin, 0);
+ 	return 0;
+ }
  
- 	mutex_unlock(&dev->mode_config.mutex);
---- linux.orig/include/drm/drm_crtc.h	2011-11-21 11:26:09.000000000 +0800
-+++ linux/include/drm/drm_crtc.h	2011-11-21 11:26:14.000000000 +0800
-@@ -419,6 +419,7 @@ struct drm_connector_funcs {
- 	int (*fill_modes)(struct drm_connector *connector, uint32_t max_width, uint32_t max_height);
- 	int (*set_property)(struct drm_connector *connector, struct drm_property *property,
- 			     uint64_t val);
-+	void (*hotplug)(struct drm_connector *connector);
- 	void (*destroy)(struct drm_connector *connector);
- 	void (*force)(struct drm_connector *connector);
- };
---- linux.orig/drivers/gpu/drm/i915/intel_modes.c	2011-11-21 11:26:09.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_modes.c	2011-11-21 11:26:14.000000000 +0800
-@@ -26,7 +26,6 @@
- #include <linux/slab.h>
- #include <linux/i2c.h>
- #include <linux/fb.h>
--#include <drm/drm_edid.h>
- #include "drmP.h"
- #include "intel_drv.h"
- #include "i915_drv.h"
-@@ -75,7 +74,6 @@ int intel_ddc_get_modes(struct drm_conne
- 	if (edid) {
- 		drm_mode_connector_update_edid_property(connector, edid);
- 		ret = drm_add_edid_modes(connector, edid);
--		drm_edid_to_eld(connector, edid);
- 		connector->display_info.raw_edid = NULL;
- 		kfree(edid);
- 	}
