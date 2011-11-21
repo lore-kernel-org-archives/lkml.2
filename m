@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab1KUN4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:56:31 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64006 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1KUN40 (ORCPT
+	id S1755298Ab1KUN4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:56:40 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49395 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab1KUN4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:56:26 -0500
+	Mon, 21 Nov 2011 08:56:35 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv1 4/9] xshm: geni/geno driver interface.
-Date: Mon, 21 Nov 2011 14:55:59 +0100
-Message-Id: <1321883764-1958-5-git-send-email-sjur.brandeland@stericsson.com>
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        netdev@vger.kernel.org
+Subject: [RFCv1 9/9] caif-xshm: Add CAIF driver for Shared memory for M7400
+Date: Mon, 21 Nov 2011 14:56:04 +0100
+Message-Id: <1321883764-1958-10-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -24,221 +25,963 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Shared Memory driver is using two paired registers called
-GENI and GENO in for triggering events/interrupts on modem and Linux host.
+This patch introduces a caif shared memory link layer driver
+for ST-Ericsson's Thor M7400 LTE modem.
 
-It's primary use is notification about read and write indexes changes
-on each channel. But GENI/GENO are also used for communicating the
-address of the shared memory upon modem boot and to notify about start-up
-event such as when IPC channels and CAIF is ready for use.
+M7400 uses a ring-buffer in shared memory for transporting data from the modem.
+Each ring-buffer element contains an array of caif frames. caif_xshm calls
+napi_schedule() when receiving notification about incoming data.
+The napi-poll function copies data from the ring-buffer to SKBs until
+ring-buffer is empty, or quota is exceeded.
+
+If transmit ring-buffer is full, it also uses napi for scheduling transmission
+of queued transmit buffer.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+cc: netdev@vger.kernel.org
 ---
- include/linux/xshm/genio.h |  195 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 195 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/xshm/genio.h
+ drivers/net/caif/Kconfig     |   10 +
+ drivers/net/caif/Makefile    |    1 +
+ drivers/net/caif/caif_xshm.c |  900 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 911 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/caif/caif_xshm.c
 
-diff --git a/include/linux/xshm/genio.h b/include/linux/xshm/genio.h
+diff --git a/drivers/net/caif/Kconfig b/drivers/net/caif/Kconfig
+index abf4d7a..2861374 100644
+--- a/drivers/net/caif/Kconfig
++++ b/drivers/net/caif/Kconfig
+@@ -47,3 +47,13 @@ config CAIF_HSI
+        The caif low level driver for CAIF over HSI.
+        Be aware that if you enable this then you also need to
+        enable a low-level HSI driver.
++
++config CAIF_XSHM
++	tristate "CAIF external memory protocol driver"
++	depends on XSHM && CAIF
++	default n
++	---help---
++	Say "yes" if you want to support CAIF over External Shared Memory (XSHM)
++	IPC mechanism (e.g. over Chip to Chip).
++	This will normally be built-in, loadable module is used for testing.
++	If unsure say N.
+diff --git a/drivers/net/caif/Makefile b/drivers/net/caif/Makefile
+index 91dff86..9310b24 100644
+--- a/drivers/net/caif/Makefile
++++ b/drivers/net/caif/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_CAIF_SPI_SLAVE) += cfspi_slave.o
+ # Shared memory
+ caif_shm-objs := caif_shmcore.o caif_shm_u5500.o
+ obj-$(CONFIG_CAIF_SHM) += caif_shm.o
++obj-$(CONFIG_CAIF_XSHM) += caif_xshm.o
+ 
+ # HSI interface
+ obj-$(CONFIG_CAIF_HSI) += caif_hsi.o
+diff --git a/drivers/net/caif/caif_xshm.c b/drivers/net/caif/caif_xshm.c
 new file mode 100644
-index 0000000..e7a846e
+index 0000000..40c83b2
 --- /dev/null
-+++ b/include/linux/xshm/genio.h
-@@ -0,0 +1,195 @@
++++ b/drivers/net/caif/caif_xshm.c
+@@ -0,0 +1,900 @@
 +/*
-+ * Copyright (C) ST-Ericsson AB 2011
-+ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ *
++ * Copyright (C) ST-Ericsson AB 2010
++ * Contact: Sjur Brendeland / sjur.brandeland@stericsson.com
++ * Authors: Sjur Brendeland / sjur.brandeland@stericsson.com
++ *	   Daniel Martensson / daniel.martensson@stericsson.com
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
-+#ifndef __INC_GENIO_H
-+#define __INC_GENIO_H
-+#include <linux/types.h>
++#define pr_fmt(fmt) KBUILD_MODNAME ": %s() :" fmt, __func__
++#include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/sched.h>
++#include <linux/list.h>
++#include <linux/netdevice.h>
++#include <linux/if_arp.h>
++#include <net/caif/caif_device.h>
++#include <net/caif/caif_layer.h>
++#include <linux/xshm/xshm_pdev.h>
 +
-+/**
-+ * DOC: C2C GENI/GENO interface.
-+ *
-+ * This API defines the API for the C2C driver and the GENI/GENO registers.
-+ */
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Daniel Martensson <daniel.martensson@stericsson.com>");
++MODULE_AUTHOR("Sjur Brendeland <sjur.brandeland@stericsson.com>");
++MODULE_DESCRIPTION("CAIF SHM driver");
 +
-+/**
-+ * enum GENIO_BITS - Definition of special GENIO BITS.
-+ * @READY_FOR_IPC_BIT:  Remote side is ready for IPC.
-+ * This GENI/GENO bit is triggered when ring-buffer protocol
-+ * is enabled from the remote end (modem)
-+ *
-+ * @READY_FOR_CAIF_BIT: Remote side is ready for CAIF.
-+ * This GENI/GENO bit is triggered when CAIF protocol
-+ * is enabled from the remote end (modem)
-+ */
-+enum GENIO_BITS {
-+	READY_FOR_CAIF_BIT = 28,
-+	READY_FOR_IPC_BIT = 29
++#define CONNECT_TIMEOUT (3 * HZ)
++#define CAIF_NEEDED_HEADROOM	32
++#define CAIF_FLOW_ON		1
++#define CAIF_FLOW_OFF		0
++
++#define LOW_XOFF_WATERMARK	50
++#define HIGH_XOFF_WATERMARK	70
++#define STUFF_MARK		30
++
++struct ringbuf {
++	__le32	*rip;
++	__le32	*wip;
++	u32	size;
++	__le32	*bufsize;
 +};
 +
-+/**
-+ * genio_subscribe - Subscribe for notifications on bit-change of GENI/O bits.
-+ *
-+ * @bit:	The GENI/O bit where we want to be called back when it changes.
-+ *
-+ * @bit_set_cb:	Callback function to be called when the requested GENI/O bit
-+ *		is set by the external device (modem).
-+ *
-+ * @data: Client data to be provided in the callback function.
-+ *
-+ * Install a callback function for a GENI/O bit. Returns negative upon error.
-+ *
-+ * The genio driver is expected to handle the 4-state handshake for geni/geno
-+ * update, for the bit this function subscribe to. This function may block,
-+ * and cannot be called from IRQ context.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition: This function is called after genio_set_shm_addr() and
-+ * genio_bit_alloc(). @bit must be defined as as getter in genio_bit_alloc().
-+ *
-+ * Callback context:
-+ *		The "bit_set_cb" callback must be called from the
-+ *		IRQ context. The callback function is not allowed to block
-+ *		or spend much CPU time in the callback, It must defer
-+ *		work to soft-IRQ or work queues.
-+ */
-+int genio_subscribe(int bit, void (*bit_set_cb)(void *data), void *data);
++struct shm_pck_desc {
++	/* Offset from start of channel to CAIF frame. */
++	u32 offset;
++	u32 length;
++} __packed;
 +
-+/**
-+ * genio_unsubscribe - Unsubscribe for callback  GENI/O bit.
-+ * @bit:       The GENI/O bit to we want release.
-+ *
-+ * This function may block. It returns zero on success, and negative upon error.
-+ *
-+ * Precondition: @bit must be defined as as getter in genio_bit_alloc().
-+ */
-+int genio_unsubscribe(int bit);
++struct shm_caif_frm {
++	/* Number of bytes of padding before the CAIF frame. */
++	u8 hdr_ofs;
++} __packed;
 +
-+/**
-+ * genio_bit_alloc - Allocate the usage of GENI/O bits.
-+ *
-+ * @setter_mask:	Bit-mask defining the bits that can be set by
-+ *			genio_set_bit()
-+ * @getter_mask:	Bit-mask defining the bits that can be subscribed by
-+ *			genio_subscribe().
-+ *
-+ * The @getter_mask defines the bit for RX direction, i.e. bits that can
-+ * be subscribed by the function genio_subscribe().
-+ * The @setter_mask defines the bit for TX direction, i.e. bits that can
-+ * be set by the function genio_set_bit().
-+ * This function may block.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition:
-+ * This function cannot be called before ipc_ready_cb() has been called,
-+ * and must be called prior to any call on genio_subscribe() or genio_set_bit().
-+ *
-+ */
-+int genio_bit_alloc(u32 setter_mask, u32 getter_mask);
++#define SHM_HDR_LEN sizeof(struct shm_caif_frm)
 +
-+/**
-+ * genio_set_shm_addr - Inform remote device about the shared memory address.
-+ * @addr:		The shared memory address.
-+ * @ipc_ready_cb:	The callback function indicating IPC is ready.
-+ *
-+ * Description:
-+ * Implements the setting of shared memory address involving the
-+ * READY_FOR_IPC GENIO bits, and READY_FOR_IPC handshaking.
-+ * When handshaking is done ipc_ready_cb is called.
-+ * The usage of this bit is during start/restart.
-+ * This function may block.
-+ *
-+ * When the ipc_ready_cb() with @ready=%true, Stream channels can be opened.
-+ *
-+ * Sequence:
-+ * (1) Write the address to the GENO register,
-+ *
-+ * (2) wait for interrupt on IPC_READY (set to one in GENI register)
-+ *
-+ * (3) write zero to the GENO register
-+ *
-+ * (4) wait for interrupt on IPC_READY (set to zero)
-+ *
-+ * (5) call the callback function for IPC_READY
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition:
-+ * This function must be called initially upon start, or after remote device
-+ * has been reset.
-+ */
-+int genio_set_shm_addr(u32 addr, void (*ipc_ready_cb) (void));
++struct shmbuffer {
++/* Static part: */
++	u8 *addr;
++	u32 index;
++	u32 len;
++/* Dynamic part: */
++	u32 frames;
++	/* Offset from start of buffer to CAIF frame. */
++	u32 frm_ofs;
++};
 +
-+/**
-+ * genio_subscribe_caif_ready - Notify that CAIF channels can be
-+ * opened.
-+ *
-+ * @caif_ready_cb: is called with @ready = %true in the start up sequence,
-+ * when the remote side is ready for CAIF enumeration. Upon reset,
-+ * caif_ready_cb() will be called with @ready = %false.
-+ *
-+ * The %READY_FOR_CAIF_BIT is set to %one as long as the
-+ * modem is able to run CAIF traffic. Upon modem restart/crash it will
-+ * be set back to %zero.
-+ * This function may block.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ */
-+int genio_subscribe_caif_ready(void (*caif_ready_cb) (bool ready));
++enum CFSHM_STATE {
++	CFSHM_CLOSED = 1,
++	CFSHM_OPENING,
++	CFSHM_OPEN
++};
 +
-+/**
-+ * genio_register_errhandler - Register an error handler.
-+ *
-+ * @errhandler: error handler called from driver upon severe errors
-+ *		that requires reset of the remote device.
-+ */
-+void genio_register_errhandler(void (*errhandler)(int errno));
++struct cfshm {
++	/* caif_dev_common must always be first in the structure*/
++	struct caif_dev_common cfdev;
++	struct xshm_dev *xshm;
++	struct napi_struct napi;
++	struct ringbuf tx;
++	struct sk_buff_head sk_qhead;
++	spinlock_t lock;
++	struct ringbuf rx;
++	u8 *rx_ringbuf;
++	u32 rx_frms_pr_buf;
++	u32 rx_alignment;
++	struct shmbuffer **rx_bufs;
++	struct net_device *ndev;
 +
-+/**
-+ * genio_reset() - Reset the C2C driver
-+ *
-+ * Reset the C2C Driver due to remote device restart.
-+ * This shall reset state back to initial state, and should only
-+ * be used when remote device (modem) has reset.
-+ *
-+ * All settings, subscriptions and state information in the driver must
-+ * be reset. GENIO client must do all subscriptions again.
-+ * This function may block.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ */
-+int genio_reset(void);
++	u32 tx_frms_pr_buf;
++	u32 tx_alignment;
++	struct shmbuffer **tx_bufs;
++	u8 *tx_ringbuf;
++	u32 tx_flow_on;
++	u32 high_xoff_water;
++	u32 low_xoff_water;
++	u32 stuff_mark;
++	atomic_t dbg_smp_rxactive;
++	enum CFSHM_STATE state;
++	struct platform_device *pdev;
++	struct list_head node;
++};
 +
-+/**
-+ * genio_set_bit() -	Set a single GENI/O bit.
-+ *
-+ * @bit:	The GENI/O bit to set
-+ *
-+ * This function is used to signal over GENI/GENO the driver must
-+ * perform the 4-state protocol to signal the change to remote device.
-+ * This function is non-blocking, and can be called from Soft-IRQ context.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition: @bit must be defined as as setter in genio_bit_alloc().
-+ */
-+int genio_set_bit(int bit);
++static LIST_HEAD(cfshm_list);
++static spinlock_t cfshm_list_lock;
 +
-+/**
-+ * genio_power_req() -	Request power on on remote C2C block.
-+ *
-+ * @state:	1 - power-on request , 0 - power-off request
-+ *
-+ * This function will request power on of remote C2C block.
-+ * This function is non-blocking, and can be called from Soft-IRQ context.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ */
-+int genio_power_req(int state);
++static unsigned int ringbuf_used(struct ringbuf *rb)
++{
++	if (le32_to_cpu(*rb->wip) >= le32_to_cpu(*rb->rip))
++		return le32_to_cpu(*rb->wip) - le32_to_cpu(*rb->rip);
++	else
++		return rb->size - le32_to_cpu(*rb->rip) + le32_to_cpu(*rb->wip);
++}
 +
-+#endif /*INC_GENIO_H*/
++static int ringbuf_get_writepos(struct ringbuf *rb)
++{
++	if ((le32_to_cpu(*rb->wip) + 1) % rb->size == le32_to_cpu(*rb->rip))
++		return -1;
++	else
++		return le32_to_cpu(*rb->wip);
++}
++
++static int ringbuf_get_readpos(struct ringbuf *rb)
++{
++
++	if (le32_to_cpu(*rb->wip) == le32_to_cpu(*rb->rip))
++		return -1;
++	else
++		return le32_to_cpu(*rb->rip);
++}
++
++static int ringbuf_upd_writeptr(struct ringbuf *rb)
++{
++	if (!WARN_ON((le32_to_cpu(*rb->wip) + 1) % rb->size == le32_to_cpu(*rb->rip))) {
++		*rb->wip = cpu_to_le32((le32_to_cpu(*rb->wip) + 1) % rb->size);
++		/* Do write barrier before updating index */
++		smp_wmb();
++	}
++	return le32_to_cpu(*rb->wip);
++}
++
++static void ringbuf_upd_readptr(struct ringbuf *rb)
++{
++	if (!WARN_ON(le32_to_cpu(*rb->wip) == le32_to_cpu(*rb->rip))) {
++		*rb->rip = cpu_to_le32((le32_to_cpu(*rb->rip) + 1) % rb->size);
++		/* Do write barrier before updating index */
++		smp_wmb();
++	}
++}
++
++
++
++static struct shmbuffer *get_rx_buf(struct cfshm *cfshm)
++{
++	struct shmbuffer *pbuf = NULL;
++	int idx = ringbuf_get_readpos(&cfshm->rx);
++
++	if (idx < 0)
++		goto out;
++	pbuf = cfshm->rx_bufs[idx];
++out:
++	return pbuf;
++}
++
++static struct shmbuffer *new_rx_buf(struct cfshm *cfshm)
++{
++	struct shmbuffer *pbuf = get_rx_buf(cfshm);
++
++	WARN_ON(!spin_is_locked(&cfshm->lock));
++	if (pbuf)
++		pbuf->frames = 0;
++
++	return pbuf;
++}
++
++static struct shmbuffer *get_tx_buf(struct cfshm *cfshm)
++{
++	int idx = ringbuf_get_writepos(&cfshm->tx);
++
++	if (idx < 0)
++		return NULL;
++	return cfshm->tx_bufs[idx];
++}
++
++inline struct shmbuffer *tx_bump_buf(struct cfshm *cfshm,
++			struct shmbuffer *pbuf)
++{
++	u32 desc_size;
++	struct shmbuffer *newpbuf = pbuf;
++
++	WARN_ON(!spin_is_locked(&cfshm->lock));
++	if (pbuf) {
++		cfshm->xshm->cfg.tx.buf_size[pbuf->index] =
++			cpu_to_le32(pbuf->frm_ofs);
++		ringbuf_upd_writeptr(&cfshm->tx);
++		newpbuf = get_tx_buf(cfshm);
++		/* Reset buffer parameters. */
++		desc_size = (cfshm->tx_frms_pr_buf + 1) *
++			sizeof(struct shm_pck_desc);
++		pbuf->frm_ofs = desc_size + (desc_size % cfshm->rx_alignment);
++		pbuf->frames = 0;
++
++	}
++	return newpbuf;
++}
++
++static struct shmbuffer *shm_rx_func(struct cfshm *cfshm, int quota)
++{
++	struct shmbuffer *pbuf;
++	struct sk_buff *skb;
++	int ret;
++	unsigned long flags;
++
++	pbuf = get_rx_buf(cfshm);
++	while (pbuf) {
++		/* Retrieve pointer to start of the packet descriptor area. */
++		struct shm_pck_desc *pck_desc =
++			((struct shm_pck_desc *) pbuf->addr) + pbuf->frames;
++		u32 offset;
++
++		/* Loop until descriptor contains zero offset */
++		while ((offset = pck_desc->offset)) {
++			unsigned int caif_len;
++			struct shm_caif_frm *frm;
++			u32 length = pck_desc->length;
++			u8 hdr_ofs;
++			frm = (struct shm_caif_frm *)(pbuf->addr + offset);
++			hdr_ofs = frm->hdr_ofs;
++			caif_len =
++				length - SHM_HDR_LEN -
++				hdr_ofs;
++
++			pr_devel("copy data buf:%d frm:%d offs:%d @%x len:%d\n",
++					pbuf->index, pbuf->frames, offset,
++					SHM_HDR_LEN + hdr_ofs +
++					offset + pbuf->addr - cfshm->rx_ringbuf,
++					length);
++
++			/* Check whether number of frames is below limit */
++			if (pbuf->frames > cfshm->rx_frms_pr_buf) {
++				pr_warn("Too many frames in buffer.\n");
++				++cfshm->ndev->stats.rx_frame_errors;
++				goto desc_err;
++			}
++
++			/* Check whether offset is below low limits */
++			if (pbuf->addr + offset
++					<= (u8 *)(pck_desc + 1)) {
++				pr_warn("Offset in desc. below buffer area.\n");
++				++cfshm->ndev->stats.rx_frame_errors;
++				goto desc_err;
++			}
++
++			/* Check whether offset above upper limit */
++			if (offset + length > pbuf->len) {
++				pr_warn("Offset outside buffer area:\n");
++				++cfshm->ndev->stats.rx_frame_errors;
++				goto desc_err;
++			}
++
++			skb = netdev_alloc_skb(cfshm->ndev,
++							caif_len + 1);
++			if (skb == NULL) {
++				pr_debug("Couldn't allocate SKB\n");
++				++cfshm->ndev->stats.rx_dropped;
++				goto out;
++			}
++
++			memcpy(skb_put(skb, caif_len),
++					SHM_HDR_LEN + hdr_ofs +
++					offset + pbuf->addr,
++					caif_len);
++
++			skb->protocol = htons(ETH_P_CAIF);
++			skb_reset_mac_header(skb);
++			skb->dev = cfshm->ndev;
++
++			/* Push received packet up the stack. */
++			ret = netif_receive_skb(skb);
++
++			if (!ret) {
++				cfshm->ndev->stats.rx_packets++;
++				cfshm->ndev->stats.rx_bytes +=
++					length;
++			} else
++				++cfshm->ndev->stats.rx_dropped;
++			/* Move to next packet descriptor. */
++			pck_desc++;
++
++			pbuf->frames++;
++			if (--quota <= 0) {
++				pr_devel("Quota exeeded (pbuf:%p)\n", pbuf);
++				goto out;
++			}
++		}
++desc_err:
++		pbuf->frames = 0;
++
++		spin_lock_irqsave(&cfshm->lock, flags);
++		ringbuf_upd_readptr(&cfshm->rx);
++		pbuf = new_rx_buf(cfshm);
++		spin_unlock_irqrestore(&cfshm->lock, flags);
++
++	}
++	cfshm->xshm->ipc_rx_release(cfshm->xshm, false);
++out:
++	return pbuf;
++}
++
++static int insert_skb_in_buf(struct cfshm *cfshm, struct sk_buff *skb,
++					struct shmbuffer *pbuf)
++{
++	struct shm_pck_desc *pck_desc;
++	unsigned int frmlen;
++	struct shm_caif_frm *frm;
++	u8 hdr_ofs;
++	struct caif_payload_info *info = (struct caif_payload_info *)&skb->cb;
++
++	WARN_ON(!spin_is_locked(&cfshm->lock));
++
++	if (unlikely(pbuf->frames >= cfshm->tx_frms_pr_buf)) {
++		pr_devel("-ENOSPC exeeded frames: %d >= %d\n",
++				pbuf->frames, cfshm->tx_frms_pr_buf);
++			return -ENOSPC;
++	}
++
++	/*
++	 * Align the address of the entire CAIF frame (incl padding),
++	 * so the modem can do efficient DMA of this frame
++	 */
++	pbuf->frm_ofs = roundup(pbuf->frm_ofs, cfshm->tx_alignment);
++
++
++	/* Make the payload (IP packet) inside the frame aligned */
++	hdr_ofs = (unsigned long) &pbuf->frm_ofs;
++	hdr_ofs = roundup(hdr_ofs + SHM_HDR_LEN + info->hdr_len,
++			cfshm->tx_alignment);
++
++	frm = (struct shm_caif_frm *)
++		(pbuf->addr + pbuf->frm_ofs);
++
++	frmlen = SHM_HDR_LEN + hdr_ofs + skb->len;
++
++	/*
++	 * Verify that packet, header and additional padding
++	 * can fit within the buffer frame area.
++	 */
++	if (pbuf->len < pbuf->frm_ofs + frmlen) {
++		pr_devel("-ENOSPC exeeded offset %d < %d\n",
++				pbuf->len, pbuf->frm_ofs + frmlen);
++			return -ENOSPC;
++	}
++
++	/* Copy in CAIF frame. */
++	frm->hdr_ofs = hdr_ofs;
++	skb_copy_bits(skb, 0, pbuf->addr +
++			pbuf->frm_ofs + SHM_HDR_LEN +
++			hdr_ofs, skb->len);
++
++	pr_devel("copy data buf:%d frm:%d offs:%d @%d len:%d\n",
++			pbuf->index, pbuf->frames,
++			pbuf->frm_ofs,
++			pbuf->addr + pbuf->frm_ofs +
++				SHM_HDR_LEN + hdr_ofs - cfshm->tx_ringbuf,
++			skb->len);
++
++	cfshm->ndev->stats.tx_packets++;
++	cfshm->ndev->stats.tx_bytes += frmlen;
++	/* Fill in the shared memory packet descriptor area. */
++	pck_desc = (struct shm_pck_desc *) (pbuf->addr);
++	/* Forward to current frame. */
++	pck_desc += pbuf->frames;
++	pck_desc->offset = pbuf->frm_ofs;
++	pck_desc->length = frmlen;
++	/* Terminate packet descriptor area. */
++	pck_desc++;
++	pck_desc->offset = 0;
++	pck_desc->length = 0;
++	/* Update buffer parameters. */
++	pbuf->frames++;
++	pbuf->frm_ofs += frmlen;
++
++	return 0;
++}
++
++static struct shmbuffer *queue_to_ringbuf(struct cfshm *cfshm, int *new_bufs)
++{
++	struct shmbuffer *pbuf;
++	struct sk_buff *skb;
++	int err;
++
++	WARN_ON(!spin_is_locked(&cfshm->lock));
++
++	pbuf = get_tx_buf(cfshm);
++	while (pbuf != NULL) {
++		skb = skb_peek(&cfshm->sk_qhead);
++		if (skb == NULL)
++			break;
++		err = insert_skb_in_buf(cfshm, skb, pbuf);
++		if (unlikely(err == -ENOSPC)) {
++			pr_devel("No more space in buffer\n");
++			++(*new_bufs);
++			pbuf = tx_bump_buf(cfshm, pbuf);
++			continue;
++		}
++		skb = skb_dequeue(&cfshm->sk_qhead);
++		/* We're always in NET_*_SOFTIRQ */
++		dev_kfree_skb(skb);
++	}
++	return pbuf;
++}
++
++static int shm_netdev_open(struct net_device *netdev)
++{
++	struct cfshm *cfshm = netdev_priv(netdev);
++	int err = 0;
++
++	cfshm->state = CFSHM_OPENING;
++	netif_carrier_off(netdev);
++	napi_enable(&cfshm->napi);
++	if (cfshm->xshm != NULL && cfshm->xshm->open != NULL)
++		cfshm->xshm->open(cfshm->xshm);
++
++	return err;
++
++}
++
++static int shm_netdev_close(struct net_device *netdev)
++{
++	struct cfshm *cfshm = netdev_priv(netdev);
++
++	napi_disable(&cfshm->napi);
++
++	if (cfshm->xshm != NULL && cfshm->xshm->close != NULL)
++		cfshm->xshm->close(cfshm->xshm);
++
++	return 0;
++}
++
++static int open_cb(void *drv)
++{
++	struct cfshm *cfshm = drv;
++
++	cfshm->state = CFSHM_OPEN;
++	netif_carrier_on(cfshm->ndev);
++	return 0;
++}
++
++static void close_cb(void *drv)
++{
++	struct cfshm *cfshm = drv;
++
++	cfshm->state = CFSHM_CLOSED;
++	netif_carrier_off(cfshm->ndev);
++}
++
++static int caif_shmdrv_rx_cb(void *drv)
++{
++	struct cfshm *cfshm = drv;
++	if (unlikely(*cfshm->xshm->cfg.rx.state == cpu_to_le32(XSHM_CLOSED)))
++		return -ESHUTDOWN;
++
++	napi_schedule(&cfshm->napi);
++	return 0;
++}
++
++static int send_pending_txbufs(struct cfshm *cfshm, int usedbufs)
++{
++	unsigned long flags;
++
++	/* Send the started buffer if used buffers are low enough */
++	WARN_ON(!spin_is_locked(&cfshm->lock));
++	if (likely(usedbufs < cfshm->stuff_mark)) {
++		struct shmbuffer *pbuf = get_tx_buf(cfshm);
++		if (unlikely(pbuf->frames > 0)) {
++			if (spin_trylock_irqsave(&cfshm->lock, flags)) {
++				WARN_ON(!spin_is_locked(&cfshm->lock));
++				pbuf = get_tx_buf(cfshm);
++				tx_bump_buf(cfshm, pbuf);
++				spin_unlock_irqrestore(&cfshm->lock, flags);
++				cfshm->xshm->ipc_tx(cfshm->xshm);
++							return 0;
++			} else {
++							return -EBUSY;
++			}
++		}
++	}
++	return 0;
++}
++
++static int caif_shmdrv_tx_release_cb(void *drv)
++{
++	struct cfshm *cfshm = drv;
++	int usedbufs;
++
++	usedbufs = ringbuf_used(&cfshm->tx);
++
++	/* Send flow-on if we have sent flow-off and get below low-water */
++	if (usedbufs <= cfshm->low_xoff_water && !cfshm->tx_flow_on) {
++		pr_debug("Flow on\n");
++		cfshm->tx_flow_on = true;
++		cfshm->cfdev.flowctrl(cfshm->ndev, CAIF_FLOW_ON);
++	}
++
++	/* If ringbuf is full, schedule NAPI to start sending */
++	if (skb_peek(&cfshm->sk_qhead) != NULL) {
++		pr_debug("Schedule NAPI to empty queue\n");
++		napi_schedule(&cfshm->napi);
++			return 0;
++	}
++
++	/* Send the started buffer if used buffers are low enough */
++	if (usedbufs < cfshm->stuff_mark) {
++		struct shmbuffer *pbuf = get_tx_buf(cfshm);
++		if (pbuf != NULL && pbuf->frames > 0)
++			napi_schedule(&cfshm->napi);
++	}
++	return 0;
++}
++
++static int shm_rx_poll(struct napi_struct *napi, int quota)
++{
++	struct cfshm *cfshm = container_of(napi, struct cfshm, napi);
++	int new_bufs;
++	struct shmbuffer *pbuf;
++	int usedbufs;
++	unsigned long flags;
++
++	/* Simply return if rx_poll is already called on other CPU */
++	if (atomic_read(&cfshm->dbg_smp_rxactive) > 0)
++		return quota;
++	atomic_inc_return(&cfshm->dbg_smp_rxactive);
++
++	pbuf = shm_rx_func(cfshm, quota);
++
++	usedbufs = ringbuf_used(&cfshm->tx);
++
++	if (spin_trylock_irqsave(&cfshm->lock, flags)) {
++
++		/* Check if we're below "Stuff" limit, and send pending data */
++		send_pending_txbufs(cfshm, usedbufs);
++
++		/* Check if we have queued packets */
++		if (unlikely(skb_peek(&cfshm->sk_qhead) != NULL)) {
++			struct shmbuffer *txbuf;
++			WARN_ON(!spin_is_locked(&cfshm->lock));
++			pr_debug("Try to empty tx-queue\n");
++			new_bufs = 0;
++			txbuf = queue_to_ringbuf(cfshm, &new_bufs);
++
++			/* Bump out if we are configured with few buffers */
++			if (txbuf && cfshm->xshm->cfg.tx.buffers < 3) {
++				tx_bump_buf(cfshm, txbuf);
++
++				spin_unlock_irqrestore(&cfshm->lock, flags);
++				cfshm->xshm->ipc_tx(cfshm->xshm);
++				goto txdone;
++			}
++		}
++		spin_unlock_irqrestore(&cfshm->lock, flags);
++	}
++txdone:
++
++	if (pbuf == NULL)
++		napi_complete(&cfshm->napi);
++
++	atomic_dec(&cfshm->dbg_smp_rxactive);
++	return 0;
++}
++
++static int shm_netdev_tx(struct sk_buff *skb, struct net_device *shm_netdev)
++{
++	struct shmbuffer *pbuf = NULL;
++	int usedbufs;
++	int new_bufs = 0;
++	struct cfshm *cfshm = netdev_priv(shm_netdev);
++	unsigned long flags;
++
++	/*
++	 * If we have packets in queue, keep queueing to avoid
++	 * out-of-order delivery
++	 */
++	spin_lock_irqsave(&cfshm->lock, flags);
++
++	skb_queue_tail(&cfshm->sk_qhead, skb);
++	pbuf = queue_to_ringbuf(cfshm, &new_bufs);
++
++	usedbufs = ringbuf_used(&cfshm->tx);
++
++	if (usedbufs > cfshm->high_xoff_water && cfshm->tx_flow_on) {
++		pr_debug("Flow off\n");
++		cfshm->tx_flow_on = false;
++		spin_unlock_irqrestore(&cfshm->lock, flags);
++		cfshm->cfdev.flowctrl(cfshm->ndev, CAIF_FLOW_OFF);
++		return 0;
++	}
++
++	/* Check if we should accumulate more packets */
++	if (new_bufs == 0 && usedbufs > cfshm->stuff_mark) {
++		spin_unlock_irqrestore(&cfshm->lock, flags);
++		return 0;
++	}
++	tx_bump_buf(cfshm, pbuf);
++	spin_unlock_irqrestore(&cfshm->lock, flags);
++	cfshm->xshm->ipc_tx(cfshm->xshm);
++	return 0;
++}
++
++static const struct net_device_ops netdev_ops = {
++	.ndo_open = shm_netdev_open,
++	.ndo_stop = shm_netdev_close,
++	.ndo_start_xmit = shm_netdev_tx,
++};
++
++static void shm_netdev_setup(struct net_device *pshm_netdev)
++{
++	struct cfshm *cfshm;
++
++	cfshm = netdev_priv(pshm_netdev);
++	pshm_netdev->netdev_ops = &netdev_ops;
++	pshm_netdev->type = ARPHRD_CAIF;
++	pshm_netdev->hard_header_len = CAIF_NEEDED_HEADROOM;
++	pshm_netdev->tx_queue_len = 0;
++	pshm_netdev->destructor = free_netdev;
++
++	/* Initialize structures in a clean state. */
++	memset(cfshm, 0, sizeof(struct cfshm));
++}
++
++static void deinit_bufs(struct cfshm *cfshm)
++{
++	int j;
++
++	if (cfshm == NULL)
++		return;
++
++	for (j = 0; j < cfshm->xshm->cfg.rx.buffers; j++)
++		kfree(cfshm->rx_bufs[j]);
++	kfree(cfshm->rx_bufs);
++
++	for (j = 0; j < cfshm->xshm->cfg.tx.buffers; j++)
++		kfree(cfshm->tx_bufs[j]);
++	kfree(cfshm->tx_bufs);
++}
++
++static int cfshm_probe(struct platform_device *pdev)
++{
++	int err, j;
++	struct xshm_dev *xshm = pdev->dev.platform_data;
++	struct cfshm *cfshm = NULL;
++	struct net_device *netdev;
++	u32 buf_size;
++	unsigned long flags;
++
++	if (xshm == NULL)
++		return 0;
++
++	if (xshm->cfg.tx.ch_size / xshm->cfg.tx.buffers <
++			xshm->cfg.tx.packets * sizeof(struct shm_pck_desc) +
++				xshm->cfg.tx.mtu) {
++		pr_warn("Bad packet TX-channel size");
++		return -EINVAL;
++	}
++
++	if (xshm->cfg.rx.ch_size / xshm->cfg.rx.buffers <
++			sizeof(struct shm_pck_desc) + xshm->cfg.rx.mtu) {
++		pr_warn("Bad packet RX-channel size");
++		return -EINVAL;
++	}
++
++	if (xshm->cfg.rx.buffers < 2 || xshm->cfg.tx.buffers < 2) {
++		pr_warn("Too few buffers in channel");
++		return -EINVAL;
++	}
++
++	err = -ENOMEM;
++	netdev = alloc_netdev(sizeof(struct cfshm), "cfshm%d",
++			shm_netdev_setup);
++
++	if (netdev == NULL)
++		goto error;
++
++	cfshm = netdev_priv(netdev);
++	cfshm->state = CFSHM_CLOSED;
++	cfshm->xshm = xshm;
++	xshm->driver_data = cfshm;
++	cfshm->ndev = netdev;
++	netdev->mtu = xshm->cfg.tx.mtu;
++	cfshm->high_xoff_water =
++		(xshm->cfg.rx.buffers * HIGH_XOFF_WATERMARK) / 100;
++	cfshm->low_xoff_water =
++		(xshm->cfg.rx.buffers * LOW_XOFF_WATERMARK) / 100;
++	cfshm->stuff_mark = (xshm->cfg.rx.buffers * STUFF_MARK) / 100;
++
++	cfshm->tx_frms_pr_buf = xshm->cfg.tx.packets;
++	cfshm->rx_frms_pr_buf = xshm->cfg.rx.packets;
++	cfshm->rx_alignment = xshm->cfg.rx.alignment;
++	cfshm->tx_alignment = xshm->cfg.tx.alignment;
++
++	if (xshm->cfg.latency)
++		cfshm->cfdev.link_select = CAIF_LINK_LOW_LATENCY;
++	else
++		cfshm->cfdev.link_select = CAIF_LINK_HIGH_BANDW;
++
++	cfshm->tx.rip = xshm->cfg.tx.read;
++	cfshm->tx.wip = xshm->cfg.tx.write;
++	cfshm->tx.bufsize = xshm->cfg.tx.buf_size;
++	cfshm->tx.size = xshm->cfg.tx.buffers;
++
++	cfshm->rx.rip = xshm->cfg.rx.read;
++	cfshm->rx.wip = xshm->cfg.rx.write;
++	cfshm->rx.bufsize = xshm->cfg.rx.buf_size;
++	cfshm->rx.size = xshm->cfg.rx.buffers;
++	pr_devel("RX ri:%d wi:%d size:%d\n",
++		le32_to_cpu(*cfshm->rx.rip),
++			le32_to_cpu(*cfshm->rx.wip), cfshm->rx.size);
++	pr_devel("TX ri:%d wi:%d size:%d\n",
++		le32_to_cpu(*cfshm->tx.rip),
++			le32_to_cpu(*cfshm->tx.wip), cfshm->rx.size);
++	pr_devel("frms_pr_buf:%d %d\n", cfshm->rx_frms_pr_buf,
++			cfshm->tx_frms_pr_buf);
++
++	spin_lock_init(&cfshm->lock);
++	netif_carrier_off(netdev);
++	skb_queue_head_init(&cfshm->sk_qhead);
++
++	pr_devel("SHM DEVICE[%p] PROBED BY DRIVER, NEW SHM DRIVER"
++			" INSTANCE AT cfshm =0x%p\n",
++			cfshm->xshm, cfshm);
++
++	cfshm->tx_ringbuf = xshm->cfg.tx.addr;
++	cfshm->rx_ringbuf = xshm->cfg.rx.addr;
++
++	pr_devel("TX-BASE:%p RX-BASE:%p\n",
++			cfshm->tx_ringbuf,
++			cfshm->rx_ringbuf);
++
++	cfshm->tx_bufs = kzalloc(sizeof(struct shmbuffer *) *
++			xshm->cfg.tx.buffers, GFP_KERNEL);
++	if (cfshm->tx_bufs == NULL)
++		goto error;
++	buf_size = xshm->cfg.tx.ch_size / xshm->cfg.tx.buffers;
++
++	pr_devel("TX: buffers:%d buf_size:%d frms:%d mtu:%d\n",
++			xshm->cfg.tx.buffers, buf_size,
++			cfshm->tx_frms_pr_buf, netdev->mtu);
++
++	for (j = 0; j < xshm->cfg.tx.buffers; j++) {
++		u32 desc_size;
++		struct shmbuffer *tx_buf =
++				kzalloc(sizeof(struct shmbuffer), GFP_KERNEL);
++
++		if (tx_buf == NULL) {
++			pr_warn("ERROR, Could not"
++					" allocate dynamic mem. for tx_buf, "
++					" Bailing out ...\n");
++			goto error;
++		}
++
++		tx_buf->index = j;
++
++		tx_buf->addr = cfshm->tx_ringbuf + (buf_size * j);
++		tx_buf->len = buf_size;
++		tx_buf->frames = 0;
++		desc_size = (cfshm->tx_frms_pr_buf + 1) *
++				sizeof(struct shm_pck_desc);
++
++		tx_buf->frm_ofs = desc_size + (desc_size % cfshm->tx_alignment);
++
++		cfshm->tx_bufs[j] = tx_buf;
++
++		pr_devel("tx_buf[%d] addr:%p len:%d\n",
++				tx_buf->index,
++				tx_buf->addr,
++				tx_buf->len);
++	}
++
++	cfshm->rx_bufs = kzalloc(sizeof(struct shmbuffer *) *
++				xshm->cfg.rx.buffers, GFP_KERNEL);
++	if (cfshm->rx_bufs == NULL)
++		goto error;
++	buf_size = xshm->cfg.tx.ch_size / xshm->cfg.tx.buffers;
++	pr_devel("RX: buffers:%d buf_size:%d frms:%d mtu:%d\n",
++			xshm->cfg.rx.buffers, buf_size,
++			cfshm->rx_frms_pr_buf, netdev->mtu);
++
++	for (j = 0; j < xshm->cfg.rx.buffers; j++) {
++		struct shmbuffer *rx_buf =
++				kzalloc(sizeof(struct shmbuffer), GFP_KERNEL);
++
++		if (rx_buf == NULL) {
++			pr_warn("ERROR, Could not"
++					" allocate dynamic mem.for rx_buf, "
++					" Bailing out ...\n");
++			goto error;
++		}
++
++		rx_buf->index = j;
++
++		rx_buf->addr = cfshm->rx_ringbuf + (buf_size * j);
++		rx_buf->len = buf_size;
++		cfshm->rx_bufs[j] = rx_buf;
++		pr_devel("rx_buf[%d] addr:%p len:%d\n",
++				rx_buf->index,
++				rx_buf->addr,
++				rx_buf->len);
++	}
++
++	cfshm->tx_flow_on = 1;
++	cfshm->xshm->ipc_rx_cb = caif_shmdrv_rx_cb;
++	cfshm->xshm->ipc_tx_release_cb = caif_shmdrv_tx_release_cb;
++	cfshm->xshm->open_cb = open_cb;
++	cfshm->xshm->close_cb = close_cb;
++
++	spin_lock_irqsave(&cfshm->lock, flags);
++	get_tx_buf(cfshm);
++	new_rx_buf(cfshm);
++	spin_unlock_irqrestore(&cfshm->lock, flags);
++
++	netif_napi_add(netdev, &cfshm->napi, shm_rx_poll,
++			2 * cfshm->rx_frms_pr_buf);
++
++	err = register_netdev(netdev);
++	if (err) {
++		pr_warn("ERROR[%d], SHM could not, "
++			"register with NW FRMWK Bailing out ...\n", err);
++		goto error;
++	}
++
++	/* Add CAIF SHM device to list. */
++	spin_lock(&cfshm_list_lock);
++	list_add_tail(&cfshm->node, &cfshm_list);
++	spin_unlock(&cfshm_list_lock);
++
++	return err;
++error:
++	deinit_bufs(cfshm);
++	free_netdev(netdev);
++	return err;
++}
++
++static int cfshm_remove(struct platform_device *pdev)
++{
++	struct xshm_dev *xshm;
++	struct cfshm *cfshm;
++
++	xshm = pdev->dev.platform_data;
++
++	if (xshm == NULL || xshm->driver_data == NULL)
++		return 0;
++
++	cfshm = xshm->driver_data;
++
++	spin_lock(&cfshm_list_lock);
++	list_del(&cfshm->node);
++	spin_unlock(&cfshm_list_lock);
++
++	deinit_bufs(cfshm);
++
++	unregister_netdev(cfshm->ndev);
++
++	xshm->ipc_rx_cb = NULL;
++	xshm->ipc_tx_release_cb = NULL;
++	xshm->open_cb = NULL;
++	xshm->close_cb = NULL;
++	xshm->driver_data = NULL;
++
++	return 0;
++}
++
++static struct platform_driver cfshm_plat_drv = {
++	.probe = cfshm_probe,
++	.remove = cfshm_remove,
++	.driver = {
++		.name = "xshmp",
++		.owner = THIS_MODULE,
++	},
++};
++
++static void __exit cfshm_exit_module(void)
++{
++	platform_driver_unregister(&cfshm_plat_drv);
++}
++
++static int __init cfshm_init_module(void)
++{
++	int err;
++
++	spin_lock_init(&cfshm_list_lock);
++
++	err = platform_driver_register(&cfshm_plat_drv);
++	if (err) {
++		printk(KERN_ERR "Could not register platform SHM driver: %d.\n",
++			err);
++		goto err_dev_register;
++	}
++	return err;
++
++ err_dev_register:
++	return err;
++}
++
++module_init(cfshm_init_module);
++module_exit(cfshm_exit_module);
 -- 
 1.7.1
 
