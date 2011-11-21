@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab1KURRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:17:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754794Ab1KURRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:17:17 -0500
-Message-ID: <4ECA8781.7090302@redhat.com>
-Date: Mon, 21 Nov 2011 12:16:49 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] mm: compaction: Allow compaction to isolate dirty
- pages
-References: <1321635524-8586-1-git-send-email-mgorman@suse.de> <1321635524-8586-2-git-send-email-mgorman@suse.de>
-In-Reply-To: <1321635524-8586-2-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755714Ab1KURTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:19:07 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:50080 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753451Ab1KURTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 12:19:06 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-ext4@vger.kernel.org
+Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        adilger@dilger.ca
+Subject: [PATCH V2 13/19] ext4: Create a new function search_dir.
+Date: Tue, 22 Nov 2011 00:39:51 +0800
+Message-Id: <1321893597-11024-13-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
+References: <4ECA7DB3.9040605@tao.ma>
+ <1321893597-11024-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 11:58 AM, Mel Gorman wrote:
-> Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-> noted that compaction does not migrate dirty or writeback pages and
-> that is was meaningless to pick the page and re-add it to the LRU list.
->
-> What was missed during review is that asynchronous migration moves
-> dirty pages if their ->migratepage callback is migrate_page() because
-> these can be moved without blocking. This potentially impacted
-> hugepage allocation success rates by a factor depending on how many
-> dirty pages are in the system.
->
-> This patch partially reverts 39deaf85 to allow migration to isolate
-> dirty pages again. This increases how much compaction disrupts the
-> LRU but that is addressed later in the series.
->
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+From: Tao Ma <boyu.mt@taobao.com>
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+search_dirblock is used to search a dir block, but the code is
+almost the same for searching an inline dir.
+
+So create a new fuction search_dir and let search_dirblock
+call it.
+
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/ext4/ext4.h  |    7 +++++++
+ fs/ext4/namei.c |   26 +++++++++++++++++++-------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index cb4dfbd..9776c06 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1965,6 +1965,13 @@ extern int ext4_orphan_add(handle_t *, struct inode *);
+ extern int ext4_orphan_del(handle_t *, struct inode *);
+ extern int ext4_htree_fill_tree(struct file *dir_file, __u32 start_hash,
+ 				__u32 start_minor_hash, __u32 *next_hash);
++extern int search_dir(struct buffer_head *bh,
++		      char *search_buf,
++		      int buf_size,
++		      struct inode *dir,
++		      const struct qstr *d_name,
++		      unsigned int offset,
++		      struct ext4_dir_entry_2 **res_dir);
+ 
+ /* resize.c */
+ extern int ext4_group_add(struct super_block *sb,
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 77312dc..6e97dd2 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -794,11 +794,13 @@ static inline int ext4_match (int len, const char * const name,
+ /*
+  * Returns 0 if not found, -1 on failure, and 1 on success
+  */
+-static inline int search_dirblock(struct buffer_head *bh,
+-				  struct inode *dir,
+-				  const struct qstr *d_name,
+-				  unsigned int offset,
+-				  struct ext4_dir_entry_2 ** res_dir)
++int search_dir(struct buffer_head *bh,
++	       char *search_buf,
++	       int buf_size,
++	       struct inode *dir,
++	       const struct qstr *d_name,
++	       unsigned int offset,
++	       struct ext4_dir_entry_2 **res_dir)
+ {
+ 	struct ext4_dir_entry_2 * de;
+ 	char * dlimit;
+@@ -806,8 +808,8 @@ static inline int search_dirblock(struct buffer_head *bh,
+ 	const char *name = d_name->name;
+ 	int namelen = d_name->len;
+ 
+-	de = (struct ext4_dir_entry_2 *) bh->b_data;
+-	dlimit = bh->b_data + dir->i_sb->s_blocksize;
++	de = (struct ext4_dir_entry_2 *)search_buf;
++	dlimit = search_buf + buf_size;
+ 	while ((char *) de < dlimit) {
+ 		/* this code is executed quadratically often */
+ 		/* do minimal checking `by hand' */
+@@ -832,6 +834,16 @@ static inline int search_dirblock(struct buffer_head *bh,
+ 	return 0;
+ }
+ 
++static inline int search_dirblock(struct buffer_head *bh,
++				  struct inode *dir,
++				  const struct qstr *d_name,
++				  unsigned int offset,
++				  struct ext4_dir_entry_2 **res_dir)
++{
++	return search_dir(bh, bh->b_data, dir->i_sb->s_blocksize, dir,
++			  d_name, offset, res_dir);
++}
++
+ 
+ /*
+  *	ext4_find_entry()
+-- 
+1.7.0.4
 
