@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab1KUI4o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 03:56:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57265 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab1KUI4m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 03:56:42 -0500
-Message-ID: <1321865797.2552.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: "Alex,Shi" <alex.shi@intel.com>,
+	id S1755484Ab1KUJBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:01:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:56944 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755032Ab1KUJBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 04:01:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="78279617"
+Subject: Re: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Mon, 21 Nov 2011 09:56:37 +0100
-In-Reply-To: <20111121082445.GD1625@x4.trippels.de>
-References: <20111118072519.GA1615@x4.trippels.de>
-	 <20111118075521.GB1615@x4.trippels.de> <1321605837.30341.551.camel@debian>
-	 <20111118085436.GC1615@x4.trippels.de>
-	 <20111118120201.GA1642@x4.trippels.de> <1321836285.30341.554.camel@debian>
-	 <20111121080554.GB1625@x4.trippels.de>
-	 <20111121082445.GD1625@x4.trippels.de>
+        "Huang, Ying" <ying.huang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+	 <alpine.DEB.2.00.1110120910540.26610@router.home>
+	 <1318908091.23426.52.camel@debian>
+	 <alpine.DEB.2.00.1110180932330.687@router.home>
+	 <1319016218.23426.104.camel@debian>
+	 <alpine.DEB.2.00.1110191033480.24001@router.home>
+	 <1319078687.23426.146.camel@debian>
+	 <1319087281.8416.45.camel@edumazet-laptop>
+	 <1319095929.23426.180.camel@debian>
+	 <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
+Date: Mon, 21 Nov 2011 17:00:51 +0800
+Message-ID: <1321866051.30341.565.camel@debian>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 21 novembre 2011 à 09:24 +0100, Markus Trippelsdorf a écrit :
-
-> So everything points to commit 87fb4b7b533:
-> "net: more accurate skb truesize"
+On Thu, 2011-10-20 at 16:38 +0800, Eric Dumazet wrote:
+> Le jeudi 20 octobre 2011 à 15:32 +0800, Alex,Shi a écrit :
+> > percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
+> > for further code clean up.
+> > 
+> > And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
+> > performance since __this_cpu_xxx has no redundant preempt_disable()
+> > 
+> > Signed-off-by: Alex Shi <alex.shi@intel.com>
+> > ---
+> >  net/netfilter/xt_TEE.c |   12 ++++++------
+> >  net/socket.c           |    4 ++--
+> >  2 files changed, 8 insertions(+), 8 deletions(-)
 > 
-> Can you take a look Eric?
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 > 
+> Thanks !
 
-Sure I can, right now.
-
-I'll send an update ASAP
-
-Thanks
+Anyone like to pick up this patch? or more comments for this? 
+> 
+> 
 
 
