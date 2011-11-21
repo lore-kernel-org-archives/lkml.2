@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1KUKU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 05:20:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11623 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315Ab1KUKU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 05:20:26 -0500
-Message-Id: <aefc95$2ambkf@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="78327439"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [Intel-gfx] [PATCH 01/13] drm/i915: fall through pwrite_gtt_slow to the shmem slow path
-To: Ben Widawsky <ben@bwidawsk.net>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <20111120190918.2b138476@bwidawsk.net>
-References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch> <1320606840-21132-2-git-send-email-daniel.vetter@ffwll.ch> <20111120190918.2b138476@bwidawsk.net>
-Date: Mon, 21 Nov 2011 10:20:15 +0000
+	id S1755666Ab1KUKUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 05:20:38 -0500
+Received: from mga07.intel.com ([143.182.124.22]:49518 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755421Ab1KUKUf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 05:20:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111119143337.cd84cfc59a78e0378dbd4089@canb.auug.org.au>
+References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
+	<fad5214d102c09d2a2bf971483efb6e0dbee3937.1319025009.git.dmitry.kasatkin@intel.com>
+	<20111119143337.cd84cfc59a78e0378dbd4089@canb.auug.org.au>
+Date: Mon, 21 Nov 2011 12:20:33 +0200
+Message-ID: <CALLzPKZ70YWb45k+8Z6ApH5MuN7HwBBTWbLcu-UtRkFU07cwmg@mail.gmail.com>
+Subject: Re: [PATCH v2.2 1/7] crypto: GnuPG based MPI lib - source files (part 1)
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        dhowells@redhat.com, herbert@gondor.hengli.com.au,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Nov 2011 19:09:18 -0800, Ben Widawsky <ben@bwidawsk.net> wrote:
-> On Sun,  6 Nov 2011 20:13:48 +0100
-> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> 
-> > The gtt_pwrite slowpath grabs the userspace memory with
-> > get_user_pages. This will not work for non-page backed memory, like a
-> > gtt mmapped gem object. Hence fall throuh to the shmem paths if we hit
-> > -EFAULT in the gtt paths.
-> > 
-> > Now the shmem paths have exactly the same problem, but this way we
-> > only need to rearrange the code in one write path.
-> > 
-> > v2: v1 accidentaly falls back to shmem pwrite for phys objects. Fixed.
-> > 
-> > Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> It would be nice if there was some way to notify users that pwriting a
-> gtt mmapped address can be really damn slow. That's also the one
-> behavior change this patch introduces. It's possible that some SW was
-> expecting to get a, "fast path" and would deal with the -EFAULT if it
-> didn't get it.
+On Sat, Nov 19, 2011 at 5:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> On Wed, 19 Oct 2011 14:51:30 +0300 Dmitry Kasatkin <dmitry.kasatkin@intel.com> wrote:
+>>
+>> Adds the multi-precision-integer maths library which was originally taken
+>> from GnuPG and ported to the kernel by (among others) David Howells.
+>> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
+>> The difference is that checkpatch reported errors and warnings have been fixed.
+>>
+>> This library is used to implemenet RSA digital signature verification
+>> used in IMA/EVM integrity protection subsystem.
+>>
+>> Due to patch size limitation, the patch is divided into 4 parts.
+>
+> I just noticed that this has been added to the "next" branch of the
+> security tree (and thus into the next release of linux-next).  I think
+> that these patches should be rearranged as in their current form, they
+> break bisection (since the files in this patch reference include files in
+> a latter patch).   We generally prefer large patches to be broken up into
+> logical sub patches rather than just along file boundaries.
+>
+> In this case, even though it was broken up for review, it could have been
+> committed as one large commit (assuming that there is no sensible way to
+> break it up).
 
-The behaviour change is intentional. Before this patch we would
-deadlock...
--Chris
+Hi,
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+It can be easily split into 2 commits and one of them would not comply
+with mailing list limits.
+
+James, should I do anything about it?
+
+Thanks,
+
+- Dmitry
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
