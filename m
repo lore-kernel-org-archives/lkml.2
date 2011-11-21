@@ -1,153 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab1KUSyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:54:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab1KUSyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:54:16 -0500
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 2/3] x86/PCI: Infrastructure to maintain a list of
-	FW-assigned BIOS BAR values
-To: jbarnes@virtuousgeek.org
-Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 21 Nov 2011 11:54:13 -0700
-Message-ID: <20111121185413.9603.12314.stgit@amt.stowe>
-In-Reply-To: <20111121185401.9603.34587.stgit@amt.stowe>
-References: <20111121185401.9603.34587.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756445Ab1KUS6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:58:08 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18945 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab1KUS6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:58:04 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6537"; a="137308956"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: netdev@vger.kernel.org
+Cc: Ben Dooks <ben@simtec.co.uk>, linux-kernel@vger.kernel.org,
+        Sebastien Jan <s-jan@ti.com>, Wolfram Sang <w.sang@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH 2/5] eeprom_93cx6: Add write support
+Date: Mon, 21 Nov 2011 10:57:57 -0800
+Message-Id: <1321901880-12883-3-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.rc2.3.g0911
+In-Reply-To: <1321901880-12883-1-git-send-email-sboyd@codeaurora.org>
+References: <1321901880-12883-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Myron Stowe <mstowe@redhat.com>
+From: Ben Dooks <ben@simtec.co.uk>
 
-Commit 58c84eda075 introduced functionality to try and reinstate the
-original BIOS BAR addresses of a PCI device when normal resource
-assignment attempts fail.  To keep track of the BIOS BAR addresses,
-struct pci_dev was augmented with an array to hold the BAR addresses
-of the PCI device: 'resource_size_t fw_addr[DEVICE_COUNT_RESOURCE]'.
+Add support for writing data to EEPROM.
 
-The reinstatement of BAR addresses is an uncommon event leaving the
-'fw_addr' array unused under normal circumstances.  This functionality
-is also currently architecture specific with an implementation limited
-to x86.  As the use of struct pci_dev is so prevalent, having the
-'fw_addr' array residing within such seems somewhat wasteful.
-
-This patch introduces a stand alone data structure and interfacing
-routines for maintaining a list of FW-assigned BIOS BAR value entries.
-
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Ben Dooks <ben@simtec.co.uk>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
+ drivers/misc/eeprom/eeprom_93cx6.c |   85 ++++++++++++++++++++++++++++++++++++
+ include/linux/eeprom_93cx6.h       |    6 +++
+ 2 files changed, 91 insertions(+), 0 deletions(-)
 
- arch/x86/pci/i386.c |   79 +++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h |    1 +
- 2 files changed, 80 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 494f2e7..bfb9d6a 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -38,6 +38,85 @@
- #include <asm/io_apic.h>
+diff --git a/drivers/misc/eeprom/eeprom_93cx6.c b/drivers/misc/eeprom/eeprom_93cx6.c
+index a6037af..0ff4b02 100644
+--- a/drivers/misc/eeprom/eeprom_93cx6.c
++++ b/drivers/misc/eeprom/eeprom_93cx6.c
+@@ -234,3 +234,88 @@ void eeprom_93cx6_multiread(struct eeprom_93cx6 *eeprom, const u8 word,
+ }
+ EXPORT_SYMBOL_GPL(eeprom_93cx6_multiread);
  
- 
-+/*
-+ * This list of dynamic mappings is for temporarily maintaining
-+ * original BIOS BAR addresses for possible reinstatement.
++/**
++ * eeprom_93cx6_wren - set the write enable state
++ * @eeprom: Pointer to eeprom structure
++ * @enable: true to enable writes, otherwise disable writes
++ *
++ * Set the EEPROM write enable state to either allow or deny
++ * writes depending on the @enable value.
 + */
-+struct pcibios_fwaddrmap {
-+	struct list_head list;
-+	struct pci_dev *dev;
-+	resource_size_t fw_addr[DEVICE_COUNT_RESOURCE];
-+};
-+
-+static LIST_HEAD(pcibios_fwaddrmappings);
-+static DEFINE_SPINLOCK(pcibios_fwaddrmap_lock);
-+
-+/* Must be called with 'pcibios_fwaddrmap_lock' lock held. */
-+static struct pcibios_fwaddrmap *pcibios_fwaddrmap_lookup(struct pci_dev *dev)
++void eeprom_93cx6_wren(struct eeprom_93cx6 *eeprom, bool enable)
 +{
-+	struct pcibios_fwaddrmap *map;
++	u16 command;
 +
-+	list_for_each_entry(map, &pcibios_fwaddrmappings, list)
-+		if (map->dev == dev)
-+			return map;
++	/* start the command */
++	eeprom_93cx6_startup(eeprom);
 +
-+	return NULL;
++	/* create command to enable/disable */
++
++	command = enable ? PCI_EEPROM_EWEN_OPCODE : PCI_EEPROM_EWDS_OPCODE;
++	command <<= (eeprom->width - 2);
++
++	eeprom_93cx6_write_bits(eeprom, command,
++				PCI_EEPROM_WIDTH_OPCODE + eeprom->width);
++
++	eeprom_93cx6_cleanup(eeprom);
 +}
++EXPORT_SYMBOL_GPL(eeprom_93cx6_wren);
 +
-+static void
-+pcibios_save_fw_addr(struct pci_dev *dev, int idx, resource_size_t fw_addr)
++/**
++ * eeprom_93cx6_write - write data to the EEPROM
++ * @eeprom: Pointer to eeprom structure
++ * @addr: Address to write data to.
++ * @data: The data to write to address @addr.
++ *
++ * Write the @data to the specified @addr in the EEPROM and
++ * waiting for the device to finish writing.
++ *
++ * Note, since we do not expect large number of write operations
++ * we delay in between parts of the operation to avoid using excessive
++ * amounts of CPU time busy waiting.
++ */
++void eeprom_93cx6_write(struct eeprom_93cx6 *eeprom, u8 addr, u16 data)
 +{
-+	unsigned long flags;
-+	struct pcibios_fwaddrmap *map;
++	int timeout = 100;
++	u16 command;
 +
-+	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
-+	map = pcibios_fwaddrmap_lookup(dev);
-+	if (!map) {
-+		spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
-+		map = kzalloc(sizeof(*map), GFP_KERNEL);
-+		if (!map)
-+			return;
++	/* start the command */
++	eeprom_93cx6_startup(eeprom);
 +
-+		map->dev = pci_dev_get(dev);
-+		map->fw_addr[idx] = fw_addr;
-+		INIT_LIST_HEAD(&map->list);
++	command = PCI_EEPROM_WRITE_OPCODE << eeprom->width;
++	command |= addr;
 +
-+		spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
-+		list_add_tail(&map->list, &pcibios_fwaddrmappings);
-+	} else
-+		map->fw_addr[idx] = fw_addr;
-+	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
-+}
++	/* send write command */
++	eeprom_93cx6_write_bits(eeprom, command,
++				PCI_EEPROM_WIDTH_OPCODE + eeprom->width);
 +
-+resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
-+{
-+	unsigned long flags;
-+	struct pcibios_fwaddrmap *map;
-+	resource_size_t fw_addr = 0;
++	/* send data */
++	eeprom_93cx6_write_bits(eeprom, data, 16);
 +
-+	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
-+	map = pcibios_fwaddrmap_lookup(dev);
-+	if (map)
-+		fw_addr = map->fw_addr[idx];
-+	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
++	/* get ready to check for busy */
++	eeprom->drive_data = 0;
++	eeprom->reg_chip_select = 1;
++	eeprom->register_write(eeprom);
 +
-+	return fw_addr;
-+}
++	/* wait at-least 250ns to get DO to be the busy signal */
++	usleep_range(1000, 2000);
 +
-+static void pcibios_fw_addr_list_del(void)
-+{
-+	unsigned long flags;
-+	struct pcibios_fwaddrmap *entry, *next;
++	/* wait for DO to go high to signify finish */
 +
-+	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
-+	list_for_each_entry_safe(entry, next, &pcibios_fwaddrmappings, list) {
-+		list_del(&entry->list);
-+		pci_dev_put(entry->dev);
-+		kfree(entry);
++	while (true) {
++		eeprom->register_read(eeprom);
++
++		if (eeprom->reg_data_out)
++			break;
++
++		usleep_range(1000, 2000);
++
++		if (--timeout <= 0) {
++			printk(KERN_ERR "%s: timeout\n", __func__);
++			break;
++		}
 +	}
-+	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
-+}
 +
- static int
- skip_isa_ioresource_align(struct pci_dev *dev) {
- 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 84225c7..4545d23 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -889,6 +889,7 @@ ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void
- int pci_vpd_truncate(struct pci_dev *dev, size_t size);
- 
- /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
-+resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
- void pci_bus_assign_resources(const struct pci_bus *bus);
- void pci_bus_size_bridges(struct pci_bus *bus);
- int pci_claim_resource(struct pci_dev *, int);
++	eeprom_93cx6_cleanup(eeprom);
++}
++EXPORT_SYMBOL_GPL(eeprom_93cx6_write);
+diff --git a/include/linux/eeprom_93cx6.h b/include/linux/eeprom_93cx6.h
+index e04546e..e50f98b 100644
+--- a/include/linux/eeprom_93cx6.h
++++ b/include/linux/eeprom_93cx6.h
+@@ -33,6 +33,7 @@
+ #define PCI_EEPROM_WIDTH_93C86	8
+ #define PCI_EEPROM_WIDTH_OPCODE	3
+ #define PCI_EEPROM_WRITE_OPCODE	0x05
++#define PCI_EEPROM_ERASE_OPCODE 0x07
+ #define PCI_EEPROM_READ_OPCODE	0x06
+ #define PCI_EEPROM_EWDS_OPCODE	0x10
+ #define PCI_EEPROM_EWEN_OPCODE	0x13
+@@ -74,3 +75,8 @@ extern void eeprom_93cx6_read(struct eeprom_93cx6 *eeprom,
+ 	const u8 word, u16 *data);
+ extern void eeprom_93cx6_multiread(struct eeprom_93cx6 *eeprom,
+ 	const u8 word, __le16 *data, const u16 words);
++
++extern void eeprom_93cx6_wren(struct eeprom_93cx6 *eeprom, bool enable);
++
++extern void eeprom_93cx6_write(struct eeprom_93cx6 *eeprom,
++			       u8 addr, u16 data);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
