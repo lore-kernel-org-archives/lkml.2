@@ -1,469 +1,463 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab1KUJvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 04:51:08 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:47289 "EHLO
+	id S1755308Ab1KUJvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 04:51:06 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:47270 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab1KUJvF (ORCPT
+	with ESMTP id S1752315Ab1KUJvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 04:51:05 -0500
-Message-ID: <4ECA1F13.3060903@oracle.com>
-Date: Mon, 21 Nov 2011 17:51:15 +0800
+	Mon, 21 Nov 2011 04:51:04 -0500
+Message-ID: <4ECA1F0D.5070303@oracle.com>
+Date: Mon, 21 Nov 2011 17:51:09 +0800
 From: ANNIE LI <annie.li@oracle.com>
 Organization: Oracle Corporation
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: "jeremy@goop.org" <jeremy@goop.org>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
         "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Paul Durrant <Paul.Durrant@citrix.com>
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] xen/granttable: Grant tables V2 implementation
-References: <4EC3B62F.6080702@oracle.com> <1321451372-13596-1-git-send-email-annie.li@oracle.com> <4EC62FE5.2080608@oracle.com> <1321614166.3664.311.camel@zakaz.uk.xensource.com> <20111118135221.GC12433@phenom.dumpdata.com> <1321624845.3664.354.camel@zakaz.uk.xensource.com> <4EC6837F.1050201@oracle.com> <20111118180500.GA19469@phenom.dumpdata.com>
-In-Reply-To: <20111118180500.GA19469@phenom.dumpdata.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] xen/granttable: Introducing grant table
+ V2 stucture
+References: <4EC3B62F.6080702@oracle.com>	 <1321451304-13559-1-git-send-email-annie.li@oracle.com>	 <4EC62E77.7090007@oracle.com>	 <1321613689.3664.305.camel@zakaz.uk.xensource.com>	 <4EC6818B.3010904@oracle.com> <1321632271.3664.367.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1321632271.3664.367.camel@zakaz.uk.xensource.com>
 Content-Type: multipart/mixed;
- boundary="------------050906020008090403000009"
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4ECA1F05.007C,ss=1,re=-2.300,fgs=0
+ boundary="------------050700040602000504040002"
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4ECA1F03.005D,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
---------------050906020008090403000009
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+--------------050700040602000504040002
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 
-
-> The idea is just to have one function. Whichever prints the
-> string and panics the machine. If 'panic' does this properly
-> (and properly meaning it actually prints data when using
-> the earlyprintk=xen as well as console=hvc0) printout system
-> the we cuold just use 'panic' and not worry about it.
->
->
-> But if it does not, then we (and by we I mean you) should
-> provide a variant of panic() that prints the data properly using the
-> earlprintk mechanism. Preferrabily to make it generic.
-I did a simple test, a serial cable was connected,  and console=hvc0 was 
-added in grub.conf.
-Whether earlyprintk=xen is set or not, both panic() and xen_raw_printk 
-all can print out strings in gnttab_request_version of grant-table.c.
-
-So I changed the
-
-xen_raw_printk();
-panic();
-
-back to
-
-panic();
-
-Other change is the re-arrange "else if" format in 
-gnttab_request_version function.
-
-Please refer to the patch attached.
+This patch changes two places from the last one,
+* removing gnttab_v1_ops
+* change update_grant_entry_v1 into gnttab_update_entry_v1
 
 Thanks
 Annie
 
---------------050906020008090403000009
+On 2011-11-19 0:04, Ian Campbell wrote:
+>>>> +static struct gnttab_ops gnttab_v1_ops = {
+>>>> +       .map_frames                     = gnttab_map_frames_v1,
+>>>> +       .unmap_frames                   = gnttab_unmap_frames_v1,
+>>>> +       .update_entry                   = update_grant_entry_v1,
+>>>>
+>>> Any reason this one is not gnttab_foo?
+>>>
+>> Actually no, just keep the original name of this function. I'd like to
+>> change it, maybe gnttab_update_entry_v1 is better?
+> I think so. Similarly for the v2 variant.
+>
+> Ian.
+>
+>
+
+--------------050700040602000504040002
 Content-Type: text/plain;
- name="0003-xen-granttable-Grant-tables-V2-implementation.patch"
-Content-Transfer-Encoding: 7bit
+ name="0001-xen-granttable-Introducing-grant-table-V2-stucture.patch"
+Content-Transfer-Encoding: base64
 Content-Disposition: attachment;
- filename*0="0003-xen-granttable-Grant-tables-V2-implementation.patch"
+ filename*0="0001-xen-granttable-Introducing-grant-table-V2-stucture.patc";
+ filename*1="h"
 
->From fa509f4a3a80fdb8a604efe6d68d9dc8ce25511b Mon Sep 17 00:00:00 2001
-From: Annie Li <annie.li@oracle.com>
-Date: Fri, 18 Nov 2011 16:53:37 +0800
-Subject: [PATCH 3/4] xen/granttable: Grant tables V2 implementation
-
-Receiver-side copying of packets is based on this implementation, it gives
-better performance and better CPU accounting. It totally supports three types:
-full-page, sub-page and transitive grants.
-
-However this patch does not cover sub-page and transitive grants, it mainly
-focus on Full-page part and implements grant table V2 interfaces corresponding
-to what already exists in grant table V1, such as: grant table V2
-initialization, mapping, releasing and exported interfaces.
-
-Each guest can only supports one type of grant table type, every entry in grant
-table should be the same version. It is necessary to set V1 or V2 version before
-initializing the grant table.
-
-Grant table exported interfaces of V2 are same with those of V1, Xen is
-responsible to judge what grant table version guests are using in every grant
-operation.
-
-V2 fulfills the same role of V1, and it is totally backwards compitable with V1.
-If dom0 support grant table V2, the guests runing on it can run with either V1
-or V2.
-
-Signed-off-by: Annie Li <annie.li@oracle.com>
----
- arch/x86/xen/grant-table.c |   37 +++++++++-
- drivers/xen/grant-table.c  |  175 +++++++++++++++++++++++++++++++++++++++++++-
- include/xen/grant_table.h  |    6 +-
- 3 files changed, 211 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index c6ab2e7..510fca0 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -54,6 +54,20 @@ static int map_pte_fn(pte_t *pte, struct page *pmd_page,
- 	return 0;
- }
- 
-+/*
-+ * This function is used to map shared frames to store grant status. It is
-+ * different from map_pte_fn above, the frames type here is uint64_t.
-+ */
-+static int map_pte_fn_status(pte_t *pte, struct page *pmd_page,
-+			     unsigned long addr, void *data)
-+{
-+	uint64_t **frames = (uint64_t **)data;
-+
-+	set_pte_at(&init_mm, addr, pte, mfn_pte((*frames)[0], PAGE_KERNEL));
-+	(*frames)++;
-+	return 0;
-+}
-+
- static int unmap_pte_fn(pte_t *pte, struct page *pmd_page,
- 			unsigned long addr, void *data)
- {
-@@ -83,7 +97,28 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- 	return rc;
- }
- 
--void arch_gnttab_unmap_shared(void *shared, unsigned long nr_gframes)
-+int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
-+			   unsigned long max_nr_gframes,
-+			   grant_status_t **__shared)
-+{
-+	int rc;
-+	grant_status_t *shared = *__shared;
-+
-+	if (shared == NULL) {
-+		struct vm_struct *area =
-+			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-+		BUG_ON(area == NULL);
-+		shared = area->addr;
-+		*__shared = shared;
-+	}
-+
-+	rc = apply_to_page_range(&init_mm, (unsigned long)shared,
-+				 PAGE_SIZE * nr_gframes,
-+				 map_pte_fn_status, &frames);
-+	return rc;
-+}
-+
-+void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
- {
- 	apply_to_page_range(&init_mm, (unsigned long)shared,
- 			    PAGE_SIZE * nr_gframes, unmap_pte_fn, NULL);
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index f33041e..ca075e9 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -44,6 +44,7 @@
- #include <xen/page.h>
- #include <xen/grant_table.h>
- #include <xen/interface/memory.h>
-+#include <xen/hvc-console.h>
- #include <asm/xen/hypercall.h>
- 
- #include <asm/pgtable.h>
-@@ -53,7 +54,10 @@
- /* External tools reserve first few grant table entries. */
- #define NR_RESERVED_ENTRIES 8
- #define GNTTAB_LIST_END 0xffffffff
--#define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry_v1))
-+#define GREFS_PER_GRANT_FRAME \
-+(grant_table_version == 1 ?                      \
-+ (PAGE_SIZE / sizeof(struct grant_entry_v1)) :   \
-+ (PAGE_SIZE / sizeof(union grant_entry_v2)))
- 
- static grant_ref_t **gnttab_list;
- static unsigned int nr_grant_frames;
-@@ -66,6 +70,7 @@ EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
- 
- static union {
- 	struct grant_entry_v1 *v1;
-+	union grant_entry_v2 *v2;
- 	void *addr;
- } gnttab_shared;
- 
-@@ -119,8 +124,12 @@ struct gnttab_ops {
- };
- 
- static struct gnttab_ops gnttab_v1_ops;
-+static struct gnttab_ops gnttab_v2_ops;
- static struct gnttab_ops *gnttab_interface;
- 
-+/*This reflects status of grant entries, so act as a global value*/
-+static grant_status_t *grstatus;
-+
- static int grant_table_version;
- 
- static struct gnttab_free_callback *gnttab_free_callback_list;
-@@ -128,6 +137,7 @@ static struct gnttab_free_callback *gnttab_free_callback_list;
- static int gnttab_expand(unsigned int req_entries);
- 
- #define RPP (PAGE_SIZE / sizeof(grant_ref_t))
-+#define SPP (PAGE_SIZE / sizeof(grant_status_t))
- 
- static inline grant_ref_t *__gnttab_entry(grant_ref_t entry)
- {
-@@ -200,6 +210,7 @@ static void put_free_entry(grant_ref_t ref)
- }
- 
- /*
-+ * Following comments apply to update_grant_entry_v1 and update_grant_entry_v2.
-  * Introducing a valid entry into the grant table:
-  *  1. Write ent->domid.
-  *  2. Write ent->frame:
-@@ -218,6 +229,15 @@ static void update_grant_entry_v1(grant_ref_t ref, domid_t domid,
- 	gnttab_shared.v1[ref].flags = flags;
- }
- 
-+static void update_grant_entry_v2(grant_ref_t ref, domid_t domid,
-+				  unsigned long frame, unsigned flags)
-+{
-+	gnttab_shared.v2[ref].hdr.domid = domid;
-+	gnttab_shared.v2[ref].full_page.frame = frame;
-+	wmb();
-+	gnttab_shared.v2[ref].hdr.flags = GTF_permit_access | flags;
-+}
-+
- /*
-  * Public grant-issuing interface functions
-  */
-@@ -249,6 +269,11 @@ static int gnttab_query_foreign_access_v1(grant_ref_t ref)
- 	return gnttab_shared.v1[ref].flags & (GTF_reading|GTF_writing);
- }
- 
-+static int gnttab_query_foreign_access_v2(grant_ref_t ref)
-+{
-+	return grstatus[ref] & (GTF_reading|GTF_writing);
-+}
-+
- int gnttab_query_foreign_access(grant_ref_t ref)
- {
- 	return gnttab_interface->query_foreign_access(ref);
-@@ -273,6 +298,29 @@ static int gnttab_end_foreign_access_ref_v1(grant_ref_t ref, int readonly)
- 	return 1;
- }
- 
-+static int gnttab_end_foreign_access_ref_v2(grant_ref_t ref, int readonly)
-+{
-+	gnttab_shared.v2[ref].hdr.flags = 0;
-+	mb();
-+	if (grstatus[ref] & (GTF_reading|GTF_writing)) {
-+		return 0;
-+	} else {
-+		/* The read of grstatus needs to have acquire
-+		semantics.  On x86, reads already have
-+		that, and we just need to protect against
-+		compiler reorderings.  On other
-+		architectures we may need a full
-+		barrier. */
-+#ifdef CONFIG_X86
-+		barrier();
-+#else
-+		mb();
-+#endif
-+		}
-+
-+	return 1;
-+}
-+
- int gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
- {
- 	return gnttab_interface->end_foreign_access_ref(ref, readonly);
-@@ -346,6 +394,37 @@ static unsigned long gnttab_end_foreign_transfer_ref_v1(grant_ref_t ref)
- 	return frame;
- }
- 
-+static unsigned long gnttab_end_foreign_transfer_ref_v2(grant_ref_t ref)
-+{
-+	unsigned long frame;
-+	u16           flags;
-+	u16          *pflags;
-+
-+	pflags = &gnttab_shared.v2[ref].hdr.flags;
-+
-+	/*
-+	 * If a transfer is not even yet started, try to reclaim the grant
-+	 * reference and return failure (== 0).
-+	 */
-+	while (!((flags = *pflags) & GTF_transfer_committed)) {
-+		if (sync_cmpxchg(pflags, flags, 0) == flags)
-+			return 0;
-+		cpu_relax();
-+	}
-+
-+	/* If a transfer is in progress then wait until it is completed. */
-+	while (!(flags & GTF_transfer_completed)) {
-+		flags = *pflags;
-+		cpu_relax();
-+	}
-+
-+	rmb();  /* Read the frame number /after/ reading completion status. */
-+	frame = gnttab_shared.v2[ref].full_page.frame;
-+	BUG_ON(frame == 0);
-+
-+	return frame;
-+}
-+
- unsigned long gnttab_end_foreign_transfer_ref(grant_ref_t ref)
- {
- 	return gnttab_interface->end_foreign_transfer_ref(ref);
-@@ -593,6 +672,11 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- }
- EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
- 
-+static unsigned nr_status_frames(unsigned nr_grant_frames)
-+{
-+	return (nr_grant_frames * GREFS_PER_GRANT_FRAME + SPP - 1) / SPP;
-+}
-+
- static int gnttab_map_frames_v1(unsigned long *frames, unsigned int nr_gframes)
- {
- 	int rc;
-@@ -607,7 +691,56 @@ static int gnttab_map_frames_v1(unsigned long *frames, unsigned int nr_gframes)
- 
- static void gnttab_unmap_frames_v1(void)
- {
--	arch_gnttab_unmap_shared(gnttab_shared.addr, nr_grant_frames);
-+	arch_gnttab_unmap(gnttab_shared.addr, nr_grant_frames);
-+}
-+
-+static int gnttab_map_frames_v2(unsigned long *frames, unsigned int nr_gframes)
-+{
-+	uint64_t *sframes;
-+	unsigned int nr_sframes;
-+	struct gnttab_get_status_frames getframes;
-+	int rc;
-+
-+	nr_sframes = nr_status_frames(nr_gframes);
-+
-+	/* No need for kzalloc as it is initialized in following hypercall
-+	 * GNTTABOP_get_status_frames.
-+	 */
-+	sframes = kmalloc(nr_sframes  * sizeof(uint64_t), GFP_ATOMIC);
-+	if (!sframes)
-+		return -ENOMEM;
-+
-+	getframes.dom        = DOMID_SELF;
-+	getframes.nr_frames  = nr_sframes;
-+	set_xen_guest_handle(getframes.frame_list, sframes);
-+
-+	rc = HYPERVISOR_grant_table_op(GNTTABOP_get_status_frames,
-+				       &getframes, 1);
-+	if (rc == -ENOSYS) {
-+		kfree(sframes);
-+		return -ENOSYS;
-+	}
-+
-+	BUG_ON(rc || getframes.status);
-+
-+	rc = arch_gnttab_map_status(sframes, nr_sframes,
-+				    nr_status_frames(gnttab_max_grant_frames()),
-+				    &grstatus);
-+	BUG_ON(rc);
-+	kfree(sframes);
-+
-+	rc = arch_gnttab_map_shared(frames, nr_gframes,
-+				    gnttab_max_grant_frames(),
-+				    &gnttab_shared.addr);
-+	BUG_ON(rc);
-+
-+	return 0;
-+}
-+
-+static void gnttab_unmap_frames_v2(void)
-+{
-+	arch_gnttab_unmap(gnttab_shared.addr, nr_grant_frames);
-+	arch_gnttab_unmap(grstatus, nr_status_frames(nr_grant_frames));
- }
- 
- static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
-@@ -641,6 +774,9 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 		return rc;
- 	}
- 
-+	/* No need for kzalloc as it is initialized in following hypercall
-+	 * GNTTABOP_setup_table.
-+	 */
- 	frames = kmalloc(nr_gframes * sizeof(unsigned long), GFP_ATOMIC);
- 	if (!frames)
- 		return -ENOMEM;
-@@ -673,10 +809,41 @@ static struct gnttab_ops gnttab_v1_ops = {
- 	.query_foreign_access		= gnttab_query_foreign_access_v1,
- };
- 
-+static struct gnttab_ops gnttab_v2_ops = {
-+	.map_frames			= gnttab_map_frames_v2,
-+	.unmap_frames			= gnttab_unmap_frames_v2,
-+	.update_entry			= update_grant_entry_v2,
-+	.end_foreign_access_ref		= gnttab_end_foreign_access_ref_v2,
-+	.end_foreign_transfer_ref	= gnttab_end_foreign_transfer_ref_v2,
-+	.query_foreign_access		= gnttab_query_foreign_access_v2,
-+};
-+
- static void gnttab_request_version(void)
- {
--	grant_table_version = 1;
--	gnttab_interface = &gnttab_v1_ops;
-+	int rc;
-+	struct gnttab_set_version gsv;
-+	const char *str = "we need grant tables version 2, but only version 1 is available\n";
-+
-+	gsv.version = 2;
-+	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv, 1);
-+	if (rc == 0) {
-+		grant_table_version = 2;
-+		gnttab_interface = &gnttab_v2_ops;
-+	} else {
-+		if (grant_table_version == 2) {
-+			/*
-+			 * If we've already used version 2 features,
-+			 * but then suddenly discover that they're not
-+			 * available (e.g. migrating to an older
-+			 * version of Xen), almost unbounded badness
-+			 * can happen.
-+			 */
-+			xen_raw_printk(str);
-+			panic(str);
-+		}
-+		grant_table_version = 1;
-+		gnttab_interface = &gnttab_v1_ops;
-+	}
- 	printk(KERN_INFO "Grant tables using version %d layout.\n",
- 		grant_table_version);
- }
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index c7a40f8..5494c40 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -146,8 +146,10 @@ gnttab_set_unmap_op(struct gnttab_unmap_grant_ref *unmap, phys_addr_t addr,
- int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- 			   unsigned long max_nr_gframes,
- 			   void **__shared);
--void arch_gnttab_unmap_shared(void *shared,
--			      unsigned long nr_gframes);
-+int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
-+			   unsigned long max_nr_gframes,
-+			   grant_status_t **__shared);
-+void arch_gnttab_unmap(void *shared, unsigned long nr_gframes);
- 
- extern unsigned long xen_hvm_resume_frames;
- unsigned int gnttab_max_grant_frames(void);
--- 
-1.7.6.4
-
-
---------------050906020008090403000009--
+RnJvbSBjMTBlYjg5NWFiYjU3OWU1MDc1OWJhZmNiZmQ1NGFlODAyMDZiYWIwIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBBbm5pZSBMaSA8YW5uaWUubGlAb3JhY2xlLmNvbT4K
+RGF0ZTogRnJpLCAxOCBOb3YgMjAxMSAxNjowNzoxNiArMDgwMApTdWJqZWN0OiBbUEFUQ0gg
+MS80XSB4ZW4vZ3JhbnR0YWJsZTogSW50cm9kdWNpbmcgZ3JhbnQgdGFibGUgVjIgc3R1Y3R1
+cmUKClRoaXMgcGF0Y2ggaW50cm9kdWNlcyBuZXcgc3RydWN0dXJlcyBvZiBncmFudCB0YWJs
+ZSBWMiwgZ3JhbnQgdGFibGUgVjIgaXMgYW4KZXh0ZW5zaW9uIGZyb20gVjEuIEdyYW50IHRh
+YmxlIGlzIHNoYXJlZCBiZXR3ZWVuIGd1ZXN0IGFuZCBYZW4sIGFuZCBYZW4gaXMKcmVzcG9u
+c2libGUgdG8gZG8gY29ycmVzcG9uZGluZyB3b3JrIGZvciBncmFudCBvcGVyYXRpb25zLCBz
+dWNoIGFzOiBmaWd1cmUKb3V0IGd1ZXN0J3MgZ3JhbnQgdGFibGUgdmVyc2lvbiwgcGVyZm9y
+bSBkaWZmZXJlbnQgYWN0aW9ucyBiYXNlZCBvbgpkaWZmZXJlbnQgZ3JhbnQgdGFibGUgdmVy
+c2lvbiwgZXRjLiBBbHRob3VnaCBmdWxsLXBhZ2Ugc3RydWN0dXJlIG9mIFYyCmlzIGRpZmZl
+cmVudCBmcm9tIFYxLCBpdCBwbGF5IHRoZSBzYW1lIHJvbGUgYXMgVjEuCgpTaWduZWQtb2Zm
+LWJ5OiBBbm5pZSBMaSA8YW5uaWUubGlAb3JhY2xlLmNvbT4KLS0tCiBhcmNoL3g4Ni94ZW4v
+Z3JhbnQtdGFibGUuYyAgICAgICAgICB8ICAgIDcgKy0KIGRyaXZlcnMveGVuL2dyYW50LXRh
+YmxlLmMgICAgICAgICAgIHwgIDE4MiArKysrKysrKysrKysrKysrKysrKysrKysrKystLS0t
+LS0tLQogaW5jbHVkZS94ZW4vZ3JhbnRfdGFibGUuaCAgICAgICAgICAgfCAgICA0ICstCiBp
+bmNsdWRlL3hlbi9pbnRlcmZhY2UvZ3JhbnRfdGFibGUuaCB8ICAxNjcgKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKy0KIGluY2x1ZGUveGVuL2ludGVyZmFjZS94ZW4uaCAgICAg
+ICAgIHwgICAgMiArCiA1IGZpbGVzIGNoYW5nZWQsIDMxMSBpbnNlcnRpb25zKCspLCA1MSBk
+ZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni94ZW4vZ3JhbnQtdGFibGUuYyBi
+L2FyY2gveDg2L3hlbi9ncmFudC10YWJsZS5jCmluZGV4IDZiYmZkN2EuLmM2YWIyZTcgMTAw
+NjQ0Ci0tLSBhL2FyY2gveDg2L3hlbi9ncmFudC10YWJsZS5jCisrKyBiL2FyY2gveDg2L3hl
+bi9ncmFudC10YWJsZS5jCkBAIC02NCwxMCArNjQsMTAgQEAgc3RhdGljIGludCB1bm1hcF9w
+dGVfZm4ocHRlX3QgKnB0ZSwgc3RydWN0IHBhZ2UgKnBtZF9wYWdlLAogCiBpbnQgYXJjaF9n
+bnR0YWJfbWFwX3NoYXJlZCh1bnNpZ25lZCBsb25nICpmcmFtZXMsIHVuc2lnbmVkIGxvbmcg
+bnJfZ2ZyYW1lcywKIAkJCSAgIHVuc2lnbmVkIGxvbmcgbWF4X25yX2dmcmFtZXMsCi0JCQkg
+ICBzdHJ1Y3QgZ3JhbnRfZW50cnkgKipfX3NoYXJlZCkKKwkJCSAgIHZvaWQgKipfX3NoYXJl
+ZCkKIHsKIAlpbnQgcmM7Ci0Jc3RydWN0IGdyYW50X2VudHJ5ICpzaGFyZWQgPSAqX19zaGFy
+ZWQ7CisJdm9pZCAqc2hhcmVkID0gKl9fc2hhcmVkOwogCiAJaWYgKHNoYXJlZCA9PSBOVUxM
+KSB7CiAJCXN0cnVjdCB2bV9zdHJ1Y3QgKmFyZWEgPQpAQCAtODMsOCArODMsNyBAQCBpbnQg
+YXJjaF9nbnR0YWJfbWFwX3NoYXJlZCh1bnNpZ25lZCBsb25nICpmcmFtZXMsIHVuc2lnbmVk
+IGxvbmcgbnJfZ2ZyYW1lcywKIAlyZXR1cm4gcmM7CiB9CiAKLXZvaWQgYXJjaF9nbnR0YWJf
+dW5tYXBfc2hhcmVkKHN0cnVjdCBncmFudF9lbnRyeSAqc2hhcmVkLAotCQkJICAgICAgdW5z
+aWduZWQgbG9uZyBucl9nZnJhbWVzKQordm9pZCBhcmNoX2dudHRhYl91bm1hcF9zaGFyZWQo
+dm9pZCAqc2hhcmVkLCB1bnNpZ25lZCBsb25nIG5yX2dmcmFtZXMpCiB7CiAJYXBwbHlfdG9f
+cGFnZV9yYW5nZSgmaW5pdF9tbSwgKHVuc2lnbmVkIGxvbmcpc2hhcmVkLAogCQkJICAgIFBB
+R0VfU0laRSAqIG5yX2dmcmFtZXMsIHVubWFwX3B0ZV9mbiwgTlVMTCk7CmRpZmYgLS1naXQg
+YS9kcml2ZXJzL3hlbi9ncmFudC10YWJsZS5jIGIvZHJpdmVycy94ZW4vZ3JhbnQtdGFibGUu
+YwppbmRleCBiZjFjMDk0Li41ZDkzMWI4IDEwMDY0NAotLS0gYS9kcml2ZXJzL3hlbi9ncmFu
+dC10YWJsZS5jCisrKyBiL2RyaXZlcnMveGVuL2dyYW50LXRhYmxlLmMKQEAgLTUzLDcgKzUz
+LDcgQEAKIC8qIEV4dGVybmFsIHRvb2xzIHJlc2VydmUgZmlyc3QgZmV3IGdyYW50IHRhYmxl
+IGVudHJpZXMuICovCiAjZGVmaW5lIE5SX1JFU0VSVkVEX0VOVFJJRVMgOAogI2RlZmluZSBH
+TlRUQUJfTElTVF9FTkQgMHhmZmZmZmZmZgotI2RlZmluZSBHUkVGU19QRVJfR1JBTlRfRlJB
+TUUgKFBBR0VfU0laRSAvIHNpemVvZihzdHJ1Y3QgZ3JhbnRfZW50cnkpKQorI2RlZmluZSBH
+UkVGU19QRVJfR1JBTlRfRlJBTUUgKFBBR0VfU0laRSAvIHNpemVvZihzdHJ1Y3QgZ3JhbnRf
+ZW50cnlfdjEpKQogCiBzdGF0aWMgZ3JhbnRfcmVmX3QgKipnbnR0YWJfbGlzdDsKIHN0YXRp
+YyB1bnNpZ25lZCBpbnQgbnJfZ3JhbnRfZnJhbWVzOwpAQCAtNjQsNyArNjQsNjQgQEAgc3Rh
+dGljIERFRklORV9TUElOTE9DSyhnbnR0YWJfbGlzdF9sb2NrKTsKIHVuc2lnbmVkIGxvbmcg
+eGVuX2h2bV9yZXN1bWVfZnJhbWVzOwogRVhQT1JUX1NZTUJPTF9HUEwoeGVuX2h2bV9yZXN1
+bWVfZnJhbWVzKTsKIAotc3RhdGljIHN0cnVjdCBncmFudF9lbnRyeSAqc2hhcmVkOworc3Rh
+dGljIHVuaW9uIHsKKwlzdHJ1Y3QgZ3JhbnRfZW50cnlfdjEgKnYxOworCXZvaWQgKmFkZHI7
+Cit9IGdudHRhYl9zaGFyZWQ7CisKKy8qVGhpcyBpcyBhIHN0cnVjdHVyZSBvZiBmdW5jdGlv
+biBwb2ludGVycyBmb3IgZ3JhbnQgdGFibGUqLworc3RydWN0IGdudHRhYl9vcHMgeworCS8q
+CisJICogTWFwcGluZyBhIGxpc3Qgb2YgZnJhbWVzIGZvciBzdG9yaW5nIGdyYW50IGVudHJp
+ZXMuIEZpcnN0IGlucHV0CisJICogcGFyYW1ldGVyIGlzIHVzZWQgdG8gc3RvcmluZyBncmFu
+dCB0YWJsZSBhZGRyZXNzIHdoZW4gZ3JhbnQgdGFibGUKKwkgKiBiZWluZyBzZXR1cCwgc2Vj
+b25kIHBhcmFtZXRlciBpcyB0aGUgbnVtYmVyIG9mIGZyYW1lcyB0byBtYXAgZ3JhbnQKKwkg
+KiB0YWJsZS4gUmV0dXJuaW5nIEdOVFNUX29rYXkgbWVhbnMgc3VjY2VzcyBhbmQgbmVnYXRp
+dmUgdmFsdWUgbWVhbnMKKwkgKiBmYWlsdXJlLgorCSAqLworCWludCAoKm1hcF9mcmFtZXMp
+KHVuc2lnbmVkIGxvbmcgKiwgdW5zaWduZWQgaW50KTsKKwkvKgorCSAqIFJlbGVhc2UgYSBs
+aXN0IG9mIGZyYW1lcyB3aGljaCBhcmUgbWFwcGVkIGluIG1hcF9mcmFtZXMgZm9yIGdyYW50
+CisJICogZW50cnkgc3RhdHVzLgorCSAqLworCXZvaWQgKCp1bm1hcF9mcmFtZXMpKHZvaWQp
+OworCS8qCisJICogSW50cm9kdWNpbmcgYSB2YWxpZCBlbnRyeSBpbnRvIHRoZSBncmFudCB0
+YWJsZSwgZ3JhbnRpbmcgdGhlIGZyYW1lCisJICogb2YgdGhpcyBncmFudCBlbnRyeSB0byBk
+b21haW4gZm9yIGFjY2Vzc2luZywgb3IgdHJhbnNmZXJpbmcsIG9yCisJICogdHJhbnNpdGl2
+ZWx5IGFjY2Vzc2luZy4gRmlyc3QgaW5wdXQgcGFyYW1ldGVyIGlzIHJlZmVyZW5jZSBvZiB0
+aGlzCisJICogaW50cm9kdWNlZCBncmFudCBlbnRyeSwgc2Vjb25kIG9uZSBpcyBkb21pZCBv
+ZiBncmFudGVkIGRvbWFpbiwgdGhpcmQKKwkgKiBvbmUgaXMgdGhlIGZyYW1lIHRvIGJlIGdy
+YW50ZWQsIGFuZCB0aGUgbGFzdCBvbmUgaXMgc3RhdHVzIG9mIHRoZQorCSAqIGdyYW50IGVu
+dHJ5IHRvIGJlIHVwZGF0ZWQuCisJICovCisJdm9pZCAoKnVwZGF0ZV9lbnRyeSkoZ3JhbnRf
+cmVmX3QsIGRvbWlkX3QsIHVuc2lnbmVkIGxvbmcsIHVuc2lnbmVkKTsKKwkvKgorCSAqIFN0
+b3AgZ3JhbnRpbmcgYSBncmFudCBlbnRyeSB0byBkb21haW4gZm9yIGFjY2Vzc2luZy4gRmly
+c3QgaW5wdXQKKwkgKiBwYXJhbWV0ZXIgaXMgcmVmZXJlbmNlIG9mIGEgZ3JhbnQgZW50cnkg
+d2hvc2UgZ3JhbnQgYWNjZXNzIHdpbGwgYmUKKwkgKiBzdG9wcGVkLCBzZWNvbmQgb25lIGlz
+IG5vdCBpbiB1c2Ugbm93LiBJZiB0aGUgZ3JhbnQgZW50cnkgaXMKKwkgKiBjdXJyZW50bHkg
+bWFwcGVkIGZvciByZWFkaW5nIG9yIHdyaXRpbmcsIGp1c3QgcmV0dXJuIGZhaWx1cmUoPT0w
+KQorCSAqIGRpcmVjdGx5IGFuZCBkb24ndCB0ZWFyIGRvd24gdGhlIGdyYW50IGFjY2Vzcy4g
+T3RoZXJ3aXNlLCBzdG9wIGdyYW50CisJICogYWNjZXNzIGZvciB0aGlzIGVudHJ5IGFuZCBy
+ZXR1cm4gc3VjY2Vzcyg9PTEpLgorCSAqLworCWludCAoKmVuZF9mb3JlaWduX2FjY2Vzc19y
+ZWYpKGdyYW50X3JlZl90LCBpbnQpOworCS8qCisJICogU3RvcCBncmFudGluZyBhIGdyYW50
+IGVudHJ5IHRvIGRvbWFpbiBmb3IgdHJhbnNmZXIuIElmIHRyYW5mZXIgaGFzCisJICogbm90
+IHN0YXJ0ZWQsIGp1c3QgcmVjbGFpbSB0aGUgZ3JhbnQgZW50cnkgYW5kIHJldHVybiBmYWls
+dXJlKD09MCkuCisJICogT3RoZXJ3aXNlLCB3YWl0IGZvciB0aGUgdHJhbnNmZXIgdG8gY29t
+cGxldGUgYW5kIHRoZW4gcmV0dXJuIHRoZQorCSAqIGZyYW1lLgorCSAqLworCXVuc2lnbmVk
+IGxvbmcgKCplbmRfZm9yZWlnbl90cmFuc2Zlcl9yZWYpKGdyYW50X3JlZl90KTsKKwkvKgor
+CSAqIFF1ZXJ5IHRoZSBzdGF0dXMgb2YgYSBncmFudCBlbnRyeS4gSW5wdXQgcGFyYW1ldGVy
+IGlzIHJlZmVyZW5jZSBvZgorCSAqIHF1ZXJpZWQgZ3JhbnQgZW50cnksIHJldHVybiB2YWx1
+ZSBpcyB0aGUgc3RhdHVzIG9mIHF1ZXJpZWQgZW50cnkuCisJICogRGV0YWlsZWQgc3RhdHVz
+KHdyaXRpbmcvcmVhZGluZykgY2FuIGJlIGdvdHRlbiBmcm9tIHRoZSByZXR1cm4gdmFsdWUK
+KwkgKiBieSBiaXQgb3BlcmF0aW9ucy4KKwkgKi8KKwlpbnQgKCpxdWVyeV9mb3JlaWduX2Fj
+Y2VzcykoZ3JhbnRfcmVmX3QpOworfTsKKworc3RhdGljIHN0cnVjdCBnbnR0YWJfb3BzIGdu
+dHRhYl92MV9vcHM7CitzdGF0aWMgc3RydWN0IGdudHRhYl9vcHMgKmdudHRhYl9pbnRlcmZh
+Y2U7CisKK3N0YXRpYyBpbnQgZ3JhbnRfdGFibGVfdmVyc2lvbjsKIAogc3RhdGljIHN0cnVj
+dCBnbnR0YWJfZnJlZV9jYWxsYmFjayAqZ250dGFiX2ZyZWVfY2FsbGJhY2tfbGlzdDsKIApA
+QCAtMTQyLDIzICsxOTksMjMgQEAgc3RhdGljIHZvaWQgcHV0X2ZyZWVfZW50cnkoZ3JhbnRf
+cmVmX3QgcmVmKQogCXNwaW5fdW5sb2NrX2lycXJlc3RvcmUoJmdudHRhYl9saXN0X2xvY2ss
+IGZsYWdzKTsKIH0KIAotc3RhdGljIHZvaWQgdXBkYXRlX2dyYW50X2VudHJ5KGdyYW50X3Jl
+Zl90IHJlZiwgZG9taWRfdCBkb21pZCwKLQkJCSAgICAgICB1bnNpZ25lZCBsb25nIGZyYW1l
+LCB1bnNpZ25lZCBmbGFncykKKy8qCisgKiBJbnRyb2R1Y2luZyBhIHZhbGlkIGVudHJ5IGlu
+dG8gdGhlIGdyYW50IHRhYmxlOgorICogIDEuIFdyaXRlIGVudC0+ZG9taWQuCisgKiAgMi4g
+V3JpdGUgZW50LT5mcmFtZToKKyAqICAgICAgR1RGX3Blcm1pdF9hY2Nlc3M6ICAgRnJhbWUg
+dG8gd2hpY2ggYWNjZXNzIGlzIHBlcm1pdHRlZC4KKyAqICAgICAgR1RGX2FjY2VwdF90cmFu
+c2ZlcjogUHNldWRvLXBoeXMgZnJhbWUgc2xvdCBiZWluZyBmaWxsZWQgYnkgbmV3CisgKiAg
+ICAgICAgICAgICAgICAgICAgICAgICAgIGZyYW1lLCBvciB6ZXJvIGlmIG5vbmUuCisgKiAg
+My4gV3JpdGUgbWVtb3J5IGJhcnJpZXIgKFdNQikuCisgKiAgNC4gV3JpdGUgZW50LT5mbGFn
+cywgaW5jLiB2YWxpZCB0eXBlLgorICovCitzdGF0aWMgdm9pZCB1cGRhdGVfZ3JhbnRfZW50
+cnlfdjEoZ3JhbnRfcmVmX3QgcmVmLCBkb21pZF90IGRvbWlkLAorCQkJCSAgdW5zaWduZWQg
+bG9uZyBmcmFtZSwgdW5zaWduZWQgZmxhZ3MpCiB7Ci0JLyoKLQkgKiBJbnRyb2R1Y2luZyBh
+IHZhbGlkIGVudHJ5IGludG8gdGhlIGdyYW50IHRhYmxlOgotCSAqICAxLiBXcml0ZSBlbnQt
+PmRvbWlkLgotCSAqICAyLiBXcml0ZSBlbnQtPmZyYW1lOgotCSAqICAgICAgR1RGX3Blcm1p
+dF9hY2Nlc3M6ICAgRnJhbWUgdG8gd2hpY2ggYWNjZXNzIGlzIHBlcm1pdHRlZC4KLQkgKiAg
+ICAgIEdURl9hY2NlcHRfdHJhbnNmZXI6IFBzZXVkby1waHlzIGZyYW1lIHNsb3QgYmVpbmcg
+ZmlsbGVkIGJ5IG5ldwotCSAqICAgICAgICAgICAgICAgICAgICAgICAgICAgZnJhbWUsIG9y
+IHplcm8gaWYgbm9uZS4KLQkgKiAgMy4gV3JpdGUgbWVtb3J5IGJhcnJpZXIgKFdNQikuCi0J
+ICogIDQuIFdyaXRlIGVudC0+ZmxhZ3MsIGluYy4gdmFsaWQgdHlwZS4KLQkgKi8KLQlzaGFy
+ZWRbcmVmXS5mcmFtZSA9IGZyYW1lOwotCXNoYXJlZFtyZWZdLmRvbWlkID0gZG9taWQ7CisJ
+Z250dGFiX3NoYXJlZC52MVtyZWZdLmRvbWlkID0gZG9taWQ7CisJZ250dGFiX3NoYXJlZC52
+MVtyZWZdLmZyYW1lID0gZnJhbWU7CiAJd21iKCk7Ci0Jc2hhcmVkW3JlZl0uZmxhZ3MgPSBm
+bGFnczsKKwlnbnR0YWJfc2hhcmVkLnYxW3JlZl0uZmxhZ3MgPSBmbGFnczsKIH0KIAogLyoK
+QEAgLTE2Nyw3ICsyMjQsNyBAQCBzdGF0aWMgdm9pZCB1cGRhdGVfZ3JhbnRfZW50cnkoZ3Jh
+bnRfcmVmX3QgcmVmLCBkb21pZF90IGRvbWlkLAogdm9pZCBnbnR0YWJfZ3JhbnRfZm9yZWln
+bl9hY2Nlc3NfcmVmKGdyYW50X3JlZl90IHJlZiwgZG9taWRfdCBkb21pZCwKIAkJCQkgICAg
+IHVuc2lnbmVkIGxvbmcgZnJhbWUsIGludCByZWFkb25seSkKIHsKLQl1cGRhdGVfZ3JhbnRf
+ZW50cnkocmVmLCBkb21pZCwgZnJhbWUsCisJZ250dGFiX2ludGVyZmFjZS0+dXBkYXRlX2Vu
+dHJ5KHJlZiwgZG9taWQsIGZyYW1lLAogCQkJICAgR1RGX3Blcm1pdF9hY2Nlc3MgfCAocmVh
+ZG9ubHkgPyBHVEZfcmVhZG9ubHkgOiAwKSk7CiB9CiBFWFBPUlRfU1lNQk9MX0dQTChnbnR0
+YWJfZ3JhbnRfZm9yZWlnbl9hY2Nlc3NfcmVmKTsKQEAgLTE4NywzMSArMjQ0LDM3IEBAIGlu
+dCBnbnR0YWJfZ3JhbnRfZm9yZWlnbl9hY2Nlc3MoZG9taWRfdCBkb21pZCwgdW5zaWduZWQg
+bG9uZyBmcmFtZSwKIH0KIEVYUE9SVF9TWU1CT0xfR1BMKGdudHRhYl9ncmFudF9mb3JlaWdu
+X2FjY2Vzcyk7CiAKLWludCBnbnR0YWJfcXVlcnlfZm9yZWlnbl9hY2Nlc3MoZ3JhbnRfcmVm
+X3QgcmVmKQorc3RhdGljIGludCBnbnR0YWJfcXVlcnlfZm9yZWlnbl9hY2Nlc3NfdjEoZ3Jh
+bnRfcmVmX3QgcmVmKQogewotCXUxNiBuZmxhZ3M7Ci0KLQluZmxhZ3MgPSBzaGFyZWRbcmVm
+XS5mbGFnczsKKwlyZXR1cm4gZ250dGFiX3NoYXJlZC52MVtyZWZdLmZsYWdzICYgKEdURl9y
+ZWFkaW5nfEdURl93cml0aW5nKTsKK30KIAotCXJldHVybiBuZmxhZ3MgJiAoR1RGX3JlYWRp
+bmd8R1RGX3dyaXRpbmcpOworaW50IGdudHRhYl9xdWVyeV9mb3JlaWduX2FjY2VzcyhncmFu
+dF9yZWZfdCByZWYpCit7CisJcmV0dXJuIGdudHRhYl9pbnRlcmZhY2UtPnF1ZXJ5X2ZvcmVp
+Z25fYWNjZXNzKHJlZik7CiB9CiBFWFBPUlRfU1lNQk9MX0dQTChnbnR0YWJfcXVlcnlfZm9y
+ZWlnbl9hY2Nlc3MpOwogCi1pbnQgZ250dGFiX2VuZF9mb3JlaWduX2FjY2Vzc19yZWYoZ3Jh
+bnRfcmVmX3QgcmVmLCBpbnQgcmVhZG9ubHkpCitzdGF0aWMgaW50IGdudHRhYl9lbmRfZm9y
+ZWlnbl9hY2Nlc3NfcmVmX3YxKGdyYW50X3JlZl90IHJlZiwgaW50IHJlYWRvbmx5KQogewog
+CXUxNiBmbGFncywgbmZsYWdzOwogCi0JbmZsYWdzID0gc2hhcmVkW3JlZl0uZmxhZ3M7CisJ
+bmZsYWdzID0gZ250dGFiX3NoYXJlZC52MVtyZWZdLmZsYWdzOwogCWRvIHsKIAkJZmxhZ3Mg
+PSBuZmxhZ3M7CiAJCWlmIChmbGFncyAmIChHVEZfcmVhZGluZ3xHVEZfd3JpdGluZykpIHsK
+IAkJCXByaW50ayhLRVJOX0FMRVJUICJXQVJOSU5HOiBnLmUuIHN0aWxsIGluIHVzZSFcbiIp
+OwogCQkJcmV0dXJuIDA7CiAJCX0KLQl9IHdoaWxlICgobmZsYWdzID0gc3luY19jbXB4Y2hn
+KCZzaGFyZWRbcmVmXS5mbGFncywgZmxhZ3MsIDApKSAhPSBmbGFncyk7CisJfSB3aGlsZSAo
+KG5mbGFncyA9IHN5bmNfY21weGNoZygmZ250dGFiX3NoYXJlZC52MVtyZWZdLmZsYWdzLCBm
+bGFncywgMCkpICE9IGZsYWdzKTsKIAogCXJldHVybiAxOwogfQorCitpbnQgZ250dGFiX2Vu
+ZF9mb3JlaWduX2FjY2Vzc19yZWYoZ3JhbnRfcmVmX3QgcmVmLCBpbnQgcmVhZG9ubHkpCit7
+CisJcmV0dXJuIGdudHRhYl9pbnRlcmZhY2UtPmVuZF9mb3JlaWduX2FjY2Vzc19yZWYocmVm
+LCByZWFkb25seSk7Cit9CiBFWFBPUlRfU1lNQk9MX0dQTChnbnR0YWJfZW5kX2ZvcmVpZ25f
+YWNjZXNzX3JlZik7CiAKIHZvaWQgZ250dGFiX2VuZF9mb3JlaWduX2FjY2VzcyhncmFudF9y
+ZWZfdCByZWYsIGludCByZWFkb25seSwKQEAgLTI0NiwxMSArMzA5LDExIEBAIEVYUE9SVF9T
+WU1CT0xfR1BMKGdudHRhYl9ncmFudF9mb3JlaWduX3RyYW5zZmVyKTsKIHZvaWQgZ250dGFi
+X2dyYW50X2ZvcmVpZ25fdHJhbnNmZXJfcmVmKGdyYW50X3JlZl90IHJlZiwgZG9taWRfdCBk
+b21pZCwKIAkJCQkgICAgICAgdW5zaWduZWQgbG9uZyBwZm4pCiB7Ci0JdXBkYXRlX2dyYW50
+X2VudHJ5KHJlZiwgZG9taWQsIHBmbiwgR1RGX2FjY2VwdF90cmFuc2Zlcik7CisJZ250dGFi
+X2ludGVyZmFjZS0+dXBkYXRlX2VudHJ5KHJlZiwgZG9taWQsIHBmbiwgR1RGX2FjY2VwdF90
+cmFuc2Zlcik7CiB9CiBFWFBPUlRfU1lNQk9MX0dQTChnbnR0YWJfZ3JhbnRfZm9yZWlnbl90
+cmFuc2Zlcl9yZWYpOwogCi11bnNpZ25lZCBsb25nIGdudHRhYl9lbmRfZm9yZWlnbl90cmFu
+c2Zlcl9yZWYoZ3JhbnRfcmVmX3QgcmVmKQorc3RhdGljIHVuc2lnbmVkIGxvbmcgZ250dGFi
+X2VuZF9mb3JlaWduX3RyYW5zZmVyX3JlZl92MShncmFudF9yZWZfdCByZWYpCiB7CiAJdW5z
+aWduZWQgbG9uZyBmcmFtZTsKIAl1MTYgICAgICAgICAgIGZsYWdzOwpAQCAtMjU5LDI0ICsz
+MjIsMjkgQEAgdW5zaWduZWQgbG9uZyBnbnR0YWJfZW5kX2ZvcmVpZ25fdHJhbnNmZXJfcmVm
+KGdyYW50X3JlZl90IHJlZikKIAkgKiBJZiBhIHRyYW5zZmVyIGlzIG5vdCBldmVuIHlldCBz
+dGFydGVkLCB0cnkgdG8gcmVjbGFpbSB0aGUgZ3JhbnQKIAkgKiByZWZlcmVuY2UgYW5kIHJl
+dHVybiBmYWlsdXJlICg9PSAwKS4KIAkgKi8KLQl3aGlsZSAoISgoZmxhZ3MgPSBzaGFyZWRb
+cmVmXS5mbGFncykgJiBHVEZfdHJhbnNmZXJfY29tbWl0dGVkKSkgewotCQlpZiAoc3luY19j
+bXB4Y2hnKCZzaGFyZWRbcmVmXS5mbGFncywgZmxhZ3MsIDApID09IGZsYWdzKQorCXdoaWxl
+ICghKChmbGFncyA9IGdudHRhYl9zaGFyZWQudjFbcmVmXS5mbGFncykgJiBHVEZfdHJhbnNm
+ZXJfY29tbWl0dGVkKSkgeworCQlpZiAoc3luY19jbXB4Y2hnKCZnbnR0YWJfc2hhcmVkLnYx
+W3JlZl0uZmxhZ3MsIGZsYWdzLCAwKSA9PSBmbGFncykKIAkJCXJldHVybiAwOwogCQljcHVf
+cmVsYXgoKTsKIAl9CiAKIAkvKiBJZiBhIHRyYW5zZmVyIGlzIGluIHByb2dyZXNzIHRoZW4g
+d2FpdCB1bnRpbCBpdCBpcyBjb21wbGV0ZWQuICovCiAJd2hpbGUgKCEoZmxhZ3MgJiBHVEZf
+dHJhbnNmZXJfY29tcGxldGVkKSkgewotCQlmbGFncyA9IHNoYXJlZFtyZWZdLmZsYWdzOwor
+CQlmbGFncyA9IGdudHRhYl9zaGFyZWQudjFbcmVmXS5mbGFnczsKIAkJY3B1X3JlbGF4KCk7
+CiAJfQogCiAJcm1iKCk7CS8qIFJlYWQgdGhlIGZyYW1lIG51bWJlciAvYWZ0ZXIvIHJlYWRp
+bmcgY29tcGxldGlvbiBzdGF0dXMuICovCi0JZnJhbWUgPSBzaGFyZWRbcmVmXS5mcmFtZTsK
+KwlmcmFtZSA9IGdudHRhYl9zaGFyZWQudjFbcmVmXS5mcmFtZTsKIAlCVUdfT04oZnJhbWUg
+PT0gMCk7CiAKIAlyZXR1cm4gZnJhbWU7CiB9CisKK3Vuc2lnbmVkIGxvbmcgZ250dGFiX2Vu
+ZF9mb3JlaWduX3RyYW5zZmVyX3JlZihncmFudF9yZWZfdCByZWYpCit7CisJcmV0dXJuIGdu
+dHRhYl9pbnRlcmZhY2UtPmVuZF9mb3JlaWduX3RyYW5zZmVyX3JlZihyZWYpOworfQogRVhQ
+T1JUX1NZTUJPTF9HUEwoZ250dGFiX2VuZF9mb3JlaWduX3RyYW5zZmVyX3JlZik7CiAKIHVu
+c2lnbmVkIGxvbmcgZ250dGFiX2VuZF9mb3JlaWduX3RyYW5zZmVyKGdyYW50X3JlZl90IHJl
+ZikKQEAgLTUyMCw2ICs1ODgsMjMgQEAgaW50IGdudHRhYl91bm1hcF9yZWZzKHN0cnVjdCBn
+bnR0YWJfdW5tYXBfZ3JhbnRfcmVmICp1bm1hcF9vcHMsCiB9CiBFWFBPUlRfU1lNQk9MX0dQ
+TChnbnR0YWJfdW5tYXBfcmVmcyk7CiAKK3N0YXRpYyBpbnQgZ250dGFiX21hcF9mcmFtZXNf
+djEodW5zaWduZWQgbG9uZyAqZnJhbWVzLCB1bnNpZ25lZCBpbnQgbnJfZ2ZyYW1lcykKK3sK
+KwlpbnQgcmM7CisKKwlyYyA9IGFyY2hfZ250dGFiX21hcF9zaGFyZWQoZnJhbWVzLCBucl9n
+ZnJhbWVzLAorCQkJCSAgICBnbnR0YWJfbWF4X2dyYW50X2ZyYW1lcygpLAorCQkJCSAgICAm
+Z250dGFiX3NoYXJlZC5hZGRyKTsKKwlCVUdfT04ocmMpOworCisJcmV0dXJuIDA7Cit9CisK
+K3N0YXRpYyB2b2lkIGdudHRhYl91bm1hcF9mcmFtZXNfdjEodm9pZCkKK3sKKwlhcmNoX2du
+dHRhYl91bm1hcF9zaGFyZWQoZ250dGFiX3NoYXJlZC5hZGRyLCBucl9ncmFudF9mcmFtZXMp
+OworfQorCiBzdGF0aWMgaW50IGdudHRhYl9tYXAodW5zaWduZWQgaW50IHN0YXJ0X2lkeCwg
+dW5zaWduZWQgaW50IGVuZF9pZHgpCiB7CiAJc3RydWN0IGdudHRhYl9zZXR1cF90YWJsZSBz
+ZXR1cDsKQEAgLTU2NywxOSArNjUyLDM1IEBAIHN0YXRpYyBpbnQgZ250dGFiX21hcCh1bnNp
+Z25lZCBpbnQgc3RhcnRfaWR4LCB1bnNpZ25lZCBpbnQgZW5kX2lkeCkKIAogCUJVR19PTihy
+YyB8fCBzZXR1cC5zdGF0dXMpOwogCi0JcmMgPSBhcmNoX2dudHRhYl9tYXBfc2hhcmVkKGZy
+YW1lcywgbnJfZ2ZyYW1lcywgZ250dGFiX21heF9ncmFudF9mcmFtZXMoKSwKLQkJCQkgICAg
+JnNoYXJlZCk7Ci0JQlVHX09OKHJjKTsKKwlyYyA9IGdudHRhYl9pbnRlcmZhY2UtPm1hcF9m
+cmFtZXMoZnJhbWVzLCBucl9nZnJhbWVzKTsKIAogCWtmcmVlKGZyYW1lcyk7CiAKLQlyZXR1
+cm4gMDsKKwlyZXR1cm4gcmM7Cit9CisKK3N0YXRpYyBzdHJ1Y3QgZ250dGFiX29wcyBnbnR0
+YWJfdjFfb3BzID0geworCS5tYXBfZnJhbWVzCQkJPSBnbnR0YWJfbWFwX2ZyYW1lc192MSwK
+KwkudW5tYXBfZnJhbWVzCQkJPSBnbnR0YWJfdW5tYXBfZnJhbWVzX3YxLAorCS51cGRhdGVf
+ZW50cnkJCQk9IHVwZGF0ZV9ncmFudF9lbnRyeV92MSwKKwkuZW5kX2ZvcmVpZ25fYWNjZXNz
+X3JlZgkJPSBnbnR0YWJfZW5kX2ZvcmVpZ25fYWNjZXNzX3JlZl92MSwKKwkuZW5kX2ZvcmVp
+Z25fdHJhbnNmZXJfcmVmCT0gZ250dGFiX2VuZF9mb3JlaWduX3RyYW5zZmVyX3JlZl92MSwK
+KwkucXVlcnlfZm9yZWlnbl9hY2Nlc3MJCT0gZ250dGFiX3F1ZXJ5X2ZvcmVpZ25fYWNjZXNz
+X3YxLAorfTsKKworc3RhdGljIHZvaWQgZ250dGFiX3JlcXVlc3RfdmVyc2lvbih2b2lkKQor
+eworCWdyYW50X3RhYmxlX3ZlcnNpb24gPSAxOworCWdudHRhYl9pbnRlcmZhY2UgPSAmZ250
+dGFiX3YxX29wczsKKwlwcmludGsoS0VSTl9JTkZPICJHcmFudCB0YWJsZXMgdXNpbmcgdmVy
+c2lvbiAlZCBsYXlvdXQuXG4iLAorCQlncmFudF90YWJsZV92ZXJzaW9uKTsKIH0KIAogaW50
+IGdudHRhYl9yZXN1bWUodm9pZCkKIHsKIAl1bnNpZ25lZCBpbnQgbWF4X25yX2dmcmFtZXM7
+CiAKKwlnbnR0YWJfcmVxdWVzdF92ZXJzaW9uKCk7CiAJbWF4X25yX2dmcmFtZXMgPSBnbnR0
+YWJfbWF4X2dyYW50X2ZyYW1lcygpOwogCWlmIChtYXhfbnJfZ2ZyYW1lcyA8IG5yX2dyYW50
+X2ZyYW1lcykKIAkJcmV0dXJuIC1FTk9TWVM7CkBAIC01ODcsOSArNjg4LDEwIEBAIGludCBn
+bnR0YWJfcmVzdW1lKHZvaWQpCiAJaWYgKHhlbl9wdl9kb21haW4oKSkKIAkJcmV0dXJuIGdu
+dHRhYl9tYXAoMCwgbnJfZ3JhbnRfZnJhbWVzIC0gMSk7CiAKLQlpZiAoIXNoYXJlZCkgewot
+CQlzaGFyZWQgPSBpb3JlbWFwKHhlbl9odm1fcmVzdW1lX2ZyYW1lcywgUEFHRV9TSVpFICog
+bWF4X25yX2dmcmFtZXMpOwotCQlpZiAoc2hhcmVkID09IE5VTEwpIHsKKwlpZiAoZ250dGFi
+X3NoYXJlZC5hZGRyID09IE5VTEwpIHsKKwkJZ250dGFiX3NoYXJlZC5hZGRyID0gaW9yZW1h
+cCh4ZW5faHZtX3Jlc3VtZV9mcmFtZXMsCisJCQkJCQlQQUdFX1NJWkUgKiBtYXhfbnJfZ2Zy
+YW1lcyk7CisJCWlmIChnbnR0YWJfc2hhcmVkLmFkZHIgPT0gTlVMTCkgewogCQkJcHJpbnRr
+KEtFUk5fV0FSTklORwogCQkJCQkiRmFpbGVkIHRvIGlvcmVtYXAgZ250dGFiIHNoYXJlIGZy
+YW1lcyEiKTsKIAkJCXJldHVybiAtRU5PTUVNOwpAQCAtNjAzLDcgKzcwNSw3IEBAIGludCBn
+bnR0YWJfcmVzdW1lKHZvaWQpCiAKIGludCBnbnR0YWJfc3VzcGVuZCh2b2lkKQogewotCWFy
+Y2hfZ250dGFiX3VubWFwX3NoYXJlZChzaGFyZWQsIG5yX2dyYW50X2ZyYW1lcyk7CisJZ250
+dGFiX2ludGVyZmFjZS0+dW5tYXBfZnJhbWVzKCk7CiAJcmV0dXJuIDA7CiB9CiAKZGlmZiAt
+LWdpdCBhL2luY2x1ZGUveGVuL2dyYW50X3RhYmxlLmggYi9pbmNsdWRlL3hlbi9ncmFudF90
+YWJsZS5oCmluZGV4IDExZTJkZmMuLmM3YTQwZjggMTAwNjQ0Ci0tLSBhL2luY2x1ZGUveGVu
+L2dyYW50X3RhYmxlLmgKKysrIGIvaW5jbHVkZS94ZW4vZ3JhbnRfdGFibGUuaApAQCAtMTQ1
+LDggKzE0NSw4IEBAIGdudHRhYl9zZXRfdW5tYXBfb3Aoc3RydWN0IGdudHRhYl91bm1hcF9n
+cmFudF9yZWYgKnVubWFwLCBwaHlzX2FkZHJfdCBhZGRyLAogCiBpbnQgYXJjaF9nbnR0YWJf
+bWFwX3NoYXJlZCh1bnNpZ25lZCBsb25nICpmcmFtZXMsIHVuc2lnbmVkIGxvbmcgbnJfZ2Zy
+YW1lcywKIAkJCSAgIHVuc2lnbmVkIGxvbmcgbWF4X25yX2dmcmFtZXMsCi0JCQkgICBzdHJ1
+Y3QgZ3JhbnRfZW50cnkgKipfX3NoYXJlZCk7Ci12b2lkIGFyY2hfZ250dGFiX3VubWFwX3No
+YXJlZChzdHJ1Y3QgZ3JhbnRfZW50cnkgKnNoYXJlZCwKKwkJCSAgIHZvaWQgKipfX3NoYXJl
+ZCk7Cit2b2lkIGFyY2hfZ250dGFiX3VubWFwX3NoYXJlZCh2b2lkICpzaGFyZWQsCiAJCQkg
+ICAgICB1bnNpZ25lZCBsb25nIG5yX2dmcmFtZXMpOwogCiBleHRlcm4gdW5zaWduZWQgbG9u
+ZyB4ZW5faHZtX3Jlc3VtZV9mcmFtZXM7CmRpZmYgLS1naXQgYS9pbmNsdWRlL3hlbi9pbnRl
+cmZhY2UvZ3JhbnRfdGFibGUuaCBiL2luY2x1ZGUveGVuL2ludGVyZmFjZS9ncmFudF90YWJs
+ZS5oCmluZGV4IDM5ZTU3MTcuLmExN2Q4NDQgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUveGVuL2lu
+dGVyZmFjZS9ncmFudF90YWJsZS5oCisrKyBiL2luY2x1ZGUveGVuL2ludGVyZmFjZS9ncmFu
+dF90YWJsZS5oCkBAIC04NSwxMiArODUsMjIgQEAKICAqLwogCiAvKgorICogUmVmZXJlbmNl
+IHRvIGEgZ3JhbnQgZW50cnkgaW4gYSBzcGVjaWZpZWQgZG9tYWluJ3MgZ3JhbnQgdGFibGUu
+CisgKi8KK3R5cGVkZWYgdWludDMyX3QgZ3JhbnRfcmVmX3Q7CisKKy8qCiAgKiBBIGdyYW50
+IHRhYmxlIGNvbXByaXNlcyBhIHBhY2tlZCBhcnJheSBvZiBncmFudCBlbnRyaWVzIGluIG9u
+ZSBvciBtb3JlCiAgKiBwYWdlIGZyYW1lcyBzaGFyZWQgYmV0d2VlbiBYZW4gYW5kIGEgZ3Vl
+c3QuCiAgKiBbWEVOXTogVGhpcyBmaWVsZCBpcyB3cml0dGVuIGJ5IFhlbiBhbmQgcmVhZCBi
+eSB0aGUgc2hhcmluZyBndWVzdC4KICAqIFtHU1RdOiBUaGlzIGZpZWxkIGlzIHdyaXR0ZW4g
+YnkgdGhlIGd1ZXN0IGFuZCByZWFkIGJ5IFhlbi4KICAqLwotc3RydWN0IGdyYW50X2VudHJ5
+IHsKKworLyoKKyAqIFZlcnNpb24gMSBvZiB0aGUgZ3JhbnQgdGFibGUgZW50cnkgc3RydWN0
+dXJlIGlzIG1haW50YWluZWQgcHVyZWx5CisgKiBmb3IgYmFja3dhcmRzIGNvbXBhdGliaWxp
+dHkuICBOZXcgZ3Vlc3RzIHNob3VsZCB1c2UgdmVyc2lvbiAyLgorICovCitzdHJ1Y3QgZ3Jh
+bnRfZW50cnlfdjEgewogICAgIC8qIEdURl94eHg6IHZhcmlvdXMgdHlwZSBhbmQgZmxhZyBp
+bmZvcm1hdGlvbi4gIFtYRU4sR1NUXSAqLwogICAgIHVpbnQxNl90IGZsYWdzOwogICAgIC8q
+IFRoZSBkb21haW4gYmVpbmcgZ3JhbnRlZCBmb3JlaWduIHByaXZpbGVnZXMuIFtHU1RdICov
+CkBAIC0xMDgsMTAgKzExOCwxMyBAQCBzdHJ1Y3QgZ3JhbnRfZW50cnkgewogICogIEdURl9w
+ZXJtaXRfYWNjZXNzOiBBbGxvdyBAZG9taWQgdG8gbWFwL2FjY2VzcyBAZnJhbWUuCiAgKiAg
+R1RGX2FjY2VwdF90cmFuc2ZlcjogQWxsb3cgQGRvbWlkIHRvIHRyYW5zZmVyIG93bmVyc2hp
+cCBvZiBvbmUgcGFnZSBmcmFtZQogICogICAgICAgICAgICAgICAgICAgICAgIHRvIHRoaXMg
+Z3Vlc3QuIFhlbiB3cml0ZXMgdGhlIHBhZ2UgbnVtYmVyIHRvIEBmcmFtZS4KKyAqICBHVEZf
+dHJhbnNpdGl2ZTogQWxsb3cgQGRvbWlkIHRvIHRyYW5zaXRpdmVseSBhY2Nlc3MgYSBzdWJy
+YW5nZSBvZgorICogICAgICAgICAgICAgICAgICBAdHJhbnNfZ3JhbnQgaW4gQHRyYW5zX2Rv
+bWlkLiAgTm8gbWFwcGluZ3MgYXJlIGFsbG93ZWQuCiAgKi8KICNkZWZpbmUgR1RGX2ludmFs
+aWQgICAgICAgICAoMFU8PDApCiAjZGVmaW5lIEdURl9wZXJtaXRfYWNjZXNzICAgKDFVPDww
+KQogI2RlZmluZSBHVEZfYWNjZXB0X3RyYW5zZmVyICgyVTw8MCkKKyNkZWZpbmUgR1RGX3Ry
+YW5zaXRpdmUgICAgICAoM1U8PDApCiAjZGVmaW5lIEdURl90eXBlX21hc2sgICAgICAgKDNV
+PDwwKQogCiAvKgpAQCAtMTE5LDYgKzEzMiw5IEBAIHN0cnVjdCBncmFudF9lbnRyeSB7CiAg
+KiAgR1RGX3JlYWRvbmx5OiBSZXN0cmljdCBAZG9taWQgdG8gcmVhZC1vbmx5IG1hcHBpbmdz
+IGFuZCBhY2Nlc3Nlcy4gW0dTVF0KICAqICBHVEZfcmVhZGluZzogR3JhbnQgZW50cnkgaXMg
+Y3VycmVudGx5IG1hcHBlZCBmb3IgcmVhZGluZyBieSBAZG9taWQuIFtYRU5dCiAgKiAgR1RG
+X3dyaXRpbmc6IEdyYW50IGVudHJ5IGlzIGN1cnJlbnRseSBtYXBwZWQgZm9yIHdyaXRpbmcg
+YnkgQGRvbWlkLiBbWEVOXQorICogIEdURl9zdWJfcGFnZTogR3JhbnQgYWNjZXNzIHRvIG9u
+bHkgYSBzdWJyYW5nZSBvZiB0aGUgcGFnZS4gIEBkb21pZAorICogICAgICAgICAgICAgICAg
+d2lsbCBvbmx5IGJlIGFsbG93ZWQgdG8gY29weSBmcm9tIHRoZSBncmFudCwgYW5kIG5vdAor
+ICogICAgICAgICAgICAgICAgbWFwIGl0LiBbR1NUXQogICovCiAjZGVmaW5lIF9HVEZfcmVh
+ZG9ubHkgICAgICAgKDIpCiAjZGVmaW5lIEdURl9yZWFkb25seSAgICAgICAgKDFVPDxfR1RG
+X3JlYWRvbmx5KQpAQCAtMTI2LDYgKzE0Miw4IEBAIHN0cnVjdCBncmFudF9lbnRyeSB7CiAj
+ZGVmaW5lIEdURl9yZWFkaW5nICAgICAgICAgKDFVPDxfR1RGX3JlYWRpbmcpCiAjZGVmaW5l
+IF9HVEZfd3JpdGluZyAgICAgICAgKDQpCiAjZGVmaW5lIEdURl93cml0aW5nICAgICAgICAg
+KDFVPDxfR1RGX3dyaXRpbmcpCisjZGVmaW5lIF9HVEZfc3ViX3BhZ2UgICAgICAgKDgpCisj
+ZGVmaW5lIEdURl9zdWJfcGFnZSAgICAgICAgKDFVPDxfR1RGX3N1Yl9wYWdlKQogCiAvKgog
+ICogU3ViZmxhZ3MgZm9yIEdURl9hY2NlcHRfdHJhbnNmZXI6CkBAIC0xNDIsMTUgKzE2MCw4
+MSBAQCBzdHJ1Y3QgZ3JhbnRfZW50cnkgewogI2RlZmluZSBfR1RGX3RyYW5zZmVyX2NvbXBs
+ZXRlZCAoMykKICNkZWZpbmUgR1RGX3RyYW5zZmVyX2NvbXBsZXRlZCAgKDFVPDxfR1RGX3Ry
+YW5zZmVyX2NvbXBsZXRlZCkKIAorLyoKKyAqIFZlcnNpb24gMiBncmFudCB0YWJsZSBlbnRy
+aWVzLiAgVGhlc2UgZnVsZmlsIHRoZSBzYW1lIHJvbGUgYXMKKyAqIHZlcnNpb24gMSBlbnRy
+aWVzLCBidXQgY2FuIHJlcHJlc2VudCBtb3JlIGNvbXBsaWNhdGVkIG9wZXJhdGlvbnMuCisg
+KiBBbnkgZ2l2ZW4gZG9tYWluIHdpbGwgaGF2ZSBlaXRoZXIgYSB2ZXJzaW9uIDEgb3IgYSB2
+ZXJzaW9uIDIgdGFibGUsCisgKiBhbmQgZXZlcnkgZW50cnkgaW4gdGhlIHRhYmxlIHdpbGwg
+YmUgdGhlIHNhbWUgdmVyc2lvbi4KKyAqCisgKiBUaGUgaW50ZXJmYWNlIGJ5IHdoaWNoIGRv
+bWFpbnMgdXNlIGdyYW50IHJlZmVyZW5jZXMgZG9lcyBub3QgZGVwZW5kCisgKiBvbiB0aGUg
+Z3JhbnQgdGFibGUgdmVyc2lvbiBpbiB1c2UgYnkgdGhlIG90aGVyIGRvbWFpbi4KKyAqLwog
+Ci0vKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioKLSAqIEdSQU5UIFRBQkxF
+IFFVRVJJRVMgQU5EIFVTRVMKKy8qCisgKiBWZXJzaW9uIDEgYW5kIHZlcnNpb24gMiBncmFu
+dCBlbnRyaWVzIHNoYXJlIGEgY29tbW9uIHByZWZpeC4gIFRoZQorICogZmllbGRzIG9mIHRo
+ZSBwcmVmaXggYXJlIGRvY3VtZW50ZWQgYXMgcGFydCBvZiBzdHJ1Y3QKKyAqIGdyYW50X2Vu
+dHJ5X3YxLgogICovCitzdHJ1Y3QgZ3JhbnRfZW50cnlfaGVhZGVyIHsKKyAgICB1aW50MTZf
+dCBmbGFnczsKKyAgICBkb21pZF90ICBkb21pZDsKK307CiAKIC8qCi0gKiBSZWZlcmVuY2Ug
+dG8gYSBncmFudCBlbnRyeSBpbiBhIHNwZWNpZmllZCBkb21haW4ncyBncmFudCB0YWJsZS4K
+KyAqIFZlcnNpb24gMiBvZiB0aGUgZ3JhbnQgZW50cnkgc3RydWN0dXJlLCBoZXJlIGlzIGFu
+IHVuaW9uIGJlY2F1c2UgdGhyZWUKKyAqIGRpZmZlcmVudCB0eXBlcyBhcmUgc3VwcG90dGVk
+OiBmdWxsX3BhZ2UsIHN1Yl9wYWdlIGFuZCB0cmFuc2l0aXZlLgorICovCit1bmlvbiBncmFu
+dF9lbnRyeV92MiB7CisgICAgc3RydWN0IGdyYW50X2VudHJ5X2hlYWRlciBoZHI7CisKKyAg
+ICAvKgorICAgICAqIFRoaXMgbWVtYmVyIGlzIHVzZWQgZm9yIFYxLXN0eWxlIGZ1bGwgcGFn
+ZSBncmFudHMsIHdoZXJlIGVpdGhlcjoKKyAgICAgKgorICAgICAqIC0tIGhkci50eXBlIGlz
+IEdURl9hY2NlcHRfdHJhbnNmZXIsIG9yCisgICAgICogLS0gaGRyLnR5cGUgaXMgR1RGX3Bl
+cm1pdF9hY2Nlc3MgYW5kIEdURl9zdWJfcGFnZSBpcyBub3Qgc2V0LgorICAgICAqCisgICAg
+ICogSW4gdGhhdCBjYXNlLCB0aGUgZnJhbWUgZmllbGQgaGFzIHRoZSBzYW1lIHNlbWFudGlj
+cyBhcyB0aGUKKyAgICAgKiBmaWVsZCBvZiB0aGUgc2FtZSBuYW1lIGluIHRoZSBWMSBlbnRy
+eSBzdHJ1Y3R1cmUuCisgICAgICovCisgICAgc3RydWN0IHsKKwlzdHJ1Y3QgZ3JhbnRfZW50
+cnlfaGVhZGVyIGhkcjsKKwl1aW50MzJfdCBwYWQwOworCXVpbnQ2NF90IGZyYW1lOworICAg
+IH0gZnVsbF9wYWdlOworCisgICAgLyoKKyAgICAgKiBJZiB0aGUgZ3JhbnQgdHlwZSBpcyBH
+VEZfZ3JhbnRfYWNjZXNzIGFuZCBHVEZfc3ViX3BhZ2UgaXMgc2V0LAorICAgICAqIEBkb21p
+ZCBpcyBhbGxvd2VkIHRvIGFjY2VzcyBieXRlcyBbQHBhZ2Vfb2ZmLEBwYWdlX29mZitAbGVu
+Z3RoKQorICAgICAqIGluIGZyYW1lIEBmcmFtZS4KKyAgICAgKi8KKyAgICBzdHJ1Y3Qgewor
+CXN0cnVjdCBncmFudF9lbnRyeV9oZWFkZXIgaGRyOworCXVpbnQxNl90IHBhZ2Vfb2ZmOwor
+CXVpbnQxNl90IGxlbmd0aDsKKwl1aW50NjRfdCBmcmFtZTsKKyAgICB9IHN1Yl9wYWdlOwor
+CisgICAgLyoKKyAgICAgKiBJZiB0aGUgZ3JhbnQgaXMgR1RGX3RyYW5zaXRpdmUsIEBkb21p
+ZCBpcyBhbGxvd2VkIHRvIHVzZSB0aGUKKyAgICAgKiBncmFudCBAZ3JlZiBpbiBkb21haW4g
+QHRyYW5zX2RvbWlkLCBhcyBpZiBpdCB3YXMgdGhlIGxvY2FsCisgICAgICogZG9tYWluLiAg
+T2J2aW91c2x5LCB0aGUgdHJhbnNpdGl2ZSBhY2Nlc3MgbXVzdCBiZSBjb21wYXRpYmxlCisg
+ICAgICogd2l0aCB0aGUgb3JpZ2luYWwgZ3JhbnQuCisgICAgICovCisgICAgc3RydWN0IHsK
+KwlzdHJ1Y3QgZ3JhbnRfZW50cnlfaGVhZGVyIGhkcjsKKwlkb21pZF90IHRyYW5zX2RvbWlk
+OworCXVpbnQxNl90IHBhZDA7CisJZ3JhbnRfcmVmX3QgZ3JlZjsKKyAgICB9IHRyYW5zaXRp
+dmU7CisKKyAgICB1aW50MzJfdCBfX3NwYWNlcls0XTsgLyogUGFkIHRvIGEgcG93ZXIgb2Yg
+dHdvICovCit9OworCit0eXBlZGVmIHVpbnQxNl90IGdyYW50X3N0YXR1c190OworCisvKioq
+KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioKKyAqIEdSQU5UIFRBQkxFIFFVRVJJ
+RVMgQU5EIFVTRVMKICAqLwotdHlwZWRlZiB1aW50MzJfdCBncmFudF9yZWZfdDsKIAogLyoK
+ICAqIEhhbmRsZSB0byB0cmFjayBhIG1hcHBpbmcgY3JlYXRlZCB2aWEgYSBncmFudCByZWZl
+cmVuY2UuCkBAIC0zMjIsNiArNDA2LDc5IEBAIHN0cnVjdCBnbnR0YWJfcXVlcnlfc2l6ZSB7
+CiBERUZJTkVfR1VFU1RfSEFORExFX1NUUlVDVChnbnR0YWJfcXVlcnlfc2l6ZSk7CiAKIC8q
+CisgKiBHTlRUQUJPUF91bm1hcF9hbmRfcmVwbGFjZTogRGVzdHJveSBvbmUgb3IgbW9yZSBn
+cmFudC1yZWZlcmVuY2UgbWFwcGluZ3MKKyAqIHRyYWNrZWQgYnkgPGhhbmRsZT4gYnV0IGF0
+b21pY2FsbHkgcmVwbGFjZSB0aGUgcGFnZSB0YWJsZSBlbnRyeSB3aXRoIG9uZQorICogcG9p
+bnRpbmcgdG8gdGhlIG1hY2hpbmUgYWRkcmVzcyB1bmRlciA8bmV3X2FkZHI+LiAgPG5ld19h
+ZGRyPiB3aWxsIGJlCisgKiByZWRpcmVjdGVkIHRvIHRoZSBudWxsIGVudHJ5LgorICogTk9U
+RVM6CisgKiAgMS4gVGhlIGNhbGwgbWF5IGZhaWwgaW4gYW4gdW5kZWZpbmVkIG1hbm5lciBp
+ZiBlaXRoZXIgbWFwcGluZyBpcyBub3QKKyAqICAgICB0cmFja2VkIGJ5IDxoYW5kbGU+Lgor
+ICogIDIuIEFmdGVyIGV4ZWN1dGluZyBhIGJhdGNoIG9mIHVubWFwcywgaXQgaXMgZ3VhcmFu
+dGVlZCB0aGF0IG5vIHN0YWxlCisgKiAgICAgbWFwcGluZ3Mgd2lsbCByZW1haW4gaW4gdGhl
+IGRldmljZSBvciBob3N0IFRMQnMuCisgKi8KKyNkZWZpbmUgR05UVEFCT1BfdW5tYXBfYW5k
+X3JlcGxhY2UgICAgNworc3RydWN0IGdudHRhYl91bm1hcF9hbmRfcmVwbGFjZSB7CisgICAg
+LyogSU4gcGFyYW1ldGVycy4gKi8KKyAgICB1aW50NjRfdCBob3N0X2FkZHI7CisgICAgdWlu
+dDY0X3QgbmV3X2FkZHI7CisgICAgZ3JhbnRfaGFuZGxlX3QgaGFuZGxlOworICAgIC8qIE9V
+VCBwYXJhbWV0ZXJzLiAqLworICAgIGludDE2X3QgIHN0YXR1czsgICAgICAgICAgICAgIC8q
+IEdOVFNUXyogKi8KK307CitERUZJTkVfR1VFU1RfSEFORExFX1NUUlVDVChnbnR0YWJfdW5t
+YXBfYW5kX3JlcGxhY2UpOworCisvKgorICogR05UVEFCT1Bfc2V0X3ZlcnNpb246IFJlcXVl
+c3QgYSBwYXJ0aWN1bGFyIHZlcnNpb24gb2YgdGhlIGdyYW50CisgKiB0YWJsZSBzaGFyZWQg
+dGFibGUgc3RydWN0dXJlLiAgVGhpcyBvcGVyYXRpb24gY2FuIG9ubHkgYmUgcGVyZm9ybWVk
+CisgKiBvbmNlIGluIGFueSBnaXZlbiBkb21haW4uICBJdCBtdXN0IGJlIHBlcmZvcm1lZCBi
+ZWZvcmUgYW55IGdyYW50cworICogYXJlIGFjdGl2YXRlZDsgb3RoZXJ3aXNlLCB0aGUgZG9t
+YWluIHdpbGwgYmUgc3R1Y2sgd2l0aCB2ZXJzaW9uIDEuCisgKiBUaGUgb25seSBkZWZpbmVk
+IHZlcnNpb25zIGFyZSAxIGFuZCAyLgorICovCisjZGVmaW5lIEdOVFRBQk9QX3NldF92ZXJz
+aW9uICAgICAgICAgIDgKK3N0cnVjdCBnbnR0YWJfc2V0X3ZlcnNpb24geworICAgIC8qIElO
+IHBhcmFtZXRlcnMgKi8KKyAgICB1aW50MzJfdCB2ZXJzaW9uOworfTsKK0RFRklORV9HVUVT
+VF9IQU5ETEVfU1RSVUNUKGdudHRhYl9zZXRfdmVyc2lvbik7CisKKy8qCisgKiBHTlRUQUJP
+UF9nZXRfc3RhdHVzX2ZyYW1lczogR2V0IHRoZSBsaXN0IG9mIGZyYW1lcyB1c2VkIHRvIHN0
+b3JlIGdyYW50CisgKiBzdGF0dXMgZm9yIDxkb20+LiBJbiBncmFudCBmb3JtYXQgdmVyc2lv
+biAyLCB0aGUgc3RhdHVzIGlzIHNlcGFyYXRlZAorICogZnJvbSB0aGUgb3RoZXIgc2hhcmVk
+IGdyYW50IGZpZWxkcyB0byBhbGxvdyBtb3JlIGVmZmljaWVudCBzeW5jaHJvbml6YXRpb24K
+KyAqIHVzaW5nIGJhcnJpZXJzIGluc3RlYWQgb2YgYXRvbWljIGNtcGV4Y2ggb3BlcmF0aW9u
+cy4KKyAqIDxucl9mcmFtZXM+IHNwZWNpZnkgdGhlIHNpemUgb2YgdmVjdG9yIDxmcmFtZV9s
+aXN0Pi4KKyAqIFRoZSBmcmFtZSBhZGRyZXNzZXMgYXJlIHJldHVybmVkIGluIHRoZSA8ZnJh
+bWVfbGlzdD4uCisgKiBPbmx5IDxucl9mcmFtZXM+IGFkZHJlc3NlcyBhcmUgcmV0dXJuZWQs
+IGV2ZW4gaWYgdGhlIHRhYmxlIGlzIGxhcmdlci4KKyAqIE5PVEVTOgorICogIDEuIDxkb20+
+IG1heSBiZSBzcGVjaWZpZWQgYXMgRE9NSURfU0VMRi4KKyAqICAyLiBPbmx5IGEgc3VmZmlj
+aWVudGx5LXByaXZpbGVnZWQgZG9tYWluIG1heSBzcGVjaWZ5IDxkb20+ICE9IERPTUlEX1NF
+TEYuCisgKi8KKyNkZWZpbmUgR05UVEFCT1BfZ2V0X3N0YXR1c19mcmFtZXMgICAgIDkKK3N0
+cnVjdCBnbnR0YWJfZ2V0X3N0YXR1c19mcmFtZXMgeworICAgIC8qIElOIHBhcmFtZXRlcnMu
+ICovCisgICAgdWludDMyX3QgbnJfZnJhbWVzOworICAgIGRvbWlkX3QgIGRvbTsKKyAgICAv
+KiBPVVQgcGFyYW1ldGVycy4gKi8KKyAgICBpbnQxNl90ICBzdGF0dXM7ICAgICAgICAgICAg
+ICAvKiBHTlRTVF8qICovCisgICAgR1VFU1RfSEFORExFKHVpbnQ2NF90KSBmcmFtZV9saXN0
+OworfTsKK0RFRklORV9HVUVTVF9IQU5ETEVfU1RSVUNUKGdudHRhYl9nZXRfc3RhdHVzX2Zy
+YW1lcyk7CisKKy8qCisgKiBHTlRUQUJPUF9nZXRfdmVyc2lvbjogR2V0IHRoZSBncmFudCB0
+YWJsZSB2ZXJzaW9uIHdoaWNoIGlzIGluCisgKiBlZmZlY3QgZm9yIGRvbWFpbiA8ZG9tPi4K
+KyAqLworI2RlZmluZSBHTlRUQUJPUF9nZXRfdmVyc2lvbiAgICAgICAgICAxMAorc3RydWN0
+IGdudHRhYl9nZXRfdmVyc2lvbiB7CisgICAgLyogSU4gcGFyYW1ldGVycyAqLworICAgIGRv
+bWlkX3QgZG9tOworICAgIHVpbnQxNl90IHBhZDsKKyAgICAvKiBPVVQgcGFyYW1ldGVycyAq
+LworICAgIHVpbnQzMl90IHZlcnNpb247Cit9OworREVGSU5FX0dVRVNUX0hBTkRMRV9TVFJV
+Q1QoZ250dGFiX2dldF92ZXJzaW9uKTsKKworLyoKICAqIEJpdGZpZWxkIHZhbHVlcyBmb3Ig
+dXBkYXRlX3Bpbl9zdGF0dXMuZmxhZ3MuCiAgKi8KICAvKiBNYXAgdGhlIGdyYW50IGVudHJ5
+IGZvciBhY2Nlc3MgYnkgSS9PIGRldmljZXMuICovCmRpZmYgLS1naXQgYS9pbmNsdWRlL3hl
+bi9pbnRlcmZhY2UveGVuLmggYi9pbmNsdWRlL3hlbi9pbnRlcmZhY2UveGVuLmgKaW5kZXgg
+NmE2ZTkxNC4uYTg5MDgwNCAxMDA2NDQKLS0tIGEvaW5jbHVkZS94ZW4vaW50ZXJmYWNlL3hl
+bi5oCisrKyBiL2luY2x1ZGUveGVuL2ludGVyZmFjZS94ZW4uaApAQCAtNTIzLDYgKzUyMyw4
+IEBAIHN0cnVjdCB0bWVtX29wIHsKIAl9IHU7CiB9OwogCitERUZJTkVfR1VFU1RfSEFORExF
+KHU2NCk7CisKICNlbHNlIC8qIF9fQVNTRU1CTFlfXyAqLwogCiAvKiBJbiBhc3NlbWJseSBj
+b2RlIHdlIGNhbm5vdCB1c2UgQyBudW1lcmljIGNvbnN0YW50IHN1ZmZpeGVzLiAqLwotLSAK
+MS43LjYuNAoK
+--------------050700040602000504040002--
