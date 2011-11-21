@@ -1,182 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab1KUKOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 05:14:44 -0500
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:42465 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754442Ab1KUKOk (ORCPT
+	id S1755981Ab1KUKPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 05:15:37 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61980 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902Ab1KUKPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 05:14:40 -0500
-Message-ID: <1321870472.2085.12.camel@sven>
-Subject: Re: Oops on suspend with libertas SDIO (Linux 3.2-rc2)
-From: Sven Neumann <s.neumann@raumfeld.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Chris Ball <cjb@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        Dan Williams <dcbw@redhat.com>, linux-mmc@vger.kernel.org,
-        libertas-dev@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "linux-pm >> Linux PM mailing list" <linux-pm@vger.kernel.org>
-Date: Mon, 21 Nov 2011 11:14:32 +0100
-In-Reply-To: <CACTFLANdc-PaaeR7CcAFsc7VztvPmGF+q4saqtA-UtuBvQxwkg@mail.gmail.com>
-References: <1321544210.31090.6.camel@sven> <87zkfuhhpq.fsf@laptop.org>
-	 <4EC55E34.3080503@linux.vnet.ibm.com>
-	 <CACTFLANdc-PaaeR7CcAFsc7VztvPmGF+q4saqtA-UtuBvQxwkg@mail.gmail.com>
-Organization: RAUMFELD GmbH
+	Mon, 21 Nov 2011 05:15:35 -0500
+Message-ID: <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [BUG] 3.2-rc2: BUG kmalloc-8: Redzone overwritten
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>, David Miller <davem@davemloft.net>
+Cc: Matt Mackall <mpm@selenic.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Mon, 21 Nov 2011 11:15:29 +0100
+In-Reply-To: <1321866845.3831.7.camel@lappy>
+References: <1321866845.3831.7.camel@lappy>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1321870480;d9dda341;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, 2011-11-18 at 15:02 +0100, Daniel Mack wrote:
-
-> >> Looks like mmc_sdio_remove() calls mmc_remove_card() after the
-> >> reset_card function has called mmc_remove_host() already.  Maybe
-> >> if_sdio_reset_card_worker() should call mmc_free_host() as well?
+Le lundi 21 novembre 2011 à 11:14 +0200, Sasha Levin a écrit :
+> Hi All,
 > 
-> >From a quick look is seems we need better housekeeping of the
-> reset_host variable.
+> I got the following output when running some tests (I'm not really sure
+> what exactly happened when this bug was triggered):
 > 
-> Does this (untested) patch help?
+> [13850.947279] =============================================================================
+> [13850.948024] BUG kmalloc-8: Redzone overwritten
+> [13850.948024] -----------------------------------------------------------------------------
+> [13850.948024] 
+> [13850.948024] INFO: 0xffff8800104f6d28-0xffff8800104f6d2b. First byte 0x0 instead of 0xcc
+> [13850.948024] INFO: Allocated in __seq_open_private+0x20/0x5e age=4436 cpu=0 pid=17295
+> [13850.948024] 	__slab_alloc.clone.46+0x3e7/0x456
+> [13850.948024] 	__kmalloc+0x8c/0x110
+> [13850.948024] 	__seq_open_private+0x20/0x5e
+> [13850.948024] 	seq_open_net+0x3b/0x5d
+> [13850.948024] 	dev_mc_seq_open+0x15/0x17
+> [13850.948024] 	proc_reg_open+0xad/0x127
+> [13850.948024] 	__dentry_open+0x1a0/0x2fe
+> [13850.948024] 	nameidata_to_filp+0x63/0x6a
+> [13850.948024] 	do_last+0x59e/0x5cb
+> [13850.948024] 	path_openat+0xcd/0x35d
+> [13850.948024] 	do_filp_open+0x38/0x84
+> [13850.948024] 	do_sys_open+0x6f/0x101
+> [13850.948024] 	sys_open+0x1b/0x1d
+> [13850.948024] 	system_call_fastpath+0x16/0x1b
+> [13850.948024] INFO: Freed in seq_release_private+0x26/0x45 age=30272 cpu=0 pid=17283
+> [13850.948024] 	__slab_free+0x35/0x1dc
+> [13850.948024] 	kfree+0xb6/0xbf
+> [13850.948024] 	seq_release_private+0x26/0x45
+> [13850.948024] 	seq_release_net+0x32/0x3b
+> [13850.948024] 	proc_reg_release+0xd9/0xf6
+> [13850.948024] 	fput+0x11e/0x1dc
+> [13850.948024] 	filp_close+0x6e/0x79
+> [13850.948024] 	put_files_struct+0xcc/0x196
+> [13850.948024] 	exit_files+0x46/0x4f
+> [13850.948024] 	do_exit+0x264/0x75c
+> [13850.948024] 	do_group_exit+0x83/0xb1
+> [13850.948024] 	sys_exit_group+0x12/0x16
+> [13850.948024] 	system_call_fastpath+0x16/0x1b
+> [13850.948024] INFO: Slab 0xffffea0000413d80 objects=12 used=8 fp=0xffff8800104f6000 flags=0x10000000000081
+> [13850.948024] INFO: Object 0xffff8800104f6d20 @offset=3360 fp=0xffff8800104f6e70
+> [13850.948024] 
+> [13850.948024] Bytes b4 ffff8800104f6d10: 39 64 00 00 01 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  9d......ZZZZZZZZ
+> [13850.948024] Object ffff8800104f6d20: 00 a9 38 83 ff ff ff ff                          ..8.....
+> [13850.948024] Redzone ffff8800104f6d28: 00 00 00 00 cc cc cc cc                          ........
+> [13850.948024] Padding ffff8800104f6e68: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> [13850.948024] Pid: 17295, comm: trinity Tainted: G        W    3.2.0-rc2-sasha-00146-gc729049-dirty #15
+> [13850.948024] Call Trace:
+> [13850.948024]  [<ffffffff8112c8f6>] ? print_section+0x38/0x3a
+> [13850.948024]  [<ffffffff8112ca21>] print_trailer+0x129/0x132
+> [13850.948024]  [<ffffffff8112cd02>] check_bytes_and_report+0xb2/0xeb
+> [13850.948024]  [<ffffffff8115bacc>] ? __seq_open_private+0x31/0x5e
+> [13850.948024]  [<ffffffff8112d811>] check_object+0x4e/0x1ae
+> [13850.948024]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [13850.948024]  [<ffffffff8112e723>] free_debug_processing+0x96/0x1dc
+> [13850.948024]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [13850.948024]  [<ffffffff8112ec07>] __slab_free+0x35/0x1dc
+> [13850.948024]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [13850.948024]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [13850.948024]  [<ffffffff81626be3>] ? debug_check_no_obj_freed+0x12/0x17
+> [13850.948024]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [13850.948024]  [<ffffffff8113041f>] kfree+0xb6/0xbf
+> [13850.948024]  [<ffffffff81196f4b>] ? single_open_net+0x54/0x54
+> [13850.948024]  [<ffffffff8115ba7c>] seq_release_private+0x26/0x45
+> [13850.948024]  [<ffffffff81196f7d>] seq_release_net+0x32/0x3b
+> [13850.948024]  [<ffffffff8118dc6c>] proc_reg_release+0xd9/0xf6
+> [13850.948024]  [<ffffffff811418cf>] fput+0x11e/0x1dc
+> [13850.948024]  [<ffffffff8113f3d8>] filp_close+0x6e/0x79
+> [13850.948024]  [<ffffffff81089f17>] put_files_struct+0xcc/0x196
+> [13850.948024]  [<ffffffff8108a074>] exit_files+0x46/0x4f
+> [13850.948024]  [<ffffffff8108a756>] do_exit+0x264/0x75c
+> [13850.948024]  [<ffffffff8113f67c>] ? fsnotify_modify+0x60/0x68
+> [13850.948024]  [<ffffffff81b96f8a>] ? sysret_check+0x2e/0x69
+> [13850.948024]  [<ffffffff8108ad01>] do_group_exit+0x83/0xb1
+> [13850.948024]  [<ffffffff8108ad41>] sys_exit_group+0x12/0x16
+> [13850.948024]  [<ffffffff81b96f52>] system_call_fastpath+0x16/0x1b
+> [13850.948024] FIX kmalloc-8: Restoring 0xffff8800104f6d28-0xffff8800104f6d2b=0xcc
+> [13850.948024] 
+> [14925.113722] =============================================================================
+> [14925.114041] BUG kmalloc-8: Redzone overwritten
+> [14925.114041] -----------------------------------------------------------------------------
+> [14925.114041] 
+> [14925.114041] INFO: 0xffff8800104f2d28-0xffff8800104f2d2b. First byte 0x0 instead of 0xcc
+> [14925.114041] INFO: Allocated in __seq_open_private+0x20/0x5e age=6777 cpu=0 pid=17491
+> [14925.114041] 	__slab_alloc.clone.46+0x3e7/0x456
+> [14925.114041] 	__kmalloc+0x8c/0x110
+> [14925.114041] 	__seq_open_private+0x20/0x5e
+> [14925.114041] 	seq_open_net+0x3b/0x5d
+> [14925.114041] 	dev_mc_seq_open+0x15/0x17
+> [14925.114041] 	proc_reg_open+0xad/0x127
+> [14925.114041] 	__dentry_open+0x1a0/0x2fe
+> [14925.114041] 	nameidata_to_filp+0x63/0x6a
+> [14925.114041] 	do_last+0x59e/0x5cb
+> [14925.114041] 	path_openat+0xcd/0x35d
+> [14925.114041] 	do_filp_open+0x38/0x84
+> [14925.114041] 	do_sys_open+0x6f/0x101
+> [14925.114041] 	sys_open+0x1b/0x1d
+> [14925.114041] 	system_call_fastpath+0x16/0x1b
+> [14925.114041] INFO: Freed in seq_release_private+0x26/0x45 age=30836 cpu=0 pid=17487
+> [14925.114041] 	__slab_free+0x35/0x1dc
+> [14925.114041] 	kfree+0xb6/0xbf
+> [14925.114041] 	seq_release_private+0x26/0x45
+> [14925.114041] 	seq_release_net+0x32/0x3b
+> [14925.114041] 	proc_reg_release+0xd9/0xf6
+> [14925.114041] 	fput+0x11e/0x1dc
+> [14925.114041] 	filp_close+0x6e/0x79
+> [14925.114041] 	put_files_struct+0xcc/0x196
+> [14925.114041] 	exit_files+0x46/0x4f
+> [14925.114041] 	do_exit+0x264/0x75c
+> [14925.114041] 	do_group_exit+0x83/0xb1
+> [14925.114041] 	sys_exit_group+0x12/0x16
+> [14925.114041] 	system_call_fastpath+0x16/0x1b
+> [14925.114041] INFO: Slab 0xffffea0000413c80 objects=12 used=11 fp=0xffff8800104f27e0 flags=0x10000000000081
+> [14925.114041] INFO: Object 0xffff8800104f2d20 @offset=3360 fp=0xffff8800104f2bd0
+> [14925.114041] 
+> [14925.114041] Bytes b4 ffff8800104f2d10: 0a b1 de 00 01 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+> [14925.114041] Object ffff8800104f2d20: 00 a9 38 83 ff ff ff ff                          ..8.....
+> [14925.114041] Redzone ffff8800104f2d28: 00 00 00 00 cc cc cc cc                          ........
+> [14925.114041] Padding ffff8800104f2e68: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> [14925.114041] Pid: 17491, comm: trinity Tainted: G        W    3.2.0-rc2-sasha-00146-gc729049-dirty #15
+> [14925.114041] Call Trace:
+> [14925.114041]  [<ffffffff8112c8f6>] ? print_section+0x38/0x3a
+> [14925.114041]  [<ffffffff8112ca21>] print_trailer+0x129/0x132
+> [14925.114041]  [<ffffffff8112cd02>] check_bytes_and_report+0xb2/0xeb
+> [14925.114041]  [<ffffffff8115bacc>] ? __seq_open_private+0x31/0x5e
+> [14925.114041]  [<ffffffff8112d811>] check_object+0x4e/0x1ae
+> [14925.114041]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [14925.114041]  [<ffffffff8112e723>] free_debug_processing+0x96/0x1dc
+> [14925.114041]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [14925.114041]  [<ffffffff8112ec07>] __slab_free+0x35/0x1dc
+> [14925.114041]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [14925.114041]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [14925.114041]  [<ffffffff81626be3>] ? debug_check_no_obj_freed+0x12/0x17
+> [14925.114041]  [<ffffffff8115ba7c>] ? seq_release_private+0x26/0x45
+> [14925.114041]  [<ffffffff8113041f>] kfree+0xb6/0xbf
+> [14925.114041]  [<ffffffff81196f4b>] ? single_open_net+0x54/0x54
+> [14925.114041]  [<ffffffff8115ba7c>] seq_release_private+0x26/0x45
+> [14925.114041]  [<ffffffff81196f7d>] seq_release_net+0x32/0x3b
+> [14925.114041]  [<ffffffff8118dc6c>] proc_reg_release+0xd9/0xf6
+> [14925.114041]  [<ffffffff811418cf>] fput+0x11e/0x1dc
+> [14925.114041]  [<ffffffff8113f3d8>] filp_close+0x6e/0x79
+> [14925.114041]  [<ffffffff81089f17>] put_files_struct+0xcc/0x196
+> [14925.114041]  [<ffffffff8108a074>] exit_files+0x46/0x4f
+> [14925.114041]  [<ffffffff8108a756>] do_exit+0x264/0x75c
+> [14925.114041]  [<ffffffff8104ca1b>] ? smp_apic_timer_interrupt+0x76/0x84
+> [14925.114041]  [<ffffffff81b966b8>] ? retint_restore_args+0x13/0x13
+> [14925.114041]  [<ffffffff8108ad01>] do_group_exit+0x83/0xb1
+> [14925.114041]  [<ffffffff8108ad41>] sys_exit_group+0x12/0x16
+> [14925.114041]  [<ffffffff81b96f52>] system_call_fastpath+0x16/0x1b
+> [14925.114041] FIX kmalloc-8: Restoring 0xffff8800104f2d28-0xffff8800104f2d2b=0xcc
+> [14925.114041] 
+> [15958.081391] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [15958.082012] CPU 1 
+> [15958.082012] Pid: 15, comm: rcuc/1 Tainted: G        W    3.2.0-rc2-sasha-00146-gc729049-dirty #15  
+> [15958.082012] RIP: 0010:[<ffffffff810b305b>]  [<ffffffff810b305b>] __lock_acquire+0xff/0xe50
+> [15958.082012] RSP: 0000:ffff880013c03cc8  EFLAGS: 00010002
+> [15958.082012] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800124daf60 RCX: 0000000000000000
+> [15958.082012] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880010b82568
+> [15958.082012] RBP: ffff880013c03d98 R08: 0000000000000002 R09: 0000000000000000
+> [15958.082012] R10: ffff880010b82568 R11: 0000000000000001 R12: ffff880010b82568
+> [15958.082012] R13: 0000000000000002 R14: 0000000000000000 R15: ffff880013c03f18
+> [15958.082012] FS:  0000000000000000(0000) GS:ffff880013c00000(0000) knlGS:0000000000000000
+> [15958.082012] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [15958.082012] CR2: 00007f9193a05c2c CR3: 0000000010735000 CR4: 00000000000406e0
+> [15958.082012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [15958.082012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [15958.082012] Process rcuc/1 (pid: 15, threadinfo ffff8800124e6000, task ffff8800124daf60)
+> [15958.082012] Stack:
+> [15958.082012]  ffff880013dceb10 ffff8800124daf60 ffffffff00000000 0000000000000000
+> [15958.082012]  ffff880010b82568 0000000000000082 ffff880000000000 ffffffff810b1d97
+> [15958.082012]  ffff8800124daf60 ffff880013c03ee8 ffff880013c03df8 ffffffff816141ae
+> [15958.082012] Call Trace:
+> [15958.082012]  <IRQ> 
+> [15958.082012]  [<ffffffff810b1d97>] ? trace_hardirqs_on_caller+0x151/0x197
+> [15958.082012]  [<ffffffff816141ae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [15958.082012]  [<ffffffff810b4255>] lock_acquire+0x8a/0xa7
+> [15958.082012]  [<ffffffff81aa6314>] ? dn_slow_timer+0x20/0x108
+> [15958.082012]  [<ffffffff810afac3>] ? arch_local_irq_restore+0x12/0x19
+> [15958.082012]  [<ffffffff81b958b7>] _raw_spin_lock+0x3b/0x6e
+> [15958.082012]  [<ffffffff81aa6314>] ? dn_slow_timer+0x20/0x108
+> [15958.082012]  [<ffffffff81aa6314>] dn_slow_timer+0x20/0x108
+> [15958.082012]  [<ffffffff810915f1>] run_timer_softirq+0x1da/0x28c
+> [15958.082012]  [<ffffffff81091599>] ? run_timer_softirq+0x182/0x28c
+> [15958.082012]  [<ffffffff81aa62f4>] ? dn_neigh_elist+0x3a/0x3a
+> [15958.082012]  [<ffffffff8108c2e4>] __do_softirq+0xa4/0x14b
+> [15958.082012]  [<ffffffff81b9923c>] call_softirq+0x1c/0x30
+> [15958.082012]  <EOI> 
+> [15958.082012]  [<ffffffff8103525a>] do_softirq+0x62/0xb8
+> [15958.082012]  [<ffffffff810e1711>] ? rcu_cpu_kthread+0x284/0x2b8
+> [15958.082012]  [<ffffffff8108c1cb>] _local_bh_enable_ip+0xaf/0xe6
+> [15958.082012]  [<ffffffff8108c233>] local_bh_enable+0xd/0xf
+> [15958.082012]  [<ffffffff810e1711>] rcu_cpu_kthread+0x284/0x2b8
+> [15958.082012]  [<ffffffff810e148d>] ? rcu_do_batch.clone.24+0x1fe/0x1fe
+> [15958.082012]  [<ffffffff8109ee97>] kthread+0x9b/0xa3
+> [15958.082012]  [<ffffffff810b1d97>] ? trace_hardirqs_on_caller+0x151/0x197
+> [15958.082012]  [<ffffffff81b99144>] kernel_thread_helper+0x4/0x10
+> [15958.082012]  [<ffffffff81b966b8>] ? retint_restore_args+0x13/0x13
+> [15958.082012]  [<ffffffff8109edfc>] ? kthread_flush_work_fn+0xf/0xf
+> [15958.082012]  [<ffffffff81b99140>] ? gs_change+0x13/0x13
+> [15958.082012] Code: 8d 40 ff ff ff 4c 89 95 50 ff ff ff 45 31 f6 e8 23 fc ff ff 44 8b 8d 40 ff ff ff 48 85 c0 4c 8b 95 50 ff ff ff 0f 84 e4 0c 00 00 <f0> ff 80 98 01 00 00 44 8b bb d0 08 00 00 83 3d 64 27 74 01 00 
+> [15958.082012] RIP  [<ffffffff810b305b>] __lock_acquire+0xff/0xe50
+> [15958.082012]  RSP <ffff880013c03cc8>
+> [15958.082012] ---[ end trace 21ee6c8ed26977a8 ]---
+> [15958.082012] Kernel panic - not syncing: Fatal exception in interrupt
+> [15958.082012] Pid: 15, comm: rcuc/1 Tainted: G      D W    3.2.0-rc2-sasha-00146-gc729049-dirty #15
+> [15958.082012] Call Trace:
+> [15958.082012]  <IRQ>  [<ffffffff81b930f3>] panic+0x96/0x1c3
+> [15958.082012]  [<ffffffff81036626>] oops_end+0xcf/0xdf
+> [15958.082012]  [<ffffffff8103677c>] die+0x55/0x61
+> [15958.082012]  [<ffffffff8103417b>] do_general_protection+0x12e/0x136
+> [15958.082012]  [<ffffffff81b966e8>] ? restore_args+0x30/0x30
+> [15958.082012]  [<ffffffff81b96935>] general_protection+0x25/0x30
+> [15958.082012]  [<ffffffff810b305b>] ? __lock_acquire+0xff/0xe50
+> [15958.082012]  [<ffffffff810b2fcb>] ? __lock_acquire+0x6f/0xe50
+> [15958.082012]  [<ffffffff810b1d97>] ? trace_hardirqs_on_caller+0x151/0x197
+> [15958.082012]  [<ffffffff816141ae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [15958.082012]  [<ffffffff810b4255>] lock_acquire+0x8a/0xa7
+> [15958.082012]  [<ffffffff81aa6314>] ? dn_slow_timer+0x20/0x108
+> [15958.082012]  [<ffffffff810afac3>] ? arch_local_irq_restore+0x12/0x19
+> [15958.082012]  [<ffffffff81b958b7>] _raw_spin_lock+0x3b/0x6e
+> [15958.082012]  [<ffffffff81aa6314>] ? dn_slow_timer+0x20/0x108
+> [15958.082012]  [<ffffffff81aa6314>] dn_slow_timer+0x20/0x108
+> [15958.082012]  [<ffffffff810915f1>] run_timer_softirq+0x1da/0x28c
+> [15958.082012]  [<ffffffff81091599>] ? run_timer_softirq+0x182/0x28c
+> [15958.082012]  [<ffffffff81aa62f4>] ? dn_neigh_elist+0x3a/0x3a
+> [15958.082012]  [<ffffffff8108c2e4>] __do_softirq+0xa4/0x14b
+> [15958.082012]  [<ffffffff81b9923c>] call_softirq+0x1c/0x30
+> [15958.082012]  <EOI>  [<ffffffff8103525a>] do_softirq+0x62/0xb8
+> [15958.082012]  [<ffffffff810e1711>] ? rcu_cpu_kthread+0x284/0x2b8
+> [15958.082012]  [<ffffffff8108c1cb>] _local_bh_enable_ip+0xaf/0xe6
+> [15958.082012]  [<ffffffff8108c233>] local_bh_enable+0xd/0xf
+> [15958.082012]  [<ffffffff810e1711>] rcu_cpu_kthread+0x284/0x2b8
+> [15958.082012]  [<ffffffff810e148d>] ? rcu_do_batch.clone.24+0x1fe/0x1fe
+> [15958.082012]  [<ffffffff8109ee97>] kthread+0x9b/0xa3
+> [15958.082012]  [<ffffffff810b1d97>] ? trace_hardirqs_on_caller+0x151/0x197
+> [15958.082012]  [<ffffffff81b99144>] kernel_thread_helper+0x4/0x10
+> [15958.082012]  [<ffffffff81b966b8>] ? retint_restore_args+0x13/0x13
+> [15958.082012]  [<ffffffff8109edfc>] ? kthread_flush_work_fn+0xf/0xf
+> [15958.082012]  [<ffffffff81b99140>] ? gs_change+0x13/0x13
+> [15958.082012] Rebooting in 1 seconds..
+>   # KVM session ended normally.
+> 
+> Please let me know if theres anything I can do to help debugging it.
+> 
 
-No, it still oopses with this patch applied:
+Hmm, trinity tries to crash decnet ;)
 
-[  102.965924] PM: Syncing filesystems ... done.
-[  103.016139] Freezing user space processes ... (elapsed 0.02 seconds) done.
-[  103.045535] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-[  103.069910] libertas_sdio mmc0:0001:1: mmc0:0001:1: suspend: PM flags = 0x0
-[  103.076923] libertas_sdio mmc0:0001:1: Suspend without wake params -- powering down card
-[  106.092767] libertas_sdio mmc0:0001:1: wlan0: command 0x0010 timed out
-[  106.099330] libertas_sdio mmc0:0001:1: wlan0: Timeout submitting command 0x0010
-[  106.106725] libertas_sdio: Resetting card...
-[  106.110837] ------------[ cut here ]------------
-[  106.115702] WARNING: at fs/sysfs/group.c:138 sysfs_remove_group+0x50/0x11c()
-[  106.122748] sysfs group c05cb5c8 not found for kobject 'mmc0:0001:1'
-[  106.129057] Modules linked in: libertas_sdio libertas pxamci
-[  106.134783] [<c000dbb4>] (unwind_backtrace+0x0/0xec) from [<c001ca10>] (warn_slowpath_common+0x4c/0x64)
-[  106.144158] [<c001ca10>] (warn_slowpath_common+0x4c/0x64) from [<c001cabc>] (warn_slowpath_fmt+0x30/0x40)
-[  106.153711] [<c001cabc>] (warn_slowpath_fmt+0x30/0x40) from [<c00d36d4>] (sysfs_remove_group+0x50/0x11c)
-[  106.163193] [<c00d36d4>] (sysfs_remove_group+0x50/0x11c) from [<c0202f04>] (device_del+0x3c/0x1a4)
-[  106.172128] [<c0202f04>] (device_del+0x3c/0x1a4) from [<c0295e3c>] (sdio_remove_func+0x1c/0x2c)
-[  106.180816] [<c0295e3c>] (sdio_remove_func+0x1c/0x2c) from [<c0295150>] (mmc_sdio_remove+0x44/0x78)
-[  106.189852] [<c0295150>] (mmc_sdio_remove+0x44/0x78) from [<c028f124>] (mmc_stop_host+0xd0/0x22c)
-[  106.198707] [<c028f124>] (mmc_stop_host+0xd0/0x22c) from [<c02905b8>] (mmc_remove_host+0x18/0x2c)
-[  106.207587] [<c02905b8>] (mmc_remove_host+0x18/0x2c) from [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio])
-[  106.218820] [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio]) from [<c00302fc>] (process_one_work+0x260/0x3c8)
-[  106.230280] [<c00302fc>] (process_one_work+0x260/0x3c8) from [<c0030ac8>] (worker_thread+0x224/0x458)
-[  106.239498] [<c0030ac8>] (worker_thread+0x224/0x458) from [<c0036a00>] (kthread+0x80/0x88)
-[  106.247758] [<c0036a00>] (kthread+0x80/0x88) from [<c0009ca8>] (kernel_thread_exit+0x0/0x8)
-[  106.256091] ---[ end trace ba085a5f8ea6593c ]---
-[  106.260692] Unable to handle kernel NULL pointer dereference at virtual address 0000000c
-[  106.268759] pgd = c0004000
-[  106.271445] [0000000c] *pgd=00000000
-[  106.275032] Internal error: Oops: 17 [#1] PREEMPT
-[  106.279698] Modules linked in: libertas_sdio libertas pxamci
-[  106.285348] CPU: 0    Tainted: G        W     (3.2.0-rc2 #1)
-[  106.290999] PC is at klist_put+0x18/0x9c
-[  106.294905] LR is at device_del+0x50/0x1a4
-[  106.298978] pc : [<c03ca92c>]    lr : [<c0202f18>]    psr: a0000013
-[  106.298989] sp : c656ff18  ip : 40000013  fp : c602e605
-[  106.310379] r10: 00000000  r9 : bf019458  r8 : c602e600
-[  106.315566] r7 : 00000000  r6 : c63ff408  r5 : c6461f70  r4 : 00000001
-[  106.322054] r3 : 00000000  r2 : 00000200  r1 : 00000001  r0 : 00000001
-[  106.328543] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  106.335805] Control: 0000397f  Table: a665c018  DAC: 00000035
-[  106.341507] Process kworker/0:2 (pid: 1196, stack limit = 0xc656e278)
-[  106.347909] Stack: (0xc656ff18 to 0xc6570000)
-[  106.352236] ff00:                                                       c64cef08 c63ff000
-[  106.360368] ff20: c63ff408 c0202f18 c64cef08 c63ff000 00000084 c0295e3c 00000001 c0295150
-[  106.368501] ff40: c64f1c00 c63ff000 60000013 00000000 00000009 c028f124 c63ff000 c63ff000
-[  106.376635] ff60: c64f1c00 c02905b8 bf019c9c bf019470 bf019af0 c00302fc c05c1b38 c64f1c00
-[  106.384767] ff80: c05c1b38 c05c1b38 00000009 c656e000 c64f1c10 c05c1b38 c64f1c10 c0030ac8
-[  106.392899] ffa0: c607df14 c656ffd4 c607df14 c64f1c00 c00308a4 00000000 00000000 00000000
-[  106.401032] ffc0: 00000000 c0036a00 c0009ca8 00000000 c64f1c00 00000000 c656ffd8 c656ffd8
-[  106.409165] ffe0: 00000000 c607df14 c0036980 c0009ca8 00000013 c0009ca8 0340f30e 153b5900
-[  106.417309] [<c03ca92c>] (klist_put+0x18/0x9c) from [<c0202f18>] (device_del+0x50/0x1a4)
-[  106.425368] [<c0202f18>] (device_del+0x50/0x1a4) from [<c0295e3c>] (sdio_remove_func+0x1c/0x2c)
-[  106.434025] [<c0295e3c>] (sdio_remove_func+0x1c/0x2c) from [<c0295150>] (mmc_sdio_remove+0x44/0x78)
-[  106.443027] [<c0295150>] (mmc_sdio_remove+0x44/0x78) from [<c028f124>] (mmc_stop_host+0xd0/0x22c)
-[  106.451847] [<c028f124>] (mmc_stop_host+0xd0/0x22c) from [<c02905b8>] (mmc_remove_host+0x18/0x2c)
-[  106.460687] [<c02905b8>] (mmc_remove_host+0x18/0x2c) from [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio])
-[  106.471864] [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio]) from [<c00302fc>] (process_one_work+0x260/0x3c8)
-[  106.483283] [<c00302fc>] (process_one_work+0x260/0x3c8) from [<c0030ac8>] (worker_thread+0x224/0x458)
-[  106.492456] [<c0030ac8>] (worker_thread+0x224/0x458) from [<c0036a00>] (kthread+0x80/0x88)
-[  106.500684] [<c0036a00>] (kthread+0x80/0x88) from [<c0009ca8>] (kernel_thread_exit+0x0/0x8)
-[  106.508991] Code: e1a05000 e3a00001 e3c33001 e1a04001 (e593600c) 
-[  106.515109] ---[ end trace ba085a5f8ea6593d ]---
-[  106.519881] Unable to handle kernel paging request at virtual address fffffffc
-[  106.527056] pgd = c0004000
-[  106.529742] [fffffffc] *pgd=a7ffe821, *pte=00000000, *ppte=00000000
-[  106.535986] Internal error: Oops: 17 [#2] PREEMPT
-[  106.540657] Modules linked in: libertas_sdio libertas pxamci
-[  106.546306] CPU: 0    Tainted: G      D W     (3.2.0-rc2 #1)
-[  106.551941] PC is at kthread_data+0x4/0xc
-[  106.555928] LR is at wq_worker_sleeping+0xc/0xb4
-[  106.560514] pc : [<c003648c>]    lr : [<c0032ee0>]    psr: 20000093
-[  106.560525] sp : c656fd60  ip : c05bff98  fp : c656fd94
-[  106.571916] r10: c659b6ec  r9 : c05bff98  r8 : c656e000
-[  106.577104] r7 : c6032000  r6 : c659b768  r5 : c659b600  r4 : 00000000
-[  106.583582] r3 : 00000000  r2 : c05bff98  r1 : 00000000  r0 : c659b600
-[  106.590064] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[  106.597239] Control: 0000397f  Table: a665c018  DAC: 00000015
-[  106.602940] Process kworker/0:2 (pid: 1196, stack limit = 0xc656e278)
-[  106.609333] Stack: (0xc656fd60 to 0xc6570000)
-[  106.613670] fd60: 00000000 c03d278c 00000000 00000001 c656fd9c c659b600 c6032000 c659b6ec
-[  106.621801] fd80: c659b5f8 c659b6ec 00000001 c656fd98 c0020acc c03d268c 00000000 c656fd9c
-[  106.629935] fda0: c656fd9c c659b734 c602e605 c656fed0 c659b600 c656e000 00000000 c04ef7d8
-[  106.638068] fdc0: 00000017 c656fed0 c602e605 c000c51c c656e278 0000000b 0000000c c656fed0
-[  106.646200] fde0: 00000000 00000017 00000000 c000ee00 c05bbbcc c659b600 00000000 0000000c
-[  106.654333] fe00: 0000000c c000effc c003b1ac c0015e8c c05bbbcc a0000013 00000017 c656fed0
-[  106.662466] fe20: 0000000c bf019458 00000000 c000849c 00000025 c656fe65 c05fffaf c656fe48
-[  106.670600] fe40: c001dc78 c0015e8c 00000000 80000013 c0036980 205b6a00 36303120 3635322e
-[  106.678732] fe60: 5d313930 00000020 00000000 00000000 c656fff8 c0009ca8 00000000 c000c2dc
-[  106.686865] fe80: c04eee5e c0036a00 00000004 0056fea8 c00d36d4 0000008a c04f71e0 c00d36d4
-[  106.694998] fea0: c656fef0 00000009 bf019458 00000000 c602e605 c03d24dc c03ca92c a0000013
-[  106.703130] fec0: ffffffff c656ff04 c602e600 c0008e98 00000001 00000001 00000200 00000000
-[  106.711264] fee0: 00000001 c6461f70 c63ff408 00000000 c602e600 bf019458 00000000 c602e605
-[  106.719397] ff00: 40000013 c656ff18 c0202f18 c03ca92c a0000013 ffffffff c64cef08 c63ff000
-[  106.727530] ff20: c63ff408 c0202f18 c64cef08 c63ff000 00000084 c0295e3c 00000001 c0295150
-[  106.735662] ff40: c64f1c00 c63ff000 60000013 00000000 00000009 c028f124 c63ff000 c63ff000
-[  106.743796] ff60: c64f1c00 c02905b8 bf019c9c bf019470 bf019af0 c00302fc c05c1b38 c64f1c00
-[  106.751929] ff80: c05c1b38 c05c1b38 00000009 c656e000 c64f1c10 c05c1b38 c64f1c10 c0030ac8
-[  106.760060] ffa0: c607df14 c656ffd4 c607df14 c64f1c00 c00308a4 00000000 00000000 00000000
-[  106.768194] ffc0: 00000000 c0036a00 c0009ca8 00000000 c64f1c00 00000001 c656ffd8 c656ffd8
-[  106.776328] ffe0: 00000000 c607df14 c0036980 c0009ca8 00000013 c0009ca8 0340f30e 153b5900
-[  106.784471] [<c003648c>] (kthread_data+0x4/0xc) from [<c0032ee0>] (wq_worker_sleeping+0xc/0xb4)
-[  106.793132] [<c0032ee0>] (wq_worker_sleeping+0xc/0xb4) from [<c03d278c>] (__schedule+0x10c/0x3a8)
-[  106.801975] [<c03d278c>] (__schedule+0x10c/0x3a8) from [<c0020acc>] (do_exit+0x668/0x694)
-[  106.810120] [<c0020acc>] (do_exit+0x668/0x694) from [<c000c51c>] (die+0x1f0/0x220)
-[  106.817658] [<c000c51c>] (die+0x1f0/0x220) from [<c000ee00>] (__do_kernel_fault+0x64/0x88)
-[  106.825880] [<c000ee00>] (__do_kernel_fault+0x64/0x88) from [<c000effc>] (do_page_fault+0x1d8/0x1f0)
-[  106.834968] [<c000effc>] (do_page_fault+0x1d8/0x1f0) from [<c000849c>] (do_DataAbort+0x34/0x94)
-[  106.843621] [<c000849c>] (do_DataAbort+0x34/0x94) from [<c0008e98>] (__dabt_svc+0x38/0x60)
-[  106.851830] Exception stack(0xc656fed0 to 0xc656ff18)
-[  106.856848] fec0:                                     00000001 00000001 00000200 00000000
-[  106.864979] fee0: 00000001 c6461f70 c63ff408 00000000 c602e600 bf019458 00000000 c602e605
-[  106.873110] ff00: 40000013 c656ff18 c0202f18 c03ca92c a0000013 ffffffff
-[  106.879705] [<c0008e98>] (__dabt_svc+0x38/0x60) from [<c03ca92c>] (klist_put+0x18/0x9c)
-[  106.887679] [<c03ca92c>] (klist_put+0x18/0x9c) from [<c0202f18>] (device_del+0x50/0x1a4)
-[  106.895743] [<c0202f18>] (device_del+0x50/0x1a4) from [<c0295e3c>] (sdio_remove_func+0x1c/0x2c)
-[  106.904400] [<c0295e3c>] (sdio_remove_func+0x1c/0x2c) from [<c0295150>] (mmc_sdio_remove+0x44/0x78)
-[  106.913400] [<c0295150>] (mmc_sdio_remove+0x44/0x78) from [<c028f124>] (mmc_stop_host+0xd0/0x22c)
-[  106.922221] [<c028f124>] (mmc_stop_host+0xd0/0x22c) from [<c02905b8>] (mmc_remove_host+0x18/0x2c)
-[  106.931063] [<c02905b8>] (mmc_remove_host+0x18/0x2c) from [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio])
-[  106.942250] [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio]) from [<c00302fc>] (process_one_work+0x260/0x3c8)
-[  106.953665] [<c00302fc>] (process_one_work+0x260/0x3c8) from [<c0030ac8>] (worker_thread+0x224/0x458)
-[  106.962840] [<c0030ac8>] (worker_thread+0x224/0x458) from [<c0036a00>] (kthread+0x80/0x88)
-[  106.971065] [<c0036a00>] (kthread+0x80/0x88) from [<c0009ca8>] (kernel_thread_exit+0x0/0x8)
-[  106.979365] Code: e593313c e5130008 e12fff1e e590313c (e5130004) 
-[  106.985555] ---[ end trace ba085a5f8ea6593e ]---
-[  106.990144] Fixing recursive fault but reboot is needed!
-[  106.995474] Unable to handle kernel paging request at virtual address fffffffc
+Maybe we should remove this decnet stuff for good instead of tracking
+all bugs just for the record. Is there anybody still using decnet ?
 
+For example dn_start_slow_timer() starts a timer without holding a
+reference on struct sock, this is highly suspect.
 
-Sven
+[PATCH] decnet: proper socket refcounting
 
+Better use sk_reset_timer() / sk_stop_timer() helpers to make sure we
+dont access already freed/reused memory later.
+
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/decnet/dn_timer.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/net/decnet/dn_timer.c b/net/decnet/dn_timer.c
+index 67f691b..9f95f0d 100644
+--- a/net/decnet/dn_timer.c
++++ b/net/decnet/dn_timer.c
+@@ -36,16 +36,13 @@ static void dn_slow_timer(unsigned long arg);
+ 
+ void dn_start_slow_timer(struct sock *sk)
+ {
+-	sk->sk_timer.expires	= jiffies + SLOW_INTERVAL;
+-	sk->sk_timer.function	= dn_slow_timer;
+-	sk->sk_timer.data	= (unsigned long)sk;
+-
+-	add_timer(&sk->sk_timer);
++	setup_timer(&sk->sk_timer, dn_slow_timer, (unsigned long)sk);
++	sk_reset_timer(sk, &sk->sk_timer, jiffies + SLOW_INTERVAL);
+ }
+ 
+ void dn_stop_slow_timer(struct sock *sk)
+ {
+-	del_timer(&sk->sk_timer);
++	sk_stop_timer(sk, &sk->sk_timer);
+ }
+ 
+ static void dn_slow_timer(unsigned long arg)
+@@ -57,8 +54,7 @@ static void dn_slow_timer(unsigned long arg)
+ 	bh_lock_sock(sk);
+ 
+ 	if (sock_owned_by_user(sk)) {
+-		sk->sk_timer.expires = jiffies + HZ / 10;
+-		add_timer(&sk->sk_timer);
++		sk_reset_timer(sk, &sk->sk_timer, jiffies + HZ / 10);
+ 		goto out;
+ 	}
+ 
+@@ -100,9 +96,7 @@ static void dn_slow_timer(unsigned long arg)
+ 			scp->keepalive_fxn(sk);
+ 	}
+ 
+-	sk->sk_timer.expires = jiffies + SLOW_INTERVAL;
+-
+-	add_timer(&sk->sk_timer);
++	sk_reset_timer(sk, &sk->sk_timer, jiffies + SLOW_INTERVAL);
+ out:
+ 	bh_unlock_sock(sk);
+ 	sock_put(sk);
 
 
