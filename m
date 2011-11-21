@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1KUXZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:25:07 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:43444 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab1KUXZF (ORCPT
+	id S1755301Ab1KUXZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:25:46 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55184 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab1KUXZp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:25:05 -0500
-Date: Tue, 22 Nov 2011 08:24:54 +0900
-From: Norbert Preining <preining@logic.at>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: iwlagn is getting very shaky
-Message-ID: <20111121232454.GC840@gamma.logic.tuwien.ac.at>
-References: <20111104045817.GA25778@gamma.logic.tuwien.ac.at> <20111107123812.GB23508@gamma.logic.tuwien.ac.at> <1320709047.31823.188.camel@wwguy-huron> <20111108043233.GA21171@gamma.logic.tuwien.ac.at> <CANUX_P0Q0wve4D6fZPsMv2Zw=02gb9u+3C2cjRv7UAmWqXnjzw@mail.gmail.com> <CANUX_P06ww42p6N1k_P-Y1KMKOd1QgR_DxVWe19qtsEX2rfWpw@mail.gmail.com> <20111109051152.GA16006@gamma.logic.tuwien.ac.at> <CANUX_P2Yz9bWP_EmU1Acs7Mu2w78CXxO-njhiMt97b0TJHFYiQ@mail.gmail.com> <20111121030640.GI32505@gamma.logic.tuwien.ac.at> <CANUX_P2AA5stHwjegKdFhFGg7jxwdVU2Xr8OUtXUdEOKz_6E5A@mail.gmail.com>
+	Mon, 21 Nov 2011 18:25:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANUX_P2AA5stHwjegKdFhFGg7jxwdVU2Xr8OUtXUdEOKz_6E5A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1321891800.20742.11.camel@frodo>
+References: <1321707028-12487-1-git-send-email-jkacur@redhat.com>
+	<1321707028-12487-4-git-send-email-jkacur@redhat.com>
+	<1321891800.20742.11.camel@frodo>
+Date: Tue, 22 Nov 2011 00:18:59 +0100
+X-Google-Sender-Auth: dr5b3S80SKtF1__ZQhQKAw0Fj5Q
+Message-ID: <CAONaPpGz3NoKs9TfDHgNR5YcnfX-j0AT_bVttxPYXLRq5Y=SSg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] rcu: Drive configuration directly from SMP and PREEMPT
+From: John Kacur <jkacur@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mo, 21 Nov 2011, Emmanuel Grumbach wrote:
-> iwlwifi: add debug information on queue stop / wake
-> 
-> and run with debug flags 0x80000000 (bit 31)
-> This will print a message each time a queue is stopped / started.
+On Mon, Nov 21, 2011 at 5:10 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sat, 2011-11-19 at 13:50 +0100, John Kacur wrote:
+>> From: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> This commit eliminates the possibility of running TREE_PREEMPT_RCU
+>> when SMP=n and of running TINY_RCU when PREEMPT=y.  People who really
+>> want these combinations can hand-edit init/Kconfig, but eliminating
+>> them as choices for production systems reduces the amount of testing
+>> required.  It will also allow cutting out a few #ifdefs.
+>>
+>> Note that running TREE_RCU and TINY_RCU on single-CPU systems using
+>> SMP-built kernels is still supported.
+>
+> With this patch, I can see the need for the first patch (although
+> there's things broken even for that), but is this really a stable fix?
+>
+> This looks more of an added feature than a bug fix. It's a bug fix if we
+> consider running tree_rcu on UP a bug. Or better stated, will it break
+> anything if we do that?
+>
+> -- Steve
+>
+>>
+>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> commit 8008e129dc90ff4f7a56cb033d6bd042afe3ed52 upstream
+>> Cherry-picked for v3.0-rt and fixed-up merge conflicts
+>> Note: This makes the depends lines for these options in init/Kconfig for v3.0-rt
+>> match those for v3.2-rc2-rt3
+>> Signed-off-by: John Kacur <jkacur@redhat.com>
+>> ---
+>>  init/Kconfig |    6 +++---
+>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/init/Kconfig b/init/Kconfig
+>> index 89e40a4..5c1147e 100644
+>> --- a/init/Kconfig
+>> +++ b/init/Kconfig
+>> @@ -391,7 +391,7 @@ config TREE_RCU
+>>
+>>  config TREE_PREEMPT_RCU
+>>       bool "Preemptible tree-based hierarchical RCU"
+>> -     depends on PREEMPT
+>> +     depends on PREEMPT && SMP
+>>       help
+>>         This option selects the RCU implementation that is
+>>         designed for very large SMP systems with hundreds or
+>> @@ -401,7 +401,7 @@ config TREE_PREEMPT_RCU
+>>
+>>  config TINY_RCU
+>>       bool "UP-only small-memory-footprint RCU"
+>> -     depends on !SMP && !PREEMPT_RT_FULL
+>> +     depends on !PREEMPT && !SMP
+>>       help
+>>         This option selects the RCU implementation that is
+>>         designed for UP systems from which real-time response
+>> @@ -410,7 +410,7 @@ config TINY_RCU
+>>
+>>  config TINY_PREEMPT_RCU
+>>       bool "Preemptible UP-only small-memory-footprint RCU"
+>> -     depends on !SMP && PREEMPT && !PREEMPT_RT_FULL
+>> +     depends on PREEMPT && !SMP
+>>       help
+>>         This option selects the RCU implementation that is designed
+>>         for real-time UP systems.  This option greatly reduces the
+>
 
-I have these patches in addition to current git:
---- a/drivers/net/wireless/iwlwifi/iwl-power.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-power.c
-@@ -436,7 +436,7 @@ int iwl_power_update_mode(struct iwl_priv *priv, bool force)
- /* initialize to default */
- void iwl_power_initialize(struct iwl_priv *priv)
- {
--       priv->power_data.bus_pm = bus_get_pm_support(bus(priv));
-+       priv->power_data.bus_pm = false;
- 
-        priv->power_data.debug_sleep_level_override = -1;
- 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-index da34110..2df3bac 100644
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -1512,8 +1512,12 @@ static int iwl_trans_pcie_check_stuck_queue(struct iwl_trans *trans, int cnt)
-        if (time_after(jiffies, timeout)) {
-                IWL_ERR(trans, "Queue %d stuck for %u ms.\n", q->id,
-                        hw_params(trans).wd_timeout);
--               IWL_ERR(trans, "Current read_ptr %d write_ptr %d\n",
-+               IWL_ERR(trans, "Current SW read_ptr %d write_ptr %d\n",
-                        q->read_ptr, q->write_ptr);
-+               IWL_ERR(trans, "Current HW read_ptr %d write_ptr %d\n",
-+                       iwl_read_prph(bus(trans), SCD_QUEUE_RDPTR(cnt))
-+                               & (TFD_QUEUE_SIZE_MAX - 1),
-+                       iwl_read_prph(bus(trans), SCD_QUEUE_WRPTR(cnt)));
-                return 1;
-        }
- 
+Imagine you have a uni-processor system and want to do real-time.
+According to the descriptions in init/Kconfig, you would want to
+select TINY_PREEMPT_RCU. The description is
 
-That is all I get. Is that what you mean?
+	  This option selects the RCU implementation that is designed
+	  for real-time UP systems.  This option greatly reduces the
+	  memory footprint of RCU.
 
-Related to that this morning at home (not university!) I had the hanging
-again, had to remove the module. Always after wake up from ram (s2ram).
-There I had in the log:
-Nov 22 07:55:32 mithrandir kernel: [ 4536.000032] iwlwifi 0000:06:00.0: Queue 11
- stuck for 10000 ms.
-Nov 22 07:55:32 mithrandir kernel: [ 4536.000044] iwlwifi 0000:06:00.0: Current 
-SW read_ptr 155 write_ptr 164
-Nov 22 07:55:32 mithrandir kernel: [ 4536.000099] iwlwifi 0000:06:00.0: Current HW read_ptr 155 write_ptr 164
-Nov 22 07:55:32 mithrandir kernel: [ 4536.000107] iwlwifi 0000:06:00.0: On demand firmware reload
-Nov 22 07:55:32 mithrandir kernel: [ 4536.000546] ieee80211 phy1: Hardware restart was requested
-Nov 22 07:55:32 mithrandir kernel: [ 4536.000648] iwlwifi 0000:06:00.0: L1 Enabled; Disabling L0S
-Nov 22 07:55:32 mithrandir kernel: [ 4536.003755] iwlwifi 0000:06:00.0: Radio type=0x1-0x2-0x0
+Without this patch, you cannot choose this option because of the &&
+!PREEMPT_RT_FULL
+So, that is a bug, and makes this patch appropriate for stable.
 
-But somehow it didn't actually start working again.
+I suppose if you want to be really conservative, you can say we only
+need that third hunk.
+However, this upstream patch, makes these options in v3.0-rt match the
+options in v3.2-rc2-rt3.
 
-Best wishes
+Furthermore, it doesn't seem like a good idea to me to support
+configurations in a stable branch that are not supported upstream.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-ULLINGSWICK (n.)
-An over-developed epiglottis found in middle-aged coloraturas.
-			--- Douglas Adams, The Meaning of Liff
+Thanks
+
+John
