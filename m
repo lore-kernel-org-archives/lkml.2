@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab1KULDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:03:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10494 "EHLO mx1.redhat.com"
+	id S1755935Ab1KULFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:05:43 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53633 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754035Ab1KULDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:03:08 -0500
-Subject: Re: [PATCH 3/8] readahead: replace ra->mmap_miss with ra->ra_flags
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111121093846.378529145@intel.com>
-References: <20111121091819.394895091@intel.com>
-	 <20111121093846.378529145@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 21 Nov 2011 11:04:27 +0000
-Message-ID: <1321873467.2710.17.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754955Ab1KULFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 06:05:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
+   d="scan'208";a="77503043"
+Date: Mon, 21 Nov 2011 19:05:38 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Keith Packard <keithp@keithp.com>,
+        "Wang, Zhenyu Z" <zhenyu.z.wang@intel.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] drm/i915: hot removal notification to HDMI audio
+ driver
+Message-ID: <20111121110538.GB6519@localhost>
+References: <20111116132004.299754849@intel.com>
+ <20111116132221.374839261@intel.com>
+ <20111116133548.GA23804@localhost>
+ <20111118093740.GA2799@localhost>
+ <86aa7tmigr.fsf@sumi.keithp.com>
+ <20111121015809.GA25148@localhost>
+ <s5haa7plv4l.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5haa7plv4l.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Nov 21, 2011 at 04:47:38PM +0800, Takashi Iwai wrote:
+> At Mon, 21 Nov 2011 09:58:09 +0800,
+> Wu Fengguang wrote:
+> > 
+> > On Sat, Nov 19, 2011 at 01:46:44AM +0800, Keith Packard wrote:
+> > > On Fri, 18 Nov 2011 17:37:40 +0800, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > > 
+> > > > However when in X, ->mode_set won't be called at all.  Only
+> > > > ->get_modes and ->detect are called...
+> > > 
+> > > The desktop software will call mode_set when it configures the
+> > > monitor. Otherwise, it's not being used (and so shouldn't have audio
+> > > routed to it by default).
+> > 
+> > Keith, I experimented playing HDMI audio in X, and during the time
+> > unplug and plug the monitor. The HDMI audio/graphics all continue to
+> > work when plugged in the monitor again. Here is the dmesg showed for
+> > the plug event, no ->mode_set is called at all...
+> 
+> Which desktop system are you using?  At hotplug/unplugging, the kernel
+> drm issues a udev event, X Intel driver receives it and updates
+> Xrandr.  Then it's supposed that a daemon like gnome-settings-daemon
+> receives Xrandr notification and changes the modes appropriately.
+> Without such a background task, there will be no mode change.
 
-I'm not quite sure why you copied me in to this patch, but I've had a
-look at it and it seems ok to me. Some of the other patches in this
-series look as if they might be rather useful for the GFS2 dir readahead
-code though, so I'll be keeping an eye on developments in this area,
+Ah I got it. I'm running debian+fluxbox w/o those fancy features...
 
-Acked-by: Steven Whitehouse <swhiteho@redhat.com>
-
-Steve.
-
-On Mon, 2011-11-21 at 17:18 +0800, Wu Fengguang wrote:
-> plain text document attachment (readahead-flags.patch)
-> Introduce a readahead flags field and embed the existing mmap_miss in it
-> (mainly to save space).
-> 
-> It will be possible to lose the flags in race conditions, however the
-> impact should be limited.  For the race to happen, there must be two
-> threads sharing the same file descriptor to be in page fault or
-> readahead at the same time.
-> 
-> Note that it has always been racy for "page faults" at the same time.
-> 
-> And if ever the race happen, we'll lose one mmap_miss++ or mmap_miss--.
-> Which may change some concrete readahead behavior, but won't really
-> impact overall I/O performance.
-> 
-> CC: Andi Kleen <andi@firstfloor.org>
-> CC: Steven Whitehouse <swhiteho@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/linux/fs.h |   31 ++++++++++++++++++++++++++++++-
->  mm/filemap.c       |    9 ++-------
->  2 files changed, 32 insertions(+), 8 deletions(-)
-> 
-> --- linux-next.orig/include/linux/fs.h	2011-11-20 11:30:55.000000000 +0800
-> +++ linux-next/include/linux/fs.h	2011-11-20 11:48:53.000000000 +0800
-> @@ -945,10 +945,39 @@ struct file_ra_state {
->  					   there are only # of pages ahead */
->  
->  	unsigned int ra_pages;		/* Maximum readahead window */
-> -	unsigned int mmap_miss;		/* Cache miss stat for mmap accesses */
-> +	unsigned int ra_flags;
->  	loff_t prev_pos;		/* Cache last read() position */
->  };
->  
-> +/* ra_flags bits */
-> +#define	READAHEAD_MMAP_MISS	0x000003ff /* cache misses for mmap access */
-> +
-> +/*
-> + * Don't do ra_flags++ directly to avoid possible overflow:
-> + * the ra fields can be accessed concurrently in a racy way.
-> + */
-> +static inline unsigned int ra_mmap_miss_inc(struct file_ra_state *ra)
-> +{
-> +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
-> +
-> +	/* the upper bound avoids banging the cache line unnecessarily */
-> +	if (miss < READAHEAD_MMAP_MISS) {
-> +		miss++;
-> +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
-> +	}
-> +	return miss;
-> +}
-> +
-> +static inline void ra_mmap_miss_dec(struct file_ra_state *ra)
-> +{
-> +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
-> +
-> +	if (miss) {
-> +		miss--;
-> +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
-> +	}
-> +}
-> +
->  /*
->   * Check if @index falls in the readahead windows.
->   */
-> --- linux-next.orig/mm/filemap.c	2011-11-20 11:30:55.000000000 +0800
-> +++ linux-next/mm/filemap.c	2011-11-20 11:48:29.000000000 +0800
-> @@ -1597,15 +1597,11 @@ static void do_sync_mmap_readahead(struc
->  		return;
->  	}
->  
-> -	/* Avoid banging the cache line if not needed */
-> -	if (ra->mmap_miss < MMAP_LOTSAMISS * 10)
-> -		ra->mmap_miss++;
-> -
->  	/*
->  	 * Do we miss much more than hit in this file? If so,
->  	 * stop bothering with read-ahead. It will only hurt.
->  	 */
-> -	if (ra->mmap_miss > MMAP_LOTSAMISS)
-> +	if (ra_mmap_miss_inc(ra) > MMAP_LOTSAMISS)
->  		return;
->  
->  	/*
-> @@ -1633,8 +1629,7 @@ static void do_async_mmap_readahead(stru
->  	/* If we don't want any read-ahead, don't bother */
->  	if (VM_RandomReadHint(vma))
->  		return;
-> -	if (ra->mmap_miss > 0)
-> -		ra->mmap_miss--;
-> +	ra_mmap_miss_dec(ra);
->  	if (PageReadahead(page))
->  		page_cache_async_readahead(mapping, ra, file,
->  					   page, offset, ra->ra_pages);
-> 
-> 
-
-
+Thanks,
+Fengguang
