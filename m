@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1KUVXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:23:12 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64715 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab1KUVXL convert rfc822-to-8bit (ORCPT
+	id S1754573Ab1KUV1G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:27:06 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:43898 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab1KUV1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:23:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321907436.32195.25.camel@x61.thuisdomein>
-References: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1321883764-1958-9-git-send-email-sjur.brandeland@stericsson.com>
-	<1321907436.32195.25.camel@x61.thuisdomein>
-Date: Mon, 21 Nov 2011 22:15:47 +0100
-Message-ID: <CAJK669Yfct+-JE3OHBO_=CGuyLfrsyZz-Srm9tjBCajFmvQQEg@mail.gmail.com>
-Subject: Re: [RFCv1 8/9] xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Nov 2011 16:27:05 -0500
+Date: Mon, 21 Nov 2011 22:26:53 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com
+Cc: "Frank T. Lofaro Jr." <ftlofaro@yahoo.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Drivers: hwmon: it87: Add support for ITE 8728
+Message-ID: <20111121222653.5441b63f@endymion.delvare>
+In-Reply-To: <1320688845.2309.122.camel@groeck-laptop>
+References: <1320381858.22997.YahooMailNeo@web161601.mail.bf1.yahoo.com>
+	<1320688845.2309.122.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Mon, 7 Nov 2011 10:00:45 -0800, Guenter Roeck wrote:
+> On Fri, 2011-11-04 at 00:44 -0400, Frank T. Lofaro Jr. wrote:
+> > This patch allows the ITE 8728 chip to be detected and used.
+> > The chip appears to be compatible with the 8721.
 
-> A few minor comments follow.
->
->> +++ b/drivers/xshm/Kconfig
->> @@ -0,0 +1,10 @@
->> +config XSHM
->> +     tristate "External Shared Memory Protocol (XSHM)"
->> +#    depends on GENIO
->
-> Why is this added commented out?
+Frank, can we see the output of "sensors" on your system with your
+patch applied?
 
-A proper GENIO driver is not yet submitted, but will be later on (see
-patch 5/9).
-When this driver is contributed I'm expecting a Kconfig with "config GENIO"
-to show up, that XSHM should depend upon. This comment serves as
-a reminder.
+> Can anyone confirm that those chips are actually compatible ?
 
->> +     default n
->> +     ---help---
->> +     Say "yes" if you want to support External Shared Memory (XSHM)
->
-> "Say Y"?
->
->> +     IPC mechanism. XSHM is an IPC protocol used to talk to external
->> +     device such as modem over a shared memory (e.g. Chip to Chip).
->> +     This will normally be built-in, loadable module is used for testing.
->
-> Perhaps something like: "Only say M here if you want to test XSHM and
-> need to load and unload its module."?
+The datasheet is not publicly available, unfortunately. The info I have
+is that temperature and fan parts are likely to be compatible. Not so
+sure about the voltages, although the ADC resolution is the same (12
+mV.)
 
-OK, thanks I'll update these things in the next patch-set.
+> > @@ -1603,6 +1605,7 @@ static int __init it87_find(unsigned short
+> > *address,
+> >                 sio_data->type = it8720;
+> >                 break;
+> >         case IT8721F_DEVID:
+> > +       case IT8728F_DEVID:
+> >                 sio_data->type = it8721;
+> >                 break;
+> >         case 0xffff:    /* No device at all */
 
->> +obj-$(CONFIG_XSHM) +=  xshmchr.o
->> +xshmchr-objs := xshm_chr.o
->
-> A quick scan of the other patches didn't show a file named xshmchr.c. If
-> that's correct, can't you rename either the object or the source file?
-Yes, you're right. I'll fix this.
+One thing for sure: I want to play it safe and introduce a separate
+chip type for the IT8728F. Two advantages: we can tell who has an
+IT8728F from user reports easily, and we can add chip tweaks later
+easily without breaking user configurations.
 
->
->> +obj-$(CONFIG_XSHM) += xshm.o
->> +xshm-objs := xshm_boot.o xshm_pdev.o genio_dummy.o
->
-> Are these two separate drivers (modules) that both are built if one
-> Kconfig symbol is set?
-
-Yes, that was the idea.
-
->If so, is there a reason why you can't use either
-> one combined driver or two Kconfig symbols?
-
-xshm exposes devices that can be of type stream or packet,
-while xshm_chr and caif_xshm are drivers for stream and
-packet devices. It looked as a good idea to keep these separate,
-but I'm open for other opinions here. In a real life deployment
-they will all be build-in anyway.
-
-Regards,
-Sjur
+-- 
+Jean Delvare
