@@ -1,36 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab1KUTyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:54:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36096 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab1KUTyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:54:16 -0500
+	id S1754077Ab1KUT7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:59:32 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50018 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752501Ab1KUT7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 14:59:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 5] PM: Update comments describing device power management callbacks
+Date: Mon, 21 Nov 2011 21:02:16 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <Pine.LNX.4.44L0.1111202139080.26314-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1111202139080.26314-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1321898245-5231-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1321898245-5231-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Mon, 21 Nov 2011 20:54:15 +0100
-Message-ID: <CACRpkdanErOt+Gi4mVxLm6sJSZSQTXtxkbvteMAyJu8sQ3QqsA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: pca953x: Staticise pca953x_get_altdata()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant@secretlab.ca>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, David Jander <david@protonic.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111212102.16918.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 6:57 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+On Monday, November 21, 2011, Alan Stern wrote:
+> On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > The comments describing device power management callbacks in
+> > include/pm.h are outdated and somewhat confusing, so make them
+> > reflect the reality more accurately.
+> 
+> A few comments below...
+> 
+> >   * @freeze: Hibernation-specific, executed before creating a hibernation image.
+> > - *	Quiesce operations so that a consistent image can be created, but do NOT
+> > - *	otherwise put the device into a low power device state and do NOT emit
+> > - *	system wakeup events.  Save in main memory the device settings to be
+> > - *	used by @restore() during the subsequent resume from hibernation or by
+> > - *	the subsequent @thaw(), if the creation of the image or the restoration
+> > - *	of main memory contents from it fails.
+> > + *	Analogous to @suspend(), but it should not enable the device to signal
+> > + *	wakeup events.  The majority of subsystems (with the notable exception
+> > + *	of the PCI bus type) expect the driver-level @freeze() to save the
+> > + *	device settings in memory to be used by @restore() during the subsequent
+> > + *	resume from hibernation.
+> > + *	Subsystem-level @freeze() is executed for all devices after invoking
+> > + *	subsystem-level @prepare() for all of them.
+> 
+> The first three lines you removed contain some important points which I
+> think should be retained.
 
-> It's not used outside of the driver so doesn't need to be exported, and
-> sparse notices this and complains about it.
->
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Well, not really, because in fact what the callback is supposed to do depends
+on the subsystem.  For example, on PCI freeze is not supposed to save the
+the device state even and generally those routines don't emit any events.
 
-OK I've queued this for the -rcs.
+> > @@ -174,29 +198,32 @@ typedef struct pm_message {
+> >   * their children.
+> >   *
+> >   * It is allowed to unregister devices while the above callbacks are being
+> > - * executed.  However, it is not allowed to unregister a device from within any
+> > - * of its own callbacks.
+> > + * executed.  However, it is NOT allowed to unregister a device from within any
+> > + * of its driver's callbacks.
+> 
+> Please be a little more precise here.  If driver D manages two devices,
+> A and B, then D _is_ allowed to unregister A from within a callback for
+> B (except if A is an ancestor of B or something like that).  It's just
+> not allowed to unregister B from within a callback for B.
 
-Thanks!
-Linus Walleij
+I can leave that as is, but devices (or device objects to be precise) don't
+have any callbacks.  Their drivers do.
+
+I can add "(unless they are being executed for a different device)" or
+something like this, but I'm not sure if that makes things any clearer.
+
+Do you know any situation in which that matters?
+
+> > - * There also are the following callbacks related to run-time power management
+> > - * of devices:
+> > + * There also are callbacks related to runtime power management of devices.
+> > + * Again, these callbacks are executed by the PM core only for subsystems
+> > + * (PM domains, device types, classes and bus types) and the subsystem-level
+> > + * callbacks are supposed to invoke the driver callbacks.  Moreover, the exact
+> > + * actions to be performed by a device driver's callbacks generally depend on
+> > + * the platform and subsystem the device belongs to.
+> >   *
+> >   * @runtime_suspend: Prepare the device for a condition in which it won't be
+> >   *	able to communicate with the CPU(s) and RAM due to power management.
+> > - *	This need not mean that the device should be put into a low power state.
+> > + *	This need not mean that the device should be put into a low-power state.
+> >   *	For example, if the device is behind a link which is about to be turned
+> >   *	off, the device may remain at full power.  If the device does go to low
+> > - *	power and is capable of generating run-time wake-up events, remote
+> > - *	wake-up (i.e., a hardware mechanism allowing the device to request a
+> > - *	change of its power state via a wake-up event, such as PCI PME) should
+> > - *	be enabled for it.
+> > + *	power and is capable of generating runtime wakeup events, remote wakeup
+> > + *	(i.e., a hardware mechanism allowing the device to request a change of
+> > + *	its power state via an interrupt) should be enabled for it.
+> >   *
+> >   * @runtime_resume: Put the device into the fully active state in response to a
+> > - *	wake-up event generated by hardware or at the request of software.  If
+> > - *	necessary, put the device into the full power state and restore its
+> > + *	wakeup event generated by hardware or at the request of software.  If
+> > + *	necessary, put the device into the full-power state and restore its
+> >   *	registers, so that it is fully operational.
+> >   *
+> > - * @runtime_idle: Device appears to be inactive and it might be put into a low
+> > - *	power state if all of the necessary conditions are satisfied.  Check
+> > + * @runtime_idle: Device appears to be inactive and it might be put into a
+> > + *	low-power state if all of the necessary conditions are satisfied.  Check
+> >   *	these conditions and handle the device as appropriate, possibly queueing
+> >   *	a suspend request for it.  The return value is ignored by the PM core.
+> >   */
+> 
+> Somewhere in here the text should tell people to find more information 
+> in Documentation/power/runtime_pm.txt.  Likewise for .../devices.txt, 
+> although that should be added at the appropriate spot higher up.
+
+OK
+
+Thanks,
+Rafael
