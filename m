@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1KUSyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:54:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11422 "EHLO mx1.redhat.com"
+	id S1753185Ab1KUSyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:54:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63011 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab1KUSyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:54:03 -0500
+	id S1756172Ab1KUSyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:54:09 -0500
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 0/3] PCI: Convert maintaining FW-assigned BIOS BAR values
-	to a list of temporary entries
+Subject: [PATCH -v2 1/3] PCI: Fix starting basis for resource requests
 To: jbarnes@virtuousgeek.org
 Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
         linux-kernel@vger.kernel.org
-Date: Mon, 21 Nov 2011 11:54:01 -0700
-Message-ID: <20111121185401.9603.34587.stgit@amt.stowe>
+Date: Mon, 21 Nov 2011 11:54:07 -0700
+Message-ID: <20111121185407.9603.70264.stgit@amt.stowe>
+In-Reply-To: <20111121185401.9603.34587.stgit@amt.stowe>
+References: <20111121185401.9603.34587.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,44 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 58c84eda075 functionality was introduced that attempts to
-reinstate the original, FW-assigned, BAR addresses of a PCI device when
-normal resource assignment fails.  To keep track of the BIOS BAR
-addresses, struct pci_dev was augmented with an array to hold the device's
-BAR addresses: 'resource_size_t fw_addr[DEVICE_COUNT_RESOURCE]'.
+From: Myron Stowe <mstowe@redhat.com>
 
-The reinstatement of BAR addresses is an uncommon event leaving the
-'fw_addr' array unused under normal circumstances.  As the use of struct
-pci_dev is so prevalent, this seems wasteful.
+pci_revert_fw_address() is used to reinstate a PCI device's original
+FW-assigned BIOS BAR value(s) if normal resource assignment fails.
 
-This patch series introduces a stand alone data structure and
-corresponding interface routine that is used in converting the
-underlying aspects of the existing maintanence scheme to a list of
-temporary BIOS BAR value entries.
+When attempting to reinstate an address, the point within the resource
+tree from which to attempt the new resource request should be the parent
+resource corresponding to the device, not the base of the resource tree
+(ioport_resource or iomem_resource).  For PCI devices this would
+typically be the resource corresponding to the upstream PCI host bridge
+or P2P bridge aperture.
 
-[v2]
- - Simplified list maintenance by adding a routine, and call to such,
-   to delete the entire list once PCI enumeration is complete (as opposed
-   to keeping reference counters and deleting entries as the reference
-   counts go to 0).
- - Reinstatement of FW-assigned BAR addresses is currently only
-   implemented for x86 so I relocated the stand alone data structure and
-   maintenance routines within an x86 architecture specific file and
-   introduced a '__weak' attribute generic interface routine -
-   'pcibios_retrieve_fw_addr()' which returns a failure condition - into
-   the PCI core that resolves the interface for all other architectures.
+This patch sets the point within the resource tree to attempt a new
+resource assignment request to the PCI device's parent resource and only
+if that fails does it fall back to the base ioport_resource or
+iomem_resource.
 
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
-Myron Stowe (3):
-      x86/PCI: Convert maintaining FW-assigned BIOS BAR values to use a list
-      x86/PCI: Infrastructure to maintain a list of FW-assigned BIOS BAR values
-      PCI: Fix starting basis for resource requests
+ drivers/pci/setup-res.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 51a9095..cdfed4f 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -164,15 +164,19 @@ static int pci_revert_fw_address(struct resource *res, struct pci_dev *dev,
+ 	resource_size_t start, end;
+ 	int ret = 0;
+ 
+-	if (res->flags & IORESOURCE_IO)
+-		root = &ioport_resource;
+-	else
+-		root = &iomem_resource;
+-
+ 	start = res->start;
+ 	end = res->end;
+ 	res->start = dev->fw_addr[resno];
+ 	res->end = res->start + size - 1;
++
++	root = pci_find_parent_resource(dev, res);
++	if (!root) {
++		if (res->flags & IORESOURCE_IO)
++			root = &ioport_resource;
++		else
++			root = &iomem_resource;
++	}
++
+ 	dev_info(&dev->dev, "BAR %d: trying firmware assignment %pR\n",
+ 		 resno, res);
+ 	conflict = request_resource_conflict(root, res);
 
- arch/x86/pci/i386.c     |   83 ++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/pci/setup-res.c |   36 ++++++++++++++++----
- include/linux/pci.h     |    2 +
- 3 files changed, 112 insertions(+), 9 deletions(-)
-
--- 
