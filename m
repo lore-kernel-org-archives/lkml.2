@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab1KURDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:03:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48796 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab1KURC7 (ORCPT
+	id S1755807Ab1KUREw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:04:52 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:38127 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab1KUREu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:02:59 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH v3] perf script: Add comm filtering option
-Date: Mon, 21 Nov 2011 10:02:52 -0700
-Message-Id: <1321894972-24246-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.7.1
+	Mon, 21 Nov 2011 12:04:50 -0500
+Message-ID: <4ECA84A8.5030005@linux.vnet.ibm.com>
+Date: Mon, 21 Nov 2011 22:34:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, lenb@kernel.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <201111192257.19763.rjw@sisk.pl> <4EC8984E.30005@linux.vnet.ibm.com> <201111201124.17528.rjw@sisk.pl> <4EC9D557.9090008@linux.vnet.ibm.com> <20111121164006.GB15314@google.com>
+In-Reply-To: <20111121164006.GB15314@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112117-4790-0000-0000-00000013EA46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows collecting events system wide and then pulling out events
-for a specific task name(s). e.g,
+On 11/21/2011 10:10 PM, Tejun Heo wrote:
+> Hello, Srivatsa.
+> 
+> On Mon, Nov 21, 2011 at 10:06:39AM +0530, Srivatsa S. Bhat wrote:
+>> void lock_system_sleep(void)
+>> {
+>> 	/* simplified freezer_do_not_count() */
+>> 	current->flags |= PF_FREEZER_SKIP;
+>>
+>> 	mutex_lock(&pm_mutex);
+>>
+>> }
+>>
+>> void unlock_system_sleep(void)
+>> {
+>> 	mutex_unlock(&pm_mutex);
+>>
+>> 	/* simplified freezer_count() */
+>> 	current->flags &= ~PF_FREEZER_SKIP;
+>>
+>> }
+>>
+>> We probably don't want the restriction that freezer_do_not_count() and
+>> freezer_count() work only for userspace tasks. So I have open coded
+>> the relevant parts of those functions here.
+>>
+>> I haven't tested this solution yet. Let me know if this solution looks
+>> good and I'll send it out as a patch after testing and analyzing some
+>> corner cases, if any.
 
-    perf script -c gnome-shell,gnome-terminal
+I tested this, and it works great! I'll send the patch in some time.
 
-Applies on top of:
-    https://lkml.org/lkml/2011/11/13/74
+> 
+> Ooh ooh, I definitely like this one much better. 
 
-v2->v3
-- update Documentation
+Thanks :-) Even I like it far better than all those ugly hacks I proposed
+earlier ;-)
 
-v1->v2
-- use comm_list from symbol_conf
+> Oleg did something
+> similar w/ wait_event_freezekillable() too.  On related notes,
+> 
+> * I think it would be better to remove direct access to pm_mutex and
+>   use [un]lock_system_sleep() universally.  I don't think hinging it
+>   on CONFIG_HIBERNATE_CALLBACKS buys us anything.
+> 
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/Documentation/perf-script.txt |    5 +++++
- tools/perf/builtin-script.c              |   12 ++++++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+Which direct access to pm_mutex are you referring to?
+Other than suspend/hibernation call paths, I think mem-hotplug is the only
+subsystem trying to access pm_mutex. I haven't checked thoroughly though. 
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 3613b0a..7f61eaa 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -188,6 +188,11 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+-c::
-+--comms=::
-+	Only display events for these comms. CSV that understands
-+	file://filename entries.
-+
- -I::
- --show-info::
- 	Display extended information about the perf.data file. This adds
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 01329ca..c170d39 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -440,6 +440,7 @@ static int process_sample_event(union perf_event *event,
- 				struct perf_session *session)
- {
- 	struct thread *thread = perf_session__findnew(session, event->ip.pid);
-+	struct addr_location al;
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-@@ -458,6 +459,15 @@ static int process_sample_event(union perf_event *event,
- 		return 0;
- 	}
- 
-+	if (perf_event__preprocess_sample(event, session, &al, sample, 0) < 0) {
-+		pr_err("problem processing %d event, skipping it.\n",
-+		       event->header.type);
-+		return -1;
-+	}
-+
-+	if (al.filtered)
-+		return 0;
-+
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
- 		return 0;
- 
-@@ -1084,6 +1094,8 @@ static const struct option options[] = {
- 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
- 		     parse_output_fields),
- 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
-+		   "only display events for these comms"),
- 	OPT_BOOLEAN('I', "show-info", &show_full_info,
- 		    "display extended information from perf.data file"),
- 	OPT_END()
--- 
-1.7.7.1
+But yes, using lock_system_sleep() for mutually excluding some code path
+from suspend/hibernation is good, and that is one reason why I wanted
+to fix this API ASAP. But as long as memory hotplug is the only direct user
+of pm_mutex, is it justified to remove the CONFIG_HIBERNATE_CALLBACKS
+restriction and make it generic? I don't know...
+
+Or, are you saying that we should use these APIs even in suspend/hibernate
+call paths? That's not such a bad idea either...
+
+[ On a totally different note, I was wondering:- if mem-hotplug wants to
+exclude itself from hibernation alone, CONFIG_HIBERNATE_CALLBACKS is not
+the right way to do it, because, it would still unintentionally exclude
+itself from suspend also! (if suspend and hibernation are both enabled).
+I don't think we should worry about this too much, because we don't get
+much benefit trying to make mem-hotplug co-exist with suspend.. In fact,
+I would say, its even better to let it be this way and exclude suspend
+as well, since running exotic stuff like memory hotplug during suspend
+or hibernation is best avoided ;-) ]
+
+> * In the longer term, we should be able to toggle PF_NOFREEZE instead
+>   as SKIP doesn't mean anything different.  We'll probably need a
+>   better API tho.  But for now SKIP should work fine.
+> 
+
+Yep, I agree.
+
+Thanks,
+Srivatsa S. Bhat
 
