@@ -1,55 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab1KUFbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 00:31:15 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14212 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab1KUFbN (ORCPT
+	id S1754321Ab1KUF47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 00:56:59 -0500
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:56958
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751114Ab1KUF45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 00:31:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 20 Nov 2011 21:31:05 -0800
-Date: Mon, 21 Nov 2011 07:31:01 +0200
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: KyongHo Cho <pullip.cho@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 0/3] ARM: iommu: tegra: Add initial Tegra IOMMU driver
-Message-ID: <20111121073101.6b369421.hdoyu@nvidia.com>
-In-Reply-To: <20111118104354.GA19737@8bytes.org>
-References: <1321527667-12923-1-git-send-email-hdoyu@nvidia.com>
-	<CAHQjnOM-N9suPrv_nSRQsxGCNrf77rFLNtRcOdsjyz_O6bGdpA@mail.gmail.com>
-	<20111118104354.GA19737@8bytes.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 21 Nov 2011 00:56:57 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Date: Sun, 20 Nov 2011 21:56:32 -0800
+From: Ben Widawsky <ben@bwidawsk.net>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 02/13] drm/i915: rewrite shmem_pwrite_slow
+ to use copy_from_user
+Message-ID: <20111120215632.6982c55c@bwidawsk.net>
+In-Reply-To: <1320606840-21132-3-git-send-email-daniel.vetter@ffwll.ch>
+References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1320606840-21132-3-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Sun,  6 Nov 2011 20:13:49 +0100
+Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
 
-On Fri, 18 Nov 2011 11:43:54 +0100
-Joerg Roedel <joro@8bytes.org> wrote:
+> ... instead of get_user_pages, because that fails on non page-backed
+> user addresses like e.g. a gtt mapping of a bo.
+> 
+> To get there essentially copy the vfs read path into pagecache. We
+> can't call that right away because we have to take care of bit17
+> swizzling. To not deadlock with our own pagefault handler we need
+> to completely drop struct_mutex, reducing the atomicty-guarantees
+> of our userspace abi. Implications for racing with other gem ioctl:
+> 
+> - execbuf, pwrite, pread: Due to -EFAULT fallback to slow paths there's
+>   already the risk of the pwrite call not being atomic, no degration.
+> - read/write access to mmaps: already fully racy, no degration.
+> - set_tiling: Calling set_tiling while reading/writing is already
+>   pretty much undefined, now it just got a bit worse. set_tiling is
+>   only called by libdrm on unused/new bos, so no problem.
+> - set_domain: When changing to the gtt domain while copying (without any
+>   read/write access, e.g. for synchronization), we might leave unflushed
+>   data in the cpu caches. The clflush_object at the end of pwrite_slow
+>   takes care of this problem.
+> - truncating of purgeable objects: the shmem_read_mapping_page call could
+>   reinstate backing storage for truncated objects. The check at the end
+>   of pwrite_slow takes care of this.
+> 
+> v2:
+> - add missing intel_gtt_chipset_flush
+> - add __ to copy_from_user_swizzled as suggest by Chris Wilson.
+> 
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+>  drivers/gpu/drm/i915/i915_gem.c |  126 ++++++++++++++++++++-------------------
+>  1 files changed, 64 insertions(+), 62 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index 6fa24bc..f9efebb 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -58,6 +58,7 @@ static void i915_gem_free_object_tail(struct drm_i915_gem_object *obj);
+>  
+>  static int i915_gem_inactive_shrink(struct shrinker *shrinker,
+>  				    struct shrink_control *sc);
+> +static void i915_gem_object_truncate(struct drm_i915_gem_object *obj);
+>  
+>  /* some bookkeeping */
+>  static void i915_gem_info_add_obj(struct drm_i915_private *dev_priv,
+> @@ -385,6 +386,32 @@ i915_gem_shmem_pread_fast(struct drm_device *dev,
+>  	return 0;
+>  }
+>  
+> +static inline int
+> +__copy_from_user_swizzled(char __user *gpu_vaddr, int gpu_offset,
+> +			  const char *cpu_vaddr,
+> +			  int length)
+> +{
+> +	int ret, cpu_offset = 0;
+> +
+> +	while (length > 0) {
+> +		int cacheline_end = ALIGN(gpu_offset + 1, 64);
+> +		int this_length = min(cacheline_end - gpu_offset, length);
+> +		int swizzled_gpu_offset = gpu_offset ^ 64;
+> +
+> +		ret = __copy_from_user(gpu_vaddr + swizzled_gpu_offset,
+> +				       cpu_vaddr + cpu_offset,
+> +				       this_length);
+> +		if (ret)
+> +			return ret + length;
+> +
+> +		cpu_offset += this_length;
+> +		gpu_offset += this_length;
+> +		length -= this_length;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
 
-> On Fri, Nov 18, 2011 at 07:19:53PM +0900, KyongHo Cho wrote:
-> 
-> > I found that those patches are not IOMMU API implementations.
-> > I wonder why they need to be located in drivers/iommu?
-> 
-> The current effort goes into creating a generic framework for IOMMUs.
-> These patches create their own framework which is totally the wrong
-> direction, they even implement their own version of an IOMMU-API.
-> 
-> I object against merging them until they are converted to the generic
-> IOMMU-API.
+Bikeshed, but I would much prefer a #define for the swizzle
+bit/cacheline size.
 
-Ok, I'll in v2 of this patchset.
-That was a plan, mentioned in the cover letter of this patchset.
+>  /**
+>   * This is the fallback shmem pread path, which allocates temporary storage
+>   * in kernel space to copy_to_user into outside of the struct_mutex, so we
+> @@ -841,71 +868,36 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
+>  			   struct drm_file *file)
+>  {
+>  	struct address_space *mapping = obj->base.filp->f_path.dentry->d_inode->i_mapping;
+> -	struct mm_struct *mm = current->mm;
+> -	struct page **user_pages;
+>  	ssize_t remain;
+> -	loff_t offset, pinned_pages, i;
+> -	loff_t first_data_page, last_data_page, num_pages;
+> -	int shmem_page_offset;
+> -	int data_page_index,  data_page_offset;
+> -	int page_length;
+> -	int ret;
+> -	uint64_t data_ptr = args->data_ptr;
+> -	int do_bit17_swizzling;
+> +	loff_t offset;
+> +	char __user *user_data;
+> +	int shmem_page_offset, page_length, ret;
+> +	int obj_do_bit17_swizzling, page_do_bit17_swizzling;
+>  
+> +	user_data = (char __user *) (uintptr_t) args->data_ptr;
+>  	remain = args->size;
+>  
+> -	/* Pin the user pages containing the data.  We can't fault while
+> -	 * holding the struct mutex, and all of the pwrite implementations
+> -	 * want to hold it while dereferencing the user data.
+> -	 */
+> -	first_data_page = data_ptr / PAGE_SIZE;
+> -	last_data_page = (data_ptr + args->size - 1) / PAGE_SIZE;
+> -	num_pages = last_data_page - first_data_page + 1;
+> -
+> -	user_pages = drm_malloc_ab(num_pages, sizeof(struct page *));
+> -	if (user_pages == NULL)
+> -		return -ENOMEM;
+> -
+> -	mutex_unlock(&dev->struct_mutex);
+> -	down_read(&mm->mmap_sem);
+> -	pinned_pages = get_user_pages(current, mm, (uintptr_t)args->data_ptr,
+> -				      num_pages, 0, 0, user_pages, NULL);
+> -	up_read(&mm->mmap_sem);
+> -	mutex_lock(&dev->struct_mutex);
+> -	if (pinned_pages < num_pages) {
+> -		ret = -EFAULT;
+> -		goto out;
+> -	}
+> -
+> -	ret = i915_gem_object_set_to_cpu_domain(obj, 1);
+> -	if (ret)
+> -		goto out;
+> -
+> -	do_bit17_swizzling = i915_gem_object_needs_bit17_swizzle(obj);
+> +	obj_do_bit17_swizzling = i915_gem_object_needs_bit17_swizzle(obj);
+>  
+>  	offset = args->offset;
+>  	obj->dirty = 1;
+>  
+> +	mutex_unlock(&dev->struct_mutex);
+> +
+>  	while (remain > 0) {
+>  		struct page *page;
+> +		char *vaddr;
+>  
+>  		/* Operation in this page
+>  		 *
+>  		 * shmem_page_offset = offset within page in shmem file
+> -		 * data_page_index = page number in get_user_pages return
+> -		 * data_page_offset = offset with data_page_index page.
+>  		 * page_length = bytes to copy for this page
+>  		 */
+>  		shmem_page_offset = offset_in_page(offset);
+> -		data_page_index = data_ptr / PAGE_SIZE - first_data_page;
+> -		data_page_offset = offset_in_page(data_ptr);
+>  
+>  		page_length = remain;
+>  		if ((shmem_page_offset + page_length) > PAGE_SIZE)
+>  			page_length = PAGE_SIZE - shmem_page_offset;
+> -		if ((data_page_offset + page_length) > PAGE_SIZE)
+> -			page_length = PAGE_SIZE - data_page_offset;
+>  
+>  		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
+>  		if (IS_ERR(page)) {
+> @@ -913,34 +905,44 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
+>  			goto out;
+>  		}
+>  
+> -		if (do_bit17_swizzling) {
+> -			slow_shmem_bit17_copy(page,
+> -					      shmem_page_offset,
+> -					      user_pages[data_page_index],
+> -					      data_page_offset,
+> -					      page_length,
+> -					      0);
+> -		} else {
+> -			slow_shmem_copy(page,
+> -					shmem_page_offset,
+> -					user_pages[data_page_index],
+> -					data_page_offset,
+> -					page_length);
+> -		}
+> +		page_do_bit17_swizzling = (page_to_phys(page) & (1 << 17)) == 0;
+> +
+> +		vaddr = kmap(page);
+> +		if (obj_do_bit17_swizzling && page_do_bit17_swizzling)
+> +			ret = __copy_from_user_swizzled(vaddr, shmem_page_offset,
+> +							user_data,
+> +							page_length);
+> +		else
+> +			ret = __copy_from_user(vaddr + shmem_page_offset,
+> +					       user_data,
+> +					       page_length);
+> +		kunmap(page);
+>  
+>  		set_page_dirty(page);
+>  		mark_page_accessed(page);
+>  		page_cache_release(page);
+>  
+> +		if (ret) {
+> +			ret = -EFAULT;
+> +			goto out;
+> +		}
+> +
+>  		remain -= page_length;
+> -		data_ptr += page_length;
+> +		user_data += page_length;
+>  		offset += page_length;
+>  	}
+>  
+>  out:
+> -	for (i = 0; i < pinned_pages; i++)
+> -		page_cache_release(user_pages[i]);
+> -	drm_free_large(user_pages);
+> +	mutex_lock(&dev->struct_mutex);
+> +	/* Fixup: Kill any reinstated backing storage pages */
+> +	if (obj->madv == __I915_MADV_PURGED)
+> +		i915_gem_object_truncate(obj);
+> +	/* and flush dirty cachelines in case the object isn't in the cpu write
+> +	 * domain anymore. */
+> +	if (obj->base.write_domain != I915_GEM_DOMAIN_CPU) {
+> +		i915_gem_clflush_object(obj);
+> +		intel_gtt_chipset_flush();
+> +	}
+>  
+>  	return ret;
+>  }
+
+I must be missing something obvious here...
+Can you explain how this can possibly be considered safe without holding
+struct_mutex?
