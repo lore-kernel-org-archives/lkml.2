@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab1KUWXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:23:47 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61451 "EHLO
+	id S1755859Ab1KUWYX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:24:23 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63716 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1KUWXo (ORCPT
+	with ESMTP id S1751170Ab1KUWYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:23:44 -0500
-Date: Mon, 21 Nov 2011 14:23:32 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Hillf Danton <dhillf@gmail.com>
-cc: Michel Lespinasse <walken@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] ksm: use FAULT_FLAG_ALLOW_RETRY in breaking COW
-In-Reply-To: <CAJd=RBBa-ZoZ3GhYQ-aM=TJ9Zw6ZSu177PWw+s8+zyFnzyUV_w@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1111211413460.1879@sister.anvils>
-References: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com> <alpine.LSU.2.00.1111201923330.1806@sister.anvils> <CAJd=RBBa-ZoZ3GhYQ-aM=TJ9Zw6ZSu177PWw+s8+zyFnzyUV_w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 21 Nov 2011 17:24:22 -0500
+Date: Mon, 21 Nov 2011 14:24:18 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Petr Holasek <pholasek@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Anton Arapov <anton@redhat.com>
+Subject: Re: NUMA emulation x86_64: numa=fake parameter for custom nodes
+ distance
+In-Reply-To: <20111121204133.GA677@dhcp-27-244.brq.redhat.com>
+Message-ID: <alpine.DEB.2.00.1111211416000.5318@chino.kir.corp.google.com>
+References: <1321617308-4998-1-git-send-email-pholasek@redhat.com> <20111118115336.18de45a0.akpm@linux-foundation.org> <20111119003114.GA10179@stainedmachine.redhat.com> <alpine.DEB.2.00.1111191806390.25103@chino.kir.corp.google.com>
+ <20111121204133.GA677@dhcp-27-244.brq.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011, Hillf Danton wrote:
-> On Mon, Nov 21, 2011 at 12:16 PM, Hugh Dickins <hughd@google.com> wrote:
-> 
-> After reading your reply and the comments in break_ksm(), if the patch does
-> not mess up
-> 	"The important thing is to not let VM_MERGEABLE be cleared while any
-> 	 such pages might remain in the area",
-> and
-> 	"because handle_mm_fault() may back out if there's
-> 	 any difficulty e.g. if pte accessed bit gets updated concurrently",
-> 
-> then if the path in which lock_page_or_retry() is called is not involved,
-> mmap_sem is not upped, so the patch has nearly same behavior with break_ksm.
-> 
-> And the overhead of the patch, I think, could match break_ksm.
-> 
-> With dozen cases of writers of mmap_sem in the mm directory, the patch looks
-> more flexible in rare and rare corners.
+On Mon, 21 Nov 2011, Petr Holasek wrote:
 
-But what's the point in enlarging the kernel, adding code to make
-break_cow() look more complicated, when there's no way in which the
-addition can make an improvement?
+> This patch was designed as nothing more than helper for debugging/testing
+> purposes, e.g. when it is useful to have more values in exports than only
+> LOCAL_DISTANCEs. So that's the reason why it disregards former distances 
+> between physical nodes.
+> 
 
-Adding in a FAULT_FLAG_ALLOW_RETRY flag is not enough for mmap_sem
-to be dropped for retry: you'd need a lock_page_or_retry() on the
-faulting path and I do not see that here - please point it out to
-me if you can see it.
+I understand, but like I said: the only debugging and testing it would be 
+useful for is node ordering.  The actual latency of memory accesses are 
+not going to be representative of the new distances and will lead to 
+confusion since they're wrong.  It's also pretty limited in even that 
+regard because all nodes are now spaced by the same distance so they're 
+just spread out linearly instead of actually representing a real NUMA 
+architecture.
 
-(And I'll be somewhat sceptical if you respond with patches adding
-lock_page_or_retry() all over, in order to meet this objection!)
+> Faking the SLIT table is a really good point, if this patch would be 
+> eventually rejected, I will rework the patch in that manner.
+> 
 
-Hugh
+That has applicability even outside of debugging, you could override your 
+own machine's slit if you know it's bogus.  The way it's defined is very 
+lengthy, however, and would require (4 * nr_nodes^2) characters at maximum 
+since the max distance is three characters, 255 (unreachable node), and 
+you'd need to separate them by one character, a comma.  That's 256 chars 
+for eight nodes!
