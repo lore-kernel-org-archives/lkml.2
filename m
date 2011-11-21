@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab1KUOcb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 09:32:31 -0500
-Received: from ackle.nomi.cz ([81.31.33.35]:35927 "EHLO ackle.nomi.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753323Ab1KUOca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 09:32:30 -0500
-Date: Mon, 21 Nov 2011 15:32:26 +0100
-From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-Message-ID: <20111121143226.GA16969@nomi.cz>
-References: <20111110125347.GA29415@nomi.cz> <20111110160703.GA2775@redhat.com> <20111110163051.GA24533@nomi.cz> <20111111054731.GA2292@redhat.com> <20111111150105.GA25437@nomi.cz> <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz> <20111121130527.GA4010@redhat.com> <20111121130916.GA11136@nomi.cz> <20111121134056.GB4010@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S1755069Ab1KUOiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 09:38:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48873 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab1KUOiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 09:38:12 -0500
+Message-ID: <1321886286.10470.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [bug] af_unix: Reading from a stream socket may lock the
+ concurrent poll() call
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexey Moiseytsev <himeraster@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mtk.manpages@gmail.com, linux-man@vger.kernel.org
+Date: Mon, 21 Nov 2011 15:38:06 +0100
+In-Reply-To: <CAHjqzy7dhqi22yPJX=DP4x916hVXDY2WaDbdmnTEQ54n6qpMXw@mail.gmail.com>
+References: <CAHjqzy7dhqi22yPJX=DP4x916hVXDY2WaDbdmnTEQ54n6qpMXw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111121134056.GB4010@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Nov 21, 2011 at 02:40:57PM +0100, Stanislaw Gruszka wrote:
-> On Mon, Nov 21, 2011 at 02:09:16PM +0100, Tomáš Janoušek wrote:
-> > And that's exactly what happens if I don't disable firewire-ohci, because of
-> > that stupid Ricoh multifunction blah blah issue.
+Le lundi 21 novembre 2011 à 00:19 +0400, Alexey Moiseytsev a écrit :
+> Hello,
 > 
-> So maybe problem is caused by Ricoh, not by iwlagn. But if so 
-> why blacklisting iwlagn help? Wired. Did you disable firewire in
-> BIOS, or just blacklist module?
-
-I don't think so. The problem with Ricoh is that it has two PCI devices:
-0d:00.0 and 0d:00.3, but both use 0d:00.0 in DMA requests, which triggers DMAR
-faults.  Of course, I can try disabling that in BIOS, but I doubt it will
-change anything.
-
-> Ok maybe let's try to find some better reproducer first.
-> I wrote simple program that fill memory with some pattern, and
-> then check every one second if pattern is still there.
-> It can be used like:
-> ./checkmem 100M 30M
-> where first argument is size of memory it will alloc and check,
-> second specify number of internal loops to make cpu busy (bigger
-> value will cause more cpu power consumption). Many instances of
-> the program can be running at once.
+> The following program shows how the poll() call hangs on a non-empty
+> stream socket.
 > 
-> Tomáš, please try to reproduce with that program, I'm attaching
-> it. When corruption will be detected, checkmem will print invalid
-> values, maybe would be possible to find out what contents is
-> written to memory.
+> #include <sys/types.h>
+> #include <sys/socket.h>
+> #include <pthread.h>
+> #include <stdio.h>
+> #include <unistd.h>
+> #include <poll.h>
+> 
+> int sockets[2];
+> 
+> int poll_socket(void) {
+>     struct pollfd pfd = {
+>         .fd = sockets[1],
+>         .events = POLLIN
+>     };
+>     return poll(&pfd, 1, -1);
+> }
+> 
+> 
+> /* observer routine doesn't modify amount of data available in the
+> socket buffer */
+> void* observer(void* arg) {
+>     char buffer;
+>     for (int j = 0; j < 2000; j++) {
+>         recv(sockets[1], &buffer, sizeof(buffer), MSG_PEEK);
+>         sched_yield();
+>     }
+>     return NULL;
+> }
+> 
+> int main(void) {
+>     if (socketpair(PF_UNIX, SOCK_STREAM, 0, sockets) == -1)
+>         return 1;
+>     int rc, data[250] = {0};
+>     if ((rc = send(sockets[0], &data, sizeof(data), MSG_DONTWAIT)) <= 0)
+>         return 2;
+>     poll_socket();
+> /* If the first poll_socket() call didn't hang then the following
+> message will be printed */
+>     fprintf(stderr, "%d bytes available in input buffer\n", rc);
+>     pthread_t observer_thread;
+>     pthread_create(&observer_thread, NULL, observer, NULL);
+>     for (int j = 0; j < 20000; j++) {
+> /* If the first poll_socket() call didn't hang then all the following
+> calls should do the same */
+>         poll_socket();
+>     }
+>     fprintf(stderr, "Well done\n");
+>     pthread_join(observer_thread, NULL);
+>     close(sockets[0]);
+>     close(sockets[1]);
+>     return 0;
+> }
+> 
+> 
+> Expected output: two lines or nothing (in case of error).
+> Observed output: only the first line (and the process never exits).
+> 
+> So the first poll() said that there is some data available in the
+> socket. And one of the following poll() said that there is no data
+> available in the socket. But this is false because the observer thread
+> didn't actually consume any data from then socket.
+> 
+> I assume that this bug can be eliminated by adding
+> sk->sk_data_ready(...) call right after each call to
+> skb_queue_head(..) in the unix_stream_recvmsg(...) routine
+> (net/unix/af_unix.c)
+> 
+> Other info:
+> $ uname -srmo
+> Linux 2.6.32-5-amd64 x86_64 GNU/Linux
+> 
 
-Okay, I'll try that later. Yesterday I tried to use memtester [1] to catch the
-problem, but it never occured in it. Kernel compilation was segfaulting and
-that tool was running alongside being all happy. But maybe it has different
-memory usage pattern or something. Anyway, I'll try your program and if it
-doesn't work, I'll make it so. :-)
+Hi Alexy
 
-[1] http://pyropus.ca/software/memtester/
+I believe you found a bug and your suggested fix should be just fine.
 
-Regards,
--- 
-Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
+(Or maybe testing in unix_poll() that at least one thread is currently
+handling one skb from sk->receive_queue)
+
+Could you submit an official patch on top of current Linus tree or do
+you prefer us to take care of this ?
+
+
+
