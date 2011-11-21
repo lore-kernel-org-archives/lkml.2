@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab1KUEjU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 23:39:20 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41028 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab1KUEjQ convert rfc822-to-8bit (ORCPT
+	id S1755473Ab1KUEjb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 23:39:31 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59148 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab1KUEj3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 23:39:16 -0500
+	Sun, 20 Nov 2011 23:39:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111120183846.GB12868@thunk.org>
-References: <1321747359-1919-1-git-send-email-linkinjeon@gmail.com>
-	<CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
-	<20111120183846.GB12868@thunk.org>
-Date: Mon, 21 Nov 2011 10:09:14 +0530
-Message-ID: <CADDb1s09iOvVUNJCLEzWu=7yykhNBhqTKpWRV_H7rP-UO8-gUw@mail.gmail.com>
-Subject: Re: [PATCH v2] ext4: group info caches set to SLAB_MEM_SPREAD flags.
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, NamJae Jeon <linkinjeon@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
+In-Reply-To: <20111120120043.GB20535@8bytes.org>
+References: <20111117170800.3125.84150.stgit@bling.home>
+	<20111118104651.GJ5627@amd.com>
+	<1321628190.26410.63.camel@bling.home>
+	<20111118152710.GA5098@amd.com>
+	<1321633956.26410.126.camel@bling.home>
+	<20111120120043.GB20535@8bytes.org>
+Date: Mon, 21 Nov 2011 12:39:27 +0800
+Message-ID: <CANqQZNEFDiQc68DBgvRY9Q+LXdQZfVym5GY_XOuNwnaA=7RtjQ@mail.gmail.com>
+Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
+ iommu groups
+From: Kai Huang <mail.kai.huang@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
-
-First of all extremely sorry for causing you inconvenience and making
-you use of your time to review such trivial patches.
-
-Yes, we are part of some company and we were looking for Ext4 as the
-next big thing and looking forward to adopting that. We really need
-complete understanding of Ext4 to stand out and gain confidence
-ourselves first. We started with the initial anlalysis of Ext4 and
-side-by-side looking at the source code.
-As far as submitting patch is concerned - yes, It was part of our
-learning curve - that we started the comparision.
-
-In the past, I have literally focussed on our runtime environment and
-raised issues. This was the firsttime - that there was something we
-saw for code submission(may be just out of our childish curiosity).
-
-I will make sure that there is no more inconvenience of that sort.
-
-Thanks & Regards,
-Amit Sahrawat
-
-
-On Mon, Nov 21, 2011 at 12:08 AM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Sun, Nov 20, 2011 at 02:45:32PM +0900, NamJae Jeon wrote:
->> This patch is not really meaningful ? or you need to see performance
->> data although cpuset mem spread flags patch is proved before.
->> I am waiting for your decision.
+On Sun, Nov 20, 2011 at 8:00 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Fri, Nov 18, 2011 at 09:32:36AM -0700, Alex Williamson wrote:
+>> I guess I fail to see the difference.  We group devices behind certain
+>> bridges together because we can't distinguish DMA from those devices.
+>> MSI presents an address window across all devices for which we
+>> potentially can't distinguish between any of them.
 >
-> I don't think it's really going to make much of a difference, to be
-> honest.  It's probably technically a little better, but at the end of
-> the day, it's not really worth the tiny amount of effort to process
-> the patch.
+> With an IOMMU the address window is per-device and not shared between
+> all devices. A MSI message is nothing more than a DMA write transaction
+> to a specific address. This message has a requestor-id so an IOMMU can
+> distinguish between devices. The AMD IOMMU for example uses that to
+> implement per-device remapping tables.
+
+In my understanding the Interrupt Remapping provides device isolation
+from the security perspective. The VFIO framework is designed to
+"expose direct device access to userspace, in a secure, IOMMU
+protected environment" (copied from vfio.txt, I am not familiar with
+vfio). Without Interrupt Remapping, an spurious interrupt issued by
+user space driver may crash other groups or the whole system entirely.
+>From this point, I think it is reasonable to disable group without
+Interrupt Remapping support in IOMMU, or at least give user a notice.
+
+-cody
+
 >
-> I put it in the same category as people who like to remove whitespaces
-> from files or remove unused variables.  It marginally makes the code a
-> tiny amount better, but at the moment, review bandwidth in the ext4
-> subsystem is a critically tight resource, and in terms of the grand
-> scheme of things, there are higher priority things that I need to
-> worry about, as opposed to people constantly resending trivial patches
-> and demanding a decision.
+>> The trouble is that interrupt remapping closing a hole in DMA isolation
+>> is a platform issue.  Is vfio supposed to know that on architecture foo
+>> we don't have such a hole and we don't need to look for interrupt
+>> remapping.  Or maybe that platform bar solved it differently and we need
+>> to instead check flag MSI_OK.  Current KVM doesn't care about this
+>> because it only does device assignment on x86.
 >
-> So let me ask a counter question --- why are you sending these
-> patches?  Especially when you don't even have a system that would
-> benefit from such changes?  Is it just ego to have your name in the
-> kernel, or to be counted amongst kernel developers?  Is this a warm up
-> because you'd like to do more substantive work in ext4, or other parts
-> of the kernel?  Is this a University exercise?  And if you're from a
-> company, which company, and what's your interest in ext4?  I
-> understand how Whamcloud uses ext4, and how the Android folks are
-> using ext4, and to a lesser extent how Tao Bao is using ext4, and that
-> helps me understand where they are going with ext4 and why they submit
-> the kind of patches that they do.
+> From device standpoint a MSI transaction is always a DMA memory write
+> to a given address range. The IOMMU-API should export a feature flag
+> whether it supports filtering on those transaction or not. We have that
+> today with the IOMMU_CAP_INTR_REMAP. I agree that the interface to get
+> this information is ugly because a domain is needed. But the interface
+> can be fixed. While doing this I suggest to rename that feature
+> IOMMU_CAP_INTR_ISOLATION or something like that.
+> VFIO can then check for this flag on module-load and refuse to load if
+> it is not available.
 >
-> But I don't understand why *you* are submitting these sorts of
-> patches.  If there's substantive work that you plan to do with ext4,
-> then the investment I might make in helping you become more proficient
-> ext4 developers is quite different from say, the sort of attention I
-> might give someone who is working on ext4 for a class project or for
-> ego reasons.
+> Regards,
 >
-> Best regards,
+>        Joerg
 >
->                                                - Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
