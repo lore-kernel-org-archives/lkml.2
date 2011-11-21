@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1KUPjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 10:39:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41958 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751802Ab1KUPjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 10:39:52 -0500
-Date: Mon, 21 Nov 2011 16:39:47 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Subject: Re: Firmware during bootup
-Message-ID: <20111121153947.GA8102@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	anish kumar <anish198519851985@gmail.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	alsa-devel@alsa-project.org
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
- <20111118120352.GZ19069@tbergstrom-lnx.Nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E63@HQMAIL01.nvidia.com>
- <20111121122212.GL19069@tbergstrom-lnx.Nvidia.com>
- <1321889298.1760.8.camel@anish-Inspiron-N5050>
+	id S1752975Ab1KUPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 10:41:29 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48908 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1KUPl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 10:41:28 -0500
+Message-ID: <4ECA7123.8020006@gmail.com>
+Date: Mon, 21 Nov 2011 07:41:23 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1321889298.1760.8.camel@anish-Inspiron-N5050>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simon Horman <horms@verge.net.au>
+CC: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: kdump.txt new web address for kexec-tools on kernel.org after
+ the hacking
+References: <4EC89CC8.2090609@gmail.com> <CAM_iQpVqkhSfYm=mVedRvGxVHd-5OjGdwq74-n71kzuUqz4HfQ@mail.gmail.com> <20111121052858.GE11378@verge.net.au>
+In-Reply-To: <20111121052858.GE11378@verge.net.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 12:28:18AM +0900, anish kumar wrote:
-> Hello Everyone,
-> 
-> I have a hardware(Noise processing chip) for which I am 
-> writing the driver.Is it a good idea to download the 
-> firmware in probe function by spawing kthread?I can't download
-> the firmware using request_firmware api as this hardware
-> is required during bootup for boot-up sound and request_firmware
-> is out of question because of no support in user-space.
-> 
-> Am i missing something?I am bit concerned about boot-up time
-> as well.
+On 11/20/2011 09:28 PM, Simon Horman wrote:
+> On Sun, Nov 20, 2011 at 05:49:26PM +0800, Cong Wang wrote:
+>> On Sun, Nov 20, 2011 at 2:23 PM, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
+>>> seems kexec-tools has been moved somewhere else than any of the addresses on
+>>> kdump.txt
+>>>
+>>> is there a new location? is the author know about this? I can supply a patch
+>>> I just need some _legit_ addresses to use; google is giving me some, but im
+>>> not sure what they are/or should I use them
+>>
+>> The git tree has been moved to,
+>> git://github.com/horms/kexec-tools.git
+>>
+>> Simon, any plan to move back to kernel.org?
+>
+> Yes. I plan to attend the Automotive Linux Summit in Yokohama next monday
+> and have my key signed at that event. After that I intend to re-establish
+> my access to kernel.org and move the kexec-tools tree back to kernel.org.
+>
 
-You could build it into the kernel, see CONFIG_EXTRA_FIRMWARE Kconfig
-help for this.
+cool! so next week after the key signing, and kernel.org adds 
+kexec-tools back in.. then there is no need for a patch _if_ the 
+addresses are not changed, but if they are then I would imagine the 
+author has that taken care of then.
 
--- 
-Regards/Gruss,
-   Boris
+Justin P. Mattock
