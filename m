@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1KUMDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 07:03:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab1KUMDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 07:03:43 -0500
-Message-ID: <4ECA3DFF.4040900@redhat.com>
-Date: Mon, 21 Nov 2011 20:03:11 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1753523Ab1KUMMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 07:12:55 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60714 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab1KUMMy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 07:12:54 -0500
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kexec-ml <kexec@lists.infradead.org>, Milton Miller <miltonm@bga.com>,
-        Haren Myneni <hbabu@us.ibm.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ananth Narayan <ananth@in.ibm.com>, Anton Blanchard <anton@samba.org>
-Subject: Re: [RFC PATCH v5 0/9] fadump: Firmware-assisted dump support for
- Powerpc.
-References: <20111115151145.16533.16384.stgit@mars.in.ibm.com>
-In-Reply-To: <20111115151145.16533.16384.stgit@mars.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4EC52842.8020906@compulab.co.il>
+References: <1321537582-8624-1-git-send-email-linus.walleij@stericsson.com>
+	<4EC52842.8020906@compulab.co.il>
+Date: Mon, 21 Nov 2011 13:12:54 +0100
+Message-ID: <CACRpkdZ0rgNzd1SKfE47J0yR51g0hd+mwuA7Ku6UD_wa3Mzi1g@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: indicate GPIO direction on single GPIO request
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek, could you please review this patchset?
+On Thu, Nov 17, 2011 at 4:29 PM, Igor Grinberg <grinberg@compulab.co.il> wrote:
 
-Thanks.
+> You haven't responded to my request for the previous version...
+
+Sorry, probably missed it :-(
+
+>>  static int pin_request(struct pinctrl_dev *pctldev,
+>>                      int pin, const char *function,
+>> -                    struct pinctrl_gpio_range *gpio_range)
+>> +                    struct pinctrl_gpio_range *gpio_range,
+>> +                    bool gpio_direction)
+>
+> can this (and other instances) be:
+> s/gpio_direction/gpio_direction_out/
+
+Yes I realized this morning that this is a better solution.
+Will post some v3 ASAP.
+
+Thanks,
+Linus Walleij
