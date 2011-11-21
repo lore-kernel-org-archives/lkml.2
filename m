@@ -1,125 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab1KUTUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:20:21 -0500
-Received: from mail-yw0-f74.google.com ([209.85.213.74]:36874 "EHLO
-	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab1KUTUU (ORCPT
+	id S1756359Ab1KUTUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:20:46 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42895 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab1KUTUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:20:20 -0500
-From: Thieu Le <thieule@chromium.org>
-To: tyhicks@canonical.com, viro@zeniv.linux.org.uk, hch@infradead.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thieu Le <thieule@chromium.org>
-Subject: Re: [PATCH] vfs: Export fallocate facility to kernel modules
-Date: Mon, 21 Nov 2011 10:55:41 -0800
-Message-Id: <1321901741-3647-1-git-send-email-thieule@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111118195338.GC9869@boyd>
-References: <20111118195338.GC9869@boyd>
-X-System-Of-Record: true
+	Mon, 21 Nov 2011 14:20:43 -0500
+Date: Mon, 21 Nov 2011 23:18:11 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: [RFC] Make Yama pid_ns aware
+Message-ID: <20111121191811.GA24039@albatros>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export fallocate facility so layered file systems such as ecryptfs can
-take advantage of this feature.  One example of the need for fallocate
-is by ecryptfs.  ecryptfs has recently switched to a writeback cache
-model so its dirty pages are not written to the lower file system
-immediately.  In order to ensure that space is available when the page
-is later written, ecryptfs can efficiently preallocate that space using
-vfs_fallocate().
+Hi,
 
-vfs_fallocate() does not perform all of the checkings of do_fallocate()
-because those checks are done higher in the stack.  Checking of offset and
-len are done by rw_verify_area() and generic_write_checks().  These
-functions are called by VFS before ecryptfs invokes vfs_fallocate() in its
-ecryptfs_write_end() function.  And since ecryptfs directly opens the lower
-file, it ensures that the file is opened with the proper flags and mode.
+As Yama's sysctls are about defining a security policy for the system,
+it is reasonable to define it per container in case of LXC containers
+(or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+to pid namespace.  With per-pid_ns sysctls it is possible to create
+multiple containers with different ptrace, /tmp, etc. policies.
 
-Signed-off-by: Thieu Le <thieule@chromium.org>
-Reviewed-by: Tyler Hicks <tyhicks@canonical.com>
----
- fs/open.c          |   32 ++++++++++++++++++++------------
- include/linux/fs.h |    2 ++
- 2 files changed, 22 insertions(+), 12 deletions(-)
+As Yama is not merged yet, I post the patch in this thread.
 
-diff --git a/fs/open.c b/fs/open.c
-index 22c41b5..65c0049 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -214,13 +214,9 @@ SYSCALL_ALIAS(sys_ftruncate64, SyS_ftruncate64);
- #endif /* BITS_PER_LONG == 32 */
+The patch is straightforward:
+
+1) all sysctl variables are moved from global vars to pid_namespace
+fields.
+
+2) each cloned pid ns gets the settings of the parent.
+
+3) the variables of current pid ns are visible through sysctl interface.
+
+proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
+ipc/ipc_sysctl.c.
+
+(The patch is not tested.)
+
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 38d1032..46edaf8 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -30,6 +30,11 @@ struct pid_namespace {
+ #ifdef CONFIG_BSD_PROCESS_ACCT
+ 	struct bsd_acct_struct *bacct;
+ #endif
++#ifdef CONFIG_SECURITY_YAMA
++	int ptrace_scope;
++	int protected_sticky_symlinks;
++	int protected_nonaccess_hardlinks;
++#endif
+ };
  
+ extern struct pid_namespace init_pid_ns;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index fa5f722..0cd8926 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
+ 	.last_pid = 0,
+ 	.level = 0,
+ 	.child_reaper = &init_task,
++#ifdef CONFIG_SECURITY_YAMA
++	.ptrace_scope = 1,
++	.protected_sticky_symlinks = 1,
++	.protected_nonaccess_hardlinks = 1,
++#endif
+ };
+ EXPORT_SYMBOL_GPL(init_pid_ns);
  
--int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
-+int vfs_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- {
- 	struct inode *inode = file->f_path.dentry->d_inode;
--	long ret;
--
--	if (offset < 0 || len <= 0)
--		return -EINVAL;
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index e9c9adc..73d47c4 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+ 	if (err)
+ 		goto out_put_parent_pid_ns;
  
- 	/* Return error if mode is not supported */
- 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-@@ -231,13 +227,28 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	    !(mode & FALLOC_FL_KEEP_SIZE))
- 		return -EOPNOTSUPP;
- 
--	if (!(file->f_mode & FMODE_WRITE))
--		return -EBADF;
--
- 	/* It's not possible punch hole on append only file */
- 	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
- 		return -EPERM;
- 
-+	if (!file->f_op->fallocate)
-+		return -EOPNOTSUPP;
++#ifdef CONFIG_SECURITY_YAMA
++	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
++	ns->protected_sticky_symlinks =
++		parent_pid_ns->protected_sticky_symlinks;
++	ns->protected_nonaccess_hardlinks =
++		parent_pid_ns->protected_nonaccess_hardlinks;
++#endif
 +
-+	return file->f_op->fallocate(file, mode, offset, len);
-+}
-+EXPORT_SYMBOL(vfs_fallocate);
-+
-+int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	return ns;
+ 
+ out_put_parent_pid_ns:
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index a92538c..cf99a8c 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -16,10 +16,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/prctl.h>
+ #include <linux/ratelimit.h>
+-
+-static int ptrace_scope = 1;
+-static int protected_sticky_symlinks = 1;
+-static int protected_nonaccess_hardlinks = 1;
++#include <linux/pid_namespace.h>
+ 
+ /* describe a PTRACE relationship for potential exception */
+ struct ptrace_relation {
+@@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
+ 
+ 	/* require ptrace target be a child of ptracer on attach */
+ 	if (mode == PTRACE_MODE_ATTACH &&
+-	    ptrace_scope &&
++	    current->nsproxy->pid_ns->ptrace_scope &&
+ 	    !capable(CAP_SYS_PTRACE) &&
+ 	    !task_is_descendant(current, child) &&
+ 	    !ptracer_exception_found(current, child))
+@@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
+ 	const struct inode *inode;
+ 	const struct cred *cred;
+ 
+-	if (!protected_sticky_symlinks)
++	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
+ 		return 0;
+ 
+ 	/* if inode isn't a symlink, don't try to evaluate blocking it */
+@@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
+ 	const int mode = inode->i_mode;
+ 	const struct cred *cred = current_cred();
+ 
+-	if (!protected_nonaccess_hardlinks)
++	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
+ 		return 0;
+ 
+ 	if (cred->fsuid != inode->i_uid &&
+@@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
+ static int zero;
+ static int one = 1;
+ 
++static void *get_pid_data(ctl_table *table)
 +{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	long ret;
++	char *which = table->data;
++	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
++	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
++	return which;
++}
 +
-+	if (offset < 0 || len <= 0)
-+		return -EINVAL;
++static int proc_pid_dointvec_minmax(ctl_table *table, int write,
++	void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table pid_table;
 +
-+	if (!(file->f_mode & FMODE_WRITE))
-+		return -EBADF;
++	memcpy(&pid_table, table, sizeof(pid_table));
++	pid_table.data = get_pid_data(table);
 +
- 	if (IS_IMMUTABLE(inode))
- 		return -EPERM;
- 
-@@ -263,10 +274,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
- 		return -EFBIG;
- 
--	if (!file->f_op->fallocate)
--		return -EOPNOTSUPP;
--
--	return file->f_op->fallocate(file, mode, offset, len);
-+	return vfs_fallocate(file, mode, offset, len);
- }
- 
- SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0c4df26..e7d26ee 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1524,6 +1524,8 @@ extern int vfs_link(struct dentry *, struct inode *, struct dentry *);
- extern int vfs_rmdir(struct inode *, struct dentry *);
- extern int vfs_unlink(struct inode *, struct dentry *);
- extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *);
-+extern int vfs_fallocate(struct file *file, int mode, loff_t offset,
-+			 loff_t len);
- 
- /*
-  * VFS dentry helper functions.
--- 
-1.7.3.1
-
++	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
++}
++
++
+ struct ctl_path yama_sysctl_path[] = {
+ 	{ .procname = "kernel", },
+ 	{ .procname = "yama", },
+@@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
+ static struct ctl_table yama_sysctl_table[] = {
+ 	{
+ 		.procname       = "protected_sticky_symlinks",
+-		.data           = &protected_sticky_symlinks,
++		.data           = &init_pid_ns.protected_sticky_symlinks,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = proc_pid_dointvec_minmax,
+ 		.extra1         = &zero,
+ 		.extra2         = &one,
+ 	},
+ 	{
+ 		.procname       = "protected_nonaccess_hardlinks",
+-		.data           = &protected_nonaccess_hardlinks,
++		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = proc_pid_dointvec_minmax,
+ 		.extra1         = &zero,
+ 		.extra2         = &one,
+ 	},
+ 	{
+ 		.procname       = "ptrace_scope",
+-		.data           = &ptrace_scope,
++		.data           = &init_pid_ns.ptrace_scope,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = proc_pid_dointvec_minmax,
+ 		.extra1         = &zero,
+ 		.extra2         = &one,
+ 	},
+---
