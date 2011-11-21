@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab1KUSjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:39:23 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:18933
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755019Ab1KUSjW (ORCPT
+	id S1755040Ab1KUSka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:40:30 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46869 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab1KUSk1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:39:22 -0500
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Nov 2011 13:39:22 EST
-X-SpamScore: -13
-X-BigFish: VS-13(zz1432N98dK4015Lzz1202hzz8275dhz2dh87h2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPV:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 21 Nov 2011 13:24:16 -0500
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <mingo@redhat.com>, <hpa@zytor.com>, <eranian@google.com>,
-        <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <tglx@linutronix.de>, <mingo@elte.hu>
-Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
- offcore events
-In-Reply-To: <tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
-Message-ID: <alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu> <tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 21 Nov 2011 13:40:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20111119165903.GB2208@openwall.com>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+	<1319672956-17114-4-git-send-email-keescook@chromium.org>
+	<20111119163058.GA3131@albatros>
+	<20111119165903.GB2208@openwall.com>
+Date: Mon, 21 Nov 2011 10:40:25 -0800
+X-Google-Sender-Auth: ZyYb8jSoLYXCqmKrEUQ2odGaNfk
+Message-ID: <CAGXu5j+C-LQT2z+J3jEJYmftt1jOnMujNjKqgy0JFwM7b_FPjQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] security: Yama: add ptrace relationship tracking interface
+From: Kees Cook <keescook@chromium.org>
+To: Solar Designer <solar@openwall.com>
+Cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011, tip-bot for Peter Zijlstra wrote:
+On Sat, Nov 19, 2011 at 8:59 AM, Solar Designer <solar@openwall.com> wrote:
+> On Sat, Nov 19, 2011 at 08:30:58PM +0400, Vasiliy Kulikov wrote:
+>> On Wed, Oct 26, 2011 at 16:49 -0700, Kees Cook wrote:
+>> > +   if (mode == PTRACE_MODE_ATTACH &&
+>> > +       ptrace_scope &&
+>> > +       !capable(CAP_SYS_PTRACE) &&
+>> > +       !task_is_descendant(current, child) &&
+>> > +       !ptracer_exception_found(current, child))
+>> > +           rc = -EPERM;
+>>
+>> capable() is better to put after all other tests
+>
+> Right, but...
+>
+>> as a failed capable()
+>> might emit a false positive warning into logs or something.
+>
+> ...primarily for another reason: a successful capable() sets
+> PF_SUPERPRIV, whereas the permission might have been granted without
+> capable() as well.  The PF_SUPERPRIV flag is visible via BSD process
+> accounting.
 
-> Commit-ID:  ed13ec58bfe0d5dc95f748e6118432cb0fa283cb
-> Gitweb:     http://git.kernel.org/tip/ed13ec58bfe0d5dc95f748e6118432cb0fa283cb
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Mon, 14 Nov 2011 10:03:25 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 14 Nov 2011 13:03:44 +0100
-> 
-> perf/x86: Enable raw event access to Intel offcore events
+Fair point, I'll move it. I had to go look up an earlier thread since
+this was ringing a bell, but in there I was talking about moving it to
+the end of the tests too. :)
 
-awesome.  You can add a "Whined-about-it-at-great-length: Vince Weaver"
-line to the commit logs if you want.  Now I'll have to find something else 
-to complain about, probably the scedulability issue introduced with the
-NMI watchdog.
+https://lkml.org/lkml/2010/6/30/5
 
-Thanks,
+-Kees
 
-Vince
-vweaver1@eecs.utk.edu
-
+-- 
+Kees Cook
+ChromeOS Security
