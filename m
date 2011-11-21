@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab1KUN4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:56:22 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64006 "EHLO
+	id S1755113Ab1KUN4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:56:30 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42531 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab1KUN4V (ORCPT
+	with ESMTP id S1754746Ab1KUN4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:56:21 -0500
+	Mon, 21 Nov 2011 08:56:25 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv1 0/9]  XSHM: Shared Memory Driver for ST-E Thor M7400 LTE modem
-Date: Mon, 21 Nov 2011 14:55:55 +0100
-Message-Id: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [RFCv1 3/9] xshm: Config data use for platform devices.
+Date: Mon, 21 Nov 2011 14:55:58 +0100
+Message-Id: <1321883764-1958-4-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,140 +24,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set introduces the Shared Memory Driver for ST-Ericsson's
-Thor M7400 LTE modem.
+This patch defines the configuration data needed to operate
+on a channel. Each channel is represented as a platform device
+containing the necessary configuration data to operate on the channel.
 
-The shared memory model is implemented for Chip-to-chip and
-uses a reserved memory area and a number of bi-directional
-channels. Each channel has it's own designated data area where payload
-data is copied into.
-
-Two different channel types are defined, one stream channel which is
-implemented as a traditional ring-buffer, and a packet channel which
-is a ring-buffer of fix sized buffers where each buffer contains
-an array of CAIF frames.
-
-The notification of read and write index updates are handled in a
-separate driver called genio. This driver will be contributed separately,
-but the API is included in this patch-set.
-
-The channel configuration is stored in shared memory, each channel
-has a designated area in shared memory for configuration data,
-read and write indexes and a data area.
-
-Configuration
-~~~~~~~~~~~~~~~
-
-        IPC-TOC
-        +--------------------+	   Index Area
-        | Channel Descr 0    | -----> +------------+
-	|                    | -+     |	Read Index |
-	|--------------------|	|     |------------|
-	| Channel Descr 1    | 	|     |	Write Index|
-	|                    |	|     +------------+
-	|--------------------|	|   Data Area
-	|       ...    	     |	|     +------------+
-	|                    |	+---> |            |
-	+--------------------+	      |	       	   |
-				      |	       	   |
-				      +------------+
-
-A IPC-TOC (table of conntent) is used for holding configuration data
-for the channels (struct xshm_ipctoc). It contains an array of
-channel descriptors (struct xshm_ipctoc_channel). The channel
-descriptors points out the data area and the location of
-read and write indexes.
-
-The configuration is proveded from user-space using gen-netlink.
-The gen-netlink format is defined in xshm_netlink.h and and handled
-in xshm_boot.c
-
-Packet data
-~~~~~~~~~~~
-The packet channel is set up to minimize interrupts needed to
-transfer a packet and to allow efficient DMA operations on the modem.
-
-Ring Buffer Indexes:
-    +------------+
-  +-| Read Index |
-  | |------------|
-  | | Write Index|------------------------+
-  | +------------+   		 	  |
-  |    		    			  |
-  V    	  				  |
-Buffer-0:				  V Buffer-1:
- +----------------------------------------+---------------+---
- |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
- +----------------------------------------+---------------+--
-   |      |              ^      ^
-   +---------------------+      |
-	  +---------------------+
-
-Packet data is organized in a channel containing a number of fixed-
-size buffers. For each fixed-size buffer the channel has a read and
-write pointer in a normal ring-buffer fashion.
-
-Each buffer holds an array of CAIF-frames, and starts with an descriptor array
-containing pointers to the data frames in the buffer. The descriptor array
-contains offset and length of each frame.
-
-The packet device (caif_xshm.c) is implemented as a network interface of
-type ARPHRD_CAIF.
-
-Stream data
-~~~~~~~~~~~
-The driver for the stream channel is implemented as a character device
-interface to user space. The character device implements non-blocking open
-and non-blocking IO in general. The character device is implementing
-a traditional circular buffer directly in the shared memory region for
-the channel.
-
-Driver model
-~~~~~~~~~~~~~~
-Current implementation is using the platform bus, but I' currently
-investigating migrating to Virtio (suggested by Linus Walleij).
-
-Review comments and feedback is welcome.
-
-Regards,
-Sjur Brændeland
-
-Sjur Brændeland (9):
-  xshm: Shared Memory layout for ST-E M7400 driver.
-  xshm: Channel config definitions for ST-E M7400 driver.
-  xshm: Config data use for platform devices.
-  xshm: geni/geno driver interface.
-  xshm: genio dummy driver
-  xshm: Platform driver for XSHM
-  xshm: Character device for XSHM channel access.
-  xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
-  caif-xshm: Add CAIF driver for Shared memory for M7400
-
- drivers/Kconfig                   |    2 +
- drivers/Makefile                  |    1 +
- drivers/net/caif/Kconfig          |   10 +
- drivers/net/caif/Makefile         |    1 +
- drivers/net/caif/caif_xshm.c      |  900 ++++++++++++++++++++++++++
- drivers/xshm/Kconfig              |   10 +
- drivers/xshm/Makefile             |    4 +
- drivers/xshm/genio_dummy.c        |   61 ++
- drivers/xshm/xshm_boot.c          | 1176 ++++++++++++++++++++++++++++++++++
- drivers/xshm/xshm_chr.c           | 1258 +++++++++++++++++++++++++++++++++++++
- drivers/xshm/xshm_pdev.c          |  459 ++++++++++++++
- include/linux/xshm/genio.h        |  195 ++++++
- include/linux/xshm/xshm_ipctoc.h  |  160 +++++
- include/linux/xshm/xshm_netlink.h |   94 +++
- include/linux/xshm/xshm_pdev.h    |  188 ++++++
- 15 files changed, 4519 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/caif/caif_xshm.c
- create mode 100644 drivers/xshm/Kconfig
- create mode 100644 drivers/xshm/Makefile
- create mode 100644 drivers/xshm/genio_dummy.c
- create mode 100644 drivers/xshm/xshm_boot.c
- create mode 100644 drivers/xshm/xshm_chr.c
- create mode 100644 drivers/xshm/xshm_pdev.c
- create mode 100644 include/linux/xshm/genio.h
- create mode 100644 include/linux/xshm/xshm_ipctoc.h
- create mode 100644 include/linux/xshm/xshm_netlink.h
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+---
+ include/linux/xshm/xshm_pdev.h |  188 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 188 insertions(+), 0 deletions(-)
  create mode 100644 include/linux/xshm/xshm_pdev.h
+
+diff --git a/include/linux/xshm/xshm_pdev.h b/include/linux/xshm/xshm_pdev.h
+new file mode 100644
+index 0000000..0c223fb
+--- /dev/null
++++ b/include/linux/xshm/xshm_pdev.h
+@@ -0,0 +1,188 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2010
++ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#ifndef XSHM_PDEV_H_
++#define XSHM_PDEV_H_
++#include <linux/platform_device.h>
++
++#define XSHM_NAMESZ 16
++
++/**
++ * struct xshm_udchannel - Unidirectional channel for xshm driver.
++ *
++ * @addr: Base address of the channel, address must be
++ *		  a kernel logical address.
++ * @buffers: The number of buffers in the channel.
++ * @ch_size: The size of data area for the channel in one direction.
++ * @xfer_bit: GENI/O bit used when sending data (write pointer move)
++ * @xfer_done_bit: GENI/O bit used to indicate avilable buffers
++ *	(read pointer move).
++ * @alignment: Alignment used in payload protocol.
++ * @mtu: Maxium Transfer Unit used for packet in a buffer (Packet mode).
++ * @packets: Maxium number of packets in a buffer (Packet mode).
++ * @state: State of the device 0 - Closed, 1 - Open
++ * @read: Specify the read index for a channel. In packed mode
++ *	this index will at any time refer to the next buffer available for read.
++ *	In stream mode, this will be the read index in the ring-buffer.
++ * @write: Specify the write index for a channel. In packed mode
++ *	this index will at any time refer to the next buffer available for
++ *	write. In stream mode, this will be the write index in the ring-buffer.
++ * @buf_size: In packet mode, this array contains the size of each buffer.
++ *	In stream mode this is unused.
++ *
++ * This external shared memory channel configuration is exported from the
++ * platform device. It gives the platform driver the
++ * necessary information for running the shared memory protocol
++ * between modem and host.
++ *
++ * Note that two instances of this configuration is needed in order to run a
++ * bi-directional channel.
++ */
++struct xshm_udchannel {
++	void *addr;
++	u32 buffers;
++	u32 ch_size;
++	u8 xfer_done_bit;
++	u8 xfer_bit;
++	u32 mtu;
++	u32 alignment;
++	u32 packets;
++	__le32 *state;
++	__le32 *read;
++	__le32 *write;
++	__le32 *buf_size;
++/* private: */
++	struct kobject kobj; /* kobj must be located at the end */
++};
++
++/**
++ * struct xshm_channel - Channel definition for xshm driver.
++ * @rx: Configuration for RX channel
++ * @tx: Configuration for TX channel
++ * @excl_group: Only channels with the same group ID can be open simultaneously.
++ * @mode: Configuring type of channel PACKET(1), STREAM(2)
++ * @name: Name of interface.
++ * @priority: Priority of the channel.
++ * @latency: Latency of the channel.
++ */
++struct xshm_channel {
++	struct xshm_udchannel rx, tx;
++	u32 excl_group;
++	u32 mode;
++	char name[XSHM_NAMESZ];
++	u32 priority;
++	u32 latency;
++};
++
++#define XSHM_OPEN   1
++#define XSHM_CLOSED 0
++
++enum xshm_dev_state {
++	XSHM_DEV_CLOSED = 0,
++	XSHM_DEV_OPENING,
++	XSHM_DEV_OPEN,
++	XSHM_DEV_ACTIVE,
++};
++
++/**
++ * struct xshm_dev - Device definition for xshm platform device.
++ *
++ * @pdev: Platform device
++ * @cfg: Configuration for the Channel
++ * @state: State of the device: Closed - No user space client is using it,
++ *	Open - Open but no payload queued, Active - Payload queued on device.
++ *
++ * @open: The driver calls open() when channel is taken into use.
++ *	This function will fail if channel configuration is inconsistent,
++ *	or upon resource conflicts with other channels.
++ *
++ * @open_cb: The device calls open_cb() when is ready for use.
++ *
++ * @close: Called by the driver when a channel is no longer in use.
++ *
++ * @close_cb: The device calls close_cb() to notify about remote side closure.
++ *
++ * @ipc_tx_release_cb: This callback is triggered by the modem when a
++ *	transmit operation has completed and the buffer can be reused.
++ *	This function must be set by the driver upon device registration.
++ *	The "more" flag is set if ipc_rx_cb() call is coming immediately
++ *	after this call to ipc_tx_release_cb().
++ *
++ * @ipc_rx_cb: The driver gets this callback when the modem sends a buffer
++ *	from the modem. The driver must call ipc_rx_release()
++ *	to make the buffer available again when the received buffer has been
++ *	processed.
++ *	This function pointer must be set by the driver upon device
++ *	registration.
++ *
++ * @ipc_rx_release: Called by the driver when a RX operation has completed
++ *	and that the rx-buffer is released.
++ *
++ * @ipc_tx: Called by the driver when a TX buffer shall be sent to the modem.
++ *
++ * @driver_data: pointer to driver specific data.
++ *
++ * When communicating between two systems (e.g. modem and host),
++ * external shared memory can bused (e.g. C2C or DPRAM).
++ *
++ * This structure is used by the platform device representing the
++ * External Shared Memory.
++ *
++ * The this structure contains configuration data for the platform device and
++ * functions pointers for IPC communication between Linux host and modem.
++ * The external shared memory protocol memory e.g. C2C or DPRAM
++ * together is a IPC mechanism for transporting small commands such as
++ * Mailbox or GENI/O.
++ *
++ * This data structure is initiated by the xshm platform device, except
++ * for the functions ipc_rx_cb() and ipc_tx_release_cb(). They must be set by
++ * the platform driver when device is registering.
++ */
++
++struct xshm_dev {
++	struct platform_device pdev;
++	struct xshm_channel cfg;
++	enum xshm_dev_state state;
++	int (*open)(struct xshm_dev *dev);
++	void (*close)(struct xshm_dev *dev);
++	int (*ipc_rx_release)(struct xshm_dev *dev, bool more);
++	int (*ipc_tx)(struct xshm_dev *dev);
++	int (*open_cb)(void *drv);
++	void (*close_cb)(void *drv);
++	int (*ipc_rx_cb)(void *drv);
++	int (*ipc_tx_release_cb)(void *drv);
++	void *driver_data;
++	/* private: */
++	struct list_head node;
++	void *priv;
++};
++
++/**
++ * xshm_create_dev() - Create an instance of the xshm platform device.
++ * @shmdev: Device configuration data.
++ */
++int xshm_register_dev(struct xshm_dev *shmdev);
++
++/** xshm_ipc_ready() - Notify that GENO bit READY_FOR_IPC is set
++*/
++void xshm_ipc_ready(void);
++
++/** xshm_caif_ready() - Notify that GENO bit READY_FOR_CAIF is set
++*/
++void xshm_caif_ready(void);
++
++extern bool ready_for_ipc;
++extern bool ready_for_caif;
++void xshm_put(struct xshm_dev *shmdev);
++struct xshm_dev *xshmdev_alloc(void);
++void xshmdev_free(struct xshm_dev *dev);
++void remove_devices(void);
++void close_devices(void);
++void xshm_boot_exit(void);
++int xshm_boot_init(void);
++void xshm_reset(void);
++void genio_ipc_ready_cb(void);
++#endif
+-- 
+1.7.1
 
