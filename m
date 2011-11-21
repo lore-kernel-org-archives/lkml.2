@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab1KUQzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:55:51 -0500
-Received: from home.keithp.com ([63.227.221.253]:59199 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752756Ab1KUQzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:55:50 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang\, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "dri-devel\@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3 v2] drm/i915: hot plug/unplug notification to HDMI audio driver
-In-Reply-To: <20111121063749.GA23450@localhost>
-References: <20111121063749.GA23450@localhost>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 21 Nov 2011 08:55:43 -0800
-Message-ID: <86hb1xife8.fsf@sumi.keithp.com>
+	id S1755600Ab1KUQ4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:56:33 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:45049 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab1KUQ4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 11:56:31 -0500
+Date: Mon, 21 Nov 2011 11:56:26 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Hugh Dickins <hughd@google.com>
+Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
+        Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes"
+Message-ID: <20111121165626.GD14568@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
+	Allison Henderson <achender@linux.vnet.ibm.com>,
+	Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
+ <alpine.LSU.2.00.1111201121120.1264@sister.anvils>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
+> We've seen no response to this, so Cc'ing Ted and linux-kernel,
+> and I'll fill in some more detail below.
 
-On Mon, 21 Nov 2011 14:37:49 +0800, Wu Fengguang <fengguang.wu@intel.com> w=
-rote:
-> On monitor hot plug/unplug, update ELD and set/clear SDVO_AUDIO_ENABLE
-> or DP_AUDIO_OUTPUT_ENABLE accordingly.  So that the audio driver will
-> receive hot plug events and take action to refresh its device state and
-> ELD contents.
->=20
-> A new callback ->hotplug() is added to struct drm_connector_funcs which
-> will be called immediately after ->detect() knowing that the monitor is
-> either plugged or unplugged.
->=20
-> It's noticed that X may not call ->mode_set() at monitor hot plug, so it's
-> necessary to call drm_edid_to_eld() earlier at ->detect() time rather than
-> in intel_ddc_get_modes(), so that intel_write_eld() can see the new ELD
-> in ->hotplug.
+Hugh,
 
-The X environment will eventually call mode_set when the user
-environment decides to use the monitor. Any audio bits can, and should,
-await the user's choice of a video mode before choosing the audio format
-to use. We should not be adding eld information until the monitor is in
-use.
+Thanks for reminding us about this.  Unfortunately bugzilla is still
+down, so we'll have to track this via e-mail.
 
-=2D-=20
-keith.packard@intel.com
+I mentioned this issue on the weekly ext4 call, and though there will
+be a delay due to the Thanksgiving break, Allison said she would try
+to take a look at this.  Hopefully other folks will as well.
 
---=-=-=
-Content-Type: application/pgp-signature
+> I did not reproduce either problem above with that.  Instead I found
+> that backing out 02fac1297eb3 made fsx on 3.2-rc1 fail in a few minutes.
+> But leaving 02fac1297eb3 in, fsx still failed in 20 minutes or an hour.
+> On 3.1, fsx failed in a few minutes.  On 3.0, fsx failed in half an hour.
+> On 2.6.39, fsx failed in a few minutes.  I had to go back to 2.6.38 for
+> fsx to run successfully under memory pressure for more than two hours.
+> 
+> It looks as if ext4 testing has not been running fsx under memory
+> pressure recently.  And although I didn't reproduce my main problems
+> that way, it could well be that getting fsx to run reliably again
+> under memory pressure will be the way to fix those problems.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Yes, I think we've been relying mostly on xfstests, and not
+necessarily under extreme memory pressures.  Out of curiosity, what
+sort of configuration were you using when you did the above tests?
+(memory, swap, fs bock size, etc.)  Was it the same as you did with
+your make -j20 kernel stress test?  And where you using any special
+fsx options?
 
-iQIVAwUBTsqCkDYtFsjWk68qAQij6A/+P9X96i9kvw2EzL+YuNzDZFsBUPOcX+2o
-gMGwq4BscA+GQMlAh/zszwSMTLriRwMsQn9E+rpRDRVvefvr3ejqqV8x/bEgtUi4
-6kM6Y+Bdm7DwjdgNGtUNmufu2QiKoIic/pjr7vNPvl1meJA8/VuTSGF5jzi6UrPs
-DRoctHadne5A6/aCgUKwUbfOUewRYvi38DIYPb3/PEaozuSNVq2zH5Z85JtIrfmx
-Vnt59+CPo8LhbzCg2TbQoMcLf/M0AsWqlbuN1Z6hiIUiQqwmCTf0JIR9UDIKGfuE
-8VrhehW0r5IK9wvq435EorH7baDJC1c4LxeENl8WAVMWdDEm9orTQRrmoyYH/Onq
-C0ddjgNFWOn3Z8HWOBAfCDNdLUAdCQ/rSuzzsWlDO97rijVxGt8FRmuyIo1asM4e
-lq4pLgvdzAgkRySHq0gwzPj2/ZPwLOCPOQi9FdDFMdd55qnpOkE86B86GzKibl2x
-huGLgrTVdz5FrS4iMrlpGtd6+QxZ1PPnlPerZXoRryIQOvJTgDq1szCC8qo635lR
-R81m7d1Rgzt9M4k2/gFR3kJcMezQo8SUZ96t8KW3k2xOHcgeaNNIVAxxiUZe7Vd/
-nf6M2nce5fnwSvns4bEhJ5VxD+Wofq3ge+sKF3xe7q4IcCycJbJrDBgwSBfzl+oE
-AzNxTOQ+MbY=
-=2U2Q
------END PGP SIGNATURE-----
---=-=-=--
+I agree that we should add better memory pressure testing to ext4.
+
+Regards,
+
+						- Ted
