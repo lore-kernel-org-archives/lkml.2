@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab1KURPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:15:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37657 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab1KURPL (ORCPT
+	id S1755811Ab1KURP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:15:58 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:26381 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751623Ab1KURP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:15:11 -0500
-Message-ID: <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org
-Date: Mon, 21 Nov 2011 18:15:06 +0100
-In-Reply-To: <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20111118085436.GC1615@x4.trippels.de>
-	 <20111118120201.GA1642@x4.trippels.de> <1321836285.30341.554.camel@debian>
-	 <20111121080554.GB1625@x4.trippels.de>
-	 <20111121082445.GD1625@x4.trippels.de>
-	 <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121131531.GA1679@x4.trippels.de>
-	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121153621.GA1678@x4.trippels.de>
-	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121161036.GA1679@x4.trippels.de>
-	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Mon, 21 Nov 2011 12:15:57 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0165lkgVM1mg.bc9PgMvTl8Uqqk7LRthbWoXoFHm75yxk3p
+ kNYW9SdVcwZVYz48rRHkXOj09f7arj1YNdEgUWBuM6ZRz8nXfXxGhaLbUFKI
+ DTGtuvwOcTxc08nTL7ORVV5ENQbT5JaMAMPNuN8pY8Ah8kOIgRW3T0WMJM9t
+ iyVr3cDQuinKrtUke7AgdNQCRDUiZOaKG1BFex0UDmLPLFMkppDXyrWW8u.L
+ 0toP9Q4WFG0LMuAP0xLDLQJbyY7JDXljloMChmSXVGIk90aKeH7YG6rC5M7s
+ SIrOKutFbQVEFcTvL7DaRSe8Mu3LqH2JQnxGf7hl0_svB4CfWxhembIif5Eq
+ 0pR4PtsQO3bFteCj4I1hVDwVX2GbXQbxZ1uV.WbLREAjS4Q--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 21 Nov 2011 11:15:54 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH v3 3/3] slub: min order when debug_guardpage_minorder >
+ 0
+In-Reply-To: <1321633507-13614-3-git-send-email-sgruszka@redhat.com>
+Message-ID: <alpine.DEB.2.00.1111211115380.4771@router.home>
+References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com> <1321633507-13614-3-git-send-email-sgruszka@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 21 novembre 2011 à 17:52 +0100, Eric Dumazet a écrit :
-> Le lundi 21 novembre 2011 à 17:10 +0100, Markus Trippelsdorf a écrit :
-> 
-> > Sure. This one happend with CONFIG_DEBUG_PAGEALLOC=y:
-> > 
-> > [drm] Initialized radeon 2.11.0 20080528 for 0000:01:05.0 on minor 0
-> > loop: module loaded
-> > ahci 0000:00:11.0: version 3.0
-> > ahci 0000:00:11.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-> > ahci 0000:00:11.0: AHCI 0001.0100 32 slots 6 ports 3 Gbps 0x3f impl SATA mode
-> > ahci 0000:00:11.0: flags: 64bit ncq sntf ilck pm led clo pmp pio slum part ccc 
-> > scsi0 : ahci
-> > scsi1 : ahci
-> > =============================================================================
-> > BUG task_struct: Poison overwritten
-> > -----------------------------------------------------------------------------
-> 
-> Unfortunately thats the same problem, not catched by DEBUG_PAGEALLOC
-> because freed page is immediately reused.
-> 
-> We should keep pages in free list longer, to have a bigger window.
-> 
-> Hmm...
-> 
-> Please try following patch :
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 9dd443d..b8932a6 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1196,7 +1196,7 @@ void free_hot_cold_page(struct page *page, int cold)
->  	}
->  
->  	pcp = &this_cpu_ptr(zone->pageset)->pcp;
-> -	if (cold)
-> +	if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC) || cold)
->  		list_add_tail(&page->lru, &pcp->lists[migratetype]);
->  	else
->  		list_add(&page->lru, &pcp->lists[migratetype]);
-> 
+On Fri, 18 Nov 2011, Stanislaw Gruszka wrote:
 
+> Disable slub debug facilities and allocate slabs at minimal order when
+> debug_guardpage_minorder > 0 to increase probability to catch random
+> memory corruption by cpu exception.
 
-Also add "slub_max_order=0" to your boot command, since it will make the
-pool larger...
-
-
-
-
-
+Acked-by: Christoph Lameter <cl@linux.com>
