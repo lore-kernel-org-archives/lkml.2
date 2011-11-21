@@ -1,49 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab1KUNqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:46:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58906 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab1KUNqP (ORCPT
+	id S1754353Ab1KUNrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:47:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40177 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab1KUNrX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:46:15 -0500
-X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VrcpeX3YRb0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=8B0y74AbsREmsCCZHrwA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [patch] mm: memcg: shorten preempt-disabled section around
- event checks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Yong Zhang <yong.zhang0@gmail.com>,
-        Luis Henriques <henrix@camandro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20111121110954.GE1771@redhat.com>
-References: <20111121110954.GE1771@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Nov 2011 08:46:07 -0500
-Message-ID: <1321883167.20742.4.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Nov 2011 08:47:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1111201923330.1806@sister.anvils>
+References: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com>
+	<alpine.LSU.2.00.1111201923330.1806@sister.anvils>
+Date: Mon, 21 Nov 2011 21:47:22 +0800
+Message-ID: <CAJd=RBBa-ZoZ3GhYQ-aM=TJ9Zw6ZSu177PWw+s8+zyFnzyUV_w@mail.gmail.com>
+Subject: Re: [PATCH] ksm: use FAULT_FLAG_ALLOW_RETRY in breaking COW
+From: Hillf Danton <dhillf@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 12:09 +0100, Johannes Weiner wrote:
-> -rt ran into a problem with the soft limit spinlock inside the
-> non-preemptible section, because that is sleeping inside an atomic
-> context.  But I think it makes sense for vanilla, too, to keep the
-> non-preemptible section as short as possible.  Also, -3 lines.
-> 
+On Mon, Nov 21, 2011 at 12:16 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Sat, 19 Nov 2011, Hillf Danton wrote:
+>
+>> The flag, FAULT_FLAG_ALLOW_RETRY, was introduced by the patch,
+>>
+>>       mm: retry page fault when blocking on disk transfer
+>>       commit: d065bd810b6deb67d4897a14bfe21f8eb526ba99
+>>
+>> for reducing mmap_sem hold times that are caused by waiting for disk
+>> transfers when accessing file mapped VMAs.
+>>
+>> To break COW, handle_mm_fault() is repeated with mmap_sem held, where
+>> the introduced flag could be used again.
+>>
+>> The straight way is to add changes in break_ksm(), but the function could be
+>> under write-mode mmap_sem, so it has to be dupilcated.
+>>
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>
+> Thank you for making the patch; but unless I'm mistaken - please
+> correct me if so - I think it's better to keep break_cow() simple
+> than add special FAULT_FLAG_ALLOW_RETRY handling there.  Do you
+> have any evidence that its down_read of mmap_sem is a problem in
+> some workload?  I sense that you're using it "because it's there".
+>
+> I'm sceptical on several grounds.
+>
+> One, break_cow() is itself only called on an "error" path: not
+> really an error, but when KSM's bet that it can merge pages turns
+> out to be wrong before it can complete the merge; not a rare case,
+> but not on the hot path.
+>
+> Two, break_ksm()'s loop is required for correctness, but it
+> is a rare case that it actually needs to go round a second time.
+> The typical case it's needed (am I forgetting a more common one?)
+> is when userspace access flips a pte bit in between handle_pte_fault()
+> noting faulting pte, and the chosen fault handler checking pte_same()
+> before committing to its action.  With the page marked PageKsm, yet
+> not in the stable tree, even page reclaim is unable to interfere.
+>
+> Three, FAULT_FLAG_ALLOW_RETRY is acted upon only in lock_page_or_retry(),
+> which is called only from filemap_fault() (not the case here since we
+> don't consider file pages for conversion to PageKsm) or do_swap_page();
+> yet the fault we're provoking would be handled by do_wp_page().
+>
+> Four, lock_page_or_retry() is called in those places when there's a
+> possibility that the page is being read in from disk, to drop the
+> mmap_sem across the slow I/O.  There is no precedent for dropping
+> mmap_sem here while allocating a new page, nor when pte_same() fails:
+> in the former case it could only be a win when the system is already
+> slowed by memory pressure, in the latter case there's little point,
+> since mmap_sem would be reacquired in a moment.
+>
+> I think that amounts to a genial Nack!
+>
+Hello Hugh,
 
-Johannes,
+After reading your reply and the comments in break_ksm(), if the patch does
+not mess up
+	"The important thing is to not let VM_MERGEABLE be cleared while any
+	 such pages might remain in the area",
+and
+	"because handle_mm_fault() may back out if there's
+	 any difficulty e.g. if pte accessed bit gets updated concurrently",
 
-Thanks for this patch. It is very much appreciated by us -rt folks :)
+then if the path in which lock_page_or_retry() is called is not involved,
+mmap_sem is not upped, so the patch has nearly same behavior with break_ksm.
 
--- Steve
+And the overhead of the patch, I think, could match break_ksm.
 
+With dozen cases of writers of mmap_sem in the mm directory, the patch looks
+more flexible in rare and rare corners.
 
+Best regards
+Hillf
