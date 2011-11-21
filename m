@@ -1,54 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab1KUS6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:58:05 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:18939 "EHLO
+	id S1756531Ab1KUS6v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:58:51 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18945 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab1KUS6D (ORCPT
+	with ESMTP id S1753811Ab1KUS6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:58:03 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6537"; a="137308954"
+	Mon, 21 Nov 2011 13:58:04 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6537"; a="137308958"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sebastien Jan <s-jan@ti.com>,
-        Ben Dooks <ben@simtec.co.uk>
-Subject: [PATCH 0/5] ks8851 MAC and eeprom updates
-Date: Mon, 21 Nov 2011 10:57:55 -0800
-Message-Id: <1321901880-12883-1-git-send-email-sboyd@codeaurora.org>
+Cc: Tristram Ha <Tristram.Ha@micrel.com>, linux-kernel@vger.kernel.org,
+        Sebastien Jan <s-jan@ti.com>, Ben Dooks <ben@simtec.co.uk>
+Subject: [PATCH 4/5] KSZ8851-SNL: Fix MAC address change problem
+Date: Mon, 21 Nov 2011 10:57:59 -0800
+Message-Id: <1321901880-12883-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.rc2.3.g0911
+In-Reply-To: <1321901880-12883-1-git-send-email-sboyd@codeaurora.org>
+References: <1321901880-12883-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I pulled this patch series off the netdev list[1] when the eeprom
-reading didn't work for my ks8851 and I wanted the mac address to be
-read out at boot. It all seems to work well, so I'm posting it here
-again, slightly cleaned up and simplified, for inclusion.
+From: Tristram Ha <Tristram.Ha@micrel.com>
 
-Overall it reduces the lines of code and properly supports eeprom
-reading; two things the previous implementation doesn't do.
+When device is off it is under power saving mode. Changing the MAC address
+in that situation will result in the device not communicating as the first
+write to the MAC address register is not executed.
 
-This is based off of linux-next-20111025.
+Signed-off-by: Tristram Ha <Tristram.Ha@micrel.com>
+[ben@simtec.co.uk: cleaned up header]
+Signed-off-by: Ben Dooks <ben@simtec.co.uk>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/net/ethernet/micrel/ks8851.c |   47 +++++++++++++++++++--------------
+ drivers/net/ethernet/micrel/ks8851.h |    2 +-
+ 2 files changed, 28 insertions(+), 21 deletions(-)
 
-Thanks to Ben Dooks for doing the heavy lifting.
-
-[1] http://article.gmane.org/gmane.linux.network/159708
-
-Ben Dooks (4):
-  eeprom_93cx6: Add data direction control.
-  eeprom_93cx6: Add write support
-  KSZ8851-SNL: Add support for EEPROM MAC address
-  KSZ8851-SNL: Add ethtool support for EEPROM via eeprom_93cx6
-
-Tristram Ha (1):
-  KSZ8851-SNL: Fix MAC address change problem
-
- drivers/misc/eeprom/eeprom_93cx6.c   |   88 ++++++
- drivers/net/ethernet/micrel/Kconfig  |    2 +
- drivers/net/ethernet/micrel/ks8851.c |  513 ++++++++++++----------------------
- drivers/net/ethernet/micrel/ks8851.h |   15 +-
- include/linux/eeprom_93cx6.h         |    8 +
- 5 files changed, 278 insertions(+), 348 deletions(-)
+diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
+index d1669bc..208e25a 100644
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -343,6 +343,26 @@ static void ks8851_soft_reset(struct ks8851_net *ks, unsigned op)
+ }
+ 
+ /**
++ * ks8851_set_powermode - set power mode of the device
++ * @ks: The device state
++ * @pwrmode: The power mode value to write to KS_PMECR.
++ *
++ * Change the power mode of the chip.
++ */
++static void ks8851_set_powermode(struct ks8851_net *ks, unsigned pwrmode)
++{
++	unsigned pmecr;
++
++	netif_dbg(ks, hw, ks->netdev, "setting power mode %d\n", pwrmode);
++
++	pmecr = ks8851_rdreg16(ks, KS_PMECR);
++	pmecr &= ~PMECR_PM_MASK;
++	pmecr |= pwrmode;
++
++	ks8851_wrreg16(ks, KS_PMECR, pmecr);
++}
++
++/**
+  * ks8851_write_mac_addr - write mac address to device registers
+  * @dev: The network device
+  *
+@@ -358,8 +378,15 @@ static int ks8851_write_mac_addr(struct net_device *dev)
+ 
+ 	mutex_lock(&ks->lock);
+ 
++	/*
++	 * Wake up chip in case it was powered off when stopped; otherwise,
++	 * the first write to the MAC address does not take effect.
++	 */
++	ks8851_set_powermode(ks, PMECR_PM_NORMAL);
+ 	for (i = 0; i < ETH_ALEN; i++)
+ 		ks8851_wrreg8(ks, KS_MAR(i), dev->dev_addr[i]);
++	if (!netif_running(dev))
++		ks8851_set_powermode(ks, PMECR_PM_SOFTDOWN);
+ 
+ 	mutex_unlock(&ks->lock);
+ 
+@@ -765,26 +792,6 @@ static void ks8851_tx_work(struct work_struct *work)
+ }
+ 
+ /**
+- * ks8851_set_powermode - set power mode of the device
+- * @ks: The device state
+- * @pwrmode: The power mode value to write to KS_PMECR.
+- *
+- * Change the power mode of the chip.
+- */
+-static void ks8851_set_powermode(struct ks8851_net *ks, unsigned pwrmode)
+-{
+-	unsigned pmecr;
+-
+-	netif_dbg(ks, hw, ks->netdev, "setting power mode %d\n", pwrmode);
+-
+-	pmecr = ks8851_rdreg16(ks, KS_PMECR);
+-	pmecr &= ~PMECR_PM_MASK;
+-	pmecr |= pwrmode;
+-
+-	ks8851_wrreg16(ks, KS_PMECR, pmecr);
+-}
+-
+-/**
+  * ks8851_net_open - open network device
+  * @dev: The network device being opened.
+  *
+diff --git a/drivers/net/ethernet/micrel/ks8851.h b/drivers/net/ethernet/micrel/ks8851.h
+index 537fb06e..b2703a1 100644
+--- a/drivers/net/ethernet/micrel/ks8851.h
++++ b/drivers/net/ethernet/micrel/ks8851.h
+@@ -16,7 +16,7 @@
+ #define CCR_32PIN				(1 << 0)
+ 
+ /* MAC address registers */
+-#define KS_MAR(_m)				0x15 - (_m)
++#define KS_MAR(_m)				(0x15 - (_m))
+ #define KS_MARL					0x10
+ #define KS_MARM					0x12
+ #define KS_MARH					0x14
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
