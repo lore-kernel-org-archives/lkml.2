@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab1KUQni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:43:38 -0500
+	id S1756176Ab1KUQnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:43:41 -0500
 Received: from mail-yw0-f46.google.com ([209.85.213.46]:43620 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab1KUQng (ORCPT
+	with ESMTP id S1756128Ab1KUQni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:43:36 -0500
+	Mon, 21 Nov 2011 11:43:38 -0500
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>,
-        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 1/3]arch:powerpc:sysdev:mpic.c Remove extra semicolon.
-Date: Mon, 21 Nov 2011 08:43:26 -0800
-Message-Id: <1321893808-3721-1-git-send-email-justinmattock@gmail.com>
+        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+Subject: [PATCH 3/3]fs:btrfs:free-space-cache.c Remove extra semicolon.
+Date: Mon, 21 Nov 2011 08:43:28 -0800
+Message-Id: <1321893808-3721-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1321893808-3721-1-git-send-email-justinmattock@gmail.com>
+References: <1321893808-3721-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-The patch below removes an extra semicolon.
+The patch below removes an extra semicolon. 
+Note: I have not compile tested this patch, so am unsure if this breaks things.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-CC: linuxppc-dev@lists.ozlabs.org
-CC: Paul Mackerras <paulus@samba.org>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: linux-btrfs@vger.kernel.org
+
 ---
- arch/powerpc/sysdev/mpic.c |    2 +-
+ fs/btrfs/free-space-cache.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
-index 8c7e852..b3fa3d7 100644
---- a/arch/powerpc/sysdev/mpic.c
-+++ b/arch/powerpc/sysdev/mpic.c
-@@ -901,7 +901,7 @@ int mpic_set_irq_type(struct irq_data *d, unsigned int flow_type)
- 	if (vold != vnew)
- 		mpic_irq_write(src, MPIC_INFO(IRQ_VECTOR_PRI), vnew);
+diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+index 181760f..75a7b11 100644
+--- a/fs/btrfs/free-space-cache.c
++++ b/fs/btrfs/free-space-cache.c
+@@ -418,7 +418,7 @@ static void io_ctl_set_crc(struct io_ctl *io_ctl, int index)
+ 	}
  
--	return IRQ_SET_MASK_OK_NOCOPY;;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
+ 	if (index == 0)
+-		offset = sizeof(u32) * io_ctl->num_pages;;
++		offset = sizeof(u32) * io_ctl->num_pages;
  
- void mpic_set_vector(unsigned int virq, unsigned int vector)
+ 	crc = btrfs_csum_data(io_ctl->root, io_ctl->orig + offset, crc,
+ 			      PAGE_CACHE_SIZE - offset);
 -- 
 1.7.5.4
 
