@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab1KUVwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:52:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60864 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab1KUVwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:52:38 -0500
-X-Authority-Analysis: v=2.0 cv=JOm5Qr2b c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=OQnieflinJEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=5ZK8A6k4RrYE1XhnOlUA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: Q: tracing: can we change trace_signal_generate() signature?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20111121202110.GA27966@redhat.com>
-References: <20111121191920.GA24883@redhat.com>
-	 <1321905799.20742.20.camel@frodo>  <20111121202110.GA27966@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Nov 2011 16:52:36 -0500
-Message-ID: <1321912356.20742.24.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1757112Ab1KUVyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:54:40 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50292 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750945Ab1KUVyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 16:54:39 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 5] PM: Update comments describing device power management callbacks
+Date: Mon, 21 Nov 2011 22:57:25 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <Pine.LNX.4.44L0.1111211642060.1848-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1111211642060.1848-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111212257.26071.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 21:21 +0100, Oleg Nesterov wrote:
-
-> > > IOW. Ignoring the changes in include/trace/events/signal.h,
-> > > can the patch below work or the changes like this are not
-> > > allowed?
-> >
-> > I say change it and see who screams.
+On Monday, November 21, 2011, Alan Stern wrote:
+> On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
 > 
-> Heh. How can I do this? The only thing I can do is: send the patch
-> to the maintainer - you ;)
-> 
-> OK. I'll send the patch "officially" tomorrow, let's see who nacks it.
-
-I only maintain the tracing infrastructure. The tracepoint users are
-maintained by the subsystem they are used in. Who's the signal
-maintainer? ;)
-
-> 
-> > > +enum {
-> > > +	TRACE_SIGNAL_DELIVERED,
-> > > +	TRACE_SIGNAL_IGNORED_OR_BLOCKED,
-> 
-> (can't understand why I added _OR_BLOCKED, it should be
->  TRACE_SIGNAL_IGNORED)
-
-quilt refresh?
-
-> 
-> > > @@ -1095,14 +1106,15 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
-> > >  			 * signal was rt and sent by user using something
-> > >  			 * other than kill().
-> > >  			 */
-> > > -			trace_signal_overflow_fail(sig, group, info);
-> > > -			return -EAGAIN;
-> > > +			result = TRACE_SIGNAL_OVERFLOW_FAIL;
-> > > +			ret = -EAGAIN;
-> > > +			goto ret;
-> > >  		} else {
-> > >  			/*
-> > >  			 * This is a silent loss of information.  We still
-> > >  			 * send the signal, but the *info bits are lost.
-> > >  			 */
-> > > -			trace_signal_lose_info(sig, group, info);
-> > > +			result = TRACE_SIGNAL_LOSE_INFO;
+> > On Monday, November 21, 2011, Alan Stern wrote:
+> > > On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > > >   * @freeze: Hibernation-specific, executed before creating a hibernation image.
+> > > > > > - *	Quiesce operations so that a consistent image can be created, but do NOT
+> > > > > > - *	otherwise put the device into a low power device state and do NOT emit
+> > > > > > - *	system wakeup events.  Save in main memory the device settings to be
+> > > > > > - *	used by @restore() during the subsequent resume from hibernation or by
+> > > > > > - *	the subsequent @thaw(), if the creation of the image or the restoration
+> > > > > > - *	of main memory contents from it fails.
+> > > > > > + *	Analogous to @suspend(), but it should not enable the device to signal
+> > > > > > + *	wakeup events.  The majority of subsystems (with the notable exception
+> > > > > > + *	of the PCI bus type) expect the driver-level @freeze() to save the
+> > > > > > + *	device settings in memory to be used by @restore() during the subsequent
+> > > > > > + *	resume from hibernation.
+> > > > > > + *	Subsystem-level @freeze() is executed for all devices after invoking
+> > > > > > + *	subsystem-level @prepare() for all of them.
+> > > > > 
+> > > > > The first three lines you removed contain some important points which I
+> > > > > think should be retained.
+> > > > 
+> > > > Well, not really, because in fact what the callback is supposed to do depends
+> > > > on the subsystem.  For example, on PCI freeze is not supposed to save the
+> > > > the device state even and generally those routines don't emit any events.
+> > > 
+> > > But you removed the part saying that the freeze callback should quiesce
+> > > the device but doesn't necessarily have to put the device into a
+> > > low-power state (in fact, it should avoid changing the power state if
+> > > possible).  And you removed the explanation that this is needed in
+> > > order to guarantee a consistent memory image.  These two points are
+> > > true for all subsystems, including PCI.
 > > 
-> > Hmm, all this result manipulation added for tracing that doesn't occur
-> > in 99.99% of all machines?
+> > I said "Analogous to @suspend()" instead.  I'm not sure why this is not
+> > sufficient?
 > 
-> Not sure I understand...
-
-Is "result" used for anything but tracepoints? When tracing is disabled,
-the tracepoints should be just nops (when jump_label is enabled). Thus
-tracing is very light. But if we are constantly calculating "result",
-this is unused by those that don't use the tracing infrastructure, which
-is 99.99% of all users. This is what I meant.
-
--- Steve
-
+> Because @suspend() is very different!  Its description basically says 
+> to do three things:
 > 
-> With this patch trace_signal_generate() also reports "result" which
-> allows to know was the signal actually delivered or not. And, if not,
-> why it wasn't delivered.
+> 	Quiesce the device,
 > 
-> TRACE_SIGNAL_OVERFLOW_FAIL and TRACE_SIGNAL_LOSE_INFO are not really
-> needed, but this way we can kill trace_signal_overflow_fail() and
-> trace_signal_lose_info() and simplify the code.
+> 	Put it into a low-power state,
 > 
-> Oleg.
+> 	And enable wakeup events.
 
+No, it doesn't any more.  It's being changed by the proposed patch too. :-)
 
+> @freeze() is supposed to do the first but not the second or third.  
+> This makes it only 33% similar to @suspend().  :-)
+> 
+> Also, the description of @suspend() says nothing about having a
+> consistent memory image.
+
+Because that is irrelevant.  The state of the device after the resume
+has to be consistent, regardless of whether the resume is from RAM or
+from an on-disk image.
+
+> > > "A callback routine must NOT try to unregister the device for which it
+> > > was called, however it may unregister children of that device (for
+> > > example, if it detects that a child was hot-unplugged while the system
+> > > was asleep)."
+> > 
+> > That sounds good, thanks!
+> >  
+> > > > Do you know any situation in which that matters?
+> > > 
+> > > Not offhand, but I'm not familiar with too many subsystems.
+> > 
+> > Well, it seems quite extreme to me to be honest. :-)
+> 
+> It would matter for the USB subsystem, except that USB registers and
+> unregisters all its devices from a freezable kernel thread.  It's not
+> hard to imagine that other subsystems might want to unregister devices
+> as soon as they are found to be missing, which means during the
+> parent's resume routine.
+
+I see.
+
+Thanks,
+Rafael
