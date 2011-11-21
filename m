@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1KUOQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 09:16:17 -0500
+	id S1754360Ab1KUOQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 09:16:13 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:53022 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab1KUOQO (ORCPT
+	with ESMTP id S1752073Ab1KUOQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 09:16:14 -0500
-Date: Mon, 21 Nov 2011 14:16:06 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-Subject: Re: [PATCH 0/2 REPOST] ARM: amba: Enable module alias autogeneration
- for AMBA drivers
-Message-ID: <20111121141606.GA14679@localhost.localdomain>
-References: <1321872510-2562-1-git-send-email-dave.martin@linaro.org>
- <20111121123153.GQ9581@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121123153.GQ9581@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Nov 2011 09:16:11 -0500
+Message-ID: <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 21 Nov 2011 15:16:06 +0100
+In-Reply-To: <20111121131531.GA1679@x4.trippels.de>
+References: <20111118072519.GA1615@x4.trippels.de>
+	 <20111118075521.GB1615@x4.trippels.de> <1321605837.30341.551.camel@debian>
+	 <20111118085436.GC1615@x4.trippels.de>
+	 <20111118120201.GA1642@x4.trippels.de> <1321836285.30341.554.camel@debian>
+	 <20111121080554.GB1625@x4.trippels.de>
+	 <20111121082445.GD1625@x4.trippels.de>
+	 <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121131531.GA1679@x4.trippels.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 12:31:53PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Nov 21, 2011 at 10:48:28AM +0000, Dave Martin wrote:
-> > [This is a partial repost of a series previously posted to alkml.
-> > 
-> > This post contains the core changes.  The driver-specific changes
-> > can be found on alkml.]
+Le lundi 21 novembre 2011 à 14:15 +0100, Markus Trippelsdorf a écrit :
+
+> I've enabled CONFIG_SLUB_DEBUG_ON and this is what happend:
 > 
-> As this has been posted a few times to LKML and no one seems to have
-> interest in it, I'll take the silence as indicating no objections
-> to the changes in include/linux/mod_devicetable.h and
-> scripts/mod/file2alias.c.
-> 
-> So I think this is ready for merging.
-
-Are you willing to take the driver changes through your tree also, or
-should I continue to push those separately?
-
-The driver changes are simple and orthogonal; I have Acks on a few of
-them, and no disagreements.  The change to each driver is just the
-addition of a single MODULE_DEVICE_TABLE() entry in each driver.
-
-The previous full series with all the drivers was posted a while ago
-([PATCH 00/16] ARM: amba: Enable module alias autogeneration for AMBA drivers
-Message-Id: <1317830707-17517-1-git-send-email-dave.martin@linaro.org>)
-
-Let me know if you need me to repost the series in order to make a
-judgement on this.
 
 Thanks
----Dave
+
+Please continue to provide more samples.
+
+There is something wrong somewhere, but where exactly, its hard to say.
+
+Something is keeping a pointer to freed memory and reuse it while memory
+had been reused.
+
+Are you using hugepages ?
+
+
+
