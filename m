@@ -1,167 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab1KUCAA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 21:00:00 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48725 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab1KUB74 convert rfc822-to-8bit (ORCPT
+	id S1755044Ab1KUCBR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 21:01:17 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43426 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877Ab1KUCBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 20:59:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1111201121120.1264@sister.anvils>
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
-	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
-Date: Mon, 21 Nov 2011 09:59:55 +0800
-Message-ID: <CAGBYx2b4+s+YSKFoPbNSw=vWVaCZyxHjQdKGMHhCztTppETT9Q@mail.gmail.com>
-Subject: Re: Bug with "fix partial page writes"
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
-        Curt Wohlgemuth <curtw@google.com>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 20 Nov 2011 21:01:15 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 21 Nov 2011 10:59:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Balbir Singh <bsingharora@gmail.com>, Paul Turner <pjt@google.com>,
+        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>,
+        <fweisbec@gmail.com>
+Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
+Message-Id: <20111121105957.9c85db16.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4EC52F32.2040708@parallels.com>
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
+	<1320182360-20043-15-git-send-email-glommer@parallels.com>
+	<4EBD94A0.9070703@google.com>
+	<4EBE4A80.6090607@parallels.com>
+	<CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
+	<CAKTCnzkFb2rRyOJ3Uxt13mXrB-9Ox=zgXAOZ5bZ_6Kwr64AbTA@mail.gmail.com>
+	<20111117085251.443fefa5.kamezawa.hiroyu@jp.fujitsu.com>
+	<4EC47632.2000904@parallels.com>
+	<CAKTCnznzpqUbMJEMwaewwjvMW1fG0J3=a8JxqKiHKNuffO7azg@mail.gmail.com>
+	<4EC52F32.2040708@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 17 Nov 2011 13:58:42 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-I am curious about the reason we need this operation in write_begin
-functions.    I had a look at the commit log just now.   The commit
-log explains the intention is to handle writes on a hole and writes on
-EOF.   Two cases can be handled successfully by block_write_begin.
+> On 11/17/2011 12:58 AM, Balbir Singh wrote:
+> > On Thu, Nov 17, 2011 at 8:19 AM, Glauber Costa<glommer@parallels.com>  wrote:
+> >> On 11/16/2011 09:52 PM, KAMEZAWA Hiroyuki wrote:
+> >>>
+> >>> On Wed, 16 Nov 2011 15:51:27 +0530
+> >>> Balbir Singh<bsingharora@gmail.com>    wrote:
+> >>>
+> >>>>>
+> >>>>> On the other hand, I don't think much discussion remains for cpuacct,
+> >>>>> everyone's pretty unanimous in that they'd like to see it deprecated.
+> >>>>> By splitting this up we can close out that quickly while we figure out
+> >>>>> the
+> >>>>> best way to resolve the above.
+> >>>>>
+> >>>>
+> >>>> I'd give it a thumbs up, if we can create sched groups and provide
+> >>>> accounting without control - like we can for the memory cgroup today.
+> >>>>
+> >>>
+> >>> Isn't it possible ?
+> >>>
+> >>> Thanks,
+> >>> -Kame
+> >>>
+> >> I must say I don't really understand what exactly you propose, and how it is
+> >> different from what we have today.
+> >>
+> >> My take is that you are talking about a single cgroup in which you can have
+> >> the functionality of both cpuacct and cpu, but surrounded by knobs that
+> >> allows you to turn them off individually.
+> >>
+> >> Am I right?
+> >>
+> >
+> > No here is what I am asking for
+> >
+> > I don't want CPU control, just accounting, so I create the following groups
+> >
+> >                            a
+> >                         /    \
+> >                        V    V
+> >                        b     c
+> >
+> > Today, with the cpu controller, the moment I create a, b and c, they
+> > get default shares and if I put tasks, their b/w is decided by the
+> > shares, what if I don't want control, but I want to account for their
+> > time only?
+> >
+> > Balbir
+> 
+> I think that if this really a requirement, cpuacct should stay. I was 
+> working under the assumption that it was not really an important case - 
+> so thanks for the clarification. Peter and Paul can chime in here, but I 
+> think that this requirement poses constraints to the cpu cgroup and 
+> consequently the scheduler - both in its current incarnation and in what 
+> come in the future - that may not be acceptable. What I am concerned 
+> about is that it might mandate the scheduler to always test whether or 
+> not the grouping has a scheduling effect or not - and then walk the 
+> group if it is not, etc. In a summary, if we can or cannot bundle 
+> processes together for scheduling purposes, we'll likely need separate 
+> data structures anyway.
+> 
+> A lot of the code I wrote can be reused to at least make it faster in 
+> the case in which only the root is mounted - for cpuacct.stat at least.
+> 
+> However, the big question remains: The most expensive operation for 
+> cpuacct also seem to be the most important, cpuusage, which was a big 
+> part of the motivation to bundle them all together. Maybe then Paul's 
+> co-mounting idea starts to make sense, but it will still be quite slow 
+> for your usage, in which the groups are clearly different.
+> 
+> I think the best I can come up with right now, is to base my work on 
+> cpuacct - I am fine with that, and it was actually how my first version 
+> looked like - and then think about a way to make cpuusage faster later...
+> 
 
+Could you share your analysis why cpuacct cgroup is slow ?
 
-Yongqiang.
-
-On Mon, Nov 21, 2011 at 4:59 AM, Hugh Dickins <hughd@google.com> wrote:
-> We've seen no response to this, so Cc'ing Ted and linux-kernel,
-> and I'll fill in some more detail below.
->
-> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
->> It appears that there's a bug with this patch:
->>
->> -------------------------------------------
->> commit 02fac1297eb3f471a27368271aadd285548297b0
->> Author: Allison Henderson <achender@linux.vnet.ibm.com>
->> Date:   Tue Sep 6 21:53:01 2011 -0400
->>
->>     ext4: fix partial page writes
->> ...
->> -------------------------------------------
->>
->> Hugh Dickins found a bug with some nasty testing and lockdep that
->
-> It's the tmpfs swapping test that I've been running, with variations,
-> for years.  System booted with mem=700M and 1.5G swap, two repetitious
-> make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
-> the balance of built to unbuilt source grows smaller with later kernels),
-> one directly in a tmpfs (irrelevant in this case, except for the added
-> pressure it generates), the other in a 1k-block ext2 (that I drive with
-> ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file.
->
-> The first oops I got was indeed down in lockdep, but I've since seen
-> crashes from the same cause without lockdep configured in.  I've not
-> bothered to write down the stacks, beyond noting ext4_da_write_end()'s
-> call to ext4_discard_partial_page_buffers_no_lock() in them, since the
-> code there is clearly at fault as Curt describes.
->
->> crashed in ext4_da_write_end(), and after looking at the code with
->> him, it appears that the call to
->> ext4_discard_partial_page_buffers_no_lock() in this routine is
->> manipulating an unlocked, and possibly non-existent page:
->>
->>
->> -------------------------------------------
->> ...
->>       ret2 = generic_write_end(file, mapping, pos, len, copied,
->>                                                       page, fsdata);
->>
->>       page_len = PAGE_CACHE_SIZE -
->>                       ((pos + copied - 1) & (PAGE_CACHE_SIZE - 1));
->>
->>       if (page_len > 0) {
->>               ret = ext4_discard_partial_page_buffers_no_lock(handle,
->>                       inode, page, pos + copied - 1, page_len,
->>                       EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED);
->>       }
->> ...
->> -------------------------------------------
->>
->> Note that generic_write_end() will unlock and release the page before
->> it returns.
->
-> Exactly.  And clearly the loop-on-tmpfs aspect of the test is
-> irrelevant, except in generating more pressure to trigger it.
->
->>
->> I've no good answer for how to fix this properly, but I wanted to let
->> Allison know about this, if she hadn't already.  I looked but didn't
->> see any related email on the linux-ext4 list for this problem.
->
-> There was a second problem I was seeing, more elusive and much harder
-> to attribute: occasionally the build on ext2 would fail with errors
-> from ld (almost always of the kind "In function `no symbol': multiple
-> definition of `no symbol'" and "Warning: size of symbol `' changed":
-> I don't know if there's anything to be deduced from that).  I took
-> these to indicate an error in filesystem or loop or tmpfs or swap.
->
-> First suspect was loop changes from hch in 3.2-rc1, but backing those
-> out made no difference.  I thought I was facing a week's bisection
-> (since it would need at least a day to conclude any stage good), but
-> took a gamble on backing out *both* parts of 02fac1297eb3: page_len
-> additions to ext4_da_write_begin() as well as page_len additions to
-> ext4_da_write_end().
->
-> That gamble paid off: the test then showed no problems in several
-> days running on two machines.  So, both parts of 02fac1297eb3 are
-> bad, but it's not so easy to see what's wrong with the write_begin.
->
-> My *guess* is that the partial page fixes have interfered with the
-> subtle page-dirty buffer-dirty protocol in some way, which manifests
-> only under memory pressure.
->
-> It's conceivable that loop and tmpfs and swap play a part in this
-> further error, but I don't think so: I have no evidence for that,
-> and no such problem was seen before 3.2-rc1.
->
-> ---
->
-> I wanted to find you an easier way to reproduce the problem, so I
-> tried fsx (I'm still using a pretty old fsx, no fallocate or punch
-> hole), run in ext2 on a kernel booted with mem=700M.  Sorry, I did
-> this a week ago, then didn't find time to write it up, and failed to
-> note when my ext2 was in /dev/loop0 and when it was directly on disk.
->
-> fsx foo -q -c 100 -l 100000000 &
-> while :
-> do      # memory hog mmaps and touches each page of 800MB private area
->        swapout 800
-> done
->
-> I did not reproduce either problem above with that.  Instead I found
-> that backing out 02fac1297eb3 made fsx on 3.2-rc1 fail in a few minutes.
-> But leaving 02fac1297eb3 in, fsx still failed in 20 minutes or an hour.
-> On 3.1, fsx failed in a few minutes.  On 3.0, fsx failed in half an hour.
-> On 2.6.39, fsx failed in a few minutes.  I had to go back to 2.6.38 for
-> fsx to run successfully under memory pressure for more than two hours.
->
-> It looks as if ext4 testing has not been running fsx under memory
-> pressure recently.  And although I didn't reproduce my main problems
-> that way, it could well be that getting fsx to run reliably again
-> under memory pressure will be the way to fix those problems.
->
-> Thanks,
-> Hugh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Thanks,
+-Kame
 
 
-
--- 
-Best Wishes
-Yongqiang Yang
