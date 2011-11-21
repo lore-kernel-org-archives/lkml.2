@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab1KULF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:05:57 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3835 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755981Ab1KULFz (ORCPT
+	id S1755948Ab1KULK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:10:27 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46585 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab1KULK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:05:55 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host pALB5pSE029126
-Subject: Re: Running Application Inside Application
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Xin Tong <xerox.time.tech@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Nov 2011 12:05:51 +0100
-In-Reply-To: <CAM_iQpXPTheJU_+GKHkDu2b0WrV_4oJJbM+pWY3uprh6fX7cSw@mail.gmail.com>
-References: <CALKntY135akw4khsrbVdk2L-YgF0aYsaHw6Lhf7n4gU6MTrZuQ@mail.gmail.com>
-	 <CAM_iQpXPTheJU_+GKHkDu2b0WrV_4oJJbM+pWY3uprh6fX7cSw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1321873552.22548.63.camel@thorin>
-Mime-Version: 1.0
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Mon, 21 Nov 2011 06:10:26 -0500
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Frank Arnold <frank.arnold@amd.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH RESEND] x86, AMD: Correct align_va_addr documentation
+Date: Mon, 21 Nov 2011 12:10:19 +0100
+Message-Id: <1321873819-29541-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.8.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 11:25 +0800, Cong Wang wrote:
-> On Mon, Nov 21, 2011 at 10:18 AM, Xin Tong <xerox.time.tech@gmail.com> wrote:
-> > I have applications that do not install signal handlers I need it to
-> > install. Therefore, I am thinking about having a light-weight run-time
-> > to load the application ELF file and install the needed signal handler
-> > in the run-time ? Is this doable ? What if it is not ELF-encoded ?
-> 
-> If you want to exec*() to load the ELF, no, the signal handlers will be
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-It is in general so - not only für ELF.
+dfb09f9b7ab0 ("x86, amd: Avoid cache aliasing penalties on AMD family
+15h") introduced a kernel command line parameter called 'align_va_addr'
+which still refers to arguments used in an earlier version of the patch
+and which got changed without updating the documentation. Correct that
+omission.
 
-> cleared after exec*(), as the entire .text will be replaced by the new ELF file.
-> 
-> So, you probably have to parse and load the ELF file by yourself.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ Documentation/kernel-parameters.txt |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Hmmm, if these (obviously broken) applications use dynamic linking, one
-could probably use a preload library.
-Never tried that though .....
-
-	Bernd
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a0c5c5f..5e22c3f 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -315,8 +315,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			CPU-intensive style benchmark, and it can vary highly in
+ 			a microbenchmark depending on workload and compiler.
+ 
+-			1: only for 32-bit processes
+-			2: only for 64-bit processes
++			32: only for 32-bit processes
++			64: only for 64-bit processes
+ 			on: enable for both 32- and 64-bit processes
+ 			off: disable for both 32- and 64-bit processes
+ 
 -- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+1.7.8.rc0
 
