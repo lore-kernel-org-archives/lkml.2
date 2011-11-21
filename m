@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1KUGDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 01:03:35 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:46067 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1KUGDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 01:03:33 -0500
-X-AuditID: cbfee61a-b7bffae000000cfc-ea-4ec9e9b489d7
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-To: FlorianSchandinat@gmx.de
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: Fix return value of fb_notifier_call_chain
-Date: Mon, 21 Nov 2011 15:03:31 +0900
-Message-id: <1321855411-13730-1-git-send-email-jy0922.shim@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-X-Brightmail-Tracker: AAAAAA==
+	id S1754923Ab1KUGGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 01:06:47 -0500
+Received: from ozlabs.org ([203.10.76.45]:51931 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751324Ab1KUGGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 01:06:46 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [patch] missing dependency for virtio_mmio
+In-Reply-To: <20111121035831.GF2203@ZenIV.linux.org.uk>
+References: <20111121035831.GF2203@ZenIV.linux.org.uk>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 21 Nov 2011 15:56:45 +1030
+Message-ID: <874nxy9hbe.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return value of blocking_notifier_call_chain isn't errno value, it
-is just notify return value. The ret of fb_notifier_call_chain should is
-restored to error value from notify return value using
-notifier_to_errno().
+On Mon, 21 Nov 2011 03:58:31 +0000, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> Driver really depends on having readb/writeb/etc. - won't even build on
+> things like s390 or uml and on tile without PCI it'll build but panic
+> if you manage to run it...
 
-Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
----
- drivers/video/fb_notify.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks, already queued.  I was about to send it when YA virtio fix
+turned up, and I like them to sit in linux-next for a cycle first.
 
-diff --git a/drivers/video/fb_notify.c b/drivers/video/fb_notify.c
-index 74c2da5..49a64a3 100644
---- a/drivers/video/fb_notify.c
-+++ b/drivers/video/fb_notify.c
-@@ -42,6 +42,8 @@ EXPORT_SYMBOL(fb_unregister_client);
-  */
- int fb_notifier_call_chain(unsigned long val, void *v)
- {
--	return blocking_notifier_call_chain(&fb_notifier_list, val, v);
-+	int ret = blocking_notifier_call_chain(&fb_notifier_list, val, v);
-+
-+	return notifier_to_errno(ret);
- }
- EXPORT_SYMBOL_GPL(fb_notifier_call_chain);
--- 
-1.7.5.4
+That said, happy for Linus to take this now if it's breaking people.
 
+Cheers,
+Rusty.
