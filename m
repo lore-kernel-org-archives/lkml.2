@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab1KUOcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 09:32:12 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36940 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab1KUOcK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 09:32:10 -0500
+	id S1755275Ab1KUOcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 09:32:31 -0500
+Received: from ackle.nomi.cz ([81.31.33.35]:35927 "EHLO ackle.nomi.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753323Ab1KUOca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 09:32:30 -0500
+Date: Mon, 21 Nov 2011 15:32:26 +0100
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20111121143226.GA16969@nomi.cz>
+References: <20111110125347.GA29415@nomi.cz> <20111110160703.GA2775@redhat.com> <20111110163051.GA24533@nomi.cz> <20111111054731.GA2292@redhat.com> <20111111150105.GA25437@nomi.cz> <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz> <20111121130527.GA4010@redhat.com> <20111121130916.GA11136@nomi.cz> <20111121134056.GB4010@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJJYPdkFpq+VJDyAP6dk3j-6YN+Ttu0ejByzEnr2HvXozYVXSg@mail.gmail.com>
-References: <CAJJYPdkFpq+VJDyAP6dk3j-6YN+Ttu0ejByzEnr2HvXozYVXSg@mail.gmail.com>
-Date: Mon, 21 Nov 2011 15:32:09 +0100
-Message-ID: <CAJJYPdnfJwUEZWpKSfjf3xjzzyHoHLe1VONtVQ0N5uP8raYY5w@mail.gmail.com>
-Subject: Re: WARNING: at drivers/gpu/drm/i915/intel_display.c:792
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111121134056.GB4010@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/21 Zdenek Kabelac <zdenek.kabelac@gmail.com>:
-> Hi
->
-> My Xorg server on rawhide machine is giving me sudden X lockups with 3.1 kernel.
-> There might be couple issue related together as rawhide is now using
-> some experimental
-> Xorg server - but the message from kernel is a bit scary - so
-> reposting to lkml as well.
->
-> xorg-x11-server-Xorg-1.11.99.1-6.20111109.fc17.x86_64
-> git intel driver: 3b9479dc39d32fd97f80c1e5e0fac67d36ee5e40
-> drm version (a bit older): 8d055890d90c3d92647e3d8b98d32630ef87c2c8
-> (since current Fedora rawhide intel driver is so much broken it
-> doesn't even start)
->
+Hello,
 
+On Mon, Nov 21, 2011 at 02:40:57PM +0100, Stanislaw Gruszka wrote:
+> On Mon, Nov 21, 2011 at 02:09:16PM +0100, Tomáš Janoušek wrote:
+> > And that's exactly what happens if I don't disable firewire-ohci, because of
+> > that stupid Ricoh multifunction blah blah issue.
+> 
+> So maybe problem is caused by Ricoh, not by iwlagn. But if so 
+> why blacklisting iwlagn help? Wired. Did you disable firewire in
+> BIOS, or just blacklist module?
 
-It's worth to mention - it happens also with kernel 3.0
-and the latest updated libdrm  (ca4971292cf99e0063416cd1c3467af94637bf2b)
-The processing of mouse event seems to be always mandatory
-(i.e. it blacks LCD with some mouse movement).
+I don't think so. The problem with Ricoh is that it has two PCI devices:
+0d:00.0 and 0d:00.3, but both use 0d:00.0 in DMA requests, which triggers DMAR
+faults.  Of course, I can try disabling that in BIOS, but I doubt it will
+change anything.
 
-Zdenek
+> Ok maybe let's try to find some better reproducer first.
+> I wrote simple program that fill memory with some pattern, and
+> then check every one second if pattern is still there.
+> It can be used like:
+> ./checkmem 100M 30M
+> where first argument is size of memory it will alloc and check,
+> second specify number of internal loops to make cpu busy (bigger
+> value will cause more cpu power consumption). Many instances of
+> the program can be running at once.
+> 
+> Tomáš, please try to reproduce with that program, I'm attaching
+> it. When corruption will be detected, checkmem will print invalid
+> values, maybe would be possible to find out what contents is
+> written to memory.
+
+Okay, I'll try that later. Yesterday I tried to use memtester [1] to catch the
+problem, but it never occured in it. Kernel compilation was segfaulting and
+that tool was running alongside being all happy. But maybe it has different
+memory usage pattern or something. Anyway, I'll try your program and if it
+doesn't work, I'll make it so. :-)
+
+[1] http://pyropus.ca/software/memtester/
+
+Regards,
+-- 
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
