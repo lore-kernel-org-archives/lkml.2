@@ -1,246 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab1KUEg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 23:36:59 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:58537 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab1KUEg4 (ORCPT
+	id S1755401Ab1KUEjU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 23:39:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41028 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab1KUEjQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 23:36:56 -0500
-Message-ID: <4EC9D557.9090008@linux.vnet.ibm.com>
-Date: Mon, 21 Nov 2011 10:06:39 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Sun, 20 Nov 2011 23:39:16 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
-References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <201111192257.19763.rjw@sisk.pl> <4EC8984E.30005@linux.vnet.ibm.com> <201111201124.17528.rjw@sisk.pl>
-In-Reply-To: <201111201124.17528.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112104-9574-0000-0000-0000003C2098
+In-Reply-To: <20111120183846.GB12868@thunk.org>
+References: <1321747359-1919-1-git-send-email-linkinjeon@gmail.com>
+	<CAKYAXd_YXUymFjbxgXwV+pXJNvPhq-W_Pi96mU3NodO3yyNTrg@mail.gmail.com>
+	<20111120183846.GB12868@thunk.org>
+Date: Mon, 21 Nov 2011 10:09:14 +0530
+Message-ID: <CADDb1s09iOvVUNJCLEzWu=7yykhNBhqTKpWRV_H7rP-UO8-gUw@mail.gmail.com>
+Subject: Re: [PATCH v2] ext4: group info caches set to SLAB_MEM_SPREAD flags.
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, NamJae Jeon <linkinjeon@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2011 03:54 PM, Rafael J. Wysocki wrote:
-> On Sunday, November 20, 2011, Srivatsa S. Bhat wrote:
->> On 11/20/2011 03:27 AM, Rafael J. Wysocki wrote:
->>> On Thursday, November 17, 2011, Srivatsa S. Bhat wrote:
->>>> The lock_system_sleep() function is used in the memory hotplug code at
->>>> several places in order to implement mutual exclusion with hibernation.
->>>> However, this function tries to acquire the 'pm_mutex' lock using
->>>> mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
->>>> get the lock. This would lead to task freezing failures and hence
->>>> hibernation failure as a consequence, even though the hibernation call path
->>>> successfully acquired the lock.
->>>>
->>>> This patch fixes this issue by modifying lock_system_sleep() to use
->>>> mutex_trylock() in a loop until the lock is acquired, instead of using
->>>> mutex_lock(), in order to avoid going to uninterruptible sleep.
->>>> Also, we use msleep() to avoid busy looping and breaking expectations
->>>> that we go to sleep when we fail to acquire the lock.
->>>> And we also call try_to_freeze() in order to cooperate with the freezer,
->>>> without which we would end up in almost the same situation as mutex_lock(),
->>>> due to uninterruptible sleep caused by msleep().
->>>>
->>>> v3: Tejun suggested avoiding busy-looping by adding an msleep() since
->>>>     it is not guaranteed that we will get frozen immediately.
->>>>
->>>> v2: Tejun pointed problems with using mutex_lock_interruptible() in a
->>>>     while loop, when signals not related to freezing are involved.
->>>>     So, replaced it with mutex_trylock().
->>>>
->>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>>> ---
->>>>
->>>>  include/linux/suspend.h |   37 ++++++++++++++++++++++++++++++++++++-
->>>>  1 files changed, 36 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
->>>> index 57a6924..0af3048 100644
->>>> --- a/include/linux/suspend.h
->>>> +++ b/include/linux/suspend.h
->>>> @@ -5,6 +5,8 @@
->>>>  #include <linux/notifier.h>
->>>>  #include <linux/init.h>
->>>>  #include <linux/pm.h>
->>>> +#include <linux/freezer.h>
->>>> +#include <linux/delay.h>
->>>>  #include <linux/mm.h>
->>>>  #include <asm/errno.h>
->>>>  
->>>> @@ -380,7 +382,40 @@ static inline void unlock_system_sleep(void) {}
->>>>  
->>>>  static inline void lock_system_sleep(void)
->>>>  {
->>>> -	mutex_lock(&pm_mutex);
->>>> +	/*
->>>> +	 * "To sleep, or not to sleep, that is the question!"
->>>> +	 *
->>>> +	 * We should not use mutex_lock() here because, in case we fail to
->>>> +	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
->>>> +	 * state, which would lead to task freezing failures. As a
->>>> +	 * consequence, hibernation would fail (even though it had acquired
->>>> +	 * the 'pm_mutex' lock).
->>>> +	 * Using mutex_lock_interruptible() in a loop is not a good idea,
->>>> +	 * because we could end up treating non-freezing signals badly.
->>>> +	 * So we use mutex_trylock() in a loop instead.
->>>> +	 *
->>>> +	 * Also, we add try_to_freeze() to the loop, to co-operate with the
->>>> +	 * freezer, to avoid task freezing failures due to busy-looping.
->>>> +	 *
->>>> +	 * But then, since it is not guaranteed that we will get frozen
->>>> +	 * rightaway, we could keep spinning for some time, breaking the
->>>> +	 * expectation that we go to sleep when we fail to acquire the lock.
->>>> +	 * So we add an msleep() to the loop, to dampen the spin (but we are
->>>> +	 * careful enough not to sleep for too long at a stretch, lest the
->>>> +	 * freezer whine and give up again!).
->>>> +	 *
->>>> +	 * Now that we no longer busy-loop, try_to_freeze() becomes all the
->>>> +	 * more important, due to a subtle reason: if we don't cooperate with
->>>> +	 * the freezer at this point, we could end up in a situation very
->>>> +	 * similar to mutex_lock() due to the usage of msleep() (which sleeps
->>>> +	 * uninterruptibly).
->>>> +	 *
->>>> +	 * Phew! What a delicate balance!
->>>> +	 */
->>>> +	while (!mutex_trylock(&pm_mutex)) {
->>>> +		try_to_freeze();
->>>> +		msleep(10);
->>>
->>> The number here seems to be somewhat arbitrary.  Is there any reason not to
->>> use 100 or any other number?
->>>
->>
->> Short answer:
->>
->> The number is not arbitrary. It is designed to match the frequency at which
->> the freezer re-tries to freeze tasks in a loop for 20 seconds (after which
->> it gives up).
-> 
-> So that should be documented too, right?  Perhaps there should be a #define
-> for that number.
-> 
->> Long answer:
->>
->> Let us define 'time-to-freeze-this-task' as the duration of time between the
->> setting of TIF_FREEZE flag for this task (after the task enters the while
->> loop in this patch) and the time at which this task is considered frozen
->> by the freezer.
->>
->> There are 2 constraints we are trying to handle here:
->>
->> [And let us see extreme case solutions for these constraints, to start with]
->>
->> 1. We want task freezing to be fast, to make hibernation fast.
->> Hence, we don't want to use msleep() here at all, just the
->> try_to_freeze() within the while loop would fit well.
->>
->> 2. As Tejun suggested, considering that we might not get frozen immediately,
->> we don't want to hurt cpu power management during that time. So, we
->> want to sleep when possible. Which means we can sleep for ~20 seconds at a
->> stretch and still manage to prevent freezing failures.
->>
->> But obviously we need to strike a balance between these 2 contradictions.
->> Hence, we observe that the freezer goes in a loop and tries to freeze
->> tasks, and waits for 10ms before retrying (and continues this procedure
->> for 20 seconds).
->>
->> Since we want time-to-freeze-this-task as small as possible, we have to
->> minimize the number of iterations the freezer does waiting for us.
->> Hence we choose to sleep for 10ms, which means, in the worst case,
->> our time-to-freeze-task will be one iteration of the freezer, IOW 10ms.
->> [That way, actually sleeping for 9ms would do best, but we probably don't
->> want to get that specific here, or should we?]
->>
->> I think I have given a slight hint about this issue in the comment as well...
->>
->> I prefer not to #define 10 and use it in freezer's loop and in this above
->> msleep() because, good design means, "Keep the freezer internals internal
->> to the freezer!". But all of us agree that this patch is only a temporary
->> hack (which unfortunately needs to know about freezer's internal working)..
->> and also that, we need to fix this whole issue at a design level sooner
->> or later.
->> So having 10ms msleep(), as well as hard-coding this value here, are both
->> justified, IMHO.
->>
->> As for the comment, I don't know if I should be expanding that "slight hint"
->> into a full-fledged explanation, since Tejun is already complaining about
->> its verbosity ;-)
->>
->> By the way, for somebody who is looking from a purely memory-hotplug point
->> of view and is not that familiar with the freezer, the "slight hint" in
->> the comment "careful enough not to sleep for too long at a stretch...
->> freezing failure..." is supposed to be interpreted as : "Oh when does
->> freezing fail? Let me look up the freezer code.. ah, 20 seconds.
->> By the way, I spot a 10ms sleep in the freezer loop as well..
->> Oh yes, *now* it all makes sense!" :-)
->>
->> Or perhaps, adding the same justification I gave above (about the 10ms
->> sleep) to the changelog should do, right?
->>
->>>> +	}
->>>>  }
->>>>  
->>>>  static inline void unlock_system_sleep(void)
->>>
-> 
-> Well, let's not add temporary hacks, especially as fragile as this one.
-> 
-> Why don't we simply open code what we need using a proper wait queue
-> and waiting for an event?
-> 
-> So, have something like transition_in_progress (I believe there already is
-> something like that somewhere), set it to 'true' under pm_mutex in
-> lock_system_sleep(), possibly waiting for it to become 'false' properly
-> (using interruptible sleep with try_to_freeze()) and reset it to 'false' (under pm_mutex) in unlock_system_sleep()?
-> 
+Hi Ted,
 
-Actually, I think I have a better idea based on a key observation:
-We are trying to acquire pm_mutex here. And if we block due to this,
-we are *100% sure* that we are not going to run as long as hibernation
-sequence is running, since hibernation releases pm_mutex only at the
-very end, when everything is done.
-And this means, this task is going to be blocked for much more longer
-than what the freezer intends to achieve. Which means, freezing and
-thawing doesn't really make a difference to this task!
+First of all extremely sorry for causing you inconvenience and making
+you use of your time to review such trivial patches.
 
-So, let's just ask the freezer to skip freezing us!! And everything
-will be just fine!
+Yes, we are part of some company and we were looking for Ext4 as the
+next big thing and looking forward to adopting that. We really need
+complete understanding of Ext4 to stand out and gain confidence
+ourselves first. We started with the initial anlalysis of Ext4 and
+side-by-side looking at the source code.
+As far as submitting patch is concerned - yes, It was part of our
+learning curve - that we started the comparision.
 
-Something like:
+In the past, I have literally focussed on our runtime environment and
+raised issues. This was the firsttime - that there was something we
+saw for code submission(may be just out of our childish curiosity).
 
-void lock_system_sleep(void)
-{
-	/* simplified freezer_do_not_count() */
-	current->flags |= PF_FREEZER_SKIP;
+I will make sure that there is no more inconvenience of that sort.
 
-	mutex_lock(&pm_mutex);
+Thanks & Regards,
+Amit Sahrawat
 
-}
 
-void unlock_system_sleep(void)
-{
-	mutex_unlock(&pm_mutex);
-
-	/* simplified freezer_count() */
-	current->flags &= ~PF_FREEZER_SKIP;
-
-}
-
-We probably don't want the restriction that freezer_do_not_count() and
-freezer_count() work only for userspace tasks. So I have open coded
-the relevant parts of those functions here.
-
-I haven't tested this solution yet. Let me know if this solution looks
-good and I'll send it out as a patch after testing and analyzing some
-corner cases, if any.
-
-Thanks,
-Srivatsa S. Bhat
- 
-
+On Mon, Nov 21, 2011 at 12:08 AM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Sun, Nov 20, 2011 at 02:45:32PM +0900, NamJae Jeon wrote:
+>> This patch is not really meaningful ? or you need to see performance
+>> data although cpuset mem spread flags patch is proved before.
+>> I am waiting for your decision.
+>
+> I don't think it's really going to make much of a difference, to be
+> honest.  It's probably technically a little better, but at the end of
+> the day, it's not really worth the tiny amount of effort to process
+> the patch.
+>
+> I put it in the same category as people who like to remove whitespaces
+> from files or remove unused variables.  It marginally makes the code a
+> tiny amount better, but at the moment, review bandwidth in the ext4
+> subsystem is a critically tight resource, and in terms of the grand
+> scheme of things, there are higher priority things that I need to
+> worry about, as opposed to people constantly resending trivial patches
+> and demanding a decision.
+>
+> So let me ask a counter question --- why are you sending these
+> patches?  Especially when you don't even have a system that would
+> benefit from such changes?  Is it just ego to have your name in the
+> kernel, or to be counted amongst kernel developers?  Is this a warm up
+> because you'd like to do more substantive work in ext4, or other parts
+> of the kernel?  Is this a University exercise?  And if you're from a
+> company, which company, and what's your interest in ext4?  I
+> understand how Whamcloud uses ext4, and how the Android folks are
+> using ext4, and to a lesser extent how Tao Bao is using ext4, and that
+> helps me understand where they are going with ext4 and why they submit
+> the kind of patches that they do.
+>
+> But I don't understand why *you* are submitting these sorts of
+> patches.  If there's substantive work that you plan to do with ext4,
+> then the investment I might make in helping you become more proficient
+> ext4 developers is quite different from say, the sort of attention I
+> might give someone who is working on ext4 for a class project or for
+> ego reasons.
+>
+> Best regards,
+>
+>                                                - Ted
+>
