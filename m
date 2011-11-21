@@ -1,160 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab1KUVgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:36:54 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:40012 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab1KUVgx (ORCPT
+	id S1753694Ab1KUVjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:39:16 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33397 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab1KUVjP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:36:53 -0500
-X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Nov 2011 16:36:53 EST
-Date: Mon, 21 Nov 2011 14:36:24 -0600
-From: cminyard <minyard@acm.org>
-To: Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: ipmi_watchdog: IPMI Watchdog: response: Error 80 on cmd 22
-Message-id: <20111121203411.GA20992@mvista.com>
-Reply-to: minyard@acm.org
-References: <201111191422.17555.a.miskiewicz@gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-disposition: inline
-Content-transfer-encoding: 8bit
-In-reply-to: <201111191422.17555.a.miskiewicz@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Nov 2011 16:39:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
+	<tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
+	<alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
+	<1321901536.28118.20.camel@twins>
+	<alpine.DEB.2.00.1111211358570.23676@cl320.eecs.utk.edu>
+	<CABPqkBRHW0ZmeqADptvBySLZpi6jc_bEFKoukkA6rtd5o04ziQ@mail.gmail.com>
+	<alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
+Date: Mon, 21 Nov 2011 22:39:14 +0100
+Message-ID: <CABPqkBTfNuY8_rcf-u=kf4V-bv_bZwUAhz3J3Z=wan29=09f9A@mail.gmail.com>
+Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
+ offcore events
+From: Stephane Eranian <eranian@google.com>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 02:22:17PM +0100, Arkadiusz Miśkiewicz wrote:
-> 
-> Hello,
-> 
-> I have few machines where ipmi_watchdog (from 3.0.9 kernel currently)
-> reports after some time:
-> 
-> IPMI Watchdog: response: Error 80 on cmd 22
-> 
-> In less than a week
-> # grep "Error 80 on cmd 22" /var/log/kernel |wc -l
-> 378681
-> 
-> #define IPMI_WDOG_RESET_TIMER           0x22
-> but no idea what error 80 is.
+On Mon, Nov 21, 2011 at 10:04 PM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+> On Mon, 21 Nov 2011, Stephane Eranian wrote:
+>
+>> > We have a workaround, but it currently disables kernel multiplexing and a
+>> > few other nice features.
+>>
+>> I don't understand why you have a problem with NMI watchdog. Multiplexing
+>> allows you to still measure more events than there are counters.
+>
+> The PAPI code currently uses FORMAT_GROUP and puts as many events as
+> possible in a group.  The way we maximize events in a group is to
+> add events until perf_events indicates a failure.
+>
+Ok, now I understand your problem.
 
-That error is a command-specific error, and it means: Attempt to start
-un-initialized watchdog
+When you submit events (one by one) the kernel does a scheduling simulation
+but only taking into account events in the group. The goal is to
+verify that the group
+is schedulable. It does not look at events from system-wide sessions
+(which have priority).
+Doing so would be difficult for per-thread because it would have to
+look on all CPUs.
+Even if it were to do that, that would be no guarantee of
+schedulability  because
+by the time the group is actually scheduled, you may now have
+system-wide session, i.e.,
+your group is not scheduled because there aren't enough counters
+leftover from system-wide.
 
-I'm guessing that the IPMI controller gets reset somehow and then thinks
-it's watchdog timer is not initialized, and thus the reset command causes
-an issue.
+The problem you're describing is not specific to X86 and the NMI
+watchdog. It applies to
+all architectures and has to do with system-wide pinned events vs.
+per-thread group schedulability.
+The NMI watchdog on X86 is an example of that. But AFAIK, the watchdog
+could be supported
+on other architectures as well.
 
-A fix should be pretty easy, if you get a 0x80 response from a reset,
-re-initialize the timer.
+One could argue, you could check is NMI is active and assume you have
+one fewer counters
+during the scheduling simulation. But I think it is a bit more
+complicated than that.
 
-Can you try the following patch?
+To solve this problem (in the general case), you need to know which
+counter is taken (or required)
+by ALL pinned system-wide events across all CPUs. Once you've
+constructed the bitmap, you can
+use it as the basis (used_mask) to try and schedule the group events.
 
->From 4467601416e23740fc940c31b1fffacbcb69b4a0 Mon Sep 17 00:00:00 2001
-From: Corey Minyard <cminyard@mvista.com>
-Date: Mon, 21 Nov 2011 14:26:20 -0600
-Subject: [PATCH] ipmi_watchdog: Restore settings when BMC reset
+That's a best effort algorithm. It does not provide the guarantee, the
+group will be schedulable
+during its entire lifetime. It simply makes it more likely it will
+run, if you assume no changes on
+system-wide pinned events from the moment you create the per-thread
+group and the time is
+starts counting.
 
-If the BMC gets reset, it will return 0x80 response errors.  In this case,
-it is probably a good idea to restore the IPMI settings.
----
- drivers/char/ipmi/ipmi_watchdog.c |   41 ++++++++++++++++++++++++++++++++++--
- 1 files changed, 38 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
-index c2917ffa..34767a6 100644
---- a/drivers/char/ipmi/ipmi_watchdog.c
-+++ b/drivers/char/ipmi/ipmi_watchdog.c
-@@ -139,6 +139,8 @@
- #define IPMI_WDOG_SET_TIMER		0x24
- #define IPMI_WDOG_GET_TIMER		0x25
- 
-+#define IPMI_WDOG_TIMER_NOT_INIT_RESP	0x80
-+
- /* These are here until the real ones get into the watchdog.h interface. */
- #ifndef WDIOC_GETTIMEOUT
- #define	WDIOC_GETTIMEOUT        _IOW(WATCHDOG_IOCTL_BASE, 20, int)
-@@ -596,6 +598,7 @@ static int ipmi_heartbeat(void)
- 	struct kernel_ipmi_msg            msg;
- 	int                               rv;
- 	struct ipmi_system_interface_addr addr;
-+	int				  timeout_retries = 0;
- 
- 	if (ipmi_ignore_heartbeat)
- 		return 0;
-@@ -616,6 +619,7 @@ static int ipmi_heartbeat(void)
- 
- 	mutex_lock(&heartbeat_lock);
- 
-+restart:
- 	atomic_set(&heartbeat_tofree, 2);
- 
- 	/*
-@@ -653,7 +657,33 @@ static int ipmi_heartbeat(void)
- 	/* Wait for the heartbeat to be sent. */
- 	wait_for_completion(&heartbeat_wait);
- 
--	if (heartbeat_recv_msg.msg.data[0] != 0) {
-+	if (heartbeat_recv_msg.msg.data[0] == IPMI_WDOG_TIMER_NOT_INIT_RESP)  {
-+		timeout_retries++;
-+		if (timeout_retries > 3) {
-+			printk(KERN_ERR PFX ": Unable to restore the IPMI"
-+			       " watchdog's settings, giving up.\n");
-+			rv = -EIO;
-+			goto out_unlock;
-+		}
-+
-+		/*
-+		 * The timer was not initialized, that means the BMC was
-+		 * probably reset and lost the watchdog information.  Attempt
-+		 * to restore the timer's info.  Note that we still hold
-+		 * the heartbeat lock, to keep a heartbeat from happening
-+		 * in this process, so must say no heartbeat to avoid a
-+		 * deadlock on this mutex.
-+		 */
-+		rv = ipmi_set_timeout(IPMI_SET_TIMEOUT_NO_HB);
-+		if (rv) {
-+			printk(KERN_ERR PFX ": Unable to send the command to"
-+			       " set the watchdog's settings, giving up.\n");
-+			goto out_unlock;
-+		}
-+
-+		/* We might need a new heartbeat, so do it now */
-+		goto restart;
-+	} else if (heartbeat_recv_msg.msg.data[0] != 0) {
- 		/*
- 		 * Got an error in the heartbeat response.  It was already
- 		 * reported in ipmi_wdog_msg_handler, but we should return
-@@ -662,6 +692,7 @@ static int ipmi_heartbeat(void)
- 		rv = -EINVAL;
- 	}
- 
-+out_unlock:
- 	mutex_unlock(&heartbeat_lock);
- 
- 	return rv;
-@@ -922,11 +953,15 @@ static struct miscdevice ipmi_wdog_miscdev = {
- static void ipmi_wdog_msg_handler(struct ipmi_recv_msg *msg,
- 				  void                 *handler_data)
- {
--	if (msg->msg.data[0] != 0) {
-+	if (msg->msg.cmd == IPMI_WDOG_RESET_TIMER &&
-+			msg->msg.data[0] == IPMI_WDOG_TIMER_NOT_INIT_RESP)
-+		printk(KERN_INFO PFX "response: The IPMI controller appears"
-+		       " to have been reset, will attempt to reinitialize"
-+		       " the watchdog timer\n");
-+	else if (msg->msg.data[0] != 0)
- 		printk(KERN_ERR PFX "response: Error %x on cmd %x\n",
- 		       msg->msg.data[0],
- 		       msg->msg.cmd);
--	}
- 
- 	ipmi_free_recv_msg(msg);
- }
--- 
-1.7.4.1
-
+> When NMI watchdog is enabled, a counter is stolen.  Yet the perf_events
+> code does not account for this.
+>
+> So say on an AMD machine with 4 counters (3 after one is stolen)
+> perf_events lets you add 4 events to an event group, even though only 3
+> are available.  It does not report failure upon open or start, only at
+> read.  By then it's too late.
+>
+> We have to work around this, by doing an extra read at open time to verify
+> that the event group actually is valid, adding overhead.
+>
+> Our multiplex code tries to maximize the number of events in a group too.
+> Currently PAPI works around this by just not doing kernel multiplexing
+> if a NMI watchdog is detected.  There's probably more elegant solutions
+> such as checking with a read there too, or not using FORMAT_GROUP at all,
+> but since this is an ABI regression I was hoping it would get fixed
+> quickly enough that I wouldn't have to construct better workarounds.
+>
+> Vince
+> vweaver1@eecs.utk.edu
+>
+>
