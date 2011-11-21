@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab1KUVtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:49:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57697 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab1KUVtb (ORCPT
+	id S1757325Ab1KUVuC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:50:02 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40631 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757147Ab1KUVr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:49:31 -0500
-Date: Mon, 21 Nov 2011 13:49:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Hellwig <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: charge leaked page dirties to active
- tasks
-Message-Id: <20111121134929.b7008f6e.akpm@linux-foundation.org>
-In-Reply-To: <20111121131215.772231181@intel.com>
-References: <20111121130342.211953629@intel.com>
-	<20111121131215.772231181@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Nov 2011 16:47:56 -0500
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=pY0Wj9W4qgsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=1BvyPUWsSLuwEhnMVCYA:9 a=YbXqbSzh4CYrLm4cuMYA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=1qODZev7S_EqOaUt1mEA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111121214752.916778529@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 21 Nov 2011 16:44:22 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
+Subject: [PATCH 2/6] rcu: Fix macro substitution for synchronize_rcu_bh() on RT
+References: <20111121214420.124907956@goodmis.org>
+Content-Disposition: inline; filename=0002-rcu-Fix-macro-substitution-for-synchronize_rcu_bh-on.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011 21:03:44 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> It's a years long problem that a large number of short-lived dirtiers
-> (eg. gcc instances in a fast kernel build) may starve long-run dirtiers
-> (eg. dd) as well as pushing the dirty pages to the global hard limit.
-> 
-> The solution is to charge the pages dirtied by the exited gcc to the
-> other random dirtying tasks. It sounds not perfect, however should
-> behave good enough in practice, seeing as that throttled tasks aren't
-> actually running so those that are running are more likely to pick it up
-> and get throttled, therefore promoting an equal spread.
-> 
-> --- linux-next.orig/mm/page-writeback.c	2011-11-17 20:57:04.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-11-17 20:57:13.000000000 +0800
-> @@ -1194,6 +1194,7 @@ void set_page_dirty_balance(struct page 
->  }
->  
->  static DEFINE_PER_CPU(int, bdp_ratelimits);
-> +DEFINE_PER_CPU(int, dirty_leaks) = 0;
+From: John Kacur <jkacur@redhat.com>
 
-This is a poor identifier for a global symbol.  Generally such symbols
-should at least identify what subsystem they belong to.
+kernel/rcutorture.c:492: error: =E2=80=98synchronize_rcu_bh=E2=80=99 undecl=
+ared here (not in a function)
 
-Also, this would be a good site at whcih to document the global
-symbol's role.  The writeback code needs a lot of documentation. Of
-the design-level kind.
+synchronize_rcu_bh() is not just called as a normal function, but can
+also be referenced as a function pointer. When CONFIG_PREEMPT_RT_FULL
+is enabled, synchronize_rcu_bh() is defined as synchronize_rcu(), but
+needs to be defined without the parenthesis because the compiler will
+complain when synchronize_rcu_bh is referenced as a function pointer
+and not a function.
 
->  /**
->   * balance_dirty_pages_ratelimited_nr - balance dirty memory state
-> @@ -1242,6 +1243,17 @@ void balance_dirty_pages_ratelimited_nr(
->  			ratelimit = 0;
->  		}
->  	}
-> +	/*
-> +	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
-> +	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
-> +	 * the dirty throttling and livelock other long-run dirtiers.
-> +	 */
-> +	p = &__get_cpu_var(dirty_leaks);
-> +	if (*p > 0 && current->nr_dirtied < ratelimit) {
-> +		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-> +		*p -= nr_pages_dirtied;
-> +		current->nr_dirtied += nr_pages_dirtied;
-> +	}
->  	preempt_enable();
->  
->  	if (unlikely(current->nr_dirtied >= ratelimit))
-> --- linux-next.orig/kernel/exit.c	2011-11-17 20:57:02.000000000 +0800
-> +++ linux-next/kernel/exit.c	2011-11-17 20:57:04.000000000 +0800
-> @@ -1037,6 +1037,8 @@ NORET_TYPE void do_exit(long code)
->  	validate_creds_for_do_exit(tsk);
->  
->  	preempt_disable();
-> +	if (tsk->nr_dirtied)
-> +		__this_cpu_add(dirty_leaks, tsk->nr_dirtied);
+Link: http://lkml.kernel.org/r/1321235083-21756-1-git-send-email-jkacur@red=
+hat.com
 
-Whatever problem this code is solving, it only solved it in certain
-cases.  For example, if tasks are forking, dirtying and exiting at a
-rapid rate on CPU 0 then all the other CPUs don't know anything about
-this and we didn't fix anything.
+Cc: stable-rt@vger.kernel.org
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: John Kacur <jkacur@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/rcutree.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-IOW, it all seems like a half-assed bandaid.
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 7a25aea..3bf47dc 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -60,7 +60,7 @@ static inline void exit_rcu(void)
+ #ifndef CONFIG_PREEMPT_RT_FULL
+ extern void synchronize_rcu_bh(void);
+ #else
+-# define synchronize_rcu_bh()	synchronize_rcu()
++# define synchronize_rcu_bh	synchronize_rcu
+ #endif
+ extern void synchronize_sched_expedited(void);
+ extern void synchronize_rcu_expedited(void);
+--=20
+1.7.7.1
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJOyscJAAoJEIy3vGnGbaoAl7AP/3IdHRkPQfwow35ViDmFSdv1
+UqJE6HEEN2K4IjJNlwwdYkTc4l/16m3Yqd7C2m2+ahXc4A+6SFhI0Kxjcr6PEgxc
+Ena7oGItiALeW5QP7uH/EmDtlhaO6f89W3HnGii3+DTzSPdS0gcs94lR+08l5hFj
+qHXzcPytsWSA4P1ZHdWEa6A3WMqZaeQlHmr5x9p+LKvdSNKtuPSCgeomaEIu7fGe
+lerUxipSOcQnaWc/0bbB/a54nqdR2mWXMkGQcxCy8EKWZyi/djbJBtPGcbkuz/LO
+b72tqVFc5kdqBDhZE6hyeJU0x85HwHcMju9lHqxIrYd6Js7jk6tFIDRdqj/MpCv1
+XdLoAXMq7kAkDBLckEs8rY4mxJgzaTph49hP4nNz1daFDojAUHVE4g44IxG7cdiF
+N/PrwPEf2Tr6pxB5/CylJ29qBcEdrl3i0X/ER39X+d1fM2JXGR1WOlPG8H+B9CWY
+rNS3OUysvnfJXf9O2uWYd9ADlzVwRpQQzlbKjPYtF3ycOo8iENCN4xJOkifLueWS
+QpZhBVdp8ERIBuyGZZ3MPYL1B7H++tTOE57yzbz522Dqk7e81jVHqBY3HSugoAST
+HYoNVMMMnQgjqD4m7jAtxpV1oW02KQfD1n2NVUOQ8U5Zo46FnFqjRqzjke9ErVB/
+iZyIAV+Fb0nQ5rQgZfop
+=bil1
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
