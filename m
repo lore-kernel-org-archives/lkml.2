@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab1KUXgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:36:25 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43880 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab1KUXgX (ORCPT
+	id S1756384Ab1KUXg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:36:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42672 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab1KUXgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:36:23 -0500
-From: Alexey Moiseytsev <himeraster@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Moiseytsev <himeraster@gmail.com>
-Subject: [PATCH 1/1] AF_UNIX: Fix poll locking problem when reading from a stream socket
-Date: Tue, 22 Nov 2011 03:35:25 +0400
-Message-Id: <1321918525-5078-1-git-send-email-himeraster@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 21 Nov 2011 18:36:25 -0500
+Date: Mon, 21 Nov 2011 15:36:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 8/8] readahead: dont do start-of-file readahead after
+ lseek()
+Message-Id: <20111121153624.dea4f320.akpm@linux-foundation.org>
+In-Reply-To: <20111121093847.015852579@intel.com>
+References: <20111121091819.394895091@intel.com>
+	<20111121093847.015852579@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-poll() call may be locked by concurrent reading from the same stream
-socket.
+On Mon, 21 Nov 2011 17:18:27 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-Signed-off-by: Alexey Moiseytsev <himeraster@gmail.com>
----
- net/unix/af_unix.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> Some applications (eg. blkid, id3tool etc.) seek around the file
+> to get information. For example, blkid does
+> 
+> 	     seek to	0
+> 	     read	1024
+> 	     seek to	1536
+> 	     read	16384
+> 
+> The start-of-file readahead heuristic is wrong for them, whose
+> access pattern can be identified by lseek() calls.
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 466fbcc..b595a3d 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1957,6 +1957,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
- 			    (UNIXCB(skb).cred != siocb->scm->cred)) {
- 				skb_queue_head(&sk->sk_receive_queue, skb);
-+				sk->sk_data_ready(sk, skb->len);
- 				break;
- 			}
- 		} else {
-@@ -1974,6 +1975,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		chunk = min_t(unsigned int, skb->len, size);
- 		if (memcpy_toiovec(msg->msg_iov, skb->data, chunk)) {
- 			skb_queue_head(&sk->sk_receive_queue, skb);
-+			sk->sk_data_ready(sk, skb->len);
- 			if (copied == 0)
- 				copied = -EFAULT;
- 			break;
-@@ -1991,6 +1993,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			/* put the skb back if we didn't use it up.. */
- 			if (skb->len) {
- 				skb_queue_head(&sk->sk_receive_queue, skb);
-+				sk->sk_data_ready(sk, skb->len);
- 				break;
- 			}
- 
-@@ -2006,6 +2009,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 			/* put message back and return */
- 			skb_queue_head(&sk->sk_receive_queue, skb);
-+			sk->sk_data_ready(sk, skb->len);
- 			break;
- 		}
- 	} while (size);
--- 
-1.7.2.5
+ah, there we are.
 
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/read_write.c    |    4 ++++
+>  include/linux/fs.h |    1 +
+>  mm/readahead.c     |    3 +++
+>  3 files changed, 8 insertions(+)
+> 
+> --- linux-next.orig/mm/readahead.c	2011-11-20 22:02:01.000000000 +0800
+> +++ linux-next/mm/readahead.c	2011-11-20 22:02:03.000000000 +0800
+> @@ -629,6 +629,8 @@ ondemand_readahead(struct address_space 
+>  	 * start of file
+>  	 */
+>  	if (!offset) {
+> +		if ((ra->ra_flags & READAHEAD_LSEEK) && req_size < max)
+> +			goto random_read;
+>  		ra_set_pattern(ra, RA_PATTERN_INITIAL);
+>  		goto initial_readahead;
+>  	}
+> @@ -707,6 +709,7 @@ ondemand_readahead(struct address_space 
+>  	if (try_context_readahead(mapping, ra, offset, req_size, max))
+>  		goto readit;
+>  
+> +random_read:
+>  	/*
+>  	 * standalone, small random read
+>  	 */
+> --- linux-next.orig/fs/read_write.c	2011-11-20 22:02:01.000000000 +0800
+> +++ linux-next/fs/read_write.c	2011-11-20 22:02:03.000000000 +0800
+> @@ -47,6 +47,10 @@ static loff_t lseek_execute(struct file 
+>  		file->f_pos = offset;
+>  		file->f_version = 0;
+>  	}
+> +
+> +	if (!(file->f_ra.ra_flags & READAHEAD_LSEEK))
+> +		file->f_ra.ra_flags |= READAHEAD_LSEEK;
+> +
+>  	return offset;
+>  }
+
+Confused.  How does READAHEAD_LSEEK get cleared again?
