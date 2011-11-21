@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab1KUSLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:11:03 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58723 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab1KUSLC (ORCPT
+	id S1754083Ab1KUSNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:13:07 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:45290 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab1KUSNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:11:02 -0500
+	Mon, 21 Nov 2011 13:13:04 -0500
+Message-ID: <4ECA94A6.90500@linux.vnet.ibm.com>
+Date: Mon, 21 Nov 2011 23:42:54 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <4EC77605.5090605@gmail.com>
-References: <1321644698-13677-1-git-send-email-keescook@chromium.org>
-	<1321644698-13677-3-git-send-email-keescook@chromium.org>
-	<4EC77605.5090605@gmail.com>
-Date: Mon, 21 Nov 2011 10:11:00 -0800
-X-Google-Sender-Auth: 8npzLKY3FCum-ssBOLhj1JEPYX0
-Message-ID: <CAGXu5j+Dh2jbAymcreOwX_T6=7FA8bOuwUFnwshdsVonAD5_EA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ramoops: remove module parameters
-From: Kees Cook <keescook@chromium.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, lenb@kernel.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH v4] PM / Memory-hotplug: Avoid task freezing failures
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <201111192257.19763.rjw@sisk.pl> <4EC8984E.30005@linux.vnet.ibm.com> <201111201124.17528.rjw@sisk.pl> <4EC9D557.9090008@linux.vnet.ibm.com> <20111121164006.GB15314@google.com> <4ECA84A8.5030005@linux.vnet.ibm.com>
+In-Reply-To: <4ECA84A8.5030005@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112118-8878-0000-0000-0000004C7DBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 1:25 AM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> Il 18/11/2011 20:31, Kees Cook ha scritto:
->>
->> The ramoops driver is intended to be used with platforms that define
->> persistent memory regions. If memory regions were configurable with
->> module parameters, it would be possible to read some RAM regions via
->> the pstore interface without access to /dev/mem (which would result
->> in a loss of kernel memory privacy when a system is built with
->> STRICT_DEVMEM), so remove this ability completely.
->>
->
-> I don't like it very much. The loss of module parameters give us less
-> flexibility. The main goal of this driver is debug, so I think it should be
-> fast to use. I mean it's not more possible reserve a memory region and load
-> the module "on-the-fly", it needs a platform device, it's ok but I think
-> it's a little bit more complicated, (without talking about platforms without
-> a device tree source).
-> I don't understand the problem of strict devmem. We shouldn't use kernel
-> memory region but only reserved ones and the driver doesn't use the
-> request_mem_region_exclusive, am I wrong?
+The lock_system_sleep() function is used in the memory hotplug code at
+several places in order to implement mutual exclusion with hibernation.
+However, this function tries to acquire the 'pm_mutex' lock using
+mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
+get the lock. This would lead to task freezing failures and hence
+hibernation failure as a consequence, even though the hibernation call path
+successfully acquired the lock.
 
-Hmmm, maybe I'm reading it backwards, but I think we want it to use
-..._exclusive().
+But it is to be noted that, since this task tries to acquire pm_mutex, if it
+blocks due to this, we are *100% sure* that this task is not going to run
+as long as hibernation sequence is in progress, since hibernation releases
+'pm_mutex' only at the very end, when everything is done.
+And this means, this task is going to be anyway blocked for much more longer
+than what the freezer intends to achieve; which means, freezing and thawing
+doesn't really make any difference to this task!
 
-int devmem_is_allowed(unsigned long pagenr)
-{
-        if (pagenr <= 256)
-                return 1;
-        if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
-                return 0;
-        if (!page_is_ram(pagenr))
-                return 1;
-        return 0;
-}
+So, to fix freezing failures, we just ask the freezer to skip freezing this
+task, since it is already "frozen enough".
 
-If the region is exclusive, access is not allowed (return 0). ramoops
-currently uses request_mem_region() instead of
-request_mem_region_exclusive(). If we made that switch, I think I'd be
-happy. Would this create some problem I'm not seeing?
+But instead of calling freezer_do_not_count() and freezer_count() as it is,
+we use only the relevant parts of those functions, because restrictions
+such as 'the task should be a userspace one' etc., might not be relevant in
+this scenario.
 
--Kees
+v4: Redesigned the whole fix, to ask the freezer to skip freezing the task
+    which is blocked trying to acquire 'pm_mutex' lock.
 
--- 
-Kees Cook
-ChromeOS Security
+v3: Tejun suggested avoiding busy-looping by adding an msleep() since
+    it is not guaranteed that we will get frozen immediately.
+
+v2: Tejun pointed problems with using mutex_lock_interruptible() in a
+    while loop, when signals not related to freezing are involved.
+    So, replaced it with mutex_trylock().
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ include/linux/suspend.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 57a6924..1f7fff4 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -380,12 +380,16 @@ static inline void unlock_system_sleep(void) {}
+ 
+ static inline void lock_system_sleep(void)
+ {
++	/* simplified freezer_do_not_count() */
++	current->flags |= PF_FREEZER_SKIP;
+ 	mutex_lock(&pm_mutex);
+ }
+ 
+ static inline void unlock_system_sleep(void)
+ {
+ 	mutex_unlock(&pm_mutex);
++	/* simplified freezer_count() */
++	current->flags &= ~PF_FREEZER_SKIP;
+ }
+ #endif
+ 
+
+
+
