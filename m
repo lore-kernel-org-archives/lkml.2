@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab1KUSNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:13:07 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:45290 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab1KUSNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:13:04 -0500
-Message-ID: <4ECA94A6.90500@linux.vnet.ibm.com>
-Date: Mon, 21 Nov 2011 23:42:54 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754639Ab1KUSRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:17:35 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:45498 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab1KUSRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:17:33 -0500
+Date: Mon, 21 Nov 2011 19:17:24 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Jean-Francois Dagenais <jeff.dagenais@gmail.com>, hjk@hansjkoch.de,
+        tglx@linutronix.de, linux-pci@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: extra large DMA buffer for PCI-E device under UIO
+Message-ID: <20111121181724.GB12011@local>
+References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
+ <20111118220849.GA25205@suse.de>
+ <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
+ <20111121173620.GA5028@suse.de>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, lenb@kernel.org,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        Chen Gong <gong.chen@linux.intel.com>
-Subject: [PATCH v4] PM / Memory-hotplug: Avoid task freezing failures
-References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <201111192257.19763.rjw@sisk.pl> <4EC8984E.30005@linux.vnet.ibm.com> <201111201124.17528.rjw@sisk.pl> <4EC9D557.9090008@linux.vnet.ibm.com> <20111121164006.GB15314@google.com> <4ECA84A8.5030005@linux.vnet.ibm.com>
-In-Reply-To: <4ECA84A8.5030005@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112118-8878-0000-0000-0000004C7DBF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111121173620.GA5028@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lock_system_sleep() function is used in the memory hotplug code at
-several places in order to implement mutual exclusion with hibernation.
-However, this function tries to acquire the 'pm_mutex' lock using
-mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
-get the lock. This would lead to task freezing failures and hence
-hibernation failure as a consequence, even though the hibernation call path
-successfully acquired the lock.
+On Mon, Nov 21, 2011 at 09:36:20AM -0800, Greg KH wrote:
+> On Mon, Nov 21, 2011 at 10:31:07AM -0500, Jean-Francois Dagenais wrote:
+> > Hi Greg, thanks for your answer...
+> > 
+> > On Nov 18, 2011, at 17:08, Greg KH wrote:
+> > 
+> > > On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
+> > >> Hello fellow hackers.
+> > >> 
+> > >> I am maintaining a UIO based driver for a PCI-E data acquisition device.
+> > >> 
+> > >> I map BAR0 of the device to userspace. I also map two memory areas,
+> > >> one is used to feed instructions to the acquisition device, the other
+> > >> is used autonomously by the PCI device to write the acquired data.
+> > > 
+> > > Nice, have a pointer to your driver anywhere so we can include it in the
+> > > main kernel tree to make your life easier?
+> > As I said in a parallel answer from "Hans J. Koch" <hjk@hansjkoch.de>,
+> > the driver, although GPL'ed, is quite uninteresting except for us here at
+> > Sonatest.
+> 
+> I really doubt that,
 
-But it is to be noted that, since this task tries to acquire pm_mutex, if it
-blocks due to this, we are *100% sure* that this task is not going to run
-as long as hibernation sequence is in progress, since hibernation releases
-'pm_mutex' only at the very end, when everything is done.
-And this means, this task is going to be anyway blocked for much more longer
-than what the freezer intends to achieve; which means, freezing and thawing
-doesn't really make any difference to this task!
+So do I. We never had a driver allocating so much memory.
 
-So, to fix freezing failures, we just ask the freezer to skip freezing this
-task, since it is already "frozen enough".
+> and you should submit it anyway to allow us to
+> change it when the in-kernel apis change in the future.  It will save
+> you time in the long run and make things easier for you (look, your
+> driver is automatically included in all distros!, people fix your bugs,
+> etc.)
 
-But instead of calling freezer_do_not_count() and freezer_count() as it is,
-we use only the relevant parts of those functions, because restrictions
-such as 'the task should be a userspace one' etc., might not be relevant in
-this scenario.
+Exactly.
 
-v4: Redesigned the whole fix, to ask the freezer to skip freezing the task
-    which is blocked trying to acquire 'pm_mutex' lock.
+> 
+> > About merging the driver to mainline, I guess it would only be interesting for
+> > the recipe I demonstrate. Please advise.
+> 
+> That is a recipe that I'm sure others will use, and need help on in the
+> future.
 
-v3: Tejun suggested avoiding busy-looping by adding an msleep() since
-    it is not guaranteed that we will get frozen immediately.
+They already needed it in the past, and they usually try to get it by
+writing me private mail.
 
-v2: Tejun pointed problems with using mutex_lock_interruptible() in a
-    while loop, when signals not related to freezing are involved.
-    So, replaced it with mutex_trylock().
+> 
+> So please submit a patch, that will make it easier to help you out.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Yes, please do. The more different drivers we have under /drivers/uio, the
+better. Didn't you use one of the existing drivers as a template for yours?
 
- include/linux/suspend.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 57a6924..1f7fff4 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -380,12 +380,16 @@ static inline void unlock_system_sleep(void) {}
- 
- static inline void lock_system_sleep(void)
- {
-+	/* simplified freezer_do_not_count() */
-+	current->flags |= PF_FREEZER_SKIP;
- 	mutex_lock(&pm_mutex);
- }
- 
- static inline void unlock_system_sleep(void)
- {
- 	mutex_unlock(&pm_mutex);
-+	/* simplified freezer_count() */
-+	current->flags &= ~PF_FREEZER_SKIP;
- }
- #endif
- 
-
-
-
+Thanks,
+Hans
