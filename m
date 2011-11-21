@@ -1,157 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1KUPX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 10:23:58 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53989 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab1KUPX5 (ORCPT
+	id S1754711Ab1KUPZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 10:25:17 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:12397
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751808Ab1KUPZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 10:23:57 -0500
-Date: Mon, 21 Nov 2011 16:23:51 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] nohz: Remove tick_nohz_idle_enter_norcu() /
- tick_nohz_idle_exit_norcu()
-Message-ID: <20111121152345.GA25088@somewhere.redhat.com>
-References: <1321552094-20237-1-git-send-email-fweisbec@gmail.com>
- <20111117201134.GB1865@leaf>
- <20111118010344.GI2429@linux.vnet.ibm.com>
- <20111119005003.GA1791@linux.vnet.ibm.com>
- <CAFTL4hx9m546KRPZX-dH+_ETyLY+WAR5cpOKoCoyECnSX2iHkA@mail.gmail.com>
- <20111121052819.GI17982@linux.vnet.ibm.com>
+	Mon, 21 Nov 2011 10:25:15 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 21 Nov 2011 23:37:18 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 6/8] of: add clock providers
+Message-ID: <20111121153716.GA16417@S2100-06.ap.freescale.net>
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
+ <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111121052819.GI17982@linux.vnet.ibm.com>
+In-Reply-To: <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 20, 2011 at 09:28:19PM -0800, Paul E. McKenney wrote:
-> On Mon, Nov 21, 2011 at 02:46:58AM +0100, Frederic Weisbecker wrote:
-> > 2011/11/19 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > > On Thu, Nov 17, 2011 at 05:03:44PM -0800, Paul E. McKenney wrote:
-> > >> On Thu, Nov 17, 2011 at 12:11:34PM -0800, Josh Triplett wrote:
-> > >> > On Thu, Nov 17, 2011 at 06:48:14PM +0100, Frederic Weisbecker wrote:
-> > >> > > Those two APIs were provided to optimize the calls of
-> > >> > > tick_nohz_idle_enter() and rcu_idle_enter() into a single
-> > >> > > irq disabled section. This way no interrupt happening in-between would
-> > >> > > needlessly process any RCU job.
-> > >> > >
-> > >> > > Now we are talking about an optimization for which benefits
-> > >> > > have yet to be measured. Let's start simple and completely decouple
-> > >> > > idle rcu and dyntick idle logics to simplify.
-> > >> > >
-> > >> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > >> > > Cc: Ingo Molnar <mingo@redhat.com>
-> > >> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > >> > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > >> > > Cc: Josh Triplett <josh@joshtriplett.org>
-> > >> >
-> > >> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > >>
-> > >> Merged, thank you both!
-> > >
-> > > And here is a patch on top of yours to allow nesting of rcu_idle_enter()
-> > > and rcu_idle_exit().  Thoughts?
-> > >
-> > >                                                        Thanx, Paul
-> > >
-> > > ------------------------------------------------------------------------
-> > >
-> > > rcu: Allow nesting of rcu_idle_enter() and rcu_idle_exit()
-> > >
-> > > Running user tasks in dyntick-idle mode requires RCU to undergo
-> > > an idle-to-non-idle transition on each entry into the kernel, and
-> > > vice versa on each exit from the kernel.  However, situations where
-> > > user tasks cannot run in dyntick-idle mode (for example, when there
-> > > is more than one runnable task on the CPU in question) also require
-> > > RCU to undergo an idle-to-non-idle transition when coming out of the
-> > > idle loop (and vice versa when entering the idle loop).
-> > 
-> > Not sure what you mean about the idle loop with the dyntick-idle mode we
-> > can't enter when we resume to userspace with more than one task in the runqueue.
-> > 
-> > >  In this case,
-> > > RCU would see one idle-to-non-idle transition when the task became
-> > > runnable, and another when the task executed a system call.
-> > 
-> > I'm a bit confused with this changelog.
-> > 
-> > What can happen with the adaptive tickless thing is:
-> > 
-> > - When we resume to userspace after a syscall/irq/exception and we are
-> > not in RCU extended quiescent state, then switch to it. We may call it RCU
-> > idle mode I guess but that may start to be confusing.
-> > So this may involve several kind of nesting. From a single rcu_idle_enter()
-> > to more complicated scenario if we switch to RCU extended qs from an
-> > an interrupt: rcu_idle_exit() is called on entry of the irq, rcu_idle_enter() is
-> > called in the middle then finally a last call to rcu_idle_enter() in the irq
-> > exit at which point only we want the RCU extended qs to be effective.
-> > 
-> > - We may also exit that RCU extended qs state by involving other funny
-> > nesting. We have the simple syscall enter that just calls rcu_idle_exit() if
-> > we were in userspace in RCU extended qs.
+On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
+> Based on work by Ben Herrenschmidt and Jeremy Kerr, this patch adds an
+> of_clk_get function to allow platforms to retrieve clock data from the
+> device tree.
 > 
-> OK, so perhaps this is what I am missing.  Do you avoid calling
-> rcu_idle_exit() in the case where the user-mode execution was not an
-> RCU extended quiescent state?  If so, then my patch is not needed,
-> and I can revert it.
-
-Yes, if we resume to userspace after a syscall but we have more than one
-task in the runqueue, then we don't switch to RCU extended qs: we don't
-call rcu_idle_exit() on syscall return in this case.
-
+> Platform register a provider through of_clk_add_provider, which will be
+> called when a device references the provider's OF node for a clock
+> reference.
 > 
-> >                                          We may also receive an IPI
-> > that enqueues a new task, in which case we may exit the RCU extended
-> > quiescent from the irq with the following nesting:
-> > rcu_idle_exit() on irq entry, then another call to rcu_idle_exit() to prevent
-> > from resuming the RCU extended quiescent state when we come back
-> > to userspace and finally the rcu_idle_enter() in the irq exit.
-> > 
-> > Is that what you had in mind?
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  .../devicetree/bindings/clock/clock-bindings.txt   |  109 +++++++++++++++++
+>  drivers/of/Kconfig                                 |    6 +
+>  drivers/of/Makefile                                |    1 +
+>  drivers/of/clock.c                                 |  129 ++++++++++++++++++++
+>  include/linux/of_clk.h                             |   37 ++++++
+>  5 files changed, 282 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/clock-bindings.txt
+>  create mode 100644 drivers/of/clock.c
+>  create mode 100644 include/linux/of_clk.h
 > 
-> I was concerned about the following scenario:
-> 
-> 1.	A CPU is initially idle.
-> 
-> 2.	Task A wakes up on that CPU, enters user-mode execution
-> 	in an RCU extended quiescent state.
+> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> new file mode 100644
+> index 0000000..4770c7e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> @@ -0,0 +1,109 @@
+> +This binding is a work-in-progress, and are based on some experimental
+> +work by benh[1].
+> +
+> +Sources of clock signal can be represented by any node in the device
+> +tree.  Those nodes are designated as clock providers.  Clock consumer
+> +nodes use a phandle and clock specifier pair to connect clock provider
+> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
+> +specifier is an array of one more more cells identifying the clock
+> +output on a device.  The length of a clock specifier is defined by the
+> +value of a #clock-cells property in the clock provider node.
+> +
+> +[1] http://patchwork.ozlabs.org/patch/31551/
+> +
+> +==Clock providers==
+> +
+> +Required properties:
+> +#clock-cells:	   Number of cells in a clock specifier; typically will be
+> +		   set to 1
+> +
+> +Optional properties:
+> +clock-output-name: Recommended to be a list of strings of clock output signal
+> +		   names indexed by the first cell in the clock specifier.
+> +		   However, the meaning of clock-output-names is domain
 
-Just in case, I would like to note what happens in detail here:
+s/clock-output-names/clock-output-name?
 
-- Idle notices the need to resched, goes out of its idle loop and
-calls rcu_idle_exit(). The scheduler context switching may need
-RCU and we don't know where the next task will resume. If it's in
-the kernel it may need RCU as well. So we need this unconditional
-rcu_idle_exit() that re-enables RCU.
+> +		   specific to the clock provider, and is only provided to
+> +		   encourage using the same meaning for the majority of clock
+> +		   providers.  This format may not work for clock providers
+> +		   using a complex clock specifier format.  In those cases it
+> +		   is recommended to omit this property and create a binding
+> +		   specific names property.
+> +
+> +		   Clock consumer nodes must never directly reference
+> +		   the provider's clock-output-names property.
 
-- We also re-enable the tick unconditionally on idle exit time. So
-when the user task resumes, the tick is there and may decide to shut
-down again, in which case we may call rcu_idle_enter() if we are in
-userspace. Otherwise this is done later when we resume userspace (syscall
-or exception).
+s/clock-output-names/clock-output-name?
 
-> 
-> 3.	Task B wakes up on that CPU, forcing the CPU out of its
-> 	RCU extended quiescent state.  However, Task A is higher
-> 	priority than is Task B, so Task A continues running.
+> +
+> +For example:
+> +
+> +    oscillator {
+> +        #clock-cells = <1>;
+> +        clock-output-name = "ckil", "ckih";
+> +    };
+> +
+> +- this node defines a device with two clock outputs, the first named
+> +  "ckil" and the second named "ckih".  Consumer nodes always reference
+> +  clocks by index. The names should reflect the clock output signal
+> +  names for the device.
+> +
+> +==Clock consumers==
+> +
+> +Required properties:
+> +clock-input:	List of phandle and clock specifier pairs, one pair
+> +		for each clock input to the device.
+> +clock-input-name: List of clock input name strings sorted in the same
+> +		order as the clock-input property.  Consumers drivers
+> +		will use clock-input-name to match clock input names
+> +		with clock-input specifiers.
+> +
+> +For example:
+> +
+> +    uart {
+> +        clock-input = <&osc 1> <&ref 0>;
+				 ^
+Comma is missed?
 
-Right but we have two tasks in the runqueue then, so we restart
-the tick and call rcu_idle_exit().
+> +        clock-input-name = "baud", "register";
+> +    };
 
-> 
-> 4.	Task A invokes a system call.  If the system-call entry
-> 	code were to again invoke rcu_idle_enter(), then my patch
-> 	is required.  If you check and avoid invoking rcu_idle_enter()
-> 	in this case, then my patch is not required.
+[...]
 
-You mean rcu_idle_exit()? So yeah, since we have the tick running
-and thus RCU not in extended QS, we won't call rcu_idle_exit() on syscall
-entry.
+> +struct clk *of_clk_get(struct device_node *np, int index)
+> +{
+> +	struct of_phandle_args clkspec;
+> +	struct clk *clk;
+> +	int rc;
+> +
+> +	if (index < 0)
+> +		return NULL;
+> +
+> +	rc = of_parse_phandle_with_args(np, "clock", "#clock-cells", index,
+
+According to binding document above, s/clock/clock-input?
+
+> +					&clkspec);
+> +	if (rc)
+> +		return NULL;
+> +
+> +	clk = __of_clk_get_from_provider(&clkspec);
+> +	of_node_put(clkspec.np);
+> +	return clk;
+> +}
+> +
+> +struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+> +{
+> +	int index = 0;
+> +
+> +	if (name)
+> +		index = of_property_match_string(np, "clock-input-names", name);
+
+If it fails to match name, we may want to force 'index' back to 0.
+
+Also according to binding document above,
+s/clock-input-names/clock-input-name?  Hope you do not want to
+change binding document to get them aligned.  I have written code
+per binding document :)
+
+Regards,
+Shawn
+
+> +	return of_clk_get(np, index);
+> +}
+
