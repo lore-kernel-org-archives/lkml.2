@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab1KUMWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 07:22:37 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4369 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab1KUMWf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 07:22:35 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 21 Nov 2011 04:22:15 -0800
-Date: Mon, 21 Nov 2011 14:22:12 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Marc Dietrich <marvin24@gmx.de>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-Message-ID: <20111121122212.GL19069@tbergstrom-lnx.Nvidia.com>
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
- <20111118120352.GZ19069@tbergstrom-lnx.Nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E63@HQMAIL01.nvidia.com>
+	id S1752960Ab1KUMXG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 07:23:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37477 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab1KUMXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 07:23:05 -0500
+Date: Mon, 21 Nov 2011 13:23:03 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hugetlb: detect race if fail to COW
+Message-ID: <20111121122303.GA13594@tiehlicka.suse.cz>
+References: <CAJd=RBC+p8033bHNfP=WQ2SU1Y1zRpj+FEi9FdjuFKkjF_=_iA@mail.gmail.com>
+ <20111118150742.GA23223@tiehlicka.suse.cz>
+ <CAJd=RBCOK9tis-bF87Csn70miRDqLtCUiZmDH2hnc8i_9+KtNw@mail.gmail.com>
+ <20111118161128.GC23223@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1740D74E63@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111118161128.GC23223@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 05:25:33PM +0100, Stephen Warren wrote:
-> Peter De Schrijver wrote at Friday, November 18, 2011 5:04 AM:
-> > On Thu, Nov 17, 2011 at 07:51:35PM +0100, Stephen Warren wrote:
-> > > Peter De Schrijver wrote at Thursday, November 17, 2011 8:07 AM:
-> > > > Convert tegra20 IRQ intialization to the GIC devicetree binding. Modify the
-> > > > interrupt definitions in the dts files according to
-> > > > Documentation/devicetree/bindings/arm/gic.txt
-> > > >
-> > > > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+On Fri 18-11-11 17:11:28, Michal Hocko wrote:
+> On Fri 18-11-11 23:23:12, Hillf Danton wrote:
+> > On Fri, Nov 18, 2011 at 11:07 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > > On Fri 18-11-11 22:04:37, Hillf Danton wrote:
+> > >> In the error path that we fail to allocate new huge page, before try again, we
+> > >> have to check race since page_table_lock is re-acquired.
 > > >
-> > > tegra-harmony.dts contains an interrupts property that wasn't updated,
-> > > for the WM8903 codec.
+> > > I do not think we can race here because we are serialized by
+> > > hugetlb_instantiation_mutex AFAIU. Without this lock, however, we could
+> > > fall into avoidcopy and shortcut despite the fact that other thread has
+> > > already did the job.
+> > >
+> > > The mutex usage is not obvious in hugetlb_cow so maybe we want to be
+> > > explicit about it (either a comment or do the recheck).
+> > >
 > > 
-> > But that's a GPIO interrupt no?
+> > Then the following check is unnecessary, no?
 > 
-> The interrupt line from codec to Tegra is a GPIO, yes.
-> 
-> But the WM8903 still has the same interrupt-parent as everything else,
-> since it's inherited from /interrupt-parent and doesn't define its own.
-> Perhaps this is a mistake?
+> Hmm, thinking about it some more, I guess we have to recheck because we
+> can still race with page migration. So we need you patch.
 
-Yes. I think this is a mistake. If we want the device tree to reflect the
-hardware, I think the WM8903 node should specify the GPIO, not the IRQ
-number.
+OK, so looked at it again and we cannot race with page migration because
+the page is locked (by unmap_and_move_*page) migration and we have the
+old page locked here as well (hugetlb_fault).
 
-Cheers,
+Or am I missing something?
 
-Peter.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
