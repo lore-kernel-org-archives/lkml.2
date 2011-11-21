@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab1KUQHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:07:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25704 "EHLO mga11.intel.com"
+	id S1755751Ab1KUQIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:08:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43404 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab1KUQHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:07:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,547,1315206000"; 
-   d="scan'208";a="93629735"
-Subject: Re: [PATCH 02/10] dmaengine: move drivers to dma_transfer_direction
-From: Vinod Koul <vinod.koul@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Shawn Guo <shawn.guo@freescale.com>, Yong Wang <yong.y.wang@intel.com>,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Boojin Kim <boojin.kim@samsung.com>, Barry Song <Baohua.Song@csr.com>
-In-Reply-To: <20111121122029.GA4814@mwanda>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
-	 <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
-	 <20111121122029.GA4814@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Nov 2011 21:33:20 +0530
-Message-ID: <1321891400.1516.215.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753021Ab1KUQIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 11:08:11 -0500
+Message-ID: <4ECA7760.5060603@redhat.com>
+Date: Mon, 21 Nov 2011 11:08:00 -0500
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Vince Weaver <vince@deater.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
+References: <20111121145114.049265181@chello.nl> <alpine.DEB.2.02.1111210959460.2903@pianoman.cluster.toy>
+In-Reply-To: <alpine.DEB.2.02.1111210959460.2903@pianoman.cluster.toy>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 15:20 +0300, Dan Carpenter wrote:
-> I haven't followed this discussion at all so perhaps you were aware
-> but this introduces a Sparse warning in linux-next.
+On 11/21/2011 10:02 AM, Vince Weaver wrote:
+> On Mon, 21 Nov 2011, Peter Zijlstra wrote:
 > 
-> drivers/dma/timb_dma.c:168:17: warning: mixing different enum types
-> drivers/dma/timb_dma.c:168:17:     int enum dma_transfer_direction  versus
-> drivers/dma/timb_dma.c:168:17:     int enum dma_data_direction 
-> drivers/dma/timb_dma.c:172:32: warning: mixing different enum types
-> drivers/dma/timb_dma.c:172:32:     int enum dma_transfer_direction  versus
-> drivers/dma/timb_dma.c:172:32:     int enum dma_data_direction 
+>> These few patches implement x86 RDPMC support and add an extention to the self
+>> monitoring data to also allow additional time updates using userspace TSC reads.
+>>
+>> There's a few loose ends, but it mostly seems to work.
+> 
+> I'll have to test these out.  
+> 
+> I have some low-level benchmarks I've been working on, you can see some 
+> preliminary results here:
+>    http://web.eecs.utk.edu/~vweaver1/projects/perf-events/benchmarks/
+> 
+> perf_events was lagging behind perfmon2 and perfctr in self-monitoring 
+> overhead, but maybe these changes will help that.
+> 
+> perf_event overhead got a lot worse between 2.6.32 and 3.0, I'm mid-bisect 
+> on that trying to isolate the cause.
+> 
+> Vince
+> 
 
-Thanks, below should fix this
+Hi Vince,
 
-diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
-index 8c88072..d142ae1 100644
---- a/drivers/dma/timb_dma.c
-+++ b/drivers/dma/timb_dma.c
-@@ -166,10 +166,10 @@ static void __td_unmap_desc(struct timb_dma_chan *td_chan, const u8 *dma_desc,
- 
- 	if (single)
- 		dma_unmap_single(chan2dev(&td_chan->chan), addr, len,
--			td_chan->direction);
-+			DMA_TO_DEVICE);
- 	else
- 		dma_unmap_page(chan2dev(&td_chan->chan), addr, len,
--			td_chan->direction);
-+			DMA_TO_DEVICE);
- }
- 
- static void __td_unmap_descs(struct timb_dma_desc *td_desc, bool single)
-@@ -398,7 +398,7 @@ static struct timb_dma_desc *td_alloc_init_desc(struct timb_dma_chan *td_chan)
- 	td_desc->txd.flags = DMA_CTRL_ACK;
- 
- 	td_desc->txd.phys = dma_map_single(chan2dmadev(chan),
--		td_desc->desc_list, td_desc->desc_list_len, DMA_MEM_TO_DEV);
-+		td_desc->desc_list, td_desc->desc_list_len, DMA_TO_DEVICE);
- 
- 	err = dma_mapping_error(chan2dmadev(chan), td_desc->txd.phys);
- 	if (err) {
-@@ -419,7 +419,7 @@ static void td_free_desc(struct timb_dma_desc *td_desc)
- {
- 	dev_dbg(chan2dev(td_desc->txd.chan), "Freeing desc: %p\n", td_desc);
- 	dma_unmap_single(chan2dmadev(td_desc->txd.chan), td_desc->txd.phys,
--		td_desc->desc_list_len, DMA_MEM_TO_DEV);
-+		td_desc->desc_list_len, DMA_TO_DEVICE);
- 
- 	kfree(td_desc->desc_list);
- 	kfree(td_desc);
+Any improvements in performance of self-monitoring would be welcomed. International Symposium on computer Architecture (ISCA 2011) has paper about a low overhead mechanism to read out the performance counters, LiMiT (http://castl.cs.columbia.edu/limit/index.php/LiMiT) that avoids using system calls to read the performance counter data. That paper shows a fair amount of overhead for PAPI.
 
-
-
--- 
-~Vinod
-
+-Will
