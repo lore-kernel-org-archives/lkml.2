@@ -1,142 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337Ab1KURm5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:42:57 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56214 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab1KURmz convert rfc822-to-8bit (ORCPT
+	id S1756304Ab1KURsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:48:09 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:60529 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752036Ab1KURsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:42:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321894767.28118.14.camel@twins>
-References: <20111121145114.049265181@chello.nl>
-	<20111121145337.912104693@chello.nl>
-	<CABPqkBTg69-EzvtGVxdAuf=EvM6Maag_tGc_a7jE5LdMwDqRgw@mail.gmail.com>
-	<1321889842.28118.9.camel@twins>
-	<1321894767.28118.14.camel@twins>
-Date: Mon, 21 Nov 2011 18:42:54 +0100
-Message-ID: <CABPqkBQPoY5ULc9djAxztm+xxeWi17wqncGf8aX_svqr6-tb2A@mail.gmail.com>
-Subject: Re: [RFC][PATCH 6/6] perf, tools: X86 RDPMC, RDTSC test
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@elte.hu, William Cohen <wcohen@redhat.com>,
-        linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 21 Nov 2011 12:48:07 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-ext4@vger.kernel.org
+Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        adilger@dilger.ca
+Subject: [PATCH V2 14/19] ext4: let ext4_find_entry handle inline data.
+Date: Tue, 22 Nov 2011 00:39:52 +0800
+Message-Id: <1321893597-11024-14-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
+References: <4ECA7DB3.9040605@tao.ma>
+ <1321893597-11024-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-11-21 at 16:37 +0100, Peter Zijlstra wrote:
->> On Mon, 2011-11-21 at 16:29 +0100, Stephane Eranian wrote:
->> > Peter,
->> >
->> > I don't see how this test and infrastructure handles the case where the event
->> > is multiplexed. I know there is time_enabled and time_running. But those are
->> > not sync'd to the moment of the rdpmc(). I think there needs to be some other
->> > timestamp in the mmap struct so the user can compute a delta to then add to
->> > time_enabled and time_running.
->>
->> When the counter isn't actually on the PMU, ->index will be 0 and rdpmc
->> should not be attempted.
->>
->> > Unless, we assume the two time metrics are there ONLY to compute a scaling
->> > ratio. In which case, I think, we don't need the delta because if we
->> > can do rdpmc()
->> > it means the event is currently scheduled and thus time_enabled and time_running
->> > are both ticking which means the scaling ratio does not change since the moment
->> > the event was scheduled in.
->>
->> Right, you don't need delta to compute the scale, but its useful for
->> user-space time based measurements, Arun wanted to do something like
->> that.
->
-> I'm full of crap, of course that makes a difference :-)
->
-> Even when both running and enabled are incremented, the scaling does
-> still change: 3/2 != 4/3 etc..
->
-You're right!
+From: Tao Ma <boyu.mt@taobao.com>
 
-count = raw_count * time_enabled / time_running
+Create a new ext4_find_inline_entry to handle the case
+of inline data.
 
-If we add 1s to time_enabled and time_running, it's not the
-same scaling. We're not multiplying, we're adding.
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/ext4/inline.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/ext4/namei.c  |   10 +++++++++-
+ fs/ext4/xattr.h  |   12 ++++++++++++
+ 3 files changed, 68 insertions(+), 1 deletions(-)
 
-To do correct scaling, we need to figure out how many ns have elapsed
-since time_enabled and time_running were last updated, i.e., when the
-counter was last scheduled.
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index a6b6593..c76ae3b 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -1308,6 +1308,53 @@ out:
+ 	return ret;
+ }
+ 
++struct buffer_head *ext4_find_inline_entry(struct inode *dir,
++					const struct qstr *d_name,
++					struct ext4_dir_entry_2 **res_dir,
++					int *has_inline_data)
++{
++	int ret;
++	struct ext4_iloc iloc;
++	void *inline_start;
++	int inline_size;
++
++	if (ext4_get_inode_loc(dir, &iloc))
++		return NULL;
++
++	down_read(&EXT4_I(dir)->xattr_sem);
++	if (!ext4_has_inline_data(dir)) {
++		*has_inline_data = 0;
++		goto out;
++	}
++
++	inline_start = ext4_raw_inode(&iloc)->i_block;
++	inline_size = EXT4_MIN_INLINE_DATA_SIZE;
++	ret = search_dir(iloc.bh, inline_start, inline_size,
++			 dir, d_name, 0, res_dir);
++	if (ret == 1)
++		goto out_find;
++	if (ret < 0)
++		goto out;
++
++	if (ext4_get_inline_size(dir) == EXT4_MIN_INLINE_DATA_SIZE)
++		goto out;
++
++	inline_start = ext4_get_inline_xattr_pos(dir, &iloc);
++	inline_size = ext4_get_max_inline_size(dir);
++
++	ret = search_dir(iloc.bh, inline_start, inline_size,
++			 dir, d_name, 0, res_dir);
++	if (ret == 1)
++		goto out_find;
++
++out:
++	brelse(iloc.bh);
++	iloc.bh = NULL;
++out_find:
++	up_read(&EXT4_I(dir)->xattr_sem);
++	return iloc.bh;
++}
++
+ int ext4_destroy_inline_data(handle_t *handle, struct inode *inode)
+ {
+ 	int ret;
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 6e97dd2..92f7b67 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -844,7 +844,6 @@ static inline int search_dirblock(struct buffer_head *bh,
+ 			  d_name, offset, res_dir);
+ }
+ 
+-
+ /*
+  *	ext4_find_entry()
+  *
+@@ -879,6 +878,15 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
+ 	namelen = d_name->len;
+ 	if (namelen > EXT4_NAME_LEN)
+ 		return NULL;
++
++	if (ext4_has_inline_data(dir)) {
++		int has_inline_data = 1;
++		ret = ext4_find_inline_entry(dir, d_name, res_dir,
++					     &has_inline_data);
++		if (has_inline_data)
++			return ret;
++	}
++
+ 	if ((namelen <= 2) && (name[0] == '.') &&
+ 	    (name[1] == '.' || name[1] == '\0')) {
+ 		/*
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index 1e042b4..f4d4cb1 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -170,6 +170,10 @@ extern int ext4_try_create_inline_dir(handle_t *handle,
+ 				      struct inode *inode);
+ extern int ext4_read_inline_dir(struct file *filp,
+ 				void *dirent, filldir_t filldir);
++extern struct buffer_head *ext4_find_inline_entry(struct inode *dir,
++					const struct qstr *d_name,
++					struct ext4_dir_entry_2 **res_dir,
++					int *has_inline_data);
+ # else  /* CONFIG_EXT4_FS_XATTR */
+ 
+ static inline int
+@@ -358,6 +362,14 @@ static inline int ext4_read_inline_dir(struct file *filp,
+ {
+ 	return 0;
+ }
++
++struct buffer_head *ext4_find_inline_entry(struct inode *dir,
++					const struct qstr *d_name,
++					struct ext4_dir_entry_2 **res_dir,
++					int *has_inline_data)
++{
++	return NULL;
++}
+ # endif  /* CONFIG_EXT4_FS_XATTR */
+ 
+ #ifdef CONFIG_EXT4_FS_SECURITY
+-- 
+1.7.0.4
 
-count = raw_count * (time_enabled + x) / (time_running + x)
-
-That's what I was suggesting initially.
-
-I you use rdtsc() + a timestamp in the mmapped page, you can
-determine x.
-
-Personally, I never understood how this mmapped count could even work
-on PPC in the case of multiplexing. The problem above is not specific
-to X86.
-
-> Using that we can actually deal with the whole multiplexing thing
-> without ever having to fall back to read(), something like:
->
->
-> static u64 mmap_read_self(void *addr)
-> {
->        struct perf_event_mmap_page *pc = addr;
->        u32 seq, idx, time_mult, time_shift;
->        u64 count, cyc, time_offset, enabled, running, delta;
->
->        do {
->                seq = pc->lock;
->                barrier();
->
->                enabled = pc->time_enabled;
->                running = pc->time_running;
->
->                if (enabled != running) {
->                        cyc = rdtsc();
->                        time_mult = pc->time_mult;
->                        time_shift = pc->time_shift;
->                        time_offset = pc->time_offset;
->                }
->
->                idx = pc->index;
->                count = pc->offset;
->                if (idx)
->                        count += rdpmc(idx - 1);
->
->                barrier();
->        } while (pc->lock != seq);
->
->        if (enabled != running) {
->                u64 quot, rem;
->
->                quot = (cyc >> time_shift);
->                rem = cyc & ((1 << time_shift) - 1);
->                delta = time_offset + quot * time_mult +
->                        ((rem * time_mult) >> time_shift);
->
->                enabled += delta;
->                if (idx)
->                        running += delta;
->
->                quot = count / running;
->                rem = count % running;
->                count = quot * enabled + (rem * enabled) / running;
->        }
->
->        return count;
-> }
->
-> Now all I need to do is make sure pc->offset actually makes sense,
-> because currently it looks like we're off by a factor
-> event->hw.prev_count when idx is set.
->
->
->
->
