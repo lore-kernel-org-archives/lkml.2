@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab1KUV3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:29:25 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37676 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab1KUV3Y (ORCPT
+	id S1756968Ab1KUVbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:31:03 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43148 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab1KUVbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:29:24 -0500
+	Mon, 21 Nov 2011 16:31:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111121210908.GJ25776@google.com>
-References: <20111102160208.GA6657@zeus>
-	<20111102163109.GA29430@core.coreip.homeip.net>
-	<20111103155956.GG4417@google.com>
-	<20111103184559.GA3295@zeus>
-	<20111103213959.GP4417@google.com>
-	<20111104134347.GA2480@zeus>
-	<20111104161431.GZ4417@google.com>
-	<20111104173441.GA2157@zeus>
-	<CAH3drwaXcUy1vz8bvHwE2_iga5WUsWn_Dp0oe_0r3UacV0vT_A@mail.gmail.com>
-	<20111104230758.GA7332@zeus>
-	<20111121210908.GJ25776@google.com>
-Date: Mon, 21 Nov 2011 16:29:23 -0500
-Message-ID: <CAH3drwbtWJcPOixW0gze0e0jbTn_uY0x5E=KY8N-WDcb1t8h2w@mail.gmail.com>
-Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Watts <akwatts@ymail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+In-Reply-To: <1321907275.13860.12.camel@pasglop>
+References: <20111121131531.GA1679@x4.trippels.de>
+	<1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121153621.GA1678@x4.trippels.de>
+	<1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121161036.GA1679@x4.trippels.de>
+	<1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121173556.GA1673@x4.trippels.de>
+	<1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121185215.GA1673@x4.trippels.de>
+	<20111121195113.GA1678@x4.trippels.de>
+	<1321907275.13860.12.camel@pasglop>
+Date: Mon, 21 Nov 2011 23:30:59 +0200
+X-Google-Sender-Auth: 27pTRhQWf2CJ8nDeGJDgZJz1Ilg
+Message-ID: <CAOJsxLGLZ23momLxidvhC+2LCtmnwmPMS2ASdke8V8gGFGa=AA@mail.gmail.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Pekka Enberg <penberg@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Christian Kujau <lists@nerdbynature.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 4:09 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Fri, Nov 04, 2011 at 06:08:20PM -0500, Andrew Watts wrote:
->> On Fri, Nov 04, 2011 at 01:35:53PM -0400, Jerome Glisse wrote:
+On Mon, 2011-11-21 at 20:51 +0100, Markus Trippelsdorf wrote:
+>> On 2011.11.21 at 19:52 +0100, Markus Trippelsdorf wrote:
+>> > On 2011.11.21 at 19:39 +0100, Eric Dumazet wrote:
+>> > > Le lundi 21 novembre 2011 à 18:35 +0100, Markus Trippelsdorf a écrit :
+>> > >
+>> > > > New one:
+>> > >
+>> > > ...
+>> > >
+>> > > I was just wondering if you were using CONFIG_CGROUPS=y, and if yes, if
+>> > > you could try to disable it.
 >> >
->> > I need full dmesg
+>> > # CONFIG_CGROUPS is not set
 >> >
->> > Cheers,
->> > Jerome
+>> > (I never enable CGROUPS on my machines)
 >>
->> Hi. Just noticed I attached a gzip of my dmesg last time by mistake.
->>
->> Here goes as text/plain.
->
-> Out of curiosity, did it get somewhere?
->
-> Thanks.
->
-> --
-> tejun
->
+>> Just for the record, I've attached full dmesg and my .config.
+>> (Will continue testing tomorrow)
 
-Yeah i am pretty sure i know what's going wrong but there is no easy
-fix, there is a deadlock in the kernel when gem wait ioctl is call on
-scanout buffer and that a gpu reset happen
+On Mon, Nov 21, 2011 at 10:27 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> Note that I hit a similar looking crash (sorry, I couldn't capture a
+> backtrace back then) on a PowerMac G5 (ppc64) while doing a large rsync
+> transfer yesterday with -rc2-something (cfcfc9ec) and
+> Christian Kujau (CC) seems to be able to reproduce something similar on
+> some other ppc platform (Christian, what is your setup ?)
+>
+> We haven't hit the poison checks, more like bad pointer derefs, almost
+> always in SLUB coming from skb alloc or free.
+>
+> In my case, it's not easy to reproduce, so a bisection would be
+> error-prone.
 
-Cheers,
-Jerome
+Does CONFIG_SLAB make all the issues go away or are you still able to
+reproduce corruption with it? I'm asking because we have the per-cpu
+partial list patches in 3.2-rc1 and I'd like to rule them out as a
+suspect.
+
+                        Pekka
