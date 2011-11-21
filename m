@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab1KURdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:33:18 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:54864 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab1KURdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:33:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=23hPWP6idQXgAuNJVcsggqTknOM8Xb/OqL9EAOMuCb480PxD
-	CKU6qQoWG+p5TgOw+/jfWNQ6br0S2NnJB+ijjfPJSs4CWmLY6kXT18bynJGpLm/e
-	MsP7bAoD2a1MQVfTvt71BQAi3Zl7b0LlLgKY1UpXvf6cBMmVtFBYQGeQvbw=
-Date: Mon, 21 Nov 2011 09:33:16 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc3
-Message-ID: <Pine.LNX.4.64.1111210931230.6600@cobra.newdream.net>
+	id S1756142Ab1KURen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:34:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47747 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab1KURem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 12:34:42 -0500
+Message-ID: <4ECA8B66.2090001@zytor.com>
+Date: Mon, 21 Nov 2011 09:33:26 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Michal Marek <mmarek@suse.cz>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        kbuild@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H.J. Lu" <hjl.tools@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 2/8] kbuild: Add support for an "archheaders" target
+References: <1321569446-20433-1-git-send-email-hpa@linux.intel.com> <1321569446-20433-3-git-send-email-hpa@linux.intel.com> <4ECA8991.20302@suse.cz>
+In-Reply-To: <4ECA8991.20302@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 11/21/2011 09:25 AM, Michal Marek wrote:
+>>  {
+>>  	if [ -f ${srctree}/arch/$2/include/asm/Kbuild ]; then
+>> +		make ARCH=$2 KBUILD_HEADERS=$1 archheaders
+>>  		make ARCH=$2 KBUILD_HEADERS=$1 headers_$1
+> 
+> I don't think we need the explicit make archheaders call here, it's
+> handled by the __headers dependency above.
+> 
 
-Please pull the following Ceph fixes from
+OK, let me test that out.  I might have missed that combination of the
+many, many I tried...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+	-hpa
 
-There is a fixed race when work queueing and inode refs, a nasty oversight 
-with the root dentry being uninitialized, and a fix for the oid buffer 
-size to allow RBD images with long names.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Thanks!
-sage
-
-
-
-Sage Weil (2):
-      ceph: fix iput race when queueing inode work
-      ceph: initialize root dentry
-
-Stratos Psomadakis (1):
-      libceph: Allocate larger oid buffer in request msgs
-
- fs/ceph/dir.c                   |    2 +-
- fs/ceph/inode.c                 |    9 ++++++---
- fs/ceph/super.c                 |    6 ++++--
- include/linux/ceph/osd_client.h |    8 +++++++-
- net/ceph/osd_client.c           |    2 +-
- 5 files changed, 19 insertions(+), 8 deletions(-)
