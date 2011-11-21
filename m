@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1KULLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:11:23 -0500
-Received: from mail202c2.megamailservers.com ([69.49.111.103]:56827 "EHLO
-	mail202c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755234Ab1KULLW (ORCPT
+	id S1756228Ab1KULLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:11:42 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43422 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756098Ab1KULLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:11:22 -0500
-X-Authenticated-User: konrad.gaisler.com
-Message-ID: <4ECA2FF6.2090708@gaisler.com>
-Date: Mon, 21 Nov 2011 12:03:18 +0100
-From: Konrad Eisele <konrad@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110928 Firefox/7.0.1 SeaMonkey/2.4.1
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Arnaud Lacombe <lacombar@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org,
-        linux kbuild list <linux-kbuild@vger.kernel.org>, pefoley2@verizon.net,
-        yann.morin.1998@anciens.enib.fr, sam@ravnborg.org,
-        zippel@linux-m68k.org
-Subject: Re: [PATCH 1/1] kconfig: Add a configuration subtree command to kconfig
-References: <1321625774-12749-1-git-send-email-konrad@gaisler.com> <4EC69F65.20207@xenotime.net> <4EC6E179.1030703@gaisler.com> <CACqU3MV=XzNUv70vP7QtQwC2xgqnY0bX+orDA+aErmJGwdEA_w@mail.gmail.com> <4EC76049.8020508@gaisler.com> <4EC9024A.7070807@suse.cz>
-In-Reply-To: <4EC9024A.7070807@suse.cz>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=t6P6ZnH7F4B+FTDzBT2sv7Wly1PyMf9jGdjNuUfj6/c= c=1 sm=1
-		a=CIB-vgOadyEA:10 a=wd-vcygihCUA:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=ebG-ZW-8AAAA:8 a=CG28bE0e01zX-QE1ZqEA:9
-		a=wPNLvfGTeEIA:10 a=cCYF7-FHeg4A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+	Mon, 21 Nov 2011 06:11:40 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 1/4] vfs: keep list of mounts for each superblock
+Date: Mon, 21 Nov 2011 12:11:30 +0100
+Message-Id: <1321873893-4544-2-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
+References: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Marek wrote:
-> On 19.11.2011 08:52, konrad.gaisler wrote:
->> On 11/19/2011 07:23 AM, Arnaud Lacombe wrote:
->>> On Fri, Nov 18, 2011 at 5:51 PM, konrad.gaisler<konrad@gaisler.com>  wrote:
->>>> As an example, apply the patch, then add to<top>/Kconfig the lines:
->>>>
->>>> subsource "arch/sparc/Kconfig" "." ".config_sparc" "SPARC config" SPARC_
->>>> CONFIG_
->>>> subsource "arch/mips/Kconfig" "." ".config_mips" "MIPS config" MIPS_ CONFIG_
->>>>
->>> ETOOMUCHARGUMENT!
->>>
->>> I wonder if we could not get all these parameters specified
->>> dynamically in the Kconfig. This would replace the `mainmenu' entry
->>> ala:
->>>
->>> config
->>>      title "Linux ..."
->>>      prefix "CONFIG_"
->>>      file .config
->>> endconfig
->> Yes maybe it can be done that way. Personally I think it is
->> more difficult.
-> 
-> A <command> <argument> syntax fits well into the existing Kconfig
-> language and it more readable, as you don't have to count the position
-> of the arguments and check their meaning in the documentation.
-> 
-> Michal
-> 
-> 
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Ok, I'll do it with "Config" and type "title". It will
-take a while until I have a new patch...
--- Konrad
+Keep track of vfsmounts belonging to a superblock.  List is protected
+by vfsmount_lock.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+---
+ fs/namespace.c        |   10 ++++++++++
+ fs/super.c            |    2 ++
+ include/linux/fs.h    |    1 +
+ include/linux/mount.h |    1 +
+ 4 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index e5e1c7d..70a0748 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -696,6 +696,11 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
+ 	mnt->mnt_sb = root->d_sb;
+ 	mnt->mnt_mountpoint = mnt->mnt_root;
+ 	mnt->mnt_parent = mnt;
++
++	br_write_lock(vfsmount_lock);
++	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
++	br_write_unlock(vfsmount_lock);
++
+ 	return mnt;
+ }
+ EXPORT_SYMBOL_GPL(vfs_kern_mount);
+@@ -745,6 +750,10 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
+ 			if (!list_empty(&old->mnt_expire))
+ 				list_add(&mnt->mnt_expire, &old->mnt_expire);
+ 		}
++
++		br_write_lock(vfsmount_lock);
++		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
++		br_write_unlock(vfsmount_lock);
+ 	}
+ 	return mnt;
+ 
+@@ -805,6 +814,7 @@ put_again:
+ 		acct_auto_close_mnt(mnt);
+ 		goto put_again;
+ 	}
++	list_del(&mnt->mnt_instance);
+ 	br_write_unlock(vfsmount_lock);
+ 	mntfree(mnt);
+ }
+diff --git a/fs/super.c b/fs/super.c
+index afd0f1a..74ab2c8 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -142,6 +142,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		INIT_LIST_HEAD(&s->s_dentry_lru);
+ 		INIT_LIST_HEAD(&s->s_inode_lru);
+ 		spin_lock_init(&s->s_inode_lru_lock);
++		INIT_LIST_HEAD(&s->s_mounts);
+ 		init_rwsem(&s->s_umount);
+ 		mutex_init(&s->s_lock);
+ 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
+@@ -200,6 +201,7 @@ static inline void destroy_super(struct super_block *s)
+ 	free_percpu(s->s_files);
+ #endif
+ 	security_sb_free(s);
++	WARN_ON(!list_empty(&s->s_mounts));
+ 	kfree(s->s_subtype);
+ 	kfree(s->s_options);
+ 	kfree(s);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0c4df26..cbae78e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1428,6 +1428,7 @@ struct super_block {
+ #else
+ 	struct list_head	s_files;
+ #endif
++	struct list_head	s_mounts;	/* list of mounts */
+ 	/* s_dentry_lru, s_nr_dentry_unused protected by dcache.c lru locks */
+ 	struct list_head	s_dentry_lru;	/* unused dentry lru */
+ 	int			s_nr_dentry_unused;	/* # of dentry on lru */
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 33fe53d..f88c726 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -67,6 +67,7 @@ struct vfsmount {
+ #endif
+ 	struct list_head mnt_mounts;	/* list of children, anchored here */
+ 	struct list_head mnt_child;	/* and going through their mnt_child */
++	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
+ 	int mnt_flags;
+ 	/* 4 bytes hole on 64bits arches without fsnotify */
+ #ifdef CONFIG_FSNOTIFY
+-- 
+1.7.7
+
