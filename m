@@ -1,87 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1KUKuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 05:50:44 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:12074 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab1KUKun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 05:50:43 -0500
-X-AuditID: cbfee61a-b7c61ae0000027a6-15-4eca2d01fb45
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: jhbird.choi@samsung.com, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Cc: "'Alessandro Zummo'" <a.zummo@towertech.it>, akpm@linux-foundation.org
-References: <1320747253-9281-1-git-send-email-jhbird.choi@samsung.com>
-In-reply-to: <1320747253-9281-1-git-send-email-jhbird.choi@samsung.com>
-Subject: RE: [PATCH] driver/rtc/rtc-s3c: Fix driver clock enable/disable
- balance issues
-Date: Mon, 21 Nov 2011 19:50:41 +0900
-Message-id: <03e901cca83b$69a48bf0$3ceda3d0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyeAicZiHwS4IxSRSesfSdl3b5AKgKOKwuw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1755692Ab1KUK5T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 05:57:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754322Ab1KUK5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 05:57:17 -0500
+Subject: Re: [BUG] 3.2-rc2: BUG kmalloc-8: Redzone overwritten
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, David Miller <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Chrissie Caulfield <ccaulfie@redhat.com>
+In-Reply-To: <1321870915.2552.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1321866845.3831.7.camel@lappy>
+	 <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321870915.2552.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 21 Nov 2011 10:58:30 +0000
+Message-ID: <1321873110.2710.13.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jhbird.choi@samsung.com wrote:
+Hi,
+
+On Mon, 2011-11-21 at 11:21 +0100, Eric Dumazet wrote:
+> Le lundi 21 novembre 2011 à 11:15 +0100, Eric Dumazet a écrit :
 > 
-> From: Jonghwan Choi <jhbird.choi@samsung.com>
+> > 
+> > Hmm, trinity tries to crash decnet ;)
+> > 
+> > Maybe we should remove this decnet stuff for good instead of tracking
+> > all bugs just for the record. Is there anybody still using decnet ?
+> >
+The best place to ask that question is on the decnet mailing list:
+linux-decnet-user@lists.sourceforge.net. I've BCC'd this message since
+that list requires you to be subscribed in order to post there.
+
+I have to say that I've been wondering lately whether it has got to the
+point where it is no longer useful. Has anybody actually tested it
+lately against "real" DEC implementations?
+
+Steve.
+
+>  
+> > For example dn_start_slow_timer() starts a timer without holding a
+> > reference on struct sock, this is highly suspect.
+> > 
+> > [PATCH] decnet: proper socket refcounting
+> > 
+> > Better use sk_reset_timer() / sk_stop_timer() helpers to make sure we
+> > dont access already freed/reused memory later.
+> > 
+> > Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 > 
-> If an error occurs after clock is enabled, it can become unbalanced.
+> Hmm, I forgot to remove the sock_hold(sk) call from dn_slow_timer(),
+> here is V2 :
 > 
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-
-Cc: stable@kernel.org
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-(Cc'ed Andrew Morton)
-
-Hi Andrew,
-
-If you're ok with this, could you please pick this up in your tree?
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+> [PATCH] decnet: proper socket refcounting
+> 
+> Better use sk_reset_timer() / sk_stop_timer() helpers to make sure we
+> dont access already freed/reused memory later.
+> 
+> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 > ---
->  drivers/rtc/rtc-s3c.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> V2: remove sock_hold(sk) call from dn_slow_timer()
 > 
-> diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-> index 7639ab9..5b979d9 100644
-> --- a/drivers/rtc/rtc-s3c.c
-> +++ b/drivers/rtc/rtc-s3c.c
-> @@ -202,7 +202,6 @@ static int s3c_rtc_settime(struct device *dev, struct
-rtc_time
-> *tm)
->  	void __iomem *base = s3c_rtc_base;
->  	int year = tm->tm_year - 100;
+>  net/decnet/dn_timer.c |   17 +++++------------
+>  1 file changed, 5 insertions(+), 12 deletions(-)
 > 
-> -	clk_enable(rtc_clk);
->  	pr_debug("set time %04d.%02d.%02d %02d:%02d:%02d\n",
->  		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
->  		 tm->tm_hour, tm->tm_min, tm->tm_sec);
-> @@ -214,6 +213,7 @@ static int s3c_rtc_settime(struct device *dev, struct
-rtc_time
-> *tm)
->  		return -EINVAL;
+> diff --git a/net/decnet/dn_timer.c b/net/decnet/dn_timer.c
+> index 67f691b..d9c150c 100644
+> --- a/net/decnet/dn_timer.c
+> +++ b/net/decnet/dn_timer.c
+> @@ -36,16 +36,13 @@ static void dn_slow_timer(unsigned long arg);
+>  
+>  void dn_start_slow_timer(struct sock *sk)
+>  {
+> -	sk->sk_timer.expires	= jiffies + SLOW_INTERVAL;
+> -	sk->sk_timer.function	= dn_slow_timer;
+> -	sk->sk_timer.data	= (unsigned long)sk;
+> -
+> -	add_timer(&sk->sk_timer);
+> +	setup_timer(&sk->sk_timer, dn_slow_timer, (unsigned long)sk);
+> +	sk_reset_timer(sk, &sk->sk_timer, jiffies + SLOW_INTERVAL);
+>  }
+>  
+>  void dn_stop_slow_timer(struct sock *sk)
+>  {
+> -	del_timer(&sk->sk_timer);
+> +	sk_stop_timer(sk, &sk->sk_timer);
+>  }
+>  
+>  static void dn_slow_timer(unsigned long arg)
+> @@ -53,12 +50,10 @@ static void dn_slow_timer(unsigned long arg)
+>  	struct sock *sk = (struct sock *)arg;
+>  	struct dn_scp *scp = DN_SK(sk);
+>  
+> -	sock_hold(sk);
+>  	bh_lock_sock(sk);
+>  
+>  	if (sock_owned_by_user(sk)) {
+> -		sk->sk_timer.expires = jiffies + HZ / 10;
+> -		add_timer(&sk->sk_timer);
+> +		sk_reset_timer(sk, &sk->sk_timer, jiffies + HZ / 10);
+>  		goto out;
 >  	}
+>  
+> @@ -100,9 +95,7 @@ static void dn_slow_timer(unsigned long arg)
+>  			scp->keepalive_fxn(sk);
+>  	}
+>  
+> -	sk->sk_timer.expires = jiffies + SLOW_INTERVAL;
+> -
+> -	add_timer(&sk->sk_timer);
+> +	sk_reset_timer(sk, &sk->sk_timer, jiffies + SLOW_INTERVAL);
+>  out:
+>  	bh_unlock_sock(sk);
+>  	sock_put(sk);
 > 
-> +	clk_enable(rtc_clk);
->  	writeb(bin2bcd(tm->tm_sec),  base + S3C2410_RTCSEC);
->  	writeb(bin2bcd(tm->tm_min),  base + S3C2410_RTCMIN);
->  	writeb(bin2bcd(tm->tm_hour), base + S3C2410_RTCHOUR);
+> 
 > --
-> 1.7.1
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
