@@ -1,134 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab1KUB6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Nov 2011 20:58:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48060 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862Ab1KUB6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Nov 2011 20:58:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="78185641"
-Date: Mon, 21 Nov 2011 09:58:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] drm/i915: hot removal notification to HDMI audio
- driver
-Message-ID: <20111121015809.GA25148@localhost>
-References: <20111116132004.299754849@intel.com>
- <20111116132221.374839261@intel.com>
- <20111116133548.GA23804@localhost>
- <20111118093740.GA2799@localhost>
- <86aa7tmigr.fsf@sumi.keithp.com>
+	id S1755077Ab1KUCAA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Nov 2011 21:00:00 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48725 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877Ab1KUB74 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Nov 2011 20:59:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <86aa7tmigr.fsf@sumi.keithp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
+	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+Date: Mon, 21 Nov 2011 09:59:55 +0800
+Message-ID: <CAGBYx2b4+s+YSKFoPbNSw=vWVaCZyxHjQdKGMHhCztTppETT9Q@mail.gmail.com>
+Subject: Re: Bug with "fix partial page writes"
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
+        Curt Wohlgemuth <curtw@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 19, 2011 at 01:46:44AM +0800, Keith Packard wrote:
-> On Fri, 18 Nov 2011 17:37:40 +0800, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > However when in X, ->mode_set won't be called at all.  Only
-> > ->get_modes and ->detect are called...
-> 
-> The desktop software will call mode_set when it configures the
-> monitor. Otherwise, it's not being used (and so shouldn't have audio
-> routed to it by default).
+Hi,
 
-Keith, I experimented playing HDMI audio in X, and during the time
-unplug and plug the monitor. The HDMI audio/graphics all continue to
-work when plugged in the monitor again. Here is the dmesg showed for
-the plug event, no ->mode_set is called at all...
+I am curious about the reason we need this operation in write_begin
+functions.    I had a look at the commit log just now.   The commit
+log explains the intention is to handle writes on a hole and writes on
+EOF.   Two cases can be handled successfully by block_write_begin.
 
-[ 1296.469103] [drm:drm_mode_getconnector], [CONNECTOR:5:?]
-[ 1296.475442] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:5:VGA-1]
-[ 1296.483649] [drm:intel_ironlake_crt_detect_hotplug], ironlake hotplug adpa=0x83f40000, result 1
-[ 1296.493417] [drm:intel_crt_detect], CRT detected via hotplug
-[ 1296.562579] [drm:drm_edid_to_eld], ELD: no CEA Extension found
-[ 1296.564700] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:5:VGA-1] probed modes :
-[ 1296.567609] [drm:drm_mode_debug_printmodeline], Modeline 24:"1024x768" 60 65000 1024 1048 1184 1344 768 771 777 806 0x48 0xa
-[ 1296.572112] [drm:drm_mode_debug_printmodeline], Modeline 23:"1024x768" 75 78800 1024 1040 1136 1312 768 769 772 800 0x40 0x5
-[ 1296.576561] [drm:drm_mode_debug_printmodeline], Modeline 25:"800x600" 75 49500 800 816 896 1056 600 601 604 625 0x40 0x5
-[ 1296.579109] [drm:drm_mode_debug_printmodeline], Modeline 19:"800x600" 60 40000 800 840 968 1056 600 601 605 628 0x40 0x5
-[ 1296.581403] [drm:drm_mode_debug_printmodeline], Modeline 20:"640x480" 75 31500 640 656 720 840 480 481 484 500 0x40 0xa
-[ 1296.584027] [drm:drm_mode_debug_printmodeline], Modeline 21:"640x480" 60 25200 640 656 752 800 480 490 492 525 0x40 0xa
-[ 1296.587294] [drm:drm_mode_debug_printmodeline], Modeline 22:"720x400" 70 28320 720 738 846 900 400 412 414 449 0x40 0x6
-[ 1296.589849] [drm:drm_mode_getconnector], [CONNECTOR:5:?]
-[ 1296.593635] [drm:drm_mode_getconnector], [CONNECTOR:8:?]
-[ 1296.595157] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:8:HDMI-A-1]
-[ 1296.608219] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:8:HDMI-A-1] disconnected
-[ 1296.610732] [drm:drm_mode_getconnector], [CONNECTOR:8:?]
-[ 1296.611939] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:8:HDMI-A-1]
-[ 1296.624882] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:8:HDMI-A-1] disconnected
-[ 1296.627445] [drm:drm_mode_getconnector], [CONNECTOR:12:?]
-[ 1296.628814] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:12:HDMI-A-2]
-[ 1296.750591] [drm:drm_detect_monitor_audio], Monitor has basic audio support
-[ 1296.873062] [drm:drm_edid_to_eld], ELD monitor SONY TV
-[ 1296.874819] HDMI: DVI dual 0, max TMDS clock 5, latency present 0 0, video latency 0 81, audio latency 114 208
-[ 1296.877018] [drm:drm_edid_to_eld], ELD size 8, SAD count 1
-[ 1296.878468] [drm:drm_mode_debug_printmodeline], Modeline 45:"1920x1080i" 0 74250 1920 2448 2492 2640 1080 1084 1094 1125 0x40 0x15
-[ 1296.880862] [drm:drm_mode_prune_invalid], Not using 1920x1080i mode 7
-[ 1296.882454] [drm:drm_mode_debug_printmodeline], Modeline 44:"1920x1080i" 0 74250 1920 2008 2052 2200 1080 1084 1094 1125 0x40 0x15
-[ 1296.885996] [drm:drm_mode_prune_invalid], Not using 1920x1080i mode 7
-[ 1296.887573] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:12:HDMI-A-2] probed modes :
-[ 1296.889507] [drm:drm_mode_debug_printmodeline], Modeline 37:"1920x1080" 50 148500 1920 2448 2492 2640 1080 1084 1089 1125 0x48 0x5
-[ 1296.892084] [drm:drm_mode_debug_printmodeline], Modeline 43:"1280x720" 50 74250 1280 1720 1760 1980 720 725 730 750 0x40 0x5
-[ 1296.894657] [drm:drm_mode_debug_printmodeline], Modeline 41:"1280x720" 60 74250 1280 1390 1430 1650 720 725 730 750 0x40 0x5
-[ 1296.897053] [drm:drm_mode_debug_printmodeline], Modeline 32:"720x576" 50 27000 720 732 796 864 576 581 586 625 0x40 0xa
-[ 1296.899603] [drm:drm_mode_debug_printmodeline], Modeline 29:"720x480" 60 27000 720 736 798 858 480 489 495 525 0x40 0xa
-[ 1296.901979] [drm:drm_mode_getconnector], [CONNECTOR:12:?]
-[ 1296.906084] [drm:drm_mode_getconnector], [CONNECTOR:13:?]
-[ 1296.907545] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:13:DP-1]
-[ 1296.909659] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.913429] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.917418] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.920908] [drm:intel_dp_detect], DPCD: 0000000000000000
-[ 1296.922663] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:13:DP-1] disconnected
-[ 1296.924543] [drm:drm_mode_getconnector], [CONNECTOR:13:?]
-[ 1296.925793] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:13:DP-1]
-[ 1296.927920] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.931393] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.935459] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.939854] [drm:intel_dp_detect], DPCD: 0000000000000000
-[ 1296.942038] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:13:DP-1] disconnected
-[ 1296.944160] [drm:drm_mode_getconnector], [CONNECTOR:15:?]
-[ 1296.946124] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:15:DP-2]
-[ 1296.948244] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.952332] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.956331] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.959803] [drm:intel_dp_detect], DPCD: 0000000000000000
-[ 1296.961384] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:15:DP-2] disconnected
-[ 1296.963332] [drm:drm_mode_getconnector], [CONNECTOR:15:?]
-[ 1296.965527] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:15:DP-2]
-[ 1296.968584] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.972279] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.976273] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1296.980756] [drm:intel_dp_detect], DPCD: 0000000000000000
-[ 1296.982903] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:15:DP-2] disconnected
-[ 1306.496011] [drm:intel_ironlake_crt_detect_hotplug], ironlake hotplug adpa=0x83f40000, result 1
-[ 1306.506271] [drm:intel_crt_detect], CRT detected via hotplug
-[ 1306.512689] [drm:output_poll_execute], [CONNECTOR:5:VGA-1] status updated from 1 to 1
-[ 1306.533016] [drm:output_poll_execute], [CONNECTOR:8:HDMI-A-1] status updated from 2 to 2
-[ 1306.663751] [drm:drm_detect_monitor_audio], Monitor has basic audio support
-[ 1306.666181] [drm:output_poll_execute], [CONNECTOR:12:HDMI-A-2] status updated from 1 to 1
-[ 1306.669486] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1306.673966] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1306.677959] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1306.681436] [drm:intel_dp_detect], DPCD: 0000000000000000
-[ 1306.682760] [drm:output_poll_execute], [CONNECTOR:13:DP-1] status updated from 2 to 2
-[ 1306.684946] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1306.688926] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1306.692914] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[ 1306.696399] [drm:intel_dp_detect], DPCD: 0000000000000000
-[ 1306.698091] [drm:output_poll_execute], [CONNECTOR:15:DP-2] status updated from 2 to 2
 
-Thanks,
-Fengguang
+Yongqiang.
+
+On Mon, Nov 21, 2011 at 4:59 AM, Hugh Dickins <hughd@google.com> wrote:
+> We've seen no response to this, so Cc'ing Ted and linux-kernel,
+> and I'll fill in some more detail below.
+>
+> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
+>> It appears that there's a bug with this patch:
+>>
+>> -------------------------------------------
+>> commit 02fac1297eb3f471a27368271aadd285548297b0
+>> Author: Allison Henderson <achender@linux.vnet.ibm.com>
+>> Date:   Tue Sep 6 21:53:01 2011 -0400
+>>
+>>     ext4: fix partial page writes
+>> ...
+>> -------------------------------------------
+>>
+>> Hugh Dickins found a bug with some nasty testing and lockdep that
+>
+> It's the tmpfs swapping test that I've been running, with variations,
+> for years.  System booted with mem=700M and 1.5G swap, two repetitious
+> make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
+> the balance of built to unbuilt source grows smaller with later kernels),
+> one directly in a tmpfs (irrelevant in this case, except for the added
+> pressure it generates), the other in a 1k-block ext2 (that I drive with
+> ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file.
+>
+> The first oops I got was indeed down in lockdep, but I've since seen
+> crashes from the same cause without lockdep configured in.  I've not
+> bothered to write down the stacks, beyond noting ext4_da_write_end()'s
+> call to ext4_discard_partial_page_buffers_no_lock() in them, since the
+> code there is clearly at fault as Curt describes.
+>
+>> crashed in ext4_da_write_end(), and after looking at the code with
+>> him, it appears that the call to
+>> ext4_discard_partial_page_buffers_no_lock() in this routine is
+>> manipulating an unlocked, and possibly non-existent page:
+>>
+>>
+>> -------------------------------------------
+>> ...
+>>       ret2 = generic_write_end(file, mapping, pos, len, copied,
+>>                                                       page, fsdata);
+>>
+>>       page_len = PAGE_CACHE_SIZE -
+>>                       ((pos + copied - 1) & (PAGE_CACHE_SIZE - 1));
+>>
+>>       if (page_len > 0) {
+>>               ret = ext4_discard_partial_page_buffers_no_lock(handle,
+>>                       inode, page, pos + copied - 1, page_len,
+>>                       EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED);
+>>       }
+>> ...
+>> -------------------------------------------
+>>
+>> Note that generic_write_end() will unlock and release the page before
+>> it returns.
+>
+> Exactly.  And clearly the loop-on-tmpfs aspect of the test is
+> irrelevant, except in generating more pressure to trigger it.
+>
+>>
+>> I've no good answer for how to fix this properly, but I wanted to let
+>> Allison know about this, if she hadn't already.  I looked but didn't
+>> see any related email on the linux-ext4 list for this problem.
+>
+> There was a second problem I was seeing, more elusive and much harder
+> to attribute: occasionally the build on ext2 would fail with errors
+> from ld (almost always of the kind "In function `no symbol': multiple
+> definition of `no symbol'" and "Warning: size of symbol `' changed":
+> I don't know if there's anything to be deduced from that).  I took
+> these to indicate an error in filesystem or loop or tmpfs or swap.
+>
+> First suspect was loop changes from hch in 3.2-rc1, but backing those
+> out made no difference.  I thought I was facing a week's bisection
+> (since it would need at least a day to conclude any stage good), but
+> took a gamble on backing out *both* parts of 02fac1297eb3: page_len
+> additions to ext4_da_write_begin() as well as page_len additions to
+> ext4_da_write_end().
+>
+> That gamble paid off: the test then showed no problems in several
+> days running on two machines.  So, both parts of 02fac1297eb3 are
+> bad, but it's not so easy to see what's wrong with the write_begin.
+>
+> My *guess* is that the partial page fixes have interfered with the
+> subtle page-dirty buffer-dirty protocol in some way, which manifests
+> only under memory pressure.
+>
+> It's conceivable that loop and tmpfs and swap play a part in this
+> further error, but I don't think so: I have no evidence for that,
+> and no such problem was seen before 3.2-rc1.
+>
+> ---
+>
+> I wanted to find you an easier way to reproduce the problem, so I
+> tried fsx (I'm still using a pretty old fsx, no fallocate or punch
+> hole), run in ext2 on a kernel booted with mem=700M.  Sorry, I did
+> this a week ago, then didn't find time to write it up, and failed to
+> note when my ext2 was in /dev/loop0 and when it was directly on disk.
+>
+> fsx foo -q -c 100 -l 100000000 &
+> while :
+> do      # memory hog mmaps and touches each page of 800MB private area
+>        swapout 800
+> done
+>
+> I did not reproduce either problem above with that.  Instead I found
+> that backing out 02fac1297eb3 made fsx on 3.2-rc1 fail in a few minutes.
+> But leaving 02fac1297eb3 in, fsx still failed in 20 minutes or an hour.
+> On 3.1, fsx failed in a few minutes.  On 3.0, fsx failed in half an hour.
+> On 2.6.39, fsx failed in a few minutes.  I had to go back to 2.6.38 for
+> fsx to run successfully under memory pressure for more than two hours.
+>
+> It looks as if ext4 testing has not been running fsx under memory
+> pressure recently.  And although I didn't reproduce my main problems
+> that way, it could well be that getting fsx to run reliably again
+> under memory pressure will be the way to fix those problems.
+>
+> Thanks,
+> Hugh
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+
+-- 
+Best Wishes
+Yongqiang Yang
