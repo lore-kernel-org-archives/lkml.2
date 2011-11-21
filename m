@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1KUOo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 09:44:58 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49024 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab1KUOo4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 09:44:56 -0500
-Subject: Re: [PATCH] virtio-mmio: Devices parameter parsing
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-In-Reply-To: <87vcqe9ml9.fsf@rustcorp.com.au>
-References: <1321365185-2928-1-git-send-email-pawel.moll@arm.com>
-	 <87sjlooq3m.fsf@rustcorp.com.au>
-	 <1321467222.3137.417.camel@hornet.cambridge.arm.com>
-	 <87vcqe9ml9.fsf@rustcorp.com.au>
-Date: Mon, 21 Nov 2011 14:44:48 +0000
-Message-ID: <1321886688.3093.248.camel@hornet.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 21 Nov 2011 14:44:48.0852 (UTC) FILETIME=[1E77B140:01CCA85C]
-X-MC-Unique: 111112114445213901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755440Ab1KUOqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 09:46:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58105 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753404Ab1KUOqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 09:46:09 -0500
+Date: Mon, 21 Nov 2011 15:46:08 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] hugetlb: clarify hugetlb_instantiation_mutex usage
+Message-ID: <20111121144608.GC16957@tiehlicka.suse.cz>
+References: <CAJd=RBC+p8033bHNfP=WQ2SU1Y1zRpj+FEi9FdjuFKkjF_=_iA@mail.gmail.com>
+ <20111118150742.GA23223@tiehlicka.suse.cz>
+ <CAJd=RBCOK9tis-bF87Csn70miRDqLtCUiZmDH2hnc8i_9+KtNw@mail.gmail.com>
+ <20111118161128.GC23223@tiehlicka.suse.cz>
+ <20111121122303.GA13594@tiehlicka.suse.cz>
+ <20111121141625.GB16957@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111121141625.GB16957@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 03:32 +0000, Rusty Russell wrote:
-> No it's not; I didn't bother when I converted things across, and it
-> shows.  
+And the follow up documentation patch:
+---
+>From 51bef05e4cbf97a749e6c0245114eceb21d05d61 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 21 Nov 2011 15:39:45 +0100
+Subject: [PATCH] hugetlb: clarify hugetlb_instantiation_mutex usage
 
-546970bc (Rusty Russell   2010-08-11 23:04:20 -0600 133) #define module_param_cb
+Let's make it clear that we cannot race with other fault handlers due to
+hugetlb (global) mutex.
+Also make it clear that we want to keep pte_same checks anayway to have a
+transition from the global mutex easier.
 
-Now I understand... :-)
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/hugetlb.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-> But we expect virtio hackers to be smarter than average :)
-
-Hope I'll stand up to the challenge ;-)
-
-> > there would be a clash. So I wanted to add a "first_id" parameter, but
-<...>
-> Well, tell them to get the cmdline order right, or allow an explicit
-> device id in the commandline.
-
-Yeah, I've came up with the same idea last night:
-
-	<size>[KMG]@<base>:<irq>[:<id>]
-
-<id>, if specified, sets the id for the current device and a base for
-the next one.
-
-> Since I hope we're going to be coding together more often, I've written
-> this how I would have done it (based loosely on your version) to
-> compare.
-
-Thanks, your efforts are truly appreciated!
-
-> Main changes other than the obvious:
-> 1) Documentation in kernel-parameters.txt
-
-I was considering this previously but for some reason I thought
-kernel-parameters.txt wasn't a place for module parameters at all. Now I
-had another look and see I was wrong.
-
-> 2) Doesn't leak mem on error paths.
-
-Em, I don't think my code was leaking memory in any error case? (no
-offence meant or taken ;-)
-
-> 3) Handles error from platform_device_register_resndata().
-
-As my code was ignoring wrong descriptions (all the continues) I ignored
-this result as well (the implementation complains on its own anyway),
-but I get your point.
-
-> 4) Uses shorter names for static functions/variables.
-
-Ah, I get the hint :-) I'm trying to keep the naming convention in
-static symbols as well, as it makes cscope/ctags/grep usage easier...
-I'll just use the abbreviated "vm_" prefixes then.
-
-> See what you think...
-
-Funnily enough when I proposed some string parser few years ago (totally
-different story) I was flamed for using strchr() instead of strsep() ;-)
-But ok, I don't mind getting back to basics.
-
-> +static int set_cmdline_device(const char *device, const struct kernel_param *kp)
-[...]
-> +       delim = strchr(device, '@');
-[...]
-> +	*delim = '\0';
-
-Ah. I forgot that strchr() takes const char * but returns "non-const"
-char *... Cheating, that's what it is ;-), but will work. Probably what
-we really want is something like
-	kstrtoull_delim(device, 0, &val, "@\0")
-I'll have a look and may try to propose something of that sort, but
-that's another story. Maybe I should just use simple_strtol() for the
-time being?
-
-I'll post v3 tonight or tomorrow.
-
-Cheers!
-
-Paweł
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index f76c7ea..611cdc8 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2348,6 +2348,9 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ /*
+  * Hugetlb_cow() should be called with page lock of the original hugepage held.
++ * Called with hugetlb_instantiation_mutex held and pte_page locked so we
++ * cannot race with other handlers or page migration.
++ * Keep the pte_same checks anyway to make transition from the mutex easier.
+  */
+ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pte_t *ptep, pte_t pte,
+-- 
+1.7.7.1
 
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
