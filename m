@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1KUQBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:01:35 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63156 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab1KUQBe (ORCPT
+	id S1755071Ab1KUQEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:04:43 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:38870 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab1KUQEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:01:34 -0500
-Date: Mon, 21 Nov 2011 17:02:44 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Ben Widawsky <ben@bwidawsk.net>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 02/13] drm/i915: rewrite shmem_pwrite_slow to
- use copy_from_user
-Message-ID: <20111121160244.GA3807@phenom.ffwll.local>
-Mail-Followup-To: Ben Widawsky <ben@bwidawsk.net>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
- <1320606840-21132-3-git-send-email-daniel.vetter@ffwll.ch>
- <20111120215632.6982c55c@bwidawsk.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111120215632.6982c55c@bwidawsk.net>
-X-Operating-System: Linux phenom 3.1.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Nov 2011 11:04:42 -0500
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=bzeNwhvjNfUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=20KFwNOVAAAA:8 a=EJac59WnUnfD6CuNgT0A:9 a=dGQJBqTFlRx27lGQapMA:7 a=QEXdDO2ut3YA:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 1/3] rcu-more-fallout.patch
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Kacur <jkacur@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1321707028-12487-2-git-send-email-jkacur@redhat.com>
+References: <1321707028-12487-1-git-send-email-jkacur@redhat.com>
+	 <1321707028-12487-2-git-send-email-jkacur@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Nov 2011 11:04:39 -0500
+Message-ID: <1321891479.20742.8.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 20, 2011 at 09:56:32PM -0800, Ben Widawsky wrote:
-[snip the patch]
-> Bikeshed, but I would much prefer a #define for the swizzle
-> bit/cacheline size.
+On Sat, 2011-11-19 at 13:50 +0100, John Kacur wrote:
+> From: Thomas Gleixner <tglx@linutronix.de>
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cherry-picked for v3.0-rt and fixed minor merge conflict
+> Signed-off-by: John Kacur <jkacur@redhat.com>
+> ---
+>  kernel/rcutiny.c |    2 ++
 
-I've looked at this stuff way too long, so I'm biased, but 64 = cacheline
-= dram fetch size = 1 << 64 feels about as natural for me as 4096 =
-PAGE_SIZE ...
+Is this really needed?
 
-[snip the patch]
+>From init/Kconfig:
 
-> I must be missing something obvious here...
-> Can you explain how this can possibly be considered safe without holding
-> struct_mutex?
+config TINY_RCU
+	bool "UP-only small-memory-footprint RCU"
+	depends on !SMP && !PREEMPT_RT_FULL
 
-That's the reason why the commit msg goes through every case and explains
-why I think it's safe. The large thing here is that we need to drop the
-mutex when calling copy_*_user (at least in the non-atomic slow-paths)
-because otherwise we might deadlock with our own pagefault handler.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+
+This code isn't even compiled when PREEMPT_RT_FULL is set.
+
+-- Steve
+
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> index 7bbac7d..f1e4bee 100644
+> --- a/kernel/rcutiny.c
+> +++ b/kernel/rcutiny.c
+> @@ -271,6 +271,7 @@ void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+>  }
+>  EXPORT_SYMBOL_GPL(call_rcu_sched);
+>  
+> +#ifndef CONFIG_PREEMPT_RT_FULL
+>  /*
+>   * Post an RCU bottom-half callback to be invoked after any subsequent
+>   * quiescent state.
+> @@ -280,6 +281,7 @@ void call_rcu_bh(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+>  	__call_rcu(head, func, &rcu_bh_ctrlblk);
+>  }
+>  EXPORT_SYMBOL_GPL(call_rcu_bh);
+> +#endif
+>  
+>  void rcu_barrier_bh(void)
+>  {
+
+
