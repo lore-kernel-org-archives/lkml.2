@@ -1,103 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab1KUNrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:47:25 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40177 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab1KUNrX convert rfc822-to-8bit (ORCPT
+	id S1754644Ab1KUN4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:56:22 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64006 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab1KUN4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:47:23 -0500
+	Mon, 21 Nov 2011 08:56:21 -0500
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [RFCv1 0/9]  XSHM: Shared Memory Driver for ST-E Thor M7400 LTE modem
+Date: Mon, 21 Nov 2011 14:55:55 +0100
+Message-Id: <1321883764-1958-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1111201923330.1806@sister.anvils>
-References: <CAJd=RBDP_z68Ewvw_O_dMxOnE0=weXqt+1FQy85_n76HAEdFHg@mail.gmail.com>
-	<alpine.LSU.2.00.1111201923330.1806@sister.anvils>
-Date: Mon, 21 Nov 2011 21:47:22 +0800
-Message-ID: <CAJd=RBBa-ZoZ3GhYQ-aM=TJ9Zw6ZSu177PWw+s8+zyFnzyUV_w@mail.gmail.com>
-Subject: Re: [PATCH] ksm: use FAULT_FLAG_ALLOW_RETRY in breaking COW
-From: Hillf Danton <dhillf@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Michel Lespinasse <walken@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 12:16 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Sat, 19 Nov 2011, Hillf Danton wrote:
->
->> The flag, FAULT_FLAG_ALLOW_RETRY, was introduced by the patch,
->>
->>       mm: retry page fault when blocking on disk transfer
->>       commit: d065bd810b6deb67d4897a14bfe21f8eb526ba99
->>
->> for reducing mmap_sem hold times that are caused by waiting for disk
->> transfers when accessing file mapped VMAs.
->>
->> To break COW, handle_mm_fault() is repeated with mmap_sem held, where
->> the introduced flag could be used again.
->>
->> The straight way is to add changes in break_ksm(), but the function could be
->> under write-mode mmap_sem, so it has to be dupilcated.
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->
-> Thank you for making the patch; but unless I'm mistaken - please
-> correct me if so - I think it's better to keep break_cow() simple
-> than add special FAULT_FLAG_ALLOW_RETRY handling there.  Do you
-> have any evidence that its down_read of mmap_sem is a problem in
-> some workload?  I sense that you're using it "because it's there".
->
-> I'm sceptical on several grounds.
->
-> One, break_cow() is itself only called on an "error" path: not
-> really an error, but when KSM's bet that it can merge pages turns
-> out to be wrong before it can complete the merge; not a rare case,
-> but not on the hot path.
->
-> Two, break_ksm()'s loop is required for correctness, but it
-> is a rare case that it actually needs to go round a second time.
-> The typical case it's needed (am I forgetting a more common one?)
-> is when userspace access flips a pte bit in between handle_pte_fault()
-> noting faulting pte, and the chosen fault handler checking pte_same()
-> before committing to its action.  With the page marked PageKsm, yet
-> not in the stable tree, even page reclaim is unable to interfere.
->
-> Three, FAULT_FLAG_ALLOW_RETRY is acted upon only in lock_page_or_retry(),
-> which is called only from filemap_fault() (not the case here since we
-> don't consider file pages for conversion to PageKsm) or do_swap_page();
-> yet the fault we're provoking would be handled by do_wp_page().
->
-> Four, lock_page_or_retry() is called in those places when there's a
-> possibility that the page is being read in from disk, to drop the
-> mmap_sem across the slow I/O.  There is no precedent for dropping
-> mmap_sem here while allocating a new page, nor when pte_same() fails:
-> in the former case it could only be a win when the system is already
-> slowed by memory pressure, in the latter case there's little point,
-> since mmap_sem would be reacquired in a moment.
->
-> I think that amounts to a genial Nack!
->
-Hello Hugh,
+This patch-set introduces the Shared Memory Driver for ST-Ericsson's
+Thor M7400 LTE modem.
 
-After reading your reply and the comments in break_ksm(), if the patch does
-not mess up
-	"The important thing is to not let VM_MERGEABLE be cleared while any
-	 such pages might remain in the area",
-and
-	"because handle_mm_fault() may back out if there's
-	 any difficulty e.g. if pte accessed bit gets updated concurrently",
+The shared memory model is implemented for Chip-to-chip and
+uses a reserved memory area and a number of bi-directional
+channels. Each channel has it's own designated data area where payload
+data is copied into.
 
-then if the path in which lock_page_or_retry() is called is not involved,
-mmap_sem is not upped, so the patch has nearly same behavior with break_ksm.
+Two different channel types are defined, one stream channel which is
+implemented as a traditional ring-buffer, and a packet channel which
+is a ring-buffer of fix sized buffers where each buffer contains
+an array of CAIF frames.
 
-And the overhead of the patch, I think, could match break_ksm.
+The notification of read and write index updates are handled in a
+separate driver called genio. This driver will be contributed separately,
+but the API is included in this patch-set.
 
-With dozen cases of writers of mmap_sem in the mm directory, the patch looks
-more flexible in rare and rare corners.
+The channel configuration is stored in shared memory, each channel
+has a designated area in shared memory for configuration data,
+read and write indexes and a data area.
 
-Best regards
-Hillf
+Configuration
+~~~~~~~~~~~~~~~
+
+        IPC-TOC
+        +--------------------+	   Index Area
+        | Channel Descr 0    | -----> +------------+
+	|                    | -+     |	Read Index |
+	|--------------------|	|     |------------|
+	| Channel Descr 1    | 	|     |	Write Index|
+	|                    |	|     +------------+
+	|--------------------|	|   Data Area
+	|       ...    	     |	|     +------------+
+	|                    |	+---> |            |
+	+--------------------+	      |	       	   |
+				      |	       	   |
+				      +------------+
+
+A IPC-TOC (table of conntent) is used for holding configuration data
+for the channels (struct xshm_ipctoc). It contains an array of
+channel descriptors (struct xshm_ipctoc_channel). The channel
+descriptors points out the data area and the location of
+read and write indexes.
+
+The configuration is proveded from user-space using gen-netlink.
+The gen-netlink format is defined in xshm_netlink.h and and handled
+in xshm_boot.c
+
+Packet data
+~~~~~~~~~~~
+The packet channel is set up to minimize interrupts needed to
+transfer a packet and to allow efficient DMA operations on the modem.
+
+Ring Buffer Indexes:
+    +------------+
+  +-| Read Index |
+  | |------------|
+  | | Write Index|------------------------+
+  | +------------+   		 	  |
+  |    		    			  |
+  V    	  				  |
+Buffer-0:				  V Buffer-1:
+ +----------------------------------------+---------------+---
+ |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
+ +----------------------------------------+---------------+--
+   |      |              ^      ^
+   +---------------------+      |
+	  +---------------------+
+
+Packet data is organized in a channel containing a number of fixed-
+size buffers. For each fixed-size buffer the channel has a read and
+write pointer in a normal ring-buffer fashion.
+
+Each buffer holds an array of CAIF-frames, and starts with an descriptor array
+containing pointers to the data frames in the buffer. The descriptor array
+contains offset and length of each frame.
+
+The packet device (caif_xshm.c) is implemented as a network interface of
+type ARPHRD_CAIF.
+
+Stream data
+~~~~~~~~~~~
+The driver for the stream channel is implemented as a character device
+interface to user space. The character device implements non-blocking open
+and non-blocking IO in general. The character device is implementing
+a traditional circular buffer directly in the shared memory region for
+the channel.
+
+Driver model
+~~~~~~~~~~~~~~
+Current implementation is using the platform bus, but I' currently
+investigating migrating to Virtio (suggested by Linus Walleij).
+
+Review comments and feedback is welcome.
+
+Regards,
+Sjur Brændeland
+
+Sjur Brændeland (9):
+  xshm: Shared Memory layout for ST-E M7400 driver.
+  xshm: Channel config definitions for ST-E M7400 driver.
+  xshm: Config data use for platform devices.
+  xshm: geni/geno driver interface.
+  xshm: genio dummy driver
+  xshm: Platform driver for XSHM
+  xshm: Character device for XSHM channel access.
+  xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
+  caif-xshm: Add CAIF driver for Shared memory for M7400
+
+ drivers/Kconfig                   |    2 +
+ drivers/Makefile                  |    1 +
+ drivers/net/caif/Kconfig          |   10 +
+ drivers/net/caif/Makefile         |    1 +
+ drivers/net/caif/caif_xshm.c      |  900 ++++++++++++++++++++++++++
+ drivers/xshm/Kconfig              |   10 +
+ drivers/xshm/Makefile             |    4 +
+ drivers/xshm/genio_dummy.c        |   61 ++
+ drivers/xshm/xshm_boot.c          | 1176 ++++++++++++++++++++++++++++++++++
+ drivers/xshm/xshm_chr.c           | 1258 +++++++++++++++++++++++++++++++++++++
+ drivers/xshm/xshm_pdev.c          |  459 ++++++++++++++
+ include/linux/xshm/genio.h        |  195 ++++++
+ include/linux/xshm/xshm_ipctoc.h  |  160 +++++
+ include/linux/xshm/xshm_netlink.h |   94 +++
+ include/linux/xshm/xshm_pdev.h    |  188 ++++++
+ 15 files changed, 4519 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/caif/caif_xshm.c
+ create mode 100644 drivers/xshm/Kconfig
+ create mode 100644 drivers/xshm/Makefile
+ create mode 100644 drivers/xshm/genio_dummy.c
+ create mode 100644 drivers/xshm/xshm_boot.c
+ create mode 100644 drivers/xshm/xshm_chr.c
+ create mode 100644 drivers/xshm/xshm_pdev.c
+ create mode 100644 include/linux/xshm/genio.h
+ create mode 100644 include/linux/xshm/xshm_ipctoc.h
+ create mode 100644 include/linux/xshm/xshm_netlink.h
+ create mode 100644 include/linux/xshm/xshm_pdev.h
+
