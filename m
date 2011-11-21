@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab1KUStw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:49:52 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60142 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab1KUStu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:49:50 -0500
-Date: Mon, 21 Nov 2011 10:49:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] dmatest: don't use set_freezable_with_signal()
-Message-ID: <20111121184939.GA25776@google.com>
-References: <20111121184316.GH15314@google.com>
+	id S1755611Ab1KUSvC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:51:02 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:60637 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab1KUSvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:51:00 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: David Daney <ddaney.cavm@gmail.com>
+Subject: Re: [PATCH RFC 1/5] scripts: Add sortextable to sort the kernel's exception table.
+Date: Mon, 21 Nov 2011 13:50:56 -0500
+User-Agent: KMail/1.13.7 (Linux/3.1.1; KDE/4.6.5; x86_64; ; )
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-embedded@vger.kernel.org, x86@kernel.org,
+        David Daney <david.daney@cavium.com>
+References: <1321645068-20475-1-git-send-email-ddaney.cavm@gmail.com> <201111201822.13614.vapier@gentoo.org> <4ECA97A0.3090005@gmail.com>
+In-Reply-To: <4ECA97A0.3090005@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121184316.GH15314@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart18916016.1oOC3NTRBy";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111211350.58916.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:43:16AM -0800, Tejun Heo wrote:
-> Commit 981ed70d8e (dmatest: make dmatest threads freezable) made
-> dmatest kthread use set_freezable_with_signal(); however, the
-> interface is scheduled to be removed in the next merge window.
-> 
-> The problem is that unlike userland tasks there's no default place
-> which handles signal pending state and it isn't clear who owns and/or
-> is responsible for clearing TIF_SIGPENDING.  For example, in the
-> current code, try_to_freeze() clears TIF_SIGPENDING but it isn't sure
-> whether it actually owns the TIF_SIGPENDING nor is it race-free -
-> ie. the task may continue to run with TIF_SIGPENDING set after the
-> freezable section.
-> 
-> Unfortunately, we don't have wait_for_completion_freezable_timeout().
-> This patch open codes it and uses wait_event_freezable_timeout()
-> instead and removes timeout reloading - wait_event_freezable_timeout()
-> won't return across freezing events (currently racy but fix scheduled)
-> and timer doesn't decrement while the task is in freezer.  Although
-> this does lose timer-reset-over-freezing, given that timeout is
-> supposed to be long enough and failure to finish inside is considered
-> irrecoverable, I don't think this is worth the complexity.
-> 
-> While at it, move completion to outer scope and explain that we're
-> ignoring dangling pointer problem after timeout.  This should give
-> slightly better chance at avoiding oops after timeout.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Guennadi, Dan, how does this look?  If it's okay, do you guys mind
-> routing this through pm tree?  I have some patches stacked on top
-> removal of freezable_with_signal and it would be much easier to route
-> these together.
+--nextPart18916016.1oOC3NTRBy
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Ooh, forgot to mention that it's only compile tested.
+On Monday 21 November 2011 13:25:36 David Daney wrote:
+> On 11/20/2011 03:22 PM, Mike Frysinger wrote:
+> > On Friday 18 November 2011 14:37:44 David Daney wrote:
+> >> +	switch (w2(ehdr->e_machine)) {
+> >> +	default:
+> >> +		fprintf(stderr, "unrecognized e_machine %d %s\n",
+> >> +			w2(ehdr->e_machine), fname);
+> >> +		fail_file();
+> >> +		break;
+> >> +	case EM_386:
+> >> +	case EM_MIPS:
+> >> +	case EM_X86_64:
+> >> +		break;
+> >> +	}  /* end switch */
+> >=20
+> > unlike recordmcount, this file doesn't do anything arch specific.  so
+> > let's just delete this and be done.
+>=20
+> Not really true at this point.  We don't know the size or layout of the
+> architecture specific exception table entries, likewise for
+> CONFIG_ARCH_HAS_SORT_EXTABLE, we don't even know how to do the comparison.
 
-Thanks.
+all of your code that i could see is based on "is it 32bit or is it 64bit".=
+ =20
+there is no code that says "if it's x86, we need to do XXX".
 
--- 
-tejun
+when i look in the kernel, we have common code behind ARCH_HAS_SORT_EXTABLE=
+=2E =20
+so you could easily do the same thing:
+
+scripts/sortextable.c:
+	#ifdef ARCH_HAS_SORT_EXTABLE
+		switch (w2(ehdr->e_machine)) {
+		default:
+			fprintf(stderr, "unrecognized e_machine %d %s\n",
+				w2(ehdr->e_machine), fname);
+			... return a unique exit code like 77 ...
+			break;
+		/* add arch sorting info here */
+		}  /* end switch */
+	#endif
+
+kernel/extable.c:
+	#if defined(ARCH_HAS_SORT_EXTABLE) && !defined(ARCH_HAS_SORTED_EXTABLE)
+	void __init sort_main_extable(void)
+	{
+		sort_extable(__start___ex_table, __stop___ex_table);
+	}
+	#endif
+
+this way all the people not doing unique stuff work out of the box.  only t=
+he=20
+people who are doing funky stuff need to extend things.
+=2Dmike
+
+--nextPart18916016.1oOC3NTRBy
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJOyp2SAAoJEEFjO5/oN/WBZg8QAMH4S+K1gxcWKe89lRRxspfJ
+MSXIss+znaNDBr+NoA9eIiO8Q4TpmrL1bCaH1UVwVEqjcMJY7IG4igEnP46Gfn0f
+aI+D6caMRgQLrgM1Peq5XiWU1MTBrz6NnJN/3lbhlugmg+s+xtn/nFIrlutGRmfR
+V/GOVG9jLWiw+qEQ2GphyYd4ggvTigNNKzhqZRN7pC3XOAUBraMnOhxzooMkSW6h
+Q3h3+p0taGrtLHB+T5SYo8MG13PLbH6GFaYJjvVOsQSmdFxPEf1acpb8vaD0orPa
+Rd+d6q2VRJm4zL/WUB0SGxySPmUFPaTLuWqc8PflHeB0MltDxJL4pgFuxuWem8L2
+b1fncRuyFgZPBe60tn84yXJMgbzjKmFFjcBjiHqCElT3kGRcXPIReKY3/TnJUxny
+D0f8VAhPYfLdlhmIALq9fcwrpHHbV8S++8XiNQsXT0hzSn6nm7mcbw9t+v5UJ0he
+W1fZjyjEyL+dAwhWxMzTb/9aHE5t+7GJFEKw0gfbfpjMCdZOhaEOfYnh28FL3T1I
+W+WiCPRo0Nz180xlZy9ia1ac+wm6iLUTzlzmTL9lAXRQMVyydHisbfuJGfNso4aa
+6XL1/Vrgq2kSKMfd2WVhgTc8laxJCTkcNhwclBOPuFbaTZPCadUZjxvPsAEgw04L
+aTty9vZcJoLu1punJLBl
+=ElBK
+-----END PGP SIGNATURE-----
+
+--nextPart18916016.1oOC3NTRBy--
