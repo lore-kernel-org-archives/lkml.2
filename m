@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab1KUVDP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:03:15 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:47633 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753404Ab1KUVDO (ORCPT
+	id S1756550Ab1KUVE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:04:27 -0500
+Received: from mail-va3.bigfish.com ([216.32.180.10]:21046 "EHLO
+	VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752595Ab1KUVE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:03:14 -0500
-Date: Mon, 21 Nov 2011 16:03:13 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 5] PM: Update comments describing device power management
- callbacks
-In-Reply-To: <201111212102.16918.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1111211552450.1848-100000@iolanthe.rowland.org>
+	Mon, 21 Nov 2011 16:04:26 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h)
+X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPV:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 21 Nov 2011 16:04:08 -0500
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <linux-kernel@vger.kernel.org>, <tglx@linutronix.de>,
+        <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
+ offcore events
+In-Reply-To: <CABPqkBRHW0ZmeqADptvBySLZpi6jc_bEFKoukkA6rtd5o04ziQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu> <tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org> <alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu> <1321901536.28118.20.camel@twins> <alpine.DEB.2.00.1111211358570.23676@cl320.eecs.utk.edu>
+ <CABPqkBRHW0ZmeqADptvBySLZpi6jc_bEFKoukkA6rtd5o04ziQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+On Mon, 21 Nov 2011, Stephane Eranian wrote:
 
-> > >   * @freeze: Hibernation-specific, executed before creating a hibernation image.
-> > > - *	Quiesce operations so that a consistent image can be created, but do NOT
-> > > - *	otherwise put the device into a low power device state and do NOT emit
-> > > - *	system wakeup events.  Save in main memory the device settings to be
-> > > - *	used by @restore() during the subsequent resume from hibernation or by
-> > > - *	the subsequent @thaw(), if the creation of the image or the restoration
-> > > - *	of main memory contents from it fails.
-> > > + *	Analogous to @suspend(), but it should not enable the device to signal
-> > > + *	wakeup events.  The majority of subsystems (with the notable exception
-> > > + *	of the PCI bus type) expect the driver-level @freeze() to save the
-> > > + *	device settings in memory to be used by @restore() during the subsequent
-> > > + *	resume from hibernation.
-> > > + *	Subsystem-level @freeze() is executed for all devices after invoking
-> > > + *	subsystem-level @prepare() for all of them.
-> > 
-> > The first three lines you removed contain some important points which I
-> > think should be retained.
+> > We have a workaround, but it currently disables kernel multiplexing and a
+> > few other nice features.
 > 
-> Well, not really, because in fact what the callback is supposed to do depends
-> on the subsystem.  For example, on PCI freeze is not supposed to save the
-> the device state even and generally those routines don't emit any events.
+> I don't understand why you have a problem with NMI watchdog. Multiplexing
+> allows you to still measure more events than there are counters.
 
-But you removed the part saying that the freeze callback should quiesce
-the device but doesn't necessarily have to put the device into a
-low-power state (in fact, it should avoid changing the power state if
-possible).  And you removed the explanation that this is needed in
-order to guarantee a consistent memory image.  These two points are
-true for all subsystems, including PCI.
+The PAPI code currently uses FORMAT_GROUP and puts as many events as 
+possible in a group.  The way we maximize events in a group is to
+add events until perf_events indicates a failure.
 
+When NMI watchdog is enabled, a counter is stolen.  Yet the perf_events
+code does not account for this.
 
-> > > @@ -174,29 +198,32 @@ typedef struct pm_message {
-> > >   * their children.
-> > >   *
-> > >   * It is allowed to unregister devices while the above callbacks are being
-> > > - * executed.  However, it is not allowed to unregister a device from within any
-> > > - * of its own callbacks.
-> > > + * executed.  However, it is NOT allowed to unregister a device from within any
-> > > + * of its driver's callbacks.
-> > 
-> > Please be a little more precise here.  If driver D manages two devices,
-> > A and B, then D _is_ allowed to unregister A from within a callback for
-> > B (except if A is an ancestor of B or something like that).  It's just
-> > not allowed to unregister B from within a callback for B.
-> 
-> I can leave that as is, but devices (or device objects to be precise) don't
-> have any callbacks.  Their drivers do.
-> 
-> I can add "(unless they are being executed for a different device)" or
-> something like this, but I'm not sure if that makes things any clearer.
+So say on an AMD machine with 4 counters (3 after one is stolen) 
+perf_events lets you add 4 events to an event group, even though only 3 
+are available.  It does not report failure upon open or start, only at 
+read.  By then it's too late.
 
-"A callback routine must NOT try to unregister the device for which it
-was called, however it may unregister children of that device (for
-example, if it detects that a child was hot-unplugged while the system
-was asleep)."
+We have to work around this, by doing an extra read at open time to verify 
+that the event group actually is valid, adding overhead.
 
-> Do you know any situation in which that matters?
+Our multiplex code tries to maximize the number of events in a group too.
+Currently PAPI works around this by just not doing kernel multiplexing
+if a NMI watchdog is detected.  There's probably more elegant solutions 
+such as checking with a read there too, or not using FORMAT_GROUP at all, 
+but since this is an ABI regression I was hoping it would get fixed 
+quickly enough that I wouldn't have to construct better workarounds.
 
-Not offhand, but I'm not familiar with too many subsystems.
-
-Alan Stern
+Vince
+vweaver1@eecs.utk.edu
 
