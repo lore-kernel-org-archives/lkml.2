@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1KULLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:11:42 -0500
+	id S1756312Ab1KULLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:11:47 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:43422 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098Ab1KULLk (ORCPT
+	with ESMTP id S1756172Ab1KULLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:11:40 -0500
+	Mon, 21 Nov 2011 06:11:43 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
         toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Subject: [PATCH 1/4] vfs: keep list of mounts for each superblock
-Date: Mon, 21 Nov 2011 12:11:30 +0100
-Message-Id: <1321873893-4544-2-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 2/4] vfs: protect remounting superblock read-only
+Date: Mon, 21 Nov 2011 12:11:31 +0100
+Message-Id: <1321873893-4544-3-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
 References: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
@@ -24,97 +24,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Keep track of vfsmounts belonging to a superblock.  List is protected
-by vfsmount_lock.
+Currently remouting superblock read-only is racy in a major way.
+
+With the per mount read-only infrastructure it is now possible to
+prevent most races, which this patch attempts.
+
+Before starting the remount read-only, iterate through all mounts
+belonging to the superblock and if none of them have any pending
+writes, set sb->s_readonly_remount.  This indicates that remount is in
+progress and no further write requests are allowed.  If the remount
+succeeds set MS_RDONLY and reset s_readonly_remount.
+
+If the remounting is unsuccessful just reset s_readonly_remount.
+This can result in transient EROFS errors, despite the fact the
+remount failed.  Unfortunately hodling off writes is difficult as
+remount itself may touch the filesystem (e.g. through load_nls())
+which would deadlock.
+
+A later patch deals with delayed writes due to nlink going to zero.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 ---
- fs/namespace.c        |   10 ++++++++++
- fs/super.c            |    2 ++
- include/linux/fs.h    |    1 +
- include/linux/mount.h |    1 +
- 4 files changed, 14 insertions(+), 0 deletions(-)
+ fs/internal.h      |    1 +
+ fs/namespace.c     |   40 +++++++++++++++++++++++++++++++++++++++-
+ fs/super.c         |   22 ++++++++++++++++++----
+ include/linux/fs.h |    3 +++
+ 4 files changed, 61 insertions(+), 5 deletions(-)
 
+diff --git a/fs/internal.h b/fs/internal.h
+index fe327c2..f925271 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -74,6 +74,7 @@ extern int finish_automount(struct vfsmount *, struct path *);
+ 
+ extern void mnt_make_longterm(struct vfsmount *);
+ extern void mnt_make_shortterm(struct vfsmount *);
++extern int sb_prepare_remount_readonly(struct super_block *);
+ 
+ extern void __init mnt_init(void);
+ 
 diff --git a/fs/namespace.c b/fs/namespace.c
-index e5e1c7d..70a0748 100644
+index 70a0748..f296790 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -696,6 +696,11 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
- 	mnt->mnt_sb = root->d_sb;
- 	mnt->mnt_mountpoint = mnt->mnt_root;
- 	mnt->mnt_parent = mnt;
+@@ -311,6 +311,15 @@ static unsigned int mnt_get_writers(struct vfsmount *mnt)
+ #endif
+ }
+ 
++static int mnt_is_readonly(struct vfsmount *mnt)
++{
++	if (mnt->mnt_sb->s_readonly_remount)
++		return 1;
++	/* Order wrt setting s_flags/s_readonly_remount in do_remount() */
++	smp_rmb();
++	return __mnt_is_readonly(mnt);
++}
++
+ /*
+  * Most r/o checks on a fs are for operations that take
+  * discrete amounts of time, like a write() or unlink().
+@@ -349,7 +358,7 @@ int mnt_want_write(struct vfsmount *mnt)
+ 	 * MNT_WRITE_HOLD is cleared.
+ 	 */
+ 	smp_rmb();
+-	if (__mnt_is_readonly(mnt)) {
++	if (mnt_is_readonly(mnt)) {
+ 		mnt_dec_writers(mnt);
+ 		ret = -EROFS;
+ 		goto out;
+@@ -466,6 +475,35 @@ static void __mnt_unmake_readonly(struct vfsmount *mnt)
+ 	br_write_unlock(vfsmount_lock);
+ }
+ 
++int sb_prepare_remount_readonly(struct super_block *sb)
++{
++	struct vfsmount *mnt;
++	int err = 0;
 +
 +	br_write_lock(vfsmount_lock);
-+	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (!(mnt->mnt_flags & MNT_READONLY)) {
++			mnt->mnt_flags |= MNT_WRITE_HOLD;
++			smp_mb();
++			if (mnt_get_writers(mnt) > 0) {
++				err = -EBUSY;
++				break;
++			}
++		}
++	}
++	if (!err) {
++		sb->s_readonly_remount = 1;
++		smp_wmb();
++	}
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (mnt->mnt_flags & MNT_WRITE_HOLD)
++			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
++	}
 +	br_write_unlock(vfsmount_lock);
 +
- 	return mnt;
- }
- EXPORT_SYMBOL_GPL(vfs_kern_mount);
-@@ -745,6 +750,10 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
- 			if (!list_empty(&old->mnt_expire))
- 				list_add(&mnt->mnt_expire, &old->mnt_expire);
- 		}
++	return err;
++}
 +
-+		br_write_lock(vfsmount_lock);
-+		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-+		br_write_unlock(vfsmount_lock);
- 	}
- 	return mnt;
- 
-@@ -805,6 +814,7 @@ put_again:
- 		acct_auto_close_mnt(mnt);
- 		goto put_again;
- 	}
-+	list_del(&mnt->mnt_instance);
- 	br_write_unlock(vfsmount_lock);
- 	mntfree(mnt);
- }
+ static void free_vfsmnt(struct vfsmount *mnt)
+ {
+ 	kfree(mnt->mnt_devname);
 diff --git a/fs/super.c b/fs/super.c
-index afd0f1a..74ab2c8 100644
+index 74ab2c8..027e02d 100644
 --- a/fs/super.c
 +++ b/fs/super.c
-@@ -142,6 +142,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 		INIT_LIST_HEAD(&s->s_dentry_lru);
- 		INIT_LIST_HEAD(&s->s_inode_lru);
- 		spin_lock_init(&s->s_inode_lru_lock);
-+		INIT_LIST_HEAD(&s->s_mounts);
- 		init_rwsem(&s->s_umount);
- 		mutex_init(&s->s_lock);
- 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
-@@ -200,6 +201,7 @@ static inline void destroy_super(struct super_block *s)
- 	free_percpu(s->s_files);
- #endif
- 	security_sb_free(s);
-+	WARN_ON(!list_empty(&s->s_mounts));
- 	kfree(s->s_subtype);
- 	kfree(s->s_options);
- 	kfree(s);
+@@ -721,23 +721,33 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 	/* If we are remounting RDONLY and current sb is read/write,
+ 	   make sure there are no rw files opened */
+ 	if (remount_ro) {
+-		if (force)
++		if (force) {
+ 			mark_files_ro(sb);
+-		else if (!fs_may_remount_ro(sb))
+-			return -EBUSY;
++		} else {
++			retval = sb_prepare_remount_readonly(sb);
++			if (retval)
++				return retval;
++
++			retval = -EBUSY;
++			if (!fs_may_remount_ro(sb))
++				goto cancel_readonly;
++		}
+ 	}
+ 
+ 	if (sb->s_op->remount_fs) {
+ 		retval = sb->s_op->remount_fs(sb, &flags, data);
+ 		if (retval) {
+ 			if (!force)
+-				return retval;
++				goto cancel_readonly;
+ 			/* If forced remount, go ahead despite any errors */
+ 			WARN(1, "forced remount of a %s fs returned %i\n",
+ 			     sb->s_type->name, retval);
+ 		}
+ 	}
+ 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
++	/* Needs to be ordered wrt mnt_is_readonly() */
++	smp_wmb();
++	sb->s_readonly_remount = 0;
+ 
+ 	/*
+ 	 * Some filesystems modify their metadata via some other path than the
+@@ -750,6 +760,10 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 	if (remount_ro && sb->s_bdev)
+ 		invalidate_bdev(sb->s_bdev);
+ 	return 0;
++
++cancel_readonly:
++	sb->s_readonly_remount = 0;
++	return retval;
+ }
+ 
+ static void do_emergency_remount(struct work_struct *work)
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0c4df26..cbae78e 100644
+index cbae78e..58f50f2 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -1428,6 +1428,7 @@ struct super_block {
- #else
- 	struct list_head	s_files;
- #endif
-+	struct list_head	s_mounts;	/* list of mounts */
- 	/* s_dentry_lru, s_nr_dentry_unused protected by dcache.c lru locks */
- 	struct list_head	s_dentry_lru;	/* unused dentry lru */
- 	int			s_nr_dentry_unused;	/* # of dentry on lru */
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 33fe53d..f88c726 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -67,6 +67,7 @@ struct vfsmount {
- #endif
- 	struct list_head mnt_mounts;	/* list of children, anchored here */
- 	struct list_head mnt_child;	/* and going through their mnt_child */
-+	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
- 	int mnt_flags;
- 	/* 4 bytes hole on 64bits arches without fsnotify */
- #ifdef CONFIG_FSNOTIFY
+@@ -1482,6 +1482,9 @@ struct super_block {
+ 	int cleancache_poolid;
+ 
+ 	struct shrinker s_shrink;	/* per-sb shrinker handle */
++
++	/* Being remounted read-only */
++	int s_readonly_remount;
+ };
+ 
+ /* superblock cache pruning functions */
 -- 
 1.7.7
 
