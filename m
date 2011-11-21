@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab1KUSwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 13:52:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49425 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab1KUSwk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 13:52:40 -0500
-Message-ID: <1321901536.28118.20.camel@twins>
-Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
- offcore events
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-Date: Mon, 21 Nov 2011 19:52:16 +0100
-In-Reply-To: <alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
-	 <tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
-	 <alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1756267Ab1KUSwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 13:52:34 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:2627 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755946Ab1KUSwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 13:52:33 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4ECA9DE0.4080202@broadcom.com>
+Date: Mon, 21 Nov 2011 10:52:16 -0800
+From: "Franky Lin" <frankyl@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929
+ Thunderbird/7.0.1
+MIME-Version: 1.0
+To: "Thomas Meyer" <thomas@m3y3r.de>
+cc: "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcm80211: smac: Use kmemdup rather than
+ duplicating its implementation
+References: <1321569820.1624.289.camel@localhost.localdomain>
+In-Reply-To: <1321569820.1624.289.camel@localhost.localdomain>
+X-WSS-ID: 62D440495WO1587936-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 13:24 -0500, Vince Weaver wrote:
-> On Fri, 18 Nov 2011, tip-bot for Peter Zijlstra wrote:
-> 
-> > Commit-ID:  ed13ec58bfe0d5dc95f748e6118432cb0fa283cb
-> > Gitweb:     http://git.kernel.org/tip/ed13ec58bfe0d5dc95f748e6118432cb0fa283cb
-> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > AuthorDate: Mon, 14 Nov 2011 10:03:25 +0100
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Mon, 14 Nov 2011 13:03:44 +0100
-> > 
-> > perf/x86: Enable raw event access to Intel offcore events
-> 
-> awesome.  You can add a "Whined-about-it-at-great-length: Vince Weaver"
-> line to the commit logs if you want.  Now I'll have to find something else 
-> to complain about, probably the scedulability issue introduced with the
-> NMI watchdog.
+On 11/17/2011 02:43 PM, Thomas Meyer wrote:
+> The semantic patch that makes this change is available
+> in scripts/coccinelle/api/memdup.cocci.
+>
+> Signed-off-by: Thomas Meyer<thomas@m3y3r.de>
+> ---
 
-:-)
+Thanks Thomas.
 
-But you can disable that thing, right?
+Acked-by: Franky Lin <frankyl@broadcom.com>
 
-echo 0 > /proc/sys/kernel/nmi_watchdog;
-
-or so should do the trick.
-
+Franky
 
