@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab1KUUg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 15:36:26 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:32009 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab1KUUgY (ORCPT
+	id S1756688Ab1KUUga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 15:36:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46156 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756610Ab1KUUgZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 15:36:24 -0500
-Date: Mon, 21 Nov 2011 15:36:14 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] btrfs: lower the dirty balance poll interval
-Message-ID: <20111121203614.GE28259@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Wu Fengguang <fengguang.wu@intel.com>,
-	linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <20111117122403.GA32363@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111117122403.GA32363@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4ECAB647.0046,ss=1,re=0.000,fgs=0
+	Mon, 21 Nov 2011 15:36:25 -0500
+Message-ID: <1321907755.28118.30.camel@twins>
+Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
+        Vince Weaver <vince@deater.net>
+Date: Mon, 21 Nov 2011 21:35:55 +0100
+In-Reply-To: <20111121203145.GA7301@mudshark.cambridge.arm.com>
+References: <20111121145114.049265181@chello.nl>
+	 <20111121145337.533322271@chello.nl>
+	 <20111121172323.GH20611@mudshark.cambridge.arm.com>
+	 <1321903090.28118.21.camel@twins>
+	 <20111121203145.GA7301@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 17, 2011 at 08:24:03PM +0800, Wu Fengguang wrote:
-> Tests show that the original large intervals can easily make the dirty
-> limit exceeded on 100 concurrent dd's. So adapt to as large as the
-> next check point selected by the dirty throttling algorithm.
+On Mon, 2011-11-21 at 20:31 +0000, Will Deacon wrote:
+> On Mon, Nov 21, 2011 at 07:18:10PM +0000, Peter Zijlstra wrote:
+> > But does ARM have a read PMU counter from userspace
+> > instruction/capability?
+> 
+> In ARMv7, you can enable user access to the performance counters but the
+> access is R/W so I don't think it's something we want to do (could interfere
+> with another task doing system-wide profiling).
 
-Thanks Wu, were you planning on pushing this through your tree or should
-I take it?
+Yeah, write access is pushing it a bit.. 
 
--chris
+> > Lacking that its all moot of course. If it does, it would be nice to
+> > have an ARM version of patch 6.
+> 
+> Well we'd need a way to get around the all-or-nothing user access to the PMU
+> and also the fact that we don't always have a user-readable clocksource.
+> 
+> Either way, the event counters are indexed from 0 on ARMv7 so we should
+> use perf_event_idx_default.
+
+Ok, done. Thanks!
