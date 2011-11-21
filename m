@@ -1,74 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab1KURkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:40:08 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33724 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab1KURkG (ORCPT
+	id S1756211Ab1KURlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:41:08 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:48869 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753816Ab1KURlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:40:06 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Hibernation: Fix *massive* memory leak at early exits in
- hibernation
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Date: Mon, 21 Nov 2011 23:09:48 +0530
-Message-ID: <20111121173939.9486.38357.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112107-1396-0000-0000-000000465C3B
+	Mon, 21 Nov 2011 12:41:04 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-ext4@vger.kernel.org
+Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        adilger@dilger.ca
+Subject: [PATCH V2 17/19] ext4: let empty_dir handle inline dir.
+Date: Tue, 22 Nov 2011 00:39:55 +0800
+Message-Id: <1321893597-11024-17-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
+References: <4ECA7DB3.9040605@tao.ma>
+ <1321893597-11024-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At some of the early exit points during hibernation (exiting either due
-to failure or after a successful hibernation test, the memory pre-allocated
-for hibernation is not freed up. And this is *very* serious, because, during
-pre-allocation, it could have allocated upto a few *gigabytes* of memory!
-And hence, if a hibernation fails or even if we run some hibernation tests
-using the 'pm_test' framework, the system is rendered unstable due to memory
-becoming signifantly lower. Fix this bug.
+From: Tao Ma <boyu.mt@taobao.com>
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+empty_dir is used when deleting a dir. So it should handle
+inline dir properly.
+
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 ---
+ fs/ext4/inline.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/ext4/namei.c  |    8 ++++++
+ fs/ext4/xattr.h  |    6 ++++
+ 3 files changed, 83 insertions(+), 0 deletions(-)
 
- kernel/power/hibernate.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 196c0126..dfe07fd 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -346,8 +346,10 @@ int hibernation_snapshot(int platform_mode)
- 		goto Close;
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index 302925e..4930e2e 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -1407,6 +1407,75 @@ out:
+ 	return err;
+ }
  
- 	error = freeze_kernel_threads();
--	if (error)
-+	if (error) {
-+		swsusp_free();
- 		goto Close;
++int empty_inline_dir(struct inode *dir, int *has_inline_data)
++{
++	int err, inline_size;
++	struct ext4_iloc iloc;
++	void *inline_pos;
++	unsigned int offset;
++	struct ext4_dir_entry_2 *de, *de1;
++	int ret = 1;
++
++	err = ext4_get_inode_loc(dir, &iloc);
++	if (err) {
++		EXT4_ERROR_INODE(dir, "error %d getting inode %lu block",
++				 err, dir->i_ino);
++		return 1;
 +	}
- 
- 	if (hibernation_test(TEST_FREEZER) ||
- 		hibernation_testmode(HIBERNATION_TESTPROC)) {
-@@ -357,12 +359,15 @@ int hibernation_snapshot(int platform_mode)
- 		 * successful freezer test.
- 		 */
- 		freezer_test_done = true;
-+		swsusp_free();
- 		goto Close;
- 	}
- 
- 	error = dpm_prepare(PMSG_FREEZE);
--	if (error)
-+	if (error) {
-+		swsusp_free();
- 		goto Complete_devices;
++
++	down_read(&EXT4_I(dir)->xattr_sem);
++	if (!ext4_has_inline_data(dir)) {
++		*has_inline_data = 0;
++		goto out;
 +	}
++
++	de = ext4_get_inline_entry(dir, &iloc, 0,
++				   &inline_pos, &inline_size);
++	de1 = ext4_get_inline_entry(dir, &iloc,
++			ext4_rec_len_from_disk(de->rec_len, inline_size),
++			&inline_pos, &inline_size);
++	if (le32_to_cpu(de->inode) != dir->i_ino ||
++			!le32_to_cpu(de1->inode) ||
++			strcmp(".", de->name) ||
++			strcmp("..", de1->name)) {
++		ext4_warning(dir->i_sb,
++			     "bad directory (dir #%lu) - no `.' or `..'",
++			     dir->i_ino);
++		ret = 1;
++		goto out;
++	}
++
++	offset = ext4_rec_len_from_disk(de->rec_len, inline_size) +
++		 ext4_rec_len_from_disk(de1->rec_len, inline_size);
++	while (offset < dir->i_size) {
++		de = ext4_get_inline_entry(dir, &iloc, offset,
++					   &inline_pos, &inline_size);
++		if (ext4_check_dir_entry(dir, NULL, de,
++					 iloc.bh, inline_pos,
++					 inline_size, offset)) {
++			ext4_warning(dir->i_sb,
++				     "bad inline directory (dir #%lu) - "
++				     "inode %u, rec_len %u, name_len %d"
++				     "inline size %d\n",
++				     dir->i_ino, le32_to_cpu(de->inode),
++				     le16_to_cpu(de->rec_len), de->name_len,
++				     inline_size);
++			ret = 1;
++			goto out;
++		}
++		if (le32_to_cpu(de->inode)) {
++			ret = 0;
++			goto out;
++		}
++		offset += ext4_rec_len_from_disk(de->rec_len, inline_size);
++	}
++
++out:
++	up_read(&EXT4_I(dir)->xattr_sem);
++	brelse(iloc.bh);
++	return ret;
++}
++
+ int ext4_destroy_inline_data(handle_t *handle, struct inode *inode)
+ {
+ 	int ret;
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index cefcec6..24cdb61 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2015,6 +2015,14 @@ static int empty_dir(struct inode *inode)
+ 	struct super_block *sb;
+ 	int err = 0;
  
- 	suspend_console();
- 	pm_restrict_gfp_mask();
++	if (ext4_has_inline_data(inode)) {
++		int has_inline_data = 1;
++
++		err = empty_inline_dir(inode, &has_inline_data);
++		if (has_inline_data)
++			return err;
++	}
++
+ 	sb = inode->i_sb;
+ 	if (inode->i_size < EXT4_DIR_REC_LEN(1) + EXT4_DIR_REC_LEN(2) ||
+ 	    !(bh = ext4_bread(NULL, inode, 0, 0, &err))) {
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index ccd994e..d889582 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -178,6 +178,7 @@ extern int ext4_delete_inline_entry(handle_t *handle,
+ 				    struct inode *dir,
+ 				    struct ext4_dir_entry_2 *de_del,
+ 				    struct buffer_head *bh);
++extern int empty_inline_dir(struct inode *dir, int *has_inline_data);
+ # else  /* CONFIG_EXT4_FS_XATTR */
+ 
+ static inline int
+@@ -381,6 +382,11 @@ static inline int ext4_delete_inline_entry(handle_t *handle,
+ {
+ 	return 0;
+ }
++
++static inline int empty_inline_dir(struct inode *dir, int *has_inline_data)
++{
++	return 0;
++}
+ # endif  /* CONFIG_EXT4_FS_XATTR */
+ 
+ #ifdef CONFIG_EXT4_FS_SECURITY
+-- 
+1.7.0.4
 
