@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab1KULLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 06:11:50 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43422 "EHLO
+	id S1756381Ab1KULMU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 06:12:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52314 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756275Ab1KULLr (ORCPT
+	with ESMTP id S1756098Ab1KULLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 06:11:47 -0500
+	Mon, 21 Nov 2011 06:11:45 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
         toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Subject: [PATCH 4/4] vfs: prevent remount read-only if pending removes
-Date: Mon, 21 Nov 2011 12:11:33 +0100
-Message-Id: <1321873893-4544-5-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 3/4] vfs: count unlinked inodes
+Date: Mon, 21 Nov 2011 12:11:32 +0100
+Message-Id: <1321873893-4544-4-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
 References: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
@@ -24,107 +24,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-If there are any inodes on the super block that have been unlinked
-(i_nlink == 0) but have not yet been deleted then prevent the
-remounting the super block read-only.
+Add a new counter to the superblock that keeps track of unlinked but
+not yet deleted inodes.
 
-Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Do not WARN_ON if set_nlink is called with zero count, just do a
+ratelimited printk.  This happens on xfs and probably other
+filesystems after an unclean shutdown when the filesystem reads inodes
+which already have zero i_nlink.  Reported by Christoph Hellwig.
+
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 ---
- fs/file_table.c    |   23 -----------------------
- fs/namespace.c     |    7 +++++++
- fs/super.c         |    4 ----
- include/linux/fs.h |    2 --
- 4 files changed, 7 insertions(+), 29 deletions(-)
+ fs/inode.c         |   85 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h |   61 ++++---------------------------------
+ 2 files changed, 92 insertions(+), 54 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index c322794..20002e3 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -474,29 +474,6 @@ void file_sb_list_del(struct file *file)
+diff --git a/fs/inode.c b/fs/inode.c
+index ee4e66b..5f8fd6b 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -26,6 +26,7 @@
+ #include <linux/ima.h>
+ #include <linux/cred.h>
+ #include <linux/buffer_head.h> /* for inode_has_buffers */
++#include <linux/ratelimit.h>
+ #include "internal.h"
  
- #endif
- 
--int fs_may_remount_ro(struct super_block *sb)
--{
--	struct file *file;
--	/* Check that no files are currently opened for writing. */
--	lg_global_lock(files_lglock);
--	do_file_list_for_each_entry(sb, file) {
--		struct inode *inode = file->f_path.dentry->d_inode;
--
--		/* File with pending delete? */
--		if (inode->i_nlink == 0)
--			goto too_bad;
--
--		/* Writeable file? */
--		if (S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE))
--			goto too_bad;
--	} while_file_list_for_each_entry;
--	lg_global_unlock(files_lglock);
--	return 1; /* Tis' cool bro. */
--too_bad:
--	lg_global_unlock(files_lglock);
--	return 0;
--}
--
- /**
-  *	mark_files_ro - mark all files read-only
-  *	@sb: superblock in question
-diff --git a/fs/namespace.c b/fs/namespace.c
-index f296790..62684d3 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -480,6 +480,10 @@ int sb_prepare_remount_readonly(struct super_block *sb)
- 	struct vfsmount *mnt;
- 	int err = 0;
- 
-+	/* Racy optimization.  Recheck the counter under MNT_WRITE_HOLD */
-+	if (atomic_long_read(&sb->s_remove_count))
-+		return -EBUSY;
+ /*
+@@ -241,6 +242,11 @@ void __destroy_inode(struct inode *inode)
+ 	BUG_ON(inode_has_buffers(inode));
+ 	security_inode_free(inode);
+ 	fsnotify_inode_delete(inode);
++	if (!inode->i_nlink) {
++		WARN_ON(atomic_long_read(&inode->i_sb->s_remove_count) == 0);
++		atomic_long_dec(&inode->i_sb->s_remove_count);
++	}
 +
- 	br_write_lock(vfsmount_lock);
- 	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
- 		if (!(mnt->mnt_flags & MNT_READONLY)) {
-@@ -491,6 +495,9 @@ int sb_prepare_remount_readonly(struct super_block *sb)
- 			}
- 		}
- 	}
-+	if (!err && atomic_long_read(&sb->s_remove_count))
-+		err = -EBUSY;
-+
- 	if (!err) {
- 		sb->s_readonly_remount = 1;
- 		smp_wmb();
-diff --git a/fs/super.c b/fs/super.c
-index 027e02d..e81baed 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -727,10 +727,6 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
- 			retval = sb_prepare_remount_readonly(sb);
- 			if (retval)
- 				return retval;
--
--			retval = -EBUSY;
--			if (!fs_may_remount_ro(sb))
--				goto cancel_readonly;
- 		}
- 	}
+ #ifdef CONFIG_FS_POSIX_ACL
+ 	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+ 		posix_acl_release(inode->i_acl);
+@@ -268,6 +274,85 @@ static void destroy_inode(struct inode *inode)
+ 		call_rcu(&inode->i_rcu, i_callback);
+ }
  
++/**
++ * drop_nlink - directly drop an inode's link count
++ * @inode: inode
++ *
++ * This is a low-level filesystem helper to replace any
++ * direct filesystem manipulation of i_nlink.  In cases
++ * where we are attempting to track writes to the
++ * filesystem, a decrement to zero means an imminent
++ * write when the file is truncated and actually unlinked
++ * on the filesystem.
++ */
++void drop_nlink(struct inode *inode)
++{
++	WARN_ON(inode->i_nlink == 0);
++	inode->__i_nlink--;
++	if (!inode->i_nlink)
++		atomic_long_inc(&inode->i_sb->s_remove_count);
++}
++EXPORT_SYMBOL(drop_nlink);
++
++/**
++ * clear_nlink - directly zero an inode's link count
++ * @inode: inode
++ *
++ * This is a low-level filesystem helper to replace any
++ * direct filesystem manipulation of i_nlink.  See
++ * drop_nlink() for why we care about i_nlink hitting zero.
++ */
++void clear_nlink(struct inode *inode)
++{
++	if (inode->i_nlink) {
++		inode->__i_nlink = 0;
++		atomic_long_inc(&inode->i_sb->s_remove_count);
++	}
++}
++EXPORT_SYMBOL(clear_nlink);
++
++/**
++ * set_nlink - directly set an inode's link count
++ * @inode: inode
++ * @nlink: new nlink (should be non-zero)
++ *
++ * This is a low-level filesystem helper to replace any
++ * direct filesystem manipulation of i_nlink.
++ */
++void set_nlink(struct inode *inode, unsigned int nlink)
++{
++	if (!nlink) {
++		printk_ratelimited(KERN_INFO
++			"set_nlink() clearing i_nlink on %s inode %li\n",
++			inode->i_sb->s_type->name, inode->i_ino);
++		clear_nlink(inode);
++	} else {
++		/* Yes, some filesystems do change nlink from zero to one */
++		if (inode->i_nlink == 0)
++			atomic_long_dec(&inode->i_sb->s_remove_count);
++
++		inode->__i_nlink = nlink;
++	}
++}
++EXPORT_SYMBOL(set_nlink);
++
++/**
++ * inc_nlink - directly increment an inode's link count
++ * @inode: inode
++ *
++ * This is a low-level filesystem helper to replace any
++ * direct filesystem manipulation of i_nlink.  Currently,
++ * it is only here for parity with dec_nlink().
++ */
++void inc_nlink(struct inode *inode)
++{
++	if (WARN_ON(inode->i_nlink == 0))
++		atomic_long_dec(&inode->i_sb->s_remove_count);
++
++	inode->__i_nlink++;
++}
++EXPORT_SYMBOL(inc_nlink);
++
+ void address_space_init_once(struct address_space *mapping)
+ {
+ 	memset(mapping, 0, sizeof(*mapping));
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index f4636c3..963dd2a 100644
+index 58f50f2..f4636c3 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -2146,8 +2146,6 @@ extern const struct file_operations read_pipefifo_fops;
- extern const struct file_operations write_pipefifo_fops;
- extern const struct file_operations rdwr_pipefifo_fops;
+@@ -1483,6 +1483,9 @@ struct super_block {
  
--extern int fs_may_remount_ro(struct super_block *);
+ 	struct shrinker s_shrink;	/* per-sb shrinker handle */
+ 
++	/* Number of inodes with nlink == 0 but still referenced */
++	atomic_long_t s_remove_count;
++
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
+ };
+@@ -1768,31 +1771,10 @@ static inline void mark_inode_dirty_sync(struct inode *inode)
+ 	__mark_inode_dirty(inode, I_DIRTY_SYNC);
+ }
+ 
+-/**
+- * set_nlink - directly set an inode's link count
+- * @inode: inode
+- * @nlink: new nlink (should be non-zero)
+- *
+- * This is a low-level filesystem helper to replace any
+- * direct filesystem manipulation of i_nlink.
+- */
+-static inline void set_nlink(struct inode *inode, unsigned int nlink)
+-{
+-	inode->__i_nlink = nlink;
+-}
 -
- #ifdef CONFIG_BLOCK
- /*
-  * return READ, READA, or WRITE
+-/**
+- * inc_nlink - directly increment an inode's link count
+- * @inode: inode
+- *
+- * This is a low-level filesystem helper to replace any
+- * direct filesystem manipulation of i_nlink.  Currently,
+- * it is only here for parity with dec_nlink().
+- */
+-static inline void inc_nlink(struct inode *inode)
+-{
+-	inode->__i_nlink++;
+-}
++extern void inc_nlink(struct inode *inode);
++extern void drop_nlink(struct inode *inode);
++extern void clear_nlink(struct inode *inode);
++extern void set_nlink(struct inode *inode, unsigned int nlink);
+ 
+ static inline void inode_inc_link_count(struct inode *inode)
+ {
+@@ -1800,35 +1782,6 @@ static inline void inode_inc_link_count(struct inode *inode)
+ 	mark_inode_dirty(inode);
+ }
+ 
+-/**
+- * drop_nlink - directly drop an inode's link count
+- * @inode: inode
+- *
+- * This is a low-level filesystem helper to replace any
+- * direct filesystem manipulation of i_nlink.  In cases
+- * where we are attempting to track writes to the
+- * filesystem, a decrement to zero means an imminent
+- * write when the file is truncated and actually unlinked
+- * on the filesystem.
+- */
+-static inline void drop_nlink(struct inode *inode)
+-{
+-	inode->__i_nlink--;
+-}
+-
+-/**
+- * clear_nlink - directly zero an inode's link count
+- * @inode: inode
+- *
+- * This is a low-level filesystem helper to replace any
+- * direct filesystem manipulation of i_nlink.  See
+- * drop_nlink() for why we care about i_nlink hitting zero.
+- */
+-static inline void clear_nlink(struct inode *inode)
+-{
+-	inode->__i_nlink = 0;
+-}
+-
+ static inline void inode_dec_link_count(struct inode *inode)
+ {
+ 	drop_nlink(inode);
 -- 
 1.7.7
 
