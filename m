@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab1KUWH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:07:28 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47855 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab1KUWHZ (ORCPT
+	id S1757433Ab1KUWHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:07:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44831 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757352Ab1KUWHn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:07:25 -0500
-Date: Mon, 21 Nov 2011 14:07:19 -0800
-From: Tejun Heo <tj@kernel.org>
-To: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCHSET] cgroup: stable threadgroup during attach & subsys
- methods consolidation
-Message-ID: <20111121220719.GP25776@google.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+	Mon, 21 Nov 2011 17:07:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320191193-8110-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201111212249.31196.rjw@sisk.pl>
+References: <lx6sezwGldO.A.IhF.UBpWOB@chimera> <201111212249.31196.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 Nov 2011 14:07:20 -0800
+X-Google-Sender-Auth: cR0wGfvawk9d7aC6OmchbsUJLi8
+Message-ID: <CA+55aFxv7+Kf=sRj7RCSeY0dcVFMcUiXVKT=CY-2aFti5bO4yA@mail.gmail.com>
+Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:46:23PM -0700, Tejun Heo wrote:
-> This patchset is combination of the following two patchsets.
-> 
->  [1] cgroup: extend threadgroup locking
->  [2] cgroup: introduce cgroup_taskset and consolidate subsys methods, take#2
+On Mon, Nov 21, 2011 at 1:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Subject    : Simultaneous cat and external keyboard input causing kernel panic
+> Submitter  : Timo Jyrinki <timo.jyrinki@gmail.com>
+> Date       : 2011-11-03 12:14
+> Message-ID : CAJtFfxmovJHspHHKbvBVc4pw+u5mjGmUejCXEzdV+GqE=jVSOQ@mail.gmail.com
+> References : http://marc.info/?l=linux-kernel&m=132032253903074&w=2
 
-Li, do you agree with the proposed patches?  If so, I'll wait for
-Frederic's response, repost updated series and merge it into the
-cgroup tree.
+So while funny, I doubt this is actually a bug. It's a feature, as
+pointed out by Clemens Ladisch in that thread.
 
-Thank you.
+It's simply sysrq-c: "perform a system crash by a NULL pointer dereference".
 
--- 
-tejun
+Now, I'm perfectly willing to consider that feature to be a
+mis-feature, and that this should be considered a bug to be fixed. But
+it is not a regression.
+
+Keeping it on the regression list just because it is amusing is
+understandable, though ;)
+
+                    Linus
