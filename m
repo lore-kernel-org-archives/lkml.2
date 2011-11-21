@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1KUWEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 17:04:12 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43484 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab1KUWEK (ORCPT
+	id S1757337Ab1KUWEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 17:04:36 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59526 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab1KUWEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 17:04:10 -0500
-Date: Mon, 21 Nov 2011 14:04:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 05/10] cgroup: subsys->attach_task() should be called
- after migration
-Message-ID: <20111121220404.GN25776@google.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-6-git-send-email-tj@kernel.org>
- <20111114200553.GG9446@somewhere>
+	Mon, 21 Nov 2011 17:04:35 -0500
+Date: Mon, 21 Nov 2011 14:04:18 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Allison Henderson <achender@linux.vnet.ibm.com>,
+        Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes"
+In-Reply-To: <20111121165626.GD14568@thunk.org>
+Message-ID: <alpine.LSU.2.00.1111211331120.1879@sister.anvils>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111114200553.GG9446@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 09:06:08PM +0100, Frederic Weisbecker wrote:
-> On Tue, Nov 01, 2011 at 04:46:28PM -0700, Tejun Heo wrote:
-> > cgroup_attach_task() calls subsys->attach_task() after
-> > cgroup_task_migrate(); however, cgroup_attach_proc() calls it before
-> > migration.  This actually affects some of the users.  Update
-> > cgroup_attach_proc() such that ->attach_task() is called after
-> > migration.
+On Mon, 21 Nov 2011, Ted Ts'o wrote:
+> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
 > 
-> That's already upstream.
+> > I did not reproduce either problem above with that.  Instead I found
+> > that backing out 02fac1297eb3 made fsx on 3.2-rc1 fail in a few minutes.
+> > But leaving 02fac1297eb3 in, fsx still failed in 20 minutes or an hour.
+> > On 3.1, fsx failed in a few minutes.  On 3.0, fsx failed in half an hour.
+> > On 2.6.39, fsx failed in a few minutes.  I had to go back to 2.6.38 for
+> > fsx to run successfully under memory pressure for more than two hours.
+> > 
+> > It looks as if ext4 testing has not been running fsx under memory
+> > pressure recently.  And although I didn't reproduce my main problems
+> > that way, it could well be that getting fsx to run reliably again
+> > under memory pressure will be the way to fix those problems.
+> 
+> Yes, I think we've been relying mostly on xfstests, and not
+> necessarily under extreme memory pressures.  Out of curiosity, what
+> sort of configuration were you using when you did the above tests?
+> (memory, swap, fs bock size, etc.)  Was it the same as you did with
+> your make -j20 kernel stress test?  And where you using any special
+> fsx options?
 
-Yeap, just dropped this one while rebasing.
+Thanks for your rapid replies.
 
-Thanks.
+x86_64 kernel booted with "mem=700M cgroup_disable=memory" (latter to
+rule out any memcg effects), swap was 1.5G, ext2 block size was 1024,
 
--- 
-tejun
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT23=y
+CONFIG_EXT4_FS_XATTR=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+# CONFIG_EXT4_FS_SECURITY is not set
+# CONFIG_EXT4_DEBUG is not set
+
+fsx options as below, no fallocation or holepunching:
+
+fsx foo -q -c 100 -l 100000000 &
+while :
+do	# memory hog mmaps and touches each page of 800MB private area
+	swapout 800
+done
+
+You might well wonder about the provenance of my fsx, and I'm not
+certain where it came from originally (perhaps akpm's toolbox about
+nine years ago).  So I got an xfstests.git tree
+
+HEAD e219e1cb59660b010ae8c1e22d41d319bb1e10c7
+Date:   Tue Nov 8 11:41:45 2011 +0800
+
+built the latest version of fsx there, and ran the script with that,
+on 3.2-rc2+ kernel pulled yesterday.
+
+This time I used a disk partition, to rule out any loop or tmpfs
+effects; but sized the partition to 460800 blocks to match what
+I'd been using with loop and tmpfs (after growing impatient when
+the first run on the whole 1.5G partition ran for half an hour -
+but in retrospect perhaps it was about to blow when I stopped it).
+
+It ran for 28 minutes before fsx failed with
+READ BAD DATA: offset = 0x97f50, size = 0xe1bf, fname = foo
+OFFSET	GOOD	BAD	RANGE
+0xa6000	0x537e	0x0000	0x    0
+operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
+...
+0xa600f	0x4453	0x0000	0x    f
+operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
+LOG DUMP (433525 total operations):
+followed by the usual trace of operations leading up to this point.
+
+Hugh
