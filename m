@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab1KUIgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 03:36:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3363 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab1KUIf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 03:35:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,546,1315206000"; 
-   d="scan'208";a="93498914"
-Subject: Re: [PATCH v2 1/5] dmaengine: add ep93xx DMA support
-From: Vinod Koul <vinod.koul@intel.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: Rafal Prylowski <prylowski@metasoft.pl>, rmallon@gmail.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, hsweeten@visionengravers.com,
-        dan.j.williams@intel.com, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20111121080158.GA2713@mwesterb-mobl.ger.corp.intel.com>
-References: <cover.1306662317.git.mika.westerberg@iki.fi>
-	 <3ea8d56034f25cbe3fd8a4c31d7d0d1540b6ac7e.1306662317.git.mika.westerberg@iki.fi>
-	 <4EC27EED.4030108@metasoft.pl>
-	 <20111116065512.GB2703@mwesterb-mobl.ger.corp.intel.com>
-	 <4EC374F0.8000400@metasoft.pl>
-	 <20111119123837.GA2711@mwesterb-mobl.ger.corp.intel.com>
-	 <4ECA0147.4020806@metasoft.pl>
-	 <20111121080158.GA2713@mwesterb-mobl.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Nov 2011 14:02:06 +0530
-Message-ID: <1321864326.1516.211.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755561Ab1KUIgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 03:36:23 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65252 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189Ab1KUIgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 03:36:18 -0500
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: zhzhl555@gmail.com, peppe.cavallaro@st.com, wuzhangjin@gmail.com,
+        r0bertz@gentoo.org, Kelvin Cheung <keguang.zhang@gmail.com>
+Subject: [PATCH V4 4/4] MIPS: Add defconfig for Loongson1B
+Date: Mon, 21 Nov 2011 16:34:52 +0800
+Message-Id: <1321864492-1278-4-git-send-email-keguang.zhang@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1321864492-1278-1-git-send-email-keguang.zhang@gmail.com>
+References: <1321864492-1278-1-git-send-email-keguang.zhang@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 10:01 +0200, Mika Westerberg wrote:
-> On Mon, Nov 21, 2011 at 08:44:07AM +0100, Rafal Prylowski wrote:
-> > 
-> > I'm calling dma_terminate_all from interrupt. It seems that tasklet_kill is not
-> > allowed to be called from this context.
-> 
-> Ah, right.
-> 
-> One more try - this time we set a flag which prevents the tasktlet from
-> referencing an empty list.
-Rather than this why not actually check for list_empty and process only
-when it is not empty?
-Also you should check the return of the ep93xx_dma_get_active() which
-should return NULL if it didn't find anything in active list
-> 
-> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-> index 6181811..f7244b3 100644
-> --- a/drivers/dma/ep93xx_dma.c
-> +++ b/drivers/dma/ep93xx_dma.c
-> @@ -155,6 +155,8 @@ struct ep93xx_dma_chan {
->  	unsigned long			flags;
->  /* Channel is configured for cyclic transfers */
->  #define EP93XX_DMA_IS_CYCLIC		0
-> +/* Channel is enabled */
-> +#define EP93xx_DMA_IS_RUNNING		1
->  
->  	int				buffer;
->  	dma_cookie_t			last_completed;
-> @@ -673,6 +675,9 @@ static void ep93xx_dma_tasklet(unsigned long data)
->  	void *callback_param;
->  	LIST_HEAD(list);
->  
-> +	if (!test_bit(EP93XX_DMA_IS_RUNNING, &edmac->flags))
-> +		return;
-> +
->  	spin_lock_irq(&edmac->lock);
->  	desc = ep93xx_dma_get_active(edmac);
->  	if (desc->complete) {
-> @@ -758,6 +763,8 @@ static dma_cookie_t ep93xx_dma_tx_submit(struct dma_async_tx_descriptor *tx)
->  	edmac->chan.cookie = cookie;
->  	desc->txd.cookie = cookie;
->  
-> +	set_bit(EP93XX_DMA_IS_RUNNING, &edmac->flags);
-> +
->  	/*
->  	 * If nothing is currently prosessed, we push this descriptor
->  	 * directly to the hardware. Otherwise we put the descriptor
-> @@ -1106,6 +1113,7 @@ static int ep93xx_dma_terminate_all(struct ep93xx_dma_chan *edmac)
->  	spin_lock_irqsave(&edmac->lock, flags);
->  	/* First we disable and flush the DMA channel */
->  	edmac->edma->hw_shutdown(edmac);
-> +	clear_bit(EP93XX_DMA_IS_RUNNING, &edmac->flags);
->  	clear_bit(EP93XX_DMA_IS_CYCLIC, &edmac->flags);
->  	list_splice_init(&edmac->active, &list);
->  	list_splice_init(&edmac->queue, &list);
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+This patch adds defconfig for Loongson1B.
 
+Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+---
+ arch/mips/configs/ls1b_defconfig |   90 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 90 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/configs/ls1b_defconfig
 
+diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
+new file mode 100644
+index 0000000..42954bc
+--- /dev/null
++++ b/arch/mips/configs/ls1b_defconfig
+@@ -0,0 +1,90 @@
++CONFIG_MACH_LOONGSON1=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_PREEMPT=y
++# CONFIG_SECCOMP is not set
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_TINY_RCU=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=16
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_RD_BZIP2=y
++CONFIG_RD_LZMA=y
++CONFIG_EXPERT=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_PERF_EVENTS=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++# CONFIG_LBDAF is not set
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++# CONFIG_SUSPEND is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_SYN_COOKIES=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_DIAG is not set
++# CONFIG_IPV6 is not set
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_STANDALONE is not set
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_NETDEVICES=y
++CONFIG_STMMAC_ETH=y
++CONFIG_STMMAC_DA=y
++# CONFIG_NETDEV_10000 is not set
++# CONFIG_WLAN is not set
++# CONFIG_INPUT_MOUSEDEV is not set
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO is not set
++CONFIG_VT_HW_CONSOLE_BINDING=y
++CONFIG_LEGACY_PTY_COUNT=8
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_MFD_SUPPORT is not set
++# CONFIG_VGA_CONSOLE is not set
++# CONFIG_HID_SUPPORT is not set
++# CONFIG_USB_SUPPORT is not set
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_LOONGSON1=y
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++# CONFIG_DNOTIFY is not set
++CONFIG_PROC_KCORE=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_POSIX_ACL=y
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_NETWORK_FILESYSTEMS is not set
++# CONFIG_ENABLE_WARN_DEPRECATED is not set
++# CONFIG_ENABLE_MUST_CHECK is not set
++CONFIG_MAGIC_SYSRQ=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_SYSCTL_SYSCALL_CHECK=y
++# CONFIG_FTRACE is not set
++# CONFIG_EARLY_PRINTK is not set
 -- 
-~Vinod
+1.7.1
 
