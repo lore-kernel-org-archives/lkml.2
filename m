@@ -1,41 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab1KUKL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 05:11:59 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39242
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755528Ab1KUKL5 (ORCPT
+	id S1755905Ab1KUKMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 05:12:24 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54514 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab1KUKMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 05:11:57 -0500
-Date: Mon, 21 Nov 2011 05:11:55 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org
-Subject: Re: [V2 PATCH] tmpfs: add fallocate support
-Message-ID: <20111121101155.GC17887@infradead.org>
-References: <1321612791-4764-1-git-send-email-amwang@redhat.com>
- <alpine.LSU.2.00.1111201300340.1264@sister.anvils>
+	Mon, 21 Nov 2011 05:12:22 -0500
+Date: Mon, 21 Nov 2011 15:41:57 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vivek Goyal <vgoyal@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
+Subject: [RFC Patch 1/2][slimdump] Append CRASH_REASON to VMCOREINFO elf-note
+Message-ID: <20111121101157.GA10194@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20111121095405.GA2289@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1111201300340.1264@sister.anvils>
+In-Reply-To: <20111121095405.GA2289@in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+x-cbid: 11112110-3864-0000-0000-0000002D566B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 20, 2011 at 01:22:10PM -0800, Hugh Dickins wrote:
-> First question that springs to mind (to which I shall easily find
-> an answer): is it actually acceptable for fallocate() to return
-> -ENOSPC when it has already completed a part of the work?
+Allow various crash paths to append the reason of crash into the
+VMCOREINFO elf-note through the field CRASH_REASON. We also make the
+fatal machine check exceptions append "PANIC_MCE" as the crash reason.
+This string will be recognised by upstream tools like makedumpfile and
+crash to generate slimdump.
 
-No, it must undo all allocations if it returns ENOSPC.
+With increased usage of the CRASH_REASON field, the crash strings can be
+encoded for better usage.
+
+Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |    8 ++++++++
+ kernel/kexec.c                   |    6 ++++++
+ 2 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 362056a..5b2cb6a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -38,6 +38,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/irq_work.h>
+ #include <linux/export.h>
++#include <linux/kexec.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/mce.h>
+@@ -240,6 +241,13 @@ static atomic_t mce_paniced;
+ static int fake_panic;
+ static atomic_t mce_fake_paniced;
+ 
++char *arch_add_crash_reason(void)
++{
++	static char crash_reason[] = "PANIC_MCE";
++
++	return crash_reason;
++}
++
+ /* Panic in progress. Enable interrupts and wait for final IPI */
+ static void wait_for_panic(void)
+ {
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index dc7bc08..a731693 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1080,6 +1080,11 @@ asmlinkage long compat_sys_kexec_load(unsigned long entry,
+ }
+ #endif
+ 
++__weak char *arch_add_crash_reason(void)
++{
++	return (char *)NULL;
++}
++
+ void crash_kexec(struct pt_regs *regs)
+ {
+ 	/* Take the kexec_mutex here to prevent sys_kexec_load
+@@ -1411,6 +1416,7 @@ static void update_vmcoreinfo_note(void)
+ void crash_save_vmcoreinfo(void)
+ {
+ 	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
++	vmcoreinfo_append_str("\nCRASH_REASON=%s\n", arch_add_crash_reason());
+ 	update_vmcoreinfo_note();
+ }
+ 
 
