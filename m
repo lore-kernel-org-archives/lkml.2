@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab1KUVjQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 16:39:16 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33397 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab1KUVjP convert rfc822-to-8bit (ORCPT
+	id S1754927Ab1KUVkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 16:40:37 -0500
+Received: from fmmailgate07.web.de ([217.72.192.248]:58472 "EHLO
+	fmmailgate07.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab1KUVkg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 16:39:15 -0500
+	Mon, 21 Nov 2011 16:40:36 -0500
+Date: Mon, 21 Nov 2011 22:40:34 +0100 (CET)
+From: "Nicolas Kalkhof" <nkalkhof@web.de>
+To: maciej.rutecki@gmail.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <615350841.1406384.1321911635013.JavaMail.fmail@mwmweb021>
+Subject: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
-	<tip-ed13ec58bfe0d5dc95f748e6118432cb0fa283cb@git.kernel.org>
-	<alpine.DEB.2.00.1111211321390.21667@cl320.eecs.utk.edu>
-	<1321901536.28118.20.camel@twins>
-	<alpine.DEB.2.00.1111211358570.23676@cl320.eecs.utk.edu>
-	<CABPqkBRHW0ZmeqADptvBySLZpi6jc_bEFKoukkA6rtd5o04ziQ@mail.gmail.com>
-	<alpine.DEB.2.00.1111211559190.24943@cl320.eecs.utk.edu>
-Date: Mon, 21 Nov 2011 22:39:14 +0100
-Message-ID: <CABPqkBTfNuY8_rcf-u=kf4V-bv_bZwUAhz3J3Z=wan29=09f9A@mail.gmail.com>
-Subject: Re: [tip:perf/urgent] perf/x86: Enable raw event access to Intel
- offcore events
-From: Stephane Eranian <eranian@google.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-Priority: 3
+Importance: normal
+Sensitivity: Normal
+X-Provags-ID: V01U2FsdGVkX1/eT2i3B54JlSBqDmTfk0u4CkV2lbnJIi7V5BUzgWtxIKoSCLfL0gnG
+ BYCB8mfP63RXX8Ew3xkAtw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:04 PM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-> On Mon, 21 Nov 2011, Stephane Eranian wrote:
->
->> > We have a workaround, but it currently disables kernel multiplexing and a
->> > few other nice features.
+This happens on my machine after some minutes, too when running X and the trinity desktop. the cpu continuously uses up additional ~10 watts comparing to older 3.1 kernels. The issue remains high even after I kill X. A closer investigation shows that poll_idle uses up the cpu (see dump below). Is it normal for poll_idle to use up all ressources?
+
+CPU: Intel Sandy Bridge microarchitecture, speed 2.701e+06 MHz (estimated)
+Counted CPU_CLK_UNHALTED events (Clock cycles when not halted) with a unit mask of 0x00 (No unit mask) count 100000
+samples  %        app name                 symbol name
+524625   96.8279  vmlinux                  poll_idle
+7807      1.4409  cfbimgblt                /cfbimgblt
+813       0.1501  vmlinux                  rb_get_reader_page
+806       0.1488  vmlinux                  fbcon_redraw.clone.30
+616       0.1137  vmlinux                  i8042_interrupt
+454       0.0838  vmlinux                  bit_putcs
+414       0.0764  vmlinux                  ring_buffer_consume
+373       0.0688  vmlinux                  _cond_resched
+301       0.0556  cfbcopyarea              /cfbcopyarea
+277       0.0511  libstdc++.so.6.0.14      /usr/lib64/gcc/x86_64-pc-linux-gnu/4.5.3/libstdc++.so.6.0.14
+239       0.0441  cfbfillrect              /cfbfillrect
+....
+
+Regards
+Nic
+
+-----Ursprüngliche Nachricht-----
+Von: "Maciej Rutecki" <maciej.rutecki@gmail.com>
+Gesendet: Nov 21, 2011 10:11:17 PM
+An: "Nicolas Kalkhof" <nkalkhof@web.de>
+Betreff: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
+
+>On piątek, 18 listopada 2011 o 21:33:15 Nicolas Kalkhof wrote:
+>> Hello,
 >>
->> I don't understand why you have a problem with NMI watchdog. Multiplexing
->> allows you to still measure more events than there are counters.
+>> since the merges for kernel 3.2 came in late october, my mobile i7 2620M
+>> sandybridge cpu/gpu seems to run hotter (approx 10 °C) when idling and
+>> after some minutes according to top the cpu load goes up on all cores but
+>> the cpu frequency stays low (800 MHz) as well as the gpu (650MHz) and the
+>> system is responding well. Yet still additional 5-8 watts are continously
+>> drained from the power supply. Something is throttling up :(. Oprofile
+>> shows that the kernel hogs the cpu (see dump below). This happens with
+>> every kernel since the 3.2 merge window closed up to latest linux-next. I
+>> wasn't able to track the bad commit down yet.
+>>
+>> Could someone please confirm the issue?
+>>
 >
-> The PAPI code currently uses FORMAT_GROUP and puts as many events as
-> possible in a group.  The way we maximize events in a group is to
-> add events until perf_events indicates a failure.
+>I observed similar behaviour, few minutes after boot, when KDE is working
+>plasma-desktop process (sometimes another) uses 20-50% cpu. System and kernel
+>works without any kernel, but cpu usage is greater than in 3.1 (and older).
 >
-Ok, now I understand your problem.
-
-When you submit events (one by one) the kernel does a scheduling simulation
-but only taking into account events in the group. The goal is to
-verify that the group
-is schedulable. It does not look at events from system-wide sessions
-(which have priority).
-Doing so would be difficult for per-thread because it would have to
-look on all CPUs.
-Even if it were to do that, that would be no guarantee of
-schedulability  because
-by the time the group is actually scheduled, you may now have
-system-wide session, i.e.,
-your group is not scheduled because there aren't enough counters
-leftover from system-wide.
-
-The problem you're describing is not specific to X86 and the NMI
-watchdog. It applies to
-all architectures and has to do with system-wide pinned events vs.
-per-thread group schedulability.
-The NMI watchdog on X86 is an example of that. But AFAIK, the watchdog
-could be supported
-on other architectures as well.
-
-One could argue, you could check is NMI is active and assume you have
-one fewer counters
-during the scheduling simulation. But I think it is a bit more
-complicated than that.
-
-To solve this problem (in the general case), you need to know which
-counter is taken (or required)
-by ALL pinned system-wide events across all CPUs. Once you've
-constructed the bitmap, you can
-use it as the basis (used_mask) to try and schedule the group events.
-
-That's a best effort algorithm. It does not provide the guarantee, the
-group will be schedulable
-during its entire lifetime. It simply makes it more likely it will
-run, if you assume no changes on
-system-wide pinned events from the moment you create the per-thread
-group and the time is
-starts counting.
+>Hardware: old hp/compaq nx6310
+>
+>Add this mail to regression list.
+>
+>Regards
+>--
+>Maciej Rutecki
+>http://www.mrutecki.pl
 
 
-> When NMI watchdog is enabled, a counter is stolen.  Yet the perf_events
-> code does not account for this.
->
-> So say on an AMD machine with 4 counters (3 after one is stolen)
-> perf_events lets you add 4 events to an event group, even though only 3
-> are available.  It does not report failure upon open or start, only at
-> read.  By then it's too late.
->
-> We have to work around this, by doing an extra read at open time to verify
-> that the event group actually is valid, adding overhead.
->
-> Our multiplex code tries to maximize the number of events in a group too.
-> Currently PAPI works around this by just not doing kernel multiplexing
-> if a NMI watchdog is detected.  There's probably more elegant solutions
-> such as checking with a read there too, or not using FORMAT_GROUP at all,
-> but since this is an ABI regression I was hoping it would get fixed
-> quickly enough that I wouldn't have to construct better workarounds.
->
-> Vince
-> vweaver1@eecs.utk.edu
->
->
+___________________________________________________________
+SMS schreiben mit WEB.DE FreeMail - einfach, schnell und
+kostenguenstig. Jetzt gleich testen! http://f.web.de/?mc=021192
