@@ -1,64 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab1KURmz (ORCPT <rfc822;w@1wt.eu>);
+	id S1756337Ab1KURm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:42:57 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56214 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755799Ab1KURmz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Nov 2011 12:42:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51980 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab1KURmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:42:53 -0500
-Date: Mon, 21 Nov 2011 09:36:20 -0800
-From: Greg KH <gregkh@suse.de>
-To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Cc: hjk@hansjkoch.de, tglx@linutronix.de, linux-pci@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: extra large DMA buffer for PCI-E device under UIO
-Message-ID: <20111121173620.GA5028@suse.de>
-References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
- <20111118220849.GA25205@suse.de>
- <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1321894767.28118.14.camel@twins>
+References: <20111121145114.049265181@chello.nl>
+	<20111121145337.912104693@chello.nl>
+	<CABPqkBTg69-EzvtGVxdAuf=EvM6Maag_tGc_a7jE5LdMwDqRgw@mail.gmail.com>
+	<1321889842.28118.9.camel@twins>
+	<1321894767.28118.14.camel@twins>
+Date: Mon, 21 Nov 2011 18:42:54 +0100
+Message-ID: <CABPqkBQPoY5ULc9djAxztm+xxeWi17wqncGf8aX_svqr6-tb2A@mail.gmail.com>
+Subject: Re: [RFC][PATCH 6/6] perf, tools: X86 RDPMC, RDTSC test
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@elte.hu, William Cohen <wcohen@redhat.com>,
+        linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
+        Vince Weaver <vince@deater.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:31:07AM -0500, Jean-Francois Dagenais wrote:
-> Hi Greg, thanks for your answer...
-> 
-> On Nov 18, 2011, at 17:08, Greg KH wrote:
-> 
-> > On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
-> >> Hello fellow hackers.
-> >> 
-> >> I am maintaining a UIO based driver for a PCI-E data acquisition device.
-> >> 
-> >> I map BAR0 of the device to userspace. I also map two memory areas,
-> >> one is used to feed instructions to the acquisition device, the other
-> >> is used autonomously by the PCI device to write the acquired data.
-> > 
-> > Nice, have a pointer to your driver anywhere so we can include it in the
-> > main kernel tree to make your life easier?
-> As I said in a parallel answer from "Hans J. Koch" <hjk@hansjkoch.de>,
-> the driver, although GPL'ed, is quite uninteresting except for us here at
-> Sonatest.
+On Mon, Nov 21, 2011 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-11-21 at 16:37 +0100, Peter Zijlstra wrote:
+>> On Mon, 2011-11-21 at 16:29 +0100, Stephane Eranian wrote:
+>> > Peter,
+>> >
+>> > I don't see how this test and infrastructure handles the case where the event
+>> > is multiplexed. I know there is time_enabled and time_running. But those are
+>> > not sync'd to the moment of the rdpmc(). I think there needs to be some other
+>> > timestamp in the mmap struct so the user can compute a delta to then add to
+>> > time_enabled and time_running.
+>>
+>> When the counter isn't actually on the PMU, ->index will be 0 and rdpmc
+>> should not be attempted.
+>>
+>> > Unless, we assume the two time metrics are there ONLY to compute a scaling
+>> > ratio. In which case, I think, we don't need the delta because if we
+>> > can do rdpmc()
+>> > it means the event is currently scheduled and thus time_enabled and time_running
+>> > are both ticking which means the scaling ratio does not change since the moment
+>> > the event was scheduled in.
+>>
+>> Right, you don't need delta to compute the scale, but its useful for
+>> user-space time based measurements, Arun wanted to do something like
+>> that.
+>
+> I'm full of crap, of course that makes a difference :-)
+>
+> Even when both running and enabled are incremented, the scaling does
+> still change: 3/2 != 4/3 etc..
+>
+You're right!
 
-I really doubt that, and you should submit it anyway to allow us to
-change it when the in-kernel apis change in the future.  It will save
-you time in the long run and make things easier for you (look, your
-driver is automatically included in all distros!, people fix your bugs,
-etc.)
+count = raw_count * time_enabled / time_running
 
-> About merging the driver to mainline, I guess it would only be interesting for
-> the recipe I demonstrate. Please advise.
+If we add 1s to time_enabled and time_running, it's not the
+same scaling. We're not multiplying, we're adding.
 
-That is a recipe that I'm sure others will use, and need help on in the
-future.
+To do correct scaling, we need to figure out how many ns have elapsed
+since time_enabled and time_running were last updated, i.e., when the
+counter was last scheduled.
 
-So please submit a patch, that will make it easier to help you out.
+count = raw_count * (time_enabled + x) / (time_running + x)
 
-thanks,
+That's what I was suggesting initially.
 
-greg k-h
+I you use rdtsc() + a timestamp in the mmapped page, you can
+determine x.
+
+Personally, I never understood how this mmapped count could even work
+on PPC in the case of multiplexing. The problem above is not specific
+to X86.
+
+> Using that we can actually deal with the whole multiplexing thing
+> without ever having to fall back to read(), something like:
+>
+>
+> static u64 mmap_read_self(void *addr)
+> {
+>        struct perf_event_mmap_page *pc = addr;
+>        u32 seq, idx, time_mult, time_shift;
+>        u64 count, cyc, time_offset, enabled, running, delta;
+>
+>        do {
+>                seq = pc->lock;
+>                barrier();
+>
+>                enabled = pc->time_enabled;
+>                running = pc->time_running;
+>
+>                if (enabled != running) {
+>                        cyc = rdtsc();
+>                        time_mult = pc->time_mult;
+>                        time_shift = pc->time_shift;
+>                        time_offset = pc->time_offset;
+>                }
+>
+>                idx = pc->index;
+>                count = pc->offset;
+>                if (idx)
+>                        count += rdpmc(idx - 1);
+>
+>                barrier();
+>        } while (pc->lock != seq);
+>
+>        if (enabled != running) {
+>                u64 quot, rem;
+>
+>                quot = (cyc >> time_shift);
+>                rem = cyc & ((1 << time_shift) - 1);
+>                delta = time_offset + quot * time_mult +
+>                        ((rem * time_mult) >> time_shift);
+>
+>                enabled += delta;
+>                if (idx)
+>                        running += delta;
+>
+>                quot = count / running;
+>                rem = count % running;
+>                count = quot * enabled + (rem * enabled) / running;
+>        }
+>
+>        return count;
+> }
+>
+> Now all I need to do is make sure pc->offset actually makes sense,
+> because currently it looks like we're off by a factor
+> event->hw.prev_count when idx is set.
+>
+>
+>
+>
