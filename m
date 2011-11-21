@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1KUNCY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 08:02:24 -0500
-Received: from mga14.intel.com ([143.182.124.37]:4105 "EHLO mga14.intel.com"
+	id S1754010Ab1KUNDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 08:03:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab1KUNCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 08:02:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,547,1315206000"; 
-   d="scan'208";a="77534876"
-Date: Mon, 21 Nov 2011 21:02:17 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] writeback bits for 3.2-rc3
-Message-ID: <20111121130217.GA21433@localhost>
+	id S1753494Ab1KUNDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 08:03:14 -0500
+Date: Mon, 21 Nov 2011 14:05:28 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20111121130527.GA4010@redhat.com>
+References: <20111109165158.GA2254@redhat.com>
+ <20111110091816.GA2247@nomi.cz>
+ <20111110114732.GA2217@redhat.com>
+ <20111110125347.GA29415@nomi.cz>
+ <20111110160703.GA2775@redhat.com>
+ <20111110163051.GA24533@nomi.cz>
+ <20111111054731.GA2292@redhat.com>
+ <20111111150105.GA25437@nomi.cz>
+ <20111114140714.GD2513@redhat.com>
+ <20111119181106.GA5515@nomi.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111119181106.GA5515@nomi.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Tomáš
 
-Please pull 3 clean fixes on dirty throttling, thanks!
+On Sat, Nov 19, 2011 at 07:11:06PM +0100, Tomáš Janoušek wrote:
+> On Mon, Nov 14, 2011 at 03:07:15PM +0100, Stanislaw Gruszka wrote:
+> > On Fri, Nov 11, 2011 at 04:01:05PM +0100, Tomáš Janoušek wrote:
+> > > Could you please elaborate on that thing with enabling IOMMU? The only thing I
+> > > know about IOMMU is that it is somehow related to VT-d (passing whole PCI
+> > > devices to virtual guests), and that I have to pass intel_iommu=off to kernel
+> > > command line, otherwise the machine doesn't even boot. Is that a problem?
+> > Yes. That mean iommu software or hardware is broken on your system.
+> >
+> > I have no other ideas how to track this down. I think now, this is
+> > a firwmare issue. BTW, you suspected that from very beginning :-)
+> > This could be also a driver issue, but AFAICT programing DMA do not
+> > differ on 6205 from other devices, so bug in firmware is much more
+> > probable reason of corruption.
+> 
+> I have some news. I got IOMMU to work, because I identified the problem [1]
+> and disabled firewire-ohci for the time being completely, but I'm not sure
+> what do I need to do to make it catch the problem. I assumed that all I need
+> is to intel_iommu=on and then all devices do DMA stuff in isolation, but I can
+> still reproduce the issue without the smallest hint of an error in dmesg. Does
+> it tell us anything, or shall I enable some more debugging stuff?
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel.pci/8765/focus=1217800
 
-The following changes since commit 6aaf05f472c97ebceff47d9eef464574f1a55727:
+The farther we get the problem is more and more strange.
 
-  Merge branch 'for-linus' of git://git390.marist.edu/pub/scm/linux-2.6 (2011-11-16 07:33:50 -0200)
+Device that write to wrong address, would generate:
 
-are available in the git repository at:
+DMAR:[DMA Write] Request device [00:02.0] fault addr 6df084000
+DMAR:[fault reason 05] PTE Write access is not set
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git writeback-for-linus
+But only if
 
-Jan Kara (1):
-      mm: Make task in balance_dirty_pages() killable
+PCI-DMA: Using DMAR IOMMU
 
-Wu Fengguang (2):
-      writeback: hard throttle 1000+ dd on a slow USB stick
-      writeback: remove vm_dirties and task->dirties
+was printed in dmesg before. DMAR can be disabled by graphics
+driver, or maybe by other drivers too. Then above print will
+be missed in dmesg and protection would not work.
 
- include/linux/init_task.h |    1 -
- include/linux/sched.h     |    1 -
- kernel/fork.c             |    5 -----
- mm/page-writeback.c       |   23 +++++++----------------
- 4 files changed, 7 insertions(+), 23 deletions(-)
+Try "dmesg | grep DMAR" to see if DMA remapping is really is
+in use. 
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-Commit 468e6a20afaccb67e2a7d7f60d301f90e1c6f301
-from git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOykMEAAoJECvKgwp+S8JaRw0P/j1WbITfF6kTCSnP0mwif9B/
-HVM1ZTv0yeOUAy2HA5Aw5RrBBE1B0gavF2z+8GHTVg1bCwnvQnXJLaQA4CAN/VAr
-vZsaNMcYZLAk26q/GA4n9DddjS4wxe8lul/gr9Oe+mHK5qh7ewjLGrRn0x91bpbj
-QqR6AfG68uNBOK4X8fgSKgoph5o2UYKrj9wC3yoXbuoHpFGpID+64U0CGJzU1Amj
-J53d75hwOaPkB6BuA2Qm7fz6G3FfOL33p2+fy834E1bD7IkR8ivACPQ3nl2Kg7er
-8pshcRh20U1BVqMu7gWF61b/uCJFoNxgc6F8EbL58YKMES6rQOqPeObWSqe+N7lh
-klGPc2KIAY6AsoRLGLQVMvC7rnzyh6bFO8oCjr21pf2J0if14BmxuDt4NcuxNtnu
-DqI+llZ28uGhjJ6xH0wJjI1rcczFDPen8AQ01TvuY5jNwAqWSN+pvvxaNpSbaY0a
-hu1Zy772KP4JJsXhiS8tcD9hnUg479uyfiSluZ2Ev036qLo/hLlzWAttz7cdktT7
-fzMKBQKggHCYtTuhgdWEJPhTsXQpxN7ThXIIT0Ikgp8quQv8f29tkGSNdHz8RZs3
-PVYIZqCnei4cKCIlHIZVMWHFj44xU6zy+HdXYXGqGdmr6Nc22mESrfr3tSZa3sQw
-NyLT0xUX20XDR7XiQNSp
-=OqXJ
------END PGP SIGNATURE-----
-
+Stanislaw
