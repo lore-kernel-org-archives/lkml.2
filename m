@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab1KUHrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 02:47:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42095 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab1KUHrw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 02:47:52 -0500
+	id S1754760Ab1KUHz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 02:55:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53008 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754338Ab1KUHzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 02:55:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="78261740"
+Message-ID: <4ECA03DF.4000402@linux.intel.com>
+Date: Mon, 21 Nov 2011 15:55:11 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1321004406-15663-1-git-send-email-p-combes@ti.com>
-References: <1321004406-15663-1-git-send-email-p-combes@ti.com>
-Date: Mon, 21 Nov 2011 08:47:51 +0100
-Message-ID: <CACRpkdbo0CRQTYYS2C3XdoP+43VX9TyVnXf4LwS6e1a+BMyAzw@mail.gmail.com>
-Subject: Re: [RFC][PATCH] gpiolib: add irq_wake (power-management) sysfs file
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Patrick Combes <p-combes@ti.com>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hugo Dupras <h-dupras@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, lenb@kernel.org,
+        ak@linux.intel.com, tj@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3] PM/Memory-hotplug: Avoid task freezing failures
+References: <20111117083042.11419.19871.stgit@srivatsabhat.in.ibm.com> <201111192257.19763.rjw@sisk.pl> <4EC8984E.30005@linux.vnet.ibm.com> <201111201124.17528.rjw@sisk.pl> <4EC9D557.9090008@linux.vnet.ibm.com>
+In-Reply-To: <4EC9D557.9090008@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 10:40 AM, Patrick Combes <p-combes@ti.com> wrote:
+[...]
+>
+> Actually, I think I have a better idea based on a key observation:
+> We are trying to acquire pm_mutex here. And if we block due to this,
+> we are *100% sure* that we are not going to run as long as hibernation
+> sequence is running, since hibernation releases pm_mutex only at the
+> very end, when everything is done.
+> And this means, this task is going to be blocked for much more longer
+> than what the freezer intends to achieve. Which means, freezing and
+> thawing doesn't really make a difference to this task!
+>
+> So, let's just ask the freezer to skip freezing us!! And everything
+> will be just fine!
+>
+> Something like:
+>
+> void lock_system_sleep(void)
+> {
+> 	/* simplified freezer_do_not_count() */
+> 	current->flags |= PF_FREEZER_SKIP;
+>
+> 	mutex_lock(&pm_mutex);
+>
+> }
+>
+> void unlock_system_sleep(void)
+> {
+> 	mutex_unlock(&pm_mutex);
+>
+> 	/* simplified freezer_count() */
+> 	current->flags&= ~PF_FREEZER_SKIP;
+>
+> }
+>
+> We probably don't want the restriction that freezer_do_not_count() and
+> freezer_count() work only for userspace tasks. So I have open coded
+> the relevant parts of those functions here.
+>
 
-> This patch creates a new sysfs file /sys/class/gpio/gpioN/irq_wake to enable
-> usermode application to set the wake properties of a gpio IRQ.
-> This option can be set or not for each gpio to preserve power consumption (e.g
-> embedded systems).
-(...)
-> +       if (!test_bit(FLAG_EXPORT, &desc->flags))
-> +               status = -EIO;
-> +       else if (sysfs_streq(buf, "enable") || sysfs_streq(buf, "1"))
-> +               status = enable_irq_wake(gpio_to_irq(gpio));
-> +       else if (sysfs_streq(buf, "disable") || sysfs_streq(buf, "0"))
-> +               status = disable_irq_wake(gpio_to_irq(gpio));
-> +       else
-> +               status = -EINVAL;
-
-As noted elsewhere, human-readable files go into debugfs.
-
-sysfs rule is one file, one value.
-
-Create a file ile named "irq_wakeup_enable" that works
-like this:
-
-cat wakeup_enable
-0
-echo 1 > wakeup_enable
-cat wakeup_enable
-1
-
-Also document you new ABI in
-Documentation/ABI/testing/*
-and preferabley write some new words on it
-in Documentation/gpio.txt too.
-
-Thanks!
-Linus Walleij
+This new design looks clean and better than old one. I just curious how do
+you design your test environment? e.g. when hibernating is in progress,
+try to online some memories and wait for hibernation fails or succeeds?
