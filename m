@@ -1,52 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1KUTJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 14:09:58 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:57998 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab1KUTJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 14:09:56 -0500
-Date: Mon, 21 Nov 2011 14:09:17 -0500
-Message-Id: <E1RSZEz-0001Zp-NV@tytso-glaptop.cam.corp.google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: ext4 bugfixes for 3.2
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1754025Ab1KUTLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 14:11:45 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:3044 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab1KUTLo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 14:11:44 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Michael Lewis" <miclewis@broadcom.com>
+To: "Matthew Dharm" <mdharm-usb@one-eyed-alien.net>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Nov 2011 11:11:30 -0800
+Subject: RE: [PATCH] usb: noted broken URL link in usb.c description
+Thread-Topic: [PATCH] usb: noted broken URL link in usb.c description
+Thread-Index: AcyogHOV/2Utx44gToCgrJjTXsIvcgAANAcg
+Message-ID: <3530313B48D5704B86CF382E8866C7F9AE16A00D0C@IRVEXCHCCR02.corp.ad.broadcom.com>
+References: <3530313B48D5704B86CF382E8866C7F9AE0F34D0B4@IRVEXCHCCR02.corp.ad.broadcom.com>
+ <CAA6KcBC6AgZJYZtCWcZ1aS6xACSOWy_8GVzq9sEr8Ozou8oT_A@mail.gmail.com>
+ <3530313B48D5704B86CF382E8866C7F9AE0F58E420@IRVEXCHCCR02.corp.ad.broadcom.com>
+ <CAA6KcBC0DXTaTHb-opd_HyTa91=XeuuHi-PFi+gqKxOurY9W1g@mail.gmail.com>
+ <CAA6KcBBdFrm3kKXO9t7tTSxF4S=jkypZfU-REQv7rKGhN0Wbiw@mail.gmail.com>
+In-Reply-To: <CAA6KcBBdFrm3kKXO9t7tTSxF4S=jkypZfU-REQv7rKGhN0Wbiw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+X-WSS-ID: 62D47BCE5WO1592664-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Thanks for fixing this, Matt.
 
-There is a signed tag tytso-for-linus-20111120 covering this set of
-changes, which are some miscellaneous bug fixes for 3.2.  Thanks!!
+- Mike
 
-	       	   		      	  - Ted
 
-The following changes since commit 5c8a0fbba543d9428a486f0d1282bbcf3cf1d95a:
+-----Original Message-----
+From: Matthew Dharm [mailto:mdharm-usb@one-eyed-alien.net] 
+Sent: Monday, November 21, 2011 11:04 AM
+To: Michael Lewis
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: noted broken URL link in usb.c description
 
-  VFS: fix statfs() automounter semantics regression (2011-11-04 18:15:59 -0700)
+The page is back up, so we can discard this patch completely.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git dev
+Matt
 
-Namjae Jeon (1):
-      ext4: add blk_finish_plug in error case of writepages.
+On Mon, Nov 14, 2011 at 12:31 PM, Matthew Dharm
+<mdharm-usb@one-eyed-alien.net> wrote:
+> Well, it hasn't been updated since 2008, but it still used to get hit
+> periodically before I shutdown the server several months ago.
+>
+> Let me see about moving the whopping 2 HTML files, one TXT file, and
+> one PNG to a different server within the organization... if it doesn't
+> happen in a few days, we should just take out all references to that
+> URL, not just mark it as a dead link.
+>
+> Matt
+>
+> On Mon, Nov 14, 2011 at 12:28 PM, Michael Lewis <miclewis@broadcom.com> wrote:
+>> Sure, that's fine. I didn't know if you were still actively maintaining it or not.
+>>
+>> Thanks,
+>> - Mike
+>>
+>>
+>> -----Original Message-----
+>> From: Matthew Dharm [mailto:mdharm-usb@one-eyed-alien.net]
+>> Sent: Monday, November 14, 2011 12:25 PM
+>> To: Michael Lewis
+>> Cc: linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] usb: noted broken URL link in usb.c description
+>>
+>> A fair point.  I should get around to fixing that.  Why don't we
+>> hold-off on the patch and let me work on this for a couple of days?
+>>
+>> Matt
+>>
+>> On Mon, Nov 14, 2011 at 12:14 PM, Michael Lewis <miclewis@broadcom.com> wrote:
+>>> From ca036284fdc2a6801fab566c2218307235518876 Mon Sep 17 00:00:00 2001
+>>> From: Michael Lewis <miclewis@broadcom.com>
+>>> Date: Mon, 14 Nov 2011 11:47:42 -0800
+>>> Subject: [PATCH] usb: noted broken URL link in usb.c description
+>>>
+>>>
+>>> Signed-off-by: Michael Lewis <miclewis@broadcom.com>
+>>> ---
+>>>  drivers/usb/storage/usb.c |    3 ++-
+>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+>>> index aa84b3d..33cf6ad 100644
+>>> --- a/drivers/usb/storage/usb.c
+>>> +++ b/drivers/usb/storage/usb.c
+>>> @@ -28,7 +28,8 @@
+>>>  * status of a command.
+>>>  *
+>>>  * Please see http://www.one-eyed-alien.net/~mdharm/linux-usb for more
+>>> - * information about this driver.
+>>> + * information about this driver. Note, URL link is dead and needs
+>>> + * to be fixed.
+>>>  *
+>>>  * This program is free software; you can redistribute it and/or modify it
+>>>  * under the terms of the GNU General Public License as published by the
+>>> --
+>>> 1.7.1
+>>>
+>>>
+>>
+>>
+>>
+>> --
+>> Matthew Dharm
+>> Maintainer, USB Mass Storage driver for Linux
+>>
+>>
+>>
+>
+>
+>
+> --
+> Matthew Dharm
+> Maintainer, USB Mass Storage driver for Linux
+>
 
-Richard Weinberger (1):
-      ext4: Remove kernel_lock annotations
 
-Theodore Ts'o (1):
-      ext4: ignore journalled data options on remount if fs has no journal
 
-Yongqiang Yang (1):
-      ext4: fix up a undefined error in ext4_free_blocks in debugging code
+-- 
+Matthew Dharm
+Maintainer, USB Mass Storage driver for Linux
 
- fs/ext4/balloc.c |    2 +-
- fs/ext4/inode.c  |    1 +
- fs/ext4/super.c  |    6 +++---
- 3 files changed, 5 insertions(+), 4 deletions(-)
+
