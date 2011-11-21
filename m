@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab1KURlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 12:41:06 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:58045 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753649Ab1KURlE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 12:41:04 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-ext4@vger.kernel.org
-Cc: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        adilger@dilger.ca
-Subject: [PATCH V2 19/19] ext4: Enable ext4 inline support.
-Date: Tue, 22 Nov 2011 00:39:57 +0800
-Message-Id: <1321893597-11024-19-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1321893597-11024-1-git-send-email-tm@tao.ma>
-References: <4ECA7DB3.9040605@tao.ma>
- <1321893597-11024-1-git-send-email-tm@tao.ma>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
+	id S1756242Ab1KURmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 12:42:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51980 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab1KURmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 12:42:53 -0500
+Date: Mon, 21 Nov 2011 09:36:20 -0800
+From: Greg KH <gregkh@suse.de>
+To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Cc: hjk@hansjkoch.de, tglx@linutronix.de, linux-pci@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: extra large DMA buffer for PCI-E device under UIO
+Message-ID: <20111121173620.GA5028@suse.de>
+References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
+ <20111118220849.GA25205@suse.de>
+ <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Mon, Nov 21, 2011 at 10:31:07AM -0500, Jean-Francois Dagenais wrote:
+> Hi Greg, thanks for your answer...
+> 
+> On Nov 18, 2011, at 17:08, Greg KH wrote:
+> 
+> > On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
+> >> Hello fellow hackers.
+> >> 
+> >> I am maintaining a UIO based driver for a PCI-E data acquisition device.
+> >> 
+> >> I map BAR0 of the device to userspace. I also map two memory areas,
+> >> one is used to feed instructions to the acquisition device, the other
+> >> is used autonomously by the PCI device to write the acquired data.
+> > 
+> > Nice, have a pointer to your driver anywhere so we can include it in the
+> > main kernel tree to make your life easier?
+> As I said in a parallel answer from "Hans J. Koch" <hjk@hansjkoch.de>,
+> the driver, although GPL'ed, is quite uninteresting except for us here at
+> Sonatest.
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- fs/ext4/ext4.h   |    1 +
- fs/ext4/ialloc.c |    4 ++++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+I really doubt that, and you should submit it anyway to allow us to
+change it when the in-kernel apis change in the future.  It will save
+you time in the long run and make things easier for you (look, your
+driver is automatically included in all distros!, people fix your bugs,
+etc.)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index a88bc00..784893a 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1414,6 +1414,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- #define EXT4_FEATURE_INCOMPAT_FLEX_BG		0x0200
- #define EXT4_FEATURE_INCOMPAT_EA_INODE		0x0400 /* EA in inode */
- #define EXT4_FEATURE_INCOMPAT_DIRDATA		0x1000 /* data in dirent */
-+#define EXT4_FEATURE_INCOMPAT_INLINEDATA	0x2000 /* data in inode */
- 
- #define EXT2_FEATURE_COMPAT_SUPP	EXT4_FEATURE_COMPAT_EXT_ATTR
- #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT4_FEATURE_INCOMPAT_FILETYPE| \
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 00beb4f..4f7fe21 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -897,6 +897,10 @@ got:
- 
- 	ei->i_extra_isize = EXT4_SB(sb)->s_want_extra_isize;
- 
-+	ei->i_inline_off = 0;
-+	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_INLINEDATA))
-+		ext4_set_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA);
-+
- 	ret = inode;
- 	dquot_initialize(inode);
- 	err = dquot_alloc_inode(inode);
--- 
-1.7.0.4
+> About merging the driver to mainline, I guess it would only be interesting for
+> the recipe I demonstrate. Please advise.
 
+That is a recipe that I'm sure others will use, and need help on in the
+future.
+
+So please submit a patch, that will make it easier to help you out.
+
+thanks,
+
+greg k-h
