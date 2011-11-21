@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab1KUQfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 11:35:18 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:56525 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753573Ab1KUQfO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 11:35:14 -0500
-Message-ID: <4ECA7DB3.9040605@tao.ma>
-Date: Tue, 22 Nov 2011 00:34:59 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1753629Ab1KUQjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 11:39:20 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:46104 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751716Ab1KUQjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 11:39:19 -0500
+Date: Mon, 21 Nov 2011 08:37:45 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] nohz: Remove tick_nohz_idle_enter_norcu() /
+ tick_nohz_idle_exit_norcu()
+Message-ID: <20111121163745.GA2323@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1321552094-20237-1-git-send-email-fweisbec@gmail.com>
+ <20111117201134.GB1865@leaf>
+ <20111118010344.GI2429@linux.vnet.ibm.com>
+ <20111119005003.GA1791@linux.vnet.ibm.com>
+ <CAFTL4hx9m546KRPZX-dH+_ETyLY+WAR5cpOKoCoyECnSX2iHkA@mail.gmail.com>
+ <20111121052819.GI17982@linux.vnet.ibm.com>
+ <20111121152345.GA25088@somewhere.redhat.com>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, ext4 development <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>, tm@tao.ma
-Subject: [PATCH V2 00/19] ext4: Add inline data support.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.83 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111121152345.GA25088@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112116-3534-0000-0000-0000026404E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted, Andreas and list,
-	This is the v2 attempt to add inline data support to ext4 inode.
-Formore information about the background, please refer to the thread
-http://marc.info/?l=linux-ext4&m=131715205428067&w=2
+On Mon, Nov 21, 2011 at 04:23:51PM +0100, Frederic Weisbecker wrote:
+> On Sun, Nov 20, 2011 at 09:28:19PM -0800, Paul E. McKenney wrote:
+> > On Mon, Nov 21, 2011 at 02:46:58AM +0100, Frederic Weisbecker wrote:
+> > > 2011/11/19 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> > > > On Thu, Nov 17, 2011 at 05:03:44PM -0800, Paul E. McKenney wrote:
+> > > >> On Thu, Nov 17, 2011 at 12:11:34PM -0800, Josh Triplett wrote:
 
-In V1 I uses all the space between i_extra_isize and inode_size if
-inode_size = 256. For inode_size > 256, half of that space is used so as
-to leave some space for other xattrs. Andreas suggested that it would
-make xattr set/get less efficient since it takes too much space for a
-small inode and xttr would be evicted to the external block. So this V2
-now uses the extent space for an inode(60 bytes) at first and then it
-will try to extend inline data by using the xattr space. So if there are
-no other xattr, now we can have up to 132 bytes to store the inline data
-for a inode_size=256. And also as Amir suggested, I have moved all the
-corresponding codes to fs/ext4/inline.c so that we don't pollute inode.c
-too much.
+[ . . . ]
 
-Some simple tests shows that with a linux-3.0 vanilla source, the new
-dir can save more than 1% disk space. For my "/usr", it can save more
-than 3% spaces. I guess for volume with future bigalloc support, it
-should save more space for us for small dir.
+> > 4.	Task A invokes a system call.  If the system-call entry
+> > 	code were to again invoke rcu_idle_enter(), then my patch
+> > 	is required.  If you check and avoid invoking rcu_idle_enter()
+> > 	in this case, then my patch is not required.
+> 
+> You mean rcu_idle_exit()? So yeah, since we have the tick running
+> and thus RCU not in extended QS, we won't call rcu_idle_exit() on syscall
+> entry.
 
-There are still something to do in my list:
-1. yes, e2fsprogs is very important and we are working on it.
-2. evicting inline data in xattr set if the xattr can be inserted into
-inode as suggested by Andreas.
+OK, then I will drop my patch.  ;-)
 
-any suggestions are welcomed.
+							Thanx, Paul
 
-git diff --stat master..
- fs/ext4/Makefile  |    2 +-
- fs/ext4/dir.c     |   36 +-
- fs/ext4/ext4.h    |   72 +++-
- fs/ext4/extents.c |    9 +-
- fs/ext4/ialloc.c  |    4 +
- fs/ext4/inline.c  | 1426
-+++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/ext4/inode.c   |  209 ++++++--
- fs/ext4/namei.c   |  348 +++++++++----
- fs/ext4/xattr.c   |   39 +--
- fs/ext4/xattr.h   |  256 ++++++++++
- 10 files changed, 2185 insertions(+), 216 deletions(-)
-
-Thanks
-Tao
