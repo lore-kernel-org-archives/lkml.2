@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab1KUXjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:39:37 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8895 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab1KUXjg convert rfc822-to-8bit (ORCPT
+	id S1754760Ab1KUXnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:43:50 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38064 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab1KUXns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:39:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 21 Nov 2011 15:39:34 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Denis Kuzmenko <linux@solonet.org.ua>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Date: Mon, 21 Nov 2011 15:39:32 -0800
-Subject: RE: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Topic: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Index: Acyon+fPvxJpJjdKTO+5DuXO6gGr+wABqoYA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C2B4@HQMAIL01.nvidia.com>
-References: <4EC572E1.1020209@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com>
- <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com>
- <4EC6DD8F.9070904@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com>
- <4EC6E75E.2080200@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF174F08C135@HQMAIL01.nvidia.com>
- <4ECAA894.4050500@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF174F08C246@HQMAIL01.nvidia.com>
- <4ECAD613.3030605@solonet.org.ua>
-In-Reply-To: <4ECAD613.3030605@solonet.org.ua>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Nov 2011 18:43:48 -0500
 MIME-Version: 1.0
+In-Reply-To: <4ECADD83.3090108@caviumnetworks.com>
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
+ <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com>
+ <4ECACF68.3020701@gmail.com> <CA+55aFwZxqHfEOemj+OJNKCj2toqGf3rkK-9iuS39L7iZsoH1Q@mail.gmail.com>
+ <4ECADD83.3090108@caviumnetworks.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 Nov 2011 15:43:26 -0800
+X-Google-Sender-Auth: -FL2_DQAhXpRba0x1FkjLBxhHsE
+Message-ID: <CA+55aFzSNqCOFuvtEc2V1THVOsOVnz6NOa1U_9p5=Y4E=sj6qg@mail.gmail.com>
+Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and HPAGE_SIZE
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Robin Holt <holt@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote at Monday, November 21, 2011 3:52 PM:
-...
-> > I don't see any pulls being configured in the original code at all,
-> > unless some of the s3c2410_* function have unexpected side-effect. The
-> > only related thing is in probe:
-> >
-> >         /* no point in having a pull-up if we are always driving */
-> >
-> >         if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
-> > ..
-> >         } else {
-> >                 s3c2410_gpio_pullup(pdata->gpio, 0);
-> >
-> > which I assume disables an pull in the case where the pin is always driven.
-> >
-> > So, yes, I'd say submit v3 without any pull manipulation at all.
-> >
-> 
-> Actually, "s3c2410_gpio_pullup(pdata->gpio, 0);" enables pull in the
-> same way I've done that. Here is it's code:
+On Mon, Nov 21, 2011 at 3:23 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+>
+> Ok Linus, for you I would recommend against running this git command on your
+> tree:
+>
+> git grep -E '#define.+BUG\(\);'
+>
+> It's not like there isn't precedence.
 
-So it does. That's extremely non-obvious if not broken.
+So two wrongs make a right?
 
-Anyway, I guess that means that your patch V1 is at least a pure conversion
-of the code from custom functions to gpiolib, even if what it was and still
-is doing doesn't make much sense to me.
+I do note that almost all the BUG() ones are in the same broken area:
+hugepages. There's something wrong with the development there.
 
--- 
-nvpublic
+I wish people whose code had stuff like that would take a deep look at it.
 
+                        Linus
