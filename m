@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab1KUXe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 18:34:58 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38914 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571Ab1KUXe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 18:34:57 -0500
-Message-ID: <4ECAE002.8020403@gmail.com>
-Date: Tue, 22 Nov 2011 03:34:26 +0400
-From: Alexey Moiseytsev <himeraster@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	id S1756031Ab1KUXfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 18:35:43 -0500
+Received: from sous-sol.org ([216.99.217.87]:45066 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752242Ab1KUXfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 18:35:41 -0500
+Date: Mon, 21 Nov 2011 15:35:05 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        iommu@lists.linux-foundation.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
+ iommu groups
+Message-ID: <20111121233505.GG3344@sequoia.sous-sol.org>
+References: <20111117170800.3125.84150.stgit@bling.home>
+ <20111118104651.GJ5627@amd.com>
+ <1321628190.26410.63.camel@bling.home>
+ <20111118152710.GA5098@amd.com>
+ <1321633956.26410.126.camel@bling.home>
+ <20111120120043.GB20535@8bytes.org>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [bug] af_unix: Reading from a stream socket may lock the concurrent
- poll() call
-References: <CAHjqzy7dhqi22yPJX=DP4x916hVXDY2WaDbdmnTEQ54n6qpMXw@mail.gmail.com> <1321886286.10470.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1321886286.10470.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111120120043.GB20535@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-21.11.2011 18:38, Eric Dumazet пишет:
-> Le lundi 21 novembre 2011 à 00:19 +0400, Alexey Moiseytsev a écrit :
->> Hello,
->>
->> The following program shows how the poll() call hangs on a non-empty
->> stream socket.
->>
->> #include<sys/types.h>
->> #include<sys/socket.h>
->> #include<pthread.h>
->> #include<stdio.h>
->> #include<unistd.h>
->> #include<poll.h>
->>
->> int sockets[2];
->>
->> int poll_socket(void) {
->>      struct pollfd pfd = {
->>          .fd = sockets[1],
->>          .events = POLLIN
->>      };
->>      return poll(&pfd, 1, -1);
->> }
->>
->>
->> /* observer routine doesn't modify amount of data available in the
->> socket buffer */
->> void* observer(void* arg) {
->>      char buffer;
->>      for (int j = 0; j<  2000; j++) {
->>          recv(sockets[1],&buffer, sizeof(buffer), MSG_PEEK);
->>          sched_yield();
->>      }
->>      return NULL;
->> }
->>
->> int main(void) {
->>      if (socketpair(PF_UNIX, SOCK_STREAM, 0, sockets) == -1)
->>          return 1;
->>      int rc, data[250] = {0};
->>      if ((rc = send(sockets[0],&data, sizeof(data), MSG_DONTWAIT))<= 0)
->>          return 2;
->>      poll_socket();
->> /* If the first poll_socket() call didn't hang then the following
->> message will be printed */
->>      fprintf(stderr, "%d bytes available in input buffer\n", rc);
->>      pthread_t observer_thread;
->>      pthread_create(&observer_thread, NULL, observer, NULL);
->>      for (int j = 0; j<  20000; j++) {
->> /* If the first poll_socket() call didn't hang then all the following
->> calls should do the same */
->>          poll_socket();
->>      }
->>      fprintf(stderr, "Well done\n");
->>      pthread_join(observer_thread, NULL);
->>      close(sockets[0]);
->>      close(sockets[1]);
->>      return 0;
->> }
->>
->>
->> Expected output: two lines or nothing (in case of error).
->> Observed output: only the first line (and the process never exits).
->>
->> So the first poll() said that there is some data available in the
->> socket. And one of the following poll() said that there is no data
->> available in the socket. But this is false because the observer thread
->> didn't actually consume any data from then socket.
->>
->> I assume that this bug can be eliminated by adding
->> sk->sk_data_ready(...) call right after each call to
->> skb_queue_head(..) in the unix_stream_recvmsg(...) routine
->> (net/unix/af_unix.c)
->>
->> Other info:
->> $ uname -srmo
->> Linux 2.6.32-5-amd64 x86_64 GNU/Linux
->>
->
-> Hi Alexy
->
-> I believe you found a bug and your suggested fix should be just fine.
->
-> (Or maybe testing in unix_poll() that at least one thread is currently
-> handling one skb from sk->receive_queue)
->
-> Could you submit an official patch on top of current Linus tree or do
-> you prefer us to take care of this ?
->
+* Joerg Roedel (joro@8bytes.org) wrote:
+> >From device standpoint a MSI transaction is always a DMA memory write
+> to a given address range. The IOMMU-API should export a feature flag
+> whether it supports filtering on those transaction or not. We have that
+> today with the IOMMU_CAP_INTR_REMAP. I agree that the interface to get
+> this information is ugly because a domain is needed. But the interface
+> can be fixed. While doing this I suggest to rename that feature
+> IOMMU_CAP_INTR_ISOLATION or something like that.
+> VFIO can then check for this flag on module-load and refuse to load if
+> it is not available.
 
-Hi,
+I can see that the native grouping (the typical pci bridge type) is
+really more a property of the topology.
 
-I will try to send a patch. If I will do something wrong, feel free to 
-submit it yourself.
+The isolation properties of a group (arguably the whole point of the
+group) is subtly different.
+
+Leaves the questions:
+
+What is the value of a group w/out complete isolation?
+Is there a practical problem w/ conflating the subtleties above?
+
+thanks,
+-chris
