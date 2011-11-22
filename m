@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab1KVTYE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:24:04 -0500
-Received: from mail-qy0-f202.google.com ([209.85.216.202]:57161 "EHLO
-	mail-qy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125Ab1KVTX7 (ORCPT
+	id S1755355Ab1KVTZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:25:33 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42889 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754656Ab1KVTXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:23:59 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: David Decotigny <david.decotigny@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH net-next v2 1/4] net-e1000e: fix ethtool set_features taking new features into account too late
-Date: Tue, 22 Nov 2011 11:23:35 -0800
-Message-Id: <aacb3778a356eafb333c6bbe9588b2496655eb3c.1321989502.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321989502.git.david.decotigny@google.com>
-References: <cover.1321989502.git.david.decotigny@google.com>
-In-Reply-To: <cover.1321989502.git.david.decotigny@google.com>
-References: <cover.1321989502.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Tue, 22 Nov 2011 14:23:10 -0500
+X-Sasl-enc: 43Qvej975cp2Gvv3q/iFYo1aLDG1tCpLzklyKZP7IgSa 1321989789
+Date: Tue, 22 Nov 2011 11:13:47 -0800
+From: Greg KH <greg@kroah.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Mike Turquette <mturquette@ti.com>, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
+        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
+        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
+        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
+        paul@pwsan.com, grant.likely@secretlab.ca, sboyd@quicinc.com,
+        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
+        arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org
+Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
+Message-ID: <20111122191347.GB4844@kroah.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
+ <1321926047-14211-6-git-send-email-mturquette@linaro.org>
+ <20111122154900.GB18954@kroah.com>
+ <CAPtuhThPQtWwihE8aGru55k87oV7QOr=O836TTJ+=30d6dtVhA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPtuhThPQtWwihE8aGru55k87oV7QOr=O836TTJ+=30d6dtVhA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch, the set_features() ethtool callback would not take
-the new specified features into account when configuring the NIC. It
-would only consider the current features, ie. the ones after previous
-set_features(). A second ethtool set_features() with the same
-specified features cannot work around that issue because it would boil
-down to a nop (code checks wether specified features changed or not).
+On Tue, Nov 22, 2011 at 09:57:41AM -0800, Mike Turquette wrote:
+> > Ah, comments like this warm my heart.
+> >
+> > Come on, no abusing the kobject code please, if have problems with how
+> > the kernel core works, and it doesn't do things you want it to, then why
+> > not change it to work properly for you, or at the least, ASK ME!!!
+> 
+> Ok, I'm asking you now.  There are two ways to solve this problem:
+> 
+> 1) have kobject core create the lists linking the objects but defer
+> allocations and any interactions with sysfs until later in the boot
+> sequence, OR
+> 
+> 2) my code can create a list of clks (the same way that clkdev does)
+> and defer kobject/sysfs stuff until later, which walks the list made
+> during early-boot
+> 
+> #1 is most closely aligned with the code I have here, #2 presents
+> challenges that I haven't really though through.  I know that OMAP
+> uses the clk framework VERY early in it's boot sequence, but as long
+> as the per-clk data is properly initialized then it should be OK.
+> 
+> What do you think?
 
-This patch solves this by propagating the requested features.
+#3 - use debugfs and don't try to create a sysfs interface for the clock
+structures :)
 
-Tested:
-  printk in code + custom ethtool (based on
-  http://patchwork.ozlabs.org/patch/95836/)
+thanks,
 
-
-
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/intel/e1000e/netdev.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index a5bd7a3..a83a108 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5901,7 +5901,7 @@ static void e1000_eeprom_checks(struct e1000_adapter *adapter)
- }
- 
- static int e1000_set_features(struct net_device *netdev,
--	netdev_features_t features)
-+			      netdev_features_t features)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
- 	netdev_features_t changed = features ^ netdev->features;
-@@ -5913,12 +5913,19 @@ static int e1000_set_features(struct net_device *netdev,
- 			 NETIF_F_RXCSUM)))
- 		return 0;
- 
-+	/* We will make sure to return 1 below so that we can change
-+	 * netdev->features on the fly from within the functions
-+	 * called below in case of error, without core/dev.c
-+	 * overriding it. */
-+	netdev->features = features;
-+
- 	if (netif_running(netdev))
- 		e1000e_reinit_locked(adapter);
- 	else
- 		e1000e_reset(adapter);
- 
--	return 0;
-+	return 1; /* tell net/core/dev.c not to override
-+		   * netdev->features */
- }
- 
- static const struct net_device_ops e1000e_netdev_ops = {
--- 
-1.7.3.1
-
+greg k-h
