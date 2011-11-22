@@ -1,160 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1KVSyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:54:36 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41923 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab1KVSye (ORCPT
+	id S1753889Ab1KVSz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:55:29 -0500
+Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:52573 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754041Ab1KVSz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:54:34 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [PATCH 1/3] reiserfs: Delay reiserfs lock until journal initialization
-Date: Tue, 22 Nov 2011 19:54:17 +0100
-Message-Id: <1321988059-13053-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1321988059-13053-1-git-send-email-fweisbec@gmail.com>
-References: <1321988059-13053-1-git-send-email-fweisbec@gmail.com>
+	Tue, 22 Nov 2011 13:55:27 -0500
+Date: Tue, 22 Nov 2011 19:55:13 +0100
+From: Marc Vertes <marc.vertes@sigfox.com>
+To: w.sang@pengutronix.de
+Cc: Wim@vger.kernel.org, wim@iguana.be, Welte@vger.kernel.org,
+        Van@vger.kernel.org, Sebroeck@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HaraldWelte@viatech.com, Harald@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
+Message-ID: <4ecbf011.dZASXe6D5kH4Uxve%marc.vertes@sigfox.com>
+References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
+ <20111122112212.GD2734@pengutronix.de>
+ <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
+ <20111122173029.GA14349@pengutronix.de>
+ <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
+In-Reply-To: <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
+User-Agent: Heirloom mailx 12.4 7/29/08
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 17298607644379039526
+X-Ovh-Remote: 92.103.90.130 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -230
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucculddquddttddmnehlihhnuhigfeigucdlqdeftddmnehvohhiugdpihhnthculddquddttddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the mount path, transactions that are made before journal
-initialization don't involve the filesystem. We can delay
-the reiserfs lock until we play with the journal.
+Marc Vertes <marc.vertes@sigfox.com> wrote:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
+> Thanks for your comments, I'm preparing an update.
+
+Here:
 ---
- fs/reiserfs/bitmap.c |    3 ---
- fs/reiserfs/super.c  |   43 ++++++++++++++++++++++++-------------------
- 2 files changed, 24 insertions(+), 22 deletions(-)
+Add a new driver for the hardware watchdog timer on VIA chipsets.
+This driver uses the new watchdog framework.
+Tested on a Artigo A1100, VX855 chipset.
 
-diff --git a/fs/reiserfs/bitmap.c b/fs/reiserfs/bitmap.c
-index d1aca1d..5bab921 100644
---- a/fs/reiserfs/bitmap.c
-+++ b/fs/reiserfs/bitmap.c
-@@ -1273,10 +1273,7 @@ int reiserfs_init_bitmap_cache(struct super_block *sb)
- 	struct reiserfs_bitmap_info *bitmap;
- 	unsigned int bmap_nr = reiserfs_bmap_count(sb);
- 
--	/* Avoid lock recursion in fault case */
--	reiserfs_write_unlock(sb);
- 	bitmap = vmalloc(sizeof(*bitmap) * bmap_nr);
--	reiserfs_write_lock(sb);
- 	if (bitmap == NULL)
- 		return -ENOMEM;
- 
-diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 14363b9..1f0d4fa 100644
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1655,22 +1655,11 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	mutex_init(&REISERFS_SB(s)->lock);
- 	REISERFS_SB(s)->lock_depth = -1;
- 
--	/*
--	 * This function is called with the bkl, which also was the old
--	 * locking used here.
--	 * do_journal_begin() will soon check if we hold the lock (ie: was the
--	 * bkl). This is likely because do_journal_begin() has several another
--	 * callers because at this time, it doesn't seem to be necessary to
--	 * protect against anything.
--	 * Anyway, let's be conservative and lock for now.
--	 */
--	reiserfs_write_lock(s);
--
- 	jdev_name = NULL;
- 	if (reiserfs_parse_options
- 	    (s, (char *)data, &(sbi->s_mount_opt), &blocks, &jdev_name,
- 	     &commit_max_age, qf_names, &qfmt) == 0) {
--		goto error;
-+		goto error_unlocked;
- 	}
- #ifdef CONFIG_QUOTA
- 	handle_quota_files(s, qf_names, &qfmt);
-@@ -1678,7 +1667,7 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 
- 	if (blocks) {
- 		SWARN(silent, s, "jmacd-7", "resize option for remount only");
--		goto error;
-+		goto error_unlocked;
- 	}
- 
- 	/* try old format (undistributed bitmap, super block in 8-th 1k block of a device) */
-@@ -1688,7 +1677,7 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	else if (read_super_block(s, REISERFS_DISK_OFFSET_IN_BYTES)) {
- 		SWARN(silent, s, "sh-2021", "can not find reiserfs on %s",
- 		      reiserfs_bdevname(s));
--		goto error;
-+		goto error_unlocked;
- 	}
- 
- 	rs = SB_DISK_SUPER_BLOCK(s);
-@@ -1704,7 +1693,7 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 		      "or increase size of your LVM partition");
- 		SWARN(silent, s, "", "Or may be you forgot to "
- 		      "reboot after fdisk when it told you to");
--		goto error;
-+		goto error_unlocked;
- 	}
- 
- 	sbi->s_mount_state = SB_REISERFS_STATE(s);
-@@ -1712,8 +1701,9 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 
- 	if ((errval = reiserfs_init_bitmap_cache(s))) {
- 		SWARN(silent, s, "jmacd-8", "unable to read bitmap");
--		goto error;
-+		goto error_unlocked;
- 	}
-+
- 	errval = -EINVAL;
- #ifdef CONFIG_REISERFS_CHECK
- 	SWARN(silent, s, "", "CONFIG_REISERFS_CHECK is set ON");
-@@ -1736,6 +1726,17 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	if (reiserfs_barrier_flush(s)) {
- 		printk("reiserfs: using flush barriers\n");
- 	}
-+
-+	/*
-+	 * This path assumed to be called with the BKL in the old times.
-+	 * Now we have inherited the big reiserfs lock from it and many
-+	 * reiserfs helpers called in the mount path and elsewhere require
-+	 * this lock to be held even if it's not always necessary. Let's be
-+	 * conservative and hold it early. The window can be reduced after
-+	 * careful review of the code.
-+	 */
-+	reiserfs_write_lock(s);
-+
- 	// set_device_ro(s->s_dev, 1) ;
- 	if (journal_init(s, jdev_name, old_format, commit_max_age)) {
- 		SWARN(silent, s, "sh-2022",
-@@ -1896,12 +1897,16 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	return (0);
- 
- error:
--	if (jinit_done) {	/* kill the commit thread, free journal ram */
-+	reiserfs_write_unlock(s);
-+
-+error_unlocked:
-+	/* kill the commit thread, free journal ram */
-+	if (jinit_done) {
-+		reiserfs_write_lock(s);
- 		journal_release_error(NULL, s);
-+		reiserfs_write_unlock(s);
- 	}
- 
--	reiserfs_write_unlock(s);
--
- 	reiserfs_free_bitmap_cache(s);
- 	if (SB_BUFFER_WITH_SB(s))
- 		brelse(SB_BUFFER_WITH_SB(s));
--- 
-1.7.5.4
+Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
+---
 
+ Kconfig   |   14 ++++++
+ Makefile  |    1 
+ via_wdt.c |  132 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 147 insertions(+)
+
+--- linux-3.2-rc2/drivers/watchdog/Makefile.orig	2011-11-15 18:02:59.000000000 +0100
++++ linux-3.2-rc2/drivers/watchdog/Makefile	2011-11-18 18:13:36.594534635 +0100
+@@ -100,6 +100,7 @@ obj-$(CONFIG_SBC7240_WDT) += sbc7240_wdt
+ obj-$(CONFIG_CPU5_WDT) += cpu5wdt.o
+ obj-$(CONFIG_SMSC_SCH311X_WDT) += sch311x_wdt.o
+ obj-$(CONFIG_SMSC37B787_WDT) += smsc37b787_wdt.o
++obj-$(CONFIG_VIA_WDT) += via_wdt.o
+ obj-$(CONFIG_W83627HF_WDT) += w83627hf_wdt.o
+ obj-$(CONFIG_W83697HF_WDT) += w83697hf_wdt.o
+ obj-$(CONFIG_W83697UG_WDT) += w83697ug_wdt.o
+--- linux-3.2-rc2/drivers/watchdog/via_wdt.c.orig	2011-11-18 18:14:45.358174874 +0100
++++ linux-3.2-rc2/drivers/watchdog/via_wdt.c	2011-11-22 19:42:06.219529719 +0100
+@@ -0,0 +1,132 @@
++/*
++ * VIA Chipset Watchdog Driver
++ *
++ * Copyright (C) 2011 Sigfox
++ * License terms: GNU General Public License (GPL) version 2
++ * Author: Marc Vertes <marc.vertes@sigfox.com>
++ * Based on a preliminary version from Harald Welte <HaraldWelte@viatech.com>
++ *
++ * The only way to activate the watchdog timer or to set its period is
++ * through BIOS setup.
++ */
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/watchdog.h>
++
++#define VIA_WDT_MB_OFFSET	0xe8	/* memory base offset */
++#define VIA_WDT_TRIGGER		0x80	/* start a new countdown */
++#define VIA_WDT_FIRED		0x02	/* set if last restart was caused
++					   by expired watchdog timer */
++
++static int wdt_start(struct watchdog_device *wdev)
++{
++	/* Nothing to do. The watchdog can only be started by the BIOS. */
++	return 0;
++}
++
++static int wdt_stop(struct watchdog_device *wdev)
++{
++	/* Nothing to do. The watchdog can not be stopped. */
++	return 0;
++}
++
++static int wdt_ping(struct watchdog_device *wdev)
++{
++	void __iomem *wdt_mem = watchdog_get_drvdata(wdev);
++	unsigned int res = readl(wdt_mem);	/* get status bits */
++
++	writel(res | VIA_WDT_TRIGGER, wdt_mem);
++	return 0;
++}
++
++static struct watchdog_info wdt_info = {
++	.identity = "VIA watchdog",
++	.options  =  WDIOF_CARDRESET,
++};
++
++static struct watchdog_ops wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = wdt_start,
++	.stop  = wdt_stop,
++	.ping  = wdt_ping,
++};
++
++static struct watchdog_device wdt_dev = {
++	.info = &wdt_info,
++	.ops  = &wdt_ops,
++};
++
++static int __devinit wdt_probe(struct pci_dev *pdev,
++			       const struct pci_device_id *ent)
++{
++	unsigned int mmio = 0;
++	void __iomem *wdt_mem;
++	int ret;
++
++	if (pci_enable_device(pdev)) {
++		dev_err(&pdev->dev, "cannot enable PCI device\n");
++		return -ENODEV;
++	}
++	pci_read_config_dword(pdev, VIA_WDT_MB_OFFSET, &mmio);
++	if (mmio) {
++		dev_info(&pdev->dev, "VIA Chipset watchdog MMIO: %x\n", mmio);
++	} else {
++		dev_err(&pdev->dev, "watchdog timer is not enabled in BIOS\n");
++		return -ENODEV;
++	}
++	wdt_mem = ioremap(mmio, 8);
++	if (wdt_mem == NULL) {
++		dev_err(&pdev->dev, "cannot remap VIA wdt MMIO registers\n");
++		return -ENODEV;
++	}
++	ret = watchdog_register_device(&wdt_dev);
++	if (ret) {
++		iounmap(wdt_mem);
++		return ret;
++	}
++	watchdog_set_drvdata(&wdt_dev, wdt_mem);
++	if (readl(wdt_mem) & VIA_WDT_FIRED)
++		wdt_dev.bootstatus |= WDIOF_CARDRESET;
++	return 0;
++}
++
++static void __devexit wdt_remove(struct pci_dev *dev)
++{
++	void __iomem *wdt_mem = watchdog_get_drvdata(&wdt_dev);
++
++	watchdog_unregister_device(&wdt_dev);
++	iounmap(wdt_mem);
++}
++
++DEFINE_PCI_DEVICE_TABLE(wdt_pci_table) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX800) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX855) },
++	{ 0 }
++};
++
++static struct pci_driver wdt_driver = {
++	.name		= "via_wdt",
++	.id_table	= wdt_pci_table,
++	.probe		= wdt_probe,
++	.remove		= __devexit_p(wdt_remove),
++};
++
++static int __init wdt_init(void)
++{
++	return pci_register_driver(&wdt_driver);
++}
++
++static void __exit wdt_exit(void)
++{
++	pci_unregister_driver(&wdt_driver);
++}
++
++module_init(wdt_init);
++module_exit(wdt_exit);
++
++MODULE_AUTHOR("Marc Vertes");
++MODULE_DESCRIPTION("Driver for watchdog timer on VIA chipset");
++MODULE_LICENSE("GPL");
+--- linux-3.2-rc2/drivers/watchdog/Kconfig.orig	2011-11-15 18:02:59.000000000 +0100
++++ linux-3.2-rc2/drivers/watchdog/Kconfig	2011-11-22 16:39:38.175325620 +0100
+@@ -779,6 +779,20 @@ config SMSC37B787_WDT
+ 
+ 	  Most people will say N.
+ 
++config VIA_WDT
++	tristate "VIA Watchdog Timer"
++	depends on X86
++	select WATCHDOG_CORE
++	---help---
++	This is the driver for the hardware watchdog timer on VIA
++	southbridge chipset CX700, VX800, VX855. Watchdog setup
++	in BIOS is required.
++
++	To compile this driver as a module, choose M here; the module
++	will be called via_wdt.
++
++	Most people will say N.
++
+ config W83627HF_WDT
+ 	tristate "W83627HF/W83627DHG Watchdog Timer"
+ 	depends on X86
