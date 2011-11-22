@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab1KVPV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 10:21:28 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:63629 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab1KVPV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 10:21:26 -0500
-Date: Tue, 22 Nov 2011 16:19:42 +0100
-From: Alessandro Rubini <rubini@unipv.it>
-To: dave.martin@linaro.org
-Cc: linux@arm.linux.org.uk, patches@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
-        a.zummo@towertech.it, alsa-devel@alsa-project.org, cjb@laptop.org,
-        dan.j.williams@intel.com, dmitry.torokhov@gmail.com,
-        grant.likely@secretlab.ca, perex@perex.cz, jassisinghbrar@gmail.com,
-        julia@diku.dk, linus.walleij@linaro.org, linux-fbdev@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        lethal@linux-sh.org, Pawel.Moll@arm.com, rtc-linux@googlegroups.com,
-        spi-devel-general@lists.sourceforge.net, tiwai@suse.de,
-        vinod.koul@intel.com, wim@iguana.be
-Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
- AMBA drivers
-Message-ID: <20111122151942.GA24821@mail.gnudd.com>
+	id S1756513Ab1KVPXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 10:23:21 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44647 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab1KVPXU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 10:23:20 -0500
+Date: Tue, 22 Nov 2011 07:23:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
+ given pids
+Message-ID: <20111122152312.GB322@google.com>
+References: <4EC4F2FB.408@parallels.com>
+ <20111117154936.GB12325@redhat.com>
+ <4EC52FBF.1010407@parallels.com>
+ <20111118233055.GA29378@google.com>
+ <4ECA1696.5060500@parallels.com>
+ <20111121225019.GQ25776@google.com>
+ <4ECB8346.8040806@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20111122120756.GF2066@localhost.localdomain>
-References: <20111122120756.GF2066@localhost.localdomain>
-  <1321961573-4562-1-git-send-email-dave.martin@linaro.org>
-  <20111122115632.GA5165@mail.gnudd.com>
+In-Reply-To: <4ECB8346.8040806@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>   lkml.org/lkml/2011/11/4/125 (0/2: description of the work)
->>   lkml.org/lkml/2011/11/4/126 (1/2: turn the if plethora to table lookup)
->>   lkml.org/lkml/2011/11/4/127 (2/2: partial split to type-specific files).
+Hello,
+
+On Tue, Nov 22, 2011 at 03:11:02PM +0400, Pavel Emelyanov wrote:
+> > Hmmm... I hope this could be prettier.  I'm having trouble following
+> > where the MAY_OPEN comes from.  Can you please explain?
 > 
-> Splitting this up doesn't look like a silly idea -- I thought it was
-> unfortunate to have to patch a core file just to add a bus type.
->
-> I guess the question is how many new buses we get over time.
+> From this calltrace:
+> 
+>  pid_ns_ctl_permissions
+>  sysctl_perm
+>  proc_sys_permission
+>  inode_permission
+>  do_last <<<<< MAY_OPEN appears here
+>  path_openat
+>  do_filp_open
+>  do_sys_open
+>  sys_open
 
-Well, CERN will have 2 in a short time. And I'm sure the bus concept
-is so good that a number of them exists as external patches. Being
-forced to patch a core file is not good, with conflicts that accumulate
-over time.
+Thanks a lot. :)
 
-I'd better be able to drop in my own file and add a kconfig-aware line
-in Makefile.  I think the implementation is straightforward. Who should
-I send it to?
+> > Can't we for now allow this for root and then later allow CAP_CHECKPOINT 
+> > that Cyrill suggested?  Or do we want to allow setting pids even w/o CR 
+> > for NS creator?
+> 
+> I think that systemd guys can play with it. E.g. respawning daemons with predefined
+> pids sounds like an interesting thing to play with.
 
-thanks
-/alessandro
+But wouldn't CAP_CHECKPOINT be enough for systemd?
+
+> >> +static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+> >> +		     void __user *buffer, size_t *lenp, loff_t *ppos)
+> >> +{
+> >> +	struct ctl_table tmp = *table;
+> >> +	tmp.data = &current->nsproxy->pid_ns->last_pid;
+> >> +	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
+> >> +}
+> > 
+> > Probably better to call set_last_pid() on write path instead?
+> 
+> Why? The usage of this sysctl is going to be synchronized  by external locks,
+> so why should we care?
+
+I think the question should usually be the other way around.  Why
+deviate when the deviation doesn't earn any tangible benefit?  If you
+think setting it explicitly is justified, explain why in the comment
+of the setter and places where those explicit settings are.
+
+Thanks.
+
+-- 
+tejun
