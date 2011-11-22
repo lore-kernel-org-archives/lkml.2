@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab1KVVno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:43:44 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47545 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab1KVVnn (ORCPT
+	id S1758733Ab1KVVpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:45:30 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:34940 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378Ab1KVVp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:43:43 -0500
-Subject: Re: [PATCH 1/2] MTD: NAND: ndfc: fix compilation error
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 Nov 2011 23:43:38 +0200
-In-Reply-To: <1321942850-20012-1-git-send-email-tinamdar@apm.com>
-References: <1321942850-20012-1-git-send-email-tinamdar@apm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321998220.2222.22.camel@koala>
-Mime-Version: 1.0
+	Tue, 22 Nov 2011 16:45:29 -0500
+Date: Tue, 22 Nov 2011 16:44:39 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-11-22
+Message-ID: <20111122214438.GG8452@tuxdriver.com>
+References: <20111122.151429.253381379981773726.davem@davemloft.net>
+ <20111122205655.GE8452@tuxdriver.com>
+ <20111122.160511.2302883259439708995.davem@davemloft.net>
+ <20111122.161322.454163033398038634.davem@davemloft.net>
+ <4ECC1479.8090209@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECC1479.8090209@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 11:50 +0530, Tanmay Inamdar wrote:
-> This patch fixes compilation error in ndfc flash driver
-> ---
->  drivers/mtd/nand/ndfc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, Nov 22, 2011 at 03:30:33PM -0600, Larry Finger wrote:
+> On 11/22/2011 03:13 PM, David Miller wrote:
+> >From: David Miller<davem@davemloft.net>
+> >Date: Tue, 22 Nov 2011 16:05:11 -0500 (EST)
 
-Tony Breeds <tony@bakeyournoodle.com> sent a fix for this a bit earlier.
+> >Everyone can just return IRQ_HANDLED and everything would just work.
+> >
+> >But you know that's not the case, and that it's important that this value
+> >is returned accurately.
+> 
+> I was trying to find the thread that reported the improvement in
+> performance with this change, but failed. Is it possible that their
+> change just papered over an interrupt storm from some other device
+> that shared that interrupt?
 
-Artem.
+Original patch was posted here:
 
+	http://marc.info/?l=linux-wireless&m=132143811916674&w=2
+
+And the Red Hat Bugzilla entry is here:
+
+	https://bugzilla.redhat.com/show_bug.cgi?id=658451
+
+> I'm following this because the rtlwifi-family of drivers already did
+> what was suggested here. If this is wrong, then so is it.
+
+Sounds like that nees to be fixed...
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
