@@ -1,62 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab1KVVdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:33:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54052 "EHLO mx1.redhat.com"
+	id S1758668Ab1KVVfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:35:16 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54344 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758631Ab1KVVdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:33:03 -0500
-Date: Tue, 22 Nov 2011 16:32:57 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: David Rientjes <rientjes@google.com>, Dave Young <dyoung@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, kexec@lists.infradead.org
-Subject: Re: [PATCH] block: initialize request_queue's numa node during
- allocation
-Message-ID: <20111122213257.GF5663@redhat.com>
-References: <4ECB5C80.8080609@redhat.com>
- <alpine.DEB.2.00.1111220140470.4306@chino.kir.corp.google.com>
- <20111122152739.GA5663@redhat.com>
- <20111122211954.GA17120@redhat.com>
+	id S1752311Ab1KVVfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 16:35:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="78971680"
+Message-ID: <4ECC1592.60607@intel.com>
+Date: Tue, 22 Nov 2011 13:35:14 -0800
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122211954.GA17120@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+CC: Stable Tree <stable@kernel.org>, stable@vger.kernel.org,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Jesse Brandeburg <jesse.brandeburg@intel.com> Bruce Allan" 
+	<bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        John Ronciak <john.ronciak@intel.com>
+Subject: Re: Kernel v3.0.8 igb driver dies when pulling network cable
+References: <4ECA4362.2050307@profihost.ag> <4ECA884C.5010706@intel.com> <4ECA936E.8060301@profihost.ag> <4ECAD3D4.4070306@intel.com> <4ECB6D1C.8010208@profihost.ag>
+In-Reply-To: <4ECB6D1C.8010208@profihost.ag>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 04:19:58PM -0500, Mike Snitzer wrote:
+On 11/22/2011 01:36 AM, Stefan Priebe - Profihost AG wrote:
+>> It would be useful if you could try the latest driver from e1000.sf.net
+>> just to verify  if this is a bug in the upstream kernel or if it is also
+>> present in our e1000.sf.net.driver.  This way we can figure out if this
+>> is an issue where a patch wasn't pushed into the stable kernel or if it
+>> is an issue that still exists in our latest release.
+>>
+>> Also could you provide us with the part number you are currently using.
+>> If you could provide us with the device ID for the part via lspci we can
+>> start narrowing down the root cause for the issue as currently we don't
+>> have any information about what hardware you are experiencing this
+>> issue on.
+>
+> Ok another note i missed last time. Ethernet and Server stays fully
+> functional - it just prints the message and resets the adapter.
+>
+> OK let's start with lspci:
+> a:00.0 Ethernet controller: Intel Corporation Device 10c9 (rev 01)
+>         Subsystem: Super Micro Computer Inc Device 10c9
+>         Flags: bus master, fast devsel, latency 0, IRQ 28
+>         Memory at fbe60000 (32-bit, non-prefetchable) [size=128K]
+>         Memory at fbe40000 (32-bit, non-prefetchable) [size=128K]
+>         I/O ports at e880 [size=32]
+>         Memory at fbe1c000 (32-bit, non-prefetchable) [size=16K]
+>         Expansion ROM at fbe20000 [disabled] [size=128K]
+>         Capabilities: [40] Power Management version 3
+>         Capabilities: [50] Message Signalled Interrupts: Mask+ 64bit+
+> Queue=0/0 Enable-
+>         Capabilities: [70] MSI-X: Enable+ Mask- TabSize=10
+>         Capabilities: [a0] Express Endpoint, MSI 00
+>         Capabilities: [100] Advanced Error Reporting <?>
+>         Capabilities: [140] Device Serial Number ce-5a-2b-ff-ff-90-25-00
+>         Capabilities: [150] #0e
+>         Capabilities: [160] #10
+>         Kernel driver in use: igb
+>
+> 0a:00.1 Ethernet controller: Intel Corporation Device 10c9 (rev 01)
+>         Subsystem: Super Micro Computer Inc Device 10c9
+>         Flags: bus master, fast devsel, latency 0, IRQ 40
+>         Memory at fbee0000 (32-bit, non-prefetchable) [size=128K]
+>         Memory at fbec0000 (32-bit, non-prefetchable) [size=128K]
+>         I/O ports at ec00 [size=32]
+>         Memory at fbe9c000 (32-bit, non-prefetchable) [size=16K]
+>         Expansion ROM at fbea0000 [disabled] [size=128K]
+>         Capabilities: [40] Power Management version 3
+>         Capabilities: [50] Message Signalled Interrupts: Mask+ 64bit+
+> Queue=0/0 Enable-
+>         Capabilities: [70] MSI-X: Enable+ Mask- TabSize=10
+>         Capabilities: [a0] Express Endpoint, MSI 00
+>         Capabilities: [100] Advanced Error Reporting <?>
+>         Capabilities: [140] Device Serial Number ce-5a-2b-ff-ff-90-25-00
+>         Capabilities: [150] #0e
+>         Capabilities: [160] #10
+>         Kernel driver in use: igb
+>
+> Using the latest stable igb driver from e1000.sf.net works fine
+> without any message.
+>
+> Thanks,
+>
+> Stefan
+Hi Stefan,
 
-[..]
-> > Storing q->node info at queue allocation time makes sense to me. In fact
-> > it might make sense to clean it up from blk_init_allocated_queue_node
-> > and assume that passed queue has queue->node set at the allocation time.
-> >
-> > CCing Mike Snitzer who introduced blk_init_allocated_queue_node(). Mike
-> > what do you think. I am not sure it makes sense to pass in nodeid, both
-> > at queue allocation and queue initialization time. To me, it should make
-> > more sense to allocate the queue at one node and that becomes the default
-> > node for reset of the initialization.
-> 
-> Yeah, that makes sense to me too:
-> 
-> From: Mike Snitzer <snitzer@redhat.com>
-> Subject: block: initialize request_queue's numa node during allocation
-> 
-> Set request_queue's node in blk_alloc_queue_node() rather than
-> blk_init_allocated_queue_node().  This avoids blk_throtl_init() using
-> q->node before it is initialized.
-> 
-> Rename blk_init_allocated_queue_node() to blk_init_allocated_queue().
-> 
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+It seems like there might be an issue with something specific to your
+board since I tried reproducing the issue here on an 82576 based adapter
+and the stable 3.0.9 kernel I have and I have not had much success.
 
-Thanks Mike. Looks good to me.
+I'm assuming the device that is failing is eth0.  I was wondering if you
+could send me the output of the following three commands so that I can
+do some further work to try and isolate the root cause for this issue:
+ethtool eth0
+ethtool -e eth0
+grep eth0 /proc/interrupts
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+The issue seems to be that your adapter is not detecting that the cable
+was unplugged.  This in turn is leaving stale packets on the Tx ring and
+is what is resulting in the dev_watchdog message you are seeing. 
+Typically this is due to one of two possible causes.  Either the device
+is not detecting that the link went down, or the interrupt for the link
+down event was never delivered.  Once we can isolate which of these two
+events is occurring we will be much closer to having the root cause.
 
-Thanks
-Vivek
+Thanks,
+
+Alex
