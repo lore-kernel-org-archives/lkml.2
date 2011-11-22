@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab1KVKJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:09:38 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51602 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1KVKJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:09:36 -0500
-Date: Tue, 22 Nov 2011 14:07:03 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <greg@kroah.com>, Theodore Tso <tytso@MIT.EDU>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC v2 1/3] procfs: parse mount options
-Message-ID: <20111122100703.GA3856@albatros>
-References: <20111119110126.GA11468@albatros>
- <20111121163407.d8946ad8.akpm@linux-foundation.org>
+	id S1756406Ab1KVKO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:14:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42755 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab1KVKOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 05:14:55 -0500
+Date: Tue, 22 Nov 2011 10:14:51 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Nai Xia <nai.xia@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+Message-ID: <20111122101451.GJ19415@suse.de>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+ <1321900608-27687-8-git-send-email-mgorman@suse.de>
+ <1321945011.22361.335.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20111121163407.d8946ad8.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1321945011.22361.335.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, Nov 22, 2011 at 02:56:51PM +0800, Shaohua Li wrote:
+> On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
+> > This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
+> > mode that avoids writing back pages to backing storage. Async
+> > compaction maps to MIGRATE_ASYNC while sync compaction maps to
+> > MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
+> > hotplug, MIGRATE_SYNC is used.
+> > 
+> > This avoids sync compaction stalling for an excessive length of time,
+> > particularly when copying files to a USB stick where there might be
+> > a large number of dirty pages backed by a filesystem that does not
+> > support ->writepages.
+> Hi,
+> from my understanding, with this, even writes
+> to /proc/sys/vm/compact_memory doesn't wait for pageout, is this
+> intended?
 
-On Mon, Nov 21, 2011 at 16:34 -0800, Andrew Morton wrote:
-> On Sat, 19 Nov 2011 15:01:26 +0400
-> Vasiliy Kulikov <segooon@gmail.com> wrote:
+For the moment yes so that manual and automatic compaction behave
+similarly. For example, if one runs a workload that periodically
+tries to fault transparent hugepages and it steadily gets X huge
+pages and running manual compaction gets more, it can indicate a bug
+in how and when compaction runs. If manual compaction is significantly
+different, the comparison is not as useful. I know this is a bit weak
+as an example but right now there is no strong motivation right now
+for manual compaction to use MIGRATE_SYNC.
+
+> on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
+> lock, so could wait on page read. page read and page out have the same
+> latency, why takes them different?
 > 
-> > This patch adds support of procfs mount options.
-> > Actual mount options are coming in the next patches.
-> 
-> The patches look sane to me.
 
-Thank you for the review!
+That's a very reasonable question.
 
+To date, the stalls that were reported to be a problem were related to
+heavy writing workloads. Workloads are naturally throttled on reads
+but not necessarily on writes and the IO scheduler priorities sync
+reads over writes which contributes to keeping stalls due to page
+reads low.  In my own tests, there have been no significant stalls
+due to waiting on page reads. I accept this may be because the stall
+threshold I record is too low.
 
-> I assume that `mount -o remount' has been tested and works as expected?
+Still, I double checked an old USB copy based test to see what the
+compaction-related stalls really were.
 
-Yes.
-
-
-> I also assume that any file which was opened prior to the remount will
-> remain accessible to any process which has the fd.  Is this acceptable
-> from a security/operational POV?
-
-No, currently this "check permissions on open()" is violated at least in
-getattr().  On each access the full permission checking is done.
-
-It is trivial to fix (by moving hide_pid to inode), but does it worth it?
-I see the scheme is totally constant during the system lifetime, i.e.
-procfs policy is defined during the boot in boot mount scripts and is not
-changed during the system lifetime at all.  I see it as an ability to
-define different policies on per-container basis, but not a "change it
-from time to time" thing.
-
-If anybody see the case where it makes sense, I'll move hide_pid to
-inode.
+58 seconds	waiting on PageWriteback
+22 seconds	waiting on generic_make_request calling ->writepage
 
 
-FWIW, in grsecurity it is a CONFIG_ option and there is no such problem
-at all. :-)
-
-Thanks,
+These are total times, each stall was about 2-5 seconds and very rough
+estimates. There were no other sources of stalls that had compaction
+in the stacktrace I'm rerunning to gather more accurate stall times
+and for a workload similar to Andrea's and will see if page reads
+crop up as a major source of stalls.
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Mel Gorman
+SUSE Labs
