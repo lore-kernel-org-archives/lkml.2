@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab1KVLrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:47:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52688 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755587Ab1KVLrH (ORCPT
+	id S1758541Ab1KVLr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:47:56 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62081 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab1KVLrz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:47:07 -0500
-Date: Tue, 22 Nov 2011 11:47:00 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Cree <mcree@orcon.net.nz>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>,
-        "ostrikov@nvidia.com" <ostrikov@nvidia.com>
-Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-Message-ID: <20111122114700.GJ20518@mudshark.cambridge.arm.com>
-References: <20111121145114.049265181@chello.nl>
- <20111121145337.533322271@chello.nl>
- <20111121172323.GH20611@mudshark.cambridge.arm.com>
- <1321903090.28118.21.camel@twins>
- <20111121203145.GA7301@mudshark.cambridge.arm.com>
- <1321907755.28118.30.camel@twins>
- <20111121224343.GA7862@mudshark.cambridge.arm.com>
- <1321961180.5148.31.camel@twins>
+	Tue, 22 Nov 2011 06:47:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321961180.5148.31.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4ECB65A5.3010009@arndnet.de>
+References: <4EC6DE6B.3080603@arndnet.de>
+	<4ECB65A5.3010009@arndnet.de>
+Date: Tue, 22 Nov 2011 13:47:53 +0200
+Message-ID: <CANUX_P1RXxRuybzj0gavVOkN-a3H_qRO45S1nc3oPq1aZe5V3g@mail.gmail.com>
+Subject: Re: 3.2.0-rc2: WARNING: at iwlwifi/wl-trans-pcie.c:1105
+From: Emmanuel Grumbach <egrumbach@gmail.com>
+To: Arnd Hannemann <arnd@arndnet.de>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 11:26:20AM +0000, Peter Zijlstra wrote:
-> On Mon, 2011-11-21 at 22:43 +0000, Will Deacon wrote:
-> > Perhaps we could disable it while per-cpu events are running, although I
-> > think this will probably just lead to SIGILL central for anybody trying to
-> > use the counters in userspace.
-> 
-> One possibility would be to do as I did in patch 4, except ARM has it
-> disabled by default and the folks who think they know WTF they're doing
-> can enable it or so.
+>
+> additional to the WARNING wireless with iwlwifi seems to be very flaky on 3.2.0-rc2.
+> Ping to the AP goes up to 4-5s in some periods (with network generally idle).
+> Here is some more info about the Hardware:
+>
+> [   11.133719] iwlwifi 0000:03:00.0: HW Revision ID = 0x35
+> [   11.133825] iwlwifi 0000:03:00.0: irq 46 for MSI/MSI-X
+> [   11.133865] iwlwifi 0000:03:00.0: Detected Intel(R) Centrino(R) Ultimate-N 6300 AGN, REV=0x74
+> [   11.133931] iwlwifi 0000:03:00.0: L1 Disabled; Enabling L0S
+> [   11.150077] iwlwifi 0000:03:00.0: device EEPROM VER=0x436, CALIB=0x6
+> [   11.150081] iwlwifi 0000:03:00.0: Device SKU: 0X1f0
+> [   11.150083] iwlwifi 0000:03:00.0: Valid Tx ant: 0X7, Valid Rx ant: 0X7
+> [   11.150648] iwlwifi 0000:03:00.0: Tunable channels: 13 802.11bg, 24 802.11a channels
+> [   11.417837] iwlwifi 0000:03:00.0: loaded firmware version 9.221.4.1 build 25532
+>
+> If you need some more info, please don't hesitate to ask.
+>
 
-The problem is that everybody thinks they know WTF they're doing!
-
-> Ostrikov mentioned on #kernelnewbies he wanted to have this enabled
-> because apparently games use it. He mentioned toggling the user access
-> on/off depending on if the kernel was using perf or not, but that would
-> create very unreliable service.
-
-Well we already have a reserve/release PMU thing which perf honours so we
-could conceivably do this. I still reckon this will just lead to SIGILLs in
-userspace though because we can't sanely notify tasks that they should leave
-the PMU alone for a bit.
-
-> Best would be to use perf to program the thing and use the userspace
-> read and simply agree not to write to these registers (and pray people
-> don't)..
-
-But you know that the first thing people will do is zero the registers.
-
-> Also, for those ARMs that do have a user readable clock, you could
-> support the new time_{mult,shift,offset} from patch 5.
-
-The user-readable clock will first appear in Cortex-A15, so the code for
-that still needs to hit mainline before I can look at doing this in perf.
-
-Will
+Yeah I know about that one. I haven't found the time to look at it yet.
+I do have a patch that can help to debug. This patch will be sent
+through the regular channel.
+I am considering to remove the warning though
