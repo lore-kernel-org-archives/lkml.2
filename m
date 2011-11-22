@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab1KVON2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 09:13:28 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38990 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab1KVON0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 09:13:26 -0500
+	id S1755850Ab1KVOO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 09:14:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:52485 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995Ab1KVOO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 09:14:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,553,1315206000"; 
+   d="scan'208";a="77967280"
+Date: Tue, 22 Nov 2011 22:14:20 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jens Axboe <jens.axboe@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] readahead: add /debug/readahead/stats
+Message-ID: <20111122141420.GA29261@localhost>
+References: <20111121091819.394895091@intel.com>
+ <20111121093846.636765408@intel.com>
+ <20111121141759.GE24062@one.firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1321968559.14799.2.camel@twins>
-References: <20111116145320.GA20146@quad>
-	<1321958457.5148.17.camel@twins>
-	<CABPqkBT-ZPZC2Ku6NjyMygWUU+kMr3h9FCdKTAjvhR6ywFmNqw@mail.gmail.com>
-	<1321968559.14799.2.camel@twins>
-Date: Tue, 22 Nov 2011 15:13:25 +0100
-Message-ID: <CABPqkBQLvZ1VY6Xn+X2Tw_+dXvfZe8zqvqqyLVuBpkjNYOVuyA@mail.gmail.com>
-Subject: Re: [PATCH] perf_event: fix loss of notification with multi-event sampling
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111121141759.GE24062@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 2:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-11-22 at 14:15 +0100, Stephane Eranian wrote:
->
->> > Ah, could it be a race of poll()/wakeup() vs perf_event_set_output() ?
->> >
->> Are you saying that by dropping event->waitq in favor of event->rb->waitq
->> we make this problem disappear due to rcu protections?
->
-> Well, except..
->
->> Poll_wait() is a blocking call. It may wait on a stale waitq.  But that problem
->> was probably already there. I am not clear as to what to do about that.
->> in perf_set_output() you would need to wakeup from poll_wait() and then
->> go back in with the new waitq.
->
-> Right, the whole blocking thing is a problem, and the whole poll()
-> interface always makes my head hurt.
->
-> If there was a go-sleep and wake-up side to poll we could do
-> ring_buffer_get()/put() and fix this problem, but I'm not finding a way
-> to make that happen quite yet.
->
->> Similarly, I am not clear as to what happens when you close an event for
->> which you have  a waiter in poll_wait(). I assume you wakeup from it.
->> But I don't see where that's implemented.
->
-> Good point, yes we should do that.
->
-I looked at how this is done for regular files: eventpoll_release(file);
-I think we need to have that call in free_event() or something like that.
-I did verify that in a multi-threaded prog, you do get stuck in poll() if
-one of the threads closes the event fd.
+Andi,
+
+On Mon, Nov 21, 2011 at 10:17:59PM +0800, Andi Kleen wrote:
+> > +static unsigned long ra_stats[RA_PATTERN_MAX][RA_ACCOUNT_MAX];
+> 
+> Why not make it per cpu?  That should get the overhead down, probably
+> even enough that it can be enabled by default.
+> 
+> BTW I have an older framework to make it really easy to add per
+> cpu stats counters to debugfs. Will repost, that would simplify
+> it even more.
+
+That's definitely a good facility to have. I would be happy to become
+its first user :)
+
+Thanks,
+Fengguang
