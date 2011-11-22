@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab1KVBUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:20:32 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:39540 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752017Ab1KVBUb (ORCPT
+	id S1757923Ab1KVBXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:23:16 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:58167 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756824Ab1KVBXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:20:31 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18xr9JCIGgxbzBwJb7UfQ/Z4C2Pm1O5uLXxBpGwLx
-	RRgyaJcwSbCvqB
-Message-ID: <4ECAF8DB.4020909@gmx.de>
-Date: Tue, 22 Nov 2011 01:20:27 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
-MIME-Version: 1.0
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: Fix return value of fb_notifier_call_chain
-References: <1321858524-19368-1-git-send-email-jy0922.shim@samsung.com> <4ECAD9F0.9050508@gmx.de> <4ECAF3C6.4010507@samsung.com>
-In-Reply-To: <4ECAF3C6.4010507@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Mon, 21 Nov 2011 20:23:14 -0500
+Date: Tue, 22 Nov 2011 12:22:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the at91 tree with the arm tree
+Message-Id: <20111122122250.0ea392605bac51e69331b9a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 12:58 AM, Joonyoung Shim wrote:
-> 11/22/2011 08:08 AM, Florian Tobias Schandinat 쓴 글:
->> On 11/21/2011 06:55 AM, Joonyoung Shim wrote:
->>> The return value of blocking_notifier_call_chain isn't errno value, it
->>> is just notify return value. The ret of fb_notifier_call_chain should is
->>> restored to error value from notify return value using
->>> notifier_to_errno().
->> If I'm not wrong this patch would rather break things than fix them. As I
->> understand the notifier_calls would be required to encode the return
->> value with
->> notifier_from_errno. This does not happen at the moment for fb
->> clients, for
->> example fbcon_event_notify in drivers/video/console/fbcon.c, so this
->> patch would
->> screw up the return values, I think.
-> 
-> OK, but it is wrong to return error value than notify value many
-> callback of fb notify clients and some fb notify clients returns notify
-> value, please see sh_mobile_lcdc_notify() and sh_hdmi_notify().
-> 
-> We should use only one, notify value or error value, i think it's right
-> to use notify value.
+--Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I agree. But all fb clients need to be checked and fixed up if needed at the
-same time you do the change you proposed, otherwise things are likely to break.
+Hi all,
 
-$ grep -r fb_register_client .
-./include/linux/fb.h:extern int fb_register_client(struct notifier_block *nb);
-./arch/arm/mach-pxa/am200epd.c: fb_register_client(&am200_fb_notif);
-./drivers/leds/ledtrig-backlight.c:     ret = fb_register_client(&n->notifier);
-./drivers/video/sh_mobile_hdmi.c:       fb_register_client(&hdmi->notifier);
-./drivers/video/fb_notify.c: *  fb_register_client - register a client notifier
-./drivers/video/fb_notify.c:int fb_register_client(struct notifier_block *nb)
-./drivers/video/fb_notify.c:EXPORT_SYMBOL(fb_register_client);
-./drivers/video/console/fbcon.c:        fb_register_client(&fbcon_event_notifier);
-./drivers/video/sh_mobile_lcdcfb.c:     fb_register_client(&priv->notifier);
-./drivers/video/omap/omapfb_main.c:int omapfb_register_client(struct
-omapfb_notifier_block *omapfb_nb,
-./drivers/video/omap/omapfb_main.c:EXPORT_SYMBOL(omapfb_register_client);
-./drivers/video/omap/omapfb.h:extern int  omapfb_register_client(struct
-omapfb_notifier_block *nb,
-./drivers/video/backlight/backlight.c:  return fb_register_client(&bd->fb_notif);
-./drivers/video/backlight/lcd.c:        return fb_register_client(&ld->fb_notif);
-./drivers/staging/olpc_dcon/olpc_dcon.c:
-fb_register_client(&dcon->fbevent_nb);
+Today's linux-next merge of the at91 tree got a conflict in
+arch/arm/mach-at91/setup.c between commit cf48c02e3bf0 ("ARM: mach-at91:
+remove arch specific special handling for ioremap") from the arm tree and
+commit 6a5f01336ed8 ("ARM: at91: make DBGU soc independent") from the
+at91 tree.
 
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Best regards,
+diff --cc arch/arm/mach-at91/setup.c
+index cf98a8f,3c309dc..0000000
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@@ -73,9 -75,24 +75,6 @@@ static struct map_desc at91_io_desc __i
+  	.type		=3D MT_DEVICE,
+  };
+ =20
+- #define AT91_DBGU0	0xfffff200
+- #define AT91_DBGU1	0xffffee00
+-=20
+ -void __iomem *at91_ioremap(unsigned long p, size_t size, unsigned int typ=
+e)
+ -{
+ -	if (p >=3D AT91_BASE_SYS && p <=3D (AT91_BASE_SYS + SZ_16K - 1))
+ -		return (void __iomem *)AT91_IO_P2V(p);
+ -
+ -	return __arm_ioremap_caller(p, size, type, __builtin_return_address(0));
+ -}
+ -EXPORT_SYMBOL(at91_ioremap);
+ -
+ -void at91_iounmap(volatile void __iomem *addr)
+ -{
+ -	unsigned long virt =3D (unsigned long)addr;
+ -
+ -	if (virt >=3D VMALLOC_START && virt < VMALLOC_END)
+ -		__iounmap(addr);
+ -}
+ -EXPORT_SYMBOL(at91_iounmap);
+ -
+  static void __init soc_detect(u32 dbgu_base)
+  {
+  	u32 cidr, socid;
 
-Florian Tobias Schandinat
+--Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T
+Content-Type: application/pgp-signature
 
-> 
-> Thanks.
-> 
->>
->> Best regards,
->>
->> Florian Tobias Schandinat
->>
->>> Signed-off-by: Joonyoung Shim<jy0922.shim@samsung.com>
->>> ---
->>>   drivers/video/fb_notify.c |    4 +++-
->>>   1 files changed, 3 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/video/fb_notify.c b/drivers/video/fb_notify.c
->>> index 74c2da5..49a64a3 100644
->>> --- a/drivers/video/fb_notify.c
->>> +++ b/drivers/video/fb_notify.c
->>> @@ -42,6 +42,8 @@ EXPORT_SYMBOL(fb_unregister_client);
->>>    */
->>>   int fb_notifier_call_chain(unsigned long val, void *v)
->>>   {
->>> -    return blocking_notifier_call_chain(&fb_notifier_list, val, v);
->>> +    int ret = blocking_notifier_call_chain(&fb_notifier_list, val, v);
->>> +
->>> +    return notifier_to_errno(ret);
->>>   }
->>>   EXPORT_SYMBOL_GPL(fb_notifier_call_chain);
->>
-> 
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJOyvlqAAoJEECxmPOUX5FEmoEQAJ3r8kHAGPw350g4mZChLU81
+gvGIUpA9ojolgiGDN+BuPlJ/AUXURQtNtZ6txFTKzb16N00QJUG3JejxwoYrGVnc
+9iMXVsQOIsl4yUHNlyQgaFcAvtQvmcpuVgKu555Rzpm40XPW8kaoUH2S0M9xGRKN
+9fVuHrVJkJPi/c5CqTHPrigUgcRroiVZb60tHOMrmM+WZvpTGUYzUW5y8FvfOULx
+N0yq902Tv+cy5L0GrmxQgmDOkrWi1DQKlZhFr+26pSrriErtOthrSAoTGmBHpjyR
+MyF/0v48hRUiRfNTMnB4GDG2HBLD05oRtwVd0jjG4hO9BQP6wBoMIsdRoto6VrUL
+rjAzxAxCOLVBDySTAO7vn3s/e7v/stK2vfK9QnZTU58yKpNhJJ2raMWqzd4ayAV9
+0m5XchYVUTOljomhH3Wqp5YoChcAyfzCX5t1x6bshGKZJH9+093ws/JyEuqbDHA2
+i/shmAGOE6kKGPy5+q4z/aEQGtcnxKi6FSWqCruWv1H7NhLLbDlLBsmZH3kpP1s9
+B5MJJUASJ2sIrLJjxG0ymLaFd8Uz+f9/7UY2YJur0ZVU0j95x04aLUBUV6dTLA83
+Z100CWjahgP3y83W5tTdTPBueYIBuigF66P90E5Y2KacPFDQNsJWSPI6BDhDEvT/
+l2cerOUfd1IWCB/h+Hhb
+=14G1
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T--
