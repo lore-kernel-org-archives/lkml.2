@@ -1,92 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1KVLTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:19:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47536 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752501Ab1KVLTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:19:23 -0500
-Date: Tue, 22 Nov 2011 11:19:20 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 1/3] sound/soc/codecs: add LAPIS Semiconductor ML26124
-Message-ID: <20111122111920.GB30048@opensource.wolfsonmicro.com>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
- <20111121112607.GB3784@opensource.wolfsonmicro.com>
- <CANKRQngsHv5M1+LaDq-fmaFCpG3f80DbJOrtvNShLn6hNWfg=w@mail.gmail.com>
+	id S1758308Ab1KVLUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:20:33 -0500
+Received: from mga03.intel.com ([143.182.124.21]:32617 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754045Ab1KVLUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 06:20:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,552,1315206000"; 
+   d="scan'208";a="77913708"
+Date: Tue, 22 Nov 2011 19:20:08 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] hda - fail ELD reading early
+Message-ID: <20111122112008.GA9207@localhost>
+References: <20111122084623.GA30050@localhost>
+ <s5hlir8igp2.wl%tiwai@suse.de>
+ <20111122105318.GB5730@localhost>
+ <s5hfwhgifck.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANKRQngsHv5M1+LaDq-fmaFCpG3f80DbJOrtvNShLn6hNWfg=w@mail.gmail.com>
-X-Cookie: A is for Apple.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hfwhgifck.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 07:47:10PM +0900, Tomoya MORINAGA wrote:
-> 2011/11/21 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+On Tue, Nov 22, 2011 at 07:08:59PM +0800, Takashi Iwai wrote:
+> At Tue, 22 Nov 2011 18:53:18 +0800,
+> Wu Fengguang wrote:
+> > 
+> > On Tue, Nov 22, 2011 at 06:39:53PM +0800, Takashi Iwai wrote:
+> > > At Tue, 22 Nov 2011 16:46:23 +0800,
+> > > Wu Fengguang wrote:
+> > > > 
+> > > > With the ELD repoll mechanism, we can (and should) fail the ELD reading
+> > > > immediately when find something obviously wrong and let the caller retry
+> > > > after some delay.
+> > > > 
+> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > > ---
+> > > >  sound/pci/hda/hda_eld.c |   28 +++++++++++++++++++---------
+> > > >  1 file changed, 19 insertions(+), 9 deletions(-)
+> > > > 
+> > > > --- linux.orig/sound/pci/hda/hda_eld.c	2011-11-22 16:02:58.000000000 +0800
+> > > > +++ linux/sound/pci/hda/hda_eld.c	2011-11-22 16:36:10.000000000 +0800
+> > > > @@ -347,18 +347,28 @@ int snd_hdmi_get_eld(struct hdmi_eld *el
+> > > >  
+> > > >  	for (i = 0; i < size; i++) {
+> > > >  		unsigned int val = hdmi_get_eld_data(codec, nid, i);
+> > > > +		/*
+> > > > +		 * Graphics driver might be writing to ELD buffer right now.
+> > > > +		 * Just abort. The caller will repoll after a while.
+> > > > +		 */
+> > > >  		if (!(val & AC_ELDD_ELD_VALID)) {
+> > > > -			if (!i) {
+> > > > -				snd_printd(KERN_INFO
+> > > > -					   "HDMI: invalid ELD data\n");
+> > > > -				ret = -EINVAL;
+> > > > -				goto error;
+> > > > -			}
+> > > >  			snd_printd(KERN_INFO
+> > > >  				  "HDMI: invalid ELD data byte %d\n", i);
+> > > > -			val = 0;
+> > > > -		} else
+> > > > -			val &= AC_ELDD_ELD_DATA;
+> > > > +			ret = -EINVAL;
+> > > > +			goto error;
+> > > > +		}
+> > > > +		val &= AC_ELDD_ELD_DATA;
+> > > > +		/*
+> > > > +		 * The first byte cannot be zero. This can happen on some DVI
+> > > > +		 * connections. Some Intel chips may also need some 250ms delay
+> > > > +		 * to return non-zero ELD data, even when the graphics driver
+> > > > +		 * correctly writes ELD content before setting ELD_valid bit.
+> > > > +		 */
+> > > > +		if (!val && !i) {
+> > > > +			snd_printdd(KERN_INFO "HDMI: 0 ELD data\n");
+> > > > +			ret = -EINVAL;
+> > > > +			goto error;
+> > > > +		}
+> > > 
+> > > Shouldn't this zero-check be before the valid-bit check?
+> > > Otherwise it'll never reach there.
+> > 
+> > It does reach there:
+> > 
+> >         [ 1191.016746] HDMI hot plug event: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
+> >         [ 1191.019309] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
+> > ==>     [ 1191.021803] ALSA hda_eld.c:368 HDMI: 0 ELD data
+> >         [ 1191.324661] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
+> >         [ 1191.333236] HDMI: detected monitor SONY TV at connection type HDMI
+> >         [ 1191.335020] HDMI: available speakers: FL/FR
+> >         [ 1191.335996] HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
+> > 
+> > The funny thing is, it's reporting (invalid) 0 ELD data that has
+> > the AC_ELDD_ELD_VALID bit set.
+> 
+> Ah OK.  Another slight concern is that your patch gives always the
+> error when ELD_VALID isn't set, so it makes the check more strict in
+> practice.  I guess it'd be OK, so I'll take it in.  But we need to
+> carefully hear whether anyone cries with this.
 
-> BTW, What's TLV ? Let me know the full spell of this "TLV".
+Agreed, the original code simply sets data to 0 when !ELD_VALID. 
+If the hardware does the illogical thing (who knows) of conditional
+setting !ELD_VALID on some parts of the ELD buffer which happen to
+contain 0, we'll be in bad luck...
 
-Tag/Length/Value.
-
-> >> +static const struct snd_kcontrol_new ml26124_dsp_controls[] = {
-> >> +     SOC_SINGLE("Play Limitter ON/OFF", ML26124_FILTER_EN, 0, 1, 0),
-
-> Do you mean SOC_SINGLE("Play Limitter Switch", ML26124_FILTER_EN, 0, 1, 0) ?
-
-Yes.
-
-> >> +     SOC_SINGLE("Set ALC position", ML26124_FILTER_EN, 5, 1, 0),
-
-> > What does this actually do?  From the name it *really* doesn't look like
-> > a mixer input.
-
-> The above means where connects the ALC.
-> So, this doesn't relate to mixer input.
-
-If this control is not a mixer input it should not be a mixer input in
-the driver.  Though with your explanation I still don't understand what
-it does so presumably the naming also needs to be improved.
-
-> However I couldn't understand the meaning of the widgets. So I didn't
-> write anything.
-
-See Documentation/sound/alsa/soc/dapm.txt.
-
-> >> +static int snd_card_codec_reg_read(struct ml26124_priv *priv,
-> >> +                                unsigned char reg, unsigned char *val)
-> >> +{
-> >> +     unsigned char data;
-> >> +     struct i2c_client *i2c;
-
-> > Use the standard register access code, don't open code things in your
-> > driver unless there's a good reason to.  Current best practice for most
-> > I2C or SPI devices is to use regmap, see any recently added driver for
-> > examples.
-
-> What's "regmap" mean ? or do you mean drivers/mfd/* ?
-> Could you tell me this ?
-
-drivers/base/regmap and also grep in sound/soc/codecs/*.c
-
-> > Use snd_soc_update_bits() and the other standard register access
-> > functions.
-
-> Using snd_soc_update_bits(), need to register ".read" method.
-
-Or use a cache.
-
-> Is the same as the above  snd_card_codec_reg_read ?
-
-I don't understand this question.
+Thanks,
+Fengguang
