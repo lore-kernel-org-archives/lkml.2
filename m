@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab1KVFis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 00:38:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33583 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab1KVFir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 00:38:47 -0500
-Date: Tue, 22 Nov 2011 13:33:43 +0800
-From: wangyanqing <udknight@gmail.com>
-To: Matt Domsch <Matt_Domsch@dell.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "warns@pre-sense.de" <warns@pre-sense.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>, pjones@redhat.com,
-        mjg59@redhat.com
-Subject: Re: [PATCH] fs:partitions:efi.c: correct misuse force_gpt
-Message-ID: <20111122053343.GA32343@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
-	Matt Domsch <Matt_Domsch@dell.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"warns@pre-sense.de" <warns@pre-sense.de>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"tj@kernel.org" <tj@kernel.org>,
-	"jaxboe@fusionio.com" <jaxboe@fusionio.com>, pjones@redhat.com,
-	mjg59@redhat.com
-References: <20111122004434.GA6584@udknight.homenetwork>
- <20111121165655.18224b14.akpm@linux-foundation.org>
- <20111122043325.GA4979@emperor.us.dell.com>
+	id S1752781Ab1KVFjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 00:39:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751869Ab1KVFjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 00:39:47 -0500
+Message-ID: <4ECB3587.3020909@redhat.com>
+Date: Tue, 22 Nov 2011 13:39:19 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122043325.GA4979@emperor.us.dell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org
+Subject: Re: [V2 PATCH] tmpfs: add fallocate support
+References: <1321612791-4764-1-git-send-email-amwang@redhat.com> <alpine.LSU.2.00.1111201300340.1264@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1111201300340.1264@sister.anvils>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:33:25PM -0600, Matt Domsch wrote:
+于 2011年11月21日 05:22, Hugh Dickins 写道:
+> On Fri, 18 Nov 2011, Cong Wang wrote:
+>
+>> It seems that systemd needs tmpfs to support fallocate,
+>> see http://lkml.org/lkml/2011/10/20/275. This patch adds
+>> fallocate support to tmpfs.
+>>
+>> As we already have shmem_truncate_range(), it is also easy
+>> to add FALLOC_FL_PUNCH_HOLE support too.
+>
+> Thank you, this version looks much much nicer.
+>
+> I wouldn't call it bug-free (don't you need a page_cache_release
+> after the unlock_page?), and I won't be reviewing it and testing it
+> for a week or two - there's a lot about the semantics of fallocate
+> and punch-hole that's not obvious, and I'll have to study the mail
+> threads discussing them before checking your patch.
 
-> Again, here there is some debate, what the Alternate GPT header and
-> table are good for.
-> 
-> I put the comment in to remind myself a decade later...
-> 
-> /**
->  * find_valid_gpt() - Search disk for valid GPT headers and PTEs
->  * @state
->  * @gpt is a GPT header ptr, filled on return.
->  * @ptes is a PTEs ptr, filled on return.
->  * Description: Returns 1 if valid, 0 on error.
->  * If valid, returns pointers to newly allocated GPT header and PTEs.
->  * Validity depends on PMBR being valid (or being overridden by the
->  * 'gpt' kernel command line option) and finding either the Primary
->  * GPT header and PTEs valid, or the Alternate GPT header and PTEs
->  * valid.  If the Primary GPT header is not valid, the Alternate GPT header
->  * is not checked unless the 'gpt' kernel command line option is passed.
->  * This protects against devices which misreport their size, and forces
->  * the user to decide to use the Alternate GPT.
->  */
-> 
-> Why is this?
-> 
-> There were a class of hard disks (IIRC, first generation iPods at
-> least), that would report their size off by one (one sector larger
-> than they actually were), and attempting to read from that one-past
-> sector would cause the whole device to go catatonic, which would then
-> hang the boot process.
-> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=281905 and what
-> should be in the historical kernel tree.
-> 
-> Your patch undoes the patch that prevented the boot from hanging in
-> such situations.
-> 
-> Because we can't know which disks might misbehave this way, and
-> because it is a catastrophic failure when it happens, we wanted to
-> force the user to do something which might cause the failure to occur,
-> hence it's protected behind the force_gpt flag.
-Sorry I miss the comment, and you are right!
+Yeah, sorry, I missed unlock_page()...
 
-> 
-> Seconarily, the primary purpose of the AGPT in my mind is so that
-> userspace tools like parted can look at all the available information
-> and make a decision as to whether the AGPT info is valid and should be
-> used, if the PGPT is corrupt, and then can fix up either or both
-> headers as necessary.  Inside the kernel, there's very little I want
-> to trust the AGPT for if I can avoid it, and nothing can fix either
-> header if determined to be corrupt.
-Thanks for the detail explanation! Matt
+>
+> First question that springs to mind (to which I shall easily find
+> an answer): is it actually acceptable for fallocate() to return
+> -ENOSPC when it has already completed a part of the work?
 
+Ah, good point, I will fix this as what Christoph suggested.
 
+>
+> But so long as the details don't end up complicating this
+> significantly, since we anyway want to regularize the punch-hole
+> situation by giving tmpfs the same interface to it as other filesystems,
+> I now think it would be a bit perverse to disallow the original
+> fallocate functionality that you implement here in-kernel.
+>
+
+Ok, I think you mean you are fine to accept it now?
+
+Anyway, thanks a lot for your comments!
