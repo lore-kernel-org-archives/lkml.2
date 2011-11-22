@@ -1,136 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab1KVFtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 00:49:52 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:56620 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab1KVFtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 00:49:49 -0500
-Message-ID: <4ECB37E4.6020204@linux.vnet.ibm.com>
-Date: Tue, 22 Nov 2011 11:19:24 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753391Ab1KVFvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 00:51:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752739Ab1KVFvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 00:51:11 -0500
+Message-ID: <4ECB3839.50908@redhat.com>
+Date: Tue, 22 Nov 2011 13:50:49 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera> <201111212249.31196.rjw@sisk.pl>
-In-Reply-To: <201111212249.31196.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Hellwig <hch@infradead.org>
+CC: Hugh Dickins <hughd@google.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [V2 PATCH] tmpfs: add fallocate support
+References: <1321612791-4764-1-git-send-email-amwang@redhat.com> <20111119100326.GA27967@infradead.org> <CAPXgP10q8Fba3vr0zf-XBBaRPwjP7MyJ=-QRL45_8WC-vtotOg@mail.gmail.com> <alpine.LSU.2.00.1111201322310.1264@sister.anvils> <20111121101059.GB17887@infradead.org>
+In-Reply-To: <20111121101059.GB17887@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-x-cbid: 11112205-4790-0000-0000-00000015D85D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 03:19 AM, Rafael J. Wysocki wrote:
-> This message contains a list of some regressions from 3.0 and 3.1
-> for which there are no fixes in the mainline known to the tracking team.
-> If any of them have been fixed already, please let us know.
-> 
-> If you know of any other unresolved regressions from 3.0 and 3.1, please let us
-> know either and we'll add them to the list.  Also, please let us know if any of
-> the entries below are invalid.
-> 
-> The entries below are simplified and the statistics are not present due to the
-> continuing Bugzilla outage.
-> 
-> Subject    : iwlagn is getting very shaky
-> Submitter  : Norbert Preining <preining@logic.at>
-> Date       : 2011-10-19 6:01
-> Message-ID : 20111019060108.GA11588@gamma.logic.tuwien.ac.at
-> References : http://marc.info/?l=linux-kernel&m=131914553920614&w=2
-> 
-> Subject    : Regression: "irqpoll" hasn't been working for me since March 16 IRQ
-> Submitter  : Edward Donovan <edward.donovan@numble.net>
-> Date       : 2011-10-19 22:09
-> Message-ID : CADdbW+HXdCPfJu2RTF6zz+ujCmiu_dmZwL2iScuF53p=AaZ1Uw@mail.gmail.com
-> References : http://marc.info/?l=linux-kernel&m=131914554220679&w=2
-> 
-> Subject    : Regression in 3.1 causes Xen to use wrong idle routine
-> Submitter  : Stefan Bader <stefan.bader@canonical.com>
-> Date       : 2011-10-26 10:24
-> Message-ID : 4EA7DFD1.9060608@canonical.com
-> References : http://marc.info/?l=linux-acpi&m=131962467924564&w=2
-> 
-> Subject    : 3.1+ iwlwifi lockup
-> Submitter  : Dave Jones <davej@redhat.com>
-> Date       : 2011-10-31 14:34
-> Message-ID : 20111031143408.GA17152@redhat.com
-> References : http://marc.info/?l=linux-kernel&m=132007169420160&w=2
-> 
-> Subject    : hugetlb oops on 3.1.0-rc8-devel
-> Submitter  : Andy Lutomirski <luto@amacapital.net>
-> Date       : 2011-11-01 22:20
-> Message-ID : CALCETrW1mpVCz2tO5roaz1r6vnno+srHR-dHA6_pkRi2qiCfdw@mail.gmail.com
-> References : http://marc.info/?l=linux-kernel&m=132018604426692&w=2
-> 
-> Subject    : Simultaneous cat and external keyboard input causing kernel panic
-> Submitter  : Timo Jyrinki <timo.jyrinki@gmail.com>
-> Date       : 2011-11-03 12:14
-> Message-ID : CAJtFfxmovJHspHHKbvBVc4pw+u5mjGmUejCXEzdV+GqE=jVSOQ@mail.gmail.com
-> References : http://marc.info/?l=linux-kernel&m=132032253903074&w=2
-> 
-> Subject    : Linus GIT - INFO: possible circular locking dependency detected
-> Submitter  : Miles Lane <miles.lane@gmail.com>
-> Date       : 2011-11-03 15:57
-> Message-ID : CAHFgRy8S0xLfhZxTUOEH5A0PL_Fb79-0-gmbQ=9h2D-xMqt1hA@mail.gmail.com
-> References : http://marc.info/?l=linux-kernel&m=132033587908426&w=2
-> 
-> Subject    : lockdep warning after aa6afca5bcab: "proc: fix races against execve() of /proc/PID/fd**"
-> Submitter  : Ari Savolainen <ari.m.savolainen@gmail.com>
-> Date       : 2011-11-08 3:47
-> Message-ID : CAEbykaXYZEFhTgWMm2AfaWQ2SaXYuO_ypTnw+6AVWScOYSCuuw@mail.gmail.com
-> References : http://marc.info/?l=linux-kernel&m=132072413125099&w=2
-> 
-> Subject    : DMA-API check_sync errors with 3.2
-> Submitter  : Josh Boyer <jwboyer@redhat.com>
-> Date       : 2011-11-08 17:31
-> Message-ID : 20111108173153.GE14216@zod.bos.redhat.com
-> References : http://marc.info/?l=linux-kernel&m=132077357608797&w=2
-> 
-> Subject    : [3.1-rc8 REGRESSION] sky2 hangs machine on turning off or suspending
-> Submitter  : Rafał Miłecki <zajec5@gmail.com>
-> Date       : 2011-11-09 11:46
-> Message-ID : CACna6ryTdLcWVYgHu=_mRFga1sFivpE_DyZOY-HMmKggkWAJAw@mail.gmail.com
-> References : http://marc.info/?l=linux-netdev&m=132083922228088&w=4
-> 
-> Subject    : 3.2-rc1 doesn't boot on dual socket opteron without swap
-> Submitter  : Niklas Schnelle <niklas@komani.de>
-> Date       : 2011-11-10 20:09
-> Message-ID : 1320955769.1718.8.camel@jupiter
-> References : http://marc.info/?l=linux-kernel&m=132095583501767&w=2
-> 
-> Subject    : Sparc-32 doesn't work in 3.1.
-> Submitter  : Rob Landley <rob@landley.net>
-> Date       : 2011-11-12 11:22
-> Message-ID : 4EBEAB5A.5020809@landley.net
-> References : http://www.spinics.net/lists/kernel/msg1260383.html
-> 
-> Subject    : khugepaged blocks suspend2ram (3.2.0-rc1-00252-g8f042aa)
-> Submitter  : Sergei Trofimovich <slyich@gmail.com>
-> Date       : 2011-11-12 10:48
-> Message-ID : 20111112104859.7744b282@sf.home
-> References : https://lkml.org/lkml/2011/11/12/11
-> 
+于 2011年11月21日 18:11, Christoph Hellwig 写道:
+> On Sun, Nov 20, 2011 at 01:39:12PM -0800, Hugh Dickins wrote:
+>>> To be able to safely use mmap(), regarding SIGBUS, on files on the
+>>> /dev/shm filesystem. The glibc fallback loop for -ENOSYS on fallocate
+>>> is just ugly.
+>>
+>> The fallback for -EOPNOTSUPP?
+>
+> Probably for both.  Note that the fallocate man page actually documents
+> the errors incorrecly - it documents ENOSYS for filesystems not
+> supporting fallocate, and EOPNOTSUPP for not recognizing the mode, but
+> we actually return EOPNOTSUPP for either case.  ENOSYS is only returned
+> by kernels not implementing fallocate at all.
 
-Andrea's patch already fixes this issue, which was reported first by
-Jiri Slaby. https://lkml.org/lkml/2011/11/11/93
-I remember Andrew Morton taking this patch in his -mm tree. But it is
-not in mainline yet. So can we consider this closed or not?
+We need to fix man page of fallocate(2)...
 
-Thanks,
-Srivatsa S. Bhat
+>
+>> Being unfamiliar with glibc, I failed to find the internal_fallocate()
+>> that it appears to use when the filesystem doesn't support the call;
+>> so I don't know if I would agree with you that it's uglier than doing
+>> the same(?) in the kernel.
+>
+> Last time I looked it basically did a pwrite loop writing zeroes.
+> Unfortunately it did far too small I/O sizes and thus actually causes
+> some major overhead e.g. on ext3.
+>
+>> But since the present situation is that tmpfs has one interface to
+>> punching holes, madvise(MADV_REMOVE), that IBM were pushing 5 years ago;
+>> but ext4 (and others) now a fallocate(FALLOC_FL_PUNCH_HOLE) interface
+>> which IBM have been pushing this year: we do want to normalize that
+>> situation and make them all behave the same way.
+>
+> FALLOC_FL_PUNCH_HOLE was added by Josef Bacik, who happens to work for
+> Red Hat, but I doubt he was pushing any corporate agenda there, he was
+> mostly making btrfs catch up with the 15 year old XFS hole punching
+> ioctl.
 
+I sent a patch to util-linux-ng too,
+
+http://thread.gmane.org/gmane.linux.utilities.util-linux-ng/5045
+
+>
+>
+>> And if tmpfs is going to support fallocate(FALLOC_FL_PUNCH_HOLE),
+>> looking at Amerigo's much more attractive V2 patch, it would seem
+>> to me perverse to permit the deallocation but fail the allocation.
+>
+> Agreed.
+>
+
+Thanks.
