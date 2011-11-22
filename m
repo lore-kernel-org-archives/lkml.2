@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab1KVHGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 02:06:46 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:33264 "EHLO
+	id S1754670Ab1KVHL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 02:11:58 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:33377 "EHLO
 	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751302Ab1KVHGp (ORCPT
+	with ESMTP id S1752401Ab1KVHL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 02:06:45 -0500
-X-Greylist: delayed 2694 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Nov 2011 02:06:45 EST
+	Tue, 22 Nov 2011 02:11:57 -0500
 From: Tanmay Inamdar <tinamdar@apm.com>
-To: dwmw2@infradead.org
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+To: benh@kernel.crashing.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Tanmay Inamdar <tinamdar@apm.com>
-Subject: [PATCH 1/2] MTD: NAND: ndfc: fix compilation error
-Date: Tue, 22 Nov 2011 11:50:50 +0530
-Message-Id: <1321942850-20012-1-git-send-email-tinamdar@apm.com>
+Subject: powerpc: dts: Fix canyonlands EMAC interrupt map
+Date: Tue, 22 Nov 2011 12:41:17 +0530
+Message-Id: <1321945877-22802-1-git-send-email-tinamdar@apm.com>
 X-Mailer: git-send-email 1.6.1.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes compilation error in ndfc flash driver
----
- drivers/mtd/nand/ndfc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Fixing interrupt mapping of EMAC for canyonlands
 
-diff --git a/drivers/mtd/nand/ndfc.c b/drivers/mtd/nand/ndfc.c
-index ee17139..f8aacf4 100644
---- a/drivers/mtd/nand/ndfc.c
-+++ b/drivers/mtd/nand/ndfc.c
-@@ -188,7 +188,7 @@ static int ndfc_chip_init(struct ndfc_controller *ndfc,
- 	if (!flash_np)
- 		return -ENODEV;
- 
--	ppdata->of_node = flash_np;
-+	ppdata.of_node = flash_np;
- 	ndfc->mtd.name = kasprintf(GFP_KERNEL, "%s.%s",
- 			dev_name(&ndfc->ofdev->dev), flash_np->name);
- 	if (!ndfc->mtd.name) {
+Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+---
+ arch/powerpc/boot/dts/canyonlands.dts |   16 ++++++----------
+ 1 files changed, 6 insertions(+), 10 deletions(-)
+
+diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+index 3dc75de..c76bbcd 100644
+--- a/arch/powerpc/boot/dts/canyonlands.dts
++++ b/arch/powerpc/boot/dts/canyonlands.dts
+@@ -360,13 +360,11 @@
+ 			EMAC0: ethernet@ef600e00 {
+ 				device_type = "network";
+ 				compatible = "ibm,emac-460ex", "ibm,emac4sync";
+-				interrupt-parent = <&EMAC0>;
+-				interrupts = <0x0 0x1>;
+-				#interrupt-cells = <1>;
++				interrupt-parent = <&UIC2>;
+ 				#address-cells = <0>;
+ 				#size-cells = <0>;
+-				interrupt-map = </*Status*/ 0x0 &UIC2 0x10 0x4
+-						 /*Wake*/   0x1 &UIC2 0x14 0x4>;
++				interrupts = </*Status*/0x10 0x4
++						/*Wake*/0x14 0x4>;
+ 				reg = <0xef600e00 0x000000c4>;
+ 				local-mac-address = [000000000000]; /* Filled in by U-Boot */
+ 				mal-device = <&MAL0>;
+@@ -390,13 +388,11 @@
+ 			EMAC1: ethernet@ef600f00 {
+ 				device_type = "network";
+ 				compatible = "ibm,emac-460ex", "ibm,emac4sync";
+-				interrupt-parent = <&EMAC1>;
+-				interrupts = <0x0 0x1>;
+-				#interrupt-cells = <1>;
++				interrupt-parent = <&UIC2>;
+ 				#address-cells = <0>;
+ 				#size-cells = <0>;
+-				interrupt-map = </*Status*/ 0x0 &UIC2 0x11 0x4
+-						 /*Wake*/   0x1 &UIC2 0x15 0x4>;
++				interrupts = </*Status*/0x11 0x4
++						/*Wake*/0x15 0x4>;
+ 				reg = <0xef600f00 0x000000c4>;
+ 				local-mac-address = [000000000000]; /* Filled in by U-Boot */
+ 				mal-device = <&MAL0>;
 -- 
 1.6.1.rc3
 
