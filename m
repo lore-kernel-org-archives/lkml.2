@@ -1,162 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860Ab1KVWoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:44:25 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59422 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab1KVWoY convert rfc822-to-8bit (ORCPT
+	id S1758883Ab1KVWpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:45:30 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:43299 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab1KVWp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:44:24 -0500
+	Tue, 22 Nov 2011 17:45:28 -0500
+Date: Tue, 22 Nov 2011 17:41:08 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-11-22 #2
+Message-ID: <20111122224108.GJ8452@tuxdriver.com>
+References: <20111122193505.GC8452@tuxdriver.com>
+ <20111122215611.GI8452@tuxdriver.com>
+ <20111122.173729.1155753802137219940.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20111122191302.GF8058@quack.suse.cz>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
-	<20111122101451.GJ19415@suse.de>
-	<20111122115427.GA8058@quack.suse.cz>
-	<201111222159.24987.nai.xia@gmail.com>
-	<20111122191302.GF8058@quack.suse.cz>
-Date: Wed, 23 Nov 2011 06:44:23 +0800
-Message-ID: <CAPQyPG6EComwoD7+SS7qDqU-G5OYrHbAWJG0gfmJPh9_2N=RZA@mail.gmail.com>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
- use by compaction
-From: Nai Xia <nai.xia@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Shaohua Li <shaohua.li@intel.com>,
-        Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122.173729.1155753802137219940.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 3:13 AM, Jan Kara <jack@suse.cz> wrote:
-> On Tue 22-11-11 21:59:24, Nai Xia wrote:
->> On Tuesday 22 November 2011 19:54:27 Jan Kara wrote:
->> > On Tue 22-11-11 10:14:51, Mel Gorman wrote:
->> > > On Tue, Nov 22, 2011 at 02:56:51PM +0800, Shaohua Li wrote:
->> > > > On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
->> > > > on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
->> > > > lock, so could wait on page read. page read and page out have the same
->> > > > latency, why takes them different?
->> > > >
->> > >
->> > > That's a very reasonable question.
->> > >
->> > > To date, the stalls that were reported to be a problem were related to
->> > > heavy writing workloads. Workloads are naturally throttled on reads
->> > > but not necessarily on writes and the IO scheduler priorities sync
->> > > reads over writes which contributes to keeping stalls due to page
->> > > reads low.  In my own tests, there have been no significant stalls
->> > > due to waiting on page reads. I accept this may be because the stall
->> > > threshold I record is too low.
->> > >
->> > > Still, I double checked an old USB copy based test to see what the
->> > > compaction-related stalls really were.
->> > >
->> > > 58 seconds        waiting on PageWriteback
->> > > 22 seconds        waiting on generic_make_request calling ->writepage
->> > >
->> > > These are total times, each stall was about 2-5 seconds and very rough
->> > > estimates. There were no other sources of stalls that had compaction
->> > > in the stacktrace I'm rerunning to gather more accurate stall times
->> > > and for a workload similar to Andrea's and will see if page reads
->> > > crop up as a major source of stalls.
->> >   OK, but the fact that reads do not stall may pretty much depend on the
->> > behavior of the underlying IO scheduler and we probably don't want to rely
->> > on it's behavior too closely. So if you are going to treat reads in a
->> > special way, check with NOOP or DEADLINE io schedulers that read-stalls
->> > are not a problem with them as well.
->>
->> Compared to the IO scheduler, I actually expect this behavior is more related
->> to these two facts:
->>
->> 1) Due to the IO direction , most pages to be read are still in disk,
->> while most pages to be write are in memory.
->>
->> 2) And as Mel explained, read trends to be sync, write trends to be async,
->> so for decent IO schedulers, no matter what they differ in each other,
->> should almost agree no favoring read more than write.
->  This is not true. CFQ heavily prefers read IO over write IO. Deadline
-> scheduler slightly prefers reads and noop io scheduler has no preference.
-> As a result, page which is read from disk is going to be locked for shorter
-> time with CFQ scheduler than with NOOP scheduler on average.
+On Tue, Nov 22, 2011 at 05:37:29PM -0500, David Miller wrote:
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Tue, 22 Nov 2011 16:56:12 -0500
+> 
+> > Here is the latest batch of fixes intended for 3.2.  This includes a
+> > correction for a user-visible error in mac80211's debugfs info, a fix
+> > for a potential memory corrupter in prism54, an endian fix for rt2x00,
+> > an endian fix for mac80211, a fix for a NULL derefernce in cfg80211, a
+> > locking fix for p54spi and a deadlock fix also for p54spi.
+> > 
+> > This reverts the problematic rt2x00 patches from the earlier pull
+> > request.
+> > 
+> > Please let me know if there are problems!
+> 
+> I'm still seeing the problematic rt2x00 changes when I pull:
+> 
+> [davem@boricha net]$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
+> remote: Counting objects: 112, done.        
+> remote: Compressing objects: 100% (82/82), done.        
+> remote: Total 82 (delta 71), reused 0 (delta 0)        
+> Unpacking objects: 100% (82/82), done.
+> From git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless
+>  * branch            for-davem  -> FETCH_HEAD
+> Updating 5eccdf5..02f1ce3
+> Fast-forward
+>  drivers/net/wireless/p54/p54spi.c        |    5 +++--
+>  drivers/net/wireless/prism54/isl_ioctl.c |    2 +-
+>  drivers/net/wireless/rt2x00/rt2800lib.c  |    2 +-
+>  net/mac80211/debugfs_sta.c               |    4 ++--
+>  net/mac80211/status.c                    |    8 ++++----
+>  net/wireless/reg.c                       |    4 ++++
+>  6 files changed, 15 insertions(+), 10 deletions(-)
+> [davem@boricha net]$ git format-patch ORIG_HEAD
+> 0001-rt2800pci-handle-spurious-interrupts.patch
+> 0002-rt2x00-handle-spurious-pci-interrupts.patch
 
-I was just meaning that for an optimized scheduler not matter "slightly" or
-"heavily" they agree on "prefering read over write"....
-But well, I am really not very conscious about how "slightly" that can be,
-maybe it's not about to make any difference.
+They're here...
 
->
->> So that amounts to the following calculation that is important to the
->> statistical stall time for the compaction:
->>
->>      page_nr *  average_stall_window_time
->>
->> where average_stall_window_time is the window for a page between
->> NotUptoDate ---> UptoDate or Dirty --> Clean. And page_nr is the
->> number of pages in stall window for read or write.
->>
->> So for general cases,
->> Fact 1) may ensure that the page_nr is smaller for read, while
->> fact 2) may ensure the same for average_locking_window_time.
->  Well, page_nr really depends on the load. If the workload is only reads,
-> clearly number of read pages is going to be higher than number of written
-> pages. Once workload does heavy writing, I agree number of pages under
-> writeback is likely going to be higher.
+> 0003-rt2x00-Fix-efuse-EEPROM-reading-on-PPC32.patch
+> 0004-p54spi-Add-missing-spin_lock_init.patch
+> 0005-p54spi-Fix-workqueue-deadlock.patch
+> 0006-mac80211-Fix-AMSDU-rate-printout-in-debugfs.patch
+> 0007-mac80211-Fix-endian-bug-in-radiotap-header-generatio.patch
+> 0008-cfg80211-fix-regulatory-NULL-dereference.patch
+> 0009-prism54-potential-memory-corruption-in-prism54_get_e.patch
+> 0010-Revert-rt2x00-handle-spurious-pci-interrupts.patch
+> 0011-Revert-rt2800pci-handle-spurious-interrupts.patch
 
-Think about process A linearly scans 100MB mapped file pages
-area for read, and another process B linearly writes to a same sized area.
-If there is no readahead, the read page in stall window in memory is only
-*one* page each time. However, 100MB dirty pages can be hold in memory
-waiting to be write which may stall the compaction for fallback_migrate_page().
-Even for buffer_migrate_page() these pages are much more likely to get locked
-by other behaviors like you said for IO submission,etc.
+And I revert them here.
 
-I was not sure about readahead, of course,  I only theoretically
-expected its still not
-comparable to the totally async write behavior.
+Linus always says to live with our mistakes?  I was trying to avoid
+a rebase both for my own pain and that of my downstream maintainers.
 
->
->> I am not sure this will be the same case for all workloads,
->> don't know if Mel has tested large readahead workloads which
->> has more async read IOs and less writebacks.
->>
->> But theoretically I expect things are not that bad even for large
->> readahead, because readahead is triggered by the readahead TAG in
->> linear order, which means for a process to generating readahead IO,
->> its speed is still somewhat govened by the read IO speed. While
->> for a process writing to a file mapped memory area, it may well
->> exceed the speed of its backing-store writing speed.
->>
->>
->> Aside from that, I think the relation between page locking and
->> page read is not 1-to-1, in other words, there maybe quite some
->> transient page locking is caused by mmap and then page fault into
->> already good-state pages requiring no IO at all. For these
->> transient page lockings I think it's reasonable to have light
->> waiting.
->  Definitely there are other lockings than for read. E.g. to write a page,
-> we lock it first, submit IO (which can actually block waiting for request
-> to get freed), set PageWriteback, and unlock the page. And there are more
-> transient ones like you mention above...
-
-Yes, you are right.
-But I think we were talking about distinguishing page locking from page read
-IO?
-
-Well, I might also want to suggest that do an early dirty test before
-taking the
-lock...but, I expect page NotUpToDate is much more likely an indication that
-we are going to block for IO on the following page lock. Dirty test is not that
-strong. Do you agree ?
-
-Nai
-
->
->                                                                Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
->
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
