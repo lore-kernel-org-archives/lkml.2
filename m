@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab1KVLk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:40:27 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33814 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab1KVLkZ (ORCPT
+	id S1758447Ab1KVLko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:40:44 -0500
+Received: from nm37-vm6.bullet.mail.bf1.yahoo.com ([72.30.238.206]:31399 "HELO
+	nm37-vm6.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756937Ab1KVLkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:40:25 -0500
+	Tue, 22 Nov 2011 06:40:43 -0500
+X-Yahoo-Newman-Id: 129403.75202.bm@smtp207.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 8lAZ2J4VM1lI.hqy9JslAJavSQuGxB2D6H1utJTB9diTmGi
+ MvAmXqNlDT0kHLYJ4JX2LgFYaWXmms_dgQB9Cx9Q3Xi697kVO6FBmJ3tJhxx
+ BjLtnzV6o840wsxryTOXoQROW4ukfguK9wfsfOMt5SLgg5996.sXhFrhmy7R
+ ecO5oLOwbEvQR6ArVECqaJi_VrMyuCDz1mH2fcbDqmJvGS3ISYGoQSLfzxD6
+ aGMQONAlqz6ywgo1_YPjr79SvjSXpupMNtO_a6HQTmXBlWcV1OfwIEnRYBT.
+ QrvvmJngUnf52bT00iryb1qDXx.lxfoNCWhV.YgFAPuNsah1QeydVApeH4wH
+ pNX_o89qNRpICsckbIe0YMi9QYGLZqPGh4toB4Abe4Lv7SCSogw--
+X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
+Date: Tue, 22 Nov 2011 06:40:21 -0500
+From: Andrew Watts <akwatts@ymail.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
+Message-ID: <20111122114019.GA20081@zeus>
+References: <20111103155956.GG4417@google.com>
+ <20111103184559.GA3295@zeus>
+ <20111103213959.GP4417@google.com>
+ <20111104134347.GA2480@zeus>
+ <20111104161431.GZ4417@google.com>
+ <20111104173441.GA2157@zeus>
+ <CAH3drwaXcUy1vz8bvHwE2_iga5WUsWn_Dp0oe_0r3UacV0vT_A@mail.gmail.com>
+ <20111104230758.GA7332@zeus>
+ <20111121210908.GJ25776@google.com>
+ <CAH3drwbtWJcPOixW0gze0e0jbTn_uY0x5E=KY8N-WDcb1t8h2w@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.173.4.235]
-In-Reply-To: <874nywpfkd.fsf@rustcorp.com.au>
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com> <874nywpfkd.fsf@rustcorp.com.au>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 22 Nov 2011 13:40:04 +0200
-Message-ID: <CAK=WgbaF=yvGXvJdENrMoi4wWxaQa3UpbtsRm3mcA3cFdDCitA@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Introducing a generic AMP framework
-To: Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH3drwbtWJcPOixW0gze0e0jbTn_uY0x5E=KY8N-WDcb1t8h2w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 6:00 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Tue, 25 Oct 2011 11:48:19 +0200, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->> Modern SoCs typically employ a central symmetric multiprocessing (SMP)
->> application processor running Linux, with several other asymmetric
->> multiprocessing (AMP) heterogeneous processors running different instances
->> of operating system, whether Linux or any other flavor of real-time OS.
->
-> OK, I'm not even sure who this should go through
+On Mon, Nov 21, 2011 at 04:29:23PM -0500, Jerome Glisse wrote:
+> On Mon, Nov 21, 2011 at 4:09 PM, Tejun Heo <tj@kernel.org> wrote:
+> >
+> > Out of curiosity, did it get somewhere?
+> >
+> > Thanks.
+> >
+> > --
+> > tejun
+> >
+> 
+> Yeah i am pretty sure i know what's going wrong but there is no easy
+> fix, there is a deadlock in the kernel when gem wait ioctl is call on
+> scanout buffer and that a gpu reset happen
+> 
+> Cheers,
+> Jerome
 
-We shortly discussed this in ELCE, and this can either go through the
-arm-soc tree or directly to Linus; however Arnd prefers really.
+Tejun, I was about to send a similar email asking about this; many thanks
+for sharing my interest.
 
-The previous RFC iteration was reviewed quite extensively (especially
-by Grant. thanks Grant!) but I was hoping to get some more review or
-feedback on this iteration as well (any form of Acked-by, Reviewed-by,
-+1-by or No-way-by are welcome).
+Jerome, sounds encouraging that you think you know what the issue is. What
+are the next steps? Please let me know how I can assist on my end (code 
+validation, etc.).
 
-At this point I know of at least four vendors (besides TI) who are
-actively looking into supporting this, and it's getting a bit hard to
-collaborate, so I plan to get this into linux-next later this week
-(minus the virtio-spec.txt change which I'll send directly to you,
-Rusty) in the hope of getting this merged into 3.3.
+~ Andy
 
->, but no objections here
-
-Can I add your Acked-by on the virtio parts (mainly patches 3 and 6) ?
-
-Thanks!
-Ohad.
