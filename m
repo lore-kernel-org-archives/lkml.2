@@ -1,144 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab1KVQuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 11:50:23 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59464 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab1KVQuV convert rfc822-to-8bit (ORCPT
+	id S1757995Ab1KVQxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 11:53:12 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42139 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754121Ab1KVQxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 11:50:21 -0500
-References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com> <20111118220849.GA25205@suse.de> <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com> <20111121173620.GA5028@suse.de> <20111121181724.GB12011@local> <4498E0C9-B5E9-44B5-8868-140D6416100E@gmail.com> <20111122153525.GB17268@redhat.com>
-In-Reply-To: <20111122153525.GB17268@redhat.com>
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <40906F5E-5E97-44CF-AB95-40355204B63F@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Greg KH <gregkh@suse.de>,
-        tglx@linutronix.de, linux-pci@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Subject: Re: extra large DMA buffer for PCI-E device under UIO
-Date: Tue, 22 Nov 2011 11:54:22 -0500
-To: "Michael S. Tsirkin" <mst@redhat.com>
-X-Mailer: Apple Mail (2.1084)
+	Tue, 22 Nov 2011 11:53:11 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: SkLTNzIVM1meAYkjFxnPREAU31xXsJJIGkEHUbLQE.jOkAj
+ pxzCTwVgv8Eukt0bovS3RsImLusJheZfGpMkVWCMuL3R2IbYyjjCb50P4ey8
+ 1d38GY_qiPqoJohiV_vYAwpGRQsdG8pSYxWOBuNbPN4SD_XjrUXs8aWZLgzi
+ IHg2ad3yH3WnUbhkNbvgE7YqLTOmULLrSNquegfuOYYHoGoVhijbYMBAaXnf
+ aNOw9jGqH2YHB7DExMYfbxDVBD.NK0pa6NSxGNSjEUqSnsZF9QNM3zD3HWtn
+ 5yrhxs337qzOSraucuKkd0XZjVvjhn67gxPw.CP29EtKQKvDxJusKflO8oRv
+ wnQ1hyn.zl5ny9Igekp9yShwE1NDDykpLulYBqTb61kDPxw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 22 Nov 2011 10:53:06 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: slub: Lockout validation scans during freeing of object
+In-Reply-To: <alpine.DEB.2.00.1111221040300.28197@router.home>
+Message-ID: <alpine.DEB.2.00.1111221052130.28197@router.home>
+References: <alpine.DEB.2.00.1111221033350.28197@router.home> <alpine.DEB.2.00.1111221040300.28197@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A bit heavy handed locking but this should do the trick.
 
-On Nov 22, 2011, at 10:35, Michael S. Tsirkin wrote:
+Subject: slub: Lockout validation scans during freeing of object
 
-> On Tue, Nov 22, 2011 at 10:24:17AM -0500, Jean-Francois Dagenais wrote:
->> 
->> On Nov 21, 2011, at 13:17, Hans J. Koch wrote:
->> 
->>> On Mon, Nov 21, 2011 at 09:36:20AM -0800, Greg KH wrote:
->>>> On Mon, Nov 21, 2011 at 10:31:07AM -0500, Jean-Francois Dagenais wrote:
->>>>> Hi Greg, thanks for your answer...
->>>>> 
->>>>> On Nov 18, 2011, at 17:08, Greg KH wrote:
->>>>> 
->>>>>> On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
->>>>>>> Hello fellow hackers.
->>>>>>> 
->>>>>>> I am maintaining a UIO based driver for a PCI-E data acquisition device.
->>>>>>> 
->>>>>>> I map BAR0 of the device to userspace. I also map two memory areas,
->>>>>>> one is used to feed instructions to the acquisition device, the other
->>>>>>> is used autonomously by the PCI device to write the acquired data.
->>>>>> 
->>>>>> Nice, have a pointer to your driver anywhere so we can include it in the
->>>>>> main kernel tree to make your life easier?
->>>>> As I said in a parallel answer from "Hans J. Koch" <hjk@hansjkoch.de>,
->>>>> the driver, although GPL'ed, is quite uninteresting except for us here at
->>>>> Sonatest.
->>>> 
->>>> I really doubt that,
->>> 
->>> So do I. We never had a driver allocating so much memory.
->>> 
->>>> and you should submit it anyway to allow us to
->>>> change it when the in-kernel apis change in the future.  It will save
->>>> you time in the long run and make things easier for you (look, your
->>>> driver is automatically included in all distros!, people fix your bugs,
->>>> etc.)
->>> 
->>> Exactly.
->>> 
->>>> 
->>>>> About merging the driver to mainline, I guess it would only be interesting for
->>>>> the recipe I demonstrate. Please advise.
->>>> 
->>>> That is a recipe that I'm sure others will use, and need help on in the
->>>> future.
->>> 
->>> They already needed it in the past, and they usually try to get it by
->>> writing me private mail.
->>> 
->>>> 
->>>> So please submit a patch, that will make it easier to help you out.
->>> 
->>> Yes, please do. The more different drivers we have under /drivers/uio, the
->>> better. Didn't you use one of the existing drivers as a template for yours?
->> Of course, and I am making contributions to the kernel as well (ds1wm,  w1_ds2408,
->> ad714x, and more to be merged contribs to blackfin list drivers) because I strongly
->> believe in the community aspect of Linux.
->> 
->> So in the spirit of making the driver more generic, I would like to make this patch
->> something along the lines of a generic uio/pci based large DMA acquisition device
->> driver. Or maybe even complementing the existing uio_generic_pci.c?
->> 
->> The problem is that there are device specific aspects that the "generic" driver would
->> need to take into account, e.g. to map BARx or not, or in our case, there are MFDs
->> embedded in the firmware (xilinx's ds1wm core, and soon, xilinx's spi core). Furthermore,
->> I want the FPGA to be an irq expander since the cores generate interrupts, and a
->> couple of balls on the FPGA are irq signals from external i2c chips.
->> 
->> I don't yet see any way to specify like a setup callback function that could reach a
->> platform module when uio_pci_generic is probing.
->> 
->> I am thinking this through as I write here...
->> 
->> My other persona (C++ programmer) suggests that conceptually, uio_pci_generic is
->> a "base class" and the other more firmware specific items would be in a derived module.
->> In that sense, maybe uio_pci_generic could export it's symbols? So it can be used as
->> uio core functionnality?
->> 
->> So I would still have a module which would contain the specific MFD registration and IRQ
->> functionnality, but the BARx and large DMA mapping would reside in uio_pci_generic...
->> 
->> Any thoughts?
->>> 
->>> Thanks,
->>> Hans
->> Cheers,
->> /jfd
-> 
-> BARx can be mapped through sysfs, right?
-> DMA into userspace really needs registration with an iommu and
-> locking userspace memory. This was discussed in the past but
-> no patch surfaced. You can copy some bits from 'VFIO' prototypes,
-> maybe - search for them.
-That is quite interesting. It really seems like my VT-d recipe to create 128MB for my PCI-e
-FPGA to write into is covered by this patch.
+Slab validation can run right now while the slab free paths prepare
+the redzone fields etc around the objects in preparation of the
+actual freeing of the object. This can lead to false positives.
 
-My problem is that our FPGA is connected to one of the atom E6XX's PCI-e links, so no
-iommu :( Since our first product had VT-d, the FPGA, uio based module and userspace
-code is designed such that the device sees a huge contiguous memory chunk. This is key
-to the performance of the FPGA, which is essentially decoupled from the CPU for it's real-time
-acquisition.
+Take the node lock unconditionally during free so that the validation
+can examine objects without them being disturbed by freeing operations.
 
-Can VFIO work without an IOMMU? Or am I better off with a UIO solution?
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-If it can, I know my current UIO based solution is un-useable without an IOMMU as well. The
-problem I have is that my fallback to using IOMMU mapping, pci_alloc_consistent (i.e. dma_alloc_coherent),
-still will only succeed at 4MB tops, and that's when the module loads from the init scripts. The
-success rate drops rapidly after this moment. Could I get more at arch_init moment maybe?
+---
+ mm/slub.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-And are there any other thoughts about ripping out like 256MB from the kernel boot args and
-initializing it later and use it as userspace mapped DMA buffer?
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-11-22 10:42:19.000000000 -0600
++++ linux-2.6/mm/slub.c	2011-11-22 10:44:34.000000000 -0600
+@@ -2391,8 +2391,15 @@ static void __slab_free(struct kmem_cach
 
-> 
-> -- 
-> MST
+ 	stat(s, FREE_SLOWPATH);
+
+-	if (kmem_cache_debug(s) && !free_debug_processing(s, page, x, addr))
+-		return;
++	if (kmem_cache_debug(s)) {
++
++		/* Lock out any concurrent validate_slab calls */
++		n = get_node(s, page_to_nid(page));
++		spin_lock_irqsave(&n->list_lock, flags);
++
++		if (!free_debug_processing(s, page, x, addr))
++			goto out;
++	}
+
+ 	do {
+ 		prior = page->freelist;
+@@ -2471,6 +2478,7 @@ static void __slab_free(struct kmem_cach
+ 			stat(s, FREE_ADD_PARTIAL);
+ 		}
+ 	}
++out:
+ 	spin_unlock_irqrestore(&n->list_lock, flags);
+ 	return;
 
