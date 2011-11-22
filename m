@@ -1,95 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab1KVU1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:27:18 -0500
-Received: from mail131.messagelabs.com ([216.82.242.99]:44479 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756284Ab1KVU1D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:27:03 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1321993616!3380900!5
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "rmallon@gmail.com" <rmallon@gmail.com>,
-        Rafal Prylowski <prylowski@metasoft.pl>
-Date: Tue, 22 Nov 2011 14:26:52 -0600
-Subject: RE: [PATCH 2/2] dma/ep93xx_dma: prevent ep93xx_dma_tasklet() to
- access empty list
-Thread-Topic: [PATCH 2/2] dma/ep93xx_dma: prevent ep93xx_dma_tasklet() to
- access empty list
-Thread-Index: AcypT1/bJilkEYclRHm3Hk9cp/eRRAABFxng
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3E96DA6B7@AUSP01VMBX24.collaborationhost.net>
-References: <19bcd0ee953116fd71bc1c705636c5fec80608cb.1321990466.git.mika.westerberg@iki.fi>
- <707c0a5c61bd597ceed3871fc3528f687ac0fcff.1321990466.git.mika.westerberg@iki.fi>
-In-Reply-To: <707c0a5c61bd597ceed3871fc3528f687ac0fcff.1321990466.git.mika.westerberg@iki.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757799Ab1KVU2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:28:22 -0500
+Received: from fieldses.org ([174.143.236.118]:42919 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756570Ab1KVU2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:28:20 -0500
+Date: Tue, 22 Nov 2011 15:28:17 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] nfsd: Fix oops when parsing a 0 length export
+Message-ID: <20111122202817.GD21451@fieldses.org>
+References: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321611289-21809-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 22, 2011 12:46 PM, Mika Westerberg wrote:
-> From: Rafal Prylowski <prylowski@metasoft.pl>
->
-> If dma_terminate_all() is called before the ep93xx_dma_tasklet() gets to run,
-> it tries to access an empty ->active list causing following OOPS:
+On Fri, Nov 18, 2011 at 12:14:49PM +0200, Sasha Levin wrote:
+> expkey_parse() oopses when handling a 0 length export. This is easily
+> triggerable from usermode by writing 0 bytes into
+> '/proc/[proc id]/net/rpc/nfsd.fh/channel'.
 
-[snip]
+Thanks--how did you run across this?
 
-> As we expect that the ->active list is never empty when the ep93xx_dma_tasklet()
-> is called, we fix this by adding a new flag per channel EP93XX_DMA_IS_RUNNING
-> which determines whether the channel is running or not.
+--b.
+
 > 
-> We also add BUG_ON() to ep93xx_dma_get_active() to make sure that similar
-> problems will be caught early.
+> Below is the log:
 > 
-> Signed-off-by: Rafal Prylowski <prylowski@metasoft.pl>
-> [added a flag instead of just checking for empty list]
-> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+> [ 1402.286893] BUG: unable to handle kernel paging request at ffff880077c49fff
+> [ 1402.287632] IP: [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
+> [ 1402.287632] PGD 2206063 PUD 1fdfd067 PMD 1ffbc067 PTE 8000000077c49160
+> [ 1402.287632] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1402.287632] CPU 1
+> [ 1402.287632] Pid: 20198, comm: trinity Not tainted 3.2.0-rc2-sasha-00058-gc65cd37 #6
+> [ 1402.287632] RIP: 0010:[<ffffffff812b4b99>]  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
+> [ 1402.287632] RSP: 0018:ffff880077f0fd68  EFLAGS: 00010292
+> [ 1402.287632] RAX: ffff880077c49fff RBX: 00000000ffffffea RCX: 0000000001043400
+> [ 1402.287632] RDX: 0000000000000000 RSI: ffff880077c4a000 RDI: ffffffff82283de0
+> [ 1402.287632] RBP: ffff880077f0fe18 R08: 0000000000000001 R09: ffff880000000000
+> [ 1402.287632] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880077c4a000
+> [ 1402.287632] R13: ffffffff82283de0 R14: 0000000001043400 R15: ffffffff82283de0
+> [ 1402.287632] FS:  00007f25fec3f700(0000) GS:ffff88007d400000(0000) knlGS:0000000000000000
+> [ 1402.287632] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1402.287632] CR2: ffff880077c49fff CR3: 0000000077e1d000 CR4: 00000000000406e0
+> [ 1402.287632] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 1402.287632] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 1402.287632] Process trinity (pid: 20198, threadinfo ffff880077f0e000, task ffff880077db17b0)
+> [ 1402.287632] Stack:
+> [ 1402.287632]  ffff880077db17b0 ffff880077c4a000 ffff880077f0fdb8 ffffffff810b411e
+> [ 1402.287632]  ffff880000000000 ffff880077db17b0 ffff880077c4a000 ffffffff82283de0
+> [ 1402.287632]  0000000001043400 ffffffff82283de0 ffff880077f0fde8 ffffffff81111f63
+> [ 1402.287632] Call Trace:
+> [ 1402.287632]  [<ffffffff810b411e>] ? lock_release+0x1af/0x1bc
+> [ 1402.287632]  [<ffffffff81111f63>] ? might_fault+0x97/0x9e
+> [ 1402.287632]  [<ffffffff81111f1a>] ? might_fault+0x4e/0x9e
+> [ 1402.287632]  [<ffffffff81a8bcf2>] cache_do_downcall+0x3e/0x4f
+> [ 1402.287632]  [<ffffffff81a8c950>] cache_write.clone.16+0xbb/0x130
+> [ 1402.287632]  [<ffffffff81a8c9df>] ? cache_write_pipefs+0x1a/0x1a
+> [ 1402.287632]  [<ffffffff81a8c9f8>] cache_write_procfs+0x19/0x1b
+> [ 1402.287632]  [<ffffffff8118dc54>] proc_reg_write+0x8e/0xad
+> [ 1402.287632]  [<ffffffff8113fe81>] vfs_write+0xaa/0xfd
+> [ 1402.287632]  [<ffffffff8114142d>] ? fget_light+0x35/0x9e
+> [ 1402.287632]  [<ffffffff8113ff8b>] sys_write+0x48/0x6f
+> [ 1402.287632]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
+> [ 1402.287632] Code: c0 c9 c3 55 48 63 d2 48 89 e5 48 8d 44 32 ff 41 57 41 56 41 55 41 54 53 bb ea ff ff ff 48 81 ec 88 00 00 00 48 89 b5 58 ff ff ff
+> [ 1402.287632]  38 0a 0f 85 89 02 00 00 c6 00 00 48 8b 3d 44 4a e5 01 48 85
+> [ 1402.287632] RIP  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
+> [ 1402.287632]  RSP <ffff880077f0fd68>
+> [ 1402.287632] CR2: ffff880077c49fff
+> [ 1402.287632] ---[ end trace 368ef53ff773a5e3 ]---
+> 
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: linux-nfs@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 > ---
->  drivers/dma/ep93xx_dma.c |   25 ++++++++++++++++---------
->  1 files changed, 16 insertions(+), 9 deletions(-)
+>  fs/nfsd/export.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-> index 6181811..cc3a302 100644
-> --- a/drivers/dma/ep93xx_dma.c
-> +++ b/drivers/dma/ep93xx_dma.c
-> @@ -155,6 +155,8 @@ struct ep93xx_dma_chan {
->  	unsigned long			flags;
->  /* Channel is configured for cyclic transfers */
->  #define EP93XX_DMA_IS_CYCLIC		0
-> +/* Channel is enabled */
-> +#define EP93XX_DMA_IS_RUNNING		1
+> diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+> index 62f3b90..5f312ab 100644
+> --- a/fs/nfsd/export.c
+> +++ b/fs/nfsd/export.c
+> @@ -87,7 +87,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
+>  	struct svc_expkey key;
+>  	struct svc_expkey *ek = NULL;
 >  
->  	int				buffer;
->  	dma_cookie_t			last_completed;
-> @@ -246,6 +248,7 @@ static void ep93xx_dma_set_active(struct ep93xx_dma_chan *edmac,
->  static struct ep93xx_dma_desc *
->  ep93xx_dma_get_active(struct ep93xx_dma_chan *edmac)
->  {
-> +	BUG_ON(list_empty(&edmac->active));
->  	return list_first_entry(&edmac->active, struct ep93xx_dma_desc, node);
-
-Mika,
-
-Thanks for looking into this.
-
-I still don't like the BUG_ON here.  Is it even possible to get here with
-an empty list now that your catching it in the tasklet?
-
-But, ep93xx_dma_set_active() also has a BUG_ON test so...
-
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> -	if (mesg[mlen-1] != '\n')
+> +	if (mlen < 1 || mesg[mlen-1] != '\n')
+>  		return -EINVAL;
+>  	mesg[mlen-1] = 0;
+>  
+> -- 
+> 1.7.8.rc1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
