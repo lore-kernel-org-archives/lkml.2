@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1KVNPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 08:15:32 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51330 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab1KVNPb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:15:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321958457.5148.17.camel@twins>
-References: <20111116145320.GA20146@quad>
-	<1321958457.5148.17.camel@twins>
-Date: Tue, 22 Nov 2011 14:15:30 +0100
-Message-ID: <CABPqkBT-ZPZC2Ku6NjyMygWUU+kMr3h9FCdKTAjvhR6ywFmNqw@mail.gmail.com>
-Subject: Re: [PATCH] perf_event: fix loss of notification with multi-event sampling
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
+	id S1753933Ab1KVNRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 08:17:08 -0500
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:45140 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751766Ab1KVNRG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 08:17:06 -0500
+X-AuditID: 12074425-b7f116d0000008fe-44-4ecba0d12154
+Subject: Re: [3.2-rc2] loop device balance_dirty_pages_nr throttling hang
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=windows-1252
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20111122104921.GE8098@dastard>
+Date: Tue, 22 Nov 2011 08:17:07 -0500
+Cc: Theodore Tso <tytso@MIT.EDU>, Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Message-Id: <ED3D1B07-DEC4-43C8-80A9-739C4973ABF9@mit.edu>
+References: <20111121142056.GF2386@dastard> <20111122035629.GE20982@localhost> <20111122102931.GD8098@dastard> <20111122104921.GE8098@dastard>
+To: Dave Chinner <david@fromorbit.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42IRYrdT0b244LSfwaseIYstx+4xWrx/vp7Z
+	Ys/ekywWl3fNYXNg8Ti1SMJj8Z6XTB6fN8kFMEdx2aSk5mSWpRbp2yVwZWzo6GUruMlWcW3e
+	bbYGxrWsXYycHBICJhJtt+eyQ9hiEhfurWfrYuTiEBLYxyix4vM0KGcDo8Th9pdMEM5pJokH
+	ly8DtXBwCAt4SiybpAjSzStgLLHm1jsWEJtZQE9ix/VfYBvYBJQk7nzaDxbnFNCRWLulE2wb
+	i4CqxPO9HxhBZjIL3GSUmPPiBBNEs7bEsoWvmUHm8wpYSXSt8YXY28co0fRlKthQEQE1iUmT
+	djBDnC0v0fL1DtsERsFZSO6YheSOWUjGLmBkXsUom5JbpZubmJlTnJqsW5ycmJeXWqRroZeb
+	WaKXmlK6iREc3C6qOxgnHFI6xCjAwajEw/tr8ik/IdbEsuLK3EOMkhxMSqK8C+ed9hPiS8pP
+	qcxILM6ILyrNSS0+xCjBwawkwnulHSjHm5JYWZValA+TkuZgURLnfb3DwU9IID2xJDU7NbUg
+	tQgmK8PBoSTBe3c+UKNgUWp6akVaZk4JQpqJgxNkOA/Q8IsgNbzFBYm5xZnpEPlTjIpS4rxP
+	QBICIImM0jy4XljyecUoDvSKMC8XMBUJ8QATF1z3K6DBTECDp609ATK4JBEhJdXAKPqwpmy9
+	iF/xq33rPA/W/LqRLfuzMtRC+OW9W/9bfl8WvVDsGHS/S2iC1Nm0zZ0nH31rdlGYfsFzw3n7
+	bCW7uI6fGvI2u+XetpZkbTCvj5/Zc7ZVlElqS4v2vie3ooPvBzi5ei4o8TO19Oi/rlkv2aaw
+	0u6Kzq1He6R3b1JP410kZliR7rdNiaU4I9FQi7moOBEAfDWymRkDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 11:40 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2011-11-16 at 15:53 +0100, Stephane Eranian wrote:
->> +       /* ring_buffer waitq pointer */
->> +       wait_queue_head_t               *waitq;
->
-> Not a big issue, but is there a reason to keep this pointer instead of
-> always having to do:
->
->  rcu_read_lock();
->  rb = rcu_dereference(event->rb);
->  if (rb)
->    wake_up_all(rb->waitq);
->  rcu_read_unlock();
->
-> Hmm, looking at that there must be a reason we go through all the RCU
-> trouble for event->rb, assuming there is, your lack of rcu in say
-> perf_poll() could go funny.
->
-I think we go drop waitq and go through event->rb each time we need to get
-to the wait queue.
 
-> /me ponders..
->
-> Ah, could it be a race of poll()/wakeup() vs perf_event_set_output() ?
->
-Are you saying that by dropping event->waitq in favor of event->rb->waitq
-we make this problem disappear due to rcu protections?
+On Nov 22, 2011, at 5:49 AM, Dave Chinner wrote:
 
-Poll_wait() is a blocking call. It may wait on a stale waitq.  But that problem
-was probably already there. I am not clear as to what to do about that.
-in perf_set_output() you would need to wakeup from poll_wait() and then
-go back in with the new waitq.
+> But, I just noticed that the discard that mkfs.ext4 will result in
+> all the extents being discarded in the underlying image file (due to
+> the fact the loopback device now supports hole punching), so the
+> previous state of the image file is getting trashed by the mkfs.ext4
+> execution, too. I think I already had a ext4 filesystem in some state
+> before I started running this manual prealloc test....
 
-Similarly, I am not clear as to what happens when you close an event for
-which you have  a waiter in poll_wait(). I assume you wakeup from it.
-But I don't see where that's implemented.
+Which version of mkfs.ext4 are you using?   We've disabled the discard by default (unless configured in via a command-line option or a /etc/mke2fs.conf setting since no distribution apparently wants to be responsible for running supplying a command that causes a crap SSD to turning into a brick; personally, I'd blame the manufacturer of the crap SSD, but�.)
 
+-- Ted
 
-> Suppose you're a threaded proglet and either one cpu/thread has an
-> incoming event that does a wakeup, or one thread is stuck in poll()
-> whilst another thread does perf_event_set_output(), it could swizzle the
-> event->rb right out from under you.
->
-> Now, this is of course a somewhat silly thing to do.. but still it
-> shouldn't make things go *bang*.
->
-> Now the above wake_up_all() thing would work just fine, its just poll()
-> that I'm not sure how to fix.
->
