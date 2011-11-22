@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1KVRs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 12:48:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61277 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab1KVRs6 convert rfc822-to-8bit (ORCPT
+	id S1754684Ab1KVRvD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 12:51:03 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53386 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab1KVRvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 12:48:58 -0500
+	Tue, 22 Nov 2011 12:51:01 -0500
+Date: Wed, 23 Nov 2011 02:50:55 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Nai Xia <nai.xia@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] mm: page allocator: Limit when direct reclaim is
+ used when compaction is deferred
+Message-ID: <20111122175055.GE15253@barrios-laptop.redhat.com>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+ <1321900608-27687-7-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20111122174419.GI2203@ZenIV.linux.org.uk>
-References: <20111122174419.GI2203@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 22 Nov 2011 09:48:36 -0800
-X-Google-Sender-Auth: cVh5oSRv5bfgoirlel-LWgWlvkc
-Message-ID: <CA+55aFz+9TN2z+q9vH2g0wMq6_X8AfYANrntGQd_et+U5+c74Q@mail.gmail.com>
-Subject: Re: [git pull] vfs fix
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321900608-27687-7-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 9:44 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> Really embarrassing braino; kudos to jlayton for catching that one.
-> Please, pull from
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
->
-> Al Viro (1):
->      mount_subtree() pointless use-after-free
+On Mon, Nov 21, 2011 at 06:36:47PM +0000, Mel Gorman wrote:
+> If compaction is deferred, we enter direct reclaim to try reclaim the
+> pages that way. For small high-orders, this has a reasonable chance
+> of success. However, if the caller as specified __GFP_NO_KSWAPD to
+> limit the disruption to the system, it makes more sense to fail the
+> allocation rather than stall the caller in direct reclaim. This patch
+> will skip direct reclaim if compaction is deferred and the caller
+> specifies __GFP_NO_KSWAPD.
+> 
+> Async compaction only considers a subset of pages so it is possible for
+> compaction to be deferred prematurely and not enter direct reclaim even
+> in cases where it should. To compensate for this, this patch also defers
+> compaction only if sync compaction failed.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
 
-Hmm. That's not at all what I get.
+It does make sense to me. 
 
-Or rather, that's just *one* of the commits I get. I also get these two:
-
-      microblaze: bury asm/namei.h
-      iio: fix a leak due to improper use of anon_inode_getfd()
-
-which look like they may be valid, but for all I know you meant to
-leave them for the next merge window. So not pulled. Please check your
-tree,
-
-                Linus
+-- 
+Kind regards,
+Minchan Kim
