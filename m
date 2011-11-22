@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1KVD4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 22:56:33 -0500
-Received: from mga03.intel.com ([143.182.124.21]:63080 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab1KVD4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 22:56:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,551,1315206000"; 
-   d="scan'208";a="77810085"
-Date: Tue, 22 Nov 2011 11:56:29 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [3.2-rc2] loop device balance_dirty_pages_nr throttling hang
-Message-ID: <20111122035629.GE20982@localhost>
-References: <20111121142056.GF2386@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121142056.GF2386@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753773Ab1KVEDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 23:03:10 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57897 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab1KVEDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 23:03:09 -0500
+Message-ID: <1321934562.4694.4.camel@js-netbook>
+Subject: [GIT PULL] time/clocksource changes for 3.3
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Deepak Saxena <dsaxena@linaro.org>
+Date: Mon, 21 Nov 2011 20:02:42 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11112204-7408-0000-0000-000000FAD9EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hey Thomas,
+	Just wanted to get my current 3.3 queue pulled into -tip for testing.
+The clocksource changes have in a few cases been tested and acked by
+maintainers, but others have been ignored despite sending them out
+periodically over the last year. If you'd rather they go through the
+maintainer trees, let me know and I'll yank them. 
 
-On Mon, Nov 21, 2011 at 10:20:56PM +0800, Dave Chinner wrote:
-> Hi Fengguang,
-> 
-> I just found a way of hanging a system and taking it down. I haven't
-> tried to narrow down the test case - it's pretty simple - because it
-> time for sleep here.
+thanks
+-john
 
-Yeah, once the global dirty limit is exceeded, the system would appear
-hang because many applications will block in balance_dirty_pages().
+The patches are available in the git repository at:
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.3/tip/timers/core
 
-I created a script for this case, however cannot reproduce it..
+Dan McGee (1):
+      time: fix bogus comment in timekeeping_get_ns_raw
 
-The test box has 32GB memory and 110GB /dev/sda7, so I lowered
-the dirty_bytes=400MB and xfs "-b size=10g" explicitly in the script.
+Deepak Saxena (4):
+      time: x86: Remove CLOCK_TICK_RATE from tsc code
+      time: x86: Remove CLOCK_TICK_RATE from mach_timer.h
+      time: x86: Remove CLOCK_TICK_RATE from acpi_pm clocksource driver
+      time: x86: Replace LATCH with PIT_LATCH in i8253 clocksource driver
 
-During the test run on 3.2.0-rc1, I find the dirty pages rarely exceed
-the background dirty threshold (200MB).
+John Stultz (7):
+      time: Fix spelling mistakes in new comments
+      clocksource: m86k: Convert to clocksource_register_hz/khz
+      clocksource: parisc: Convert to clocksource_register_hz/khz
+      clocksource: um: Convert to clocksource_register_hz/khz
+      clocksource: xtensa: Convert to clocksource_register_hz/khz
+      clocksource: cris: Convert to clocksource_register_khz
+      clocksource: Convert tcb_clksrc to use clocksource_register_hz/khz
 
-Would you try run this and see if this it's a problem of the test script?
-
-root@snb /home/wfg# cat ./test-loop-fallocate.sh
-#!/bin/sh
-
-# !!!change and uncomment this before run!!!
-# DEV=/dev/sda7
-
-echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
-echo 1 > /debug/tracing/events/writeback/global_dirty_state/enable
-
-echo $((400<<20)) > /proc/sys/vm/dirty_bytes
-mkfs.xfs -f -d size=10g $DEV
-mount $DEV /mnt/scratch
-xfs_io -f -c "truncate 20T" /mnt/scratch/scratch.img
-losetup /dev/loop0 /mnt/scratch/scratch.img
-mkfs.ext4 /dev/loop0
-mkdir /mnt/scratch/scratch
-mount /dev/loop0 /mnt/scratch/scratch
-time xfs_io -f -F -c "truncate 15T " -c "falloc 0 15T" /mnt/scratch/scratch/foo
-umount /mnt/scratch/scratch
-losetup -d /dev/loop0
-umount /mnt/scratch
-
-root@snb /home/wfg# ./test-loop-fallocate.sh
-meta-data=/dev/sda7              isize=256    agcount=4, agsize=655360 blks
-         =                       sectsz=512   attr=2, projid32bit=0
-data     =                       bsize=4096   blocks=2621440, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0
-log      =internal log           bsize=4096   blocks=2560, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-mke2fs 1.42-WIP (16-Oct-2011)
-Discarding device blocks: done
-Filesystem label=
-OS type: Linux
-Block size=4096 (log=2)
-Fragment size=4096 (log=2)
-Stride=0 blocks, Stripe width=0 blocks
-335544320 inodes, 5368709120 blocks
-268435456 blocks (5.00%) reserved for the super user
-First data block=0
-163840 block groups
-32768 blocks per group, 32768 fragments per group
-2048 inodes per group
-Superblock backups stored on blocks:
-        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
-        4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
-        102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
-        2560000000, 3855122432
-
-Allocating group tables: done
-Writing inode tables: done
-Creating journal (32768 blocks): done
-Writing superblocks and filesystem accounting information: done
+ arch/cris/arch-v32/kernel/time.c        |    4 +---
+ arch/m68k/platform/68328/timers.c       |    4 +---
+ arch/m68k/platform/coldfire/dma_timer.c |    5 +----
+ arch/m68k/platform/coldfire/pit.c       |    4 +---
+ arch/m68k/platform/coldfire/sltimers.c  |    4 +---
+ arch/m68k/platform/coldfire/timers.c    |    4 +---
+ arch/parisc/kernel/time.c               |    6 +-----
+ arch/um/kernel/time.c                   |    6 ++----
+ arch/x86/include/asm/mach_timer.h       |    2 +-
+ arch/x86/kernel/tsc.c                   |    4 ++--
+ arch/xtensa/kernel/time.c               |   13 +------------
 
 
-real    0m38.323s
-user    0m0.000s
-sys     0m25.203s
-
-Thanks,
-Fengguang
