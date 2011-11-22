@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1KVIT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 03:19:57 -0500
-Received: from fmmailgate06.web.de ([217.72.192.247]:36315 "EHLO
-	fmmailgate06.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab1KVIT4 convert rfc822-to-8bit (ORCPT
+	id S1755868Ab1KVIVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 03:21:45 -0500
+Received: from szxga04-in.huawei.com ([119.145.14.67]:50300 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab1KVIVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 03:19:56 -0500
-Date: Tue, 22 Nov 2011 09:19:54 +0100 (CET)
-From: "Nicolas Kalkhof" <nkalkhof@web.de>
-To: "Mike Galbraith" <efault@gmx.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        maciej.rutecki@gmail.com
-Message-ID: <1525712996.2585575.1321949994931.JavaMail.fmail@mwmweb003>
-Subject: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: normal
-Sensitivity: Normal
-X-Provags-ID: V01U2FsdGVkX1+U7TfQcVPFXfXjSKo+nsbgGsmyI6pA1TgaI+N7VnggF+tZI/4HlFrG
- 4PQiShWIe7cIFZONJXUP/w==
+	Tue, 22 Nov 2011 03:21:43 -0500
+Date: Tue, 22 Nov 2011 08:20:51 +0000
+From: Qianhuibin <qianhuibin@huawei.com>
+Subject: RE: A kernel panic occurred when I do some operation about vlan
+In-reply-to: <20111122074850.GC2190@minipsycho>
+X-Originating-IP: [10.166.82.152]
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        Wuchangyi <wuchangyi@huawei.com>, Qinchuanyu <qinchuanyu@huawei.com>,
+        Zhanghaoyu <zhanghaoyu@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lichunhe <lichunhe@huawei.com>, Wangzhenguo <wangzhenguo@huawei.com>
+Message-id: <FF4D6E6C1D10244088EA772C65CB346E015195E2@szxeml528-mbs.china.huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-language: en-US
+Accept-Language: en-US, zh-CN
+Thread-topic: A kernel panic occurred when I do some operation about vlan
+Thread-index: Acyo5R8O+tzxPc1xQEqrILDu3CUQ7v//hf+AgACOSUo=
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-CFilter-Loop: Reflected
+References: <FF4D6E6C1D10244088EA772C65CB346E015195A8@szxeml528-mbs.china.huawei.com>
+ <20111122074850.GC2190@minipsycho>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Hi Mike,
-
-thanks for your reply! I didn't set any polling explicitly.
-
-My boot params are:
-intel_iommu=off pcie_aspm=force i915.powersave=1 i915.i915_enable_rc6=1
-
-and in the cpufrequtils startup daemon the only parameter set is:
-# Options when starting cpufreq (given to the `cpufreq-set` program)
-START_OPTS="--governor ondemand"
-
-egrep "IDLE|GOV" .config yields:
-
-CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-CONFIG_ARCH_HAS_DEFAULT_IDLE=y
-# CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
-# CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
-CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
-# CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
-CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
-CONFIG_CPU_FREQ_GOV_POWERSAVE=y
-CONFIG_CPU_FREQ_GOV_USERSPACE=y
-CONFIG_CPU_FREQ_GOV_ONDEMAND=y
-CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
-CONFIG_CPU_IDLE=y
-CONFIG_CPU_IDLE_GOV_LADDER=y
-CONFIG_INTEL_IDLE=y
-# CONFIG_I7300_IDLE is not set
-
-Any advice?
-
-Thanks and Regards
-Nic
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAM8Lt62030304
 
 
+We find the crash on SLES11SP1.
 
------Urspr√ºngliche Nachricht-----
-Von: "Mike Galbraith" <efault@gmx.de>
-Gesendet: Nov 22, 2011 6:03:03 AM
-An: "Nicolas Kalkhof" <nkalkhof@web.de>
-Betreff: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
+The igb version is 3.0.6-k2 which comes with SLES11SP1
 
->On Mon, 2011-11-21 at 22:40 +0100, Nicolas Kalkhof wrote:
->> This happens on my machine after some minutes, too when running X and
->> the trinity desktop. the cpu continuously uses up additional ~10 watts
->> comparing to older 3.1 kernels. The issue remains high even after I
->> kill X. A closer investigation shows that poll_idle uses up the cpu
->> (see dump below). Is it normal for poll_idle to use up all ressources?
->
->poll_idle should not consume cycles on i7 unless you booted idle=poll,
->or miss-configured the kernel.
->
->egrep 'IDLE|GOV' .config
->
->CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
->CONFIG_ARCH_HAS_DEFAULT_IDLE=y
->CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
-># CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
-># CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
-># CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
->CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
->CONFIG_CPU_FREQ_GOV_POWERSAVE=m
->CONFIG_CPU_FREQ_GOV_USERSPACE=m
->CONFIG_CPU_FREQ_GOV_ONDEMAND=m
->CONFIG_CPU_FREQ_GOV_CONSERVATIVE=m
->CONFIG_CPU_IDLE=y
->CONFIG_CPU_IDLE_GOV_LADDER=y
->CONFIG_CPU_IDLE_GOV_MENU=y
->CONFIG_INTEL_IDLE=y
->CONFIG_I7300_IDLE_IOAT_CHANNEL=y
->CONFIG_I7300_IDLE=m
->CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND=y
->CONFIG_DEVFREQ_GOV_PERFORMANCE=y
->CONFIG_DEVFREQ_GOV_POWERSAVE=y
->CONFIG_DEVFREQ_GOV_USERSPACE=y
+
+________________________________________
+From: Jiri Pirko [jpirko@redhat.com]
+Sent: Tuesday, November 22, 2011 15:48
+To: Qianhuibin
+Cc: jeffrey.t.kirsher@intel.com; e1000-devel@lists.sourceforge.net; davem@davemloft.net; Wuchangyi; Qinchuanyu; Zhanghaoyu
+Subject: Re: A kernel panic occurred when I do some operation about vlan
+
+Tue, Nov 22, 2011 at 08:11:51AM CET, qianhuibin@huawei.com wrote:
+>Hi, all
+>A kernel panic occurred when I do some operation about vlan.
 >
 >
+>The operation is as below:
+>ifconfig eth2 up
+>modprobe bonding
+>modprobe 8021q
+>ifconfig bond0 up
+>ifenslave bond0 eth2
+>vconfig add eth2 3300
+>vconfig add bond0 33
+>vconfig rem eth2.3300
+>
+>
+>the panic stack is as below:
+>[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
+>[<ffffffff80378917>] notifier_call_chain+0x37/0x70
+>[<ffffffff80372122>] panic+0xa2/0x195
+>[<ffffffff80376ed8>] oops_end+0xd8/0x140
+>[<ffffffff8001bea7>] no_context+0xf7/0x280
+>[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
+>[<ffffffff80376318>] page_fault+0x28/0x30
+>[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
+>[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
+>[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
+>[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
+>[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
+>[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
+>[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
+>[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
+>[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
+>[<00007f108a2b8bd7>] 0x7f108a2b8bd7
+>
+>
+>And the nic is as below:
+>[root@localhost ~]# ethtool -i eth2
+>driver: igb
+>version: 3.0.6-k2
+>firmware-version: 1.2-1
+>bus-info: 0000:04:00.0
+>
+>
+># lspci | grep Eth
+>01:00.0 Ethernet controller: Intel Corporation 82576 Gigabit Network Connection (rev 01)
+>
+>
+>kernel version£∫
+>2.6.32.12-0.7 also happen in 2.6.32-131
 
+What kernel is this? RHEL? And what driver you are using? The one which
+came with kernel? In case of [yes, yes] answers I suggest filling up bug
+at bugzilla.redhat.com
 
-___________________________________________________________
-SMS schreiben mit WEB.DE FreeMail - einfach, schnell und
-kostenguenstig. Jetzt gleich testen! http://f.web.de/?mc=021192
+Jirka
+
+>
+>
+>I had tried the same operation on other nics, like tg3,bnx2. But they haven°Øt panic.
+>So I find the reason is that igb have two more netdev_ops (ndo_vlan_rx_add_vid and ndo_vlan_rx_kill_vid) than tg3 and bnx2.
+>I think the reason of panic is that when ndo_vlan_rx_kill_vid has been called, the vlgrp haven°Øt been correctly find.
+>
+>
+>My question is what the purpose of  "vlan_group_set_device(adapter->vlgrp, vid, NULL);" in method igb_vlan_rx_kill_vid?
+>
+>unregister_vlan_dev(vlan.c)  has done the same thing after ops->ndo_vlan_rx_kill_vid was called.
+>
+>If I delete it , Would it cause somthing bad?
+>
+>
+>qinchuanyu
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
