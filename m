@@ -1,142 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab1KVNnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 08:43:35 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34152 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1KVNne convert rfc822-to-8bit (ORCPT
+	id S1755501Ab1KVNqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 08:46:14 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34600 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1KVNqN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:43:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321917453.10276.3.camel@pjaxe>
-References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
-	<1321917453.10276.3.camel@pjaxe>
-Date: Tue, 22 Nov 2011 14:43:33 +0100
-Message-ID: <CAJfGthT1Fbez_oyfjepo8gdh4BFhpfUPAX45aeRe+8dMd=Ku=Q@mail.gmail.com>
-Subject: Re: softirq oops from b44_poll
-From: Xander Hover <lkml@hover.be>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Nov 2011 08:46:13 -0500
+Message-ID: <1321969559.14799.7.camel@twins>
+Subject: RE: [PATCH v2 5/5] perf: Enable applicable siblings when group
+ leader is enable-on-exec
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Zhu, DengCheng" <dczhu@mips.com>
+Cc: "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Nov 2011 14:45:59 +0100
+In-Reply-To: <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>
+References: <1321932601-21128-1-git-send-email-dczhu@mips.com>
+	,<1321959115.5148.22.camel@twins>
+	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested on 3.1.1 and 3.2_rc2+ now.
-Fix is working as expected.
+On Tue, 2011-11-22 at 13:24 +0000, Zhu, DengCheng wrote:
+> > ________________________________________
+> > From: Peter Zijlstra [a.p.zijlstra@chello.nl]
+> > Sent: Tuesday, November 22, 2011 6:51 PM
+> > To: Zhu, DengCheng
+> > Cc: Barzilay, Eyal; Fortuna, Zenon; Paul Mackerras; Ingo Molnar; Arnaldo Carvalho de Melo; ralf@linux-mips.org; LKML
+> > Subject: Re: [PATCH v2 5/5] perf: Enable applicable siblings when group leader is enable-on-exec
+> >
+> > On Tue, 2011-11-22 at 11:30 +0800, Deng-Cheng Zhu wrote:
+> >> Currently, when grouped events are created disabled and enable-on-exec, the
+> >> siblings won't be enabled on exec in fact. The problem looks like this:
+> >
+> > Arguably that's a daft thing to do, since if the leader is disabled the
+> > group won't get scheduled anyway. But I guess we should at least try to
+> > deal with it when people do do it.
+> 
+> Well, by "grouped events" I mean "all of the grouped events", not only the
+> group leader. In fact the leader (and only the leader) will be enabled by
+> going through ctx->flexible_groups in perf_event_enable_on_exec().
 
-Kind regards,
+Right, I understood that. What I said was daft was to tag the
+non-leaders as enabled_on_exec,disabled. They wouldn't get scheduled
+anyway for as long as the leader is off.
 
-Xander Hover
+> > Seems perf-stat is a bit daft this way.
+> >
+> >> This patch fixes it.
+> >
+> > I guess it does, but its not pretty, event_enable_on_exec() already
+> > calls __perf_event_mark_enable(), now this recursion is limited because
+> > siblings can't have a sibling list of their own, but still.
+> 
+> I did it like this just by reading the code comment of
+> __perf_event_mark_enabled(): "Enabling the leader of a group effectively
+> enables all the group members that aren't explicitly disabled ... Note:
+> this works for group members as well as group leaders since the non-leader
+> members' sibling_lists will be empty."
+> 
+> So I suppose dealing with siblings' state in this traversal is the right
+> thing to do and introduces minimal code turmoil, although the latter is by
+> no means critical.
 
+Yeah, I just don't really like the recursion thing... Also, there's more
+ways to get to __perf_event_mark_enabled() and not all those want to
+actually do enable_on_exec().
 
-On Tue, Nov 22, 2011 at 12:17 AM, Peter P Waskiewicz Jr
-<peter.p.waskiewicz.jr@intel.com> wrote:
-> On Mon, 2011-11-21 at 05:58 -0800, Xander Hover wrote:
->> Hi all,
->>
->> I noticed the small discussion about the b44_poll OOPS and
->> I also have a uni-processor PC with a broadcom network device (b44)
->> that causes similar kernel OOPSes.
->>
->> Here is a (reproducible) trace that still shows up in kernel 3.1.1:
->>
->>  ------------[ cut here ]------------
->>     WARNING: at kernel/softirq.c:159 local_bh_enable+0x32/0x79()
->>     Hardware name: Dimension 2400
->>     Modules linked in: snd_seq_midi snd_emu10k1_synth snd_emux_synth
->> snd_seq_virmidi snd_seq_midi_emul snd_seq_oss snd_seq_midi_event
->> snd_seq snd_pcm_oss snd_mixer_oss bnep rfcomm cryptd aes_i586
->> aes_generic ecb btusb bluetooth rfkill ppdev snd_emu10k1 snd_rawmidi
->> snd_ac97_codec ac97_bus snd_pcm snd_seq_device snd_timer
->> snd_page_alloc dcdbas snd_util_mem parport_pc snd_hwdep snd parport
->> emu10k1_gp rtc_cmos gameport i2c_i801
->>     Pid: 0, comm: swapper Not tainted 3.1.1-gentoo #1
->>     Call Trace:
->>      [<c1022970>] warn_slowpath_common+0x65/0x7a
->>      [<c102699e>] ? local_bh_enable+0x32/0x79
->>      [<c1022994>] warn_slowpath_null+0xf/0x13
->>      [<c102699e>] local_bh_enable+0x32/0x79
->>      [<c134bfd8>] destroy_conntrack+0x7c/0x9b
->>      [<c134890b>] nf_conntrack_destroy+0x1f/0x26
->>      [<c132e3a6>] skb_release_head_state+0x74/0x83
->>      [<c132e286>] __kfree_skb+0xb/0x6b
->>      [<c132e30a>] consume_skb+0x24/0x26
->>      [<c127c925>] b44_poll+0xaa/0x449
->>      [<c1333ca1>] net_rx_action+0x3f/0xea
->>      [<c1026a44>] __do_softirq+0x5f/0xd5
->>      [<c10269e5>] ? local_bh_enable+0x79/0x79
->>      <IRQ>  [<c1026c32>] ? irq_exit+0x34/0x8d
->>      [<c1003628>] ? do_IRQ+0x74/0x87
->>      [<c13f5329>] ? common_interrupt+0x29/0x30
->>      [<c1006e18>] ? default_idle+0x29/0x3e
->>      [<c10015a7>] ? cpu_idle+0x2f/0x5d
->>      [<c13e91c5>] ? rest_init+0x79/0x7b
->>      [<c15c66a9>] ? start_kernel+0x297/0x29c
->>      [<c15c60b0>] ? i386_start_kernel+0xb0/0xb7
->>     ---[ end trace 583f33bb1aa207a9 ]---
->>
->>
->> However if I apply the following patch this error does not show up anymore:
->>
->>
->> diff --git a/drivers/net/ethernet/broadcom/b44.c
->> b/drivers/net/ethernet/broadcom/b44.c
->> index 4cf835d..3fb66d0 100644
->> --- a/drivers/net/ethernet/broadcom/b44.c
->> +++ b/drivers/net/ethernet/broadcom/b44.c
->> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
->>                                  skb->len,
->>                                  DMA_TO_DEVICE);
->>                 rp->skb = NULL;
->> -               dev_kfree_skb(skb);
->> +               dev_kfree_skb_irq(skb);
->
-> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
-> instead, since that will handle the in-interrupt case if that's where
-> we're stuck.
->
-> Can you try this patch (compile-tested only) and see if fixes the issue
-> you're seeing:
->
-> commit e36ef2c1a2b6b517ed43254eb89768794a049b1c
-> Author: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Date:   Mon Nov 21 15:14:18 2011 -0800
->
-> b44: Use dev_kfree_skb_any() in b44_tx()
->
-> Reported issues when using dev_kfree_skb() on UP systems and
-> systems with low numbers of cores.  dev_kfree_skb_any() will
-> properly save IRQ state before freeing the skb, depending on
-> how b44_tx() is invoked.
->
-> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> ---
->
->  drivers/net/ethernet/broadcom/b44.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
->
-> diff --git a/drivers/net/ethernet/broadcom/b44.c
-> b/drivers/net/ethernet/broadcom/b44.c
-> index 4cf835d..6a7c39b 100644
-> --- a/drivers/net/ethernet/broadcom/b44.c
-> +++ b/drivers/net/ethernet/broadcom/b44.c
-> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
->                                 skb->len,
->                                 DMA_TO_DEVICE);
->                rp->skb = NULL;
-> -               dev_kfree_skb(skb);
-> +               dev_kfree_skb_any(skb);
->        }
->
->        bp->tx_cons = cons;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> > The below is a somewhat larger patch that avoids the recursion (and does
+> > a small cleanup by eradicating all those useless ctx arguments). Quick
+> > testing seems to indicate it works, but please confirm.
+> 
+> I have no objection of deleting the redundant ctx arguments, but that's
+> another topic.
+
+Yeah, I should probably split that into a separate patch.
