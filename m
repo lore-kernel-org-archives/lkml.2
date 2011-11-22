@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab1KVCZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 21:25:49 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50429 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668Ab1KVCZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 21:25:48 -0500
-Message-ID: <4ECB089C.3080208@cn.fujitsu.com>
-Date: Tue, 22 Nov 2011 10:27:40 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1755404Ab1KVCjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 21:39:20 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:34472 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab1KVCjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 21:39:20 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: paul@paulmenage.org, rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        fweisbec@gmail.com, matthltc@us.ibm.com, akpm@linux-foundation.org,
-        oleg@redhat.com, kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCHSET] cgroup: stable threadgroup during attach & subsys
- methods consolidation
-References: <1320191193-8110-1-git-send-email-tj@kernel.org> <20111121220719.GP25776@google.com>
-In-Reply-To: <20111121220719.GP25776@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-22 10:25:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-22 10:25:34,
-	Serialize complete at 2011-11-22 10:25:34
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <86ipmdgcjo.fsf@sumi.keithp.com>
+References: <alpine.LNX.2.00.1111151301410.2693@darkstar.example.net>
+ <alpine.LNX.2.00.1111191124350.5248@darkstar.example.net> <864ny0kku8.fsf@sumi.keithp.com>
+ <alpine.LNX.2.00.1111212248140.2070@darkstar.example.net> <86ipmdgcjo.fsf@sumi.keithp.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Tue, 22 Nov 2011 00:38:58 -0200
+Message-ID: <CAKi4VAL-BO=4duQ18o-sQ8h4V8_-1LPg1g+QxZoTEJzp0FBJ+w@mail.gmail.com>
+Subject: Re: max PWM is zero
+To: Keith Packard <keithp@keithp.com>
+Cc: Marcos Paulo de Souza <marcos.mage@gmail.com>,
+        linux-kernel@vger.kernel.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> On Tue, Nov 01, 2011 at 04:46:23PM -0700, Tejun Heo wrote:
->> This patchset is combination of the following two patchsets.
->>
->>  [1] cgroup: extend threadgroup locking
->>  [2] cgroup: introduce cgroup_taskset and consolidate subsys methods, take#2
-> 
-> Li, do you agree with the proposed patches?  If so, I'll wait for
-> Frederic's response, repost updated series and merge it into the
-> cgroup tree.
-> 
+On Mon, Nov 21, 2011 at 23:40, Keith Packard <keithp@keithp.com> wrote:
+> On Mon, 21 Nov 2011 22:48:21 +0000 (Local time zone must be set--see zic manual page), Marcos Paulo de Souza <marcos.mage@gmail.com> wrote:
+>
+>> My max_brightness is 1, and my brightness is 0.
+>
+> Right, we've prevented the internal backlight driver from exposing a max
+> value of 0 as that's just confusing.
+>
+>> But, my acpi_video0 have a
+>> max_brightness value = 9...
+>
+> Right, sounds like your device is just using some other backlight
+> controller, which is perfectly reasonable.
+>
+>> So, what can I do to silence this warning...? Change the driver of
+>> backlight?
+>
+> If your backlight keys work correctly, then things are fine and perhaps
+> we should just remove the warning from the driver, or disable the
+> internal driver when we discover this situation.
+>
+> This is the first time I've heard of this warning appearing...
 
-I remember I've acked both patchsets in your earlier post. :)
+It appears here as well. I think it was since 2.6.39 or 3.0, I'm not sure.
 
---
-Li Zefan
+Same card:
+
+00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
+Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA
+controller])
+	Subsystem: Dell Device 02bb
+	Flags: bus master, fast devsel, latency 0, IRQ 45
+	Memory at f6400000 (64-bit, non-prefetchable) [size=4M]
+	Memory at d0000000 (64-bit, prefetchable) [size=256M]
+	I/O ports at 1800 [size=8]
+	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+	Capabilities: [d0] Power Management version 3
+	Kernel driver in use: i915
+
+00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset
+Integrated Graphics Controller (rev 07)
+	Subsystem: Dell Device 02bb
+	Flags: bus master, fast devsel, latency 0
+	Memory at f6100000 (64-bit, non-prefetchable) [size=1M]
+	Capabilities: [d0] Power Management version 3
+
+My kernel log has:
+
+[drm] Driver supports precise vblank timestamp query.
+composite sync not supported
+fixme: max PWM is zero.
+composite sync not supported
+
+
+Is this "composite sync not supported" related to this issue?
+
+
+Lucas De Marchi
