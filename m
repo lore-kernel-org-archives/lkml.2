@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758881Ab1KVWEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:04:08 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34302 "EHLO smtp5-g21.free.fr"
+	id S1758907Ab1KVWEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:04:21 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:34738 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758809Ab1KVWED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:04:03 -0500
+	id S1758850Ab1KVWES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 17:04:18 -0500
 From: Corentin Chary <corentincj@iksaif.net>
 To: platform-driver-x86@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@suse.de>,
         Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 12/15] samsung-laptop: add true rfkill support for swsmi
-Date: Tue, 22 Nov 2011 23:02:43 +0100
-Message-Id: <1321999366-23784-13-git-send-email-corentincj@iksaif.net>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 15/15] samsung-laptop: promote myself as maintainer of samsung-laptop
+Date: Tue, 22 Nov 2011 23:02:46 +0100
+Message-Id: <1321999366-23784-16-git-send-email-corentincj@iksaif.net>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
 References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
@@ -23,305 +26,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 ---
- drivers/platform/x86/samsung-laptop.c |  201 ++++++++++++++++++++++++++++-----
- 1 files changed, 170 insertions(+), 31 deletions(-)
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index 17afb13..c9f574c 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -45,6 +45,9 @@
- #define SABI_IFACE_COMPLETE		0x04
- #define SABI_IFACE_DATA			0x05
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3523ab0..bdde26f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5666,6 +5666,12 @@ F:	drivers/media/common/saa7146*
+ F:	drivers/media/video/*7146*
+ F:	include/media/*7146*
  
-+#define WL_STATUS_WLAN			0x0
-+#define WL_STATUS_BT			0x2
++SAMSUNG LAPTOP DRIVER
++M:	Corentin Chary <corentincj@iksaif.net>
++L:	platform-driver-x86@vger.kernel.org
++S:	Maintained
++F:	drivers/platform/x86/samsung-laptop.c
 +
- /* Structure get/set data using sabi */
- struct sabi_data {
- 	union {
-@@ -113,6 +116,10 @@ struct sabi_commands {
- 	u16 get_usb_charge;
- 	u16 set_usb_charge;
- 
-+	/* the first byte is for bluetooth and the third one is for wlan */
-+	u16 get_wireless_status;
-+	u16 set_wireless_status;
-+
- 	/* 0x81 to read, (0x82 | level << 8) to set, 0xaabb to enable */
- 	u16 kbd_backlight;
- 
-@@ -129,6 +136,7 @@ struct sabi_performance_level {
- };
- 
- struct sabi_config {
-+	int sabi_version;
- 	const char *test_string;
- 	u16 main_function;
- 	const struct sabi_header_offsets header_offsets;
-@@ -140,6 +148,10 @@ struct sabi_config {
- 
- static const struct sabi_config sabi_configs[] = {
- 	{
-+		/* I don't know if it is really 2, but it it is
-+		 * less than 3 anyway */
-+		.sabi_version = 2,
-+
- 		.test_string = "SECLINUX",
- 
- 		.main_function = 0x4c49,
-@@ -175,6 +187,9 @@ static const struct sabi_config sabi_configs[] = {
- 			.get_usb_charge = 0xFFFF,
- 			.set_usb_charge = 0xFFFF,
- 
-+			.get_wireless_status = 0xFFFF,
-+			.set_wireless_status = 0xFFFF,
-+
- 			.kbd_backlight = 0xFFFF,
- 
- 			.set_linux = 0x0a,
-@@ -195,6 +210,8 @@ static const struct sabi_config sabi_configs[] = {
- 		.max_brightness = 8,
- 	},
- 	{
-+		.sabi_version = 3,
-+
- 		.test_string = "SwSmi@",
- 
- 		.main_function = 0x5843,
-@@ -230,6 +247,9 @@ static const struct sabi_config sabi_configs[] = {
- 			.get_usb_charge = 0x67,
- 			.set_usb_charge = 0x68,
- 
-+			.get_wireless_status = 0x69,
-+			.set_wireless_status = 0x6a,
-+
- 			.kbd_backlight = 0x78,
- 
- 			.set_linux = 0xff,
-@@ -274,6 +294,14 @@ struct samsung_laptop_debug {
- 	struct debugfs_blob_wrapper data_wrapper;
- };
- 
-+struct samsung_laptop;
-+
-+struct samsung_rfkill {
-+	struct samsung_laptop *samsung;
-+	struct rfkill *rfkill;
-+	enum rfkill_type type;
-+};
-+
- struct samsung_laptop {
- 	const struct sabi_config *config;
- 
-@@ -285,7 +313,9 @@ struct samsung_laptop {
- 
- 	struct platform_device *platform_device;
- 	struct backlight_device *backlight_device;
--	struct rfkill *rfk;
-+
-+	struct samsung_rfkill wlan;
-+	struct samsung_rfkill bluetooth;
- 
- 	struct led_classdev kbd_led;
- 	int kbd_led_wk;
-@@ -486,26 +516,74 @@ static const struct backlight_ops backlight_ops = {
- 	.update_status	= update_status,
- };
- 
--static int rfkill_set(void *data, bool blocked)
-+static int seclinux_rfkill_set(void *data, bool blocked)
- {
- 	struct samsung_laptop *samsung = data;
- 	const struct sabi_commands *commands = &samsung->config->commands;
- 
--	/* Do something with blocked...*/
--	/*
--	 * blocked == false is on
--	 * blocked == true is off
--	 */
--	if (blocked)
--		sabi_set_commandb(samsung, commands->set_wireless_button, 0);
-+	return sabi_set_commandb(samsung, commands->set_wireless_button,
-+				 !blocked);
-+}
-+
-+static struct rfkill_ops seclinux_rfkill_ops = {
-+	.set_block = seclinux_rfkill_set,
-+};
-+
-+static int swsmi_wireless_status(struct samsung_laptop *samsung,
-+				 struct sabi_data *data)
-+{
-+	const struct sabi_commands *commands = &samsung->config->commands;
-+
-+	return sabi_command(samsung, commands->get_wireless_status,
-+			    NULL, data);
-+}
-+
-+static int swsmi_rfkill_set(void *priv, bool blocked)
-+{
-+	struct samsung_rfkill *srfkill = priv;
-+	struct samsung_laptop *samsung = srfkill->samsung;
-+	const struct sabi_commands *commands = &samsung->config->commands;
-+	struct sabi_data data;
-+	int ret;
-+
-+	ret = swsmi_wireless_status(samsung, &data);
-+	if (ret)
-+		return ret;
-+
-+	data.data[1] = 0;
-+	if (srfkill->type == RFKILL_TYPE_WLAN)
-+		data.data[WL_STATUS_WLAN] = !blocked;
-+	else if (srfkill->type == RFKILL_TYPE_BLUETOOTH)
-+		data.data[WL_STATUS_BT] = !blocked;
-+
-+	return sabi_command(samsung, commands->set_wireless_status,
-+			    &data, &data);
-+}
-+
-+static void swsmi_rfkill_query(struct rfkill *rfkill, void *priv)
-+{
-+	struct samsung_rfkill *srfkill = priv;
-+	struct samsung_laptop *samsung = srfkill->samsung;
-+	struct sabi_data data;
-+	int ret;
-+
-+	ret = swsmi_wireless_status(samsung, &data);
-+	if (ret)
-+		return ;
-+
-+	if (srfkill->type == RFKILL_TYPE_WLAN)
-+		ret = data.data[WL_STATUS_WLAN];
-+	else if (srfkill->type == RFKILL_TYPE_BLUETOOTH)
-+		ret = data.data[WL_STATUS_BT];
- 	else
--		sabi_set_commandb(samsung, commands->set_wireless_button, 1);
-+		return ;
- 
--	return 0;
-+	rfkill_set_sw_state(rfkill, !ret);
- }
- 
--static struct rfkill_ops rfkill_ops = {
--	.set_block = rfkill_set,
-+static struct rfkill_ops swsmi_rfkill_ops = {
-+	.set_block = swsmi_rfkill_set,
-+	.query = swsmi_rfkill_query,
- };
- 
- static ssize_t get_performance_level(struct device *dev,
-@@ -730,31 +808,92 @@ static int find_signature(void __iomem *memcheck, const char *testStr)
- 
- static void samsung_rfkill_exit(struct samsung_laptop *samsung)
- {
--	if (samsung->rfk) {
--		rfkill_unregister(samsung->rfk);
--		rfkill_destroy(samsung->rfk);
--		samsung->rfk = NULL;
-+	if (samsung->wlan.rfkill) {
-+		rfkill_unregister(samsung->wlan.rfkill);
-+		rfkill_destroy(samsung->wlan.rfkill);
-+		samsung->wlan.rfkill = NULL;
-+	}
-+	if (samsung->bluetooth.rfkill) {
-+		rfkill_unregister(samsung->bluetooth.rfkill);
-+		rfkill_destroy(samsung->bluetooth.rfkill);
-+		samsung->bluetooth.rfkill = NULL;
- 	}
- }
- 
--static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
-+static int samsung_new_rfkill(struct samsung_laptop *samsung,
-+			      struct samsung_rfkill *arfkill,
-+			      const char *name, enum rfkill_type type,
-+			      const struct rfkill_ops *ops,
-+			      int blocked)
- {
--	int retval;
-+	struct rfkill **rfkill = &arfkill->rfkill;
-+	int ret;
- 
--	samsung->rfk = rfkill_alloc("samsung-wifi",
--				    &samsung->platform_device->dev,
--				    RFKILL_TYPE_WLAN,
--				    &rfkill_ops, samsung);
--	if (!samsung->rfk)
--		return -ENOMEM;
-+	arfkill->type = type;
-+	arfkill->samsung = samsung;
- 
--	retval = rfkill_register(samsung->rfk);
--	if (retval) {
--		rfkill_destroy(samsung->rfk);
--		samsung->rfk = NULL;
--		return -ENODEV;
-+	*rfkill = rfkill_alloc(name, &samsung->platform_device->dev,
-+			       type, ops, arfkill);
-+
-+	if (!*rfkill)
-+		return -EINVAL;
-+
-+	if (blocked != -1)
-+		rfkill_init_sw_state(*rfkill, blocked);
-+
-+	ret = rfkill_register(*rfkill);
-+	if (ret) {
-+		rfkill_destroy(*rfkill);
-+		*rfkill = NULL;
-+		return ret;
- 	}
-+	return 0;
-+}
- 
-+static int __init samsung_rfkill_init_seclinux(struct samsung_laptop *samsung)
-+{
-+	return samsung_new_rfkill(samsung, &samsung->wlan, "samsung-wlan",
-+				  RFKILL_TYPE_WLAN, &seclinux_rfkill_ops, -1);
-+}
-+
-+static int __init samsung_rfkill_init_swsmi(struct samsung_laptop *samsung)
-+{
-+	struct sabi_data data;
-+	int ret;
-+
-+	ret = swsmi_wireless_status(samsung, &data);
-+	if (ret)
-+		return ret;
-+
-+	ret = samsung_new_rfkill(samsung, &samsung->wlan,
-+				 "samsung-wlan",
-+				 RFKILL_TYPE_WLAN,
-+				 &swsmi_rfkill_ops,
-+				 !data.data[WL_STATUS_WLAN]);
-+	if (ret)
-+		goto exit;
-+
-+	ret = samsung_new_rfkill(samsung, &samsung->bluetooth,
-+				 "samsung-bluetooth",
-+				 RFKILL_TYPE_BLUETOOTH,
-+				 &swsmi_rfkill_ops,
-+				 !data.data[WL_STATUS_BT]);
-+	if (ret)
-+		goto exit;
-+
-+exit:
-+	if (ret)
-+		samsung_rfkill_exit(samsung);
-+
-+	return ret;
-+}
-+
-+static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
-+{
-+	if (samsung->config->sabi_version == 2)
-+		return samsung_rfkill_init_seclinux(samsung);
-+	if (samsung->config->sabi_version == 3)
-+		return samsung_rfkill_init_swsmi(samsung);
- 	return 0;
- }
- 
+ SAMSUNG AUDIO (ASoC) DRIVERS
+ M:	Jassi Brar <jassisinghbrar@gmail.com>
+ M:	Sangbeom Kim <sbkim73@samsung.com>
 -- 
 1.7.5.4
 
