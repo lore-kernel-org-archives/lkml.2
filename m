@@ -1,124 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1KVRa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 12:30:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33812 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab1KVRaZ (ORCPT
+	id S1756359Ab1KVRak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 12:30:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57471 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab1KVRaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 12:30:25 -0500
-Date: Wed, 23 Nov 2011 02:30:18 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] mm: compaction: make isolate_lru_page() filter-aware
- again
-Message-ID: <20111122173018.GD15253@barrios-laptop.redhat.com>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
- <1321900608-27687-6-git-send-email-mgorman@suse.de>
+	Tue, 22 Nov 2011 12:30:39 -0500
+Date: Tue, 22 Nov 2011 18:30:29 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Marc Vertes <marc.vertes@sigfox.com>
+Cc: Wim@vger.kernel.org, wim@iguana.be, Welte@vger.kernel.org,
+        Van@vger.kernel.org, Sebroeck@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HaraldWelte@viatech.com, Harald@vger.kernel.org
+Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
+Message-ID: <20111122173029.GA14349@pengutronix.de>
+References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
+ <20111122112212.GD2734@pengutronix.de>
+ <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
 Content-Disposition: inline
-In-Reply-To: <1321900608-27687-6-git-send-email-mgorman@suse.de>
+In-Reply-To: <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 06:36:46PM +0000, Mel Gorman wrote:
-> Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-> noted that compaction does not migrate dirty or writeback pages and
-> that is was meaningless to pick the page and re-add it to the LRU list.
-> This had to be partially reverted because some dirty pages can be
-> migrated by compaction without blocking.
-> 
-> This patch updates "mm: compaction: make isolate_lru_page" by skipping
-> over pages that migration has no possibility of migrating to minimise
-> LRU disruption.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  include/linux/mmzone.h |    2 ++
->  mm/compaction.c        |    3 +++
->  mm/vmscan.c            |   36 ++++++++++++++++++++++++++++++++++--
->  3 files changed, 39 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 188cb2f..ac5b522 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -173,6 +173,8 @@ static inline int is_unevictable_lru(enum lru_list l)
->  #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
->  /* Isolate unmapped file */
->  #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
-> +/* Isolate for asynchronous migration */
-> +#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
->  
->  /* LRU Isolation modes. */
->  typedef unsigned __bitwise__ isolate_mode_t;
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 615502b..0379263 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -349,6 +349,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  			continue;
->  		}
->  
-> +		if (!cc->sync)
-> +			mode |= ISOLATE_ASYNC_MIGRATE;
-> +
->  		/* Try isolate the page */
->  		if (__isolate_lru_page(page, mode, 0) != 0)
->  			continue;
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 3421746..28df0ed 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1061,8 +1061,40 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
->  
->  	ret = -EBUSY;
->  
-> -	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
-> -		return ret;
-> +	/*
-> +	 * To minimise LRU disruption, the caller can indicate that it only
-> +	 * wants to isolate pages it will be able to operate on without
-> +	 * blocking - clean pages for the most part.
-> +	 *
-> +	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
-> +	 * is used by reclaim when it is cannot write to backing storage
-> +	 *
-> +	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
-> +	 * that it is possible to migrate without blocking with a ->migratepage
-> +	 * handler
-> +	 */
-> +	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
-> +		/* All the caller can do on PageWriteback is block */
-> +		if (PageWriteback(page))
-> +			return ret;
-> +
-> +		if (PageDirty(page)) {
-> +			struct address_space *mapping;
-> +
-> +			/* ISOLATE_CLEAN means only clean pages */
-> +			if (mode & ISOLATE_CLEAN)
-> +				return ret;
-> +
-> +			/*
-> +			 * Only the ->migratepage callback knows if a dirty
-> +			 * page can be migrated without blocking. Skip the
-> +			 * page unless there is a ->migratepage callback.
-> +			 */
-> +			mapping = page_mapping(page);
-> +			if (!mapping || !mapping->a_ops->migratepage)
 
-I didn't review 4/7 carefully yet.
-In case of page_mapping is NULL, move_to_new_page calls migrate_page
-which is non-blocking function. So, I guess it could be migrated without blocking.
- 
--- 
-Kind regards,
-Minchan Kim
+--tThc/1wpZn/ma/RB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Nov 22, 2011 at 06:05:48PM +0100, Marc Vertes wrote:
+> Wolfram Sang <w.sang@pengutronix.de> wrote:
+>=20
+> > On Tue, Nov 22, 2011 at 12:17:13PM +0100, Marc Vertes wrote:
+> > > Add a new driver for the hardware watchdog timer on VIA chipsets.
+> > > Tested on a Artigo A1100, VX855 chipset.
+> > >=20
+> > > Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
+> >
+> > New watchdog drivers should use the framework. Have a look at
+> > Documentation/watchdog/convert_drivers_to_kernel_api.txt for a guide. It
+> > is mainly removing code, though.
+> >
+> Here it is:
+
+Great, thanks.
+
+> +static int wdt_start(struct watchdog_device *wdev)
+> +{
+> +	/* Nothing to do. The watchdog can only be started by the BIOS. */
+> +	return 0;
+> +}
+> +
+> +static int wdt_stop(struct watchdog_device *wdev)
+> +{
+> +	/* Nothing to do. The watchdog can not be stopped. */
+> +	return 0;
+> +}
+
+Hmm, I'll leave this to Wim if it can stay like this (or if he wants a time=
+r to
+serve the non-stoppable watchdog or so).
+
+> +static int __devinit wdt_probe(struct pci_dev *pdev,
+> +			       const struct pci_device_id *ent)
+> +{
+> +	unsigned int mmio =3D 0;
+> +	void __iomem *wdt_mem;
+> +	int ret;
+> +
+> +	if (pci_enable_device(pdev)) {
+> +		dev_err(&pdev->dev, "cannot enable PCI device\n");
+> +		return -ENODEV;
+> +	}
+> +	pci_read_config_dword(pdev, VIA_WDT_MB_OFFSET, &mmio);
+> +	dev_info(&pdev->dev, "VIA Chipset watchdog MMIO: %x\n", mmio);
+> +	if (mmio =3D=3D 0) {
+> +		dev_err(&pdev->dev, "watchdog timer is not enabled in BIOS\n");
+> +		return -ENODEV;
+> +	}
+
+What about
+
+	if (mmio !=3D 0) {
+		dev_info("VIA Chipset...")
+	} else {
+		dev_err()
+		return -ENODEV;
+	}
+
+to only have the needed printouts.
+
+> +	wdt_mem =3D ioremap(mmio, 8);
+> +	if (wdt_mem =3D=3D NULL) {
+> +		dev_err(&pdev->dev, "cannot remap VIA wdt mmio registers\n");
+> +		return -ENODEV;
+> +	}
+> +	ret =3D watchdog_register_device(&wdt_dev);
+> +	if (ret)
+> +		return ret;
+
+You need to iounmap in the error-case.
+
+> +	watchdog_set_drvdata(&wdt_dev, wdt_mem);
+> +	if (readl(wdt_mem) & VIA_WDT_FIRED) {
+> +		wdt_dev.bootstatus |=3D WDIOF_CARDRESET;
+> +		dev_notice(&pdev->dev, "restarted by expired watchdog\n");
+
+Skip the printout. This can be detected using CARDRESET.
+
+> +/*
+> + * The driver has not been tested yet on CX700 and VX800.
+> + */
+
+Then, I'd rather skip this comment and the IDs. Or if you are sure enough it
+works, leave them in ;) Best option would be testers showing up.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--tThc/1wpZn/ma/RB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7L3DUACgkQD27XaX1/VRt0iQCaAtwVRshSc4kt1TBuw44PcZ98
+Fs8AoJoIW8CmN3Cww6eXZrVEAC9znuWV
+=d7Ai
+-----END PGP SIGNATURE-----
+
+--tThc/1wpZn/ma/RB--
