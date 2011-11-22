@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124Ab1KVJDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 04:03:22 -0500
+	id S1756961Ab1KVJDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 04:03:19 -0500
 Received: from emcscan.emc.com.tw ([192.72.220.5]:62061 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab1KVJCz (ORCPT
+	with ESMTP id S1756169Ab1KVJC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 04:02:55 -0500
+	Tue, 22 Nov 2011 04:02:59 -0500
 From: JJ Ding <jj_ding@emc.com.tw>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Grant Likely <grant.likely@secretlab.ca>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
         JJ Ding <jj_ding@emc.com.tw>, JJ Ding <dgdunix@gmail.com>
-Subject: [PATCH TRIVIAL 2/5] Input: misc: use macro module_platform_driver()
-Date: Tue, 22 Nov 2011 17:00:43 +0800
-Message-Id: <1321952446-7591-3-git-send-email-jj_ding@emc.com.tw>
+Subject: [PATCH TRIVIAL 5/5] Input: touchscreen: use macro module_platform_driver()
+Date: Tue, 22 Nov 2011 17:00:46 +0800
+Message-Id: <1321952446-7591-6-git-send-email-jj_ding@emc.com.tw>
 X-Mailer: git-send-email 1.7.8-rc2
 In-Reply-To: <1321952446-7591-1-git-send-email-jj_ding@emc.com.tw>
 References: <1321952446-7591-1-git-send-email-jj_ding@emc.com.tw>
@@ -30,515 +30,473 @@ save some platform_driver boilerplate code. Use it.
 
 Signed-off-by: JJ Ding <dgdunix@gmail.com>
 ---
- drivers/input/misc/88pm860x_onkey.c    |   13 +------------
- drivers/input/misc/ab8500-ponkey.c     |   13 +------------
- drivers/input/misc/bfin_rotary.c       |   13 +------------
- drivers/input/misc/cobalt_btns.c       |   14 +-------------
- drivers/input/misc/dm355evm_keys.c     |   13 +------------
- drivers/input/misc/ixp4xx-beeper.c     |   13 +------------
- drivers/input/misc/max8925_onkey.c     |   13 +------------
- drivers/input/misc/pcap_keys.c         |   14 +-------------
- drivers/input/misc/pcf50633-input.c    |   13 +------------
- drivers/input/misc/pcspkr.c            |   14 +-------------
- drivers/input/misc/pm8xxx-vibrator.c   |   13 +------------
- drivers/input/misc/pmic8xxx-pwrkey.c   |   13 +------------
- drivers/input/misc/pwm-beeper.c        |   13 +------------
- drivers/input/misc/rb532_button.c      |   14 +-------------
- drivers/input/misc/rotary_encoder.c    |   14 +-------------
- drivers/input/misc/sgi_btns.c          |   13 +------------
- drivers/input/misc/twl4030-pwrbutton.c |   15 ++-------------
- drivers/input/misc/twl4030-vibra.c     |   14 +-------------
- drivers/input/misc/twl6040-vibra.c     |   13 +------------
- drivers/input/misc/wm831x-on.c         |   13 +------------
- 20 files changed, 21 insertions(+), 247 deletions(-)
+ drivers/input/touchscreen/88pm860x-ts.c      |   13 +------------
+ drivers/input/touchscreen/atmel-wm97xx.c     |   13 +------------
+ drivers/input/touchscreen/atmel_tsadcc.c     |   15 +--------------
+ drivers/input/touchscreen/da9034-ts.c        |   13 +------------
+ drivers/input/touchscreen/intel-mid-touch.c  |   13 +------------
+ drivers/input/touchscreen/jornada720_ts.c    |   14 +-------------
+ drivers/input/touchscreen/lpc32xx_ts.c       |   13 +------------
+ drivers/input/touchscreen/mainstone-wm97xx.c |   14 +-------------
+ drivers/input/touchscreen/mc13783_ts.c       |   13 +------------
+ drivers/input/touchscreen/pcap_ts.c          |   14 +-------------
+ drivers/input/touchscreen/s3c2410_ts.c       |   14 +-------------
+ drivers/input/touchscreen/stmpe-ts.c         |   15 +--------------
+ drivers/input/touchscreen/tnetv107x-ts.c     |   14 +-------------
+ drivers/input/touchscreen/tps6507x-ts.c      |   13 +------------
+ drivers/input/touchscreen/ucb1400_ts.c       |   14 +-------------
+ drivers/input/touchscreen/w90p910_ts.c       |   14 +-------------
+ drivers/input/touchscreen/wm831x-ts.c        |   13 +------------
+ drivers/input/touchscreen/zylonite-wm97xx.c  |   14 +-------------
+ 18 files changed, 18 insertions(+), 228 deletions(-)
 
-diff --git a/drivers/input/misc/88pm860x_onkey.c b/drivers/input/misc/88pm860x_onkey.c
-index 3dca3c1..f2e0cbc 100644
---- a/drivers/input/misc/88pm860x_onkey.c
-+++ b/drivers/input/misc/88pm860x_onkey.c
-@@ -137,18 +137,7 @@ static struct platform_driver pm860x_onkey_driver = {
- 	.probe		= pm860x_onkey_probe,
- 	.remove		= __devexit_p(pm860x_onkey_remove),
+diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
+index b3aebc2..05f30b7 100644
+--- a/drivers/input/touchscreen/88pm860x-ts.c
++++ b/drivers/input/touchscreen/88pm860x-ts.c
+@@ -217,18 +217,7 @@ static struct platform_driver pm860x_touch_driver = {
+ 	.probe	= pm860x_touch_probe,
+ 	.remove	= __devexit_p(pm860x_touch_remove),
  };
 -
--static int __init pm860x_onkey_init(void)
+-static int __init pm860x_touch_init(void)
 -{
--	return platform_driver_register(&pm860x_onkey_driver);
+-	return platform_driver_register(&pm860x_touch_driver);
 -}
--module_init(pm860x_onkey_init);
+-module_init(pm860x_touch_init);
 -
--static void __exit pm860x_onkey_exit(void)
+-static void __exit pm860x_touch_exit(void)
 -{
--	platform_driver_unregister(&pm860x_onkey_driver);
+-	platform_driver_unregister(&pm860x_touch_driver);
 -}
--module_exit(pm860x_onkey_exit);
-+module_platform_driver(pm860x_onkey_driver);
+-module_exit(pm860x_touch_exit);
++module_platform_driver(pm860x_touch_driver);
  
- MODULE_DESCRIPTION("Marvell 88PM860x ONKEY driver");
+ MODULE_DESCRIPTION("Touchscreen driver for Marvell Semiconductor 88PM860x");
  MODULE_AUTHOR("Haojian Zhuang <haojian.zhuang@marvell.com>");
-diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
-index 3d3288a..79d9016 100644
---- a/drivers/input/misc/ab8500-ponkey.c
-+++ b/drivers/input/misc/ab8500-ponkey.c
-@@ -139,18 +139,7 @@ static struct platform_driver ab8500_ponkey_driver = {
- 	.probe		= ab8500_ponkey_probe,
- 	.remove		= __devexit_p(ab8500_ponkey_remove),
+diff --git a/drivers/input/touchscreen/atmel-wm97xx.c b/drivers/input/touchscreen/atmel-wm97xx.c
+index 8034cbb..d016cb2 100644
+--- a/drivers/input/touchscreen/atmel-wm97xx.c
++++ b/drivers/input/touchscreen/atmel-wm97xx.c
+@@ -429,18 +429,7 @@ static struct platform_driver atmel_wm97xx_driver = {
+ 	.suspend	= atmel_wm97xx_suspend,
+ 	.resume		= atmel_wm97xx_resume,
  };
 -
--static int __init ab8500_ponkey_init(void)
+-static int __init atmel_wm97xx_init(void)
 -{
--	return platform_driver_register(&ab8500_ponkey_driver);
+-	return platform_driver_probe(&atmel_wm97xx_driver, atmel_wm97xx_probe);
 -}
--module_init(ab8500_ponkey_init);
+-module_init(atmel_wm97xx_init);
 -
--static void __exit ab8500_ponkey_exit(void)
+-static void __exit atmel_wm97xx_exit(void)
 -{
--	platform_driver_unregister(&ab8500_ponkey_driver);
+-	platform_driver_unregister(&atmel_wm97xx_driver);
 -}
--module_exit(ab8500_ponkey_exit);
-+module_platform_driver(ab8500_ponkey_driver);
+-module_exit(atmel_wm97xx_exit);
++module_platform_driver(atmel_wm97xx_driver);
  
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
-diff --git a/drivers/input/misc/bfin_rotary.c b/drivers/input/misc/bfin_rotary.c
-index d00edc9..1c4146f 100644
---- a/drivers/input/misc/bfin_rotary.c
-+++ b/drivers/input/misc/bfin_rotary.c
-@@ -264,18 +264,7 @@ static struct platform_driver bfin_rotary_device_driver = {
- #endif
+ MODULE_AUTHOR("Hans-Christian Egtvedt <egtvedt@samfundet.no>");
+ MODULE_DESCRIPTION("wm97xx continuous touch driver for Atmel AT91 and AVR32");
+diff --git a/drivers/input/touchscreen/atmel_tsadcc.c b/drivers/input/touchscreen/atmel_tsadcc.c
+index 122a878..201b2d2 100644
+--- a/drivers/input/touchscreen/atmel_tsadcc.c
++++ b/drivers/input/touchscreen/atmel_tsadcc.c
+@@ -351,20 +351,7 @@ static struct platform_driver atmel_tsadcc_driver = {
+ 		.name	= "atmel_tsadcc",
  	},
  };
 -
--static int __init bfin_rotary_init(void)
+-static int __init atmel_tsadcc_init(void)
 -{
--	return platform_driver_register(&bfin_rotary_device_driver);
+-	return platform_driver_register(&atmel_tsadcc_driver);
 -}
--module_init(bfin_rotary_init);
 -
--static void __exit bfin_rotary_exit(void)
+-static void __exit atmel_tsadcc_exit(void)
 -{
--	platform_driver_unregister(&bfin_rotary_device_driver);
+-	platform_driver_unregister(&atmel_tsadcc_driver);
 -}
--module_exit(bfin_rotary_exit);
-+module_platform_driver(bfin_rotary_device_driver);
+-
+-module_init(atmel_tsadcc_init);
+-module_exit(atmel_tsadcc_exit);
+-
++module_platform_driver(atmel_tsadcc_driver);
  
  MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
-diff --git a/drivers/input/misc/cobalt_btns.c b/drivers/input/misc/cobalt_btns.c
-index fd8407a..53e43d2 100644
---- a/drivers/input/misc/cobalt_btns.c
-+++ b/drivers/input/misc/cobalt_btns.c
-@@ -163,16 +163,4 @@ static struct platform_driver cobalt_buttons_driver = {
+ MODULE_DESCRIPTION("Atmel TouchScreen Driver");
+diff --git a/drivers/input/touchscreen/da9034-ts.c b/drivers/input/touchscreen/da9034-ts.c
+index 2b72a59..36b65cf 100644
+--- a/drivers/input/touchscreen/da9034-ts.c
++++ b/drivers/input/touchscreen/da9034-ts.c
+@@ -379,18 +379,7 @@ static struct platform_driver da9034_touch_driver = {
+ 	.probe		= da9034_touch_probe,
+ 	.remove		= __devexit_p(da9034_touch_remove),
+ };
+-
+-static int __init da9034_touch_init(void)
+-{
+-	return platform_driver_register(&da9034_touch_driver);
+-}
+-module_init(da9034_touch_init);
+-
+-static void __exit da9034_touch_exit(void)
+-{
+-	platform_driver_unregister(&da9034_touch_driver);
+-}
+-module_exit(da9034_touch_exit);
++module_platform_driver(da9034_touch_driver);
+ 
+ MODULE_DESCRIPTION("Touchscreen driver for Dialog Semiconductor DA9034");
+ MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>, Bin Yang <bin.yang@marvell.com>");
+diff --git a/drivers/input/touchscreen/intel-mid-touch.c b/drivers/input/touchscreen/intel-mid-touch.c
+index 3276952..3cd7a83 100644
+--- a/drivers/input/touchscreen/intel-mid-touch.c
++++ b/drivers/input/touchscreen/intel-mid-touch.c
+@@ -664,18 +664,7 @@ static struct platform_driver mrstouch_driver = {
+ 	.probe		= mrstouch_probe,
+ 	.remove		= __devexit_p(mrstouch_remove),
+ };
+-
+-static int __init mrstouch_init(void)
+-{
+-	return platform_driver_register(&mrstouch_driver);
+-}
+-module_init(mrstouch_init);
+-
+-static void __exit mrstouch_exit(void)
+-{
+-	platform_driver_unregister(&mrstouch_driver);
+-}
+-module_exit(mrstouch_exit);
++module_platform_driver(mrstouch_driver);
+ 
+ MODULE_AUTHOR("Sreedhara Murthy. D.S, sreedhara.ds@intel.com");
+ MODULE_DESCRIPTION("Intel Moorestown Resistive Touch Screen Driver");
+diff --git a/drivers/input/touchscreen/jornada720_ts.c b/drivers/input/touchscreen/jornada720_ts.c
+index 50076c2..c3848ad 100644
+--- a/drivers/input/touchscreen/jornada720_ts.c
++++ b/drivers/input/touchscreen/jornada720_ts.c
+@@ -172,16 +172,4 @@ static struct platform_driver jornada720_ts_driver = {
  		.owner	= THIS_MODULE,
  	},
  };
 -
--static int __init cobalt_buttons_init(void)
+-static int __init jornada720_ts_init(void)
 -{
--	return platform_driver_register(&cobalt_buttons_driver);
+-	return platform_driver_register(&jornada720_ts_driver);
 -}
 -
--static void __exit cobalt_buttons_exit(void)
+-static void __exit jornada720_ts_exit(void)
 -{
--	platform_driver_unregister(&cobalt_buttons_driver);
+-	platform_driver_unregister(&jornada720_ts_driver);
 -}
 -
--module_init(cobalt_buttons_init);
--module_exit(cobalt_buttons_exit);
-+module_platform_driver(cobalt_buttons_driver);
-diff --git a/drivers/input/misc/dm355evm_keys.c b/drivers/input/misc/dm355evm_keys.c
-index 7283dd2..35083c6 100644
---- a/drivers/input/misc/dm355evm_keys.c
-+++ b/drivers/input/misc/dm355evm_keys.c
-@@ -267,17 +267,6 @@ static struct platform_driver dm355evm_keys_driver = {
- 		.name	= "dm355evm_keys",
+-module_init(jornada720_ts_init);
+-module_exit(jornada720_ts_exit);
++module_platform_driver(jornada720_ts_driver);
+diff --git a/drivers/input/touchscreen/lpc32xx_ts.c b/drivers/input/touchscreen/lpc32xx_ts.c
+index 0a484ed..afcd069 100644
+--- a/drivers/input/touchscreen/lpc32xx_ts.c
++++ b/drivers/input/touchscreen/lpc32xx_ts.c
+@@ -392,18 +392,7 @@ static struct platform_driver lpc32xx_ts_driver = {
+ 		.pm	= LPC32XX_TS_PM_OPS,
  	},
  };
 -
--static int __init dm355evm_keys_init(void)
+-static int __init lpc32xx_ts_init(void)
 -{
--	return platform_driver_register(&dm355evm_keys_driver);
+-	return platform_driver_register(&lpc32xx_ts_driver);
 -}
--module_init(dm355evm_keys_init);
+-module_init(lpc32xx_ts_init);
 -
--static void __exit dm355evm_keys_exit(void)
+-static void __exit lpc32xx_ts_exit(void)
 -{
--	platform_driver_unregister(&dm355evm_keys_driver);
+-	platform_driver_unregister(&lpc32xx_ts_driver);
 -}
--module_exit(dm355evm_keys_exit);
-+module_platform_driver(dm355evm_keys_driver);
+-module_exit(lpc32xx_ts_exit);
++module_platform_driver(lpc32xx_ts_driver);
  
+ MODULE_AUTHOR("Kevin Wells <kevin.wells@nxp.com");
+ MODULE_DESCRIPTION("LPC32XX TSC Driver");
+diff --git a/drivers/input/touchscreen/mainstone-wm97xx.c b/drivers/input/touchscreen/mainstone-wm97xx.c
+index e966c29..7d2b213 100644
+--- a/drivers/input/touchscreen/mainstone-wm97xx.c
++++ b/drivers/input/touchscreen/mainstone-wm97xx.c
+@@ -302,19 +302,7 @@ static struct platform_driver mainstone_wm97xx_driver = {
+ 		.name = "wm97xx-touch",
+ 	},
+ };
+-
+-static int __init mainstone_wm97xx_init(void)
+-{
+-	return platform_driver_register(&mainstone_wm97xx_driver);
+-}
+-
+-static void __exit mainstone_wm97xx_exit(void)
+-{
+-	platform_driver_unregister(&mainstone_wm97xx_driver);
+-}
+-
+-module_init(mainstone_wm97xx_init);
+-module_exit(mainstone_wm97xx_exit);
++module_platform_driver(mainstone_wm97xx_driver);
+ 
+ /* Module information */
+ MODULE_AUTHOR("Liam Girdwood <lrg@slimlogic.co.uk>");
+diff --git a/drivers/input/touchscreen/mc13783_ts.c b/drivers/input/touchscreen/mc13783_ts.c
+index ede0274..68f86f7 100644
+--- a/drivers/input/touchscreen/mc13783_ts.c
++++ b/drivers/input/touchscreen/mc13783_ts.c
+@@ -240,18 +240,7 @@ static struct platform_driver mc13783_ts_driver = {
+ 		.name	= MC13783_TS_NAME,
+ 	},
+ };
+-
+-static int __init mc13783_ts_init(void)
+-{
+-	return platform_driver_probe(&mc13783_ts_driver, &mc13783_ts_probe);
+-}
+-module_init(mc13783_ts_init);
+-
+-static void __exit mc13783_ts_exit(void)
+-{
+-	platform_driver_unregister(&mc13783_ts_driver);
+-}
+-module_exit(mc13783_ts_exit);
++module_platform_driver(mc13783_ts_driver);
+ 
+ MODULE_DESCRIPTION("MC13783 input touchscreen driver");
+ MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
+diff --git a/drivers/input/touchscreen/pcap_ts.c b/drivers/input/touchscreen/pcap_ts.c
+index ea6ef16..f57aeb8 100644
+--- a/drivers/input/touchscreen/pcap_ts.c
++++ b/drivers/input/touchscreen/pcap_ts.c
+@@ -252,19 +252,7 @@ static struct platform_driver pcap_ts_driver = {
+ 		.pm	= PCAP_TS_PM_OPS,
+ 	},
+ };
+-
+-static int __init pcap_ts_init(void)
+-{
+-	return platform_driver_register(&pcap_ts_driver);
+-}
+-
+-static void __exit pcap_ts_exit(void)
+-{
+-	platform_driver_unregister(&pcap_ts_driver);
+-}
+-
+-module_init(pcap_ts_init);
+-module_exit(pcap_ts_exit);
++module_platform_driver(pcap_ts_driver);
+ 
+ MODULE_DESCRIPTION("Motorola PCAP2 touchscreen driver");
+ MODULE_AUTHOR("Daniel Ribeiro / Harald Welte");
+diff --git a/drivers/input/touchscreen/s3c2410_ts.c b/drivers/input/touchscreen/s3c2410_ts.c
+index 64ce697..bf1a064 100644
+--- a/drivers/input/touchscreen/s3c2410_ts.c
++++ b/drivers/input/touchscreen/s3c2410_ts.c
+@@ -432,19 +432,7 @@ static struct platform_driver s3c_ts_driver = {
+ 	.probe		= s3c2410ts_probe,
+ 	.remove		= __devexit_p(s3c2410ts_remove),
+ };
+-
+-static int __init s3c2410ts_init(void)
+-{
+-	return platform_driver_register(&s3c_ts_driver);
+-}
+-
+-static void __exit s3c2410ts_exit(void)
+-{
+-	platform_driver_unregister(&s3c_ts_driver);
+-}
+-
+-module_init(s3c2410ts_init);
+-module_exit(s3c2410ts_exit);
++module_platform_driver(s3c_ts_driver);
+ 
+ MODULE_AUTHOR("Arnaud Patard <arnaud.patard@rtp-net.org>, "
+ 	      "Ben Dooks <ben@simtec.co.uk>, "
+diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchscreen/stmpe-ts.c
+index ae88e13..692b685 100644
+--- a/drivers/input/touchscreen/stmpe-ts.c
++++ b/drivers/input/touchscreen/stmpe-ts.c
+@@ -379,20 +379,7 @@ static struct platform_driver stmpe_ts_driver = {
+ 	.probe = stmpe_input_probe,
+ 	.remove = __devexit_p(stmpe_ts_remove),
+ };
+-
+-static int __init stmpe_ts_init(void)
+-{
+-	return platform_driver_register(&stmpe_ts_driver);
+-}
+-
+-module_init(stmpe_ts_init);
+-
+-static void __exit stmpe_ts_exit(void)
+-{
+-	platform_driver_unregister(&stmpe_ts_driver);
+-}
+-
+-module_exit(stmpe_ts_exit);
++module_platform_driver(stmpe_ts_driver);
+ 
+ MODULE_AUTHOR("Luotao Fu <l.fu@pengutronix.de>");
+ MODULE_DESCRIPTION("STMPEXXX touchscreen driver");
+diff --git a/drivers/input/touchscreen/tnetv107x-ts.c b/drivers/input/touchscreen/tnetv107x-ts.c
+index 0e8f63e..7e74880 100644
+--- a/drivers/input/touchscreen/tnetv107x-ts.c
++++ b/drivers/input/touchscreen/tnetv107x-ts.c
+@@ -378,19 +378,7 @@ static struct platform_driver tsc_driver = {
+ 	.driver.name	= "tnetv107x-ts",
+ 	.driver.owner	= THIS_MODULE,
+ };
+-
+-static int __init tsc_init(void)
+-{
+-	return platform_driver_register(&tsc_driver);
+-}
+-
+-static void __exit tsc_exit(void)
+-{
+-	platform_driver_unregister(&tsc_driver);
+-}
+-
+-module_init(tsc_init);
+-module_exit(tsc_exit);
++module_platform_driver(tsc_driver);
+ 
+ MODULE_AUTHOR("Cyril Chemparathy");
+ MODULE_DESCRIPTION("TNETV107X Touchscreen Driver");
+diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
+index 4303149..6c6f6d8 100644
+--- a/drivers/input/touchscreen/tps6507x-ts.c
++++ b/drivers/input/touchscreen/tps6507x-ts.c
+@@ -371,18 +371,7 @@ static struct platform_driver tps6507x_ts_driver = {
+ 	.probe = tps6507x_ts_probe,
+ 	.remove = __devexit_p(tps6507x_ts_remove),
+ };
+-
+-static int __init tps6507x_ts_init(void)
+-{
+-	return platform_driver_register(&tps6507x_ts_driver);
+-}
+-module_init(tps6507x_ts_init);
+-
+-static void __exit tps6507x_ts_exit(void)
+-{
+-	platform_driver_unregister(&tps6507x_ts_driver);
+-}
+-module_exit(tps6507x_ts_exit);
++module_platform_driver(tps6507x_ts_driver);
+ 
+ MODULE_AUTHOR("Todd Fischer <todd.fischer@ridgerun.com>");
+ MODULE_DESCRIPTION("TPS6507x - TouchScreen driver");
+diff --git a/drivers/input/touchscreen/ucb1400_ts.c b/drivers/input/touchscreen/ucb1400_ts.c
+index 3b5b5df..cf2440f 100644
+--- a/drivers/input/touchscreen/ucb1400_ts.c
++++ b/drivers/input/touchscreen/ucb1400_ts.c
+@@ -456,16 +456,7 @@ static struct platform_driver ucb1400_ts_driver = {
+ 		.name	= "ucb1400_ts",
+ 	},
+ };
+-
+-static int __init ucb1400_ts_init(void)
+-{
+-	return platform_driver_register(&ucb1400_ts_driver);
+-}
+-
+-static void __exit ucb1400_ts_exit(void)
+-{
+-	platform_driver_unregister(&ucb1400_ts_driver);
+-}
++module_platform_driver(ucb1400_ts_driver);
+ 
+ module_param(adcsync, bool, 0444);
+ MODULE_PARM_DESC(adcsync, "Synchronize touch readings with ADCSYNC pin.");
+@@ -479,8 +470,5 @@ MODULE_PARM_DESC(ts_delay_pressure,
+ 		"delay between panel setup and pressure read."
+ 		"  Default = 0us.");
+ 
+-module_init(ucb1400_ts_init);
+-module_exit(ucb1400_ts_exit);
+-
+ MODULE_DESCRIPTION("Philips UCB1400 touchscreen driver");
  MODULE_LICENSE("GPL");
-diff --git a/drivers/input/misc/ixp4xx-beeper.c b/drivers/input/misc/ixp4xx-beeper.c
-index 302ab46..50e2830 100644
---- a/drivers/input/misc/ixp4xx-beeper.c
-+++ b/drivers/input/misc/ixp4xx-beeper.c
-@@ -168,16 +168,5 @@ static struct platform_driver ixp4xx_spkr_platform_driver = {
- 	.remove		= __devexit_p(ixp4xx_spkr_remove),
- 	.shutdown	= ixp4xx_spkr_shutdown,
- };
-+module_platform_driver(ixp4xx_spkr_platform_driver);
- 
--static int __init ixp4xx_spkr_init(void)
--{
--	return platform_driver_register(&ixp4xx_spkr_platform_driver);
--}
--
--static void __exit ixp4xx_spkr_exit(void)
--{
--	platform_driver_unregister(&ixp4xx_spkr_platform_driver);
--}
--
--module_init(ixp4xx_spkr_init);
--module_exit(ixp4xx_spkr_exit);
-diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
-index 7de0ded..23cf082 100644
---- a/drivers/input/misc/max8925_onkey.c
-+++ b/drivers/input/misc/max8925_onkey.c
-@@ -166,18 +166,7 @@ static struct platform_driver max8925_onkey_driver = {
- 	.probe		= max8925_onkey_probe,
- 	.remove		= __devexit_p(max8925_onkey_remove),
- };
--
--static int __init max8925_onkey_init(void)
--{
--	return platform_driver_register(&max8925_onkey_driver);
--}
--module_init(max8925_onkey_init);
--
--static void __exit max8925_onkey_exit(void)
--{
--	platform_driver_unregister(&max8925_onkey_driver);
--}
--module_exit(max8925_onkey_exit);
-+module_platform_driver(max8925_onkey_driver);
- 
- MODULE_DESCRIPTION("Maxim MAX8925 ONKEY driver");
- MODULE_AUTHOR("Haojian Zhuang <haojian.zhuang@marvell.com>");
-diff --git a/drivers/input/misc/pcap_keys.c b/drivers/input/misc/pcap_keys.c
-index 99335c2..e09b4fe 100644
---- a/drivers/input/misc/pcap_keys.c
-+++ b/drivers/input/misc/pcap_keys.c
-@@ -125,19 +125,7 @@ static struct platform_driver pcap_keys_device_driver = {
- 		.owner	= THIS_MODULE,
- 	}
- };
--
--static int __init pcap_keys_init(void)
--{
--	return platform_driver_register(&pcap_keys_device_driver);
--};
--
--static void __exit pcap_keys_exit(void)
--{
--	platform_driver_unregister(&pcap_keys_device_driver);
--};
--
--module_init(pcap_keys_init);
--module_exit(pcap_keys_exit);
-+module_platform_driver(pcap_keys_device_driver);
- 
- MODULE_DESCRIPTION("Motorola PCAP2 input events driver");
- MODULE_AUTHOR("Ilya Petrov <ilya.muromec@gmail.com>");
-diff --git a/drivers/input/misc/pcf50633-input.c b/drivers/input/misc/pcf50633-input.c
-index 9556273..53891de 100644
---- a/drivers/input/misc/pcf50633-input.c
-+++ b/drivers/input/misc/pcf50633-input.c
-@@ -113,18 +113,7 @@ static struct platform_driver pcf50633_input_driver = {
- 	.probe = pcf50633_input_probe,
- 	.remove = __devexit_p(pcf50633_input_remove),
- };
--
--static int __init pcf50633_input_init(void)
--{
--	return platform_driver_register(&pcf50633_input_driver);
--}
--module_init(pcf50633_input_init);
--
--static void __exit pcf50633_input_exit(void)
--{
--	platform_driver_unregister(&pcf50633_input_driver);
--}
--module_exit(pcf50633_input_exit);
-+module_platform_driver(pcf50633_input_driver);
- 
- MODULE_AUTHOR("Balaji Rao <balajirrao@openmoko.org>");
- MODULE_DESCRIPTION("PCF50633 input driver");
-diff --git a/drivers/input/misc/pcspkr.c b/drivers/input/misc/pcspkr.c
-index 34f4d2e..b2484aa 100644
---- a/drivers/input/misc/pcspkr.c
-+++ b/drivers/input/misc/pcspkr.c
-@@ -134,17 +134,5 @@ static struct platform_driver pcspkr_platform_driver = {
- 	.remove		= __devexit_p(pcspkr_remove),
- 	.shutdown	= pcspkr_shutdown,
- };
-+module_platform_driver(pcspkr_platform_driver);
- 
--
--static int __init pcspkr_init(void)
--{
--	return platform_driver_register(&pcspkr_platform_driver);
--}
--
--static void __exit pcspkr_exit(void)
--{
--	platform_driver_unregister(&pcspkr_platform_driver);
--}
--
--module_init(pcspkr_init);
--module_exit(pcspkr_exit);
-diff --git a/drivers/input/misc/pm8xxx-vibrator.c b/drivers/input/misc/pm8xxx-vibrator.c
-index 4319293..dfbfb46 100644
---- a/drivers/input/misc/pm8xxx-vibrator.c
-+++ b/drivers/input/misc/pm8xxx-vibrator.c
-@@ -277,18 +277,7 @@ static struct platform_driver pm8xxx_vib_driver = {
- 		.pm	= &pm8xxx_vib_pm_ops,
- 	},
- };
--
--static int __init pm8xxx_vib_init(void)
--{
--	return platform_driver_register(&pm8xxx_vib_driver);
--}
--module_init(pm8xxx_vib_init);
--
--static void __exit pm8xxx_vib_exit(void)
--{
--	platform_driver_unregister(&pm8xxx_vib_driver);
--}
--module_exit(pm8xxx_vib_exit);
-+module_platform_driver(pm8xxx_vib_driver);
- 
- MODULE_ALIAS("platform:pm8xxx_vib");
- MODULE_DESCRIPTION("PMIC8xxx vibrator driver based on ff-memless framework");
-diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
-index b3cfb9c..0f83d0f 100644
---- a/drivers/input/misc/pmic8xxx-pwrkey.c
-+++ b/drivers/input/misc/pmic8xxx-pwrkey.c
-@@ -213,18 +213,7 @@ static struct platform_driver pmic8xxx_pwrkey_driver = {
- 		.pm	= &pm8xxx_pwr_key_pm_ops,
- 	},
- };
--
--static int __init pmic8xxx_pwrkey_init(void)
--{
--	return platform_driver_register(&pmic8xxx_pwrkey_driver);
--}
--module_init(pmic8xxx_pwrkey_init);
--
--static void __exit pmic8xxx_pwrkey_exit(void)
--{
--	platform_driver_unregister(&pmic8xxx_pwrkey_driver);
--}
--module_exit(pmic8xxx_pwrkey_exit);
-+module_platform_driver(pmic8xxx_pwrkey_driver);
- 
- MODULE_ALIAS("platform:pmic8xxx_pwrkey");
- MODULE_DESCRIPTION("PMIC8XXX Power Key driver");
-diff --git a/drivers/input/misc/pwm-beeper.c b/drivers/input/misc/pwm-beeper.c
-index 57c294f..fc84c8a 100644
---- a/drivers/input/misc/pwm-beeper.c
-+++ b/drivers/input/misc/pwm-beeper.c
-@@ -180,18 +180,7 @@ static struct platform_driver pwm_beeper_driver = {
- 		.pm	= PWM_BEEPER_PM_OPS,
- 	},
- };
--
--static int __init pwm_beeper_init(void)
--{
--	return platform_driver_register(&pwm_beeper_driver);
--}
--module_init(pwm_beeper_init);
--
--static void __exit pwm_beeper_exit(void)
--{
--	platform_driver_unregister(&pwm_beeper_driver);
--}
--module_exit(pwm_beeper_exit);
-+module_platform_driver(pwm_beeper_driver);
- 
- MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
- MODULE_DESCRIPTION("PWM beeper driver");
-diff --git a/drivers/input/misc/rb532_button.c b/drivers/input/misc/rb532_button.c
-index e2c7f62..aeb02bc 100644
---- a/drivers/input/misc/rb532_button.c
-+++ b/drivers/input/misc/rb532_button.c
-@@ -100,19 +100,7 @@ static struct platform_driver rb532_button_driver = {
- 		.owner = THIS_MODULE,
- 	},
- };
--
--static int __init rb532_button_init(void)
--{
--	return platform_driver_register(&rb532_button_driver);
--}
--
--static void __exit rb532_button_exit(void)
--{
--	platform_driver_unregister(&rb532_button_driver);
--}
--
--module_init(rb532_button_init);
--module_exit(rb532_button_exit);
-+module_platform_driver(rb532_button_driver);
- 
- MODULE_AUTHOR("Phil Sutter <n0-1@freewrt.org>");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/input/misc/rotary_encoder.c b/drivers/input/misc/rotary_encoder.c
-index 2be2169..f07f784 100644
---- a/drivers/input/misc/rotary_encoder.c
-+++ b/drivers/input/misc/rotary_encoder.c
-@@ -284,19 +284,7 @@ static struct platform_driver rotary_encoder_driver = {
- 		.owner	= THIS_MODULE,
- 	}
- };
--
--static int __init rotary_encoder_init(void)
--{
--	return platform_driver_register(&rotary_encoder_driver);
--}
--
--static void __exit rotary_encoder_exit(void)
--{
--	platform_driver_unregister(&rotary_encoder_driver);
--}
--
--module_init(rotary_encoder_init);
--module_exit(rotary_encoder_exit);
-+module_platform_driver(rotary_encoder_driver);
- 
- MODULE_ALIAS("platform:" DRV_NAME);
- MODULE_DESCRIPTION("GPIO rotary encoder driver");
-diff --git a/drivers/input/misc/sgi_btns.c b/drivers/input/misc/sgi_btns.c
-index 1a80c0d..5d9fd55 100644
---- a/drivers/input/misc/sgi_btns.c
-+++ b/drivers/input/misc/sgi_btns.c
-@@ -164,17 +164,6 @@ static struct platform_driver sgi_buttons_driver = {
+diff --git a/drivers/input/touchscreen/w90p910_ts.c b/drivers/input/touchscreen/w90p910_ts.c
+index 217aa51..9396b21 100644
+--- a/drivers/input/touchscreen/w90p910_ts.c
++++ b/drivers/input/touchscreen/w90p910_ts.c
+@@ -331,19 +331,7 @@ static struct platform_driver w90x900ts_driver = {
  		.owner	= THIS_MODULE,
  	},
  };
 -
--static int __init sgi_buttons_init(void)
+-static int __init w90x900ts_init(void)
 -{
--	return platform_driver_register(&sgi_buttons_driver);
+-	return platform_driver_register(&w90x900ts_driver);
 -}
 -
--static void __exit sgi_buttons_exit(void)
+-static void __exit w90x900ts_exit(void)
 -{
--	platform_driver_unregister(&sgi_buttons_driver);
+-	platform_driver_unregister(&w90x900ts_driver);
 -}
-+module_platform_driver(sgi_buttons_driver);
+-
+-module_init(w90x900ts_init);
+-module_exit(w90x900ts_exit);
++module_platform_driver(w90x900ts_driver);
  
- MODULE_LICENSE("GPL");
--module_init(sgi_buttons_init);
--module_exit(sgi_buttons_exit);
-diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-index 38e4b50..19a6882 100644
---- a/drivers/input/misc/twl4030-pwrbutton.c
-+++ b/drivers/input/misc/twl4030-pwrbutton.c
-@@ -107,25 +107,14 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
- }
+ MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
+ MODULE_DESCRIPTION("w90p910 touch screen driver!");
+diff --git a/drivers/input/touchscreen/wm831x-ts.c b/drivers/input/touchscreen/wm831x-ts.c
+index 9175d49..4bc851a 100644
+--- a/drivers/input/touchscreen/wm831x-ts.c
++++ b/drivers/input/touchscreen/wm831x-ts.c
+@@ -401,18 +401,7 @@ static struct platform_driver wm831x_ts_driver = {
+ 	.probe = wm831x_ts_probe,
+ 	.remove = __devexit_p(wm831x_ts_remove),
+ };
+-
+-static int __init wm831x_ts_init(void)
+-{
+-	return platform_driver_register(&wm831x_ts_driver);
+-}
+-module_init(wm831x_ts_init);
+-
+-static void __exit wm831x_ts_exit(void)
+-{
+-	platform_driver_unregister(&wm831x_ts_driver);
+-}
+-module_exit(wm831x_ts_exit);
++module_platform_driver(wm831x_ts_driver);
  
- static struct platform_driver twl4030_pwrbutton_driver = {
-+	.probe		= twl4030_pwrbutton_probe,
- 	.remove		= __exit_p(twl4030_pwrbutton_remove),
- 	.driver		= {
- 		.name	= "twl4030_pwrbutton",
- 		.owner	= THIS_MODULE,
+ /* Module information */
+ MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
+diff --git a/drivers/input/touchscreen/zylonite-wm97xx.c b/drivers/input/touchscreen/zylonite-wm97xx.c
+index f6328c0..add6e3b 100644
+--- a/drivers/input/touchscreen/zylonite-wm97xx.c
++++ b/drivers/input/touchscreen/zylonite-wm97xx.c
+@@ -223,19 +223,7 @@ static struct platform_driver zylonite_wm97xx_driver = {
+ 		.name	= "wm97xx-touch",
  	},
  };
 -
--static int __init twl4030_pwrbutton_init(void)
+-static int __init zylonite_wm97xx_init(void)
 -{
--	return platform_driver_probe(&twl4030_pwrbutton_driver,
--			twl4030_pwrbutton_probe);
+-	return platform_driver_register(&zylonite_wm97xx_driver);
 -}
--module_init(twl4030_pwrbutton_init);
 -
--static void __exit twl4030_pwrbutton_exit(void)
+-static void __exit zylonite_wm97xx_exit(void)
 -{
--	platform_driver_unregister(&twl4030_pwrbutton_driver);
+-	platform_driver_unregister(&zylonite_wm97xx_driver);
 -}
--module_exit(twl4030_pwrbutton_exit);
-+module_platform_driver(twl4030_pwrbutton_driver);
+-
+-module_init(zylonite_wm97xx_init);
+-module_exit(zylonite_wm97xx_exit);
++module_platform_driver(zylonite_wm97xx_driver);
  
- MODULE_ALIAS("platform:twl4030_pwrbutton");
- MODULE_DESCRIPTION("Triton2 Power Button");
-diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-index 3c1a432..3765137 100644
---- a/drivers/input/misc/twl4030-vibra.c
-+++ b/drivers/input/misc/twl4030-vibra.c
-@@ -278,21 +278,9 @@ static struct platform_driver twl4030_vibra_driver = {
- #endif
- 	},
- };
--
--static int __init twl4030_vibra_init(void)
--{
--	return platform_driver_register(&twl4030_vibra_driver);
--}
--module_init(twl4030_vibra_init);
--
--static void __exit twl4030_vibra_exit(void)
--{
--	platform_driver_unregister(&twl4030_vibra_driver);
--}
--module_exit(twl4030_vibra_exit);
-+module_platform_driver(twl4030_vibra_driver);
- 
- MODULE_ALIAS("platform:twl4030-vibra");
--
- MODULE_DESCRIPTION("TWL4030 Vibra driver");
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Nokia Corporation");
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index ad153a4..45874fe 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -410,18 +410,7 @@ static struct platform_driver twl6040_vibra_driver = {
- 		.pm	= &twl6040_vibra_pm_ops,
- 	},
- };
--
--static int __init twl6040_vibra_init(void)
--{
--	return platform_driver_register(&twl6040_vibra_driver);
--}
--module_init(twl6040_vibra_init);
--
--static void __exit twl6040_vibra_exit(void)
--{
--	platform_driver_unregister(&twl6040_vibra_driver);
--}
--module_exit(twl6040_vibra_exit);
-+module_platform_driver(twl6040_vibra_driver);
- 
- MODULE_ALIAS("platform:twl6040-vibra");
- MODULE_DESCRIPTION("TWL6040 Vibra driver");
-diff --git a/drivers/input/misc/wm831x-on.c b/drivers/input/misc/wm831x-on.c
-index c3d7ba5..47f18d6 100644
---- a/drivers/input/misc/wm831x-on.c
-+++ b/drivers/input/misc/wm831x-on.c
-@@ -145,18 +145,7 @@ static struct platform_driver wm831x_on_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- };
--
--static int __init wm831x_on_init(void)
--{
--	return platform_driver_register(&wm831x_on_driver);
--}
--module_init(wm831x_on_init);
--
--static void __exit wm831x_on_exit(void)
--{
--	platform_driver_unregister(&wm831x_on_driver);
--}
--module_exit(wm831x_on_exit);
-+module_platform_driver(wm831x_on_driver);
- 
- MODULE_ALIAS("platform:wm831x-on");
- MODULE_DESCRIPTION("WM831x ON pin");
+ /* Module information */
+ MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
 -- 
 1.7.8-rc2
 
