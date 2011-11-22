@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1KVCjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 21:39:20 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:34472 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab1KVCjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 21:39:20 -0500
+	id S1757050Ab1KVCqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 21:46:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab1KVCqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 21:46:24 -0500
+Message-ID: <4ECB0D7C.1020700@redhat.com>
+Date: Tue, 22 Nov 2011 10:48:28 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <86ipmdgcjo.fsf@sumi.keithp.com>
-References: <alpine.LNX.2.00.1111151301410.2693@darkstar.example.net>
- <alpine.LNX.2.00.1111191124350.5248@darkstar.example.net> <864ny0kku8.fsf@sumi.keithp.com>
- <alpine.LNX.2.00.1111212248140.2070@darkstar.example.net> <86ipmdgcjo.fsf@sumi.keithp.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Tue, 22 Nov 2011 00:38:58 -0200
-Message-ID: <CAKi4VAL-BO=4duQ18o-sQ8h4V8_-1LPg1g+QxZoTEJzp0FBJ+w@mail.gmail.com>
-Subject: Re: max PWM is zero
-To: Keith Packard <keithp@keithp.com>
-Cc: Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        linux-kernel@vger.kernel.org, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: WANG Cong <xiyou.wangcong@gmail.com>, kexec@lists.infradead.org,
+        tim@edgecast.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: fix chunk range calculation
+References: <1321467647.2137.4.camel@boudreau> <4EC47FCA.5090908@redhat.com> <CAOS58YMOuJrvGxE1VxsU=ZPTLgY60HDJoLFjTowx9ZApUQ3tTw@mail.gmail.com> <4EC491B3.705@redhat.com> <CAMMEr5k_ynqg5-7Looar2DxXTGZcMqi5Lo+jtETn9awO_bsaGg@mail.gmail.com> <4EC4B60C.3030706@redhat.com> <1321548033.12208.12.camel@boudreau> <4EC61AB6.4090808@redhat.com> <4EC61B2A.7010000@redhat.com> <20111118185535.GA27152@google.com> <20111121211050.GK25776@google.com>
+In-Reply-To: <20111121211050.GK25776@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 23:40, Keith Packard <keithp@keithp.com> wrote:
-> On Mon, 21 Nov 2011 22:48:21 +0000 (Local time zone must be set--see zic manual page), Marcos Paulo de Souza <marcos.mage@gmail.com> wrote:
->
->> My max_brightness is 1, and my brightness is 0.
->
-> Right, we've prevented the internal backlight driver from exposing a max
-> value of 0 as that's just confusing.
->
->> But, my acpi_video0 have a
->> max_brightness value = 9...
->
-> Right, sounds like your device is just using some other backlight
-> controller, which is perfectly reasonable.
->
->> So, what can I do to silence this warning...? Change the driver of
->> backlight?
->
-> If your backlight keys work correctly, then things are fine and perhaps
-> we should just remove the warning from the driver, or disable the
-> internal driver when we discover this situation.
->
-> This is the first time I've heard of this warning appearing...
+On 11/22/2011 05:10 AM, Tejun Heo wrote:
 
-It appears here as well. I think it was since 2.6.39 or 3.0, I'm not sure.
-
-Same card:
-
-00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
-Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA
-controller])
-	Subsystem: Dell Device 02bb
-	Flags: bus master, fast devsel, latency 0, IRQ 45
-	Memory at f6400000 (64-bit, non-prefetchable) [size=4M]
-	Memory at d0000000 (64-bit, prefetchable) [size=256M]
-	I/O ports at 1800 [size=8]
-	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-	Capabilities: [d0] Power Management version 3
-	Kernel driver in use: i915
-
-00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset
-Integrated Graphics Controller (rev 07)
-	Subsystem: Dell Device 02bb
-	Flags: bus master, fast devsel, latency 0
-	Memory at f6100000 (64-bit, non-prefetchable) [size=1M]
-	Capabilities: [d0] Power Management version 3
-
-My kernel log has:
-
-[drm] Driver supports precise vblank timestamp query.
-composite sync not supported
-fixme: max PWM is zero.
-composite sync not supported
+> On Fri, Nov 18, 2011 at 10:55:35AM -0800, Tejun Heo wrote:
+>> Percpu allocator recorded the cpus which map to the first and last
+>> units in pcpu_first/last_unit_cpu respectively and used them to
+>> determine the address range of a chunk - e.g. it assumed that the
+>> first unit has the lowest address in a chunk while the last unit has
+>> the highest address.
+>>
+>> This simply isn't true.  Groups in a chunk can have arbitrary positive
+>> or negative offsets from the previous one and there is no guarantee
+>> that the first unit occupies the lowest offset while the last one the
+>> highest.
+>>
+>> Fix it by actually comparing unit offsets to determine cpus occupying
+>> the lowest and highest offsets.  Also, rename pcu_first/last_unit_cpu
+>> to pcpu_low/high_unit_cpu to avoid confusion.
+>>
+>> The chunk address range is used to flush cache on vmalloc area
+>> map/unmap and decide whether a given address is in the first chunk by
+>> per_cpu_ptr_to_phys() and the bug was discovered by invalid
+>> per_cpu_ptr_to_phys() translation for crash_note.
+>>
+>> Kudos to Dave Young for tracking down the problem.
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>> Reported-by: WANG Cong <xiyou.wangcong@gmail.com>
+>> Reported-by: Dave Young <dyoung@redhat.com>
+>> LKML-Reference: <4EC21F67.10905@redhat.com>
+>> Cc: stable @kernel.org
+> 
+> BTW, waiting for Tested-by.  If someone gives me that, I'll push it
+> through percpu/for-fixes.
 
 
-Is this "composite sync not supported" related to this issue?
+Tested-by: Dave Young <dyoung@redhat.com>
+
+> 
+> Thanks.
+> 
 
 
-Lucas De Marchi
+
+-- 
+Thanks
+Dave
