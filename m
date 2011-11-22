@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758314Ab1KVLJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:09:42 -0500
+	id S1758369Ab1KVLJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:09:48 -0500
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:38576 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1KVLJk (ORCPT
+	with ESMTP id S1758345Ab1KVLJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:09:40 -0500
+	Tue, 22 Nov 2011 06:09:46 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v4 1/5] smp: Introduce a generic on_each_cpu_mask function
-Date: Tue, 22 Nov 2011 13:08:44 +0200
-Message-Id: <1321960128-15191-2-git-send-email-gilad@benyossef.com>
+Subject: [PATCH v4 3/5] tile: Move tile to use generic on_each_cpu_mask
+Date: Tue, 22 Nov 2011 13:08:46 +0200
+Message-Id: <1321960128-15191-4-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
 References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
@@ -27,89 +27,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on_each_cpu_mask calls a function on processors specified my cpumask, which may include the local processor.
-
-All the limitation specified in smp_call_function_many apply.
+The API is the same as the tile private one, so just remove the private version of the functions
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-mm@kvack.org
+CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Andi Kleen <andi@firstfloor.org>
 CC: Sasha Levin <levinsasha928@gmail.com>
 ---
- include/linux/smp.h |   16 ++++++++++++++++
- kernel/smp.c        |   20 ++++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
+ arch/tile/include/asm/smp.h |    7 -------
+ arch/tile/kernel/smp.c      |   19 -------------------
+ 2 files changed, 0 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 8cc38d3..60628d7 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -102,6 +102,13 @@ static inline void call_function_init(void) { }
- int on_each_cpu(smp_call_func_t func, void *info, int wait);
+diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
+index 532124a..1aa759a 100644
+--- a/arch/tile/include/asm/smp.h
++++ b/arch/tile/include/asm/smp.h
+@@ -43,10 +43,6 @@ void evaluate_message(int tag);
+ /* Boot a secondary cpu */
+ void online_secondary(void);
  
- /*
-+ * Call a function on processors specified by mask, which might include
-+ * the local one.
-+ */
-+void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
-+		void *info, bool wait);
-+
-+/*
-  * Mark the boot cpu "online" so that it can call console drivers in
-  * printk() and can access its per-cpu storage.
-  */
-@@ -132,6 +139,15 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- 		local_irq_enable();		\
- 		0;				\
- 	})
-+#define on_each_cpu_mask(mask, func, info, wait) \
-+	do {						\
-+		if (cpumask_test_cpu(0, (mask))) {	\
-+			local_irq_disable();		\
-+			(func)(info);			\
-+			local_irq_enable();		\
-+		}					\
-+	} while (0)
-+
- static inline void smp_send_reschedule(int cpu) { }
- #define num_booting_cpus()			1
- #define smp_prepare_boot_cpu()			do {} while (0)
-diff --git a/kernel/smp.c b/kernel/smp.c
-index db197d6..7c0cbd7 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -701,3 +701,23 @@ int on_each_cpu(void (*func) (void *info), void *info, int wait)
- 	return ret;
+-/* Call a function on a specified set of CPUs (may include this one). */
+-extern void on_each_cpu_mask(const struct cpumask *mask,
+-			     void (*func)(void *), void *info, bool wait);
+-
+ /* Topology of the supervisor tile grid, and coordinates of boot processor */
+ extern HV_Topology smp_topology;
+ 
+@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
+ 
+ #else /* !CONFIG_SMP */
+ 
+-#define on_each_cpu_mask(mask, func, info, wait)		\
+-  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
+-
+ #define smp_master_cpu		0
+ #define smp_height		1
+ #define smp_width		1
+diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
+index c52224d..a44e103 100644
+--- a/arch/tile/kernel/smp.c
++++ b/arch/tile/kernel/smp.c
+@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
+ 	send_IPI_many(&mask, tag);
  }
- EXPORT_SYMBOL(on_each_cpu);
-+
-+/*
-+ * Call a function on processors specified by cpumask, which may include
-+ * the local processor. All the limitation specified in smp_call_function_many
-+ * apply.
-+ */
-+void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
-+			void *info, bool wait)
-+{
-+	int cpu = get_cpu();
-+
-+	smp_call_function_many(mask, func, info, wait);
-+	if (cpumask_test_cpu(cpu, mask)) {
-+		local_irq_disable();
-+		func(info);
-+		local_irq_enable();
-+	}
-+	put_cpu();
-+}
-+EXPORT_SYMBOL(on_each_cpu_mask);
+ 
+-
+-/*
+- * Provide smp_call_function_mask, but also run function locally
+- * if specified in the mask.
+- */
+-void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
+-		      void *info, bool wait)
+-{
+-	int cpu = get_cpu();
+-	smp_call_function_many(mask, func, info, wait);
+-	if (cpumask_test_cpu(cpu, mask)) {
+-		local_irq_disable();
+-		func(info);
+-		local_irq_enable();
+-	}
+-	put_cpu();
+-}
+-
+-
+ /*
+  * Functions related to starting/stopping cpus.
+  */
 -- 
 1.7.0.4
 
