@@ -1,114 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758308Ab1KVLUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:20:33 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32617 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754045Ab1KVLUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:20:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,552,1315206000"; 
-   d="scan'208";a="77913708"
-Date: Tue, 22 Nov 2011 19:20:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] hda - fail ELD reading early
-Message-ID: <20111122112008.GA9207@localhost>
-References: <20111122084623.GA30050@localhost>
- <s5hlir8igp2.wl%tiwai@suse.de>
- <20111122105318.GB5730@localhost>
- <s5hfwhgifck.wl%tiwai@suse.de>
+	id S1758362Ab1KVLVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:21:06 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:56816 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888Ab1KVLVE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 06:21:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hfwhgifck.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1321917453.10276.3.camel@pjaxe>
+References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
+	<1321917453.10276.3.camel@pjaxe>
+Date: Tue, 22 Nov 2011 12:21:03 +0100
+Message-ID: <CAJfGthQzQEq66-r-tpW5LH=19iGXR0BtM8KoYRhSONXjE_S+0A@mail.gmail.com>
+Subject: Re: softirq oops from b44_poll
+From: Xander Hover <lkml@hover.be>
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 07:08:59PM +0800, Takashi Iwai wrote:
-> At Tue, 22 Nov 2011 18:53:18 +0800,
-> Wu Fengguang wrote:
-> > 
-> > On Tue, Nov 22, 2011 at 06:39:53PM +0800, Takashi Iwai wrote:
-> > > At Tue, 22 Nov 2011 16:46:23 +0800,
-> > > Wu Fengguang wrote:
-> > > > 
-> > > > With the ELD repoll mechanism, we can (and should) fail the ELD reading
-> > > > immediately when find something obviously wrong and let the caller retry
-> > > > after some delay.
-> > > > 
-> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > ---
-> > > >  sound/pci/hda/hda_eld.c |   28 +++++++++++++++++++---------
-> > > >  1 file changed, 19 insertions(+), 9 deletions(-)
-> > > > 
-> > > > --- linux.orig/sound/pci/hda/hda_eld.c	2011-11-22 16:02:58.000000000 +0800
-> > > > +++ linux/sound/pci/hda/hda_eld.c	2011-11-22 16:36:10.000000000 +0800
-> > > > @@ -347,18 +347,28 @@ int snd_hdmi_get_eld(struct hdmi_eld *el
-> > > >  
-> > > >  	for (i = 0; i < size; i++) {
-> > > >  		unsigned int val = hdmi_get_eld_data(codec, nid, i);
-> > > > +		/*
-> > > > +		 * Graphics driver might be writing to ELD buffer right now.
-> > > > +		 * Just abort. The caller will repoll after a while.
-> > > > +		 */
-> > > >  		if (!(val & AC_ELDD_ELD_VALID)) {
-> > > > -			if (!i) {
-> > > > -				snd_printd(KERN_INFO
-> > > > -					   "HDMI: invalid ELD data\n");
-> > > > -				ret = -EINVAL;
-> > > > -				goto error;
-> > > > -			}
-> > > >  			snd_printd(KERN_INFO
-> > > >  				  "HDMI: invalid ELD data byte %d\n", i);
-> > > > -			val = 0;
-> > > > -		} else
-> > > > -			val &= AC_ELDD_ELD_DATA;
-> > > > +			ret = -EINVAL;
-> > > > +			goto error;
-> > > > +		}
-> > > > +		val &= AC_ELDD_ELD_DATA;
-> > > > +		/*
-> > > > +		 * The first byte cannot be zero. This can happen on some DVI
-> > > > +		 * connections. Some Intel chips may also need some 250ms delay
-> > > > +		 * to return non-zero ELD data, even when the graphics driver
-> > > > +		 * correctly writes ELD content before setting ELD_valid bit.
-> > > > +		 */
-> > > > +		if (!val && !i) {
-> > > > +			snd_printdd(KERN_INFO "HDMI: 0 ELD data\n");
-> > > > +			ret = -EINVAL;
-> > > > +			goto error;
-> > > > +		}
-> > > 
-> > > Shouldn't this zero-check be before the valid-bit check?
-> > > Otherwise it'll never reach there.
-> > 
-> > It does reach there:
-> > 
-> >         [ 1191.016746] HDMI hot plug event: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
-> >         [ 1191.019309] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
-> > ==>     [ 1191.021803] ALSA hda_eld.c:368 HDMI: 0 ELD data
-> >         [ 1191.324661] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
-> >         [ 1191.333236] HDMI: detected monitor SONY TV at connection type HDMI
-> >         [ 1191.335020] HDMI: available speakers: FL/FR
-> >         [ 1191.335996] HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
-> > 
-> > The funny thing is, it's reporting (invalid) 0 ELD data that has
-> > the AC_ELDD_ELD_VALID bit set.
-> 
-> Ah OK.  Another slight concern is that your patch gives always the
-> error when ELD_VALID isn't set, so it makes the check more strict in
-> practice.  I guess it'd be OK, so I'll take it in.  But we need to
-> carefully hear whether anyone cries with this.
+This patch fixes the issue also. I have tried it on kernel 3.1.1.
+I will also try it on kernel 3.2_rc2  soon.
+Using dev_free_skb_any() instead of dev_free_skb_irq()  makes indeed
+more sense to me.
 
-Agreed, the original code simply sets data to 0 when !ELD_VALID. 
-If the hardware does the illogical thing (who knows) of conditional
-setting !ELD_VALID on some parts of the ELD buffer which happen to
-contain 0, we'll be in bad luck...
 
-Thanks,
-Fengguang
+On Tue, Nov 22, 2011 at 12:17 AM, Peter P Waskiewicz Jr
+<peter.p.waskiewicz.jr@intel.com> wrote:
+> On Mon, 2011-11-21 at 05:58 -0800, Xander Hover wrote:
+>> Hi all,
+>>
+>> I noticed the small discussion about the b44_poll OOPS and
+>> I also have a uni-processor PC with a broadcom network device (b44)
+>> that causes similar kernel OOPSes.
+>>
+>> Here is a (reproducible) trace that still shows up in kernel 3.1.1:
+>>
+>>  ------------[ cut here ]------------
+>>     WARNING: at kernel/softirq.c:159 local_bh_enable+0x32/0x79()
+>>     Hardware name: Dimension 2400
+>>     Modules linked in: snd_seq_midi snd_emu10k1_synth snd_emux_synth
+>> snd_seq_virmidi snd_seq_midi_emul snd_seq_oss snd_seq_midi_event
+>> snd_seq snd_pcm_oss snd_mixer_oss bnep rfcomm cryptd aes_i586
+>> aes_generic ecb btusb bluetooth rfkill ppdev snd_emu10k1 snd_rawmidi
+>> snd_ac97_codec ac97_bus snd_pcm snd_seq_device snd_timer
+>> snd_page_alloc dcdbas snd_util_mem parport_pc snd_hwdep snd parport
+>> emu10k1_gp rtc_cmos gameport i2c_i801
+>>     Pid: 0, comm: swapper Not tainted 3.1.1-gentoo #1
+>>     Call Trace:
+>>      [<c1022970>] warn_slowpath_common+0x65/0x7a
+>>      [<c102699e>] ? local_bh_enable+0x32/0x79
+>>      [<c1022994>] warn_slowpath_null+0xf/0x13
+>>      [<c102699e>] local_bh_enable+0x32/0x79
+>>      [<c134bfd8>] destroy_conntrack+0x7c/0x9b
+>>      [<c134890b>] nf_conntrack_destroy+0x1f/0x26
+>>      [<c132e3a6>] skb_release_head_state+0x74/0x83
+>>      [<c132e286>] __kfree_skb+0xb/0x6b
+>>      [<c132e30a>] consume_skb+0x24/0x26
+>>      [<c127c925>] b44_poll+0xaa/0x449
+>>      [<c1333ca1>] net_rx_action+0x3f/0xea
+>>      [<c1026a44>] __do_softirq+0x5f/0xd5
+>>      [<c10269e5>] ? local_bh_enable+0x79/0x79
+>>      <IRQ>  [<c1026c32>] ? irq_exit+0x34/0x8d
+>>      [<c1003628>] ? do_IRQ+0x74/0x87
+>>      [<c13f5329>] ? common_interrupt+0x29/0x30
+>>      [<c1006e18>] ? default_idle+0x29/0x3e
+>>      [<c10015a7>] ? cpu_idle+0x2f/0x5d
+>>      [<c13e91c5>] ? rest_init+0x79/0x7b
+>>      [<c15c66a9>] ? start_kernel+0x297/0x29c
+>>      [<c15c60b0>] ? i386_start_kernel+0xb0/0xb7
+>>     ---[ end trace 583f33bb1aa207a9 ]---
+>>
+>>
+>> However if I apply the following patch this error does not show up anymore:
+>>
+>>
+>> diff --git a/drivers/net/ethernet/broadcom/b44.c
+>> b/drivers/net/ethernet/broadcom/b44.c
+>> index 4cf835d..3fb66d0 100644
+>> --- a/drivers/net/ethernet/broadcom/b44.c
+>> +++ b/drivers/net/ethernet/broadcom/b44.c
+>> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
+>>                                  skb->len,
+>>                                  DMA_TO_DEVICE);
+>>                 rp->skb = NULL;
+>> -               dev_kfree_skb(skb);
+>> +               dev_kfree_skb_irq(skb);
+>
+> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
+> instead, since that will handle the in-interrupt case if that's where
+> we're stuck.
+>
+> Can you try this patch (compile-tested only) and see if fixes the issue
+> you're seeing:
+>
+> commit e36ef2c1a2b6b517ed43254eb89768794a049b1c
+> Author: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> Date:   Mon Nov 21 15:14:18 2011 -0800
+>
+> b44: Use dev_kfree_skb_any() in b44_tx()
+>
+> Reported issues when using dev_kfree_skb() on UP systems and
+> systems with low numbers of cores.  dev_kfree_skb_any() will
+> properly save IRQ state before freeing the skb, depending on
+> how b44_tx() is invoked.
+>
+> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> ---
+>
+>  drivers/net/ethernet/broadcom/b44.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>
+> diff --git a/drivers/net/ethernet/broadcom/b44.c
+> b/drivers/net/ethernet/broadcom/b44.c
+> index 4cf835d..6a7c39b 100644
+> --- a/drivers/net/ethernet/broadcom/b44.c
+> +++ b/drivers/net/ethernet/broadcom/b44.c
+> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
+>                                 skb->len,
+>                                 DMA_TO_DEVICE);
+>                rp->skb = NULL;
+> -               dev_kfree_skb(skb);
+> +               dev_kfree_skb_any(skb);
+>        }
+>
+>        bp->tx_cons = cons;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
