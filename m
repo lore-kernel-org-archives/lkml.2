@@ -1,229 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1KVSz3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:55:29 -0500
-Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:52573 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754041Ab1KVSz1 (ORCPT
+	id S1754906Ab1KVSzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:55:45 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:55581 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab1KVSzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:55:27 -0500
-Date: Tue, 22 Nov 2011 19:55:13 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: w.sang@pengutronix.de
-Cc: Wim@vger.kernel.org, wim@iguana.be, Welte@vger.kernel.org,
-        Van@vger.kernel.org, Sebroeck@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        HaraldWelte@viatech.com, Harald@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <4ecbf011.dZASXe6D5kH4Uxve%marc.vertes@sigfox.com>
-References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
- <20111122112212.GD2734@pengutronix.de>
- <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
- <20111122173029.GA14349@pengutronix.de>
- <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
-In-Reply-To: <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Tue, 22 Nov 2011 13:55:43 -0500
+Date: Tue, 22 Nov 2011 19:55:40 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: slub: Lockout validation scans during freeing of object
+Message-ID: <20111122185540.GA1627@x4.trippels.de>
+References: <alpine.DEB.2.00.1111221033350.28197@router.home>
+ <alpine.DEB.2.00.1111221040300.28197@router.home>
+ <alpine.DEB.2.00.1111221052130.28197@router.home>
+ <1321982484.18002.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <alpine.DEB.2.00.1111221139240.28197@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 17298607644379039526
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -230
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucculddquddttddmnehlihhnuhigfeigucdlqdeftddmnehvohhiugdpihhnthculddquddttddm
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1111221139240.28197@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc Vertes <marc.vertes@sigfox.com> wrote:
+On 2011.11.22 at 11:40 -0600, Christoph Lameter wrote:
+> On Tue, 22 Nov 2011, Eric Dumazet wrote:
+> 
+> > This seems better, but I still have some warnings :
+> 
+> Trying to reproduce with a kernel configured to do preempt. This is
+> actually quite interesting since its always off by 1.
 
-> Thanks for your comments, I'm preparing an update.
+BTW there are some obvious overflows in the "slabinfo -l" output on my machine:
 
-Here:
----
-Add a new driver for the hardware watchdog timer on VIA chipsets.
-This driver uses the new watchdog framework.
-Tested on a Artigo A1100, VX855 chipset.
+Name                   Objects Objsize    Space Slabs/Part/Cpu  O/S O %Fr %Ef Flg
+:t-0000024                 680      24    16.3K          0/0/4  170 0   0  99 *
+:t-0000032                 768      32    24.5K          0/0/6  128 0   0 100 *
+:t-0000040                1632      40    65.5K         13/0/3  102 0   0  99 *
+:t-0000048                4533      48   241.6K 18446744073709551583/9/92   85 0  15  90 *
+:t-0000064                3392      64   217.0K        30/0/23   64 0   0 100 *
+:t-0000072                4368      72   319.4K         73/0/5   56 0   0  98 *
+:t-0000112                 720     112    81.9K         0/0/20   36 0   0  98 *
+:t-0000128                1684     128   233.4K 18446744073709551607/7/66   32 0  12  92 *
+:t-0000136                 120     136    16.3K          0/0/4   30 0   0  99 *
+:t-0000144                8036     144     1.1M        283/0/4   28 0   0  98 *
+:t-0000192                4452     192   872.4K       165/0/48   21 0   0  97 *
+:t-0000216                  90     216    20.4K          1/0/4   18 0   0  94 *
+:t-0000256                 539     256   147.4K 18446744073709551609/3/43   16 0   8  93 *
+:t-0000320                2425     320   794.6K         93/0/4   25 1   0  97 *A
+:t-0000400                  60     400    24.5K          0/0/3   20 1   0  97 *
+:t-0000512                 640     512   327.6K        23/0/17   16 1   0 100 *
+:t-0000704                 483     704   344.0K         0/0/21   23 2   0  98 *A
+:t-0001024                 373    1024   475.1K       15/10/14   16 2  34  80 *
+:t-0002048                 288    2048   589.8K         10/0/8   16 3   0 100 *
+:t-0004096                 119    4096   524.2K         4/3/12    8 3  18  92 *
+Acpi-State                 204      80    16.3K          0/0/4   51 0   0  99 
+anon_vma                  3528      64   258.0K         9/0/54   56 0   0  87 
+bdev_cache                  84     728    65.5K          0/0/4   21 2   0  93 Aa
+blkdev_queue                38    1664    65.5K          0/0/2   19 3   0  96 
+blkdev_requests            161     344    57.3K          0/0/7   23 1   0  96 
+buffer_head               1014     104   106.4K         5/0/21   39 0   0  99 a
+cfq_queue                  102     232    24.5K          1/0/5   17 0   0  96 
+dentry                   15897     192     3.1M       723/0/34   21 0   0  98 a
+idr_layer_cache            390     544   212.9K          8/0/5   30 2   0  99 
+inode_cache               6448     512     3.4M        199/0/9   31 2   0  96 a
+ip_fib_trie                219      56    12.2K          0/0/3   73 0   0  99 
+kmalloc-16                3072      16    49.1K          7/0/5  256 0   0 100 
+kmalloc-8                 4608       8    36.8K          4/0/5  512 0   0 100 
+kmalloc-8192                20    8192   163.8K          1/0/4    4 3   0 100 
+kmalloc-96                 840      96    81.9K         7/0/13   42 0   0  98 
+kmem_cache                  21     192     4.0K          0/0/1   21 0   0  98 *A
+kmem_cache_node            192      64    12.2K          0/0/3   64 0   0 100 *A
+mm_struct                  171     832   147.4K          0/0/9   19 2   0  96 A
+mqueue_inode_cache          19     800    16.3K          0/0/1   19 2   0  92 A
+nf_conntrack_ffffffff8199e380       60     264    16.3K          0/0/2   30 1   0  96 
+proc_inode_cache           420     576   245.7K         2/0/13   28 2   0  98 a
+radix_tree_node           3472     560     2.0M        120/0/4   28 2   0  95 a
+RAW                         42     712    32.7K          0/0/2   21 2   0  91 A
+shmem_inode_cache         1036     576   606.2K        21/0/16   28 2   0  98 
+sighand_cache              210    2088   458.7K         3/0/11   15 3   0  95 A
+signal_cache               268     920   360.4K 18446744073709551614/7/24   17 2  31  68 A
+sigqueue                   125     160    20.4K          0/0/5   25 0   0  97 
+skbuff_fclone_cache         72     420    32.7K          0/0/4   18 1   0  92 A
+sock_inode_cache           196     560   114.6K          0/0/7   28 2   0  95 Aa
+task_struct                215    1504   557.0K          9/9/8   21 3  52  58 
+TCP                         21    1504    32.7K          0/0/1   21 3   0  96 A
+UDP                         63     736    49.1K          0/0/3   21 2   0  94 A
+vm_area_struct            3278     168   602.1K       89/33/58   24 0  22  91 
+xfs_btree_cur               76     208    16.3K          0/0/4   19 0   0  96 
+xfs_buf_item               108     224    24.5K          0/0/6   18 0   0  98 
+xfs_da_state                64     488    32.7K          0/0/4   16 1   0  95 
+xfs_inode                 7055     896     6.7M        411/0/4   17 2   0  92 Aa
+xfs_log_ticket              80     200    16.3K          0/0/4   20 0   0  97 
+xfs_trans                  116     280    32.7K          0/0/4   29 1   0  99 
 
-Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
----
 
- Kconfig   |   14 ++++++
- Makefile  |    1 
- via_wdt.c |  132 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 147 insertions(+)
-
---- linux-3.2-rc2/drivers/watchdog/Makefile.orig	2011-11-15 18:02:59.000000000 +0100
-+++ linux-3.2-rc2/drivers/watchdog/Makefile	2011-11-18 18:13:36.594534635 +0100
-@@ -100,6 +100,7 @@ obj-$(CONFIG_SBC7240_WDT) += sbc7240_wdt
- obj-$(CONFIG_CPU5_WDT) += cpu5wdt.o
- obj-$(CONFIG_SMSC_SCH311X_WDT) += sch311x_wdt.o
- obj-$(CONFIG_SMSC37B787_WDT) += smsc37b787_wdt.o
-+obj-$(CONFIG_VIA_WDT) += via_wdt.o
- obj-$(CONFIG_W83627HF_WDT) += w83627hf_wdt.o
- obj-$(CONFIG_W83697HF_WDT) += w83697hf_wdt.o
- obj-$(CONFIG_W83697UG_WDT) += w83697ug_wdt.o
---- linux-3.2-rc2/drivers/watchdog/via_wdt.c.orig	2011-11-18 18:14:45.358174874 +0100
-+++ linux-3.2-rc2/drivers/watchdog/via_wdt.c	2011-11-22 19:42:06.219529719 +0100
-@@ -0,0 +1,132 @@
-+/*
-+ * VIA Chipset Watchdog Driver
-+ *
-+ * Copyright (C) 2011 Sigfox
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Marc Vertes <marc.vertes@sigfox.com>
-+ * Based on a preliminary version from Harald Welte <HaraldWelte@viatech.com>
-+ *
-+ * The only way to activate the watchdog timer or to set its period is
-+ * through BIOS setup.
-+ */
-+#include <linux/device.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/watchdog.h>
-+
-+#define VIA_WDT_MB_OFFSET	0xe8	/* memory base offset */
-+#define VIA_WDT_TRIGGER		0x80	/* start a new countdown */
-+#define VIA_WDT_FIRED		0x02	/* set if last restart was caused
-+					   by expired watchdog timer */
-+
-+static int wdt_start(struct watchdog_device *wdev)
-+{
-+	/* Nothing to do. The watchdog can only be started by the BIOS. */
-+	return 0;
-+}
-+
-+static int wdt_stop(struct watchdog_device *wdev)
-+{
-+	/* Nothing to do. The watchdog can not be stopped. */
-+	return 0;
-+}
-+
-+static int wdt_ping(struct watchdog_device *wdev)
-+{
-+	void __iomem *wdt_mem = watchdog_get_drvdata(wdev);
-+	unsigned int res = readl(wdt_mem);	/* get status bits */
-+
-+	writel(res | VIA_WDT_TRIGGER, wdt_mem);
-+	return 0;
-+}
-+
-+static struct watchdog_info wdt_info = {
-+	.identity = "VIA watchdog",
-+	.options  =  WDIOF_CARDRESET,
-+};
-+
-+static struct watchdog_ops wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = wdt_start,
-+	.stop  = wdt_stop,
-+	.ping  = wdt_ping,
-+};
-+
-+static struct watchdog_device wdt_dev = {
-+	.info = &wdt_info,
-+	.ops  = &wdt_ops,
-+};
-+
-+static int __devinit wdt_probe(struct pci_dev *pdev,
-+			       const struct pci_device_id *ent)
-+{
-+	unsigned int mmio = 0;
-+	void __iomem *wdt_mem;
-+	int ret;
-+
-+	if (pci_enable_device(pdev)) {
-+		dev_err(&pdev->dev, "cannot enable PCI device\n");
-+		return -ENODEV;
-+	}
-+	pci_read_config_dword(pdev, VIA_WDT_MB_OFFSET, &mmio);
-+	if (mmio) {
-+		dev_info(&pdev->dev, "VIA Chipset watchdog MMIO: %x\n", mmio);
-+	} else {
-+		dev_err(&pdev->dev, "watchdog timer is not enabled in BIOS\n");
-+		return -ENODEV;
-+	}
-+	wdt_mem = ioremap(mmio, 8);
-+	if (wdt_mem == NULL) {
-+		dev_err(&pdev->dev, "cannot remap VIA wdt MMIO registers\n");
-+		return -ENODEV;
-+	}
-+	ret = watchdog_register_device(&wdt_dev);
-+	if (ret) {
-+		iounmap(wdt_mem);
-+		return ret;
-+	}
-+	watchdog_set_drvdata(&wdt_dev, wdt_mem);
-+	if (readl(wdt_mem) & VIA_WDT_FIRED)
-+		wdt_dev.bootstatus |= WDIOF_CARDRESET;
-+	return 0;
-+}
-+
-+static void __devexit wdt_remove(struct pci_dev *dev)
-+{
-+	void __iomem *wdt_mem = watchdog_get_drvdata(&wdt_dev);
-+
-+	watchdog_unregister_device(&wdt_dev);
-+	iounmap(wdt_mem);
-+}
-+
-+DEFINE_PCI_DEVICE_TABLE(wdt_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX800) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX855) },
-+	{ 0 }
-+};
-+
-+static struct pci_driver wdt_driver = {
-+	.name		= "via_wdt",
-+	.id_table	= wdt_pci_table,
-+	.probe		= wdt_probe,
-+	.remove		= __devexit_p(wdt_remove),
-+};
-+
-+static int __init wdt_init(void)
-+{
-+	return pci_register_driver(&wdt_driver);
-+}
-+
-+static void __exit wdt_exit(void)
-+{
-+	pci_unregister_driver(&wdt_driver);
-+}
-+
-+module_init(wdt_init);
-+module_exit(wdt_exit);
-+
-+MODULE_AUTHOR("Marc Vertes");
-+MODULE_DESCRIPTION("Driver for watchdog timer on VIA chipset");
-+MODULE_LICENSE("GPL");
---- linux-3.2-rc2/drivers/watchdog/Kconfig.orig	2011-11-15 18:02:59.000000000 +0100
-+++ linux-3.2-rc2/drivers/watchdog/Kconfig	2011-11-22 16:39:38.175325620 +0100
-@@ -779,6 +779,20 @@ config SMSC37B787_WDT
- 
- 	  Most people will say N.
- 
-+config VIA_WDT
-+	tristate "VIA Watchdog Timer"
-+	depends on X86
-+	select WATCHDOG_CORE
-+	---help---
-+	This is the driver for the hardware watchdog timer on VIA
-+	southbridge chipset CX700, VX800, VX855. Watchdog setup
-+	in BIOS is required.
-+
-+	To compile this driver as a module, choose M here; the module
-+	will be called via_wdt.
-+
-+	Most people will say N.
-+
- config W83627HF_WDT
- 	tristate "W83627HF/W83627DHG Watchdog Timer"
- 	depends on X86
+-- 
+Markus
