@@ -1,60 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab1KVI1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 03:27:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40156 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab1KVI1S (ORCPT
+	id S1755974Ab1KVIfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 03:35:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35363 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab1KVIfQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 03:27:18 -0500
-Message-ID: <1321950432.27077.27.camel@edumazet-laptop>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Christian Kujau <lists@nerdbynature.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Date: Tue, 22 Nov 2011 09:27:12 +0100
-In-Reply-To: <1321948113.27077.24.camel@edumazet-laptop>
-References: <20111121131531.GA1679@x4.trippels.de>
-	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121153621.GA1678@x4.trippels.de>
-	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121161036.GA1679@x4.trippels.de>
-	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121173556.GA1673@x4.trippels.de>
-	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121185215.GA1673@x4.trippels.de>
-	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
-	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-	 <alpine.DEB.2.00.1111212105330.19606@router.home>
-	 <1321948113.27077.24.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 22 Nov 2011 03:35:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJ8eaTyYcJMjgj5AtFT7tgk9JEFHjHZbgBJcpenzAJ+KdFvnVw@mail.gmail.com>
+References: <CAJ8eaTyYcJMjgj5AtFT7tgk9JEFHjHZbgBJcpenzAJ+KdFvnVw@mail.gmail.com>
+Date: Tue, 22 Nov 2011 14:05:14 +0530
+Message-ID: <CAJ8eaTzgbPCgV1Bo7gGACKD_bKOmKb9KA_+LJQ1-L5Sgp=f5EQ@mail.gmail.com>
+Subject: busybox utility
+From: naveen yadav <yad.naveen@gmail.com>
+To: linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 22 novembre 2011 à 08:48 +0100, Eric Dumazet a écrit :
+Dear all,
 
-> For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
-> machines.
-> 
+I am checking busybox utility, Is there any other package available
+similar to busybox which �we can use in embedded system .
 
-
-By the way, I wonder why we still emit this_cpu_cmpxchg16b_emu() code
-and calls when compiling a kernel for a cpu implementing cmpxchg16b
-
-(CONFIG_MCORE2=y)
-
-
-
+Thanks
