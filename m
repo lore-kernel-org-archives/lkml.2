@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab1KVJsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 04:48:00 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37064 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751119Ab1KVJr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 04:47:59 -0500
-Date: Tue, 22 Nov 2011 09:47:38 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
-Message-ID: <20111122094738.GB31064@arm.com>
-References: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
+	id S1757805Ab1KVJvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 04:51:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40894 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab1KVJvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 04:51:46 -0500
+Date: Tue, 22 Nov 2011 09:51:42 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] mm: compaction: avoid overwork in migrate sync mode
+Message-ID: <20111122095142.GI19415@suse.de>
+References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
+ <1321732460-14155-6-git-send-email-aarcange@redhat.com>
+ <4ECAC9C8.5040202@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4ECAC9C8.5040202@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Tue, Nov 22, 2011 at 01:03:58AM +0000, Stephen Rothwell wrote:
-> Today's linux-next merge of the arm-lpae tree got a conflict in
-> arch/arm/mm/ioremap.c between commit 3afb51f744b6 ("ARM: add generic
-> ioremap optimization by reusing static mappings") from the arm tree and
-> commit ec93d80c4b07 ("ARM: LPAE: Page table maintenance for the 3-level
-> format") from the arm-lpae tree.
+On Mon, Nov 21, 2011 at 04:59:36PM -0500, Rik van Riel wrote:
+> On 11/19/2011 02:54 PM, Andrea Arcangeli wrote:
+> >Add a lightweight sync migration (sync == 2) mode that avoids overwork
+> >so more suitable to be used by compaction to provide lower latency but
 > 
-> I guessed (probably incorrectly) about the fix up (see below).  Please
-> supply a better fix if necessary.
+> >--- a/mm/compaction.c
+> >+++ b/mm/compaction.c
+> >@@ -552,7 +552,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+> >  		nr_migrate = cc->nr_migratepages;
+> >  		err = migrate_pages(&cc->migratepages, compaction_alloc,
+> >  				(unsigned long)cc, false,
+> >-				cc->sync);
+> >+				cc->sync ? 2 : 0);
+> 
+> Great idea, but it would be good if these numbers got
+> a symbolic name so people trying to learn the code can
+> figure it out a little easier.
+> 
 
-Thanks for pointing out. I'll have a look at the conflict and let you
-know.
-
-> More generally, is the LPAE stuff going to be merged soon?  
-
-Hopefully I get it merged during the upcoming merging window (for
-3.3-rc1) but it does not depend only on me.
-
-> The above
-> arm-lpae commit dates from February (though it was recommitted on Nov
-> 15) ...
-
-Maybe I should do a 'git rebase --ignore-date', it doesn't make much
-sense for a reworked patch to still keep the original author date.
+I took the bulk of this patch and gave them symbolic names when trying
+to reconcile the two series. I didn't take all this patch such as
+varying the number of passes because even if that turns out to be of
+benefit, it should be a separate patch.
 
 -- 
-Catalin
+Mel Gorman
+SUSE Labs
