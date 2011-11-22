@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab1KVIOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 03:14:01 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55636 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab1KVIOA (ORCPT
+	id S1755840Ab1KVIT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 03:19:57 -0500
+Received: from fmmailgate06.web.de ([217.72.192.247]:36315 "EHLO
+	fmmailgate06.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab1KVIT4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 03:14:00 -0500
-Date: Tue, 22 Nov 2011 08:13:17 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
-Message-ID: <20111122081317.GB22232@flint.arm.linux.org.uk>
-References: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
+	Tue, 22 Nov 2011 03:19:56 -0500
+Date: Tue, 22 Nov 2011 09:19:54 +0100 (CET)
+From: "Nicolas Kalkhof" <nkalkhof@web.de>
+To: "Mike Galbraith" <efault@gmx.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        maciej.rutecki@gmail.com
+Message-ID: <1525712996.2585575.1321949994931.JavaMail.fmail@mwmweb003>
+Subject: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: normal
+Sensitivity: Normal
+X-Provags-ID: V01U2FsdGVkX1+U7TfQcVPFXfXjSKo+nsbgGsmyI6pA1TgaI+N7VnggF+tZI/4HlFrG
+ 4PQiShWIe7cIFZONJXUP/w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 12:03:58PM +1100, Stephen Rothwell wrote:
-> diff --cc arch/arm/mm/ioremap.c
-> index 12c7ad2,d1f78ba..0000000
-> --- a/arch/arm/mm/ioremap.c
-> +++ b/arch/arm/mm/ioremap.c
-> @@@ -194,7 -208,14 +202,8 @@@ void __iomem * __arm_ioremap_pfn_caller
->   	 */
->   	if (pfn >= 0x100000 && (__pfn_to_phys(pfn) & ~SUPERSECTION_MASK))
->   		return NULL;
-> + #endif
->   
->  -	/*
->  -	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
->  -	 */
->  -	if (WARN_ON(pfn_valid(pfn)))
->  -		return NULL;
->  -
+Hi Mike,
 
-This certainly is not correct - if Catalin's lpae tree is removing this
-then that needs to be fixed.
+thanks for your reply! I didn't set any polling explicitly.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+My boot params are:
+intel_iommu=off pcie_aspm=force i915.powersave=1 i915.i915_enable_rc6=1
+
+and in the cpufrequtils startup daemon the only parameter set is:
+# Options when starting cpufreq (given to the `cpufreq-set` program)
+START_OPTS="--governor ondemand"
+
+egrep "IDLE|GOV" .config yields:
+
+CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+CONFIG_ARCH_HAS_DEFAULT_IDLE=y
+# CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+# CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+CONFIG_CPU_FREQ_GOV_USERSPACE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_INTEL_IDLE=y
+# CONFIG_I7300_IDLE is not set
+
+Any advice?
+
+Thanks and Regards
+Nic
+
+
+
+-----Ursprüngliche Nachricht-----
+Von: "Mike Galbraith" <efault@gmx.de>
+Gesendet: Nov 22, 2011 6:03:03 AM
+An: "Nicolas Kalkhof" <nkalkhof@web.de>
+Betreff: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
+
+>On Mon, 2011-11-21 at 22:40 +0100, Nicolas Kalkhof wrote:
+>> This happens on my machine after some minutes, too when running X and
+>> the trinity desktop. the cpu continuously uses up additional ~10 watts
+>> comparing to older 3.1 kernels. The issue remains high even after I
+>> kill X. A closer investigation shows that poll_idle uses up the cpu
+>> (see dump below). Is it normal for poll_idle to use up all ressources?
+>
+>poll_idle should not consume cycles on i7 unless you booted idle=poll,
+>or miss-configured the kernel.
+>
+>egrep 'IDLE|GOV' .config
+>
+>CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+>CONFIG_ARCH_HAS_DEFAULT_IDLE=y
+>CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
+># CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+># CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
+># CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
+>CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+>CONFIG_CPU_FREQ_GOV_POWERSAVE=m
+>CONFIG_CPU_FREQ_GOV_USERSPACE=m
+>CONFIG_CPU_FREQ_GOV_ONDEMAND=m
+>CONFIG_CPU_FREQ_GOV_CONSERVATIVE=m
+>CONFIG_CPU_IDLE=y
+>CONFIG_CPU_IDLE_GOV_LADDER=y
+>CONFIG_CPU_IDLE_GOV_MENU=y
+>CONFIG_INTEL_IDLE=y
+>CONFIG_I7300_IDLE_IOAT_CHANNEL=y
+>CONFIG_I7300_IDLE=m
+>CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND=y
+>CONFIG_DEVFREQ_GOV_PERFORMANCE=y
+>CONFIG_DEVFREQ_GOV_POWERSAVE=y
+>CONFIG_DEVFREQ_GOV_USERSPACE=y
+>
+>
+
+
+___________________________________________________________
+SMS schreiben mit WEB.DE FreeMail - einfach, schnell und
+kostenguenstig. Jetzt gleich testen! http://f.web.de/?mc=021192
