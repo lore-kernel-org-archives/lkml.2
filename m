@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab1KVVZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:25:10 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59383 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab1KVVZI (ORCPT
+	id S1758503Ab1KVVZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:25:52 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58531 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab1KVVZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:25:08 -0500
+	Tue, 22 Nov 2011 16:25:50 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernation: Refactor and simplify
+ hibernation_snapshot() code
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Wed, 23 Nov 2011 02:55:40 +0530
+Message-ID: <20111122212500.11648.2252.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20111122210930.GJ2203@ZenIV.linux.org.uk>
-References: <20111122174419.GI2203@ZenIV.linux.org.uk> <CA+55aFz+9TN2z+q9vH2g0wMq6_X8AfYANrntGQd_et+U5+c74Q@mail.gmail.com>
- <20111122210930.GJ2203@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 22 Nov 2011 13:24:46 -0800
-X-Google-Sender-Auth: VNFAytnmzB83tqE1SZUqTlvst_I
-Message-ID: <CA+55aFyhYDOt49v7kn3nKqr3gNt9+ZcCdT6qa3OZjiL+OLPjpw@mail.gmail.com>
-Subject: Re: [git pull] vfs fix
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112221-5816-0000-0000-000000281FF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 1:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> FWIW, the fixed form of script follows; if you see any potential problems in
-> it, please tell:
+The goto statements in hibernation_snapshot() are a bit complex.
+Refactor the code to remove some of them, thereby simplifying the
+implementation.
 
-So not problems per se, just not very pretty.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+This is on top of the patch posted at https://lkml.org/lkml/2011/11/21/498
 
-> echo Shortlog:
-> base=`git merge-base origin "$1"`
-> git log --pretty=short "$base..$1" | git shortlog
-> echo Diffstat:
-> git diff --stat -M "$base..$1"
+ kernel/power/hibernate.c |   22 +++++++++-------------
+ 1 files changed, 9 insertions(+), 13 deletions(-)
 
-I would suggest this instead:
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index a6b0503..ebf62c3 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -333,7 +333,7 @@ static int create_image(int platform_mode)
+  */
+ int hibernation_snapshot(int platform_mode)
+ {
+-	pm_message_t msg = PMSG_RECOVER;
++	pm_message_t msg;
+ 	int error;
+ 
+ 	error = platform_begin(platform_mode);
+@@ -362,26 +362,26 @@ int hibernation_snapshot(int platform_mode)
+ 
+ 	error = dpm_prepare(PMSG_FREEZE);
+ 	if (error) {
+-		dpm_complete(msg);
++		dpm_complete(PMSG_RECOVER);
+ 		goto Cleanup;
+ 	}
+ 
+ 	suspend_console();
+ 	pm_restrict_gfp_mask();
++
+ 	error = dpm_suspend(PMSG_FREEZE);
+-	if (error)
+-		goto Recover_platform;
+ 
+-	if (hibernation_test(TEST_DEVICES))
+-		goto Recover_platform;
++	if (error || hibernation_test(TEST_DEVICES))
++		platform_recover(platform_mode);
++	else
++		error = create_image(platform_mode);
+ 
+-	error = create_image(platform_mode);
+ 	/*
+-	 * Control returns here (1) after the image has been created or the
++	 * In the case that we call create_image() above, the control
++	 * returns here (1) after the image has been created or the
+ 	 * image creation has failed and (2) after a successful restore.
+ 	 */
+ 
+- Resume_devices:
+ 	/* We may need to release the preallocated image pages here. */
+ 	if (error || !in_suspend)
+ 		swsusp_free();
+@@ -399,10 +399,6 @@ int hibernation_snapshot(int platform_mode)
+ 	platform_end(platform_mode);
+ 	return error;
+ 
+- Recover_platform:
+-	platform_recover(platform_mode);
+-	goto Resume_devices;
+-
+  Cleanup:
+ 	swsusp_free();
+ 	goto Close;
 
-  echo Shortlog:
-  git shortlog "origin..$1"
-  echo Diffstat:
-  git diff --stat --summary -M "origin...$1"
-
-and skip all the merge-base crap (git will do it for you: with a "git
-log" you don't need it, and with a "git diff" the three-dot version
-will do it for you). And just use "git shortlog" directly.
-
-And the above also uses "--summary" for the "git diff" to show a
-summary of renames/deletes.
-
-                        Linus
