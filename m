@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab1KVOci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 09:32:38 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:54828 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab1KVOch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 09:32:37 -0500
-Date: Tue, 22 Nov 2011 09:32:20 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: ANNIE LI <annie.li@oracle.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Paul Durrant <paul.durrant@citrix.com>,
-        Kurt Hackel <Kurt.Hackel@oracle.com>
-Subject: Re: Forth version patches for upstreaming grant table version 2
-Message-ID: <20111122143220.GB3430@phenom.dumpdata.com>
-References: <4ECB77BB.9090401@oracle.com>
+	id S1756069Ab1KVOiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 09:38:01 -0500
+Received: from xyratex195.xyratex.com ([194.131.166.195]:49327 "EHLO
+	XY01EX22.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754174Ab1KVOiA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 09:38:00 -0500
+X-Greylist: delayed 832 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Nov 2011 09:37:59 EST
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ECB77BB.9090401@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4ECBB280.0061,ss=1,re=0.000,fgs=0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating its implementation
+Date: Tue, 22 Nov 2011 06:24:01 -0800
+Message-ID: <FC1F9E38C0703341A1A750524E2525A901978CD9@XYUS-EX22.xyus.xyratex.com>
+In-Reply-To: <1321569820.1624.290.camel@localhost.localdomain>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating its implementation
+Thread-Index: Acymr77G/TtqxpMsRzirD2wodiI1UwCccEHQ
+References: <1321569820.1624.290.camel@localhost.localdomain>
+From: "Mark Salyzyn" <mark_salyzyn@us.xyratex.com>
+To: "Thomas Meyer" <thomas@m3y3r.de>, <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Cc: "Achim Leubner" <Achim_Leubner@pmc-sierra.com>,
+        "Mahesh Rajashekhara" <Mahesh_Rajashekhara@pmc-sierra.com>
+X-OriginalArrivalTime: 22 Nov 2011 14:24:04.0909 (UTC) FILETIME=[636ECDD0:01CCA922]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 06:21:47PM +0800, ANNIE LI wrote:
-> Hi
-> 
-> The following patches introduce and implement grant table version 2.
-> This is the forth version patches, and based on v3.2.0-rc1+. Changes
-> from the previous patches are following:
-> 
-> * Fix an indentation issue of the code.
+Ack
 
-I've put your patches in my queue for 3.3. They should show up in my #linux-next
-tonight if there are no outstanding compile/test issues.
+This driver is maintained by Achim Leubner
+<Achim_Leubner@pmc-sierra.com> and Mahesh Rajashekhara
+<Mahesh_Rajashekhara@pmc-sierra.com>. I have added them so that either
+one of them can have the opportunity to respond.
+
+Sincerely -- Mark Salyzyn
+
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Thomas Meyer
+Sent: Thursday, November 17, 2011 5:44 PM
+To: JBottomley@parallels.com; linux-scsi@vger.kernel.org;
+linux-kernel@vger.kernel.org
+Subject: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating its
+implementation
+
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/scsi/aacraid/commctrl.c
+b/drivers/scsi/aacraid/commctrl.c
+--- a/drivers/scsi/aacraid/commctrl.c 2011-11-07 19:38:06.463566391
++0100
++++ b/drivers/scsi/aacraid/commctrl.c 2011-11-08 10:53:23.848146953
++0100
+@@ -631,15 +631,14 @@ static int aac_send_raw_srb(struct aac_d
+ 			}
+ 		} else {
+ 			struct user_sgmap* usg;
+-			usg = kmalloc(actual_fibsize - sizeof(struct
+aac_srb)
+-			  + sizeof(struct sgmap), GFP_KERNEL);
++			usg = kmemdup(upsg,
++				      actual_fibsize - sizeof(struct
+aac_srb) + sizeof(struct sgmap),
++				      GFP_KERNEL);
+ 			if (!usg) {
+ 				dprintk((KERN_DEBUG"aacraid: Allocation
+error in Raw SRB command\n"));
+ 				rcode = -ENOMEM;
+ 				goto cleanup;
+ 			}
+-			memcpy (usg, upsg, actual_fibsize -
+sizeof(struct aac_srb)
+-			  + sizeof(struct sgmap));
+ 			actual_fibsize = actual_fibsize64;
+ 
+ 			for (i = 0; i < usg->count; i++) {
