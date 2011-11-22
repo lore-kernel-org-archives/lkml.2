@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab1KVLpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:45:53 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40678 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab1KVLpv (ORCPT
+	id S1758489Ab1KVLrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:47:09 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52688 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755587Ab1KVLrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:45:51 -0500
-Date: Tue, 22 Nov 2011 12:45:49 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, len.brown@intel.com,
-        tj@kernel.org, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] PM / Hibernation: Fix *massive* memory leak at early
- exits in hibernation
-Message-ID: <20111122114549.GC32023@elf.ucw.cz>
-References: <20111121173939.9486.38357.stgit@srivatsabhat.in.ibm.com>
- <201111212325.39330.rjw@sisk.pl>
+	Tue, 22 Nov 2011 06:47:07 -0500
+Date: Tue, 22 Nov 2011 11:47:00 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
+        Vince Weaver <vince@deater.net>,
+        "ostrikov@nvidia.com" <ostrikov@nvidia.com>
+Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
+Message-ID: <20111122114700.GJ20518@mudshark.cambridge.arm.com>
+References: <20111121145114.049265181@chello.nl>
+ <20111121145337.533322271@chello.nl>
+ <20111121172323.GH20611@mudshark.cambridge.arm.com>
+ <1321903090.28118.21.camel@twins>
+ <20111121203145.GA7301@mudshark.cambridge.arm.com>
+ <1321907755.28118.30.camel@twins>
+ <20111121224343.GA7862@mudshark.cambridge.arm.com>
+ <1321961180.5148.31.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201111212325.39330.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1321961180.5148.31.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2011-11-21 23:25:39, Rafael J. Wysocki wrote:
-> On Monday, November 21, 2011, Srivatsa S. Bhat wrote:
-> > At some of the early exit points during hibernation (exiting either due
-> > to failure or after a successful hibernation test, the memory pre-allocated
-> > for hibernation is not freed up. And this is *very* serious, because, during
-> > pre-allocation, it could have allocated upto a few *gigabytes* of memory!
-> > And hence, if a hibernation fails or even if we run some hibernation tests
-> > using the 'pm_test' framework, the system is rendered unstable due to memory
-> > becoming signifantly lower. Fix this bug.
+On Tue, Nov 22, 2011 at 11:26:20AM +0000, Peter Zijlstra wrote:
+> On Mon, 2011-11-21 at 22:43 +0000, Will Deacon wrote:
+> > Perhaps we could disable it while per-cpu events are running, although I
+> > think this will probably just lead to SIGILL central for anybody trying to
+> > use the counters in userspace.
 > 
-> While the observation is valid, I'd prefer to do something like the patch
-> below.
+> One possibility would be to do as I did in patch 4, except ARM has it
+> disabled by default and the folks who think they know WTF they're doing
+> can enable it or so.
 
-The code slowly becomes goto maze :-(.
+The problem is that everybody thinks they know WTF they're doing!
 
-> @@ -357,12 +357,14 @@ int hibernation_snapshot(int platform_mo
->  		 * successful freezer test.
->  		 */
->  		freezer_test_done = true;
-> -		goto Close;
-> +		goto Cleanup;
->  	}
->  
->  	error = dpm_prepare(PMSG_FREEZE);
-> -	if (error)
-> -		goto Complete_devices;
-> +	if (error) {
-> +		dpm_complete(msg);
-> +		goto Cleanup;
-> +	}
+> Ostrikov mentioned on #kernelnewbies he wanted to have this enabled
+> because apparently games use it. He mentioned toggling the user access
+> on/off depending on if the kernel was using perf or not, but that would
+> create very unreliable service.
 
-Perhaps dpm_prepare should be changed to clean after itself in the
-error case? That is the normal convention AFAICT....
+Well we already have a reserve/release PMU thing which perf honours so we
+could conceivably do this. I still reckon this will just lead to SIGILLs in
+userspace though because we can't sanely notify tasks that they should leave
+the PMU alone for a bit.
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> Best would be to use perf to program the thing and use the userspace
+> read and simply agree not to write to these registers (and pray people
+> don't)..
+
+But you know that the first thing people will do is zero the registers.
+
+> Also, for those ARMs that do have a user readable clock, you could
+> support the new time_{mult,shift,offset} from patch 5.
+
+The user-readable clock will first appear in Cortex-A15, so the code for
+that still needs to hit mainline before I can look at doing this in perf.
+
+Will
