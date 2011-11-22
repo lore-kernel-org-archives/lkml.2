@@ -1,169 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab1KVKwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:52:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56513 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757860Ab1KVKwN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:52:13 -0500
-Message-ID: <1321959115.5148.22.camel@twins>
-Subject: Re: [PATCH v2 5/5] perf: Enable applicable siblings when group
- leader is enable-on-exec
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Deng-Cheng Zhu <dczhu@mips.com>
-Cc: eyal@mips.com, zenon@mips.com, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
+	id S1754903Ab1KVKxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:53:23 -0500
+Received: from mga14.intel.com ([143.182.124.37]:23156 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab1KVKxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 05:53:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,552,1315206000"; 
+   d="scan'208";a="77906910"
+Date: Tue, 22 Nov 2011 18:53:18 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
         LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Nov 2011 11:51:55 +0100
-In-Reply-To: <1321932601-21128-1-git-send-email-dczhu@mips.com>
-References: <1321932601-21128-1-git-send-email-dczhu@mips.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+Subject: Re: [alsa-devel] [PATCH] hda - fail ELD reading early
+Message-ID: <20111122105318.GB5730@localhost>
+References: <20111122084623.GA30050@localhost>
+ <s5hlir8igp2.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hlir8igp2.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 11:30 +0800, Deng-Cheng Zhu wrote:
-> Currently, when grouped events are created disabled and enable-on-exec, the
-> siblings won't be enabled on exec in fact. The problem looks like this:
+On Tue, Nov 22, 2011 at 06:39:53PM +0800, Takashi Iwai wrote:
+> At Tue, 22 Nov 2011 16:46:23 +0800,
+> Wu Fengguang wrote:
+> > 
+> > With the ELD repoll mechanism, we can (and should) fail the ELD reading
+> > immediately when find something obviously wrong and let the caller retry
+> > after some delay.
+> > 
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  sound/pci/hda/hda_eld.c |   28 +++++++++++++++++++---------
+> >  1 file changed, 19 insertions(+), 9 deletions(-)
+> > 
+> > --- linux.orig/sound/pci/hda/hda_eld.c	2011-11-22 16:02:58.000000000 +0800
+> > +++ linux/sound/pci/hda/hda_eld.c	2011-11-22 16:36:10.000000000 +0800
+> > @@ -347,18 +347,28 @@ int snd_hdmi_get_eld(struct hdmi_eld *el
+> >  
+> >  	for (i = 0; i < size; i++) {
+> >  		unsigned int val = hdmi_get_eld_data(codec, nid, i);
+> > +		/*
+> > +		 * Graphics driver might be writing to ELD buffer right now.
+> > +		 * Just abort. The caller will repoll after a while.
+> > +		 */
+> >  		if (!(val & AC_ELDD_ELD_VALID)) {
+> > -			if (!i) {
+> > -				snd_printd(KERN_INFO
+> > -					   "HDMI: invalid ELD data\n");
+> > -				ret = -EINVAL;
+> > -				goto error;
+> > -			}
+> >  			snd_printd(KERN_INFO
+> >  				  "HDMI: invalid ELD data byte %d\n", i);
+> > -			val = 0;
+> > -		} else
+> > -			val &= AC_ELDD_ELD_DATA;
+> > +			ret = -EINVAL;
+> > +			goto error;
+> > +		}
+> > +		val &= AC_ELDD_ELD_DATA;
+> > +		/*
+> > +		 * The first byte cannot be zero. This can happen on some DVI
+> > +		 * connections. Some Intel chips may also need some 250ms delay
+> > +		 * to return non-zero ELD data, even when the graphics driver
+> > +		 * correctly writes ELD content before setting ELD_valid bit.
+> > +		 */
+> > +		if (!val && !i) {
+> > +			snd_printdd(KERN_INFO "HDMI: 0 ELD data\n");
+> > +			ret = -EINVAL;
+> > +			goto error;
+> > +		}
+> 
+> Shouldn't this zero-check be before the valid-bit check?
+> Otherwise it'll never reach there.
 
-Arguably that's a daft thing to do, since if the leader is disabled the
-group won't get scheduled anyway. But I guess we should at least try to
-deal with it when people do do it.
+It does reach there:
 
-Seems perf-stat is a bit daft this way.
+        [ 1191.016746] HDMI hot plug event: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
+        [ 1191.019309] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
+==>     [ 1191.021803] ALSA hda_eld.c:368 HDMI: 0 ELD data
+        [ 1191.324661] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
+        [ 1191.333236] HDMI: detected monitor SONY TV at connection type HDMI
+        [ 1191.335020] HDMI: available speakers: FL/FR
+        [ 1191.335996] HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
 
-> This patch fixes it.
+The funny thing is, it's reporting (invalid) 0 ELD data that has
+the AC_ELDD_ELD_VALID bit set.
 
-I guess it does, but its not pretty, event_enable_on_exec() already
-calls __perf_event_mark_enable(), now this recursion is limited because
-siblings can't have a sibling list of their own, but still.
-
-> +++ b/kernel/events/core.c
-> @@ -1651,6 +1651,8 @@ retry:
->  	raw_spin_unlock_irq(&ctx->lock);
->  }
->  
-> +static int event_enable_on_exec(struct perf_event *event,
-> +				struct perf_event_context *ctx);
->  /*
->   * Put a event into inactive state and update time fields.
->   * Enabling the leader of a group effectively enables all
-> @@ -1668,6 +1670,7 @@ static void __perf_event_mark_enabled(struct perf_event *event,
->  	event->state = PERF_EVENT_STATE_INACTIVE;
->  	event->tstamp_enabled = tstamp - event->total_time_enabled;
->  	list_for_each_entry(sub, &event->sibling_list, group_entry) {
-> +		event_enable_on_exec(sub, sub->ctx);
->  		if (sub->state >= PERF_EVENT_STATE_INACTIVE)
->  			sub->tstamp_enabled = tstamp - sub->total_time_enabled;
->  	}
-
-The below is a somewhat larger patch that avoids the recursion (and does
-a small cleanup by eradicating all those useless ctx arguments). Quick
-testing seems to indicate it works, but please confirm.
-
----
-Subject: perf: Fix enable_on_exec for sibling events
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue Nov 22 11:25:43 CET 2011
-
-Deng-Cheng Zhu reported that sibling events that were created disabled
-with enable_on_exec would never get enabled.
-
-Reported-by: Deng-Cheng Zhu <dczhu@mips.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/events/core.c |   30 +++++++++++++++++++++---------
- 1 file changed, 21 insertions(+), 9 deletions(-)
-
-Index: linux-2.6/kernel/events/core.c
-===================================================================
---- linux-2.6.orig/kernel/events/core.c
-+++ linux-2.6/kernel/events/core.c
-@@ -1664,8 +1664,7 @@ perf_install_in_context(struct perf_even
-  * Note: this works for group members as well as group leaders
-  * since the non-leader members' sibling_lists will be empty.
-  */
--static void __perf_event_mark_enabled(struct perf_event *event,
--					struct perf_event_context *ctx)
-+static void __perf_event_mark_enabled(struct perf_event *event)
- {
- 	struct perf_event *sub;
- 	u64 tstamp = perf_event_time(event);
-@@ -1703,7 +1702,7 @@ static int __perf_event_enable(void *inf
- 	 */
- 	perf_cgroup_set_timestamp(current, ctx);
- 
--	__perf_event_mark_enabled(event, ctx);
-+	__perf_event_mark_enabled(event);
- 
- 	if (!event_filter_match(event)) {
- 		if (is_cgroup_event(event))
-@@ -1784,7 +1783,7 @@ void perf_event_enable(struct perf_event
- 
- retry:
- 	if (!ctx->is_active) {
--		__perf_event_mark_enabled(event, ctx);
-+		__perf_event_mark_enabled(event);
- 		goto out;
- 	}
- 
-@@ -2453,8 +2452,7 @@ void perf_event_task_tick(void)
- 	}
- }
- 
--static int event_enable_on_exec(struct perf_event *event,
--				struct perf_event_context *ctx)
-+static int event_enable_on_exec(struct perf_event *event)
- {
- 	if (!event->attr.enable_on_exec)
- 		return 0;
-@@ -2463,11 +2461,25 @@ static int event_enable_on_exec(struct p
- 	if (event->state >= PERF_EVENT_STATE_INACTIVE)
- 		return 0;
- 
--	__perf_event_mark_enabled(event, ctx);
-+	event->state = PERF_EVENT_STATE_INACTIVE;
- 
- 	return 1;
- }
- 
-+static int group_enable_on_exec(struct perf_event *event)
-+{
-+	struct perf_event *sub;
-+	int ret = 0;
-+
-+	ret += event_enable_on_exec(event);
-+	list_for_each_entry(sub, &event->sibling_list, group_entry)
-+		ret += event_enable_on_exec(sub);
-+
-+	__perf_event_mark_enabled(event);
-+
-+	return ret;
-+}
-+
- /*
-  * Enable all of a task's events that have been marked enable-on-exec.
-  * This expects task == current.
-@@ -2496,13 +2508,13 @@ static void perf_event_enable_on_exec(st
- 	task_ctx_sched_out(ctx);
- 
- 	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
--		ret = event_enable_on_exec(event, ctx);
-+		ret = group_enable_on_exec(event);
- 		if (ret)
- 			enabled = 1;
- 	}
- 
- 	list_for_each_entry(event, &ctx->flexible_groups, group_entry) {
--		ret = event_enable_on_exec(event, ctx);
-+		ret = group_enable_on_exec(event);
- 		if (ret)
- 			enabled = 1;
- 	}
-
+Thanks,
+Fengguang
