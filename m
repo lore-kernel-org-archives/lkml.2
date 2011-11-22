@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1KVSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:54:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60058 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752251Ab1KVSyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:54:25 -0500
-Message-ID: <4ECBEFCB.6010905@zytor.com>
-Date: Tue, 22 Nov 2011 10:54:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Daniel Drake <dsd@laptop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Geode LX boot fails after x86 microcode revision change
-References: <CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com> <20111108203116.GF25083@aftab> <4EB9A6BC.7050600@zytor.com> <F625F33982F5D847987879CC59FF132D6F5B@storexdag03.amd.com> <4EB9AAF1.4040103@zytor.com> <20111122130048.GB11020@aftab>
-In-Reply-To: <20111122130048.GB11020@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753468Ab1KVSyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:54:31 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58883 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1KVSy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 13:54:29 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [PATCH 0/3] reiserfs: Reduce a bit reiserfs lock coverage on mount path
+Date: Tue, 22 Nov 2011 19:54:16 +0100
+Message-Id: <1321988059-13053-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 05:00 AM, Borislav Petkov wrote:
-> 
-> Also, we might need the patches which sort extable at build time too,
-> which are floating around lkml currently.
-> 
-> Hmm...
-> 
+This cleans up a bit the code and fixes a lock inversion.
+No real regression fixed though so this is rather 3.3 material.
 
-Yes, with the extable set up at build time there isn't really any strong
-reason why we couldn't take exceptions very early.
+Thanks.
 
-I am supposed to dredge up the perfect hash code I already have for this
-(I'm away from work this and next week to deal with personal stuff, so
-it might be a bit slow.)
+Frederic Weisbecker (3):
+  reiserfs: Delay reiserfs lock until journal initialization
+  reiserfs: Don't lock journal_init()
+  reiserfs: Don't lock root inode searching
 
-	-hpa
+ fs/reiserfs/bitmap.c  |    3 --
+ fs/reiserfs/journal.c |   53 ++++++++++++++++++-----------------------------
+ fs/reiserfs/super.c   |   54 ++++++++++++++++++++++++++----------------------
+ 3 files changed, 49 insertions(+), 61 deletions(-)
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.5.4
 
