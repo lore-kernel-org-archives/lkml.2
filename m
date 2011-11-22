@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab1KVKeB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:34:01 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33713 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1KVKeA (ORCPT
+	id S1756566Ab1KVKhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:37:11 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:51040 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab1KVKhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:34:00 -0500
-Date: Tue, 22 Nov 2011 11:33:58 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: imx: drop 'ARCH_MX31' and 'ARCH_MX35'
-Message-ID: <20111122103358.GA24770@pengutronix.de>
-References: <1321882445.32195.3.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321882445.32195.3.camel@x61.thuisdomein>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:30:55 up 9 days, 18:18, 42 users,  load average: 1.12, 2.95, 3.44
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 22 Nov 2011 05:37:09 -0500
+Date: Tue, 22 Nov 2011 21:36:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH linux-next] iwlegacy: debug.c needs export.h
+Message-Id: <20111122213659.3fae12bf805d4dfa4dd6597a@canb.auug.org.au>
+In-Reply-To: <20111122075933.GC2199@redhat.com>
+References: <20111122142502.ca68d0a1640b2a8480d51ad2@canb.auug.org.au>
+	<20111122075640.GB2199@redhat.com>
+	<20111122075933.GC2199@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_Nov_2011_21_36_59_+1100_tujm4Np9chIbrwpU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 02:34:05PM +0100, Paul Bolle wrote:
-> Commit 27ad4bf72a ("ARM: imx: move mx3 support to mach-imx") kept
-> ARCH_MX31 and ARCH_MX35 'for compatibility'. Now that they aren't
-> actually used anymore, they can be dropped entirely.
+--Signature=_Tue__22_Nov_2011_21_36_59_+1100_tujm4Np9chIbrwpU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Added.
+Hi Stanislaw,
 
-Thanks
- Sascha
-
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On Tue, 22 Nov 2011 08:59:34 +0100 Stanislaw Gruszka <sgruszka@redhat.com> =
+wrote:
+>
+> Fix:
+>=20
+> drivers/net/wireless/iwlegacy/debug.c:1395:1: warning: data definition ha=
+s no type or storage class [enabled by default]
+> drivers/net/wireless/iwlegacy/debug.c:1395:1: warning: type defaults to '=
+int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+> drivers/net/wireless/iwlegacy/debug.c:1395:1: warning: parameter names (w=
+ithout types) in function declaration [enabled by default]
+> drivers/net/wireless/iwlegacy/debug.c:1410:1: warning: data definition ha=
+s no type or storage class [enabled by default]
+> drivers/net/wireless/iwlegacy/debug.c:1410:1: warning: type defaults to '=
+int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+> drivers/net/wireless/iwlegacy/debug.c:1410:1: warning: parameter names (w=
+ithout types) in function declaration [enabled by default]
+>=20
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 > ---
-> "git grep" tested only.
-> 
->  arch/arm/mach-imx/Kconfig |   13 -------------
->  1 files changed, 0 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index 5f7f9c2..c44aa97 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -10,11 +10,6 @@ config HAVE_IMX_MMDC
->  config HAVE_IMX_SRC
->  	bool
->  
-> -#
-> -# ARCH_MX31 and ARCH_MX35 are left for compatibility
-> -# Some usages assume that having one of them implies not having (e.g.) ARCH_MX2.
-> -# To easily distinguish good and reviewed from unreviewed usages new (and IMHO
-> -# more sensible) names are used: SOC_IMX31 and SOC_IMX35
->  config ARCH_MX1
->  	bool
->  
-> @@ -27,12 +22,6 @@ config ARCH_MX25
->  config MACH_MX27
->  	bool
->  
-> -config ARCH_MX31
-> -	bool
-> -
-> -config ARCH_MX35
-> -	bool
-> -
->  config SOC_IMX1
->  	bool
->  	select ARCH_MX1
-> @@ -72,7 +61,6 @@ config SOC_IMX31
->  	select CPU_V6
->  	select IMX_HAVE_PLATFORM_MXC_RNGA
->  	select ARCH_MXC_AUDMUX_V2
-> -	select ARCH_MX31
->  	select MXC_AVIC
->  	select SMP_ON_UP if SMP
->  
-> @@ -82,7 +70,6 @@ config SOC_IMX35
->  	select ARCH_MXC_IOMUX_V3
->  	select ARCH_MXC_AUDMUX_V2
->  	select HAVE_EPIT
-> -	select ARCH_MX35
->  	select MXC_AVIC
->  	select SMP_ON_UP if SMP
->  
-> -- 
-> 1.7.7.3
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+> This is linux-next patch only, in wireless-next we do not have
+> include/linux/export.h file.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I will queue this up for as a merge fix in linux-next for tomorrow.
+Alternatively, John, you could merge v3.2-rc1 or rc2 into wireless-next
+and apply this as a merge fixup.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__22_Nov_2011_21_36_59_+1100_tujm4Np9chIbrwpU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOy3tLAAoJEECxmPOUX5FEKgwQAItb9xocJC/LM+cPDL8DhjeV
+K+OBLu0mvTssl6nlpxZxLxx45vugMY61qaPvbJiPye/8sTIaCal9tdIH2si1Ko7p
+mEJ8h/Vq44mkAnn0pWWpJ1Q6jQkTe/0RUQXJBhUK9GMAzJwLt4pFgXF+zSpN81pi
+3Gyjc8RZYgXm8Rj0aE4pKItNM9pX6MBV3qsml6/9qrD02BztKN6eF3RSIVJlIiit
+6qCS83VXwRblD5VheSKVg7d88QIm0x774bgoJEha/bMsjftINo3qDS3zyQED4r8Q
+ctYhTTZgEHTaV0IXi73VrDzozF783bQJVhBued8/hyRs0Ks/p/dnjRw2g2DKQZ7F
+s0t0IwxdsbGgj8C+2EK8QJ/3M8FdMVqusqMn7p9C0uuD3P0jf/9quJKBq4V+0bvS
+UEztDO8y6izVsfoAtdBS7bPk0pc/oDnm/nUAkjGQr/TYzJXWAGdG/s2OF07NO4z/
+Iq/C5zn6A0BsOOUi/7RgX7QQjEYIXDEDFJ2SDywAfohPc0wASGtkTS1B4bcegZx7
+AAIJvrD6it90IvWmt2Gi4O/NkGRsFvM45kEmlDuKV3DAgecPbeIm+Kn8E1fBq/dX
+t1yAl4jiJO55FXILznldpE8LHB9CiZVA9i3s0eL/kOm/Rn/57J0RDKbRuVVLjgYK
+3Fj7gV9ne00gyIulhmBm
+=/gna
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_Nov_2011_21_36_59_+1100_tujm4Np9chIbrwpU--
