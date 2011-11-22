@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959Ab1KVXBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 18:01:48 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:52756 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752802Ab1KVXBr (ORCPT
+	id S1753912Ab1KVXQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 18:16:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43154 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab1KVXQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 18:01:47 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH resend] fadvise: only initiate writeback for specified range with FADV_DONTNEED
-Date: Tue, 22 Nov 2011 17:01:17 -0600
-Message-Id: <1322002877-5464-1-git-send-email-sbohrer@rgmadvisors.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <20111101150555.GC19965@redhat.com>
-References: <20111101150555.GC19965@redhat.com>
+	Tue, 22 Nov 2011 18:16:07 -0500
+Date: Tue, 22 Nov 2011 15:16:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rtc-cmos: fix broken NVRAM bank 2 writing
+Message-Id: <20111122151605.827702bf.akpm@linux-foundation.org>
+In-Reply-To: <201111132320.34420.linux@rainbow-software.org>
+References: <201111132320.34420.linux@rainbow-software.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously POSIX_FADV_DONTNEED would start writeback for the entire file
-when the bdi was not write congested.  This negatively impacts
-performance if the file contians dirty pages outside of the requested
-range.  This change uses __filemap_fdatawrite_range() to only initiate
-writeback for the requested range.
+On Sun, 13 Nov 2011 23:20:31 +0100
+Ondrej Zary <linux@rainbow-software.org> wrote:
 
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
----
+> Fix writing to NVRAM bank 2 in rtc-cmos driver. It never worked since its
+> introduction in 2.6.28 because of a typo.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 
+> --- linux-3.1-orig/drivers/rtc/rtc-cmos.c	2011-10-24 09:10:05.000000000 +0200
+> +++ linux-3.1/drivers/rtc/rtc-cmos.c	2011-11-08 17:43:29.000000000 +0100
+> @@ -164,7 +164,7 @@ static inline unsigned char cmos_read_ba
+>  static inline void cmos_write_bank2(unsigned char val, unsigned char addr)
+>  {
+>  	outb(addr, RTC_PORT(2));
+> -	outb(val, RTC_PORT(2));
+> +	outb(val, RTC_PORT(3));
+>  }
+>  
+>  #else
 
-Andrew is this something you could apply?
-
- mm/fadvise.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/mm/fadvise.c b/mm/fadvise.c
-index 8d723c9..469491e 100644
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -117,7 +117,8 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 		break;
- 	case POSIX_FADV_DONTNEED:
- 		if (!bdi_write_congested(mapping->backing_dev_info))
--			filemap_flush(mapping);
-+			__filemap_fdatawrite_range(mapping, offset, endbyte,
-+						   WB_SYNC_NONE);
- 
- 		/* First and last FULL page! */
- 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
--- 
-1.7.6
-
-
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
-
+Strange.  Can you suggest why this bug has lived for so long without anyone
+noticing it?
