@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab1KVDfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 22:35:44 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:37437 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab1KVDfm (ORCPT
+	id S1757417Ab1KVDgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 22:36:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64096 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab1KVDgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 22:35:42 -0500
-Date: Tue, 22 Nov 2011 14:35:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: linux-next: build failure after merge of the wireless-next tree
-Message-Id: <20111122143523.ee83308efc48baf19f691441@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_Nov_2011_14_35_23_+1100_HKevlburjjgNG5Wl"
+	Mon, 21 Nov 2011 22:36:03 -0500
+From: Min Zhang <mzhang@mvista.com>
+To: linux-kernel@vger.kernel.org
+Cc: Min Zhang <mzhang@mvista.com>
+Subject: [PATCH] waitpid: traverse pid task list instead of children or ptraced list
+Date: Mon, 21 Nov 2011 19:35:09 -0800
+Message-Id: <1321932909-7101-1-git-send-email-mzhang@mvista.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Nov_2011_14_35_23_+1100_HKevlburjjgNG5Wl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Shorten waitpid system call time by traversing pid task list intead of
+entire children or ptraced list when waiting for specific PIDTYPE_PID/PGID/SID.
 
-Hi John,
+Tested by fork thousands child processes, PTRACE_ATTACH on each, then
+waitpid on each. Result shows saving 2 order of magnitude of time.
 
-After merging the wireless-next tree, today's linux-next build
-(x86_64_allmodconfig) failed like this:
+Signed-off-by: Min Zhang <mzhang@mvista.com>
+---
+ kernel/exit.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-ERROR: "il_dbgfs_unregister" [drivers/net/wireless/iwlegacy/iwl4965.ko] und=
-efined!
-ERROR: "il_dbgfs_register" [drivers/net/wireless/iwlegacy/iwl4965.ko] undef=
-ined!
-ERROR: "il_dbgfs_unregister" [drivers/net/wireless/iwlegacy/iwl3945.ko] und=
-efined!
-ERROR: "il_dbgfs_register" [drivers/net/wireless/iwlegacy/iwl3945.ko] undef=
-ined!
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 2913b35..89c5d51 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1634,6 +1634,19 @@ static int do_wait_thread(struct wait_opts *wo, struct task_struct *tsk)
+ {
+ 	struct task_struct *p;
+ 
++	/* traverse pid task list for a specific child pid */
++	if (wo->wo_type != PIDTYPE_MAX) {
++		do_each_pid_task(wo->wo_pid, wo->wo_type, p) {
++			if (p->parent == tsk) {
++				int ret = wait_consider_task(wo, 0, p);
++				if (ret)
++					return ret;
++			}
++		} while_each_pid_task(wo->wo_pid, wo->wo_type, p);
++		return 0;
++	}
++
++	/* traverse entire children list for any child pid */
+ 	list_for_each_entry(p, &tsk->children, sibling) {
+ 		int ret = wait_consider_task(wo, 0, p);
+ 		if (ret)
+@@ -1647,6 +1660,19 @@ static int ptrace_do_wait(struct wait_opts *wo, struct task_struct *tsk)
+ {
+ 	struct task_struct *p;
+ 
++	/* traverse pid task list for a specific child pid */
++	if (wo->wo_type != PIDTYPE_MAX) {
++		do_each_pid_task(wo->wo_pid, wo->wo_type, p) {
++			if (task_is_traced(p) && p->parent == tsk) {
++				int ret = wait_consider_task(wo, 1, p);
++				if (ret)
++					return ret;
++			}
++		} while_each_pid_task(wo->wo_pid, wo->wo_type, p);
++		return 0;
++	}
++
++	/* traverse entire children list for any child pid */
+ 	list_for_each_entry(p, &tsk->ptraced, ptrace_entry) {
+ 		int ret = wait_consider_task(wo, 1, p);
+ 		if (ret)
+-- 
+1.6.4.2
 
-Presumably caused by the large cleanup of iwlegacy.
-
-I have used the wireless-next tree from next-20111121 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__22_Nov_2011_14_35_23_+1100_HKevlburjjgNG5Wl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOyxh7AAoJEECxmPOUX5FEGdAP/j8kzrzpUHpmrrtPyGa5ZmJQ
-FcL6mNdKGfUchPrvfaYSHkawQoIZVoU1UgmxzPwrsqGKJrYTu9cpEbUxPBGdoSnx
-fW6AOiQoLCrA5bT/4Ngd2b+3kugetEiKA8CUHcKsDEoq9lryEJPG6wzCyEgNe+SW
-hy7JC3ex98jGpdkRWu5ZmkHxZyZ+JL5cQRQxm8bDf17ZLBIuqLf1y10er6B+qsds
-xk4vu8rlZF5J8jlM7HCWhktphUq+5gh0NsvF7GAIjXS/GT207mpESIhC260HYsTO
-0RQtdWiRavdFuT3x/+nT9Pt/2770bT6Szmo4+0cIhTrrOohpTw1zUFKQLOpj4QpY
-RhuFUps00V/IpLKfWEKsWquusCzb2m4eiCUrB0oiGQQF7PvhRVPFccmuYKXEE1FF
-zZwHsjnPFwxvOQhAF1C/RR2Dx2MytDz6J3+9TWPY8l1RY/7t1ktAk24BsEf7gcpo
-LtYNk3ks+5I3laeVVBvO33doWRt+A5FB7sEasxdDt7T0BFYVZKKLajgcTpitpwgl
-kZT+0YZQn/7XfLjm8qDNfdWGesRxmVDEdVlFPl8QkPlZKOR6kigfZRtfIfb10BSX
-1B1uaL69rLWuk7xIbKazV17Sq/+g/49GPTrMc6yHscyroV4Em+wi/x53jnnP9L4g
-UsHmHMJ9AAExQj9tyY9n
-=g208
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Nov_2011_14_35_23_+1100_HKevlburjjgNG5Wl--
