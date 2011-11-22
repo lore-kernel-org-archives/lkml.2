@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab1KVAky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:40:54 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15737 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab1KVAkw convert rfc822-to-8bit (ORCPT
+	id S1753953Ab1KVApi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:45:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50680 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab1KVAph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:40:52 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 21 Nov 2011 16:40:51 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Denis Kuzmenko <linux@solonet.org.ua>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Date: Mon, 21 Nov 2011 16:40:49 -0800
-Subject: RE: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Topic: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-Thread-Index: AcyorVpkOakfxmnbT0CNUs7oYhJ3egAAeTCw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C2F4@HQMAIL01.nvidia.com>
-References: <4EC572E1.1020209@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com>
- <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com>
- <4EC6DD8F.9070904@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com>
- <4EC6E75E.2080200@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF174F08C135@HQMAIL01.nvidia.com>
- <4ECAA894.4050500@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF174F08C246@HQMAIL01.nvidia.com>
- <4ECAD613.3030605@solonet.org.ua>
- <74CDBE0F657A3D45AFBB94109FB122FF174F08C2B4@HQMAIL01.nvidia.com>
- <4ECAECA6.7090109@solonet.org.ua>
-In-Reply-To: <4ECAECA6.7090109@solonet.org.ua>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 21 Nov 2011 19:45:37 -0500
+Date: Mon, 21 Nov 2011 16:45:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, richard@nod.at,
+        containers@lists.linux-foundation.org, oleg@redhat.com,
+        eparis@redhat.com, linux-kernel@vger.kernel.org, dhowells@redhat.com
+Subject: Re: [PATCH 1/1] __send_signal: pass q->info, not info, to
+ userns_fixup_signal_uid (v2)
+Message-Id: <20111121164535.6877e112.akpm@linux-foundation.org>
+In-Reply-To: <4EC7D419.1090404@gmail.com>
+References: <20111119004148.GA16259@sergelap>
+	<4EC7D419.1090404@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote at Monday, November 21, 2011 5:28 PM:
-> On 11/22/2011 01:39 AM, Stephen Warren wrote:
-...
-> > Anyway, I guess that means that your patch V1 is at least a pure conversion
-> > of the code from custom functions to gpiolib, even if what it was and still
-> > is doing doesn't make much sense to me.
-> >
+On Sat, 19 Nov 2011 17:06:49 +0100
+Jiri Slaby <jirislaby@gmail.com> wrote:
+
+> On 11/19/2011 01:41 AM, Serge Hallyn wrote:
+> > Eric Biederman pointed out that passing info is a bug and could lead
+> > to a NULL pointer deref to boot.
 > 
-> So what do you suggest? Leave original behavior?
-> I'd like to remove pull-related actions at all considering:
->  - power consumption
->  - we are both not able to find any sense in that code
->  - s3c2410_gpio_pullup looks like deprecated
->  - can't imagine situation where this change will break functionality
-> (of course when this code used to drive actually LED and not something else)
+> It would be great if you could describe what bug you are fixing in fact
+> in the commit log. "Something that could lead to a bug" is not helpful
+> at all.
+> 
+> A link to the thread where Eric pointed *that* out would be enough.
 
-Well, if that works for you, that makes sense to me too.
-
--- 
-nvpublic
+What Serge is secretly hiding from everyone is that this patch is a
+fixup against his earlier "user namespace: make signal.c respect user
+namespaces v5".  So the fix isn't very interesting for people who
+aren't running that patch.
 
