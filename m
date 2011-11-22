@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab1KVWpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:45:30 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:43299 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab1KVWp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:45:28 -0500
-Date: Tue, 22 Nov 2011 17:41:08 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2011-11-22 #2
-Message-ID: <20111122224108.GJ8452@tuxdriver.com>
-References: <20111122193505.GC8452@tuxdriver.com>
- <20111122215611.GI8452@tuxdriver.com>
- <20111122.173729.1155753802137219940.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122.173729.1155753802137219940.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758842Ab1KVWst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:48:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:65163 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752565Ab1KVWss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 17:48:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="78968731"
+Date: Tue, 22 Nov 2011 23:00:19 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alessandro Rubini <ru@gnudd.com>, fujita.tomonori@lab.ntt.co.jp,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        maddalena.brattoli@st.com
+Subject: Re: a question on DMA and remapping
+Message-ID: <20111122230019.3304ecdf@bob.linux.org.uk>
+In-Reply-To: <20111117154729.afa24f07.akpm@linux-foundation.org>
+References: <20111117233059.GA659@mail.gnudd.com>
+	<20111117154729.afa24f07.akpm@linux-foundation.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 05:37:29PM -0500, David Miller wrote:
-> From: "John W. Linville" <linville@tuxdriver.com>
-> Date: Tue, 22 Nov 2011 16:56:12 -0500
-> 
-> > Here is the latest batch of fixes intended for 3.2.  This includes a
-> > correction for a user-visible error in mac80211's debugfs info, a fix
-> > for a potential memory corrupter in prism54, an endian fix for rt2x00,
-> > an endian fix for mac80211, a fix for a NULL derefernce in cfg80211, a
-> > locking fix for p54spi and a deadlock fix also for p54spi.
-> > 
-> > This reverts the problematic rt2x00 patches from the earlier pull
-> > request.
-> > 
-> > Please let me know if there are problems!
-> 
-> I'm still seeing the problematic rt2x00 changes when I pull:
-> 
-> [davem@boricha net]$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
-> remote: Counting objects: 112, done.        
-> remote: Compressing objects: 100% (82/82), done.        
-> remote: Total 82 (delta 71), reused 0 (delta 0)        
-> Unpacking objects: 100% (82/82), done.
-> From git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless
->  * branch            for-davem  -> FETCH_HEAD
-> Updating 5eccdf5..02f1ce3
-> Fast-forward
->  drivers/net/wireless/p54/p54spi.c        |    5 +++--
->  drivers/net/wireless/prism54/isl_ioctl.c |    2 +-
->  drivers/net/wireless/rt2x00/rt2800lib.c  |    2 +-
->  net/mac80211/debugfs_sta.c               |    4 ++--
->  net/mac80211/status.c                    |    8 ++++----
->  net/wireless/reg.c                       |    4 ++++
->  6 files changed, 15 insertions(+), 10 deletions(-)
-> [davem@boricha net]$ git format-patch ORIG_HEAD
-> 0001-rt2800pci-handle-spurious-interrupts.patch
-> 0002-rt2x00-handle-spurious-pci-interrupts.patch
+> Generalising the existing code to cover more cases isn't a bad thing
+> to do.  Others might be able to use it, and they surely won't be able
+> to use any cloned-and-owned swiotlb.c.
 
-They're here...
+If you look on the kernel list there has also been some discussion and
+work recently towards removing a lot of the duplication between the
+iommu devices.
 
-> 0003-rt2x00-Fix-efuse-EEPROM-reading-on-PPC32.patch
-> 0004-p54spi-Add-missing-spin_lock_init.patch
-> 0005-p54spi-Fix-workqueue-deadlock.patch
-> 0006-mac80211-Fix-AMSDU-rate-printout-in-debugfs.patch
-> 0007-mac80211-Fix-endian-bug-in-radiotap-header-generatio.patch
-> 0008-cfg80211-fix-regulatory-NULL-dereference.patch
-> 0009-prism54-potential-memory-corruption-in-prism54_get_e.patch
-> 0010-Revert-rt2x00-handle-spurious-pci-interrupts.patch
-> 0011-Revert-rt2800pci-handle-spurious-interrupts.patch
+I think really you need to be an actual iommu instance because in
+reality you are. Trying to fudge it any other way breaks the moment
+someone tries to do a device to device DMA transfer because your
+bus/phys mapping seen from your device and the bus/phys mapping seen
+from another device into your device do not match as I understand it.
 
-And I revert them here.
-
-Linus always says to live with our mistakes?  I was trying to avoid
-a rebase both for my own pain and that of my downstream maintainers.
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Alan
