@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab1KVCFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 21:05:34 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:33012 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab1KVCFc (ORCPT
+	id S1758084Ab1KVCIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 21:08:18 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56049 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab1KVCIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 21:05:32 -0500
-Date: Tue, 22 Nov 2011 13:05:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Subject: linux-next: manual merge of the s5p tree with the arm tree
-Message-Id: <20111122130512.08ced601a96038308e5149ad@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Mon, 21 Nov 2011 21:08:16 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 22 Nov 2011 11:07:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: David Miller <davem@davemloft.net>, <jbottomley@parallels.com>,
+        <eric.dumazet@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <paul@paulmenage.org>, <lizf@cn.fujitsu.com>,
+        <linux-mm@kvack.org>, <devel@openvz.org>, <kirill@shutemov.name>,
+        <gthelen@google.com>
+Subject: Re: [Devel] Re: [PATCH v5 00/10] per-cgroup tcp memory pressure
+Message-Id: <20111122110707.377ff8ef.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4EC6B457.4010502@parallels.com>
+References: <1320679595-21074-1-git-send-email-glommer@parallels.com>
+	<4EBAC04F.1010901@parallels.com>
+	<1321381632.3021.57.camel@dabdike.int.hansenpartnership.com>
+	<20111117.163501.1963137869848419475.davem@davemloft.net>
+	<4EC6B457.4010502@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_Nov_2011_13_05_12_+1100_fksGrm1ldnrgsjHG"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Nov_2011_13_05_12_+1100_fksGrm1ldnrgsjHG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 18 Nov 2011 17:39:03 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-Hi Kukjin,
+> On 11/17/2011 07:35 PM, David Miller wrote:
+> > TCP specific stuff in mm/memcontrol.c, at best that's not nice at all.
+> 
+> How crucial is that? Thing is that as far as I am concerned, all the 
+> memcg people really want the inner layout of struct mem_cgroup to be 
+> private to memcontrol.c 
 
-Today's linux-next merge of the s5p tree got a conflict in
-arch/arm/mach-exynos/include/mach/entry-macro.S between commit
-4e44d2cb95bd ("ARM: exynos4: convert to CONFIG_MULTI_IRQ_HANDLER") from
-the arm tree and commit 3a7c87154294 ("ARM: SAMSUNG: Move timer irq numbers
-to end of linux irq space") from the s5p tree.
+This is just because memcg is just related to memory management and I don't
+want it be wide spreaded, 'struct mem_cgroup' has been changed often.
 
-The former removed the code modified by the latter, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+But I don't like to have TCP code in memcgroup.c.
 
---Signature=_Tue__22_Nov_2011_13_05_12_+1100_fksGrm1ldnrgsjHG
-Content-Type: application/pgp-signature
+New idea is welcome.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> This means that at some point, we need to have
+> at least a wrapper in memcontrol.c that is able to calculate the offset
+> of the tcp structure, and since most functions are actually quite 
+> simple, that would just make us do more function calls.
+> 
+> Well, an alternative to that would be to use a void pointer in the newly 
+> added struct cg_proto to an already parsed memcg-related field
+> (in this case tcp_memcontrol), that would be passed to the functions
+> instead of the whole memcg structure. Do you think this would be 
+> preferable ?
+> 
+like this ?
 
-iQIcBAEBCAAGBQJOywNYAAoJEECxmPOUX5FErtwQAKJR1ALjcZQw1ZST8w0xscHA
-RWJk+x5XVeYoN0pwU2hXkDSCubtP513mtt3voiXo0X4IzMthj6UtT4d2EQTPWtkg
-GR0Bdl0RTp/Abo8aYuKaznJkA1E+DxSTbSTxaOQd0UarcgEr2DrPyQh3jtA6313V
-naUoLIE01Z2Vd+jzIfVYIsWij0nS+xacv+aUSN0ljte4HTDrsuJYQfbyW9mVN1wy
-v4tYLYZ1T7Sm9tllJYEpfsYLhP2TQchiiDgs5bR95/41KpLqVrLwPRA7xlVUnSjN
-s2OisBeBeS9ervbzX+c9mxbFcLQ3nh/pWTcdD36+MLIZjPBChQb40DvwWElIu28i
-g9W+Ak50vGD/BVvF/zNFPvTVrdMD7WVPEMPrRQ0ofFawjg2DkUSOMUOBWVfX77zM
-nAPwoiq+259N65MrNy2nQ7eEb7UAjWUr2jP6DdoADR/eZ+2yl5zIBgom4YxySD0b
-NdRLXy1d1fX+fWG6A7L0+r47aVcEpCssQJUgSD3UhQb3nqO+kCb8iA7vZvFI9duL
-rYezolHKsewRpSaQbwXZ8DCe/PyJkDz/qJdDhcsV3ka/Cchmtplzc90MdbhU1AJD
-/1aiMHX0S+Z2I6xUtYSvTdJc1t7miDWp4F7dpFoIGlS8nZqqL0i0/QXaov5dYc4r
-ogRyjGeOicBIs6qDozKV
-=h1Vp
------END PGP SIGNATURE-----
+struct mem_cgroup_sub_controls {
+	struct mem_cgroup *mem;
+	union {
+		struct tcp_mem_control tcp;
+	} data;
+};
+/* for loosely coupled controls for memcg */
+struct memcg_sub_controls_function
+{
+	struct memcg_sub_controls	(*create)(struct mem_cgroup *);
+	struct memcg_sub_controls	(*destroy)(struct mem_cgroup *);
+}
 
---Signature=_Tue__22_Nov_2011_13_05_12_+1100_fksGrm1ldnrgsjHG--
+int register_memcg_sub_controls(char *name, 
+		struct memcg_sub_controls_function *abis);
+
+
+struct mem_cgroup {
+	.....
+	.....
+	/* Root memcg will have no sub_controls! */
+	struct memcg_sub_controls	*sub_controls[NR_MEMCG_SUB_CONTROLS];
+}
+
+
+Maybe some functions should be exported. 
+
+Thanks,
+-Kame
+
+
