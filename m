@@ -1,126 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1KVMSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 07:18:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57540 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab1KVMSr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 07:18:47 -0500
+	id S1754406Ab1KVMWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 07:22:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56984 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab1KVMWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 07:22:00 -0500
+Date: Tue, 22 Nov 2011 13:21:57 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: fix dirtied pages accounting on
+ sub-page writes
+Message-ID: <20111122122157.GB8058@quack.suse.cz>
+References: <20111121130342.211953629@intel.com>
+ <20111121131215.905222115@intel.com>
+ <20111122001127.GG4017@quack.suse.cz>
+ <20111122092110.GB12864@localhost>
 MIME-Version: 1.0
-In-Reply-To: <CAJuYYwRFGn+Efu80yjszuBof5omN1RvKjz7efh8bwK2t-MUj+A@mail.gmail.com>
-References: <1321904871-32278-1-git-send-email-linus.walleij@stericsson.com>
-	<CAJuYYwRFGn+Efu80yjszuBof5omN1RvKjz7efh8bwK2t-MUj+A@mail.gmail.com>
-Date: Tue, 22 Nov 2011 13:18:46 +0100
-Message-ID: <CACRpkdYwfW+wNxxJmFcXsR-u7nZndbGQA4Y-cQDrV-oOQ33b1A@mail.gmail.com>
-Subject: Re: [PATCH 1/8 v3] pinctrl: add a generic pin config interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122092110.GB12864@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 11:52 AM, Thomas Abraham
-<thomas.abraham@linaro.org> wrote:
-> On 22 November 2011 01:17, Linus Walleij <linus.walleij@stericsson.com> wrote:
+On Tue 22-11-11 17:21:11, Wu Fengguang wrote:
+> On Tue, Nov 22, 2011 at 08:11:27AM +0800, Jan Kara wrote:
+> > On Mon 21-11-11 21:03:45, Wu Fengguang wrote:
+> > > When dd in 512bytes, generic_perform_write() calls
+> > > balance_dirty_pages_ratelimited() 8 times for the same page, but
+> > > obviously the page is only dirtied once.
+> > > 
+> > > Fix it by accounting nr_dirtied at page dirty time.
+> >   Well, but after this change, the interface balance_dirty_ratelimited_nr()
+> > is strange because the argument is only used for per-CPU ratelimiting and
+> > not for per-task ratelimiting...
+> 
+> Yeah I was vaguely aware of this... and still choose to ignore this
+> since the patchset looked already forbiddingly large at the time ;)
+> 
+> > So if you do this switch then I'd also
+> > switch bdp_ratelimits to get consistent results and a clean interface and
+> > completely kill balance_dirty_pages_ratelimited_nr().
+> 
+> Following your suggestions to change ratelimiting as well :)
+> 
+> I'll do the interface change with a standalone patch.
+  OK.
 
->>(...)
->> @@ -61,6 +67,10 @@ struct pin_desc {
->>  #ifdef CONFIG_PINMUX
->>        const char *mux_function;
->>  #endif
->> +#ifdef CONFIG_PINCONF
->> +       struct mutex config_lock;
->> +       struct pin_config config;
->
-> Some platforms (like exynos) can read back the current pin_config from
-> the hardware registers. For such platforms, 'config' would consume
-> additional space which will not be used. Can 'config' be made a
-> pointer and memory for it allocated in 'pinctrl_register_one_pin' only
-> if the pin-controller requires it. Maybe, 'struct pinctrl_desc' can
-> have a additional member to describe some of its characteristics such
-> as ability to read back pin configuration from registers.
+> ---
+> Subject: writeback: fix dirtied pages accounting on sub-page writes
+> Date: Thu Apr 14 07:52:37 CST 2011
+> 
+> When dd in 512bytes, generic_perform_write() calls
+> balance_dirty_pages_ratelimited() 8 times for the same page, but
+> obviously the page is only dirtied once.
+> 
+> Fix it by accounting tsk->nr_dirtied and bdp_ratelimits at page dirty time.
+> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/page-writeback.c |   13 +++++--------
+>  1 file changed, 5 insertions(+), 8 deletions(-)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2011-11-22 16:59:48.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-11-22 17:12:20.000000000 +0800
+> @@ -1231,8 +1231,6 @@ void balance_dirty_pages_ratelimited_nr(
+>  	if (bdi->dirty_exceeded)
+>  		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
+>  
+> -	current->nr_dirtied += nr_pages_dirtied;
+> -
+>  	preempt_disable();
+>  	/*
+>  	 * This prevents one CPU to accumulate too many dirtied pages without
+> @@ -1243,12 +1241,9 @@ void balance_dirty_pages_ratelimited_nr(
+>  	p =  &__get_cpu_var(bdp_ratelimits);
+>  	if (unlikely(current->nr_dirtied >= ratelimit))
+>  		*p = 0;
+> -	else {
+> -		*p += nr_pages_dirtied;
+> -		if (unlikely(*p >= ratelimit_pages)) {
+> -			*p = 0;
+> -			ratelimit = 0;
+> -		}
+> +	else if (unlikely(*p >= ratelimit_pages)) {
+> +		*p = 0;
+> +		ratelimit = 0;
+>  	}
+>  	/*
+>  	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
+> @@ -1743,6 +1738,8 @@ void account_page_dirtied(struct page *p
+>  		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+>  		task_dirty_inc(current);
+>  		task_io_account_write(PAGE_CACHE_SIZE);
+> +		current->nr_dirtied++;
+> +		__get_cpu_var(bdp_ratelimits)++;
+  I think you need preempt_disable() and preempt_enable() pair around
+__get_cpu_var(). Otherwise a process could get rescheduled in the middle of
+read-modify-write cycle...
 
-Yes. And I also do realize that most controllers at hand does not have
-this limitation. I had second thoughts about it yesterday, so I'll
-refactor this to assume that we can read back values from the
-hardware instead, if a hardware has the mentioned limitation it
-can do the caching in the driver instead. I can't quite remember
-why I did it this way anyway, stupid me :-(
-
-> EXPORT_SYMBOL(pin_config); here ?
-> EXPORT_SYMBOL(pin_config_group); here ?
-
-Yep added them.
-
->> +enum pin_config_param {
->> +       PIN_CONFIG_BIAS_DISABLE,
->> +       PIN_CONFIG_BIAS_HIGH_IMPEDANCE,
->> +       PIN_CONFIG_BIAS_PULL_UP,
->> +       PIN_CONFIG_BIAS_PULL_DOWN,
->> +       PIN_CONFIG_BIAS_HIGH,
->> +       PIN_CONFIG_BIAS_GROUND,
->> +       PIN_CONFIG_DRIVE_PUSH_PULL,
->> +       PIN_CONFIG_DRIVE_OPEN_DRAIN,
->> +       PIN_CONFIG_DRIVE_OPEN_SOURCE,
->> +       PIN_CONFIG_DRIVE_OFF,
->> +       PIN_CONFIG_INPUT_SCHMITT,
->> +       PIN_CONFIG_INPUT_DEBOUNCE,
->> +       PIN_CONFIG_SLEW_RATE_RISING,
->> +       PIN_CONFIG_SLEW_RATE_FALLING,
->> +       PIN_CONFIG_POWER_SOURCE,
->> +       PIN_CONFIG_LOW_POWER_MODE,
->> +       PIN_CONFIG_WAKEUP,
->> +       PIN_CONFIG_END,
->> +};
->
-> For all Samsung SoC's, PIN_CONFIG_BIAS_PULL_UP,
-> PIN_CONFIG_BIAS_PULL_DOWN and PIN_CONFIG_DRIVE_PUSH_PULL would be
-> sufficient. So the above list of config options is fine for all
-> Samsung platforms.
-
-Thanks! That's what I needed to know.
-
->> +extern int pin_config(struct pinctrl_dev *pctldev, int pin,
->> +                     const struct pin_config_tuple *configs,
->> +                     unsigned num_configs);
->
->
-> Is the 'pin' number expected to be local to the pin-controller
-> represented by 'pctldev' ?
-
-Yes, the entire subsystem is designed like that.
-
->  There can be multiple pin-controllers in a
-> system, so it would be easier if 'pin' parameter above is a
-> system-wide pin number, and the caller of 'pin_config' need not know
-> which pin-controller manages 'pin'. Ideally, 'pctldev' should not be
-> included in the parameter list.
-
-I did that in the initial pinctrl patch set and Grant NACK:ed it
-and requested that the pin controller pin space be local to each
-pin controller.
-
-The reason is that the global GPIO pin space is nothing but one
-big mess, it's arbitrarily roofed at ARCH_NR_GPIOS and what
-is that number in a single zImage for multiple platforms anyway?
-
-Global GPIO 15 in a multi-platform binary would mean totally
-different things depending on where it boots and strange numbers
-have to be encoded everywhere.
-
-Actually the plan is to kill the global number space from GPIO
-too, one day. So the GPIO maintainer would like GPIO to be
-like pinctrl not the other way around...
-
-Yours,
-Linus Walleij
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
