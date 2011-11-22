@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836Ab1KVVWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:22:40 -0500
-Received: from mail-vw0-f74.google.com ([209.85.212.74]:52240 "EHLO
-	mail-vw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab1KVVWj (ORCPT
+	id S1756497Ab1KVVZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:25:10 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59383 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab1KVVZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:22:39 -0500
-From: David Decotigny <david.decotigny@google.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: David Decotigny <david.decotigny@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH net-next v3] net-e1000e: fix ethtool set_features taking new features into account too late
-Date: Tue, 22 Nov 2011 13:22:27 -0800
-Message-Id: <0c2a178ff250edb110f343815ab82af2d1a8750b.1321996918.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1321996918.git.david.decotigny@google.com>
-References: <cover.1321996918.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Tue, 22 Nov 2011 16:25:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111122210930.GJ2203@ZenIV.linux.org.uk>
+References: <20111122174419.GI2203@ZenIV.linux.org.uk> <CA+55aFz+9TN2z+q9vH2g0wMq6_X8AfYANrntGQd_et+U5+c74Q@mail.gmail.com>
+ <20111122210930.GJ2203@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 22 Nov 2011 13:24:46 -0800
+X-Google-Sender-Auth: VNFAytnmzB83tqE1SZUqTlvst_I
+Message-ID: <CA+55aFyhYDOt49v7kn3nKqr3gNt9+ZcCdT6qa3OZjiL+OLPjpw@mail.gmail.com>
+Subject: Re: [git pull] vfs fix
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch, the set_features() ethtool callback would not take
-the new specified features into account when configuring the NIC. It
-would only consider the current features, ie. the ones after previous
-set_features(). A second ethtool set_features() with the same
-specified features cannot work around that issue because it would boil
-down to a nop (code checks wether specified features changed or not).
+On Tue, Nov 22, 2011 at 1:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> FWIW, the fixed form of script follows; if you see any potential problems in
+> it, please tell:
 
-This patch solves this by propagating the requested features.
+So not problems per se, just not very pretty.
 
-Tested:
-  printk in code + custom ethtool (based on
-  http://patchwork.ozlabs.org/patch/95836/)
+> echo Shortlog:
+> base=`git merge-base origin "$1"`
+> git log --pretty=short "$base..$1" | git shortlog
+> echo Diffstat:
+> git diff --stat -M "$base..$1"
 
+I would suggest this instead:
 
+  echo Shortlog:
+  git shortlog "origin..$1"
+  echo Diffstat:
+  git diff --stat --summary -M "origin...$1"
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/intel/e1000e/netdev.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+and skip all the merge-base crap (git will do it for you: with a "git
+log" you don't need it, and with a "git diff" the three-dot version
+will do it for you). And just use "git shortlog" directly.
 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index a5bd7a3..a83a108 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5901,7 +5901,7 @@ static void e1000_eeprom_checks(struct e1000_adapter *adapter)
- }
- 
- static int e1000_set_features(struct net_device *netdev,
--	netdev_features_t features)
-+			      netdev_features_t features)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
- 	netdev_features_t changed = features ^ netdev->features;
-@@ -5913,12 +5913,19 @@ static int e1000_set_features(struct net_device *netdev,
- 			 NETIF_F_RXCSUM)))
- 		return 0;
- 
-+	/* We will make sure to return 1 below so that we can change
-+	 * netdev->features on the fly from within the functions
-+	 * called below in case of error, without core/dev.c
-+	 * overriding it. */
-+	netdev->features = features;
-+
- 	if (netif_running(netdev))
- 		e1000e_reinit_locked(adapter);
- 	else
- 		e1000e_reset(adapter);
- 
--	return 0;
-+	return 1; /* tell net/core/dev.c not to override
-+		   * netdev->features */
- }
- 
- static const struct net_device_ops e1000e_netdev_ops = {
--- 
-1.7.3.1
+And the above also uses "--summary" for the "git diff" to show a
+summary of renames/deletes.
 
+                        Linus
