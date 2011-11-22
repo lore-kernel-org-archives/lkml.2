@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab1KVJer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 04:34:47 -0500
-Received: from relay.medianet-world.de ([213.157.0.172]:14431 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752583Ab1KVJeo convert rfc822-to-8bit (ORCPT
+	id S1757010Ab1KVJgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 04:36:33 -0500
+Received: from server655-han.de-nserver.de ([85.158.177.45]:32774 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753039Ab1KVJga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 04:34:44 -0500
-Thread-Index: Acyo+fbdvU37Pr4ATLWeJ2kJ2qIDIg==
-Thread-Topic: [ANNOUNCE] 3.2-rc1-rt1 - Compile errors also for rc1 vanilla
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-Content-class: urn:content-classes:message
-Importance: normal
-From: "Tim Sander" <tim.sander@hbm.com>
-Organization: Hottinger Baldwin Messtechnik
-To: "Steven Rostedt" <rostedt@goodmis.org>
-Subject: Re: [ANNOUNCE] 3.2-rc1-rt1 - Compile errors also for rc1 vanilla
-Date: Tue, 22 Nov 2011 10:34:15 +0100
-User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
-Cc: "Thomas Gleixner" <tglx@linutronix.de>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>,
-        "John Kacur" <jkacur@redhat.com>
-References: <alpine.LFD.2.02.1111132213220.2694@ionos> <201111141014.06906.tim.sander@hbm.com> <1321896657.20742.16.camel@frodo>
-In-Reply-To: <1321896657.20742.16.camel@frodo>
+	Tue, 22 Nov 2011 04:36:30 -0500
+Message-ID: <4ECB6D1C.8010208@profihost.ag>
+Date: Tue, 22 Nov 2011 10:36:28 +0100
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/Plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <201111221034.16018.tim.sander@hbm.com>
-X-OriginalArrivalTime: 22 Nov 2011 09:34:42.0769 (UTC) FILETIME=[F6CA7C10:01CCA8F9]
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+CC: Stable Tree <stable@kernel.org>, stable@vger.kernel.org,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Jesse Brandeburg <jesse.brandeburg@intel.com> Bruce Allan" 
+	<bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        John Ronciak <john.ronciak@intel.com>
+Subject: Re: Kernel v3.0.8 igb driver dies when pulling network cable
+References: <4ECA4362.2050307@profihost.ag> <4ECA884C.5010706@intel.com> <4ECA936E.8060301@profihost.ag> <4ECAD3D4.4070306@intel.com>
+In-Reply-To: <4ECAD3D4.4070306@intel.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve
-> arch/arm/mach-imx/built-in.o: In function `imx31_soc_init':
-> /work/rt/rt.git/arch/arm/mach-imx/mm-imx3.c:186: undefined reference to
-> `mx31_revision' make[1]: *** [.tmp_vmlinux1] Error 1
-> make: *** [sub-make] Error 2
-> 
-> Which is not the error you saw. I'm curious to what I did wrong.
-As i wrote i had some platform modifications which i took from my 3.0 kernel.
-When compiling vanilla 3.2-rc2 i have the same error as you above.
+> It would be useful if you could try the latest driver from e1000.sf.net
+> just to verify  if this is a bug in the upstream kernel or if it is also
+> present in our e1000.sf.net.driver.  This way we can figure out if this
+> is an issue where a patch wasn't pushed into the stable kernel or if it
+> is an issue that still exists in our latest release.
+>
+> Also could you provide us with the part number you are currently using.
+> If you could provide us with the device ID for the part via lspci we can
+> start narrowing down the root cause for the issue as currently we don't
+> have any information about what hardware you are experiencing this issue on.
 
-I've just send an error report to the arm kernel mailing list.
+Ok another note i missed last time. Ethernet and Server stays fully 
+functional - it just prints the message and resets the adapter.
 
-Best regards
-Tim
+OK let's start with lspci:
+a:00.0 Ethernet controller: Intel Corporation Device 10c9 (rev 01)
+         Subsystem: Super Micro Computer Inc Device 10c9
+         Flags: bus master, fast devsel, latency 0, IRQ 28
+         Memory at fbe60000 (32-bit, non-prefetchable) [size=128K]
+         Memory at fbe40000 (32-bit, non-prefetchable) [size=128K]
+         I/O ports at e880 [size=32]
+         Memory at fbe1c000 (32-bit, non-prefetchable) [size=16K]
+         Expansion ROM at fbe20000 [disabled] [size=128K]
+         Capabilities: [40] Power Management version 3
+         Capabilities: [50] Message Signalled Interrupts: Mask+ 64bit+ 
+Queue=0/0 Enable-
+         Capabilities: [70] MSI-X: Enable+ Mask- TabSize=10
+         Capabilities: [a0] Express Endpoint, MSI 00
+         Capabilities: [100] Advanced Error Reporting <?>
+         Capabilities: [140] Device Serial Number ce-5a-2b-ff-ff-90-25-00
+         Capabilities: [150] #0e
+         Capabilities: [160] #10
+         Kernel driver in use: igb
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+0a:00.1 Ethernet controller: Intel Corporation Device 10c9 (rev 01)
+         Subsystem: Super Micro Computer Inc Device 10c9
+         Flags: bus master, fast devsel, latency 0, IRQ 40
+         Memory at fbee0000 (32-bit, non-prefetchable) [size=128K]
+         Memory at fbec0000 (32-bit, non-prefetchable) [size=128K]
+         I/O ports at ec00 [size=32]
+         Memory at fbe9c000 (32-bit, non-prefetchable) [size=16K]
+         Expansion ROM at fbea0000 [disabled] [size=128K]
+         Capabilities: [40] Power Management version 3
+         Capabilities: [50] Message Signalled Interrupts: Mask+ 64bit+ 
+Queue=0/0 Enable-
+         Capabilities: [70] MSI-X: Enable+ Mask- TabSize=10
+         Capabilities: [a0] Express Endpoint, MSI 00
+         Capabilities: [100] Advanced Error Reporting <?>
+         Capabilities: [140] Device Serial Number ce-5a-2b-ff-ff-90-25-00
+         Capabilities: [150] #0e
+         Capabilities: [160] #10
+         Kernel driver in use: igb
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+Using the latest stable igb driver from e1000.sf.net works fine without 
+any message.
 
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+Thanks,
 
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+Stefan
