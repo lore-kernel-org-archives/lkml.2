@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab1KVWPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:15:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52313 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab1KVWPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:15:31 -0500
-Date: Tue, 22 Nov 2011 14:15:14 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
-        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dm: verity target
-Message-ID: <20111122221514.GC2096@google.com>
-References: <20111110074408.GE10138@secunet.com>
- <1321032884-14621-1-git-send-email-msb@chromium.org>
- <20111114092252.GA11359@secunet.com>
- <20111114175423.GA13132@google.com>
- <20111115091922.GC20943@secunet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111115091922.GC20943@secunet.com>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757506Ab1KVWRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:17:04 -0500
+Received: from gate.crashing.org ([63.228.1.57]:56458 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab1KVWRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 17:17:02 -0500
+Message-ID: <1322000195.14573.13.camel@pasglop>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Date: Wed, 23 Nov 2011 09:16:35 +1100
+In-Reply-To: <alpine.DEB.2.01.1111220038060.8000@trent.utfs.org>
+References: <20111121131531.GA1679@x4.trippels.de>
+	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121153621.GA1678@x4.trippels.de>
+	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121161036.GA1679@x4.trippels.de>
+	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121173556.GA1673@x4.trippels.de>
+	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121185215.GA1673@x4.trippels.de>
+	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
+	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
+	 <alpine.DEB.2.00.1111212105330.19606@router.home>
+	 <1321948113.27077.24.camel@edumazet-laptop>
+	 <alpine.DEB.2.01.1111220038060.8000@trent.utfs.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steffen,
-
-Sorry for the delayed repsonse.
-
-Steffen Klassert (steffen.klassert@secunet.com) wrote:
-> Hi.
+On Tue, 2011-11-22 at 00:39 -0800, Christian Kujau wrote:
+> On Tue, 22 Nov 2011 at 08:48, Eric Dumazet wrote:
+> > > --- linux-2.6.orig/mm/slub.c	2011-11-21 21:15:41.575673204 -0600
+> > > +++ linux-2.6/mm/slub.c	2011-11-21 21:16:33.442336849 -0600
+> > > @@ -1969,7 +1969,7 @@
+> > >  		page->pobjects = pobjects;
+> > >  		page->next = oldpage;
+> > > 
+> > > -	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+> > > +	} while (irqsafe_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+> > >  	stat(s, CPU_PARTIAL_FREE);
+> > >  	return pobjects;
+> > >  }
 > 
-> On Mon, Nov 14, 2011 at 09:54:23AM -0800, Mandeep Singh Baines wrote:
-> > 
-> > Hi Steffen,
-> > 
-> > We use a hash per CPU to avoid allocating and freeing a context per
-> > computation. We could allocate the context on the stack as you suggest.
-> > However, we were worried about overflowing the stack. The context can be
-> > quite large (close to 200 bytes for sha512).
+> Is this a patch to try for my PowerPC machine? With CONFIG_SLUB=y?
 > 
-> Indeed, but preallocating on percpu basis can be also quite large on
-> bigsmp machines.
+> > For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
+> > machines.
 > 
+> I'm on UP, don't have any x68/SMP machines to test atm :(
 
-Yes, you'll consume NUM_CPUS*sizeof(context) but I'm not sure that its
-a lot of memory relative to the total amount of memory you'd see on a
-big SMP/NUMA system.
+Yes, please try the patch with SLUB and let us know if it makes a
+difference.
 
-> > 
-> > We use a hash per CPU because there can be at most one hash in progress
-> > on each CPU at any one time.
-> > 
-> 
-> Ok, this is the case because you use a workqueue and this processes
-> at most one work item on each cpu the time.
-> 
-> On another note, you might want to use ahash here. Most crypto hardware
-> accelerators need to use asynchronous ciphers. These can't be used if
-> you use the synchronous interface.
-> 
+Eric, Christoph, the generic version of this_cpu_cmpxchg() is not
+interrupt safe, so I suppose this patch should go in right ?
 
-We definitely want to look at ahash but I'd like to get the baseline
-functionality in and then iterate. Do you think it would be cool
-if we deferred looking into ahash until later?
+Cheers,
+Ben.
 
-> And at the latest when you switch to ahash, you need more than one
-> preallocated ahash request on each cpu, as there can be many ahash
-> requests submitted on each cpu :)
-> 
 
-Thanks much for all the feedback.
-
-Regards,
-Mandeep
