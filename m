@@ -1,95 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab1KVQaw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 11:30:52 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:21511 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668Ab1KVQav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 11:30:51 -0500
-Message-ID: <4ECBCE30.30001@parallels.com>
-Date: Tue, 22 Nov 2011 20:30:40 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1757817Ab1KVQbe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 11:31:34 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38785 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756044Ab1KVQbd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 11:31:33 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given
- pids
-References: <4EC4F2FB.408@parallels.com> <20111117154936.GB12325@redhat.com> <4EC52FBF.1010407@parallels.com> <20111118233055.GA29378@google.com> <4ECA1696.5060500@parallels.com> <20111121225019.GQ25776@google.com> <4ECB8346.8040806@parallels.com> <20111122152312.GB322@google.com>
-In-Reply-To: <20111122152312.GB322@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4ECB6D60.1010702@redhat.com>
+References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org>
+	<4ECB6D60.1010702@redhat.com>
+Date: Tue, 22 Nov 2011 11:31:32 -0500
+Message-ID: <CAG6tG3y+C4815b=bByU7ZeOVE9o1g71QoSpRRUud5jcDFqK_Ow@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: Robert Love <rlove@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 07:23 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Nov 22, 2011 at 03:11:02PM +0400, Pavel Emelyanov wrote:
->>> Hmmm... I hope this could be prettier.  I'm having trouble following
->>> where the MAY_OPEN comes from.  Can you please explain?
->>
->> From this calltrace:
->>
->>  pid_ns_ctl_permissions
->>  sysctl_perm
->>  proc_sys_permission
->>  inode_permission
->>  do_last <<<<< MAY_OPEN appears here
->>  path_openat
->>  do_filp_open
->>  do_sys_open
->>  sys_open
-> 
-> Thanks a lot. :)
-> 
->>> Can't we for now allow this for root and then later allow CAP_CHECKPOINT 
->>> that Cyrill suggested?  Or do we want to allow setting pids even w/o CR 
->>> for NS creator?
->>
->> I think that systemd guys can play with it. E.g. respawning daemons with predefined
->> pids sounds like an interesting thing to play with.
-> 
-> But wouldn't CAP_CHECKPOINT be enough for systemd?
+First, thanks to John for driving this. I'd love to see something like
+ashmem's cache functionality in Linux.
 
-It would, but what's the point in granting to a systemd (which can be a container's
-init by the way) the ability to use the _whole_ checkpoint/restore engine?
+Comments inline:
 
-Even more - protecting with the capability implies, that any task might want to play
-with it. But what's the point for an arbitrary task, that just _lives_ in a pid namespace
-to set the last_pid of its namespace?
+On Tue, Nov 22, 2011 at 4:37 AM, Rik van Riel <riel@redhat.com> wrote:
+> 1) How do you tell userspace some of its data got
+>   discarded?
 
->>>> +static int pid_ns_ctl_handler(struct ctl_table *table, int write,
->>>> +		     void __user *buffer, size_t *lenp, loff_t *ppos)
->>>> +{
->>>> +	struct ctl_table tmp = *table;
->>>> +	tmp.data = &current->nsproxy->pid_ns->last_pid;
->>>> +	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
->>>> +}
->>>
->>> Probably better to call set_last_pid() on write path instead?
->>
->> Why? The usage of this sysctl is going to be synchronized  by external locks,
->> so why should we care?
-> 
-> I think the question should usually be the other way around.  Why
-> deviate when the deviation doesn't earn any tangible benefit?  If you
-> think setting it explicitly is justified, explain why in the comment
-> of the setter and places where those explicit settings are.
+This is my big question, too. This must be addressed to make this
+usable by user-space. Unfortunately there isn't a side channel
+available in madvise or fadvise.
 
-The set_last_pid() is the way to update the last_pid by two concurrent updaters. Since
-setting the last_pid via sysctl is racy by its nature, using that race protection is
-just pointless.
+The ashmem use case is like this:
 
-And yes, I agree, that writing this comment is a good idea :)
+1. Create an ashmem mapping. All pages start off pinned.
+2. Populate pages
+3. Use pages.
+4. Unpin some or all pages.
+5. Re-pin pages. Return value tells you if they were jettisoned. If
+so, goto #2. If not, goto #3.
 
-> Thanks.
-> 
+> 2) How do you prevent the situation where every
+>   volatile object gets a few pages discarded, making
+>   them all unusable?
+>   (better to throw away an entire object at once)
 
+In ashmem, I prevent this by jettisoning pages in units of unpinned
+chunks, ordered by least-recently-unpinned. Since pinned/unpinned
+chunks tend to relate to user-space objects (e.g. you'd unpin a whole
+image), you end up throwing away the entire user-space object.
+
+Put another way, the eviction algorithm is least-recently-unpinned
+chunk, not least-recently-unpinned page, which prevents thrashing lots
+of objects. An alternative would be to toss not whole chunks, but
+whole mappings.
+
+> 3) Isn't it too slow for something like Firefox to
+>   create a new tmpfs object for every single throw-away
+>   cache object?
+
+Nope, although user-space might want to create larger mappings and
+sub-divide them if its objects are *really* small.
+
+> Johannes, Jon and I have looked at an alternative way to
+> allow the kernel and userspace to cooperate in throwing
+> out cached data.  This alternative way does not touch
+> the alloc/free fast path at all, but does require some
+> cooperation at "shrink cache" time.
+
+I'm open to whatever works, and I need to think about your proposal
+more, but it sounds inferior to the model John is proposing.
+
+I think we can sum the two models up as,
+
+- User-space pins, unpins objects, and kernel handles eviction
+- Kernel lets user-space register callbacks for notification during
+cache shrink, user handles eviction
+
+Right?
+
+Actually, I can see the need for both. But the first is simpler, lets
+the kernel evict pages from user-space even in low memory situations
+(since you can call the cache shrinker atomically), and relies on the
+fact that the "free caches" action is just jettisoning the pages, so
+the kernel can do it. The actual work is in repopulating the caches.
+
+That last point, btw, is why user-space developers like ashmem: It
+fits their models of how they do work. They pin/unpin objects as part
+of their normal access and repopulating is tied into the re-pin path,
+which is where it makes sense.
+
+In a callback model, you have two issues: One, user-space needs to do
+its own jettisoning. Two, user-space now needs to keep track of
+whether an object was jettisoned and repopulate it (when? on next use?
+now you have user-space reimplementing the pin/unpin logic, right?).
+
+         Robert
