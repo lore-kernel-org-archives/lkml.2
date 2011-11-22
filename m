@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab1KVRA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 12:00:56 -0500
-Received: from server.fomav.gob.ni ([165.98.54.226]:53683 "EHLO
-	server.fomav.gob.ni" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758093Ab1KVRAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 12:00:54 -0500
-Message-ID: <7957d9e5fcace09faffd3bf62d2b163c.squirrel@www.fomav.gob.ni>
-Date: Tue, 22 Nov 2011 02:49:56 +0600
-Subject: =?iso-8859-2?Q?B=B3=B1d_Zauwa=BFy=B3em_Code_573FKx9?=
-From: "Systemu Administrator" <info@systemuadministrator.pl>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.19
+	id S1758202Ab1KVRDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 12:03:55 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:48824
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754591Ab1KVRDy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 12:03:54 -0500
+X-SpamScore: -17
+X-BigFish: VPS-17(zz936eK148cM1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-SS: 13,
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "greg@kroah.com" <greg@kroah.com>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        Drivers <Drivers@analog.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Nov 2011 17:03:10 +0000
+Subject: RE: [PATCH 2/2] misc: ad525x_dpot: Add support for SPI module
+ device table matching
+Thread-Topic: [PATCH 2/2] misc: ad525x_dpot: Add support for SPI module
+ device table matching
+Thread-Index: AcypMYMO77xSb5njTbiCcgQmpashXAABuobw
+Message-ID: <544AC56F16B56944AEC3BD4E3D5917714872FF3A29@LIMKCMBX1.ad.analog.com>
+References: <1321610711-12507-1-git-send-email-michael.hennerich@analog.com>
+ <1321610711-12507-2-git-send-email-michael.hennerich@analog.com>
+ <201111221611.19190.arnd@arndb.de>
+In-Reply-To: <201111221611.19190.arnd@arndb.de>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-2
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drodzy u¿ytkownika konto e-mail
+Arnd Bergmann wrote on 2011-11-22:
+> On Friday 18 November 2011, michael.hennerich@analog.com wrote:
+>> From: Michael Hennerich <michael.hennerich@analog.com>
+>>
+>> Passing device name via platform data, is a leftover from times where
+>> SPI module device table matching was not existent.
+>>
+>> * Add id_table and remove old mechanism.
+>> (To my knowledge no intree boards affected)
+>> * Miscellaneous other cleanup.
+>
+> The patch looks good to me, but please don't do "miscelaneous other
+> cleanup" in the same patch. I think doing cleanups while you change a
+> driver is a good idea, just do the extra step to split those out into a
+> cleanup patch and describe what you do, just like you have split out the
+> bug fix.
+>
+>       Arnd
 
-Ze wzgledu na niedawne sladu przez naszych pracowników administratora,
-zauwazylismy, ze rózne komputerów zalogowaniu sie do poczty ektronicznej i
-wielu hasel awariibyly obecne przed zalogowac. Dlatego twoje konto zostalo
-ograniczone.
+Hi Arnd,
 
-Dostep do portalu zarzadzania dla przywrócenia kontroli oraz kadry
-zarzadzajacej. Wystarczy kliknac odpowiedziec na te wiadomosc natychmiast i
-wprowadz szczególy konta ponizej.
+Thanks for reminding me.
+Will do in future.
 
-E-mail w celu potwierdzenia tozsamosci ponizej:
-Uzytkownik:
-E-mail Uzytkownik:
-Haslo:
-Potwierdz haslo:
-Data urodzenia :
-Przyszlosci Haslo:
+Greetings,
+Michael
 
-Uwaga: Tylko przywrócony konto nie zostanie zablokowane.
-
-Dziekuje za wspólprace.
-
-Webmail Help Desk.
-Systemu Administrator
-
-
-
-
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
 
 
