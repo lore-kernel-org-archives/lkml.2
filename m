@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab1KVBXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:23:16 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:58167 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756824Ab1KVBXO (ORCPT
+	id S1757590Ab1KVBao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:30:44 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24748 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab1KVBam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:23:14 -0500
-Date: Tue, 22 Nov 2011 12:22:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the at91 tree with the arm tree
-Message-Id: <20111122122250.0ea392605bac51e69331b9a2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T"
+	Mon, 21 Nov 2011 20:30:42 -0500
+Date: Mon, 21 Nov 2011 20:30:31 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs fixes
+Message-ID: <20111122013031.GG28259@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4ECAFB40.006D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi everyone,
 
-Hi all,
+The for-linus branch of the linux-btrfs repo has some important fixes:
 
-Today's linux-next merge of the at91 tree got a conflict in
-arch/arm/mach-at91/setup.c between commit cf48c02e3bf0 ("ARM: mach-at91:
-remove arch specific special handling for ioremap") from the arm tree and
-commit 6a5f01336ed8 ("ARM: at91: make DBGU soc independent") from the
-at91 tree.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The most important in the bunch fixes the btrfs cache flushing.  This
+one probably explains many of the corruptions that have been reported,
+especially on multi-device filesystems.  I had a hard time hitting it
+locally, partially because it is much less likely to happen for fsync
+based commits and most of my tests used fsyncs to exercise the commit
+code.  Ceph users running with -o notreelog were dramatically more
+likely to trigger the corruptions.
 
-diff --cc arch/arm/mach-at91/setup.c
-index cf98a8f,3c309dc..0000000
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@@ -73,9 -75,24 +75,6 @@@ static struct map_desc at91_io_desc __i
-  	.type		=3D MT_DEVICE,
-  };
- =20
-- #define AT91_DBGU0	0xfffff200
-- #define AT91_DBGU1	0xffffee00
--=20
- -void __iomem *at91_ioremap(unsigned long p, size_t size, unsigned int typ=
-e)
- -{
- -	if (p >=3D AT91_BASE_SYS && p <=3D (AT91_BASE_SYS + SZ_16K - 1))
- -		return (void __iomem *)AT91_IO_P2V(p);
- -
- -	return __arm_ioremap_caller(p, size, type, __builtin_return_address(0));
- -}
- -EXPORT_SYMBOL(at91_ioremap);
- -
- -void at91_iounmap(volatile void __iomem *addr)
- -{
- -	unsigned long virt =3D (unsigned long)addr;
- -
- -	if (virt >=3D VMALLOC_START && virt < VMALLOC_END)
- -		__iounmap(addr);
- -}
- -EXPORT_SYMBOL(at91_iounmap);
- -
-  static void __init soc_detect(u32 dbgu_base)
-  {
-  	u32 cidr, socid;
+The problem was that btrfs was triggering cache flushes before the last
+copy of the super block, instead of doing them before the first copy.
+We also needed to be more careful about getting flushes done to all the
+devices in a multi-device FS before writing any of the supers.  To help
+verify the new code, I wrote up a writeback-caching elevator, which I
+sent posted earlier today for comments/review.
 
---Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T
-Content-Type: application/pgp-signature
+Many thanks to Alexandre Oliva and Arne Jansen for helping nail this
+down.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Outside of the cache flushes, we also have a fix from Liu Bo for
+corruptions when snapshotting with mount -o inode_cache enabled.
 
-iQIcBAEBCAAGBQJOyvlqAAoJEECxmPOUX5FEmoEQAJ3r8kHAGPw350g4mZChLU81
-gvGIUpA9ojolgiGDN+BuPlJ/AUXURQtNtZ6txFTKzb16N00QJUG3JejxwoYrGVnc
-9iMXVsQOIsl4yUHNlyQgaFcAvtQvmcpuVgKu555Rzpm40XPW8kaoUH2S0M9xGRKN
-9fVuHrVJkJPi/c5CqTHPrigUgcRroiVZb60tHOMrmM+WZvpTGUYzUW5y8FvfOULx
-N0yq902Tv+cy5L0GrmxQgmDOkrWi1DQKlZhFr+26pSrriErtOthrSAoTGmBHpjyR
-MyF/0v48hRUiRfNTMnB4GDG2HBLD05oRtwVd0jjG4hO9BQP6wBoMIsdRoto6VrUL
-rjAzxAxCOLVBDySTAO7vn3s/e7v/stK2vfK9QnZTU58yKpNhJJ2raMWqzd4ayAV9
-0m5XchYVUTOljomhH3Wqp5YoChcAyfzCX5t1x6bshGKZJH9+093ws/JyEuqbDHA2
-i/shmAGOE6kKGPy5+q4z/aEQGtcnxKi6FSWqCruWv1H7NhLLbDlLBsmZH3kpP1s9
-B5MJJUASJ2sIrLJjxG0ymLaFd8Uz+f9/7UY2YJur0ZVU0j95x04aLUBUV6dTLA83
-Z100CWjahgP3y83W5tTdTPBueYIBuigF66P90E5Y2KacPFDQNsJWSPI6BDhDEvT/
-l2cerOUfd1IWCB/h+Hhb
-=14G1
------END PGP SIGNATURE-----
+My for-linus branch is still against 3.1, but these were tested on Linus
+git as well.
 
---Signature=_Tue__22_Nov_2011_12_22_50_+1100_ClLzGPotq5.YCD4T--
+Josef Bacik (3) commits (+90/-42):
+    Btrfs: wait on caching if we're loading the free space cache (+81/-41)
+    Btrfs: clear pages dirty for io and set them extent mapped (+5/-0)
+    Btrfs: sectorsize align offsets in fiemap (+4/-1)
+
+Chris Mason (2) commits (+141/-18):
+    Btrfs: remove free-space-cache.c WARN during log replay (+7/-1)
+    Btrfs: fix barrier flushes (+134/-17)
+
+Li Zefan (2) commits (+16/-38):
+    Btrfs: avoid unnecessary bitmap search for cluster setup (+4/-38)
+    Btrfs: fix to search one more bitmap for cluster setup (+12/-0)
+
+Jan Schmidt (1) commits (+4/-4):
+    btrfs: mirror_num should be int, not u64
+
+Jeff Mahoney (1) commits (+9/-6):
+    btrfs: Fix up 32/64-bit compatibility for new ioctls
+
+Liu Bo (1) commits (+26/-1):
+    Btrfs: fix tree corruption after multi-thread snapshots and inode_cache flush
+
+Arnd Hannemann (1) commits (+3/-3):
+    Btrfs: prefix resize related printks with btrfs:
+
+David Sterba (1) commits (+4/-2):
+    btrfs: fix stat blocks accounting
+
+Total: (12) commits (+290/-111)
+
+ fs/btrfs/backref.c          |    2 +-
+ fs/btrfs/ctree.c            |   17 +++++-
+ fs/btrfs/ctree.h            |    5 +-
+ fs/btrfs/disk-io.c          |  147 +++++++++++++++++++++++++++++++++++++-----
+ fs/btrfs/extent-tree.c      |  119 +++++++++++++++++++++++------------
+ fs/btrfs/extent_io.c        |    9 ++-
+ fs/btrfs/extent_io.h        |    2 +-
+ fs/btrfs/free-space-cache.c |   63 ++++++++-----------
+ fs/btrfs/inode.c            |    6 +-
+ fs/btrfs/ioctl.c            |   15 +++--
+ fs/btrfs/scrub.c            |    2 +-
+ fs/btrfs/transaction.c      |    8 +++
+ fs/btrfs/volumes.h          |    6 ++
+ 13 files changed, 290 insertions(+), 111 deletions(-)
