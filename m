@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1KVAeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:34:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab1KVAeJ (ORCPT
+	id S1755436Ab1KVAhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:37:41 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53423 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701Ab1KVAhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:34:09 -0500
-Date: Mon, 21 Nov 2011 16:34:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <greg@kroah.com>, Theodore Tso <tytso@MIT.EDU>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC v2 1/3] procfs: parse mount options
-Message-Id: <20111121163407.d8946ad8.akpm@linux-foundation.org>
-In-Reply-To: <20111119110126.GA11468@albatros>
-References: <20111119110126.GA11468@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 21 Nov 2011 19:37:40 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 22 Nov 2011 09:36:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>, mhocko@suse.cz,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] fix mem_cgroup_split_huge_fixup to work efficiently.
+Message-Id: <20111122093622.eba8bbef.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <CAKTCnzk81UiqVHGcTcN_0iyG8dw=-wC6jo8ME7g303PQFKDM3w@mail.gmail.com>
+References: <20111117103308.063f78df.kamezawa.hiroyu@jp.fujitsu.com>
+	<CAKTCnzk81UiqVHGcTcN_0iyG8dw=-wC6jo8ME7g303PQFKDM3w@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -28,17 +30,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Nov 2011 15:01:26 +0400
-Vasiliy Kulikov <segooon@gmail.com> wrote:
+On Mon, 21 Nov 2011 16:30:11 +0530
+Balbir Singh <bsingharora@gmail.com> wrote:
 
-> This patch adds support of procfs mount options.
-> Actual mount options are coming in the next patches.
+> On Thu, Nov 17, 2011 at 7:03 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >
+> > I'll send this again when mm is shipped.
+> > I sometimes see mem_cgroup_split_huge_fixup() in perf report and noticed
+> > it's very slow. This fixes it. Any comments are welcome.
+> >
+> 
+> How do you see this - what tests?
+> 
+Sometimes. By applications calling fork() or mremap(), mprotect(), which
+will cause split_huge_page(). 
+But not 100% reporoducable, yet.
 
-The patches look sane to me.
-
-I assume that `mount -o remount' has been tested and works as expected?
-
-I also assume that any file which was opened prior to the remount will
-remain accessible to any process which has the fd.  Is this acceptable
-from a security/operational POV?
+Thanks,
+-Kame
 
