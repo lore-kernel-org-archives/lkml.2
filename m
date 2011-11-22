@@ -1,100 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab1KVLLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:11:14 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:33844 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab1KVLLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:11:12 -0500
-Message-ID: <4ECB8346.8040806@parallels.com>
-Date: Tue, 22 Nov 2011 15:11:02 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1758204Ab1KVLOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:14:09 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39624 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab1KVLOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 06:14:08 -0500
+Date: Tue, 22 Nov 2011 12:14:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: 3.2-rc2 regression: floppy driver breaks boot
+Message-ID: <20111122111405.GA28215@elf.ucw.cz>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given
- pids
-References: <4EC4F2FB.408@parallels.com> <20111117154936.GB12325@redhat.com> <4EC52FBF.1010407@parallels.com> <20111118233055.GA29378@google.com> <4ECA1696.5060500@parallels.com> <20111121225019.GQ25776@google.com>
-In-Reply-To: <20111121225019.GQ25776@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +static int pid_ns_ctl_permissions(struct nsproxy *namespaces,
->> +			struct ctl_table *table, int op)
->> +{
->> +	int mode = 0644;
->> +
->> +	if ((op & MAY_OPEN) &&
->> +			current != namespaces->pid_ns->child_reaper)
->> +		/*
->> +		 * Writing to this sysctl is allowed only for init
->> +		 * and to whoever it grands the open file
->> +		 */
->> +		mode &= ~0222;
->> +
->> +	return sysctl_test_perm(mode, op);
->> +}
->> +
->> +static struct ctl_table_root pid_ns_root = {
->> +	.permissions = pid_ns_ctl_permissions,
->> +};
-> 
-> Hmmm... I hope this could be prettier.  I'm having trouble following
-> where the MAY_OPEN comes from.  Can you please explain?
+Hi!
 
->From this calltrace:
+3.2-rc1..rc2 fail to boot, due to some warn-on in block layer. It
+seems that floppy driver is responsible.
 
- pid_ns_ctl_permissions
- sysctl_perm
- proc_sys_permission
- inode_permission
- do_last <<<<< MAY_OPEN appears here
- path_openat
- do_filp_open
- do_sys_open
- sys_open
+I'll try to turn the floppy driver off and see what happens.
 
-
-> Can't we for now allow this for root and then later allow CAP_CHECKPOINT 
-> that Cyrill suggested?  Or do we want to allow setting pids even w/o CR 
-> for NS creator?
-
-I think that systemd guys can play with it. E.g. respawning daemons with predefined
-pids sounds like an interesting thing to play with.
-
->> +static int pid_ns_ctl_handler(struct ctl_table *table, int write,
->> +		     void __user *buffer, size_t *lenp, loff_t *ppos)
->> +{
->> +	struct ctl_table tmp = *table;
->> +	tmp.data = &current->nsproxy->pid_ns->last_pid;
->> +	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
->> +}
-> 
-> Probably better to call set_last_pid() on write path instead?
-
-Why? The usage of this sysctl is going to be synchronized  by external locks,
-so why should we care?
-
->> Well, after a bit more thinking I found one more pros for this
->> sysctl - when restoring a container we'll have the possibility to
->> set the last_pid to what we want to prevent the pids reuse after the
->> restore.
-> 
-> Hmmm... I personally like this one better.  Restoring multilevel pids
-> would be more tedious but should still be possible and I really like
-> that it's staying out of clone path and all modifications are to ns
-> and pid code.  Oleg, what do you think?
-> 
-> Thank you.
-> 
-
+Seems like floppy driver has no maintianer :-(.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
