@@ -1,120 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1KVOAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 09:00:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48414 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755482Ab1KVN77 (ORCPT
+	id S1755844Ab1KVOCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 09:02:38 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:37013 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab1KVOCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:59:59 -0500
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-To: Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for use by compaction
-Date: Tue, 22 Nov 2011 21:59:24 +0800
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic-pae; KDE/4.6.5; i686; ; )
-Cc: Mel Gorman <mgorman@suse.de>, Shaohua Li <shaohua.li@intel.com>,
-        "Linux-MM" <linux-mm@kvack.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de> <20111122101451.GJ19415@suse.de> <20111122115427.GA8058@quack.suse.cz>
-In-Reply-To: <20111122115427.GA8058@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111222159.24987.nai.xia@gmail.com>
+	Tue, 22 Nov 2011 09:02:37 -0500
+From: Corey Minyard <cminyard@mvista.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: =?UTF-8?q?Arkadiusz=20Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>,
+        Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH] ipmi_watchdog: Restore settings when BMC reset
+Date: Tue, 22 Nov 2011 08:01:37 -0600
+Message-id: <1321970497-3865-1-git-send-email-cminyard@mvista.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 November 2011 19:54:27 Jan Kara wrote:
-> On Tue 22-11-11 10:14:51, Mel Gorman wrote:
-> > On Tue, Nov 22, 2011 at 02:56:51PM +0800, Shaohua Li wrote:
-> > > On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
-> > > on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
-> > > lock, so could wait on page read. page read and page out have the same
-> > > latency, why takes them different?
-> > > 
-> > 
-> > That's a very reasonable question.
-> > 
-> > To date, the stalls that were reported to be a problem were related to
-> > heavy writing workloads. Workloads are naturally throttled on reads
-> > but not necessarily on writes and the IO scheduler priorities sync
-> > reads over writes which contributes to keeping stalls due to page
-> > reads low.  In my own tests, there have been no significant stalls
-> > due to waiting on page reads. I accept this may be because the stall
-> > threshold I record is too low.
-> > 
-> > Still, I double checked an old USB copy based test to see what the
-> > compaction-related stalls really were.
-> > 
-> > 58 seconds	waiting on PageWriteback
-> > 22 seconds	waiting on generic_make_request calling ->writepage
-> > 
-> > These are total times, each stall was about 2-5 seconds and very rough
-> > estimates. There were no other sources of stalls that had compaction
-> > in the stacktrace I'm rerunning to gather more accurate stall times
-> > and for a workload similar to Andrea's and will see if page reads
-> > crop up as a major source of stalls.
->   OK, but the fact that reads do not stall may pretty much depend on the
-> behavior of the underlying IO scheduler and we probably don't want to rely
-> on it's behavior too closely. So if you are going to treat reads in a
-> special way, check with NOOP or DEADLINE io schedulers that read-stalls
-> are not a problem with them as well.
+If the BMC gets reset, it will return 0x80 response errors.  In this case,
+it is probably a good idea to restore the IPMI settings.
 
-Compared to the IO scheduler, I actually expect this behavior is more related
-to these two facts:
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Tested-by: Arkadiusz Miśkiewicz <a.miskiewicz@gmail.com>
+---
+ drivers/char/ipmi/ipmi_watchdog.c |   41 ++++++++++++++++++++++++++++++++++--
+ 1 files changed, 38 insertions(+), 3 deletions(-)
 
-1) Due to the IO direction , most pages to be read are still in disk,
-while most pages to be write are in memory. 
+diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
+index c2917ffa..34767a6 100644
+--- a/drivers/char/ipmi/ipmi_watchdog.c
++++ b/drivers/char/ipmi/ipmi_watchdog.c
+@@ -139,6 +139,8 @@
+ #define IPMI_WDOG_SET_TIMER		0x24
+ #define IPMI_WDOG_GET_TIMER		0x25
+ 
++#define IPMI_WDOG_TIMER_NOT_INIT_RESP	0x80
++
+ /* These are here until the real ones get into the watchdog.h interface. */
+ #ifndef WDIOC_GETTIMEOUT
+ #define	WDIOC_GETTIMEOUT        _IOW(WATCHDOG_IOCTL_BASE, 20, int)
+@@ -596,6 +598,7 @@ static int ipmi_heartbeat(void)
+ 	struct kernel_ipmi_msg            msg;
+ 	int                               rv;
+ 	struct ipmi_system_interface_addr addr;
++	int				  timeout_retries = 0;
+ 
+ 	if (ipmi_ignore_heartbeat)
+ 		return 0;
+@@ -616,6 +619,7 @@ static int ipmi_heartbeat(void)
+ 
+ 	mutex_lock(&heartbeat_lock);
+ 
++restart:
+ 	atomic_set(&heartbeat_tofree, 2);
+ 
+ 	/*
+@@ -653,7 +657,33 @@ static int ipmi_heartbeat(void)
+ 	/* Wait for the heartbeat to be sent. */
+ 	wait_for_completion(&heartbeat_wait);
+ 
+-	if (heartbeat_recv_msg.msg.data[0] != 0) {
++	if (heartbeat_recv_msg.msg.data[0] == IPMI_WDOG_TIMER_NOT_INIT_RESP)  {
++		timeout_retries++;
++		if (timeout_retries > 3) {
++			printk(KERN_ERR PFX ": Unable to restore the IPMI"
++			       " watchdog's settings, giving up.\n");
++			rv = -EIO;
++			goto out_unlock;
++		}
++
++		/*
++		 * The timer was not initialized, that means the BMC was
++		 * probably reset and lost the watchdog information.  Attempt
++		 * to restore the timer's info.  Note that we still hold
++		 * the heartbeat lock, to keep a heartbeat from happening
++		 * in this process, so must say no heartbeat to avoid a
++		 * deadlock on this mutex.
++		 */
++		rv = ipmi_set_timeout(IPMI_SET_TIMEOUT_NO_HB);
++		if (rv) {
++			printk(KERN_ERR PFX ": Unable to send the command to"
++			       " set the watchdog's settings, giving up.\n");
++			goto out_unlock;
++		}
++
++		/* We might need a new heartbeat, so do it now */
++		goto restart;
++	} else if (heartbeat_recv_msg.msg.data[0] != 0) {
+ 		/*
+ 		 * Got an error in the heartbeat response.  It was already
+ 		 * reported in ipmi_wdog_msg_handler, but we should return
+@@ -662,6 +692,7 @@ static int ipmi_heartbeat(void)
+ 		rv = -EINVAL;
+ 	}
+ 
++out_unlock:
+ 	mutex_unlock(&heartbeat_lock);
+ 
+ 	return rv;
+@@ -922,11 +953,15 @@ static struct miscdevice ipmi_wdog_miscdev = {
+ static void ipmi_wdog_msg_handler(struct ipmi_recv_msg *msg,
+ 				  void                 *handler_data)
+ {
+-	if (msg->msg.data[0] != 0) {
++	if (msg->msg.cmd == IPMI_WDOG_RESET_TIMER &&
++			msg->msg.data[0] == IPMI_WDOG_TIMER_NOT_INIT_RESP)
++		printk(KERN_INFO PFX "response: The IPMI controller appears"
++		       " to have been reset, will attempt to reinitialize"
++		       " the watchdog timer\n");
++	else if (msg->msg.data[0] != 0)
+ 		printk(KERN_ERR PFX "response: Error %x on cmd %x\n",
+ 		       msg->msg.data[0],
+ 		       msg->msg.cmd);
+-	}
+ 
+ 	ipmi_free_recv_msg(msg);
+ }
+-- 
+1.7.4.1
 
-2) And as Mel explained, read trends to be sync, write trends to be async,
-so for decent IO schedulers, no matter what they differ in each other, 
-should almost agree no favoring read more than write. 
-
-So that amounts to the following calculation that is important to the 
-statistical stall time for the compaction:
-
-     page_nr *  average_stall_window_time
-
-where average_stall_window_time is the window for a page between 
-NotUptoDate ---> UptoDate or Dirty --> Clean. And page_nr is the
-number of pages in stall window for read or write.
-
-So for general cases, 
-Fact 1) may ensure that the page_nr is smaller for read, while
-fact 2) may ensure the same for average_locking_window_time. 
-
-I am not sure this will be the same case for all workloads, 
-don't know if Mel has tested large readahead workloads which 
-has more async read IOs and less writebacks. 
-
-But theoretically I expect things are not that bad even for large
-readahead, because readahead is triggered by the readahead TAG in
-linear order, which means for a process to generating readahead IO,
-its speed is still somewhat govened by the read IO speed. While
-for a process writing to a file mapped memory area, it may well
-exceed the speed of its backing-store writing speed. 
-
-
-Aside from that, I think the relation between page locking and 
-page read is not 1-to-1, in other words, there maybe quite some
-transient page locking is caused by mmap and then page fault into 
-already good-state pages requiring no IO at all. For these 
-transient page lockings I think it's reasonable to have light 
-waiting. 
-
-Correct me please, if sth is wrong in my reasoning. :)
-
-
-Thanks
-
-Nai
-
-> 
-> 								Honza
-> 
