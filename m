@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab1KVNys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 08:54:48 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:37735 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab1KVNyp (ORCPT
+	id S1755526Ab1KVN6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 08:58:55 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36025 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab1KVN6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:54:45 -0500
-Date: Tue, 22 Nov 2011 08:54:12 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
-Message-ID: <20111122135412.GA29905@phenom.dumpdata.com>
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
- <201111212249.31196.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111212249.31196.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4ECBA994.008C,ss=1,re=0.000,fgs=0
+	Tue, 22 Nov 2011 08:58:54 -0500
+From: Aman Deep <amandeep3986@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Aman Deep <amandeep3986@gmail.com>
+Subject: [PATCH 1/1] xHCI: Adding #define values used for hub descriptor
+Date: Tue, 22 Nov 2011 19:33:36 +0530
+Message-Id: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject    : Regression in 3.1 causes Xen to use wrong idle routine
-> Submitter  : Stefan Bader <stefan.bader@canonical.com>
-> Date       : 2011-10-26 10:24
-> Message-ID : 4EA7DFD1.9060608@canonical.com
-> References : http://marc.info/?l=linux-acpi&m=131962467924564&w=2
+xhci-hub used some numerical values for initialisation of root hub
+descriptors. #define values are addded in usb 2.0 hub specification
+file and these values are used for root hub characteristics
+initialisation.
 
-The patch mentioned in http://mid.gmane.org/20111115144004.GE22675@phenom.dumpdata.com 
-should do it. But the patch needs an Ack from ACPI/x86 folks.
+Also use some #defines in places where magic numbers are being used.
+
+Signed-off-by: Aman Deep <amandeep3986@gmail.com>
+---
+ drivers/usb/host/xhci-hub.c |   18 ++++++++----------
+ include/linux/usb/ch11.h    |   19 ++++++++++++++-----
+ 2 files changed, 22 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 430e88f..35e257f 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -57,17 +57,15 @@ static void xhci_common_hub_descriptor(struct xhci_hcd *xhci,
+ 	desc->bHubContrCurrent = 0;
+ 
+ 	desc->bNbrPorts = ports;
+-	/* Ugh, these should be #defines, FIXME */
+-	/* Using table 11-13 in USB 2.0 spec. */
+ 	temp = 0;
+-	/* Bits 1:0 - support port power switching, or power always on */
++	/* Bits 1:0 - support per-port power switching, or power always on */
+ 	if (HCC_PPC(xhci->hcc_params))
+-		temp |= 0x0001;
++		temp |= HUB_CHAR_INDV_PORT_LPSM;
+ 	else
+-		temp |= 0x0002;
++		temp |= HUB_CHAR_NO_LPSM;
+ 	/* Bit  2 - root hubs are not part of a compound device */
+ 	/* Bits 4:3 - individual port over current protection */
+-	temp |= 0x0008;
++	temp |= HUB_CHAR_INDV_PORT_OCPM;
+ 	/* Bits 6:5 - no TTs in root ports */
+ 	/* Bit  7 - no port indicators */
+ 	desc->wHubCharacteristics = cpu_to_le16(temp);
+@@ -86,9 +84,9 @@ static void xhci_usb2_hub_descriptor(struct usb_hcd *hcd, struct xhci_hcd *xhci,
+ 	ports = xhci->num_usb2_ports;
+ 
+ 	xhci_common_hub_descriptor(xhci, desc, ports);
+-	desc->bDescriptorType = 0x29;
++	desc->bDescriptorType = USB_DT_HUB;
+ 	temp = 1 + (ports / 8);
+-	desc->bDescLength = 7 + 2 * temp;
++	desc->bDescLength = USB_DT_HUB_NONVAR_SIZE + 2 * temp;
+ 
+ 	/* The Device Removable bits are reported on a byte granularity.
+ 	 * If the port doesn't exist within that byte, the bit is set to 0.
+@@ -137,8 +135,8 @@ static void xhci_usb3_hub_descriptor(struct usb_hcd *hcd, struct xhci_hcd *xhci,
+ 
+ 	ports = xhci->num_usb3_ports;
+ 	xhci_common_hub_descriptor(xhci, desc, ports);
+-	desc->bDescriptorType = 0x2a;
+-	desc->bDescLength = 12;
++	desc->bDescriptorType = USB_DT_SS_HUB;
++	desc->bDescLength = USB_DT_SS_HUB_SIZE;
+ 
+ 	/* header decode latency should be zero for roothubs,
+ 	 * see section 4.23.5.2.
+diff --git a/include/linux/usb/ch11.h b/include/linux/usb/ch11.h
+index 4ebaf08..537f354 100644
+--- a/include/linux/usb/ch11.h
++++ b/include/linux/usb/ch11.h
+@@ -165,11 +165,20 @@ struct usb_port_status {
+  * wHubCharacteristics (masks)
+  * See USB 2.0 spec Table 11-13, offset 3
+  */
+-#define HUB_CHAR_LPSM		0x0003 /* D1 .. D0 */
+-#define HUB_CHAR_COMPOUND	0x0004 /* D2       */
+-#define HUB_CHAR_OCPM		0x0018 /* D4 .. D3 */
+-#define HUB_CHAR_TTTT           0x0060 /* D6 .. D5 */
+-#define HUB_CHAR_PORTIND        0x0080 /* D7       */
++#define HUB_CHAR_LPSM		0x0003 /* Logical Power Switching Mode mask */
++#define HUB_CHAR_COMMON_LPSM	0x0000 /* All ports power control at once */
++#define HUB_CHAR_INDV_PORT_LPSM	0x0001 /* per-port power control */
++#define HUB_CHAR_NO_LPSM	0x0002 /* no power switching */
++
++#define HUB_CHAR_COMPOUND	0x0004 /* hub is part of a compound device */
++
++#define HUB_CHAR_OCPM		0x0018 /* Over-Current Protection Mode mask */
++#define HUB_CHAR_COMMON_OCPM	0x0000 /* All ports Over-Current reporting */
++#define HUB_CHAR_INDV_PORT_OCPM	0x0008 /* per-port Over-current reporting */
++#define HUB_CHAR_NO_OCPM	0x0010 /* No Over-current Protection support */
++
++#define HUB_CHAR_TTTT           0x0060 /* TT Think Time mask */
++#define HUB_CHAR_PORTIND        0x0080 /* per-port indicators (LEDs) */
+ 
+ struct usb_hub_status {
+ 	__le16 wHubStatus;
+-- 
+1.7.6
+
