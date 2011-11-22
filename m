@@ -1,193 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab1KVA7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:59:53 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60306 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757588Ab1KVA7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:59:40 -0500
-X-Sasl-enc: MUNJn9gFdTTZTe6v8AbYZnfeSKMBMFF1hS4BbpKIdxZM 1321923579
-Date: Mon, 21 Nov 2011 16:59:24 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 3.2
-Message-ID: <20111122005924.GE25420@kroah.com>
+	id S1757763Ab1KVBAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:00:05 -0500
+Received: from ozlabs.org ([203.10.76.45]:38021 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757660Ab1KVA74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 19:59:56 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH] virtio-mmio: Devices parameter parsing
+In-Reply-To: <1321898210.3093.263.camel@hornet.cambridge.arm.com>
+References: <1321365185-2928-1-git-send-email-pawel.moll@arm.com> <87sjlooq3m.fsf@rustcorp.com.au> <1321467222.3137.417.camel@hornet.cambridge.arm.com> <87vcqe9ml9.fsf@rustcorp.com.au> <1321886688.3093.248.camel@hornet.cambridge.arm.com> <1321898210.3093.263.camel@hornet.cambridge.arm.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 22 Nov 2011 11:23:31 +1030
+Message-ID: <87fwhhx9is.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a number of USB fixes and new device ids for the 3.2 tree.
+On Mon, 21 Nov 2011 17:56:50 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Mon, 2011-11-21 at 14:44 +0000, Pawel Moll wrote:
+> > I'll post v3 tonight or tomorrow.
+> 
+> Ok, it won't be v3 then...
+> 
+> I tried again, using your suggestions - see below (just the crucial bit,
+> however I have the kernel-parameters.txt bits ready as well). Parsing
+> works like charm, however when it gets to device_register() and
+> platform_device_register_resndata() I hit the same problem as
+> previously. Both are using slab allocator...
+> 
+> device_register()->device_add()->device_private_init()->kzalloc()
+> 
+> and
+> 
+> platform_device_register_resndata()->platform_device_register_full()->
+> platform_device_alloc()->kzalloc().
+> 
+> Essentially it seems that the parameter callbacks are just executed
+> waaay to early to do more than just set few integers here and there...
+> 
+> Any ideas?
 
-All pretty minor, full details are in the shortlog below.
+Rewrite the kernel and every arch so allocators work as soon as we hit
+start_kernel() and we can get rid of hundreds of ugly workarounds?
 
-Please pull from:
-	git.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-linus
+Perhaps not today.  So, we will need a linked list of devices and
+resources.  Yeah, that means allocating, which means YA
+slab_is_available()/alloc_bootmem() hack.
 
-All have been in the -next releases for a while now.
+Think of yourself as a pioneer...
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
-
-thanks,
-
-greg k-h
-
-------------
-
- drivers/usb/class/cdc-acm.c            |    8 +-
- drivers/usb/core/hub.c                 |    6 ++
- drivers/usb/core/quirks.c              |   27 ++++++
- drivers/usb/dwc3/gadget.c              |    1 +
- drivers/usb/gadget/Kconfig             |    9 +-
- drivers/usb/gadget/ci13xxx_msm.c       |    2 +
- drivers/usb/gadget/ci13xxx_udc.c       |   21 +++--
- drivers/usb/gadget/f_mass_storage.c    |    6 +-
- drivers/usb/gadget/f_midi.c            |  138 +++++++++++++++-----------------
- drivers/usb/gadget/file_storage.c      |    4 +-
- drivers/usb/gadget/fsl_udc_core.c      |    3 +-
- drivers/usb/gadget/inode.c             |    5 +-
- drivers/usb/gadget/pch_udc.c           |   10 ++-
- drivers/usb/gadget/r8a66597-udc.c      |   30 +++-----
- drivers/usb/gadget/udc-core.c          |   10 +-
- drivers/usb/host/ehci-sched.c          |   15 +++-
- drivers/usb/host/ehci-xls.c            |    2 +-
- drivers/usb/host/ohci-at91.c           |    6 ++
- drivers/usb/host/ohci-hcd.c            |   15 ++--
- drivers/usb/host/ohci-pci.c            |   26 ------
- drivers/usb/host/ohci.h                |    1 -
- drivers/usb/host/pci-quirks.c          |   57 ++++++--------
- drivers/usb/host/xhci-mem.c            |    5 -
- drivers/usb/host/xhci-ring.c           |   13 ++--
- drivers/usb/host/xhci.c                |   34 ++++----
- drivers/usb/musb/Kconfig               |    3 +-
- drivers/usb/musb/am35x.c               |    1 +
- drivers/usb/musb/da8xx.c               |    1 +
- drivers/usb/musb/musb_core.c           |    3 +-
- drivers/usb/musb/musb_gadget.c         |    4 -
- drivers/usb/renesas_usbhs/common.c     |    2 +-
- drivers/usb/renesas_usbhs/fifo.c       |    4 +-
- drivers/usb/renesas_usbhs/mod.h        |    8 +-
- drivers/usb/renesas_usbhs/mod_gadget.c |    4 +-
- drivers/usb/renesas_usbhs/mod_host.c   |   63 +++++++++------
- drivers/usb/serial/ark3116.c           |   10 +-
- drivers/usb/serial/ftdi_sio.c          |   14 +++-
- drivers/usb/serial/option.c            |   28 +++++++
- drivers/usb/serial/pl2303.c            |    1 -
- drivers/usb/serial/pl2303.h            |    4 -
- drivers/usb/storage/ene_ub6250.c       |    3 +-
- drivers/usb/storage/protocol.c         |    7 +-
- 42 files changed, 332 insertions(+), 282 deletions(-)
-
----------------
-
-Alan Stern (4):
-      USB: workaround for bug in old version of GCC
-      USB: XHCI: resume root hubs when the controller resumes
-      usb-storage: Accept 8020i-protocol commands longer than 12 bytes
-      OHCI: final fix for NVIDIA problems (I hope)
-
-Alexander Aring (1):
-      usb: gadget: fsl_udc_core: fix compile error.
-
-Andrew Worsley (1):
-      USB: Fix Corruption issue in USB ftdi driver ftdi_sio.c
-
-Bart Hartgers (1):
-      USB: ark3116 initialisation fix
-
-Daniel Mack (1):
-      usb: gadget: fix MIDI gadget jack allocation
-
-Don Zickus (2):
-      usb, xhci: fix lockdep warning on endpoint timeout
-      usb, xhci: Clear warm reset change event during init
-
-Felipe Balbi (6):
-      usb: gadget: udc-core: fix bug on soft_connect and srp interfaces
-      usb: musb: gadget: don't call ->disconnect() on exit
-      usb: gadget: core: fix bug when removing gadget drivers
-      usb: gadget: core: allow everybody to read sysfs attributes
-      usb: musb: fix compilation breakage introduced by de47725
-      USB: storage: ene_ub6250: fix compile warnings
-
-Ferenc Wagner (1):
-      USB: option: add PID of Huawei E173s 3G modem
-
-Havard Skinnemoen (1):
-      USB: cdc-acm: Fix disconnect() vs close() race
-
-Jayachandran C (1):
-      usb: Netlogic: Fix HC_LENGTH call in ehci-xls.c
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      USB: at91: at91-ohci: fix set/get power
-
-Josh Boyer (1):
-      USB: add quirk for Logitech C600 web cam
-
-Kuninori Morimoto (6):
-      usb: gadget: renesas_usbhs: fixup struct completion usage
-      usb: gadget: renesas_usbhs: fixup bogus conversion
-      usb: gadget: renesas_usbhs: fixup section mismatch warning
-      usb: gadget: renesas_usbhs: bugfix: care pipe direction
-      usb: gadget: renesas_usbhs: bugfix: disable irq when device stop
-      usb: gadget: renesas_usbhs: bugfix: set DATA0 when usbhsh_endpoint_alloc()
-
-Luciano Coelho (1):
-      usb: musb: hdrc: fix dependency on USB_GADGET_DUALSPEED in Kconfig
-
-Marc Kleine-Budde (4):
-      USB: gadgetfs: gadgetfs_disconnect: fix inconsistent lock state
-      USB: ci13xxx_udc: fix deadlock during rmmod
-      USB: ci13xxx_udc: fix debug trace code
-      USB: ci13xxx_msm: add module license
-
-Mian Yousaf Kaukab (1):
-      usb: musb: remove incorrectly added ARCH_U5500 define
-
-Michael Grzeschik (1):
-      USB: ci13xxx_udc: fix logic to mark request dma addresses as invalid
-
-Paul Zimmerman (2):
-      usb: gadget: storage: check for valid USB_BULK_GET_MAX_LUN_REQUEST
-      usb: gadget: storage: check for valid USB_BULK_RESET_REQUEST wLength
-
-Sarah Sharp (1):
-      xhci: Set slot and ep0 flags for address command.
-
-Sebastian Andrzej Siewior (1):
-      usb: dwc3: gadget: initialize max_streams
-
-Shaohui Xie (1):
-      powerpc/usb: fix type cast for address of ioremap to compatible with 64-bit
-
-Thomas Poussevin (1):
-      USB: EHCI: fix HUB TT scheduling issue with iso transfer
-
-Tomoya MORINAGA (2):
-      USB: pch_udc: Support new device LAPIS Semiconductor ML7831 IOH
-      USB: pch_udc: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
-
-VU Tuan Duc (1):
-      USB: option: add id for 3G dongle Model VT1000 of Viettel
-
-Yoshihiro Shimoda (2):
-      usb: gadget: r8a66597-udc: fix for udc-newstyle
-      usb: gadget: r8a66597-udc: fix flush fifo handling
-
-sordna (1):
-      USB: quirks: adding more quirky webcams to avoid squeaky audio
-
-wangyanqing (1):
-      USB: serial: pl2303: rm duplicate id
-
-zheng.zhijian@zte.com.cn (1):
-      USB: option: release new PID for ZTE 3G modem
-
+Thanks :)
+Rusty.
