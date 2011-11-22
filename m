@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab1KVNA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 08:00:56 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51219 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab1KVNAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:00:54 -0500
-Date: Tue, 22 Nov 2011 14:00:48 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Daniel Drake <dsd@laptop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Geode LX boot fails after x86 microcode revision change
-Message-ID: <20111122130048.GB11020@aftab>
-References: <CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com>
- <20111108203116.GF25083@aftab>
- <4EB9A6BC.7050600@zytor.com>
- <F625F33982F5D847987879CC59FF132D6F5B@storexdag03.amd.com>
- <4EB9AAF1.4040103@zytor.com>
+	id S1755023Ab1KVNCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 08:02:39 -0500
+Received: from mga03.intel.com ([143.182.124.21]:32562 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab1KVNCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 08:02:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,552,1315206000"; 
+   d="scan'208";a="77943734"
+Date: Tue, 22 Nov 2011 21:02:31 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: fix dirtied pages accounting on
+ sub-page writes
+Message-ID: <20111122130231.GA18638@localhost>
+References: <20111121130342.211953629@intel.com>
+ <20111121131215.905222115@intel.com>
+ <20111122001127.GG4017@quack.suse.cz>
+ <20111122092110.GB12864@localhost>
+ <20111122122157.GB8058@quack.suse.cz>
+ <20111122123001.GA16054@localhost>
+ <20111122124811.GD8058@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EB9AAF1.4040103@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111122124811.GD8058@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 02:19:29PM -0800, H. Peter Anvin wrote:
-> > If so, then a family check is unavoidable.
-> 
-> Either that, or make changes so that we can handle exceptions earlier.
-> That would be useful for other reasons.
+On Tue, Nov 22, 2011 at 08:48:11PM +0800, Jan Kara wrote:
+> On Tue 22-11-11 20:30:01, Wu Fengguang wrote:
+> > > > @@ -1743,6 +1738,8 @@ void account_page_dirtied(struct page *p
+> > > >  		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+> > > >  		task_dirty_inc(current);
+> > > >  		task_io_account_write(PAGE_CACHE_SIZE);
+> > > > +		current->nr_dirtied++;
+> > > > +		__get_cpu_var(bdp_ratelimits)++;
+> > >   I think you need preempt_disable() and preempt_enable() pair around
+> > > __get_cpu_var(). Otherwise a process could get rescheduled in the middle of
+> > > read-modify-write cycle...
+> > 
+> > Hmm, I'm not worried about it at all, because bdp_ratelimits don't
+> > need to be accurate. In normal cases it won't even trigger one single
+> > call to balance_dirty_pages().
+>   I agree regarding the accuracy. But the CPU can change when the process
+> is scheduled again. So you could modify counter of a CPU you are not
+> running on. And that can cause bad things...
 
-Well, I did some experimenting with this by forcing a guest to #GP on a
-rdmsr in kvm. What I got was the early_idt_handler's panic message:
+Will modifying another CPU's per-cpu data lead to more serious
+problems than inaccuracy? If not, it would be fine. bdp_ratelimits is
+only meant to be a coarse grained safeguard after all :-)
 
-"PANIC: early exception %02lx rip %lx:%lx error %lx cr2 %lx\n"
+> > btw, account_page_dirtied() is called inside spinlock, will it be
+> > sufficient?
+>   Currently it is not enough in real-time kernels and when sleeping
+> spinlocks work gets merged it won't be enough even in standard kernels...
+> And in kernels where spinlock means preemption is disabled
+> preempt_enable/disable will be almost for free...
 
-because of the following boot code flow:
+I see, spinlock won't be a general superset of preempt_enable/disable
+indeed.
 
-x86_64_start_kernel
-|-> ... set_intr_gate           /* register early_idt_handler */
-|-> x86_64_start_reservations
-    |-> start_kernel
-        |-> setup_arch
-        |-> early_cpu_init()    /*
-				 * this is where we need the extable for
-				 * rdmsr_safe
-				 */
-...
-    |-> trap_init()             /* switch to default #GP handler */
-
-and do_general_protection does the actual exception fixup. Now, the
-whole setup_arch() is running with the initial traps and only after we
-finish it and a bunch of other stuff, we switch to the #GP handler in
-trap_init().
-
->From where I stand, maybe I could try to teach the early_idt_handler in
-head_64.S to do fixup_exception() ?
-
-Also, we might need the patches which sort extable at build time too,
-which are floating around lkml currently.
-
-Hmm...
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Fengguang
