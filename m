@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab1KVV5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:57:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58561 "EHLO mx2.suse.de"
+	id S1758701Ab1KVV6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:58:40 -0500
+Received: from gate.crashing.org ([63.228.1.57]:43909 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751698Ab1KVV5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:57:51 -0500
-Date: Tue, 22 Nov 2011 22:57:49 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] x86: Kconfig: drop unknown symbol
- 'APM_MODULE'
-In-Reply-To: <1321526491.20271.275.camel@x61.thuisdomein>
-Message-ID: <alpine.LNX.2.00.1111222257320.28728@pobox.suse.cz>
-References: <1321526491.20271.275.camel@x61.thuisdomein>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757528Ab1KVV6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 16:58:39 -0500
+Message-ID: <1321999085.14573.2.camel@pasglop>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Christian Kujau <lists@nerdbynature.de>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Date: Wed, 23 Nov 2011 08:58:05 +1100
+In-Reply-To: <1321948113.27077.24.camel@edumazet-laptop>
+References: <20111121131531.GA1679@x4.trippels.de>
+	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121153621.GA1678@x4.trippels.de>
+	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121161036.GA1679@x4.trippels.de>
+	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121173556.GA1673@x4.trippels.de>
+	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111121185215.GA1673@x4.trippels.de>
+	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
+	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
+	 <alpine.DEB.2.00.1111212105330.19606@router.home>
+	 <1321948113.27077.24.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Nov 2011, Paul Bolle wrote:
-
-> There's no Kconfig symbol APM_MODULE, so the check for it will always
-> fail. There's no need to append _MODULE to tristate symbols anyhow,
-> because the config tools will do the right thing automagically.
-
-I will be taking this through apm.git instead of trivial.git.
-
-Thanks.
-
+On Tue, 2011-11-22 at 08:48 +0100, Eric Dumazet wrote:
+> Le lundi 21 novembre 2011 à 21:18 -0600, Christoph Lameter a écrit :
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Added in commit a6b68076fd ("x86: compile apm and voyager module only
-> when selected in Kconfig"). The reason for appending _MODULE can be
-> found at https://lkml.org/lkml/2008/1/3/422 .
+> > Hmmm... That means that c->page points to page not frozen. Per cpu
+> > partial pages are frozen until they are reused or until the partial list
+> > is flushed.
+> > 
+> > Does this ever happen on x86 or only on other platforms? In put_cpu_partial() the
+> > this_cpu_cmpxchg really needs really to be irq safe. this_cpu_cmpxchg is
+> > only preempt safe.
+> > 
+> > Index: linux-2.6/mm/slub.c
+> > ===================================================================
+> > --- linux-2.6.orig/mm/slub.c	2011-11-21 21:15:41.575673204 -0600
+> > +++ linux-2.6/mm/slub.c	2011-11-21 21:16:33.442336849 -0600
+> > @@ -1969,7 +1969,7 @@
+> >  		page->pobjects = pobjects;
+> >  		page->next = oldpage;
+> > 
+> > -	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+> > +	} while (irqsafe_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+> >  	stat(s, CPU_PARTIAL_FREE);
+> >  	return pobjects;
+> >  }
+> > 
 > 
->  arch/x86/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
+> machines.
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cb9a104..e4d218e 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1726,7 +1726,7 @@ source "drivers/sfi/Kconfig"
->  
->  config X86_APM_BOOT
->  	def_bool y
-> -	depends on APM || APM_MODULE
-> +	depends on APM
->  
->  menuconfig APM
->  	tristate "APM (Advanced Power Management) BIOS support"
-> -- 
-> 1.7.4.4
+> this_cpu_cmpxchg16b_emu() claims to be IRQ safe, but may be buggy...
 > 
+> Could we have somewhere a NMI handler calling kmalloc() ?
 
--- 
-Jiri Kosina
-SUSE Labs
+Christian and I are on ppc, which uses the generic implementation of
+this_cpu_cmpxchg() which is not irq safe. So the above patch is needed
+regardless.
+
+Christian, can you try it see if that helps in your case ?
+
+Cheers,
+Ben.
+
