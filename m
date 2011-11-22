@@ -1,137 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab1KVKrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:47:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53851 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab1KVKrT convert rfc822-to-8bit (ORCPT
+	id S1757932Ab1KVKt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:49:27 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:26002 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754654Ab1KVKtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:47:19 -0500
+	Tue, 22 Nov 2011 05:49:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAKh6y055LGY5/2dsb2JhbABDqkyBBoFyAQEFOhwPFBAIAxguFCUDIRO9HxKJWmMElD+JBYkY
+Date: Tue, 22 Nov 2011 21:49:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [3.2-rc2] loop device balance_dirty_pages_nr throttling hang
+Message-ID: <20111122104921.GE8098@dastard>
+References: <20111121142056.GF2386@dastard>
+ <20111122035629.GE20982@localhost>
+ <20111122102931.GD8098@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20111121112607.GB3784@opensource.wolfsonmicro.com>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
-	<20111121112607.GB3784@opensource.wolfsonmicro.com>
-Date: Tue, 22 Nov 2011 19:47:10 +0900
-Message-ID: <CANKRQngsHv5M1+LaDq-fmaFCpG3f80DbJOrtvNShLn6hNWfg=w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] sound/soc/codecs: add LAPIS Semiconductor ML26124
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122102931.GD8098@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Tue, Nov 22, 2011 at 09:29:31PM +1100, Dave Chinner wrote:
+> I suspect the difference is that I was reproducing this with a used
+> image file. It had somewhere in the order of 750MB of space used
+> prior to running the test. I'd been using the image to test large
+> filesystem support for xfstests. I'd done a bunch of testing with
+> XFS on the loop device, and was trying to get the ext4 support to
+> work when I was seeing these hangs. I manually ran the
+> losetup/mount/mkfs loopdev/mount/falloc step to get it to hang.
+> 
+> So I think the state of the underlying image file has something to
+> do with the hang. Most likely due to the IO rates, I think....
+> 
+> I'll try to reproduce it by running xfstests on XFS on it again
+> before trying ext4 again (your script blew away the old image file I
+> had). Alternatively, you can try writing lots of small random blocks
+> to the image file before running the ext4 portion of the test.
 
-Thank you for your comments.
-I have some questions.
+At a rough approximation, the image file after xfs tests has run on
+it for a while has somewhere on the high side of 30000 allocated
+extents in it. So that could have significant impact on the layout
+of the file and the IO patterns that result.
 
-2011/11/21 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
->> +static const struct snd_kcontrol_new ml26124_snd_controls[] = {
->> +     SOC_SINGLE_TLV("Record Digital Volume", ML26124_RECORD_DIG_VOL, 0, 0xff, 1, rec_play_digi_vol),
->
-> Capture, not Record.
+But, I just noticed that the discard that mkfs.ext4 will result in
+all the extents being discarded in the underlying image file (due to
+the fact the loopback device now supports hole punching), so the
+previous state of the image file is getting trashed by the mkfs.ext4
+execution, too. I think I already had a ext4 filesystem in some state
+before I started running this manual prealloc test....
 
-OK,
-BTW, What's TLV ? Let me know the full spell of this "TLV".
+So, let me go back to running test 223 and then trying again with
+having run mkfs on the loop device.
 
->
->> +static const struct snd_kcontrol_new ml26124_dsp_controls[] = {
->> +     SOC_SINGLE("Play Limitter ON/OFF", ML26124_FILTER_EN, 0, 1, 0),
->
-Do you mean SOC_SINGLE("Play Limitter Switch", ML26124_FILTER_EN, 0, 1, 0) ?
+Cheers,
 
-
->> +     SOC_SINGLE("Set ALC position", ML26124_FILTER_EN, 5, 1, 0),
->
-> What does this actually do?  From the name it *really* doesn't look like
-> a mixer input.
->
-The above means where connects the ALC.
-So, this doesn't relate to mixer input.
-
-
->> +static const struct snd_soc_dapm_route intercon[] = {
->> +};
->
-> I can't see how any of the DAPM widgets you specify will ever work with
-> no interconnections.
-I see.
-However I couldn't understand the meaning of the widgets. So I didn't
-write anything.
-For example, wm8731 writes like below.
-Could you explain this ?
-
-static const struct snd_soc_dapm_route wm8731_intercon[] = {
-	{"DAC", NULL, "OSC", wm8731_check_osc},
-	{"ADC", NULL, "OSC", wm8731_check_osc},
-	{"DAC", NULL, "ACTIVE"},
-	{"ADC", NULL, "ACTIVE"},
-
-	/* output mixer */
-	{"Output Mixer", "Line Bypass Switch", "Line Input"},
-	{"Output Mixer", "HiFi Playback Switch", "DAC"},
-	{"Output Mixer", "Mic Sidetone Switch", "Mic Bias"},
-
-	/* outputs */
-	{"RHPOUT", NULL, "Output Mixer"},
-	{"ROUT", NULL, "Output Mixer"},
-	{"LHPOUT", NULL, "Output Mixer"},
-	{"LOUT", NULL, "Output Mixer"},
-
-	/* input mux */
-	{"Input Mux", "Line In", "Line Input"},
-	{"Input Mux", "Mic", "Mic Bias"},
-	{"ADC", NULL, "Input Mux"},
-
-	/* inputs */
-	{"Line Input", NULL, "LLINEIN"},
-	{"Line Input", NULL, "RLINEIN"},
-	{"Mic Bias", NULL, "MICIN"},
-};
-
-
-
->
->> +
->> +static int snd_card_codec_reg_read(struct ml26124_priv *priv,
->> +                                unsigned char reg, unsigned char *val)
->> +{
->> +     unsigned char data;
->> +     struct i2c_client *i2c;
->
-> Use the standard register access code, don't open code things in your
-> driver unless there's a good reason to.  Current best practice for most
-> I2C or SPI devices is to use regmap, see any recently added driver for
-> examples.
-What's "regmap" mean ? or do you mean drivers/mfd/* ?
-Could you tell me this ?
-
->> +     unsigned char data;
->> +     unsigned int rate = priv->rate;
->> +     unsigned int channels = priv->ch;
->> +
->> +     snd_card_codec_reg_read(priv, 0x30, &data);      /* Read MICVIAS Voltage */
->> +
->> +     snd_card_codec_reg_write(priv, 0x10, 0x01);     /* soft reset assert */
->> +     snd_card_codec_reg_write(priv, 0x10, 0x00);     /* soft reset negate */
->> +
->> +     snd_card_codec_reg_write(priv, 0x0c, 0x00);     /* Stop clock  */
->
-> Use snd_soc_update_bits() and the other standard register access
-> functions.
-Using snd_soc_update_bits(), need to register ".read" method.
-Is the same as the above  snd_card_codec_reg_read ?
-
-Thanks in advance,
----
-tomoya
-ROHM Co., Ltd
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
