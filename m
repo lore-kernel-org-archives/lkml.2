@@ -1,136 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab1KVTtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:49:17 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:40117 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1KVTtP (ORCPT
+	id S1755527Ab1KVTx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:53:58 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65243 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab1KVTx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:49:15 -0500
-Message-ID: <1321991338.6445.70.camel@work-vm>
-Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-From: John Stultz <john.stultz@linaro.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Eric Anholt <eric@anholt.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Johannes Weiner <jweiner@redhat.com>, Jon Masters <jcm@redhat.com>
-Date: Tue, 22 Nov 2011 11:48:58 -0800
-In-Reply-To: <4ECB6D60.1010702@redhat.com>
-References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org>
-	 <4ECB6D60.1010702@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	Tue, 22 Nov 2011 14:53:56 -0500
+References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com> <20111118220849.GA25205@suse.de>
+In-Reply-To: <20111118220849.GA25205@suse.de>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <EDE518F3-0E59-49A4-A5B1-A013A91C319F@gmail.com>
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11112219-3352-0000-0000-000000ECD8FF
+Cc: hjk@hansjkoch.de, tglx@linutronix.de, linux-pci@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Subject: Re: extra large DMA buffer for PCI-E device under UIO
+Date: Tue, 22 Nov 2011 14:57:58 -0500
+To: Greg KH <gregkh@suse.de>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 04:37 -0500, Rik van Riel wrote:
-> On 11/21/2011 10:33 PM, John Stultz wrote:
-> > This patch provides new fadvise flags that can be used to mark
-> > file pages as volatile, which will allow it to be discarded if the
-> > kernel wants to reclaim memory.
-> >
-> > This is useful for userspace to allocate things like caches, and lets
-> > the kernel destructively (but safely) reclaim them when there's memory
-> > pressure.
-> >
-> > Right now, we can simply throw away pages if they are clean (backed
-> > by a current on-disk copy).  That only happens for anonymous/tmpfs/shmfs
-> > pages when they're swapped out.  This patch lets userspace select
-> > dirty pages which can be simply thrown away instead of writing them
-> > to disk first.  See the mm/shmem.c for this bit of code.  It's
-> > different from FADV_DONTNEED since the pages are not immediately
-> > discarded; they are only discarded under pressure.
+
+On Nov 18, 2011, at 17:08, Greg KH wrote:
+
+> On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
+>> Hello fellow hackers.
+>> 
+>> I am maintaining a UIO based driver for a PCI-E data acquisition device.
+>> 
+>> I map BAR0 of the device to userspace. I also map two memory areas,
+>> one is used to feed instructions to the acquisition device, the other
+>> is used autonomously by the PCI device to write the acquired data.
 > 
-> I've got a few questions:
+> Nice, have a pointer to your driver anywhere so we can include it in the
+> main kernel tree to make your life easier?
 > 
-> 1) How do you tell userspace some of its data got
->     discarded?
-
-You get a return code when marking the page non-volatile if it has been
-discarded. This follows the ashmem style that Robert described in the
-other mail.
-
-> 2) How do you prevent the situation where every
->     volatile object gets a few pages discarded, making
->     them all unusable?
->     (better to throw away an entire object at once)
-
-Indeed. One of the issues folks brought up about the ashmem code was
-that it manages its own lru.  This attempt just simplifies the code, by
-using the kerenl's own lru, but does have the draw back that it is page
-based instead of  object or range-based.
-
-We could try to zap the entire range when a page from the range is
-written out, or we could go back to using a range based lru, like ashmem
-does. 
-
-
-> 3) Isn't it too slow for something like Firefox to
->     create a new tmpfs object for every single throw-away
->     cache object?
-
-So, if you mean creating a new file for every cache object, that doesn't
-seem necessary, as you could map a number of objects into the same file
-and mark the ranges as volatile or not as needed. 
-
-Or are you worried about the allocation of the range structure when we
-mark a region as volatile?
-
-Either way, I'd defer to Robert on real-world usage. 
-
-
-> Johannes, Jon and I have looked at an alternative way to
-> allow the kernel and userspace to cooperate in throwing
-> out cached data.  This alternative way does not touch
-> the alloc/free fast path at all, but does require some
-> cooperation at "shrink cache" time.
+>> The strategy we have been using for those two share memory areas has
+>> historically been using pci_alloc_coherent on v2.6.35 x86_64 (limited
+>> to 4MB based on my trials) and later, I made use of the VT-d
+>> (intel_iommu) to allocate as much as 128MB (an arbitrary limit) which
+>> appear contiguous to the PCI device. I use vmalloc_user to allocate
+>> 128M, then write all the physically continuous segments in a
+>> scatterlist, then use pci_map_sg which works it's way to intel_iommu.
+>> The device DMA addresses I get back are contiguous over the whole
+>> 128M. Neat! Our VT-d capable devices still use this strategy.
+>> 
+>> This large memory is mission-critical in making the acquisition device
+>> autonomous (real-time), yet keep the DMA implementation very simple.
+>> Today, we are re-using this device on a CPU architecture that has no
+>> IOMMU (intel E6XX/EG20T) and want to avoid creating a scatter-gather
+>> scheme between my driver and the FPGA (PCI device).
+>> 
+>> So I went back to the old pci_alloc_coherent method, which although
+>> limited to 4 MB, will do for early development phases. Instead of
+>> 2.6.35, we are doing preliminary development using 2.6.37 and will
+>> probably use 3.1 or more later.  The cpu/device shared memory maps
+>> (1MB and 4MB) are allocated using pci_alloc_coherent and handed to UIO
+>> as physical memory using the dma_addr_t returned by the pci_alloc
+>> func.
+>> 
+>> The 1st memory map is written to by CPU and read from device.
+>> The 2nd memory map is typically written by the device and read by the
+>> CPU, but future features may have the device also read this memory.
+>> 
+>> My initial testing on the atom E6XX show the PCI device failing when
+>> trying to read from the first memory map. I suspect PCI-E payload
+>> sizes which may be somewhat hardcoded in the FPGA firmware... we will
+>> confirm this soon.
 > 
-> The idea is quite simple:
+> That would be good to find out.
+Just FYI,
+To close the loop on the right above issue... The problem we had was that the
+FPGA was using 64-bit formatted TLPs for it's read and write requests to the
+system's <4Gig RAM, which is said by PCI-E to be unsupported.
+
+This has never been a problem on the other systems we used, i.e.
+Core2/ICH9M, and Atom-Z5xx/SCH-US15W.
 > 
-> 1) Every program that we are interested in already has
->     some kind of main loop where it polls on file descriptors.
->     It is easy for such programs to add an additional file,
->     which would be a device or sysfs file that wakes up the
->     program from its poll/select loop when memory is getting
->     full to the point that userspace needs to shrink its
->     caches.
+>> Now from the get go I have felt lucky to have made this work because
+>> of my limited research into the intricacies of the kernel's memory
+>> management. So I ask two things:
+>> 
+>> - Is this kosher?
 > 
->     The kernel can be smart here and wake up just one process
->     at a time, targeting specific NUMA nodes or cgroups. Such
->     kernel smarts do not require additional userspace changes.
+> I think so, yes, but others who know the DMA subsystem better than I
+> should chime in here, as I might be totally wrong.
 > 
-> 2) When userspace gets such a "please shrink your caches"
->     event, it can do various things.  A program like firefox
->     could throw away several cached objects, eg. uncompressed
->     images or entire pre-rendered tabs, while a JVM can shrink
->     its heap size and a database could shrink its internal
->     cache.
-
-So similarly to Robert, I don't see this approach as necessarily
-exclusive to the volatile flags. There are just some tradeoffs with the
-different approaches.
-
-The upside with your approach is that applications don't have to
-remember to re-pin the cache before using it and unpin it after its done
-using it.
-
-The downside is that the "please shrink your caches" message is likely
-to arrive when the system is low on resources. Once applications have
-been asked to "be nice and get small!", having to wait for that action
-to occur might not be great. Where as with the volatile regions, there
-are just additionally easily freeable pages available when the kernel
-needs them.
-
-thanks
--john
-
+>> - Is there a better/easier/safer way to achieve this? (remember that
+>> for the second map, the more memory I have, the better. We have a gig
+>> of ram, if I take, say 256MB, that would be OK too.
+>> 
+>> I had thought about cutting out a chunk of ram from the kernel's boot
+>> args, but had always feared cache/snooping errors. Not to mention I
+>> had no idea how to "claim" or setup this memory once my driver's probe
+>> function. Maybe I would still be lucky and it would just work? mmmh...
+> 
+> Yeah, don't do that, it might not work out well.
+> 
+> greg k-h
 
