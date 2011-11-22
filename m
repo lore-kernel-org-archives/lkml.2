@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758503Ab1KVVZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:25:52 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58531 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1KVVZu (ORCPT
+	id S1758200Ab1KVV3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:29:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56530 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755349Ab1KVV3L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:25:50 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Hibernation: Refactor and simplify
- hibernation_snapshot() code
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Wed, 23 Nov 2011 02:55:40 +0530
-Message-ID: <20111122212500.11648.2252.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112221-5816-0000-0000-000000281FF3
+	Tue, 22 Nov 2011 16:29:11 -0500
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=windows-1252
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20111122200414.GA28205@alea.gnuu.de>
+Date: Tue, 22 Nov 2011 22:29:09 +0100
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de>
+References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de>
+To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goto statements in hibernation_snapshot() are a bit complex.
-Refactor the code to remove some of them, thereby simplifying the
-implementation.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-This is on top of the patch posted at https://lkml.org/lkml/2011/11/21/498
+On 22.11.2011, at 21:04, Jörg Sommer wrote:
 
- kernel/power/hibernate.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
+> Hi,
+> 
+> Jörg Sommer hat am Mon 07. Nov, 20:48 (+0100) geschrieben:
+>> I'm trying to build the kernel with the git commit-id
+>> 31555213f03bca37d2c02e10946296052f4ecfcd, but it fails
+>> 
+>>  CHK     include/linux/version.h
+>>  HOSTCC  scripts/mod/modpost.o
+>>  CHK     include/generated/utsrelease.h
+>>  UPD     include/generated/utsrelease.h
+>>  HOSTLD  scripts/mod/modpost
+>>  GEN     include/generated/bounds.h
+>>  CC      arch/powerpc/kernel/asm-offsets.s
+>> In file included from arch/powerpc/kernel/asm-offsets.c:59:0:
+>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h: In function ‘compute_tlbie_rb’:
+>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: error: ‘HPTE_V_SECONDARY’ undeclared (first use in this function)
+>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: note: each undeclared identifier is reported only once for each function it appears in
+>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:396:12: error: ‘HPTE_V_1TB_SEG’ undeclared (first use in this function)
+>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:401:10: error: ‘HPTE_V_LARGE’ undeclared (first use in this function)
+>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:415:2: warning: right shift count >= width of type [enabled by default]
+>> make[3]: *** [arch/powerpc/kernel/asm-offsets.s] Fehler 1
+>> make[2]: *** [prepare0] Fehler 2
+>> make[1]: *** [deb-pkg] Fehler 2
+>> make: *** [deb-pkg] Fehler 2
+> 
+> I'm still having this problem. I can' build
+> 6fe4c6d466e95d31164f14b1ac4aefb51f0f4f82. Are there any patches to
+> make the kernel builds and do not oops [1] on PowerPC?
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index a6b0503..ebf62c3 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -333,7 +333,7 @@ static int create_image(int platform_mode)
-  */
- int hibernation_snapshot(int platform_mode)
- {
--	pm_message_t msg = PMSG_RECOVER;
-+	pm_message_t msg;
- 	int error;
- 
- 	error = platform_begin(platform_mode);
-@@ -362,26 +362,26 @@ int hibernation_snapshot(int platform_mode)
- 
- 	error = dpm_prepare(PMSG_FREEZE);
- 	if (error) {
--		dpm_complete(msg);
-+		dpm_complete(PMSG_RECOVER);
- 		goto Cleanup;
- 	}
- 
- 	suspend_console();
- 	pm_restrict_gfp_mask();
-+
- 	error = dpm_suspend(PMSG_FREEZE);
--	if (error)
--		goto Recover_platform;
- 
--	if (hibernation_test(TEST_DEVICES))
--		goto Recover_platform;
-+	if (error || hibernation_test(TEST_DEVICES))
-+		platform_recover(platform_mode);
-+	else
-+		error = create_image(platform_mode);
- 
--	error = create_image(platform_mode);
- 	/*
--	 * Control returns here (1) after the image has been created or the
-+	 * In the case that we call create_image() above, the control
-+	 * returns here (1) after the image has been created or the
- 	 * image creation has failed and (2) after a successful restore.
- 	 */
- 
-- Resume_devices:
- 	/* We may need to release the preallocated image pages here. */
- 	if (error || !in_suspend)
- 		swsusp_free();
-@@ -399,10 +399,6 @@ int hibernation_snapshot(int platform_mode)
- 	platform_end(platform_mode);
- 	return error;
- 
-- Recover_platform:
--	platform_recover(platform_mode);
--	goto Resume_devices;
--
-  Cleanup:
- 	swsusp_free();
- 	goto Close;
+The failures above should be fixed by now.
+
+> [1] »kernel BUG at include/linux/kvm_host.h:603!«
+>  http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
+
+This is unfortunately still there. It's because of preemption being enabled. Please just use CONFIG_PREEMPT_NONE for the time being - it's on my todo list :)
+
+
+Alex
 
