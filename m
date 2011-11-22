@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab1KVGUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 01:20:31 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:42670 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752881Ab1KVGUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 01:20:30 -0500
-Message-ID: <4ECB3F1F.9060806@st.com>
-Date: Tue, 22 Nov 2011 11:50:15 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1753707Ab1KVG1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 01:27:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65395 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235Ab1KVG1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 01:27:53 -0500
+Date: Tue, 22 Nov 2011 08:29:08 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
+Message-ID: <20111122062907.GB11012@redhat.com>
+References: <patchbomb.1320306168@localhost6.localdomain6>
+ <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
+ <20111113210256.GA31621@redhat.com>
+ <20111114065606.GA3779@redhat.com>
+ <871ut8q5mh.fsf@rustcorp.com.au>
+ <20111116071838.GE5433@redhat.com>
+ <8739dib5z6.fsf@rustcorp.com.au>
+ <20111121115702.GA27580@redhat.com>
+ <87lir9xagv.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>
-Subject: Re: [PATCH] dmaengine/dw_dmac: Reconfigure interrupt and chan_cfg
- register on resume
-References: <69e29c139ba027029e11940c6693e9d50dc21613.1321525673.git.viresh.kumar@st.com> <1321935206.1516.217.camel@vkoul-udesk3>
-In-Reply-To: <1321935206.1516.217.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lir9xagv.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 9:43 AM, Vinod Koul wrote:
-> On Thu, 2011-11-17 at 16:01 +0530, Viresh Kumar wrote:
->> > In S2R all DMA registers are reset by hardware and thus they are required to be
-> When are they reset, whenever you leave channel idle or once you come
-> back from suspend?
+On Tue, Nov 22, 2011 at 11:03:04AM +1030, Rusty Russell wrote:
+> On Mon, 21 Nov 2011 13:57:04 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > On Mon, Nov 21, 2011 at 12:18:45PM +1030, Rusty Russell wrote:
+> > > On Wed, 16 Nov 2011 09:18:38 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > My unlocked kick patches will trip this warning: they make
+> > > > virtio-net do add + get without kick.
+> > > 
+> > > Heh, it's a good sign if they do, since that means you're running really
+> > > well :)
+> > 
+> > They don't in fact, in my testing :(. But I think they can with luck.
+> > 
+> > > > I think block with unlocked kick can trip it too:
+> > > > add, lock is dropped and then an interrupt can get.
+> > > > 
+> > > > We also don't need a kick each num - each 2^15 is enough.
+> > > > Why don't we do this at start of add_buf:
+> > > > if (vq->num_added >= 0x7fff)
+> > > > 	return -ENOSPC;
+> > > 
+> > > The warning was there in case a driver is never doing a kick, and
+> > > getting away with it (mostly) because the device is polling.  Let's not
+> > > penalize good drivers to catch bad ones.
+> > > 
+> > > How about we do this properly, like so:
+> > 
+> > Absolutely. But I think we also need to handle num_added
+> > overflow of a 15 bit counter, no? Otherwise the
+> > vring_need_event logic might give us false negatives ....
+> > I'm guessing we can just assume we need a kick in that case.
+> 
+> You're right.  Thankyou.  My immediate reaction of "make it an unsigned
+> long" doesn't work.
+> 
+> Here's the diff to what I posted before:
+> 
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -254,9 +254,10 @@ add_head:
+>  	vq->vring.avail->idx++;
+>  	vq->num_added++;
+>  
+> -	/* If you haven't kicked in this long, you're probably doing something
+> -	 * wrong. */
+> -	WARN_ON(vq->num_added > vq->vring.num);
+> +	/* This is very unlikely, but theoretically possible.  Kick
+> +	 * just in case. */
+> +	if (unlikely(vq->num_added == 65535))
 
-Whenever we do S2R, many power islands are switched off and so DMAC controller looses
-all its power. On resume, all registers are in their reset state.
+This is 0xffff but why use the decimal notation?
+
+> +		virtqueue_kick(_vq);
+>  
+>  	pr_debug("Added buffer head %i to %p\n", head, vq);
+>  	END_USE(vq);
+
+We also still need to reset vq->num_added, right?
 
 -- 
-viresh
+MST
