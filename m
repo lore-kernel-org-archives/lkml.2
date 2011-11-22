@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab1KVP6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 10:58:00 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:36611 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754956Ab1KVP57 (ORCPT
+	id S1757538Ab1KVQCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 11:02:33 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41818 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab1KVQCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 10:57:59 -0500
-Date: Tue, 22 Nov 2011 10:57:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 5] PM: Update comments describing device power management
- callbacks
-In-Reply-To: <201111212333.07799.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1111221043390.2466-100000@iolanthe.rowland.org>
+	Tue, 22 Nov 2011 11:02:32 -0500
+Date: Tue, 22 Nov 2011 08:02:08 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: WANG Cong <xiyou.wangcong@gmail.com>, kexec@lists.infradead.org,
+        tim@edgecast.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: fix chunk range calculation
+Message-ID: <20111122160208.GA3250@google.com>
+References: <4EC491B3.705@redhat.com>
+ <CAMMEr5k_ynqg5-7Looar2DxXTGZcMqi5Lo+jtETn9awO_bsaGg@mail.gmail.com>
+ <4EC4B60C.3030706@redhat.com>
+ <1321548033.12208.12.camel@boudreau>
+ <4EC61AB6.4090808@redhat.com>
+ <4EC61B2A.7010000@redhat.com>
+ <20111118185535.GA27152@google.com>
+ <4EC9AD4F.3050404@redhat.com>
+ <20111121170146.GD15314@google.com>
+ <4ECB104C.3040801@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECB104C.3040801@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+Hello, Dave.
 
-> On Monday, November 21, 2011, Alan Stern wrote:
-> > On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
-> > 
-> > > > > I said "Analogous to @suspend()" instead.  I'm not sure why this is not
-> > > > > sufficient?
-> > > > 
-> > > > Because @suspend() is very different!  Its description basically says 
-> > > > to do three things:
-> > > > 
-> > > > 	Quiesce the device,
-> > > > 
-> > > > 	Put it into a low-power state,
-> > > > 
-> > > > 	And enable wakeup events.
-> > > 
-> > > No, it doesn't any more.  It's being changed by the proposed patch too. :-)
-> > 
-> > I must have missed reading that part.  Okay...  but it seems weird that
-> > none of the new descriptions says anything about changing the power
-> > state.  Shouldn't the description of @suspend say something like "For
-> > many platforms and subsystems, the device should be put in a low-power
-> > state"?
+On Tue, Nov 22, 2011 at 11:00:28AM +0800, Dave Young wrote:
+> > Maybe we can add comment there how it can be further simplified and
+> > why things look more complicated than necessary?
 > 
-> Hmm.  I'm not really sure, actually, because I'd recommend that subsystems
-> rather than drivers change power states of devices and this description
-> is targeted at driver writers mostly.
+> I wonder if it's good to add something like CONFIG_PER_CPU_DEBUG?
 
-The same data structure (dev_pm_ops) is used for both drivers and
-subsystems.  Therefore the comments should be directed toward both
-driver writers and subsystem writers.
+Yeah, having more comprehensive sanity checks w/ CONFIG_PER_CPU_DEBUG
+would be really nice.
 
-You could say: "For many platforms, the subsystem @suspend() or
-@suspend_noirq() callback should put the device in a low-power state.  
-Some subsystems may require the driver to do this instead."
+> Anyway I have no strong opinion with this. I'm fine to either of adding
+> comment and put it into debug around.
 
-> > > > @freeze() is supposed to do the first but not the second or third.  
-> > > > This makes it only 33% similar to @suspend().  :-)
-> > > > 
-> > > > Also, the description of @suspend() says nothing about having a
-> > > > consistent memory image.
-> > > 
-> > > Because that is irrelevant.  The state of the device after the resume
-> > > has to be consistent, regardless of whether the resume is from RAM or
-> > > from an on-disk image.
-> > 
-> > Sure, the device's state will be consistent.  But will the contents of
-> > memory image be consistent?  Not if the device was doing DMA writes
-> > during the time when the image was created.
-> 
-> Well, since .suspend() is also expected to stop DMA, that's rather moot.
+I mostly just don't want to lose the minimal but useful checks in the
+phys conversion function.  Please feel free to improve it.
 
-It won't be moot if you add the sentences I recommend above.  You could
-add an additional sentence: "Either way, the @freeze() and
-@freeze_noirq() callbacks (both the subsystem's and the driver's)  
-should always avoid changing the device's state."
+Thank you.
 
-Alan Stern
-
+-- 
+tejun
