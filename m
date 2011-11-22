@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab1KVUop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:44:45 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52368 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756716Ab1KVUoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:44:44 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 5] PM: Update comments describing device power management callbacks
-Date: Tue, 22 Nov 2011 21:47:32 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-References: <Pine.LNX.4.44L0.1111221043390.2466-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1111221043390.2466-100000@iolanthe.rowland.org>
+	id S1758441Ab1KVUpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:45:31 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44105 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758416Ab1KVUpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:45:30 -0500
+Message-ID: <4ECC09D7.7050601@linux.vnet.ibm.com>
+Date: Wed, 23 Nov 2011 02:15:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Pavel Machek <pavel@ucw.cz>, len.brown@intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Hibernation: Fix *massive* memory leak at early
+ exits in hibernation
+References: <20111121173939.9486.38357.stgit@srivatsabhat.in.ibm.com> <20111122114549.GC32023@elf.ucw.cz> <4ECBF271.3040308@linux.vnet.ibm.com> <201111222132.35984.rjw@sisk.pl>
+In-Reply-To: <201111222132.35984.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111222147.32303.rjw@sisk.pl>
+x-cbid: 11112210-5140-0000-0000-0000004BE425
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 22, 2011, Alan Stern wrote:
-> On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
+On 11/23/2011 02:02 AM, Rafael J. Wysocki wrote:
+> On Tuesday, November 22, 2011, Srivatsa S. Bhat wrote:
+>> On 11/22/2011 05:15 PM, Pavel Machek wrote:
+>>> On Mon 2011-11-21 23:25:39, Rafael J. Wysocki wrote:
+>>>> On Monday, November 21, 2011, Srivatsa S. Bhat wrote:
+>>>>> At some of the early exit points during hibernation (exiting either due
+>>>>> to failure or after a successful hibernation test, the memory pre-allocated
+>>>>> for hibernation is not freed up. And this is *very* serious, because, during
+>>>>> pre-allocation, it could have allocated upto a few *gigabytes* of memory!
+>>>>> And hence, if a hibernation fails or even if we run some hibernation tests
+>>>>> using the 'pm_test' framework, the system is rendered unstable due to memory
+>>>>> becoming signifantly lower. Fix this bug.
+>>>>
+>>>> While the observation is valid, I'd prefer to do something like the patch
+>>>> below.
+>>>
+>>> The code slowly becomes goto maze :-(.
+>>>
+>>
+>> I agree.. It is already quite a mess.
+>>
+>>>> @@ -357,12 +357,14 @@ int hibernation_snapshot(int platform_mo
+>>>>  		 * successful freezer test.
+>>>>  		 */
+>>>>  		freezer_test_done = true;
+>>>> -		goto Close;
+>>>> +		goto Cleanup;
+>>>>  	}
+>>>>  
+>>>>  	error = dpm_prepare(PMSG_FREEZE);
+>>>> -	if (error)
+>>>> -		goto Complete_devices;
+>>>> +	if (error) {
+>>>> +		dpm_complete(msg);
+>>>> +		goto Cleanup;
+>>>> +	}
+>>>
+>>> Perhaps dpm_prepare should be changed to clean after itself in the
+>>> error case? That is the normal convention AFAICT....
+>>>
+>>
+>> If the intention here is to merely clean up hibernation_snapshot() code,
+>> I would not prefer to change the behaviour of dpm_prepare(), considering
+>> things like, what parameter should we pass to dpm_complete(); is the
+>> resultant behaviour change in dpm_suspend_start() correct or not; what
+>> happens to all the code that uses the nice pair: dpm_suspend_start() and
+>> dpm_resume_end() and so on.
+>>
+>> Perhaps there are bigger issues involved there, since I observed on a brief
+>> look that the current code doesn't seem to strictly follow the above
+>> convention that whoever called dpm_prepare() should call dpm_complete()
+>> upon failure. Or may be its doing the right thing.. I don't know.
+>>
+>> But anyway, the good news is, even without changing dpm_prepare()'s
+>> behaviour, we can clean up quite a bit of code in hibernation_snapshot(),
+>> as it is.
+>>
+>> The first patch below does the cleanup, the second patch fixes the memory
+>> leak and applies on top of the first patch.
 > 
-> > On Monday, November 21, 2011, Alan Stern wrote:
-> > > On Mon, 21 Nov 2011, Rafael J. Wysocki wrote:
-> > > 
-> > > > > > I said "Analogous to @suspend()" instead.  I'm not sure why this is not
-> > > > > > sufficient?
-> > > > > 
-> > > > > Because @suspend() is very different!  Its description basically says 
-> > > > > to do three things:
-> > > > > 
-> > > > > 	Quiesce the device,
-> > > > > 
-> > > > > 	Put it into a low-power state,
-> > > > > 
-> > > > > 	And enable wakeup events.
-> > > > 
-> > > > No, it doesn't any more.  It's being changed by the proposed patch too. :-)
-> > > 
-> > > I must have missed reading that part.  Okay...  but it seems weird that
-> > > none of the new descriptions says anything about changing the power
-> > > state.  Shouldn't the description of @suspend say something like "For
-> > > many platforms and subsystems, the device should be put in a low-power
-> > > state"?
-> > 
-> > Hmm.  I'm not really sure, actually, because I'd recommend that subsystems
-> > rather than drivers change power states of devices and this description
-> > is targeted at driver writers mostly.
+> Wait, wait.  These changes can be made in the 3.3 merge window, while I'd
+> like the fix the bug _now_.
 > 
-> The same data structure (dev_pm_ops) is used for both drivers and
-> subsystems.  Therefore the comments should be directed toward both
-> driver writers and subsystem writers.
-
-I don't quite agree.  Trying to do so would turn that comment into a lengthy
-document and there's no room for anything like that in the header file.
-
-Perhaps I'll just modify the comment to say when the callbacks are executed
-without specifying what the specific callbacks are supposed to do (because
-that may vary from one subsystem to another and even between different
-drivers belonging to the same subsystem).  If PM domains are taken into
-account, it gets even more complicated.
-
-> You could say: "For many platforms, the subsystem @suspend() or
-> @suspend_noirq() callback should put the device in a low-power state.  
-> Some subsystems may require the driver to do this instead."
-
-Well, that information is not really useful for someone wanting to learn
-what the callbacks are supposed to do, because he still has to know what
-the subsystem in question expects him to do.
-
-> > > > > @freeze() is supposed to do the first but not the second or third.  
-> > > > > This makes it only 33% similar to @suspend().  :-)
-> > > > > 
-> > > > > Also, the description of @suspend() says nothing about having a
-> > > > > consistent memory image.
-> > > > 
-> > > > Because that is irrelevant.  The state of the device after the resume
-> > > > has to be consistent, regardless of whether the resume is from RAM or
-> > > > from an on-disk image.
-> > > 
-> > > Sure, the device's state will be consistent.  But will the contents of
-> > > memory image be consistent?  Not if the device was doing DMA writes
-> > > during the time when the image was created.
-> > 
-> > Well, since .suspend() is also expected to stop DMA, that's rather moot.
+> Does anyone have any _technical_ problem with my patch posted previously
+> in this thread?
 > 
-> It won't be moot if you add the sentences I recommend above.  You could
-> add an additional sentence: "Either way, the @freeze() and
-> @freeze_noirq() callbacks (both the subsystem's and the driver's)  
-> should always avoid changing the device's state."
 
-That sounds good.
+Technically, your patch is fine :-)
+
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
 Thanks,
-Rafael
+Srivatsa S. Bhat
+
