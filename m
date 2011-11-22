@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab1KVUyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:54:31 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:53816 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1KVUya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:54:30 -0500
-Date: Tue, 22 Nov 2011 15:54:26 -0500 (EST)
-Message-Id: <20111122.155426.1153643155035648664.davem@davemloft.net>
-To: peter.p.waskiewicz.jr@intel.com
-Cc: lkml@hover.be, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: softirq oops from b44_poll
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1321917453.10276.3.camel@pjaxe>
-References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
-	<1321917453.10276.3.camel@pjaxe>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1757963Ab1KVUyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:54:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:22930 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757009Ab1KVUyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:54:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,555,1315206000"; 
+   d="scan'208";a="88267197"
+Subject: Re: 3.1+ iwlwifi lockup
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+In-Reply-To: <20111122204741.GA3764@redhat.com>
+References: <20111031143408.GA17152@redhat.com>
+	 <1321992902.8072.7.camel@wwguy-ubuntu>  <20111122204741.GA3764@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Nov 2011 11:58:36 -0800
+Message-ID: <1321991916.11647.77.camel@wwguy-huron>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 12:54:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Date: Mon, 21 Nov 2011 15:17:33 -0800
+Hi Dave,
 
-> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
-> instead, since that will handle the in-interrupt case if that's where
-> we're stuck.
+Not sure what happens, feel like memory corruption but not sure. the
+contain of the command is totally bogus.
 
-Caller is always b44_poll(), and that caller always does spin_lock_irqsave().
+Could you please test and send update, it is part of "3.2+rc2+
+Regressions from 3.0 and 3.1" reports
 
-Adding the extra tests implied by dev_kfree_skb_any() therefore doesn't
-make any sense, as it will always evaluate to dev_kfree_skb_irq().
+Thanks
+Wey
+
+On Tue, 2011-11-22 at 12:47 -0800, Dave Jones wrote:
+> On Tue, Nov 22, 2011 at 12:15:02PM -0800, wwguy wrote:
+>  > Hi Dave,
+>  > 
+>  > Sorry for taking so long.
+>  > it is a bogus command from the firmware which driver try to process it
+>  > and cause problem. I am not sure how it happen. But could you please try
+>  > the patch I attach here.
+>  > 
+>  > For now I am just ignore the command, but not sure it is good enough,
+>  > might has to reload the firmware, but not sure.
+> 
+> I can try the patch. Though FYI, I've not seen this bug again since I reported it.
+> 
+>  > Do you have a bugzilla# I can reference to?
+> 
+> no.
+> 
+> 	Dave
+
+
