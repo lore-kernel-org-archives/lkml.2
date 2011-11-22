@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab1KVP4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 10:56:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51876 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757356Ab1KVP4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 10:56:48 -0500
-Date: Tue, 22 Nov 2011 16:56:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        Tomasz Buchert <tomasz.buchert@inria.fr>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
-Message-ID: <20111122155645.GC26768@tiehlicka.suse.cz>
-References: <1321480234-29241-1-git-send-email-mhocko@suse.cz>
- <20111121230709.GR25776@google.com>
- <4ECB06D2.6060106@cn.fujitsu.com>
- <20111122022118.GT25776@google.com>
- <20111122090522.GA26768@tiehlicka.suse.cz>
- <20111122153948.GE322@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122153948.GE322@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757573Ab1KVP4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 10:56:53 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58244 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757356Ab1KVP4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 10:56:51 -0500
+Message-ID: <1321977410.1131.24.camel@Joe-Laptop>
+Subject: RE: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating its
+ implementation
+From: Joe Perches <joe@perches.com>
+To: Mark Salyzyn <mark_salyzyn@us.xyratex.com>
+Cc: Thomas Meyer <thomas@m3y3r.de>, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Achim Leubner <Achim_Leubner@pmc-sierra.com>,
+        Mahesh Rajashekhara <Mahesh_Rajashekhara@pmc-sierra.com>
+Date: Tue, 22 Nov 2011 07:56:50 -0800
+In-Reply-To: <FC1F9E38C0703341A1A750524E2525A901978CD9@XYUS-EX22.xyus.xyratex.com>
+References: <1321569820.1624.290.camel@localhost.localdomain>
+	 <FC1F9E38C0703341A1A750524E2525A901978CD9@XYUS-EX22.xyus.xyratex.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-11-11 07:39:48, Tejun Heo wrote:
-> Hello, Michal.
+> -----Original Message-----
+> The semantic patch that makes this change is available
+> in scripts/coccinelle/api/memdup.cocci.
 > 
-> On Tue, Nov 22, 2011 at 10:05:22AM +0100, Michal Hocko wrote:
-> > I am not sure which BUG_ON you have in mind.
-> > update_if_frozen:
-> > 	BUG_ON(nfrozen != ntotal);
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> ---
 > 
-> Heh, try to put a kthread into the cgroup and freeze it. :)
+> diff -u -p a/drivers/scsi/aacraid/commctrl.c
 
-Ahh got it. So not related to the original issue. Just yet another issue
-in the area.
+On Tue, 2011-11-22 at 06:24 -0800, Mark Salyzyn wrote:
+> This driver is maintained by Achim Leubner
+> <Achim_Leubner@pmc-sierra.com> and Mahesh Rajashekhara
+> <Mahesh_Rajashekhara@pmc-sierra.com>. I have added them so that either
+> one of them can have the opportunity to respond.
+ 
+Really?  MAINTAINERS has:
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+AACRAID SCSI RAID DRIVER
+M:	Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+L:	linux-scsi@vger.kernel.org
+W:	http://www.adaptec.com/
+S:	Supported
+F:	Documentation/scsi/aacraid.txt
+F:	drivers/scsi/aacraid/
+
+Should either or both Achim or Mahesh be added?
+
