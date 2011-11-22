@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab1KVVAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:00:37 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55752 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab1KVVAg (ORCPT
+	id S1758001Ab1KVVCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:02:51 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:36719 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753263Ab1KVVCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:00:36 -0500
-Date: Tue, 22 Nov 2011 21:00:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v4 2/5] arm: Move arm over to generic on_each_cpu_mask
-Message-ID: <20111122210018.GF9581@n2100.arm.linux.org.uk>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com> <1321960128-15191-3-git-send-email-gilad@benyossef.com>
+	Tue, 22 Nov 2011 16:02:50 -0500
+Date: Tue, 22 Nov 2011 16:02:49 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 5] PM: Update comments describing device power management
+ callbacks
+In-Reply-To: <201111222147.32303.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1111221600580.2466-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321960128-15191-3-git-send-email-gilad@benyossef.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 01:08:45PM +0200, Gilad Ben-Yossef wrote:
-> -static void on_each_cpu_mask(void (*func)(void *), void *info, int wait,
-> -	const struct cpumask *mask)
-> -{
-> -	preempt_disable();
-> -
-> -	smp_call_function_many(mask, func, info, wait);
-> -	if (cpumask_test_cpu(smp_processor_id(), mask))
-> -		func(info);
-> -
-> -	preempt_enable();
-> -}
+On Tue, 22 Nov 2011, Rafael J. Wysocki wrote:
 
-What hasn't been said in the descriptions (I couldn't find it) is that
-there's a semantic change between the new generic version and this version -
-that is, we run the function with IRQs disabled on the local CPU, whereas
-the version above runs it with IRQs potentially enabled.
+> > The same data structure (dev_pm_ops) is used for both drivers and
+> > subsystems.  Therefore the comments should be directed toward both
+> > driver writers and subsystem writers.
+> 
+> I don't quite agree.  Trying to do so would turn that comment into a lengthy
+> document and there's no room for anything like that in the header file.
 
-Luckily, for TLB flushing this is probably not a problem, but it's
-something that should've been pointed out in the patch description.
+That's a good point.
+
+> Perhaps I'll just modify the comment to say when the callbacks are executed
+> without specifying what the specific callbacks are supposed to do (because
+> that may vary from one subsystem to another and even between different
+> drivers belonging to the same subsystem).  If PM domains are taken into
+> account, it gets even more complicated.
+
+Yes, a minimal description would be good, along with a pointer to the 
+Documentation/power files.
+
+> > It won't be moot if you add the sentences I recommend above.  You could
+> > add an additional sentence: "Either way, the @freeze() and
+> > @freeze_noirq() callbacks (both the subsystem's and the driver's)  
+> > should always avoid changing the device's state."
+> 
+> That sounds good.
+
+Actually I meant to write "avoid changing the device's power state".
+
+Alan Stern
+
