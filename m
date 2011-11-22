@@ -1,66 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab1KVNmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 08:42:03 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21116 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab1KVNmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:42:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,552,1315206000"; 
-   d="scan'208";a="77957161"
-Date: Tue, 22 Nov 2011 21:41:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] writeback: fix dirtied pages accounting on
- sub-page writes
-Message-ID: <20111122134155.GA23599@localhost>
-References: <20111121130342.211953629@intel.com>
- <20111121131215.905222115@intel.com>
- <20111122001127.GG4017@quack.suse.cz>
- <20111122092110.GB12864@localhost>
- <20111122122157.GB8058@quack.suse.cz>
- <1321966662.5148.35.camel@twins>
- <20111122130750.GA19929@localhost>
+	id S1755422Ab1KVNnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 08:43:35 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34152 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1KVNne convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 08:43:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122130750.GA19929@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1321917453.10276.3.camel@pjaxe>
+References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
+	<1321917453.10276.3.camel@pjaxe>
+Date: Tue, 22 Nov 2011 14:43:33 +0100
+Message-ID: <CAJfGthT1Fbez_oyfjepo8gdh4BFhpfUPAX45aeRe+8dMd=Ku=Q@mail.gmail.com>
+Subject: Re: softirq oops from b44_poll
+From: Xander Hover <lkml@hover.be>
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 09:07:50PM +0800, Wu Fengguang wrote:
-> On Tue, Nov 22, 2011 at 08:57:42PM +0800, Peter Zijlstra wrote:
-> > On Tue, 2011-11-22 at 13:21 +0100, Jan Kara wrote:
-> > > > +             __get_cpu_var(bdp_ratelimits)++;
-> > >   I think you need preempt_disable() and preempt_enable() pair around
-> > > __get_cpu_var(). Otherwise a process could get rescheduled in the middle of
-> > > read-modify-write cycle... 
-> > 
-> > there's of course the this_cpu_inc(bdp_ratelimits); thing.
-> > 
-> > On x86 that'll turn into a single insn, on others it will add the
-> > required preempt_disable/enable bits.
-> 
-> It's good to know that. But what if we don't really care which CPU
-> data it's increasing, and can accept losing some increases due to the
-> resulted race condition?
+Tested on 3.1.1 and 3.2_rc2+ now.
+Fix is working as expected.
 
-I just added a comment for it, hope it helps :)
+Kind regards,
 
-                /*
-                 * This is racy, however bdp_ratelimits merely serves as a
-                 * gross safeguard. We don't really care the exact CPU it's
-                 * charging to and the resulted inaccuracy is acceptable.
-                 */
-                __get_cpu_var(bdp_ratelimits)++;
+Xander Hover
 
-Thanks,
-Fengguang
+
+On Tue, Nov 22, 2011 at 12:17 AM, Peter P Waskiewicz Jr
+<peter.p.waskiewicz.jr@intel.com> wrote:
+> On Mon, 2011-11-21 at 05:58 -0800, Xander Hover wrote:
+>> Hi all,
+>>
+>> I noticed the small discussion about the b44_poll OOPS and
+>> I also have a uni-processor PC with a broadcom network device (b44)
+>> that causes similar kernel OOPSes.
+>>
+>> Here is a (reproducible) trace that still shows up in kernel 3.1.1:
+>>
+>>  ------------[ cut here ]------------
+>>     WARNING: at kernel/softirq.c:159 local_bh_enable+0x32/0x79()
+>>     Hardware name: Dimension 2400
+>>     Modules linked in: snd_seq_midi snd_emu10k1_synth snd_emux_synth
+>> snd_seq_virmidi snd_seq_midi_emul snd_seq_oss snd_seq_midi_event
+>> snd_seq snd_pcm_oss snd_mixer_oss bnep rfcomm cryptd aes_i586
+>> aes_generic ecb btusb bluetooth rfkill ppdev snd_emu10k1 snd_rawmidi
+>> snd_ac97_codec ac97_bus snd_pcm snd_seq_device snd_timer
+>> snd_page_alloc dcdbas snd_util_mem parport_pc snd_hwdep snd parport
+>> emu10k1_gp rtc_cmos gameport i2c_i801
+>>     Pid: 0, comm: swapper Not tainted 3.1.1-gentoo #1
+>>     Call Trace:
+>>      [<c1022970>] warn_slowpath_common+0x65/0x7a
+>>      [<c102699e>] ? local_bh_enable+0x32/0x79
+>>      [<c1022994>] warn_slowpath_null+0xf/0x13
+>>      [<c102699e>] local_bh_enable+0x32/0x79
+>>      [<c134bfd8>] destroy_conntrack+0x7c/0x9b
+>>      [<c134890b>] nf_conntrack_destroy+0x1f/0x26
+>>      [<c132e3a6>] skb_release_head_state+0x74/0x83
+>>      [<c132e286>] __kfree_skb+0xb/0x6b
+>>      [<c132e30a>] consume_skb+0x24/0x26
+>>      [<c127c925>] b44_poll+0xaa/0x449
+>>      [<c1333ca1>] net_rx_action+0x3f/0xea
+>>      [<c1026a44>] __do_softirq+0x5f/0xd5
+>>      [<c10269e5>] ? local_bh_enable+0x79/0x79
+>>      <IRQ>  [<c1026c32>] ? irq_exit+0x34/0x8d
+>>      [<c1003628>] ? do_IRQ+0x74/0x87
+>>      [<c13f5329>] ? common_interrupt+0x29/0x30
+>>      [<c1006e18>] ? default_idle+0x29/0x3e
+>>      [<c10015a7>] ? cpu_idle+0x2f/0x5d
+>>      [<c13e91c5>] ? rest_init+0x79/0x7b
+>>      [<c15c66a9>] ? start_kernel+0x297/0x29c
+>>      [<c15c60b0>] ? i386_start_kernel+0xb0/0xb7
+>>     ---[ end trace 583f33bb1aa207a9 ]---
+>>
+>>
+>> However if I apply the following patch this error does not show up anymore:
+>>
+>>
+>> diff --git a/drivers/net/ethernet/broadcom/b44.c
+>> b/drivers/net/ethernet/broadcom/b44.c
+>> index 4cf835d..3fb66d0 100644
+>> --- a/drivers/net/ethernet/broadcom/b44.c
+>> +++ b/drivers/net/ethernet/broadcom/b44.c
+>> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
+>>                                  skb->len,
+>>                                  DMA_TO_DEVICE);
+>>                 rp->skb = NULL;
+>> -               dev_kfree_skb(skb);
+>> +               dev_kfree_skb_irq(skb);
+>
+> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
+> instead, since that will handle the in-interrupt case if that's where
+> we're stuck.
+>
+> Can you try this patch (compile-tested only) and see if fixes the issue
+> you're seeing:
+>
+> commit e36ef2c1a2b6b517ed43254eb89768794a049b1c
+> Author: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> Date:   Mon Nov 21 15:14:18 2011 -0800
+>
+> b44: Use dev_kfree_skb_any() in b44_tx()
+>
+> Reported issues when using dev_kfree_skb() on UP systems and
+> systems with low numbers of cores.  dev_kfree_skb_any() will
+> properly save IRQ state before freeing the skb, depending on
+> how b44_tx() is invoked.
+>
+> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> ---
+>
+>  drivers/net/ethernet/broadcom/b44.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>
+> diff --git a/drivers/net/ethernet/broadcom/b44.c
+> b/drivers/net/ethernet/broadcom/b44.c
+> index 4cf835d..6a7c39b 100644
+> --- a/drivers/net/ethernet/broadcom/b44.c
+> +++ b/drivers/net/ethernet/broadcom/b44.c
+> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
+>                                 skb->len,
+>                                 DMA_TO_DEVICE);
+>                rp->skb = NULL;
+> -               dev_kfree_skb(skb);
+> +               dev_kfree_skb_any(skb);
+>        }
+>
+>        bp->tx_cons = cons;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
