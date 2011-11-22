@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733Ab1KVVpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:45:30 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:34940 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab1KVVp3 (ORCPT
+	id S1758746Ab1KVVp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:45:56 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61225 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab1KVVpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:45:29 -0500
-Date: Tue, 22 Nov 2011 16:44:39 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2011-11-22
-Message-ID: <20111122214438.GG8452@tuxdriver.com>
-References: <20111122.151429.253381379981773726.davem@davemloft.net>
- <20111122205655.GE8452@tuxdriver.com>
- <20111122.160511.2302883259439708995.davem@davemloft.net>
- <20111122.161322.454163033398038634.davem@davemloft.net>
- <4ECC1479.8090209@lwfinger.net>
+	Tue, 22 Nov 2011 16:45:55 -0500
+Date: Tue, 22 Nov 2011 13:45:51 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>
+cc: Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] block: initialize request_queue's numa node during
+ allocation
+In-Reply-To: <20111122211954.GA17120@redhat.com>
+Message-ID: <alpine.DEB.2.00.1111221342320.2621@chino.kir.corp.google.com>
+References: <4ECB5C80.8080609@redhat.com> <alpine.DEB.2.00.1111220140470.4306@chino.kir.corp.google.com> <20111122152739.GA5663@redhat.com> <20111122211954.GA17120@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ECC1479.8090209@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 03:30:33PM -0600, Larry Finger wrote:
-> On 11/22/2011 03:13 PM, David Miller wrote:
-> >From: David Miller<davem@davemloft.net>
-> >Date: Tue, 22 Nov 2011 16:05:11 -0500 (EST)
+On Tue, 22 Nov 2011, Mike Snitzer wrote:
 
-> >Everyone can just return IRQ_HANDLED and everything would just work.
-> >
-> >But you know that's not the case, and that it's important that this value
-> >is returned accurately.
+> From: Mike Snitzer <snitzer@redhat.com>
+> Subject: block: initialize request_queue's numa node during allocation
 > 
-> I was trying to find the thread that reported the improvement in
-> performance with this change, but failed. Is it possible that their
-> change just papered over an interrupt storm from some other device
-> that shared that interrupt?
+> Set request_queue's node in blk_alloc_queue_node() rather than
+> blk_init_allocated_queue_node().  This avoids blk_throtl_init() using
+> q->node before it is initialized.
+> 
+> Rename blk_init_allocated_queue_node() to blk_init_allocated_queue().
+> 
+> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 
-Original patch was posted here:
+When I debug an issue and suggest a patch to fix it in addition to 
+suggesting the possible cleanup for blk_init_allocated_queue_node(), I 
+don't expect that you'll just take it and claim it as your own, sheesh.
 
-	http://marc.info/?l=linux-wireless&m=132143811916674&w=2
+Signed-off-by: David Rientjes <rientjes@google.com>
 
-And the Red Hat Bugzilla entry is here:
+Also, your changelog is inadequate since it doesn't convey that his should 
+be merged for 3.2 because it fixes an oops when there is no node 0!  That 
+could have been done by adding a
 
-	https://bugzilla.redhat.com/show_bug.cgi?id=658451
+Reported-by: Dave Young <dyoung@redhat.com>
 
-> I'm following this because the rtlwifi-family of drivers already did
-> what was suggested here. If this is wrong, then so is it.
+and copying his stack trace in the changelog and adding my analysis of 
+what the problem is, thanks.
 
-Sounds like that nees to be fixed...
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> ---
+>  block/blk-core.c       |   14 +++-----------
+>  include/linux/blkdev.h |    3 ---
+>  2 files changed, 3 insertions(+), 14 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index ea70e6c..20d69f6 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -467,6 +467,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+>  	q->backing_dev_info.state = 0;
+>  	q->backing_dev_info.capabilities = BDI_CAP_MAP_COPY;
+>  	q->backing_dev_info.name = "block";
+> +	q->node = node_id;
+>  
+>  	err = bdi_init(&q->backing_dev_info);
+>  	if (err) {
+> @@ -551,7 +552,7 @@ blk_init_queue_node(request_fn_proc *rfn, spinlock_t *lock, int node_id)
+>  	if (!uninit_q)
+>  		return NULL;
+>  
+> -	q = blk_init_allocated_queue_node(uninit_q, rfn, lock, node_id);
+> +	q = blk_init_allocated_queue(uninit_q, rfn, lock);
+>  	if (!q)
+>  		blk_cleanup_queue(uninit_q);
+>  
+> @@ -563,18 +564,9 @@ struct request_queue *
+>  blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+>  			 spinlock_t *lock)
+>  {
+> -	return blk_init_allocated_queue_node(q, rfn, lock, -1);
+> -}
+> -EXPORT_SYMBOL(blk_init_allocated_queue);
+> -
+> -struct request_queue *
+> -blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+> -			      spinlock_t *lock, int node_id)
+> -{
+>  	if (!q)
+>  		return NULL;
+>  
+> -	q->node = node_id;
+>  	if (blk_init_free_list(q))
+>  		return NULL;
+>  
+> @@ -604,7 +596,7 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+>  
+>  	return NULL;
+>  }
+> -EXPORT_SYMBOL(blk_init_allocated_queue_node);
+> +EXPORT_SYMBOL(blk_init_allocated_queue);
+>  
+>  int blk_get_queue(struct request_queue *q)
+>  {
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index c7a6d3b..94acd81 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -805,9 +805,6 @@ extern void blk_unprep_request(struct request *);
+>   */
+>  extern struct request_queue *blk_init_queue_node(request_fn_proc *rfn,
+>  					spinlock_t *lock, int node_id);
+> -extern struct request_queue *blk_init_allocated_queue_node(struct request_queue *,
+> -							   request_fn_proc *,
+> -							   spinlock_t *, int node_id);
+>  extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+>  extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
+>  						      request_fn_proc *, spinlock_t *);
+> 
