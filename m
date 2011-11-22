@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1KVTXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:23:06 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58796 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab1KVTXF (ORCPT
+	id S1754571Ab1KVTXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:23:12 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48118 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753069Ab1KVTXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:23:05 -0500
-Date: Tue, 22 Nov 2011 23:20:28 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [RFC] Make Yama pid_ns aware
-Message-ID: <20111122192028.GA10458@albatros>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
- <20111121191811.GA24039@albatros>
- <20111122181310.GA4235@sergelap>
+	Tue, 22 Nov 2011 14:23:09 -0500
+X-Sasl-enc: 8hotMU/DqSbvvP96OrkggNhXQOBaZITrTD2JvSnOd4KG 1321989788
+Date: Tue, 22 Nov 2011 11:12:26 -0800
+From: Greg KH <greg@kroah.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, paul@pwsan.com, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org
+Subject: Re: [PATCH v3 0/5] common clk framework
+Message-ID: <20111122191226.GA4844@kroah.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
+ <20111122154259.GA18954@kroah.com>
+ <20111122174544.GA19739@n2100.arm.linux.org.uk>
+ <CAPtuhTgFPZA9U-8heNw1eNUnHLFv2w+LzXg5rdjSx3J53Xy+2g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111122181310.GA4235@sergelap>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPtuhTgFPZA9U-8heNw1eNUnHLFv2w+LzXg5rdjSx3J53Xy+2g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Serge,
-
-On Tue, Nov 22, 2011 at 12:13 -0600, Serge Hallyn wrote:
-> Quoting Vasiliy Kulikov (segoon@openwall.com):
-> > As Yama's sysctls are about defining a security policy for the system,
-> > it is reasonable to define it per container in case of LXC containers
-> > (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
-> > to pid namespace.  With per-pid_ns sysctls it is possible to create
-> > multiple containers with different ptrace, /tmp, etc. policies.
+On Tue, Nov 22, 2011 at 10:09:29AM -0800, Mike Turquette wrote:
+> On Tue, Nov 22, 2011 at 9:45 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Tue, Nov 22, 2011 at 07:42:59AM -0800, Greg KH wrote:
+> >> On Mon, Nov 21, 2011 at 05:40:42PM -0800, Mike Turquette wrote:
+> >> >   .sysfs support.  Visualize your clk tree at /sys/clk!  Where would be
+> >> > a better place to put the clk tree besides the root of /sys/?
+> >>
+> >> Um, in the "proper" place for it under /sys/devices like the rest of the
+> >> device tree is?
+> >
+> > I'd suggest that making the clock tree visible in sysfs (and therefore
+> > part of the kernel ABI) is not a good idea.  Some of the nodes in there
+> > will be specific to the implementation.  Exposing the clock nodes means
+> > that if you have to change the clock tree structure, you change the
+> > visible userspace ABI.
 > 
-> tying the ptrace policy to pidns makes some sense, but is it definately
-> what we want?
+> It is true that the ABI will change dynamically.
 > 
-> Is the idea that the container should never be able to bypass the
-> restrictions, or should root in the container eventually be able to
-> bypass it as he can on the host?
+> >
+> > So, I'd suggest that we need to see a justification for this, rather
+> > than exposing this stuff via debugfs as has been done with existing
+> > implementations.
+> 
+> Userspace tools like powerdebug (and maybe someday powertop) hope to
+> use a reliable-looking interface to view clk data.  There are obvious
+> uses for this data in a debug tool, the most obvious of which is
+> "which clk isn't turning off when it should?".
+> 
+> I can migrate this stuff to debugfs, but it adds the burden of having
+> debugfs enabled for folks that want to view this data.  I would also
+> argue that sysfs is there to model various aspects of system topology
+> and a clk tree certainly fits the bill.
+> 
+> If others also agree that it should reside only in debugfs then I'll
+> move it there for V4.
 
-In-container root already has CAP_SYS_PTRACE, so he can avoid the check
-even if Yama's ptrace policy is enabled.
+If it's only for debug stuff, then yes, it belongs in debugfs.  All
+distros turn debugfs on these days, and for an embedded system, the code
+is quite small so there should not be much overhead.
 
+thanks,
 
-> Would a securebits interface be more or less suitable?  It would allow
-> per-process setting, inherited from parent on fork.
-
-IMHO securebits doesn't belong to such finegrained type of things.
-I don't find anything dangerous for privileged process (i.e. with
-CAP_SYS_ADMIN and CAP_SYS_PTRACE) to be able to fork from
-ptrace-restricted pid namespace, unshare pid namespace and relax ptrace
-policy.  Because (1) process which is able to do unshare is already able
-to ptrace everybody and (2) unshared namespace cannot explicitly
-interact with parent namespace.
-
-
-> It would however
-> not allow a root shell on the desktop, after the fact, saying that
-> a running gdb should be allowed to access firefox.  But, it would be
-> able to say "I, from now on, am exempt, so that I can debug the
-> running firefox", without the rest of the system having its setting
-> changed.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+greg k-h
