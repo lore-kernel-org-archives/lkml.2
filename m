@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab1KVWEC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:04:02 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34133 "EHLO smtp5-g21.free.fr"
+	id S1758881Ab1KVWEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:04:08 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:34302 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758850Ab1KVWD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:03:58 -0500
+	id S1758809Ab1KVWED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 17:04:03 -0500
 From: Corentin Chary <corentincj@iksaif.net>
 To: platform-driver-x86@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@suse.de>,
         Corentin Chary <corentincj@iksaif.net>,
         Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 11/15] samsung-laptop: add keyboard backlight support
-Date: Tue, 22 Nov 2011 23:02:42 +0100
-Message-Id: <1321999366-23784-12-git-send-email-corentincj@iksaif.net>
+Subject: [PATCH 12/15] samsung-laptop: add true rfkill support for swsmi
+Date: Tue, 22 Nov 2011 23:02:43 +0100
+Message-Id: <1321999366-23784-13-git-send-email-corentincj@iksaif.net>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
 References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
@@ -23,226 +23,305 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 ---
- drivers/platform/x86/Kconfig          |    2 +
- drivers/platform/x86/samsung-laptop.c |  136 +++++++++++++++++++++++++++++++++
- 2 files changed, 138 insertions(+), 0 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |  201 ++++++++++++++++++++++++++++-----
+ 1 files changed, 170 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 2f7a9a7..7e594e5 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -747,6 +747,8 @@ config SAMSUNG_LAPTOP
- 	depends on X86
- 	depends on RFKILL || RFKILL = n
- 	depends on BACKLIGHT_CLASS_DEVICE
-+	select LEDS_CLASS
-+	select NEW_LEDS
- 	---help---
- 	  This module implements a driver for a wide range of different
- 	  Samsung laptops.  It offers control over the different
 diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index 88acec9..17afb13 100644
+index 17afb13..c9f574c 100644
 --- a/drivers/platform/x86/samsung-laptop.c
 +++ b/drivers/platform/x86/samsung-laptop.c
-@@ -17,6 +17,7 @@
- #include <linux/delay.h>
- #include <linux/pci.h>
- #include <linux/backlight.h>
-+#include <linux/leds.h>
- #include <linux/fb.h>
- #include <linux/dmi.h>
- #include <linux/platform_device.h>
-@@ -112,6 +113,9 @@ struct sabi_commands {
+@@ -45,6 +45,9 @@
+ #define SABI_IFACE_COMPLETE		0x04
+ #define SABI_IFACE_DATA			0x05
+ 
++#define WL_STATUS_WLAN			0x0
++#define WL_STATUS_BT			0x2
++
+ /* Structure get/set data using sabi */
+ struct sabi_data {
+ 	union {
+@@ -113,6 +116,10 @@ struct sabi_commands {
  	u16 get_usb_charge;
  	u16 set_usb_charge;
  
-+	/* 0x81 to read, (0x82 | level << 8) to set, 0xaabb to enable */
-+	u16 kbd_backlight;
++	/* the first byte is for bluetooth and the third one is for wlan */
++	u16 get_wireless_status;
++	u16 set_wireless_status;
 +
- 	/*
- 	 * Tell the BIOS that Linux is running on this machine.
- 	 * 81 is on, 80 is off
-@@ -171,6 +175,8 @@ static const struct sabi_config sabi_configs[] = {
+ 	/* 0x81 to read, (0x82 | level << 8) to set, 0xaabb to enable */
+ 	u16 kbd_backlight;
+ 
+@@ -129,6 +136,7 @@ struct sabi_performance_level {
+ };
+ 
+ struct sabi_config {
++	int sabi_version;
+ 	const char *test_string;
+ 	u16 main_function;
+ 	const struct sabi_header_offsets header_offsets;
+@@ -140,6 +148,10 @@ struct sabi_config {
+ 
+ static const struct sabi_config sabi_configs[] = {
+ 	{
++		/* I don't know if it is really 2, but it it is
++		 * less than 3 anyway */
++		.sabi_version = 2,
++
+ 		.test_string = "SECLINUX",
+ 
+ 		.main_function = 0x4c49,
+@@ -175,6 +187,9 @@ static const struct sabi_config sabi_configs[] = {
  			.get_usb_charge = 0xFFFF,
  			.set_usb_charge = 0xFFFF,
  
-+			.kbd_backlight = 0xFFFF,
++			.get_wireless_status = 0xFFFF,
++			.set_wireless_status = 0xFFFF,
 +
- 			.set_linux = 0x0a,
- 		},
+ 			.kbd_backlight = 0xFFFF,
  
-@@ -224,6 +230,8 @@ static const struct sabi_config sabi_configs[] = {
+ 			.set_linux = 0x0a,
+@@ -195,6 +210,8 @@ static const struct sabi_config sabi_configs[] = {
+ 		.max_brightness = 8,
+ 	},
+ 	{
++		.sabi_version = 3,
++
+ 		.test_string = "SwSmi@",
+ 
+ 		.main_function = 0x5843,
+@@ -230,6 +247,9 @@ static const struct sabi_config sabi_configs[] = {
  			.get_usb_charge = 0x67,
  			.set_usb_charge = 0x68,
  
-+			.kbd_backlight = 0x78,
++			.get_wireless_status = 0x69,
++			.set_wireless_status = 0x6a,
 +
+ 			.kbd_backlight = 0x78,
+ 
  			.set_linux = 0xff,
- 		},
+@@ -274,6 +294,14 @@ struct samsung_laptop_debug {
+ 	struct debugfs_blob_wrapper data_wrapper;
+ };
  
-@@ -279,6 +287,11 @@ struct samsung_laptop {
- 	struct backlight_device *backlight_device;
- 	struct rfkill *rfk;
- 
-+	struct led_classdev kbd_led;
-+	int kbd_led_wk;
-+	struct workqueue_struct *led_workqueue;
-+	struct work_struct kbd_led_work;
++struct samsung_laptop;
 +
- 	struct samsung_laptop_debug debug;
++struct samsung_rfkill {
++	struct samsung_laptop *samsung;
++	struct rfkill *rfkill;
++	enum rfkill_type type;
++};
++
+ struct samsung_laptop {
+ 	const struct sabi_config *config;
  
- 	bool handle_backlight;
-@@ -745,6 +758,122 @@ static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
- 	return 0;
+@@ -285,7 +313,9 @@ struct samsung_laptop {
+ 
+ 	struct platform_device *platform_device;
+ 	struct backlight_device *backlight_device;
+-	struct rfkill *rfk;
++
++	struct samsung_rfkill wlan;
++	struct samsung_rfkill bluetooth;
+ 
+ 	struct led_classdev kbd_led;
+ 	int kbd_led_wk;
+@@ -486,26 +516,74 @@ static const struct backlight_ops backlight_ops = {
+ 	.update_status	= update_status,
+ };
+ 
+-static int rfkill_set(void *data, bool blocked)
++static int seclinux_rfkill_set(void *data, bool blocked)
+ {
+ 	struct samsung_laptop *samsung = data;
+ 	const struct sabi_commands *commands = &samsung->config->commands;
+ 
+-	/* Do something with blocked...*/
+-	/*
+-	 * blocked == false is on
+-	 * blocked == true is off
+-	 */
+-	if (blocked)
+-		sabi_set_commandb(samsung, commands->set_wireless_button, 0);
++	return sabi_set_commandb(samsung, commands->set_wireless_button,
++				 !blocked);
++}
++
++static struct rfkill_ops seclinux_rfkill_ops = {
++	.set_block = seclinux_rfkill_set,
++};
++
++static int swsmi_wireless_status(struct samsung_laptop *samsung,
++				 struct sabi_data *data)
++{
++	const struct sabi_commands *commands = &samsung->config->commands;
++
++	return sabi_command(samsung, commands->get_wireless_status,
++			    NULL, data);
++}
++
++static int swsmi_rfkill_set(void *priv, bool blocked)
++{
++	struct samsung_rfkill *srfkill = priv;
++	struct samsung_laptop *samsung = srfkill->samsung;
++	const struct sabi_commands *commands = &samsung->config->commands;
++	struct sabi_data data;
++	int ret;
++
++	ret = swsmi_wireless_status(samsung, &data);
++	if (ret)
++		return ret;
++
++	data.data[1] = 0;
++	if (srfkill->type == RFKILL_TYPE_WLAN)
++		data.data[WL_STATUS_WLAN] = !blocked;
++	else if (srfkill->type == RFKILL_TYPE_BLUETOOTH)
++		data.data[WL_STATUS_BT] = !blocked;
++
++	return sabi_command(samsung, commands->set_wireless_status,
++			    &data, &data);
++}
++
++static void swsmi_rfkill_query(struct rfkill *rfkill, void *priv)
++{
++	struct samsung_rfkill *srfkill = priv;
++	struct samsung_laptop *samsung = srfkill->samsung;
++	struct sabi_data data;
++	int ret;
++
++	ret = swsmi_wireless_status(samsung, &data);
++	if (ret)
++		return ;
++
++	if (srfkill->type == RFKILL_TYPE_WLAN)
++		ret = data.data[WL_STATUS_WLAN];
++	else if (srfkill->type == RFKILL_TYPE_BLUETOOTH)
++		ret = data.data[WL_STATUS_BT];
+ 	else
+-		sabi_set_commandb(samsung, commands->set_wireless_button, 1);
++		return ;
+ 
+-	return 0;
++	rfkill_set_sw_state(rfkill, !ret);
  }
  
-+static int kbd_backlight_enable(struct samsung_laptop *samsung)
-+{
-+	const struct sabi_commands *commands = &samsung->config->commands;
-+	struct sabi_data data;
-+	int retval;
+-static struct rfkill_ops rfkill_ops = {
+-	.set_block = rfkill_set,
++static struct rfkill_ops swsmi_rfkill_ops = {
++	.set_block = swsmi_rfkill_set,
++	.query = swsmi_rfkill_query,
+ };
+ 
+ static ssize_t get_performance_level(struct device *dev,
+@@ -730,31 +808,92 @@ static int find_signature(void __iomem *memcheck, const char *testStr)
+ 
+ static void samsung_rfkill_exit(struct samsung_laptop *samsung)
+ {
+-	if (samsung->rfk) {
+-		rfkill_unregister(samsung->rfk);
+-		rfkill_destroy(samsung->rfk);
+-		samsung->rfk = NULL;
++	if (samsung->wlan.rfkill) {
++		rfkill_unregister(samsung->wlan.rfkill);
++		rfkill_destroy(samsung->wlan.rfkill);
++		samsung->wlan.rfkill = NULL;
++	}
++	if (samsung->bluetooth.rfkill) {
++		rfkill_unregister(samsung->bluetooth.rfkill);
++		rfkill_destroy(samsung->bluetooth.rfkill);
++		samsung->bluetooth.rfkill = NULL;
+ 	}
+ }
+ 
+-static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
++static int samsung_new_rfkill(struct samsung_laptop *samsung,
++			      struct samsung_rfkill *arfkill,
++			      const char *name, enum rfkill_type type,
++			      const struct rfkill_ops *ops,
++			      int blocked)
+ {
+-	int retval;
++	struct rfkill **rfkill = &arfkill->rfkill;
++	int ret;
+ 
+-	samsung->rfk = rfkill_alloc("samsung-wifi",
+-				    &samsung->platform_device->dev,
+-				    RFKILL_TYPE_WLAN,
+-				    &rfkill_ops, samsung);
+-	if (!samsung->rfk)
+-		return -ENOMEM;
++	arfkill->type = type;
++	arfkill->samsung = samsung;
+ 
+-	retval = rfkill_register(samsung->rfk);
+-	if (retval) {
+-		rfkill_destroy(samsung->rfk);
+-		samsung->rfk = NULL;
+-		return -ENODEV;
++	*rfkill = rfkill_alloc(name, &samsung->platform_device->dev,
++			       type, ops, arfkill);
 +
-+	if (commands->kbd_backlight == 0xFFFF)
-+		return -ENODEV;
++	if (!*rfkill)
++		return -EINVAL;
 +
-+	memset(&data, 0, sizeof(data));
-+	data.d0 = 0xaabb;
-+	retval = sabi_command(samsung, commands->kbd_backlight,
-+			      &data, &data);
++	if (blocked != -1)
++		rfkill_init_sw_state(*rfkill, blocked);
 +
-+	if (retval)
-+		return retval;
-+
-+	if (data.d0 != 0xccdd)
-+		return -ENODEV;
++	ret = rfkill_register(*rfkill);
++	if (ret) {
++		rfkill_destroy(*rfkill);
++		*rfkill = NULL;
++		return ret;
+ 	}
 +	return 0;
 +}
-+
-+static int kbd_backlight_read(struct samsung_laptop *samsung)
+ 
++static int __init samsung_rfkill_init_seclinux(struct samsung_laptop *samsung)
 +{
-+	const struct sabi_commands *commands = &samsung->config->commands;
++	return samsung_new_rfkill(samsung, &samsung->wlan, "samsung-wlan",
++				  RFKILL_TYPE_WLAN, &seclinux_rfkill_ops, -1);
++}
++
++static int __init samsung_rfkill_init_swsmi(struct samsung_laptop *samsung)
++{
 +	struct sabi_data data;
-+	int retval;
++	int ret;
 +
-+	memset(&data, 0, sizeof(data));
-+	data.data[0] = 0x81;
-+	retval = sabi_command(samsung, commands->kbd_backlight,
-+			      &data, &data);
-+
-+	if (retval)
-+		return retval;
-+
-+	return data.data[0];
-+}
-+
-+static int kbd_backlight_write(struct samsung_laptop *samsung, int brightness)
-+{
-+	const struct sabi_commands *commands = &samsung->config->commands;
-+	struct sabi_data data;
-+
-+	memset(&data, 0, sizeof(data));
-+	data.d0 = 0x82 | ((brightness & 0xFF) << 8);
-+	return sabi_command(samsung, commands->kbd_backlight,
-+			    &data, NULL);
-+}
-+
-+static void kbd_led_update(struct work_struct *work)
-+{
-+	struct samsung_laptop *samsung;
-+
-+	samsung = container_of(work, struct samsung_laptop, kbd_led_work);
-+	kbd_backlight_write(samsung, samsung->kbd_led_wk);
-+}
-+
-+static void kbd_led_set(struct led_classdev *led_cdev,
-+			enum led_brightness value)
-+{
-+	struct samsung_laptop *samsung;
-+
-+	samsung = container_of(led_cdev, struct samsung_laptop, kbd_led);
-+
-+	if (value > samsung->kbd_led.max_brightness)
-+		value = samsung->kbd_led.max_brightness;
-+	else if (value < 0)
-+		value = 0;
-+
-+	samsung->kbd_led_wk = value;
-+	queue_work(samsung->led_workqueue, &samsung->kbd_led_work);
-+}
-+
-+static enum led_brightness kbd_led_get(struct led_classdev *led_cdev)
-+{
-+	struct samsung_laptop *samsung;
-+
-+	samsung = container_of(led_cdev, struct samsung_laptop, kbd_led);
-+	return kbd_backlight_read(samsung);
-+}
-+
-+static void samsung_leds_exit(struct samsung_laptop *samsung)
-+{
-+	if (!IS_ERR_OR_NULL(samsung->kbd_led.dev))
-+		led_classdev_unregister(&samsung->kbd_led);
-+	if (samsung->led_workqueue)
-+		destroy_workqueue(samsung->led_workqueue);
-+}
-+
-+static int __init samsung_leds_init(struct samsung_laptop *samsung)
-+{
-+	int ret = 0;
-+
-+	samsung->led_workqueue = create_singlethread_workqueue("led_workqueue");
-+	if (!samsung->led_workqueue)
-+		return -ENOMEM;
-+
-+	if (kbd_backlight_enable(samsung) >= 0) {
-+		INIT_WORK(&samsung->kbd_led_work, kbd_led_update);
-+
-+		samsung->kbd_led.name = "samsung::kbd_backlight";
-+		samsung->kbd_led.brightness_set = kbd_led_set;
-+		samsung->kbd_led.brightness_get = kbd_led_get;
-+		samsung->kbd_led.max_brightness = 8;
-+
-+		ret = led_classdev_register(&samsung->platform_device->dev,
-+					   &samsung->kbd_led);
-+	}
-+
++	ret = swsmi_wireless_status(samsung, &data);
 +	if (ret)
-+		samsung_leds_exit(samsung);
++		return ret;
++
++	ret = samsung_new_rfkill(samsung, &samsung->wlan,
++				 "samsung-wlan",
++				 RFKILL_TYPE_WLAN,
++				 &swsmi_rfkill_ops,
++				 !data.data[WL_STATUS_WLAN]);
++	if (ret)
++		goto exit;
++
++	ret = samsung_new_rfkill(samsung, &samsung->bluetooth,
++				 "samsung-bluetooth",
++				 RFKILL_TYPE_BLUETOOTH,
++				 &swsmi_rfkill_ops,
++				 !data.data[WL_STATUS_BT]);
++	if (ret)
++		goto exit;
++
++exit:
++	if (ret)
++		samsung_rfkill_exit(samsung);
 +
 +	return ret;
 +}
 +
- static void samsung_backlight_exit(struct samsung_laptop *samsung)
- {
- 	if (samsung->backlight_device) {
-@@ -1354,6 +1483,10 @@ static int __init samsung_init(void)
- 	if (ret)
- 		goto error_rfkill;
++static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
++{
++	if (samsung->config->sabi_version == 2)
++		return samsung_rfkill_init_seclinux(samsung);
++	if (samsung->config->sabi_version == 3)
++		return samsung_rfkill_init_swsmi(samsung);
+ 	return 0;
+ }
  
-+	ret = samsung_leds_init(samsung);
-+	if (ret)
-+		goto error_leds;
-+
- 	ret = samsung_debugfs_init(samsung);
- 	if (ret)
- 		goto error_debugfs;
-@@ -1362,6 +1495,8 @@ static int __init samsung_init(void)
- 	return ret;
- 
- error_debugfs:
-+	samsung_leds_exit(samsung);
-+error_leds:
- 	samsung_rfkill_exit(samsung);
- error_rfkill:
- 	samsung_backlight_exit(samsung);
-@@ -1383,6 +1518,7 @@ static void __exit samsung_exit(void)
- 	samsung = platform_get_drvdata(samsung_platform_device);
- 
- 	samsung_debugfs_exit(samsung);
-+	samsung_leds_exit(samsung);
- 	samsung_rfkill_exit(samsung);
- 	samsung_backlight_exit(samsung);
- 	samsung_sysfs_exit(samsung);
 -- 
 1.7.5.4
 
