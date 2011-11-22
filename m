@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab1KVO3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 09:29:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42525 "EHLO mx2.suse.de"
+	id S1756390Ab1KVO3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 09:29:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42496 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756343Ab1KVO3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 09:29:34 -0500
-Subject: [patch 7/7] sched: only use TTWU_QUEUE when waker/wakee CPUs do
- not share top level cache
+	id S1756343Ab1KVO32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 09:29:28 -0500
+Subject: [patch 5/7] sched: ratelimit select_idle_sibling()for sync wakeups
 From: Mike Galbraith <mgalbraith@suse.de>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
@@ -28,8 +27,8 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321630552.2197.15.camel@twins>
 	 <1321971445.6855.14.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Nov 2011 15:26:25 +0100
-Message-ID: <1321971985.6855.26.camel@marge.simson.net>
+Date: Tue, 22 Nov 2011 15:23:46 +0100
+Message-ID: <1321971826.6855.22.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -38,57 +37,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-TTWU_QUEUE IPI overhead was measured to be as much as 13% of netperf TCP_RR
-overhead when waking to a shared cache.  Don't IPI unless we're waking cross
-cache, where it can be a winner.
-
-Suggested by Peterz, tested by /me.
+select_idle_sibling() injures synchromous loads horribly
+on processors with L3 (ala westmere) when called at high
+Frequency.  Cut it off at 40 KHz (25usec event rate) when
+waking sync, in lieu of an inter-domain cache penalty.
 
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 
 ---
- kernel/sched/core.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c     |   20 ++++++++++++++++++--
+ kernel/sched/features.h |    6 ++++++
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-Index: linux-3.0-tip/kernel/sched/core.c
+Index: linux-3.0-tip/kernel/sched/fair.c
 ===================================================================
---- linux-3.0-tip.orig/kernel/sched/core.c
-+++ linux-3.0-tip/kernel/sched/core.c
-@@ -1479,12 +1479,34 @@ static int ttwu_activate_remote(struct t
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- #endif /* CONFIG_SMP */
+--- linux-3.0-tip.orig/kernel/sched/fair.c
++++ linux-3.0-tip/kernel/sched/fair.c
+@@ -2643,6 +2643,21 @@ find_idlest_cpu(struct sched_group *grou
+ }
  
-+static int ttwu_share_cache(int this_cpu, int cpu)
+ /*
++ * select_idle_sibling() injures synchromous loads horribly
++ * on processors with L3 (ala westmere) when called at high
++ * Frequency.  Cut it off at 40 KHz (25usec event rate) when
++ * waking sync, in lieu of an inter-domain cache penalty.
++ */
++#define SIBLING_SYNC_CUTOFF_NS (NSEC_PER_SEC/40000UL)
++
++static int idle_sibling_limit(int target, int sync)
 +{
-+#ifndef CONFIG_X86
-+	struct sched_domain *sd;
-+	int ret = 0;
-+
-+	rcu_read_lock();
-+	for_each_domain(this_cpu, sd) {
-+		if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
-+			continue;
-+
-+		ret = (sd->flags & SD_SHARE_PKG_RESOURCES);
-+		break;
-+	}
-+	rcu_read_unlock();
-+
-+	return ret;
-+#else
-+	return per_cpu(cpu_llc_id, this_cpu) == per_cpu(cpu_llc_id, cpu);
-+#endif
++	if (!sync || !sched_feat(SIBLING_LIMIT_SYNC))
++		return 0;
++	return cpu_rq(target)->avg_event < SIBLING_SYNC_CUTOFF_NS;
 +}
 +
- static void ttwu_queue(struct task_struct *p, int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
++/*
+  * Try and locate an idle CPU in the sched_domain.
+  */
+ static int select_idle_sibling(struct task_struct *p, int target)
+@@ -2790,9 +2805,10 @@ select_task_rq_fair(struct task_struct *
  
- #if defined(CONFIG_SMP)
--	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
-+	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
- 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
- 		ttwu_queue_remote(p, cpu);
- 		return;
+ 	if (affine_sd) {
+ 		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+-			prev_cpu = cpu;
++			new_cpu = cpu;
+ 
+-		new_cpu = select_idle_sibling(p, prev_cpu);
++		if (!idle_sibling_limit(new_cpu, sync))
++			new_cpu = select_idle_sibling(p, new_cpu);
+ 		goto unlock;
+ 	}
+ 
+Index: linux-3.0-tip/kernel/sched/features.h
+===================================================================
+--- linux-3.0-tip.orig/kernel/sched/features.h
++++ linux-3.0-tip/kernel/sched/features.h
+@@ -68,3 +68,9 @@ SCHED_FEAT(TTWU_QUEUE, 1)
+ 
+ SCHED_FEAT(FORCE_SD_OVERLAP, 0)
+ SCHED_FEAT(RT_RUNTIME_SHARE, 1)
++
++/*
++ * Restrict the frequency at which select_idle_sibling() may be called
++ * for synchronous wakeups.
++ */
++SCHED_FEAT(SIBLING_LIMIT_SYNC, 1)
 
 
