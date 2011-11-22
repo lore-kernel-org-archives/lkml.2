@@ -1,65 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab1KVAta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:49:30 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57381 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab1KVAt3 (ORCPT
+	id S1757075Ab1KVAxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:53:48 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54674 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab1KVAxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:49:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111121233258.GA18466@google.com>
-References: <20111121233258.GA18466@google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 21 Nov 2011 16:49:07 -0800
-X-Google-Sender-Auth: zf-dXqtN8jh0SzVF4O92U1kbWJE
-Message-ID: <CA+55aFw1XMbJTBifw1sSUN-7cC2BdeeZwPrqkxsboAo6SFSoNw@mail.gmail.com>
-Subject: Re: [PATCH] eCryptfs: Check array bounds for filename characters
-To: Michael Halcrow <mhalcrow@google.com>
-Cc: tyhicks@canonical.com, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, thieule@google.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 Nov 2011 19:53:47 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 22 Nov 2011 09:52:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Luis Henriques <henrix@camandro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: shorten preempt-disabled section around
+ event checks
+Message-Id: <20111122095223.0baefec9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111121110954.GE1771@redhat.com>
+References: <20111121110954.GE1771@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 3:32 PM, Michael Halcrow <mhalcrow@google.com> wrote:
-> Characters with ASCII values greater than the size of
-> filename_rev_map[] are valid filename
-> characters. ecryptfs_decode_from_filename() will access kernel memory
-> beyond that array, and ecryptfs_parse_tag_70_packet() will then
-> decrypt those characters.
+On Mon, 21 Nov 2011 12:09:54 +0100
+Johannes Weiner <jweiner@redhat.com> wrote:
 
-Ugh. I really don't like the patch.
+> -rt ran into a problem with the soft limit spinlock inside the
+> non-preemptible section, because that is sleeping inside an atomic
+> context.  But I think it makes sense for vanilla, too, to keep the
+> non-preemptible section as short as possible.  Also, -3 lines.
+> 
+> Yong, Luis, could you add your Tested-bys?
+> 
+> ---
+> Only the ratelimit checks themselves have to run with preemption
+> disabled, the resulting actions - checking for usage thresholds,
+> updating the soft limit tree - can and should run with preemption
+> enabled.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Reported-by: Yong Zhang <yong.zhang0@gmail.com>
+> Reported-by: Luis Henriques <henrix@camandro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
 
-Why isn't the patch just this one-liner:
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-  diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-  index 58609bde3b9f..7c50715c05d6 100644
-  --- a/fs/ecryptfs/crypto.c
-  +++ b/fs/ecryptfs/crypto.c
-  @@ -1943,7 +1943,7 @@ static unsigned char *portable_filename_chars
-= ("-.0123456789ABCD"
+> ---
+>  mm/memcontrol.c |   73 ++++++++++++++++++++++++++----------------------------
+>  1 files changed, 35 insertions(+), 38 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 6aff93c..8e62d3e 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -683,37 +683,32 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
+>  	return total;
+>  }
+>  
+> -static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
+> +static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+> +				       enum mem_cgroup_events_target target)
+>  {
+>  	unsigned long val, next;
+>  
+>  	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+>  	next = __this_cpu_read(memcg->stat->targets[target]);
+>  	/* from time_after() in jiffies.h */
+> -	return ((long)next - (long)val < 0);
+> -}
+> -
+> -static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
+> -{
+> -	unsigned long val, next;
+> -
+> -	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+> -
+> -	switch (target) {
+> -	case MEM_CGROUP_TARGET_THRESH:
+> -		next = val + THRESHOLDS_EVENTS_TARGET;
+> -		break;
+> -	case MEM_CGROUP_TARGET_SOFTLIMIT:
+> -		next = val + SOFTLIMIT_EVENTS_TARGET;
+> -		break;
+> -	case MEM_CGROUP_TARGET_NUMAINFO:
+> -		next = val + NUMAINFO_EVENTS_TARGET;
+> -		break;
+> -	default:
+> -		return;
+> +	if ((long)next - (long)val < 0) {
+> +		switch (target) {
+> +		case MEM_CGROUP_TARGET_THRESH:
+> +			next = val + THRESHOLDS_EVENTS_TARGET;
+> +			break;
+> +		case MEM_CGROUP_TARGET_SOFTLIMIT:
+> +			next = val + SOFTLIMIT_EVENTS_TARGET;
+> +			break;
+> +		case MEM_CGROUP_TARGET_NUMAINFO:
+> +			next = val + NUMAINFO_EVENTS_TARGET;
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +		__this_cpu_write(memcg->stat->targets[target], next);
+> +		return true;
+>  	}
+> -
+> -	__this_cpu_write(memcg->stat->targets[target], next);
+> +	return false;
+>  }
+>  
+>  /*
+> @@ -724,25 +719,27 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+>  {
+>  	preempt_disable();
+>  	/* threshold event is triggered in finer grain than soft limit */
+> -	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
+> +	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_THRESH))) {
+> +		bool do_softlimit, do_numainfo;
+> +
+> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_SOFTLIMIT);
+> +#if MAX_NUMNODES > 1
+> +		do_numainfo = mem_cgroup_event_ratelimit(memcg,
+> +						MEM_CGROUP_TARGET_NUMAINFO);
+> +#endif
+> +		preempt_enable();
+> +
+>  		mem_cgroup_threshold(memcg);
+> -		__mem_cgroup_target_update(memcg, MEM_CGROUP_TARGET_THRESH);
+> -		if (unlikely(__memcg_event_check(memcg,
+> -			     MEM_CGROUP_TARGET_SOFTLIMIT))) {
+> +		if (unlikely(do_softlimit))
+>  			mem_cgroup_update_tree(memcg, page);
+> -			__mem_cgroup_target_update(memcg,
+> -						   MEM_CGROUP_TARGET_SOFTLIMIT);
+> -		}
+>  #if MAX_NUMNODES > 1
+> -		if (unlikely(__memcg_event_check(memcg,
+> -			MEM_CGROUP_TARGET_NUMAINFO))) {
+> +		if (unlikely(do_numainfo))
+>  			atomic_inc(&memcg->numainfo_events);
+> -			__mem_cgroup_target_update(memcg,
+> -				MEM_CGROUP_TARGET_NUMAINFO);
+> -		}
+>  #endif
+> -	}
+> -	preempt_enable();
+> +	} else
+> +		preempt_enable();
+>  }
+>  
+>  static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-   /* We could either offset on every reverse map or just pad some 0x00's
-    * at the front here */
-  -static const unsigned char filename_rev_map[] = {
-  +static const unsigned char filename_rev_map[256] = {
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 7 */
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 15 */
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 23 */
-
-instead?
-
-Making invalid characters over \x50 be somehow magically different
-from invalid characters elsewhere seems just totally bogus. There are
-lots of characters that aren't valid, and they have the
-filename_rev_map[] value of 0 elsewhere.
-
-So the simpler one-liner is not only simpler, but gives much saner
-semantics, I think - now invalid character '\x05' gets exactly the
-same result as invalid character '\xf5'.
-
-Hmm?
-
-                         Linus
