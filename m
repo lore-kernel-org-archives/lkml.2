@@ -1,139 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab1KVLVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:21:06 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56816 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888Ab1KVLVE convert rfc822-to-8bit (ORCPT
+	id S1758419Ab1KVLVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:21:14 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:43896 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758374Ab1KVLVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:21:04 -0500
+	Tue, 22 Nov 2011 06:21:10 -0500
+Date: Tue, 22 Nov 2011 12:21:07 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Christian Kujau <lists@nerdbynature.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111122112107.GA1675@x4.trippels.de>
+References: <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121173556.GA1673@x4.trippels.de>
+ <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121185215.GA1673@x4.trippels.de>
+ <20111121195113.GA1678@x4.trippels.de>
+ <1321907275.13860.12.camel@pasglop>
+ <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
+ <alpine.DEB.2.00.1111212105330.19606@router.home>
+ <20111122084513.GA1688@x4.trippels.de>
+ <1321954729.2474.4.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
-In-Reply-To: <1321917453.10276.3.camel@pjaxe>
-References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
-	<1321917453.10276.3.camel@pjaxe>
-Date: Tue, 22 Nov 2011 12:21:03 +0100
-Message-ID: <CAJfGthQzQEq66-r-tpW5LH=19iGXR0BtM8KoYRhSONXjE_S+0A@mail.gmail.com>
-Subject: Re: softirq oops from b44_poll
-From: Xander Hover <lkml@hover.be>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1321954729.2474.4.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the issue also. I have tried it on kernel 3.1.1.
-I will also try it on kernel 3.2_rc2  soon.
-Using dev_free_skb_any() instead of dev_free_skb_irq()  makes indeed
-more sense to me.
+On 2011.11.22 at 10:38 +0100, Eric Dumazet wrote:
+> Le mardi 22 novembre 2011 à 09:45 +0100, Markus Trippelsdorf a écrit :
+> 
+> > I sometimes see the following pattern. Is this a false positive?
+> > 
+> > 
+> > =============================================================================
+> > BUG anon_vma: Redzone overwritten
+> > -----------------------------------------------------------------------------
+> > 
+> > INFO: 0xffff88020f347c80-0xffff88020f347c87. First byte 0xbb instead of 0xcc
+> > INFO: Allocated in anon_vma_fork+0x51/0x140 age=1 cpu=2 pid=1826
+> > 	__slab_alloc.constprop.70+0x1ac/0x1e8
+> > 	kmem_cache_alloc+0x12e/0x160
+> > 	anon_vma_fork+0x51/0x140
+> > 	dup_mm+0x1f2/0x4a0
+> > 	copy_process+0xd10/0xf70
+> > 	do_fork+0x100/0x2b0
+> > 	sys_clone+0x23/0x30
+> > 	stub_clone+0x13/0x20
+> > INFO: Freed in __put_anon_vma+0x54/0xa0 age=0 cpu=1 pid=1827
+> > 	__slab_free+0x33/0x2d0
+> > 	kmem_cache_free+0x10e/0x120
+> > 	__put_anon_vma+0x54/0xa0
+> > 	unlink_anon_vmas+0x12f/0x1c0
+> > 	free_pgtables+0x83/0xe0
+> > 	exit_mmap+0xee/0x140
+> > 	mmput+0x43/0xf0
+> > 	flush_old_exec+0x33f/0x630
+> > 	load_elf_binary+0x340/0x1960
+> > 	search_binary_handler+0x8f/0x180
+> > 	do_execve+0x2d3/0x370
+> > 	sys_execve+0x42/0x70
+> > 	stub_execve+0x6c/0xc0
+> > INFO: Slab 0xffffea00083cd1c0 objects=10 used=9 fp=0xffff88020f347ab8 flags=0x4000000000000081
+> > INFO: Object 0xffff88020f347c40 @offset=3136 fp=0xffff88020f347ab8
+> > 
+> > Bytes b4 ffff88020f347c30: 39 b6 fb ff 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  9.......ZZZZZZZZ
+> > Object ffff88020f347c40: 30 c9 9b 0d 02 88 ff ff 01 00 00 00 00 00 5a 5a  0.............ZZ
+> > Object ffff88020f347c50: 50 7c 34 0f 02 88 ff ff 50 7c 34 0f 02 88 ff ff  P|4.....P|4.....
+> > Object ffff88020f347c60: 00 00 00 00 00 00 00 00 00 00 00 00 5a 5a 5a 5a  ............ZZZZ
+> > Object ffff88020f347c70: 70 7c 34 0f 02 88 ff ff 70 7c 34 0f 02 88 ff ff  p|4.....p|4.....
+> > Redzone ffff88020f347c80: bb bb bb bb bb bb bb bb                          ........
+> > Padding ffff88020f347dc0: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> > Pid: 1820, comm: slabinfo Not tainted 3.2.0-rc2-00369-gbbbc479-dirty #83
+> > Call Trace:
+> >  [<ffffffff81105df8>] ? print_section+0x38/0x40
+> >  [<ffffffff811062f3>] print_trailer+0xe3/0x150
+> >  [<ffffffff811064f0>] check_bytes_and_report+0xe0/0x100
+> >  [<ffffffff81107313>] check_object+0x183/0x240
+> >  [<ffffffff81107eb0>] validate_slab_slab+0x1c0/0x230
+> >  [<ffffffff8110a4a6>] validate_store+0xa6/0x190
+> >  [<ffffffff8110573c>] slab_attr_store+0x1c/0x30
+> >  [<ffffffff81168838>] sysfs_write_file+0xc8/0x140
+> >  [<ffffffff811124a3>] vfs_write+0xa3/0x160
+> >  [<ffffffff81112635>] sys_write+0x45/0x90
+> >  [<ffffffff814d3ffb>] system_call_fastpath+0x16/0x1b
+> > FIX anon_vma: Restoring 0xffff88020f347c80-0xffff88020f347c87=0xcc
+> 
+> 
+> Wait a minute
+> 
+> You trigger this using slabinfo looping or something ?
+> 
+> Bug is in slabinfo then, dont use it, and see if bug triggers.
+> 
+> Given slub is now lockless, validate_slab_slab() is probably very wrong
+> these days.
 
+OK "slabinfo -v" is useless then. But that doesn't invalidate the BUGs
+that I saw during boot. They happend before I could even run slabinfo
+for the first time.
 
-On Tue, Nov 22, 2011 at 12:17 AM, Peter P Waskiewicz Jr
-<peter.p.waskiewicz.jr@intel.com> wrote:
-> On Mon, 2011-11-21 at 05:58 -0800, Xander Hover wrote:
->> Hi all,
->>
->> I noticed the small discussion about the b44_poll OOPS and
->> I also have a uni-processor PC with a broadcom network device (b44)
->> that causes similar kernel OOPSes.
->>
->> Here is a (reproducible) trace that still shows up in kernel 3.1.1:
->>
->>  ------------[ cut here ]------------
->>     WARNING: at kernel/softirq.c:159 local_bh_enable+0x32/0x79()
->>     Hardware name: Dimension 2400
->>     Modules linked in: snd_seq_midi snd_emu10k1_synth snd_emux_synth
->> snd_seq_virmidi snd_seq_midi_emul snd_seq_oss snd_seq_midi_event
->> snd_seq snd_pcm_oss snd_mixer_oss bnep rfcomm cryptd aes_i586
->> aes_generic ecb btusb bluetooth rfkill ppdev snd_emu10k1 snd_rawmidi
->> snd_ac97_codec ac97_bus snd_pcm snd_seq_device snd_timer
->> snd_page_alloc dcdbas snd_util_mem parport_pc snd_hwdep snd parport
->> emu10k1_gp rtc_cmos gameport i2c_i801
->>     Pid: 0, comm: swapper Not tainted 3.1.1-gentoo #1
->>     Call Trace:
->>      [<c1022970>] warn_slowpath_common+0x65/0x7a
->>      [<c102699e>] ? local_bh_enable+0x32/0x79
->>      [<c1022994>] warn_slowpath_null+0xf/0x13
->>      [<c102699e>] local_bh_enable+0x32/0x79
->>      [<c134bfd8>] destroy_conntrack+0x7c/0x9b
->>      [<c134890b>] nf_conntrack_destroy+0x1f/0x26
->>      [<c132e3a6>] skb_release_head_state+0x74/0x83
->>      [<c132e286>] __kfree_skb+0xb/0x6b
->>      [<c132e30a>] consume_skb+0x24/0x26
->>      [<c127c925>] b44_poll+0xaa/0x449
->>      [<c1333ca1>] net_rx_action+0x3f/0xea
->>      [<c1026a44>] __do_softirq+0x5f/0xd5
->>      [<c10269e5>] ? local_bh_enable+0x79/0x79
->>      <IRQ>  [<c1026c32>] ? irq_exit+0x34/0x8d
->>      [<c1003628>] ? do_IRQ+0x74/0x87
->>      [<c13f5329>] ? common_interrupt+0x29/0x30
->>      [<c1006e18>] ? default_idle+0x29/0x3e
->>      [<c10015a7>] ? cpu_idle+0x2f/0x5d
->>      [<c13e91c5>] ? rest_init+0x79/0x7b
->>      [<c15c66a9>] ? start_kernel+0x297/0x29c
->>      [<c15c60b0>] ? i386_start_kernel+0xb0/0xb7
->>     ---[ end trace 583f33bb1aa207a9 ]---
->>
->>
->> However if I apply the following patch this error does not show up anymore:
->>
->>
->> diff --git a/drivers/net/ethernet/broadcom/b44.c
->> b/drivers/net/ethernet/broadcom/b44.c
->> index 4cf835d..3fb66d0 100644
->> --- a/drivers/net/ethernet/broadcom/b44.c
->> +++ b/drivers/net/ethernet/broadcom/b44.c
->> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
->>                                  skb->len,
->>                                  DMA_TO_DEVICE);
->>                 rp->skb = NULL;
->> -               dev_kfree_skb(skb);
->> +               dev_kfree_skb_irq(skb);
->
-> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
-> instead, since that will handle the in-interrupt case if that's where
-> we're stuck.
->
-> Can you try this patch (compile-tested only) and see if fixes the issue
-> you're seeing:
->
-> commit e36ef2c1a2b6b517ed43254eb89768794a049b1c
-> Author: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Date:   Mon Nov 21 15:14:18 2011 -0800
->
-> b44: Use dev_kfree_skb_any() in b44_tx()
->
-> Reported issues when using dev_kfree_skb() on UP systems and
-> systems with low numbers of cores.  dev_kfree_skb_any() will
-> properly save IRQ state before freeing the skb, depending on
-> how b44_tx() is invoked.
->
-> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> ---
->
->  drivers/net/ethernet/broadcom/b44.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
->
-> diff --git a/drivers/net/ethernet/broadcom/b44.c
-> b/drivers/net/ethernet/broadcom/b44.c
-> index 4cf835d..6a7c39b 100644
-> --- a/drivers/net/ethernet/broadcom/b44.c
-> +++ b/drivers/net/ethernet/broadcom/b44.c
-> @@ -608,7 +608,7 @@ static void b44_tx(struct b44 *bp)
->                                 skb->len,
->                                 DMA_TO_DEVICE);
->                rp->skb = NULL;
-> -               dev_kfree_skb(skb);
-> +               dev_kfree_skb_any(skb);
->        }
->
->        bp->tx_cons = cons;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-- 
+Markus
