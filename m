@@ -1,97 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab1KVSKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:10:08 -0500
-Received: from 5.mo2.mail-out.ovh.net ([87.98.181.248]:56865 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754897Ab1KVSKE (ORCPT
+	id S1754244Ab1KVSNU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:13:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60781 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab1KVSNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:10:04 -0500
-Date: Tue, 22 Nov 2011 19:09:49 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: w.sang@pengutronix.de
-Cc: Wim@vger.kernel.org, wim@iguana.be, Welte@vger.kernel.org,
-        Van@vger.kernel.org, Sebroeck@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        HaraldWelte@viatech.com, Harald@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
-References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
- <20111122112212.GD2734@pengutronix.de>
- <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
- <20111122173029.GA14349@pengutronix.de>
-In-Reply-To: <20111122173029.GA14349@pengutronix.de>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Tue, 22 Nov 2011 13:13:18 -0500
+Date: Tue, 22 Nov 2011 12:13:10 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [RFC] Make Yama pid_ns aware
+Message-ID: <20111122181310.GA4235@sergelap>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+ <20111121191811.GA24039@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 16532151282737268518
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucculddquddttddm
+Content-Disposition: inline
+In-Reply-To: <20111121191811.GA24039@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram Sang <w.sang@pengutronix.de> wrote:
+Quoting Vasiliy Kulikov (segoon@openwall.com):
+> Hi,
+> 
+> As Yama's sysctls are about defining a security policy for the system,
+> it is reasonable to define it per container in case of LXC containers
+> (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+> to pid namespace.  With per-pid_ns sysctls it is possible to create
+> multiple containers with different ptrace, /tmp, etc. policies.
 
-> > +	dev_info(&pdev->dev, "VIA Chipset watchdog MMIO: %x\n", mmio);
-> > +	if (mmio == 0) {
-> > +		dev_err(&pdev->dev, "watchdog timer is not enabled in BIOS\n");
-> > +		return -ENODEV;
-> > +	}
->
-> What about
->
-> 	if (mmio != 0) {
-> 		dev_info("VIA Chipset...")
-> 	} else {
-> 		dev_err()
-> 		return -ENODEV;
-> 	}
->
-> to only have the needed printouts.
->
-Ok.
+tying the ptrace policy to pidns makes some sense, but is it definately
+what we want?
 
-> > +	ret = watchdog_register_device(&wdt_dev);
-> > +	if (ret)
-> > +		return ret;
->
-> You need to iounmap in the error-case.
-Yes. Good catch.
+Is the idea that the container should never be able to bypass the
+restrictions, or should root in the container eventually be able to
+bypass it as he can on the host?
 
->
-> > +	watchdog_set_drvdata(&wdt_dev, wdt_mem);
-> > +	if (readl(wdt_mem) & VIA_WDT_FIRED) {
-> > +		wdt_dev.bootstatus |= WDIOF_CARDRESET;
-> > +		dev_notice(&pdev->dev, "restarted by expired watchdog\n");
->
-> Skip the printout. This can be detected using CARDRESET.
->
-Ok.
+Would a securebits interface be more or less suitable?  It would allow
+per-process setting, inherited from parent on fork.  It would however
+not allow a root shell on the desktop, after the fact, saying that
+a running gdb should be allowed to access firefox.  But, it would be
+able to say "I, from now on, am exempt, so that I can debug the
+running firefox", without the rest of the system having its setting
+changed.
 
-> > +/*
-> > + * The driver has not been tested yet on CX700 and VX800.
-> > + */
->
-> Then, I'd rather skip this comment and the IDs. Or if you are sure enough it
-> works, leave them in ;) Best option would be testers showing up.
->
-Then I take the risk and remove the comments ;). This is stable stuff inherited
-from old models...
-
-> Regards,
->
->    Wolfram
->
-Thanks for your comments, I'm preparing an update.
---
-Marc
+> As Yama is not merged yet, I post the patch in this thread.
+> 
+> The patch is straightforward:
+> 
+> 1) all sysctl variables are moved from global vars to pid_namespace
+> fields.
+> 
+> 2) each cloned pid ns gets the settings of the parent.
+> 
+> 3) the variables of current pid ns are visible through sysctl interface.
+> 
+> proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
+> ipc/ipc_sysctl.c.
+> 
+> (The patch is not tested.)
+> 
+> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> index 38d1032..46edaf8 100644
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -30,6 +30,11 @@ struct pid_namespace {
+>  #ifdef CONFIG_BSD_PROCESS_ACCT
+>  	struct bsd_acct_struct *bacct;
+>  #endif
+> +#ifdef CONFIG_SECURITY_YAMA
+> +	int ptrace_scope;
+> +	int protected_sticky_symlinks;
+> +	int protected_nonaccess_hardlinks;
+> +#endif
+>  };
+>  
+>  extern struct pid_namespace init_pid_ns;
+> diff --git a/kernel/pid.c b/kernel/pid.c
+> index fa5f722..0cd8926 100644
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
+>  	.last_pid = 0,
+>  	.level = 0,
+>  	.child_reaper = &init_task,
+> +#ifdef CONFIG_SECURITY_YAMA
+> +	.ptrace_scope = 1,
+> +	.protected_sticky_symlinks = 1,
+> +	.protected_nonaccess_hardlinks = 1,
+> +#endif
+>  };
+>  EXPORT_SYMBOL_GPL(init_pid_ns);
+>  
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index e9c9adc..73d47c4 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+>  	if (err)
+>  		goto out_put_parent_pid_ns;
+>  
+> +#ifdef CONFIG_SECURITY_YAMA
+> +	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
+> +	ns->protected_sticky_symlinks =
+> +		parent_pid_ns->protected_sticky_symlinks;
+> +	ns->protected_nonaccess_hardlinks =
+> +		parent_pid_ns->protected_nonaccess_hardlinks;
+> +#endif
+> +
+>  	return ns;
+>  
+>  out_put_parent_pid_ns:
+> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+> index a92538c..cf99a8c 100644
+> --- a/security/yama/yama_lsm.c
+> +++ b/security/yama/yama_lsm.c
+> @@ -16,10 +16,7 @@
+>  #include <linux/ptrace.h>
+>  #include <linux/prctl.h>
+>  #include <linux/ratelimit.h>
+> -
+> -static int ptrace_scope = 1;
+> -static int protected_sticky_symlinks = 1;
+> -static int protected_nonaccess_hardlinks = 1;
+> +#include <linux/pid_namespace.h>
+>  
+>  /* describe a PTRACE relationship for potential exception */
+>  struct ptrace_relation {
+> @@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
+>  
+>  	/* require ptrace target be a child of ptracer on attach */
+>  	if (mode == PTRACE_MODE_ATTACH &&
+> -	    ptrace_scope &&
+> +	    current->nsproxy->pid_ns->ptrace_scope &&
+>  	    !capable(CAP_SYS_PTRACE) &&
+>  	    !task_is_descendant(current, child) &&
+>  	    !ptracer_exception_found(current, child))
+> @@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
+>  	const struct inode *inode;
+>  	const struct cred *cred;
+>  
+> -	if (!protected_sticky_symlinks)
+> +	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
+>  		return 0;
+>  
+>  	/* if inode isn't a symlink, don't try to evaluate blocking it */
+> @@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
+>  	const int mode = inode->i_mode;
+>  	const struct cred *cred = current_cred();
+>  
+> -	if (!protected_nonaccess_hardlinks)
+> +	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
+>  		return 0;
+>  
+>  	if (cred->fsuid != inode->i_uid &&
+> @@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
+>  static int zero;
+>  static int one = 1;
+>  
+> +static void *get_pid_data(ctl_table *table)
+> +{
+> +	char *which = table->data;
+> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
+> +	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
+> +	return which;
+> +}
+> +
+> +static int proc_pid_dointvec_minmax(ctl_table *table, int write,
+> +	void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	struct ctl_table pid_table;
+> +
+> +	memcpy(&pid_table, table, sizeof(pid_table));
+> +	pid_table.data = get_pid_data(table);
+> +
+> +	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
+> +}
+> +
+> +
+>  struct ctl_path yama_sysctl_path[] = {
+>  	{ .procname = "kernel", },
+>  	{ .procname = "yama", },
+> @@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
+>  static struct ctl_table yama_sysctl_table[] = {
+>  	{
+>  		.procname       = "protected_sticky_symlinks",
+> -		.data           = &protected_sticky_symlinks,
+> +		.data           = &init_pid_ns.protected_sticky_symlinks,
+>  		.maxlen         = sizeof(int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_dointvec_minmax,
+> +		.proc_handler   = proc_pid_dointvec_minmax,
+>  		.extra1         = &zero,
+>  		.extra2         = &one,
+>  	},
+>  	{
+>  		.procname       = "protected_nonaccess_hardlinks",
+> -		.data           = &protected_nonaccess_hardlinks,
+> +		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
+>  		.maxlen         = sizeof(int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_dointvec_minmax,
+> +		.proc_handler   = proc_pid_dointvec_minmax,
+>  		.extra1         = &zero,
+>  		.extra2         = &one,
+>  	},
+>  	{
+>  		.procname       = "ptrace_scope",
+> -		.data           = &ptrace_scope,
+> +		.data           = &init_pid_ns.ptrace_scope,
+>  		.maxlen         = sizeof(int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_dointvec_minmax,
+> +		.proc_handler   = proc_pid_dointvec_minmax,
+>  		.extra1         = &zero,
+>  		.extra2         = &one,
+>  	},
+> ---
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
