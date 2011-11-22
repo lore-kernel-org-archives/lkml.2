@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582Ab1KVLx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:53:56 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34615 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758469Ab1KVLxz (ORCPT
+	id S932067Ab1KVLyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:54:11 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53559 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758594Ab1KVLyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:53:55 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Cc: patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Fix rbtreee build when not using debugfs
-Date: Tue, 22 Nov 2011 11:53:33 +0000
-Message-Id: <1321962813-18106-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 22 Nov 2011 06:54:09 -0500
+Date: Tue, 22 Nov 2011 11:54:08 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, William Cohen <wcohen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
+        Vince Weaver <vince@deater.net>,
+        "ostrikov@nvidia.com" <ostrikov@nvidia.com>
+Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
+Message-ID: <20111122115407.GM20518@mudshark.cambridge.arm.com>
+References: <20111121145114.049265181@chello.nl>
+ <20111121145337.533322271@chello.nl>
+ <20111121172323.GH20611@mudshark.cambridge.arm.com>
+ <1321903090.28118.21.camel@twins>
+ <20111121203145.GA7301@mudshark.cambridge.arm.com>
+ <1321907755.28118.30.camel@twins>
+ <20111121224343.GA7862@mudshark.cambridge.arm.com>
+ <1321961180.5148.31.camel@twins>
+ <20111122114700.GJ20518@mudshark.cambridge.arm.com>
+ <1321962710.5148.34.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321962710.5148.34.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debugfs functions don't stub themselves out quite so well as might
-be desirable so provide functions which do do this stubbing.
+On Tue, Nov 22, 2011 at 11:51:50AM +0000, Peter Zijlstra wrote:
+> On Tue, 2011-11-22 at 11:47 +0000, Will Deacon wrote:
+> 
+> OK, I had interpreted your "we don't always have" to be slightly more
+> common than just A15.
 
-Reported-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regcache-rbtree.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+It was introduced for v7.1, of which the A15 is the first implementation. A7
+and future cores should also have it (it's part of the architected timers
+which are really needed for doing virtualisation properly).
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 7767cbb..32620c4 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -170,6 +170,15 @@ static const struct file_operations rbtree_fops = {
- 	.llseek		= seq_lseek,
- 	.release	= single_release,
- };
-+
-+static void rbtree_debugfs_init(struct regmap *map)
-+{
-+	debugfs_create_file("rbtree", 0400, map->debugfs, map, &rbtree_fops);
-+}
-+#else
-+static void rbtree_debugfs_init(struct regmap *map)
-+{
-+}
- #endif
- 
- static int regcache_rbtree_init(struct regmap *map)
-@@ -194,7 +203,7 @@ static int regcache_rbtree_init(struct regmap *map)
- 			goto err;
- 	}
- 
--	debugfs_create_file("rbtree", 0400, map->debugfs, map, &rbtree_fops);
-+	rbtree_debugfs_init(map);
- 
- 	return 0;
- 
--- 
-1.7.7.3
-
+Will
