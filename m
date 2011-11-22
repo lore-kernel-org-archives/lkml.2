@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab1KVBFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:05:01 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58874 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752511Ab1KVBFA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:05:00 -0500
-X-Sasl-enc: bEH9zUVDX5Tb8ZrtMdY8ARrzzLNthQNppTEXSFwZ8Dor 1321923899
-Date: Mon, 21 Nov 2011 17:04:53 -0800
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] staging fixes for 3.2
-Message-ID: <20111122010453.GA25819@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754282Ab1KVBLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:11:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40993 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab1KVBLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 20:11:04 -0500
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Axel Lin <axel.lin@gmail.com>, stable <stable@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 2/7] pcie-gadget-spear: Add "platform:" prefix for platform modalias
+Date: Mon, 21 Nov 2011 17:10:29 -0800
+Message-Id: <1321924234-26258-2-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1321924234-26258-1-git-send-email-gregkh@suse.de>
+References: <20111122005836.GA25420@kroah.com>
+ <1321924234-26258-1-git-send-email-gregkh@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a few build fixes for the staging tree that need to get into
-the final 3.2 release as people keep hitting them.
+From: Axel Lin <axel.lin@gmail.com>
 
-Please pull from:
-	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ staging-linus
+Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+with "platform:"), the platform modalias is prefixed with "platform:".
 
-All patches have been in the -next releases for a while now.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Pratyush Anand <pratyush.anand@st.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/misc/spear13xx_pcie_gadget.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-thanks,
-
-greg k-h
-
---------------
-
- drivers/staging/et131x/Kconfig  |    3 ++-
- drivers/staging/et131x/et131x.c |   12 ++++++------
- drivers/staging/slicoss/Kconfig |    2 +-
- 3 files changed, 9 insertions(+), 8 deletions(-)
-
----------------
-
-Mark Einon (1):
-      linux-next: et131x: Fix build error when CONFIG_PM_SLEEP not enabled
-
-Randy Dunlap (3):
-      staging: slicoss depends on NET
-      staging: et131x depends on NET
-      staging: fix more ET131X build errors
+diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
+index cfbddbe..43d073b 100644
+--- a/drivers/misc/spear13xx_pcie_gadget.c
++++ b/drivers/misc/spear13xx_pcie_gadget.c
+@@ -903,6 +903,6 @@ static void __exit spear_pcie_gadget_exit(void)
+ }
+ module_exit(spear_pcie_gadget_exit);
+ 
+-MODULE_ALIAS("pcie-gadget-spear");
++MODULE_ALIAS("platform:pcie-gadget-spear");
+ MODULE_AUTHOR("Pratyush Anand");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.7.3
 
