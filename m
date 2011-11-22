@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab1KVT5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:57:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34533 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756160Ab1KVT5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:57:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="78918007"
-Date: Tue, 22 Nov 2011 11:57:14 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Aman Deep <amandeep3986@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] xHCI: Adding #define values used for hub descriptor
-Message-ID: <20111122195714.GA2815@xanatos>
-References: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
+	id S1756138Ab1KVUCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:02:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:52137 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab1KVUCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:02:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-dev@lists.linaro.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mike Turquette <mturquette@linaro.org>, linus.walleij@stericsson.com,
+        sboyd@quicinc.com, broonie@opensource.wolfsonmicro.com,
+        magnus.damm@gmail.com, linux-kernel@vger.kernel.org,
+        eric.miao@linaro.org, aul@pwsan.com, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        skannan@quicinc.com, linux@arm.linux.org.uk, arnd.bergmann@linaro.org,
+        linux-omap@vger.kernel.org, jeremy.kerr@canonical.com
+Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
+Date: Tue, 22 Nov 2011 21:02:08 +0100
+Message-ID: <9315670.oOZAWsuHPb@wuerfel>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <CACxGe6vK-vHvSbd9N2k3FZY4gGVS_DETx0BbfPgNghTkOncjpg@mail.gmail.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <CAPtuhTheG-mvoGMaB2y9BSKF-abm2yigoN-SXaeCb+P5R6t_Dg@mail.gmail.com> <CACxGe6vK-vHvSbd9N2k3FZY4gGVS_DETx0BbfPgNghTkOncjpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:wtuzTUcKwmpD+O0Ffh/Zz4/MAbumBvaRZ1eubgues/l
+ KVT5ojsQdPcahNK4XnEvSdOxE4f40Sxl8KNT2sYiPiYHaWh3Nc
+ 42ceZ0IbSuvI634sAiw3FI2IsfxNasGLAv9SRcJ7jCOAC8QU/j
+ L2jTftK65IQJAYodVQSfUrZIOvZ0EHimwg++iXsHOyUrrpg8Lr
+ E0zWkbNAPB3f6suFhn9e5hfSEQcP8+gMHykzbataFgAG8u+WBL
+ I2iK6wTPhBGCfBAql4n3xzZhCACYED+9GY3OiPZaz7GA15Zsiu
+ y/8XKKWdIk2AG1ANg4QzvOm2WZNTPCp/ddBa3oYxTA/p1t6Z5T
+ rqhkzm+7wILz3t1sPm7o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 07:33:36PM +0530, Aman Deep wrote:
-> xhci-hub used some numerical values for initialisation of root hub
-> descriptors. #define values are addded in usb 2.0 hub specification
-> file and these values are used for root hub characteristics
-> initialisation.
+On Tuesday 22 November 2011 12:19:51 Grant Likely wrote:
+> On Tue, Nov 22, 2011 at 11:01 AM, Mike Turquette <mturquette@linaro.org> wrote:
+>
+> > Others have requested to have knobs made available for actually
+> > performing clk_enable/clk_disable and even clk_set_rate from
+> > userspace.  I hate this idea and won't implement it.  I encourage
+> > anyone that needs this to do it in debugfs.
+> >
+> > Does that work-split make sense to you, or do you still not like the
+> > idea of having topology and read-only info in sysfs?
 > 
-> Also use some #defines in places where magic numbers are being used.
+> Unless there is a solid real-world use case for exporting this data to
+> userspace, I do not think sysfs is a good idea.  As long as the usage
+> (beyond debug) is theoretical I think the whole thing should be in
+> debugfs.  It can always be moved at a later date If a real use case
+> does become important.
 
-Looks fine to me for the xHCI changes.  I copied most of the hub
-descriptor code from EHCI, so it will need the same treatment.
+I would recomment not to spend any time on implementing a debugfs interface
+for this right now. As far as I can tell, nothing relies on exporting
+the structure to user space, so Mike's time is better spent on getting the
+other four patches merged.
 
-Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Note that the static topology information about clocks will already be
+visible in /proc/devicetree when that is enabled and the clocks are
+described in the .dts file.
 
-The #defines look a bit odd to me, like you're using spaces instead of
-tabs to separate the name and value, or your mail program is converting
-tabs to spaces.  Do the numbers line up for you?
-
-> Signed-off-by: Aman Deep <amandeep3986@gmail.com>
-> ---
->  drivers/usb/host/xhci-hub.c |   18 ++++++++----------
->  include/linux/usb/ch11.h    |   19 ++++++++++++++-----
->  2 files changed, 22 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-> index 430e88f..35e257f 100644
-> --- a/drivers/usb/host/xhci-hub.c
-> +++ b/drivers/usb/host/xhci-hub.c
-> @@ -57,17 +57,15 @@ static void xhci_common_hub_descriptor(struct xhci_hcd *xhci,
->  	desc->bHubContrCurrent = 0;
->  
->  	desc->bNbrPorts = ports;
-> -	/* Ugh, these should be #defines, FIXME */
-> -	/* Using table 11-13 in USB 2.0 spec. */
->  	temp = 0;
-> -	/* Bits 1:0 - support port power switching, or power always on */
-> +	/* Bits 1:0 - support per-port power switching, or power always on */
->  	if (HCC_PPC(xhci->hcc_params))
-> -		temp |= 0x0001;
-> +		temp |= HUB_CHAR_INDV_PORT_LPSM;
->  	else
-> -		temp |= 0x0002;
-> +		temp |= HUB_CHAR_NO_LPSM;
->  	/* Bit  2 - root hubs are not part of a compound device */
->  	/* Bits 4:3 - individual port over current protection */
-> -	temp |= 0x0008;
-> +	temp |= HUB_CHAR_INDV_PORT_OCPM;
->  	/* Bits 6:5 - no TTs in root ports */
->  	/* Bit  7 - no port indicators */
->  	desc->wHubCharacteristics = cpu_to_le16(temp);
-> @@ -86,9 +84,9 @@ static void xhci_usb2_hub_descriptor(struct usb_hcd *hcd, struct xhci_hcd *xhci,
->  	ports = xhci->num_usb2_ports;
->  
->  	xhci_common_hub_descriptor(xhci, desc, ports);
-> -	desc->bDescriptorType = 0x29;
-> +	desc->bDescriptorType = USB_DT_HUB;
->  	temp = 1 + (ports / 8);
-> -	desc->bDescLength = 7 + 2 * temp;
-> +	desc->bDescLength = USB_DT_HUB_NONVAR_SIZE + 2 * temp;
->  
->  	/* The Device Removable bits are reported on a byte granularity.
->  	 * If the port doesn't exist within that byte, the bit is set to 0.
-> @@ -137,8 +135,8 @@ static void xhci_usb3_hub_descriptor(struct usb_hcd *hcd, struct xhci_hcd *xhci,
->  
->  	ports = xhci->num_usb3_ports;
->  	xhci_common_hub_descriptor(xhci, desc, ports);
-> -	desc->bDescriptorType = 0x2a;
-> -	desc->bDescLength = 12;
-> +	desc->bDescriptorType = USB_DT_SS_HUB;
-> +	desc->bDescLength = USB_DT_SS_HUB_SIZE;
->  
->  	/* header decode latency should be zero for roothubs,
->  	 * see section 4.23.5.2.
-> diff --git a/include/linux/usb/ch11.h b/include/linux/usb/ch11.h
-> index 4ebaf08..537f354 100644
-> --- a/include/linux/usb/ch11.h
-> +++ b/include/linux/usb/ch11.h
-> @@ -165,11 +165,20 @@ struct usb_port_status {
->   * wHubCharacteristics (masks)
->   * See USB 2.0 spec Table 11-13, offset 3
->   */
-> -#define HUB_CHAR_LPSM		0x0003 /* D1 .. D0 */
-> -#define HUB_CHAR_COMPOUND	0x0004 /* D2       */
-> -#define HUB_CHAR_OCPM		0x0018 /* D4 .. D3 */
-> -#define HUB_CHAR_TTTT           0x0060 /* D6 .. D5 */
-> -#define HUB_CHAR_PORTIND        0x0080 /* D7       */
-> +#define HUB_CHAR_LPSM		0x0003 /* Logical Power Switching Mode mask */
-> +#define HUB_CHAR_COMMON_LPSM	0x0000 /* All ports power control at once */
-> +#define HUB_CHAR_INDV_PORT_LPSM	0x0001 /* per-port power control */
-> +#define HUB_CHAR_NO_LPSM	0x0002 /* no power switching */
-> +
-> +#define HUB_CHAR_COMPOUND	0x0004 /* hub is part of a compound device */
-> +
-> +#define HUB_CHAR_OCPM		0x0018 /* Over-Current Protection Mode mask */
-> +#define HUB_CHAR_COMMON_OCPM	0x0000 /* All ports Over-Current reporting */
-> +#define HUB_CHAR_INDV_PORT_OCPM	0x0008 /* per-port Over-current reporting */
-> +#define HUB_CHAR_NO_OCPM	0x0010 /* No Over-current Protection support */
-> +
-> +#define HUB_CHAR_TTTT           0x0060 /* TT Think Time mask */
-> +#define HUB_CHAR_PORTIND        0x0080 /* per-port indicators (LEDs) */
->  
->  struct usb_hub_status {
->  	__le16 wHubStatus;
-> -- 
-> 1.7.6
-> 
+	Arnd
