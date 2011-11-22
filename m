@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab1KVA7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:59:41 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49950 "EHLO
+	id S1757649Ab1KVA7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:59:53 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60306 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756921Ab1KVA7i (ORCPT
+	by vger.kernel.org with ESMTP id S1757588Ab1KVA7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:59:38 -0500
-X-Sasl-enc: QiOYp2XXkvcJnKsbihHTP62LyrFr40lxlGBn/ko4YKqC 1321923577
-Date: Mon, 21 Nov 2011 16:59:17 -0800
+	Mon, 21 Nov 2011 19:59:40 -0500
+X-Sasl-enc: MUNJn9gFdTTZTe6v8AbYZnfeSKMBMFF1hS4BbpKIdxZM 1321923579
+Date: Mon, 21 Nov 2011 16:59:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/serial driver fixes for 3.2
-Message-ID: <20111122005917.GD25420@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.2
+Message-ID: <20111122005924.GE25420@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,18 +23,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some tty/serial driver fixes for your 3.2 tree.
+Here are a number of USB fixes and new device ids for the 3.2 tree.
 
-Not many patches here, just an assortment of fixes and a few new devices
-supported, full details are in the shortlog below.
+All pretty minor, full details are in the shortlog below.
 
 Please pull from:
-	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git tty-linus
+	git.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-linus
 
-All of these patches have been in the -mm and -next trees for a while.
+All have been in the -next releases for a while now.
 
-Patches will be sent to the linux-serial mailing list, if anyone wants
-to see them.
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
 
 thanks,
 
@@ -42,46 +41,153 @@ greg k-h
 
 ------------
 
- Documentation/serial/serial-rs485.txt |   14 +++++++++++---
- MAINTAINERS                           |    2 +-
- drivers/tty/hvc/hvc_dcc.c             |    2 ++
- drivers/tty/serial/Kconfig            |   14 +++++++-------
- drivers/tty/serial/atmel_serial.c     |   16 +++-------------
- drivers/tty/serial/crisv10.c          |   10 ++--------
- drivers/tty/serial/mfd.c              |    4 +---
- drivers/tty/serial/pch_uart.c         |   19 ++++++++++++++-----
- drivers/tty/tty_ldisc.c               |   30 +++++++++++++++++++++++-------
- include/linux/serial.h                |   14 ++++++++------
- 10 files changed, 72 insertions(+), 53 deletions(-)
+ drivers/usb/class/cdc-acm.c            |    8 +-
+ drivers/usb/core/hub.c                 |    6 ++
+ drivers/usb/core/quirks.c              |   27 ++++++
+ drivers/usb/dwc3/gadget.c              |    1 +
+ drivers/usb/gadget/Kconfig             |    9 +-
+ drivers/usb/gadget/ci13xxx_msm.c       |    2 +
+ drivers/usb/gadget/ci13xxx_udc.c       |   21 +++--
+ drivers/usb/gadget/f_mass_storage.c    |    6 +-
+ drivers/usb/gadget/f_midi.c            |  138 +++++++++++++++-----------------
+ drivers/usb/gadget/file_storage.c      |    4 +-
+ drivers/usb/gadget/fsl_udc_core.c      |    3 +-
+ drivers/usb/gadget/inode.c             |    5 +-
+ drivers/usb/gadget/pch_udc.c           |   10 ++-
+ drivers/usb/gadget/r8a66597-udc.c      |   30 +++-----
+ drivers/usb/gadget/udc-core.c          |   10 +-
+ drivers/usb/host/ehci-sched.c          |   15 +++-
+ drivers/usb/host/ehci-xls.c            |    2 +-
+ drivers/usb/host/ohci-at91.c           |    6 ++
+ drivers/usb/host/ohci-hcd.c            |   15 ++--
+ drivers/usb/host/ohci-pci.c            |   26 ------
+ drivers/usb/host/ohci.h                |    1 -
+ drivers/usb/host/pci-quirks.c          |   57 ++++++--------
+ drivers/usb/host/xhci-mem.c            |    5 -
+ drivers/usb/host/xhci-ring.c           |   13 ++--
+ drivers/usb/host/xhci.c                |   34 ++++----
+ drivers/usb/musb/Kconfig               |    3 +-
+ drivers/usb/musb/am35x.c               |    1 +
+ drivers/usb/musb/da8xx.c               |    1 +
+ drivers/usb/musb/musb_core.c           |    3 +-
+ drivers/usb/musb/musb_gadget.c         |    4 -
+ drivers/usb/renesas_usbhs/common.c     |    2 +-
+ drivers/usb/renesas_usbhs/fifo.c       |    4 +-
+ drivers/usb/renesas_usbhs/mod.h        |    8 +-
+ drivers/usb/renesas_usbhs/mod_gadget.c |    4 +-
+ drivers/usb/renesas_usbhs/mod_host.c   |   63 +++++++++------
+ drivers/usb/serial/ark3116.c           |   10 +-
+ drivers/usb/serial/ftdi_sio.c          |   14 +++-
+ drivers/usb/serial/option.c            |   28 +++++++
+ drivers/usb/serial/pl2303.c            |    1 -
+ drivers/usb/serial/pl2303.h            |    4 -
+ drivers/usb/storage/ene_ub6250.c       |    3 +-
+ drivers/usb/storage/protocol.c         |    7 +-
+ 42 files changed, 332 insertions(+), 282 deletions(-)
 
 ---------------
 
-Alan Cox (1):
-      serial,mfd: Fix CMSPAR setup
+Alan Stern (4):
+      USB: workaround for bug in old version of GCC
+      USB: XHCI: resume root hubs when the controller resumes
+      usb-storage: Accept 8020i-protocol commands longer than 12 bytes
+      OHCI: final fix for NVIDIA problems (I hope)
 
-Claudio Scordino (1):
-      RS485: fix inconsistencies in the meaning of some variables
+Alexander Aring (1):
+      usb: gadget: fsl_udc_core: fix compile error.
 
-Doug Anderson (1):
-      tty/serial: Prevent drop of DCD on suspend for Tegra UARTs
+Andrew Worsley (1):
+      USB: Fix Corruption issue in USB ftdi driver ftdi_sio.c
 
-Greg Kroah-Hartman (1):
-      Revert "tty/serial: Prevent drop of DCD on suspend for Tegra UARTs"
+Bart Hartgers (1):
+      USB: ark3116 initialisation fix
 
-Jiri Slaby (3):
-      TTY: ldisc, allow waiting for ldisc arbitrarily long
-      TTY: ldisc, move wait idle to caller
-      TTY: ldisc, wait for ldisc infinitely in hangup
+Daniel Mack (1):
+      usb: gadget: fix MIDI gadget jack allocation
 
-Lucas Kannebley Tavares (1):
-      jsm: Change maintainership
+Don Zickus (2):
+      usb, xhci: fix lockdep warning on endpoint timeout
+      usb, xhci: Clear warm reset change event during init
 
-Stephen Boyd (1):
-      tty: hvc_dcc: Fix duplicate character inputs
+Felipe Balbi (6):
+      usb: gadget: udc-core: fix bug on soft_connect and srp interfaces
+      usb: musb: gadget: don't call ->disconnect() on exit
+      usb: gadget: core: fix bug when removing gadget drivers
+      usb: gadget: core: allow everybody to read sysfs attributes
+      usb: musb: fix compilation breakage introduced by de47725
+      USB: storage: ene_ub6250: fix compile warnings
 
-Tomoya MORINAGA (4):
-      pch_uart: Fix hw-flow control issue
-      pch_uart: Support new device LAPIS Semiconductor ML7831 IOH
-      pch_uart: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
-      pch_uart: Fix DMA resource leak issue
+Ferenc Wagner (1):
+      USB: option: add PID of Huawei E173s 3G modem
+
+Havard Skinnemoen (1):
+      USB: cdc-acm: Fix disconnect() vs close() race
+
+Jayachandran C (1):
+      usb: Netlogic: Fix HC_LENGTH call in ehci-xls.c
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      USB: at91: at91-ohci: fix set/get power
+
+Josh Boyer (1):
+      USB: add quirk for Logitech C600 web cam
+
+Kuninori Morimoto (6):
+      usb: gadget: renesas_usbhs: fixup struct completion usage
+      usb: gadget: renesas_usbhs: fixup bogus conversion
+      usb: gadget: renesas_usbhs: fixup section mismatch warning
+      usb: gadget: renesas_usbhs: bugfix: care pipe direction
+      usb: gadget: renesas_usbhs: bugfix: disable irq when device stop
+      usb: gadget: renesas_usbhs: bugfix: set DATA0 when usbhsh_endpoint_alloc()
+
+Luciano Coelho (1):
+      usb: musb: hdrc: fix dependency on USB_GADGET_DUALSPEED in Kconfig
+
+Marc Kleine-Budde (4):
+      USB: gadgetfs: gadgetfs_disconnect: fix inconsistent lock state
+      USB: ci13xxx_udc: fix deadlock during rmmod
+      USB: ci13xxx_udc: fix debug trace code
+      USB: ci13xxx_msm: add module license
+
+Mian Yousaf Kaukab (1):
+      usb: musb: remove incorrectly added ARCH_U5500 define
+
+Michael Grzeschik (1):
+      USB: ci13xxx_udc: fix logic to mark request dma addresses as invalid
+
+Paul Zimmerman (2):
+      usb: gadget: storage: check for valid USB_BULK_GET_MAX_LUN_REQUEST
+      usb: gadget: storage: check for valid USB_BULK_RESET_REQUEST wLength
+
+Sarah Sharp (1):
+      xhci: Set slot and ep0 flags for address command.
+
+Sebastian Andrzej Siewior (1):
+      usb: dwc3: gadget: initialize max_streams
+
+Shaohui Xie (1):
+      powerpc/usb: fix type cast for address of ioremap to compatible with 64-bit
+
+Thomas Poussevin (1):
+      USB: EHCI: fix HUB TT scheduling issue with iso transfer
+
+Tomoya MORINAGA (2):
+      USB: pch_udc: Support new device LAPIS Semiconductor ML7831 IOH
+      USB: pch_udc: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
+
+VU Tuan Duc (1):
+      USB: option: add id for 3G dongle Model VT1000 of Viettel
+
+Yoshihiro Shimoda (2):
+      usb: gadget: r8a66597-udc: fix for udc-newstyle
+      usb: gadget: r8a66597-udc: fix flush fifo handling
+
+sordna (1):
+      USB: quirks: adding more quirky webcams to avoid squeaky audio
+
+wangyanqing (1):
+      USB: serial: pl2303: rm duplicate id
+
+zheng.zhijian@zte.com.cn (1):
+      USB: option: release new PID for ZTE 3G modem
 
