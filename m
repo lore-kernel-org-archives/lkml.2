@@ -1,108 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab1KVSPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:15:40 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42968 "EHLO
+	id S1755902Ab1KVSRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:17:10 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43636 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab1KVSO5 (ORCPT
+	with ESMTP id S1752755Ab1KVSRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:14:57 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: ralf@linux-mips.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, DM <dm.n9107@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH v2 2/2] hugetlb: Replace BUG() with BUILD_BUG() for dummy definitions.
-Date: Tue, 22 Nov 2011 10:14:46 -0800
-Message-Id: <1321985686-798-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1321985686-798-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1321985686-798-1-git-send-email-ddaney.cavm@gmail.com>
+	Tue, 22 Nov 2011 13:17:08 -0500
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1 v5] arm: fault.c: Port OOM changes into do_page_fault
+Date: Tue, 22 Nov 2011 13:16:19 -0500
+Message-Id: <1321985779-5810-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+From: Kautuk <kautuk@ubuntu.(none)>
 
-The file linux/hugetlb.h has many places where dummy symbols were
-defined so that the main source code would contain fewer:
+Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+(mm: retry page fault when blocking on disk transfer) and
+commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+(x86,mm: make pagefault killable)
 
-    #ifdef CONFIG_HUGETLBFS
+The above commits introduced changes into the x86 pagefault handler
+for making the page fault handler retryable as well as killable.
 
-or
+These changes reduce the mmap_sem hold time, which is crucial
+during OOM killer invocation.
 
-    #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+Port these changes to ARM.
 
-If there were any misuse of these symbols, the only symptom would be
-an OOPS at runtime.  Change the BUG() to BUILD_BUG() to catch
-any such abuse at compile time instead.
+Without these changes, my ARM board encounters many hang and livelock
+scenarios.
+After applying this patch, OOM feature performance improves according to
+my testing.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Kautuk <kautuk@ubuntu.(none)>
 ---
- include/linux/huge_mm.h |    8 ++++----
- include/linux/hugetlb.h |   14 +++++++-------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ arch/arm/mm/fault.c |   58 ++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 39 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index a9ace9c..33e47d8 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -145,10 +145,10 @@ static inline struct page *compound_trans_head(struct page *page)
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index aa33949..4aabeae 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
+ 
+ static int __kprobes
+ __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
+-		struct task_struct *tsk)
++		unsigned int flags, struct task_struct *tsk)
+ {
+ 	struct vm_area_struct *vma;
+ 	int fault;
+@@ -253,18 +253,7 @@ good_area:
+ 		goto out;
  	}
- 	return page;
- }
--#else /* CONFIG_TRANSPARENT_HUGEPAGE */
--#define HPAGE_PMD_SHIFT ({ BUG(); 0; })
--#define HPAGE_PMD_MASK ({ BUG(); 0; })
--#define HPAGE_PMD_SIZE ({ BUG(); 0; })
-+#else /* !CONFIG_TRANSPARENT_HUGEPAGE */
-+#define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
-+#define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
-+#define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
  
- #define hpage_nr_pages(x) 1
+-	/*
+-	 * If for any reason at all we couldn't handle the fault, make
+-	 * sure we exit gracefully rather than endlessly redo the fault.
+-	 */
+-	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
+-	if (unlikely(fault & VM_FAULT_ERROR))
+-		return fault;
+-	if (fault & VM_FAULT_MAJOR)
+-		tsk->maj_flt++;
+-	else
+-		tsk->min_flt++;
+-	return fault;
++	return handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
  
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index d9d6c86..1289937 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -85,11 +85,11 @@ static inline unsigned long hugetlb_total_pages(void)
- 	return 0;
- }
+ check_stack:
+ 	if (vma->vm_flags & VM_GROWSDOWN && !expand_stack(vma, addr))
+@@ -279,6 +268,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 	struct task_struct *tsk;
+ 	struct mm_struct *mm;
+ 	int fault, sig, code;
++	int write = fsr & FSR_WRITE;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++				(write ? FAULT_FLAG_WRITE : 0);
  
--#define follow_hugetlb_page(m,v,p,vs,a,b,i,w)	({ BUG(); 0; })
-+#define follow_hugetlb_page(m,v,p,vs,a,b,i,w)	({ BUILD_BUG(); 0; })
- #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
--#define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
--#define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
--#define unmap_hugepage_range(vma, start, end, page)	BUG()
-+#define copy_hugetlb_page_range(src, dst, vma)	({ BUILD_BUG(); 0; })
-+#define hugetlb_prefault(mapping, vma)		({ BUILD_BUG(); 0; })
-+#define unmap_hugepage_range(vma, start, end, page)	BUILD_BUG()
- static inline void hugetlb_report_meminfo(struct seq_file *m)
- {
- }
-@@ -100,8 +100,8 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
- #define pmd_huge(x)	0
- #define pud_huge(x)	0
- #define is_hugepage_only_range(mm, addr, len)	0
--#define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
--#define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
-+#define hugetlb_free_pgd_range(tlb, addr, end, f, c) ({BUILD_BUG(); 0; })
-+#define hugetlb_fault(mm, vma, addr, flags)	({ BUILD_BUG(); 0; })
- #define huge_pte_offset(mm, address)	0
- #define dequeue_hwpoisoned_huge_page(page)	0
- static inline void copy_huge_page(struct page *dst, struct page *src)
-@@ -186,7 +186,7 @@ static inline void set_file_hugepages(struct file *file)
- #else /* !CONFIG_HUGETLBFS */
+ 	if (notify_page_fault(regs, fsr))
+ 		return 0;
+@@ -305,6 +297,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 	if (!down_read_trylock(&mm->mmap_sem)) {
+ 		if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
+ 			goto no_context;
++retry:
+ 		down_read(&mm->mmap_sem);
+ 	} else {
+ 		/*
+@@ -320,14 +313,41 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ #endif
+ 	}
  
- #define is_file_hugepages(file)			0
--#define set_file_hugepages(file)		BUG()
-+#define set_file_hugepages(file)		BUILD_BUG()
- static inline struct file *hugetlb_file_setup(const char *name, size_t size,
- 		vm_flags_t acctflag, struct user_struct **user, int creat_flags)
- {
+-	fault = __do_page_fault(mm, addr, fsr, tsk);
+-	up_read(&mm->mmap_sem);
++	fault = __do_page_fault(mm, addr, fsr, flags, tsk);
++
++	/* If we need to retry but a fatal signal is pending, handle the
++	 * signal first. We do not need to release the mmap_sem because
++	 * it would already be released in __lock_page_or_retry in
++	 * mm/filemap.c. */
++	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
++		return 0;
++
++	/*
++	 * Major/minor page fault accounting is only done on the
++	 * initial attempt. If we go through a retry, it is extremely
++	 * likely that the page will be found in page cache at that point.
++	 */
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+-	if (fault & VM_FAULT_MAJOR)
+-		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
+-	else if (fault & VM_FAULT_MINOR)
+-		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
++	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++		if (fault & VM_FAULT_MAJOR) {
++			tsk->maj_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
++					regs, addr);
++		} else {
++			tsk->min_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
++					regs, addr);
++		}
++		if (fault & VM_FAULT_RETRY) {
++			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
++			* of starvation. */
++			flags &= ~FAULT_FLAG_ALLOW_RETRY;
++			goto retry;
++		}
++	}
++
++	up_read(&mm->mmap_sem);
+ 
+ 	/*
+ 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
 -- 
-1.7.2.3
+1.7.5.4
 
