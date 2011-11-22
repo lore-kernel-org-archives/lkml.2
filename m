@@ -1,112 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1KVHwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 02:52:05 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:48325 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab1KVHwD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 02:52:03 -0500
-Date: Tue, 22 Nov 2011 08:51:59 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Christian Kujau <lists@nerdbynature.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111122075159.GA1675@x4.trippels.de>
-References: <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121173556.GA1673@x4.trippels.de>
- <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121185215.GA1673@x4.trippels.de>
- <20111121195113.GA1678@x4.trippels.de>
- <1321907275.13860.12.camel@pasglop>
- <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
- <alpine.DEB.2.00.1111212105330.19606@router.home>
- <1321948113.27077.24.camel@edumazet-laptop>
+	id S1755468Ab1KVHyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 02:54:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152Ab1KVHyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 02:54:38 -0500
+Date: Tue, 22 Nov 2011 08:56:41 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: linux-next: build warning after merge of the wireless-next tree
+Message-ID: <20111122075640.GB2199@redhat.com>
+References: <20111122142502.ca68d0a1640b2a8480d51ad2@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1321948113.27077.24.camel@edumazet-laptop>
+In-Reply-To: <20111122142502.ca68d0a1640b2a8480d51ad2@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.22 at 08:48 +0100, Eric Dumazet wrote:
-> Le lundi 21 novembre 2011 à 21:18 -0600, Christoph Lameter a écrit :
+On Tue, Nov 22, 2011 at 02:25:02PM +1100, Stephen Rothwell wrote:
+> After merging the wireless-next tree, today's linux-next build
+> (x86_64_allmodconfig) produced this warning:
 > 
-> > Hmmm... That means that c->page points to page not frozen. Per cpu
-> > partial pages are frozen until they are reused or until the partial list
-> > is flushed.
-> > 
-> > Does this ever happen on x86 or only on other platforms? In put_cpu_partial() the
-> > this_cpu_cmpxchg really needs really to be irq safe. this_cpu_cmpxchg is
-> > only preempt safe.
-> > 
-> > Index: linux-2.6/mm/slub.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/slub.c	2011-11-21 21:15:41.575673204 -0600
-> > +++ linux-2.6/mm/slub.c	2011-11-21 21:16:33.442336849 -0600
-> > @@ -1969,7 +1969,7 @@
-> >  		page->pobjects = pobjects;
-> >  		page->next = oldpage;
-> > 
-> > -	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
-> > +	} while (irqsafe_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
-> >  	stat(s, CPU_PARTIAL_FREE);
-> >  	return pobjects;
-> >  }
-> > 
+> drivers/net/wireless/iwlegacy/debug.c:1395:1: warning: data definition has no type or storage class [enabled by default]
+> drivers/net/wireless/iwlegacy/debug.c:1395:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+> drivers/net/wireless/iwlegacy/debug.c:1395:1: warning: parameter names (without types) in function declaration [enabled by default]
+> drivers/net/wireless/iwlegacy/debug.c:1410:1: warning: data definition has no type or storage class [enabled by default]
+> drivers/net/wireless/iwlegacy/debug.c:1410:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+> drivers/net/wireless/iwlegacy/debug.c:1410:1: warning: parameter names (without types) in function declaration [enabled by default]
 > 
-> For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
-> machines.
-> 
-> this_cpu_cmpxchg16b_emu() claims to be IRQ safe, but may be buggy...
-> 
-> Could we have somewhere a NMI handler calling kmalloc() ?
-> 
-> Please Markus send us :
-> 
-> cat /proc/cpuinfo
- processor       : 0
- vendor_id       : AuthenticAMD
- cpu family      : 16
- model           : 4
- model name      : AMD Phenom(tm) II X4 955 Processor
- stepping        : 2
- microcode       : 0x10000c6
- cpu MHz         : 800.000
- cache size      : 512 KB
- physical id     : 0
- siblings        : 4
- core id         : 0
- cpu cores       : 4
- apicid          : 0
- initial apicid  : 0
- fpu             : yes
- fpu_exception   : yes
- cpuid level     : 5
- wp              : yes
- flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
- mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext
- fxsr_opt pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl
- nonstop_tsc extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm
- extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit
- wdt npt lbrv svm_lock nrip_save
- bogomips        : 6420.59
- TLB size        : 1024 4K pages
- clflush size    : 64
- cache_alignment : 64
- address sizes   : 48 bits physical, 48 bits virtual
- power management: ts ttp tm stc 100mhzsteps hwpstate
-(*4)
+> This indicates that this file needs to include export.h.
 
--- 
-Markus
+I think adding export.h to debug.c should be part of current
+wireless-next manual merge (debug.c include old iwl-debugfs.c,
+which was modified with export.h). If not, I'm posting patch
+with fix in the following email.
+
+Thanks
+Stanislaw
