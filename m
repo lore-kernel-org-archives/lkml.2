@@ -1,37 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab1KVVvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:51:53 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52735 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab1KVVvw (ORCPT
+	id S1758681Ab1KVV4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:56:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36506 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab1KVV4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:51:52 -0500
-Date: Tue, 22 Nov 2011 13:51:48 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [RFC, PATCH] slub: unfreeze_partials() uses a wrong param
-In-Reply-To: <alpine.DEB.2.00.1111220948240.25785@router.home>
-Message-ID: <alpine.DEB.2.00.1111221351030.2621@chino.kir.corp.google.com>
-References: <1321976189.2474.35.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.00.1111220948240.25785@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 Nov 2011 16:56:11 -0500
+Date: Tue, 22 Nov 2011 13:56:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH v2 1/3] mm: more intensive memory corruption debug
+Message-Id: <20111122135608.42686f14.akpm@linux-foundation.org>
+In-Reply-To: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
+References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Nov 2011, Christoph Lameter wrote:
+On Fri, 18 Nov 2011 17:25:05 +0100
+Stanislaw Gruszka <sgruszka@redhat.com> wrote:
 
-> > unfreeze_partials() calls add_partial(..., 1) while it should use
-> > DEACTIVATE_TO_TAIL or DEACTIVATE_TO_HEAD
+> With CONFIG_DEBUG_PAGEALLOC configured, cpu will generate exception on
+> access (read,write) to not allocated page, what allow to catch code
+> which corrupt memory. However kernel is trying to maximalise memory
+> usage, hence there is usually not much free pages in the system and
+> buggy code usually corrupt some crucial data.
 > 
-> Something like that must already be pending in Pekka's tree. I have seen
-> this patch a couple of times before.
+> This patch change buddy allocator to keep more free/protected pages
+> and interlace free/protected and allocated pages to increase probability
+> of catch a corruption.
+> 
+> When kernel is compiled with CONFIG_DEBUG_PAGEALLOC,
+> debug_guardpage_minorder defines the minimum order used by the page
+> allocator to grant a request. The requested size will be returned with
+> the remaining pages used as guard pages.
+> 
 
-Yeah, it's "slub: use correct parameter to add a page to partial list 
-tail" in slab/urgent.
+I added this:
+
+  The default value of debug_guardpage_minorder is zero: no change
+  from current behaviour.
+
+correct?
+
+>
+> ...
+>
+> +static int __init debug_guardpage_minorder_setup(char *buf)
+> +{
+> +	unsigned long res;
+> +
+> +	if (kstrtoul(buf, 10, &res) < 0 ||  res > MAX_ORDER / 2) {
+> +		printk(KERN_ERR "Bad debug_guardpage_minorder value\n");
+> +		return 0;
+> +	}
+> +	_debug_guardpage_minorder = res;
+> +	printk(KERN_INFO "Setting debug_guardpage_minorder to %lu\n", res);
+> +	return 0;
+> +}
+> +__setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
+> +
+> +static inline void set_page_guard_flg(struct page *page)
+
+"flag" not "flg", please ;)
+
+> +{
+> +	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +}
+> +
+> +static inline void clear_page_guard_flg(struct page *page)
+> +{
+> +	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +}
+
+Why is it safe to use the non-atomic bitops here.
+
+Please verify that CONFIG_WANT_PAGE_DEBUG_FLAGS is always reliably
+enabled when this feature is turned on.
+
+>
+> ...
+>
+
+
+Some changes I made - please review.
+
+
+ Documentation/kernel-parameters.txt |   31 +++++++++++++-------------
+ mm/page_alloc.c                     |   12 +++++-----
+ 2 files changed, 22 insertions(+), 21 deletions(-)
+
+diff -puN Documentation/kernel-parameters.txt~mm-more-intensive-memory-corruption-debug-fix Documentation/kernel-parameters.txt
+--- a/Documentation/kernel-parameters.txt~mm-more-intensive-memory-corruption-debug-fix
++++ a/Documentation/kernel-parameters.txt
+@@ -625,21 +625,22 @@ bytes respectively. Such letter suffixes
+ 
+ 	debug_guardpage_minorder=
+ 			[KNL] When CONFIG_DEBUG_PAGEALLOC is set, this
+-			parameter allows control order of pages that will be
+-			intentionally kept free (and hence protected) by buddy
+-			allocator. Bigger value increase probability of
+-			catching random memory corruption, but reduce amount
+-			of memory for normal system use. Maximum possible
+-			value is MAX_ORDER/2. Setting this parameter to 1 or 2,
+-			should be enough to identify most random memory
+-			corruption problems caused by bugs in kernel/drivers
+-			code when CPU write to (or read from) random memory
+-			location. Note that there exist class of memory
+-			corruptions problems caused by buggy H/W or F/W or by
+-			drivers badly programing DMA (basically when memory is
+-			written at bus level and CPU MMU is bypassed), which
+-			are not detectable by CONFIG_DEBUG_PAGEALLOC, hence this
+-			option would not help tracking down these problems too.
++			parameter allows control of the order of pages that will
++			be intentionally kept free (and hence protected) by the
++			buddy allocator. Bigger value increase the probability
++			of catching random memory corruption, but reduce the
++			amount of memory for normal system use. The maximum
++			possible value is MAX_ORDER/2.  Setting this parameter
++			to 1 or 2 should be enough to identify most random
++			memory corruption problems caused by bugs in kernel or
++			driver code when a CPU writes to (or reads from) a
++			random memory location. Note that there exists a class
++			of memory corruptions problems caused by buggy H/W or
++			F/W or by drivers badly programing DMA (basically when
++			memory is written at bus level and the CPU MMU is
++			bypassed) which are not detectable by
++			CONFIG_DEBUG_PAGEALLOC, hence this option will not help
++			tracking down these problems.
+ 
+ 	debugpat	[X86] Enable PAT debugging
+ 
+diff -puN mm/page_alloc.c~mm-more-intensive-memory-corruption-debug-fix mm/page_alloc.c
+--- a/mm/page_alloc.c~mm-more-intensive-memory-corruption-debug-fix
++++ a/mm/page_alloc.c
+@@ -441,18 +441,18 @@ static int __init debug_guardpage_minord
+ }
+ __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
+ 
+-static inline void set_page_guard_flg(struct page *page)
++static inline void set_page_guard_flag(struct page *page)
+ {
+ 	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+ }
+ 
+-static inline void clear_page_guard_flg(struct page *page)
++static inline void clear_page_guard_flag(struct page *page)
+ {
+ 	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+ }
+ #else
+-static inline void set_page_guard_flg(struct page *page) { }
+-static inline void clear_page_guard_flg(struct page *page) { }
++static inline void set_page_guard_flag(struct page *page) { }
++static inline void clear_page_guard_flag(struct page *page) { }
+ #endif
+ 
+ static inline void set_page_order(struct page *page, int order)
+@@ -578,7 +578,7 @@ static inline void __free_one_page(struc
+ 		 * merge with it and move up one order.
+ 		 */
+ 		if (page_is_guard(buddy)) {
+-			clear_page_guard_flg(buddy);
++			clear_page_guard_flag(buddy);
+ 			set_page_private(page, 0);
+ 			__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 		} else {
+@@ -821,7 +821,7 @@ static inline void expand(struct zone *z
+ 			 * pages will stay not present in virtual address space
+ 			 */
+ 			INIT_LIST_HEAD(&page[size].lru);
+-			set_page_guard_flg(&page[size]);
++			set_page_guard_flag(&page[size]);
+ 			set_page_private(&page[size], high);
+ 			/* Guard pages are not available for any usage */
+ 			__mod_zone_page_state(zone, NR_FREE_PAGES, -(1 << high));
+_
+
