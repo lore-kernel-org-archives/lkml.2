@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab1KVMBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 07:01:24 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5798 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab1KVMBX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 07:01:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 22 Nov 2011 04:00:36 -0800
-From: Oleg Strikov <OSTRIKOV@nvidia.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, "mingo@elte.hu" <mingo@elte.hu>,
-        William Cohen <wcohen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Cree <mcree@orcon.net.nz>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>
-Date: Tue, 22 Nov 2011 13:00:33 +0100
-Subject: RE: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-Thread-Topic: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
-Thread-Index: AcypDUzuyFJX1gn6RuyZhKuLfdhNwQAAKoGQ
-Message-ID: <68B2676CBD57C643A577008EC1419ED15046778919@DEMAIL01.nvidia.com>
-References: <20111121145114.049265181@chello.nl>
- <20111121145337.533322271@chello.nl>
- <20111121172323.GH20611@mudshark.cambridge.arm.com>
- <1321903090.28118.21.camel@twins>
- <20111121203145.GA7301@mudshark.cambridge.arm.com>
- <1321907755.28118.30.camel@twins>
- <20111121224343.GA7862@mudshark.cambridge.arm.com>
- <1321961180.5148.31.camel@twins>
- <20111122114700.GJ20518@mudshark.cambridge.arm.com>
- <68B2676CBD57C643A577008EC1419ED1504663E239@DEMAIL01.nvidia.com>
- <20111122115221.GL20518@mudshark.cambridge.arm.com>
-In-Reply-To: <20111122115221.GL20518@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1753134Ab1KVMCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 07:02:50 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:63283 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387Ab1KVMCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 07:02:49 -0500
+Date: Tue, 22 Nov 2011 12:56:32 +0100
+From: Alessandro Rubini <rubini@unipv.it>
+To: dave.martin@linaro.org
+Cc: linux@arm.linux.org.uk, patches@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        a.zummo@towertech.it, alsa-devel@alsa-project.org, cjb@laptop.org,
+        dan.j.williams@intel.com, dmitry.torokhov@gmail.com,
+        grant.likely@secretlab.ca, perex@perex.cz, jassisinghbrar@gmail.com,
+        julia@diku.dk, linus.walleij@linaro.org, linux-fbdev@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        lethal@linux-sh.org, Pawel.Moll@arm.com, rtc-linux@googlegroups.com,
+        spi-devel-general@lists.sourceforge.net, tiwai@suse.de,
+        vinod.koul@intel.com, wim@iguana.be
+Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
+ AMBA drivers
+Message-ID: <20111122115632.GA5165@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <1321961573-4562-1-git-send-email-dave.martin@linaro.org>
+References: <1321961573-4562-1-git-send-email-dave.martin@linaro.org> 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also, please do not forget that enabling the userspace access to the counters may not only create some problems
-to the profilers like Perf/OProfile but could also trash the kernel with the interrupts.
+> I have Acks on some of the driver patches and no comments on the
+> rest.  I've been circulating these for some time, so if you're
+> happy to pull those driver patches via your tree, please go ahead.
 
-The PerfEvents subsystem enables the interrupts for the counters overflows.
-If the userspace application can change the counter value the right way -- it could generate a lot of interrupts per second.
+Sure I have no problem with the nomadik-rng.c, (so please have my
+Acked-by: -- sorry for not noting it earlier) but I think this
+file2alias thing needs a serious rework to split each bus in a
+different file, using ELF sections like we do elsewhere.
 
-Oleg
+I posted a patch last week but I got no comment at all. Maybe this
+is the time to ask for comments? I can rebase and repost if needed.
 
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com] 
-Sent: Tuesday, November 22, 2011 3:52 PM
-To: Oleg Strikov
-Cc: Peter Zijlstra; mingo@elte.hu; William Cohen; linux-kernel@vger.kernel.org; Michael Cree; Deng-Cheng Zhu; Anton Blanchard; Eric B Munson; Heiko Carstens; Paul Mundt; David S. Miller; Richard Kuo; Stephane Eranian; Arun Sharma; Vince Weaver
-Subject: Re: [RFC][PATCH 2/6] perf, arch: Rework perf_event_index()
+  lkml.org/lkml/2011/11/4/125 (0/2: description of the work)
+  lkml.org/lkml/2011/11/4/126 (1/2: turn the if plethora to table lookup)
+  lkml.org/lkml/2011/11/4/127 (2/2: partial split to type-specific files).
 
-On Tue, Nov 22, 2011 at 11:49:41AM +0000, Oleg Strikov wrote:
-> > The user-readable clock will first appear in Cortex-A15, so the code for that still needs to hit mainline before I can look at doing this in perf.
-> 
-> This could be very useful. I think that the cycles counter covers the 90% of all the in-app profiler needs.
-
-Well, it's slightly different to the cycle counter in that it will continue to count when the core is idle. The PMU cycle counter may stop when you issue a WFI. The frequency of the clock is also unlikely to be the same as the CPU clock.
-
-Will
+thanks
+/alessandro
