@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455Ab1KVVE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:04:29 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55745 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957Ab1KVVE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:04:28 -0500
-Subject: Re: [PATCH v3 3/3] mtd/nand : workaround for Freescale FCM to
- support large-page Nand chip
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: b35362@freescale.com
-Cc: dwmw2@infradead.org, Artem.Bityutskiy@nokia.com,
-        linux-mtd@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        leoli@freescale.com, scottwood@freescale.com,
-        Liu Shuo <Shuo.Liu@freescale.com>,
-        Shengzhou Liu <Shengzhou.Liu@freescale.com>
-Date: Tue, 22 Nov 2011 23:04:18 +0200
-In-Reply-To: <1321349355-1639-3-git-send-email-b35362@freescale.com>
-References: <1321349355-1639-1-git-send-email-b35362@freescale.com>
-	 <1321349355-1639-2-git-send-email-b35362@freescale.com>
-	 <1321349355-1639-3-git-send-email-b35362@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1321995862.2222.2.camel@koala>
-Mime-Version: 1.0
+	id S1758589Ab1KVVEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:04:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55648 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758545Ab1KVVEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 16:04:39 -0500
+Date: Tue, 22 Nov 2011 22:04:37 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] writeback: balanced_rate cannot exceed write
+ bandwidth
+Message-ID: <20111122210437.GH8058@quack.suse.cz>
+References: <20111121130342.211953629@intel.com>
+ <20111121131215.645601798@intel.com>
+ <20111121225049.GE4017@quack.suse.cz>
+ <20111122064149.GA12864@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122064149.GA12864@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-15 at 17:29 +0800, b35362@freescale.com wrote:
-> +               /*
-> +                * Freescale FCM controller has a 2K size limitation of buffer
-> +                * RAM, so elbc_fcm_ctrl->buffer have to be used if writesize
-> +                * of chip is greater than 2048.
-> +                * We malloc a large enough buffer at this point, because we
-> +                * don't know writesize before calling nand_scan(). We will
-> +                * re-malloc later if needed.
-> +                */
-> +               elbc_fcm_ctrl->buffer = kmalloc(4096 * 6, GFP_KERNEL);
-> +               if (!elbc_fcm_ctrl->buffer)
-> +                       return -ENOMEM; 
+On Tue 22-11-11 14:41:49, Wu Fengguang wrote:
+> On Tue, Nov 22, 2011 at 06:50:49AM +0800, Jan Kara wrote:
+> > On Mon 21-11-11 21:03:43, Wu Fengguang wrote:
+> > > Add an upper limit to balanced_rate according to the below inequality.
+> > > This filters out some rare but huge singular points, which at least
+> > > enables more readable gnuplot figures.
+> > > 
+> > > When there are N dd dirtiers,
+> > > 
+> > > 	balanced_dirty_ratelimit = write_bw / N
+> > > 
+> > > So it holds that
+> > > 
+> > > 	balanced_dirty_ratelimit <= write_bw
+> >   The change makes sense, but do we understand why there are such huge
+> > singular points? Are they due to errors in estimation of bandwidth or due
+> > to errors in dirtying rate computations (e.g. due to truncates), or
+> > something else?
+> 
+> Good point. I'll add this to the changelog:
+> 
+> The singular points originate from dirty_rate in the below formular:
+> 
+>         balanced_dirty_ratelimit = task_ratelimit * write_bw / dirty_rate
+> where
+>         dirty_rate = (number of page dirties in the past 200ms) / 200ms
+> 
+> In the extreme case, if all dd tasks suddenly get blocked on something 
+> else and hence no pages are dirtied at all, dirty_rate will be 0 and
+> balanced_dirty_ratelimit will be inf. This could happen in reality.
+> 
+> There won't be tiny singular points though, as long as the dirty pages
+> lie inside the dirty control area (above the freerun region).
+> Because there the dd tasks will be throttled by balanced_dirty_pages()
+> and won't be able to suddenly dirty much more pages than average.
+  OK, I see. Thanks for explanation.
 
-Why 4096*6? Judging from the comment it should be 4096.
-
-Artem.
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
