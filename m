@@ -1,136 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab1KVWNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:13:47 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:50262 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756861Ab1KVWNq (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 22 Nov 2011 17:13:46 -0500
-Subject: RE: A kernel panic occurred when I do some operation about vlan
-From: joeyli <jlee@suse.com>
-To: Qianhuibin <qianhuibin@huawei.com>
-Cc: Jiri Pirko <jpirko@redhat.com>,
-        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        Wuchangyi <wuchangyi@huawei.com>, Qinchuanyu <qinchuanyu@huawei.com>,
-        Zhanghaoyu <zhanghaoyu@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lichunhe <lichunhe@huawei.com>, Wangzhenguo <wangzhenguo@huawei.com>
-In-Reply-To: <FF4D6E6C1D10244088EA772C65CB346E015195E2@szxeml528-mbs.china.huawei.com>
-References: <FF4D6E6C1D10244088EA772C65CB346E015195A8@szxeml528-mbs.china.huawei.com>
-	 <20111122074850.GC2190@minipsycho>
-	 <FF4D6E6C1D10244088EA772C65CB346E015195E2@szxeml528-mbs.china.huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Nov 2011 06:11:35 +0800
-Message-ID: <1321999895.11930.237.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1758690Ab1KVWPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:15:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52313 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab1KVWPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 17:15:31 -0500
+Date: Tue, 22 Nov 2011 14:15:14 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
+        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] dm: verity target
+Message-ID: <20111122221514.GC2096@google.com>
+References: <20111110074408.GE10138@secunet.com>
+ <1321032884-14621-1-git-send-email-msb@chromium.org>
+ <20111114092252.GA11359@secunet.com>
+ <20111114175423.GA13132@google.com>
+ <20111115091922.GC20943@secunet.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111115091922.GC20943@secunet.com>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Qianhuibin, 
+Hi Steffen,
 
-於 二，2011-11-22 於 08:20 +0000，Qianhuibin 提到：
-> We find the crash on SLES11SP1.
+Sorry for the delayed repsonse.
+
+Steffen Klassert (steffen.klassert@secunet.com) wrote:
+> Hi.
 > 
-> The igb version is 3.0.6-k2 which comes with SLES11SP1
+> On Mon, Nov 14, 2011 at 09:54:23AM -0800, Mandeep Singh Baines wrote:
+> > 
+> > Hi Steffen,
+> > 
+> > We use a hash per CPU to avoid allocating and freeing a context per
+> > computation. We could allocate the context on the stack as you suggest.
+> > However, we were worried about overflowing the stack. The context can be
+> > quite large (close to 200 bytes for sha512).
+> 
+> Indeed, but preallocating on percpu basis can be also quite large on
+> bigsmp machines.
 > 
 
-Did you file this bug to novell bugzilla:
-	https://bugzilla.novell.com/
+Yes, you'll consume NUM_CPUS*sizeof(context) but I'm not sure that its
+a lot of memory relative to the total amount of memory you'd see on a
+big SMP/NUMA system.
 
-I didn't search out your bug from bugzilla, please kindly file it.
-Let our experts can help.
-
-
-Thank's a lot!
-Joey Lee
-
+> > 
+> > We use a hash per CPU because there can be at most one hash in progress
+> > on each CPU at any one time.
+> > 
 > 
-> ________________________________________
-> From: Jiri Pirko [jpirko@redhat.com]
-> Sent: Tuesday, November 22, 2011 15:48
-> To: Qianhuibin
-> Cc: jeffrey.t.kirsher@intel.com; e1000-devel@lists.sourceforge.net; davem@davemloft.net; Wuchangyi; Qinchuanyu; Zhanghaoyu
-> Subject: Re: A kernel panic occurred when I do some operation about vlan
+> Ok, this is the case because you use a workqueue and this processes
+> at most one work item on each cpu the time.
 > 
-> Tue, Nov 22, 2011 at 08:11:51AM CET, qianhuibin@huawei.com wrote:
-> >Hi, all
-> >A kernel panic occurred when I do some operation about vlan.
-> >
-> >
-> >The operation is as below:
-> >ifconfig eth2 up
-> >modprobe bonding
-> >modprobe 8021q
-> >ifconfig bond0 up
-> >ifenslave bond0 eth2
-> >vconfig add eth2 3300
-> >vconfig add bond0 33
-> >vconfig rem eth2.3300
-> >
-> >
-> >the panic stack is as below:
-> >[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
-> >[<ffffffff80378917>] notifier_call_chain+0x37/0x70
-> >[<ffffffff80372122>] panic+0xa2/0x195
-> >[<ffffffff80376ed8>] oops_end+0xd8/0x140
-> >[<ffffffff8001bea7>] no_context+0xf7/0x280
-> >[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
-> >[<ffffffff80376318>] page_fault+0x28/0x30
-> >[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
-> >[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
-> >[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
-> >[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
-> >[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
-> >[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
-> >[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
-> >[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
-> >[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
-> >[<00007f108a2b8bd7>] 0x7f108a2b8bd7
-> >
-> >
-> >And the nic is as below:
-> >[root@localhost ~]# ethtool -i eth2
-> >driver: igb
-> >version: 3.0.6-k2
-> >firmware-version: 1.2-1
-> >bus-info: 0000:04:00.0
-> >
-> >
-> ># lspci | grep Eth
-> >01:00.0 Ethernet controller: Intel Corporation 82576 Gigabit Network Connection (rev 01)
-> >
-> >
-> >kernel version：
-> >2.6.32.12-0.7 also happen in 2.6.32-131
+> On another note, you might want to use ahash here. Most crypto hardware
+> accelerators need to use asynchronous ciphers. These can't be used if
+> you use the synchronous interface.
 > 
-> What kernel is this? RHEL? And what driver you are using? The one which
-> came with kernel? In case of [yes, yes] answers I suggest filling up bug
-> at bugzilla.redhat.com
-> 
-> Jirka
-> 
-> >
-> >
-> >I had tried the same operation on other nics, like tg3,bnx2. But they haven’t panic.
-> >So I find the reason is that igb have two more netdev_ops (ndo_vlan_rx_add_vid and ndo_vlan_rx_kill_vid) than tg3 and bnx2.
-> >I think the reason of panic is that when ndo_vlan_rx_kill_vid has been called, the vlgrp haven’t been correctly find.
-> >
-> >
-> >My question is what the purpose of  "vlan_group_set_device(adapter->vlgrp, vid, NULL);" in method igb_vlan_rx_kill_vid?
-> >
-> >unregister_vlan_dev(vlan.c)  has done the same thing after ops->ndo_vlan_rx_kill_vid was called.
-> >
-> >If I delete it , Would it cause somthing bad?
-> >
-> >
-> >qinchuanyu
-> NР骒rybX肚v^)藓{.n+伐{赙zXФ≤}财z&j:+v赙zZ++zf＂h~izwア?ㄨ&)撷f^j谦ym@Aa囤0鹅hi
 
+We definitely want to look at ahash but I'd like to get the baseline
+functionality in and then iterate. Do you think it would be cool
+if we deferred looking into ahash until later?
 
+> And at the latest when you switch to ahash, you need more than one
+> preallocated ahash request on each cpu, as there can be many ahash
+> requests submitted on each cpu :)
+> 
+
+Thanks much for all the feedback.
+
+Regards,
+Mandeep
