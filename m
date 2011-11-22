@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab1KVKVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:21:54 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:52089 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1KVKVw (ORCPT
+	id S1757583Ab1KVKWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:22:24 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37767 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754685Ab1KVKWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:21:52 -0500
-Message-ID: <4ECB77BB.9090401@oracle.com>
-Date: Tue, 22 Nov 2011 18:21:47 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: Paul Durrant <paul.durrant@citrix.com>,
-        Kurt Hackel <Kurt.Hackel@oracle.com>, ANNIE LI <annie.li@oracle.com>
-Subject: Forth version patches for upstreaming grant table version 2
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 22 Nov 2011 05:22:23 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/PF11RIDPPz8s7Of8XkLCBxebKzrO8/hG+5hA3EY
+	ykmFVWchad7le/
+Subject: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
+From: Mike Galbraith <efault@gmx.de>
+To: Nicolas Kalkhof <nkalkhof@web.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        maciej.rutecki@gmail.com
+In-Reply-To: <1525712996.2585575.1321949994931.JavaMail.fmail@mwmweb003>
+References: <1525712996.2585575.1321949994931.JavaMail.fmail@mwmweb003>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Nov 2011 11:22:19 +0100
+Message-ID: <1321957339.6855.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4ECB77BC.0070,ss=1,re=0.000,fgs=0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, 2011-11-22 at 09:19 +0100, Nicolas Kalkhof wrote:
+> Hi Mike,
+> 
+> thanks for your reply! I didn't set any polling explicitly.
+> 
+> My boot params are:
+> intel_iommu=off pcie_aspm=force i915.powersave=1 i915.i915_enable_rc6=1
+> 
+> and in the cpufrequtils startup daemon the only parameter set is:
+> # Options when starting cpufreq (given to the `cpufreq-set` program)
+> START_OPTS="--governor ondemand"
+> 
+> egrep "IDLE|GOV" .config yields:
+> 
+> CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+> CONFIG_ARCH_HAS_DEFAULT_IDLE=y
+> # CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
+> # CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+> CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+> # CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
+> CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+> CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+> CONFIG_CPU_FREQ_GOV_USERSPACE=y
+> CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+> CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+> CONFIG_CPU_IDLE=y
+> CONFIG_CPU_IDLE_GOV_LADDER=y
+> CONFIG_INTEL_IDLE=y
+> # CONFIG_I7300_IDLE is not set
+> 
+> Any advice?
 
-The following patches introduce and implement grant table version 2. 
-This is the forth version patches, and based on v3.2.0-rc1+. Changes 
-from the previous patches are following:
+Not really.  If you apply the below, then..
 
-* Fix an indentation issue of the code.
+make -C tools/perf prefix=/usr/local install
+perf top -U
 
-Descriptions for those patches:
+..does perf top agree with oprofile?
 
-1. In those patches, the grant table code supports both grant table v1 
-and v2 version, v2 is an extension from v1. Grant table of guest domain 
-can be either v1 or v2 version, and every grant table entry on one guest 
-should be the same version.
-2. Full page structure of grant table v2 play the same role as grant 
-table v1. Although full page structure is different from v1, grant table 
-2 is totally backwards compatible with v1. Grant table is shared between 
-guest and Xen, domu and dom0 all have their own grant table shared with 
-Xen, and their grant table version should be set before any grants are 
-activated. When domu grants an entry to dom0 to map a frame,following 
-are steps: * domu introduces a grant entry by reference * domu informs 
-dom0 the gref * dom0 sends hypercall to map frame through this 
-reference, Xen copy shared entry to active entry and update frame * dom0 
-does its work and release the frame, Xen releases the entry. * domu redo 
-those steps for a new cycle. Xen mapping process can be found in 
-function __gnttab_map_grant_ref in Xen code: xen/common/grant_table.c
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9cdedb..28ef86d 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -636,7 +636,6 @@ static const char *skip_symbols[] = {
+ 	"exit_idle",
+ 	"mwait_idle",
+ 	"mwait_idle_with_hints",
+-	"poll_idle",
+ 	"ppc64_runlatch_off",
+ 	"pseries_dedicated_idle_sleep",
+ 	NULL
 
-3. If dom0 supports grant table v2, guests run on it can either supports 
-v1 or v2. Xen is responsible to judge what  version the guests are 
-using. This is implemented in Xen code: xen/common/grant_table.c. Key 
-word is:  rd->grant_table->gt_version.
-4. Grant table v2 has been supported by Xen for a long time, and 
-receiver-side copying mechanism bases on this implementation. Netback 
-and netfront driver can pick up this new feature to get better network 
-performance and better CPU accounting.
 
-Diff:
-
-  arch/x86/xen/grant-table.c          |   42 ++++-
-  drivers/xen/grant-table.c           |  354 
-++++++++++++++++++++++++++++++-----
-  include/xen/grant_table.h           |   10 +-
-  include/xen/interface/grant_table.h |  167 ++++++++++++++++-
-  include/xen/interface/xen.h         |    2 +
-  5 files changed, 519 insertions(+), 56 deletions(-)
-
-Shortlog:
-
-Annie Li (4):
-       xen/granttable: Introducing grant table V2 stucture
-       xen/granttable: Refactor some code
-       xen/granttable: Grant tables V2 implementation
-       xen/granttable: Keep code format clean
-
-Thanks
-Annie
