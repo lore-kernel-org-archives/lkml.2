@@ -1,53 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab1KVQoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 11:44:44 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53759 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab1KVQon (ORCPT
+	id S1757973Ab1KVQuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 11:50:23 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59464 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373Ab1KVQuV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 11:44:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <4ECBCE30.30001@parallels.com>
-References: <4EC4F2FB.408@parallels.com> <20111117154936.GB12325@redhat.com>
- <4EC52FBF.1010407@parallels.com> <20111118233055.GA29378@google.com>
- <4ECA1696.5060500@parallels.com> <20111121225019.GQ25776@google.com>
- <4ECB8346.8040806@parallels.com> <20111122152312.GB322@google.com> <4ECBCE30.30001@parallels.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 22 Nov 2011 08:44:21 -0800
-X-Google-Sender-Auth: J8iLQYvcZ60SBSzHDy7MOv0NaWo
-Message-ID: <CA+55aFwS0=yb1Nwq=ph6-B5XRY-r7h+EjXq9EDDH7oj8UObrQw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given pids
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Nov 2011 11:50:21 -0500
+References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com> <20111118220849.GA25205@suse.de> <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com> <20111121173620.GA5028@suse.de> <20111121181724.GB12011@local> <4498E0C9-B5E9-44B5-8868-140D6416100E@gmail.com> <20111122153525.GB17268@redhat.com>
+In-Reply-To: <20111122153525.GB17268@redhat.com>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <40906F5E-5E97-44CF-AB95-40355204B63F@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Greg KH <gregkh@suse.de>,
+        tglx@linutronix.de, linux-pci@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Subject: Re: extra large DMA buffer for PCI-E device under UIO
+Date: Tue, 22 Nov 2011 11:54:22 -0500
+To: "Michael S. Tsirkin" <mst@redhat.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 8:30 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
->>>
->>> I think that systemd guys can play with it. E.g. respawning daemons with predefined
->>> pids sounds like an interesting thing to play with.
->>
->> But wouldn't CAP_CHECKPOINT be enough for systemd?
->
-> It would, but what's the point in granting to a systemd (which can be a container's
-> init by the way) the ability to use the _whole_ checkpoint/restore engine?
 
-Christ, stop making it sound like we would *want* systemd to do even
-more odd things.
+On Nov 22, 2011, at 10:35, Michael S. Tsirkin wrote:
 
-Quite frankly, any feature that is sold with ".. and systemd can use
-this fox Xyz", is a *misfeature* in my opinion.  Core infrastructure
-like systemd should use a *minimal* interface, not some random
-extended features.
+> On Tue, Nov 22, 2011 at 10:24:17AM -0500, Jean-Francois Dagenais wrote:
+>> 
+>> On Nov 21, 2011, at 13:17, Hans J. Koch wrote:
+>> 
+>>> On Mon, Nov 21, 2011 at 09:36:20AM -0800, Greg KH wrote:
+>>>> On Mon, Nov 21, 2011 at 10:31:07AM -0500, Jean-Francois Dagenais wrote:
+>>>>> Hi Greg, thanks for your answer...
+>>>>> 
+>>>>> On Nov 18, 2011, at 17:08, Greg KH wrote:
+>>>>> 
+>>>>>> On Fri, Nov 18, 2011 at 04:16:23PM -0500, Jean-Francois Dagenais wrote:
+>>>>>>> Hello fellow hackers.
+>>>>>>> 
+>>>>>>> I am maintaining a UIO based driver for a PCI-E data acquisition device.
+>>>>>>> 
+>>>>>>> I map BAR0 of the device to userspace. I also map two memory areas,
+>>>>>>> one is used to feed instructions to the acquisition device, the other
+>>>>>>> is used autonomously by the PCI device to write the acquired data.
+>>>>>> 
+>>>>>> Nice, have a pointer to your driver anywhere so we can include it in the
+>>>>>> main kernel tree to make your life easier?
+>>>>> As I said in a parallel answer from "Hans J. Koch" <hjk@hansjkoch.de>,
+>>>>> the driver, although GPL'ed, is quite uninteresting except for us here at
+>>>>> Sonatest.
+>>>> 
+>>>> I really doubt that,
+>>> 
+>>> So do I. We never had a driver allocating so much memory.
+>>> 
+>>>> and you should submit it anyway to allow us to
+>>>> change it when the in-kernel apis change in the future.  It will save
+>>>> you time in the long run and make things easier for you (look, your
+>>>> driver is automatically included in all distros!, people fix your bugs,
+>>>> etc.)
+>>> 
+>>> Exactly.
+>>> 
+>>>> 
+>>>>> About merging the driver to mainline, I guess it would only be interesting for
+>>>>> the recipe I demonstrate. Please advise.
+>>>> 
+>>>> That is a recipe that I'm sure others will use, and need help on in the
+>>>> future.
+>>> 
+>>> They already needed it in the past, and they usually try to get it by
+>>> writing me private mail.
+>>> 
+>>>> 
+>>>> So please submit a patch, that will make it easier to help you out.
+>>> 
+>>> Yes, please do. The more different drivers we have under /drivers/uio, the
+>>> better. Didn't you use one of the existing drivers as a template for yours?
+>> Of course, and I am making contributions to the kernel as well (ds1wm,  w1_ds2408,
+>> ad714x, and more to be merged contribs to blackfin list drivers) because I strongly
+>> believe in the community aspect of Linux.
+>> 
+>> So in the spirit of making the driver more generic, I would like to make this patch
+>> something along the lines of a generic uio/pci based large DMA acquisition device
+>> driver. Or maybe even complementing the existing uio_generic_pci.c?
+>> 
+>> The problem is that there are device specific aspects that the "generic" driver would
+>> need to take into account, e.g. to map BARx or not, or in our case, there are MFDs
+>> embedded in the firmware (xilinx's ds1wm core, and soon, xilinx's spi core). Furthermore,
+>> I want the FPGA to be an irq expander since the cores generate interrupts, and a
+>> couple of balls on the FPGA are irq signals from external i2c chips.
+>> 
+>> I don't yet see any way to specify like a setup callback function that could reach a
+>> platform module when uio_pci_generic is probing.
+>> 
+>> I am thinking this through as I write here...
+>> 
+>> My other persona (C++ programmer) suggests that conceptually, uio_pci_generic is
+>> a "base class" and the other more firmware specific items would be in a derived module.
+>> In that sense, maybe uio_pci_generic could export it's symbols? So it can be used as
+>> uio core functionnality?
+>> 
+>> So I would still have a module which would contain the specific MFD registration and IRQ
+>> functionnality, but the BARx and large DMA mapping would reside in uio_pci_generic...
+>> 
+>> Any thoughts?
+>>> 
+>>> Thanks,
+>>> Hans
+>> Cheers,
+>> /jfd
+> 
+> BARx can be mapped through sysfs, right?
+> DMA into userspace really needs registration with an iommu and
+> locking userspace memory. This was discussed in the past but
+> no patch surfaced. You can copy some bits from 'VFIO' prototypes,
+> maybe - search for them.
+That is quite interesting. It really seems like my VT-d recipe to create 128MB for my PCI-e
+FPGA to write into is covered by this patch.
 
-I'm starting to really dislike this whole feature discussion.
+My problem is that our FPGA is connected to one of the atom E6XX's PCI-e links, so no
+iommu :( Since our first product had VT-d, the FPGA, uio based module and userspace
+code is designed such that the device sees a huge contiguous memory chunk. This is key
+to the performance of the FPGA, which is essentially decoupled from the CPU for it's real-time
+acquisition.
 
-                Linus
+Can VFIO work without an IOMMU? Or am I better off with a UIO solution?
+
+If it can, I know my current UIO based solution is un-useable without an IOMMU as well. The
+problem I have is that my fallback to using IOMMU mapping, pci_alloc_consistent (i.e. dma_alloc_coherent),
+still will only succeed at 4MB tops, and that's when the module loads from the init scripts. The
+success rate drops rapidly after this moment. Could I get more at arch_init moment maybe?
+
+And are there any other thoughts about ripping out like 256MB from the kernel boot args and
+initializing it later and use it as userspace mapped DMA buffer?
+
+> 
+> -- 
+> MST
+
