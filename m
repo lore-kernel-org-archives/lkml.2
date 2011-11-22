@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab1KVRin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 12:38:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754135Ab1KVRil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 12:38:41 -0500
-Date: Tue, 22 Nov 2011 19:40:02 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Jean-Francois Dagenais <jeff.dagenais@gmail.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg KH <gregkh@suse.de>,
-        tglx@linutronix.de, linux-pci@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: extra large DMA buffer for PCI-E device under UIO
-Message-ID: <20111122174001.GB29068@redhat.com>
-References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
- <20111118220849.GA25205@suse.de>
- <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
- <20111121173620.GA5028@suse.de>
- <20111121181724.GB12011@local>
- <4498E0C9-B5E9-44B5-8868-140D6416100E@gmail.com>
- <20111122153525.GB17268@redhat.com>
- <40906F5E-5E97-44CF-AB95-40355204B63F@gmail.com>
- <20111122172725.GK4387@parisc-linux.org>
+	id S1758092Ab1KVRky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 12:40:54 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:38624 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754867Ab1KVRkx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 12:40:53 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: A_oEQRIVM1m3WiFOAPasQRu96yUcGGQPZoKVLTtS0hIGcva
+ E3pOBAdbX8Av7y7Uf4rYclQdVfJhE266_w.BuiZ2rCUl8bWN50gAE1_PUw6A
+ 3Ncow0cWW5XaC.he498is5Q8wXcN94U8gn7ku.LAJq2iqLWh1lZIj2N5KbDT
+ B4VEky1QV9fw7fvhvnzreX1qc1hy18wozgv1KccNjKQ_dBZi1e3DbSSb.Uek
+ vcgjl.eTJLLmjvhot2E3hWmzGQ8Nu..u3G3Ulcfn843EnyjqfSp1xDcZok55
+ P8rs1sfF01zBv93GVgwCi_R1WnN9s_f1qJ.n1TOTNwWW.BQuAy8xGhLahqkc
+ IJBWQ4emMns0VSRFJuODKXX1GMKUbbAoi_7QZUFRbFDP_cmBADId3LIWY9Gc
+ UjdlqJ914yT8CexdBVVti
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 22 Nov 2011 11:40:48 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: slub: Lockout validation scans during freeing of object
+In-Reply-To: <1321982484.18002.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <alpine.DEB.2.00.1111221139240.28197@router.home>
+References: <alpine.DEB.2.00.1111221033350.28197@router.home>  <alpine.DEB.2.00.1111221040300.28197@router.home>  <alpine.DEB.2.00.1111221052130.28197@router.home> <1321982484.18002.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122172725.GK4387@parisc-linux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 10:27:25AM -0700, Matthew Wilcox wrote:
-> On Tue, Nov 22, 2011 at 11:54:22AM -0500, Jean-Francois Dagenais wrote:
-> > That is quite interesting. It really seems like my VT-d recipe to create 128MB for my PCI-e
-> > FPGA to write into is covered by this patch.
-> > 
-> > My problem is that our FPGA is connected to one of the atom E6XX's PCI-e links, so no
-> > iommu :( Since our first product had VT-d, the FPGA, uio based module and userspace
-> > code is designed such that the device sees a huge contiguous memory chunk. This is key
-> > to the performance of the FPGA, which is essentially decoupled from the CPU for it's real-time
-> > acquisition.
-> 
-> Is it really key?  If you supported, ohidon'tknow, 2MB pages, you'd
-> need 64 entries in the FPGA to store the addresses of those 2MB pages,
-> which doesn't sound like a huge burden.
+On Tue, 22 Nov 2011, Eric Dumazet wrote:
 
-Ah yes, we have this support for on-device IOMMUs. Maybe a generic
-access driver will work if you implement an IOMMU in FPGA.
-You would need to separate the programming of the IOMMU
-from the rest of the functionality of the device,
-protecting it from a malicious driver, somehow.
+> This seems better, but I still have some warnings :
 
-> -- 
-> Matthew Wilcox				Intel Open Source Technology Centre
-> "Bill, look, we understand that you're interested in selling us this
-> operating system, but compare it to ours.  We can't possibly take such
-> a retrograde step."
+Trying to reproduce with a kernel configured to do preempt. This is
+actually quite interesting since its always off by 1.
