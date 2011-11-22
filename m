@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab1KVKxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:53:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:23156 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab1KVKxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:53:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,552,1315206000"; 
-   d="scan'208";a="77906910"
-Date: Tue, 22 Nov 2011 18:53:18 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] hda - fail ELD reading early
-Message-ID: <20111122105318.GB5730@localhost>
-References: <20111122084623.GA30050@localhost>
- <s5hlir8igp2.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hlir8igp2.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755088Ab1KVKyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:54:45 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38139 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860Ab1KVKyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 05:54:44 -0500
+Subject: Re: [PATCH] UBIFS: Use kmemdup rather than duplicating its
+ implementation
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: adrian.hunter@intel.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 22 Nov 2011 12:55:18 +0200
+In-Reply-To: <1321570852.1624.312.camel@localhost.localdomain>
+References: <1321570852.1624.312.camel@localhost.localdomain>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-rRlB0AxtFrp01fem53H+"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1321959323.24797.150.camel@sauron.fi.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 06:39:53PM +0800, Takashi Iwai wrote:
-> At Tue, 22 Nov 2011 16:46:23 +0800,
-> Wu Fengguang wrote:
-> > 
-> > With the ELD repoll mechanism, we can (and should) fail the ELD reading
-> > immediately when find something obviously wrong and let the caller retry
-> > after some delay.
-> > 
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  sound/pci/hda/hda_eld.c |   28 +++++++++++++++++++---------
-> >  1 file changed, 19 insertions(+), 9 deletions(-)
-> > 
-> > --- linux.orig/sound/pci/hda/hda_eld.c	2011-11-22 16:02:58.000000000 +0800
-> > +++ linux/sound/pci/hda/hda_eld.c	2011-11-22 16:36:10.000000000 +0800
-> > @@ -347,18 +347,28 @@ int snd_hdmi_get_eld(struct hdmi_eld *el
-> >  
-> >  	for (i = 0; i < size; i++) {
-> >  		unsigned int val = hdmi_get_eld_data(codec, nid, i);
-> > +		/*
-> > +		 * Graphics driver might be writing to ELD buffer right now.
-> > +		 * Just abort. The caller will repoll after a while.
-> > +		 */
-> >  		if (!(val & AC_ELDD_ELD_VALID)) {
-> > -			if (!i) {
-> > -				snd_printd(KERN_INFO
-> > -					   "HDMI: invalid ELD data\n");
-> > -				ret = -EINVAL;
-> > -				goto error;
-> > -			}
-> >  			snd_printd(KERN_INFO
-> >  				  "HDMI: invalid ELD data byte %d\n", i);
-> > -			val = 0;
-> > -		} else
-> > -			val &= AC_ELDD_ELD_DATA;
-> > +			ret = -EINVAL;
-> > +			goto error;
-> > +		}
-> > +		val &= AC_ELDD_ELD_DATA;
-> > +		/*
-> > +		 * The first byte cannot be zero. This can happen on some DVI
-> > +		 * connections. Some Intel chips may also need some 250ms delay
-> > +		 * to return non-zero ELD data, even when the graphics driver
-> > +		 * correctly writes ELD content before setting ELD_valid bit.
-> > +		 */
-> > +		if (!val && !i) {
-> > +			snd_printdd(KERN_INFO "HDMI: 0 ELD data\n");
-> > +			ret = -EINVAL;
-> > +			goto error;
-> > +		}
-> 
-> Shouldn't this zero-check be before the valid-bit check?
-> Otherwise it'll never reach there.
 
-It does reach there:
+--=-rRlB0AxtFrp01fem53H+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-        [ 1191.016746] HDMI hot plug event: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
-        [ 1191.019309] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
-==>     [ 1191.021803] ALSA hda_eld.c:368 HDMI: 0 ELD data
-        [ 1191.324661] HDMI status: Codec=3 Pin=6 Presence_Detect=1 ELD_Valid=1
-        [ 1191.333236] HDMI: detected monitor SONY TV at connection type HDMI
-        [ 1191.335020] HDMI: available speakers: FL/FR
-        [ 1191.335996] HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
+On Fri, 2011-11-18 at 00:00 +0100, Thomas Meyer wrote:
+> The semantic patch that makes this change is available
+> in scripts/coccinelle/api/memdup.cocci.
+>=20
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-The funny thing is, it's reporting (invalid) 0 ELD data that has
-the AC_ELDD_ELD_VALID bit set.
+Pushed to the UBIFS git tree, thank you!
 
-Thanks,
-Fengguang
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-rRlB0AxtFrp01fem53H+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJOy3+WAAoJECmIfjd9wqK0kfUQAKN45LnYb9g/+DkiUMncar8w
+F/qwKeIb82hxo/vafhuptm709TqdksRdUIPllbMp1X4g5euvneAigo1e1OTcq67j
+Cu89lmJZ5UvSleKuouCxBbo/sgrboTir7q8kRkEGmBsuQyqTW6I4tievGGlQsRJU
+djDcmXaQvcjV/uzQPS9J51ZWo4Z8msnF4oM9ziRfnu5Ch6uBM7u+o24UKdxzf4dD
+4XMSQnQE+4erS/Ebwbr9MNr/pIAp1Qa+RtuTOfoNt26ID8urIEI5OZBZOaU9pDFU
+yLBS3zEU39OtnwS9rCU5SL7MKNURMskxzAO8L41OFA2hCbXtK6LBmt2uIGHahhFK
+FUn5Ks41H/6z8F3UfBimxo+tBz8sYkTsqQzxO8F0uZOT3WJfZV7sVdWLA6oPxHdt
+f7KolL9x1PGareMgduGWD5CKczdbhIUuyQcohd4Z7b0vyichaTcvDAiM64vnNd5k
+Ph7pef8w3WRXqFnLL6CK4tGgBRipixrftKj71gYFMwBoLiFM9eyF03/R5L4pg1Ew
+2KnnY6Xy4FPKWKXsn+7hElMbHPENcT7K6Qsi7hpEc95ke8KFgbRDZ/qXJg6ITHtg
+6jrUWjkGffanrYgFGH/EoXLlXgeEyGEqfwRRlb+aOf65c1LcX3mNf614onRAf9Js
+dTKhWIPQyMsjP7wUdOZP
+=L0G/
+-----END PGP SIGNATURE-----
+
+--=-rRlB0AxtFrp01fem53H+--
+
