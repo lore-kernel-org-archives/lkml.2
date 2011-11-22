@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853Ab1KVXQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 18:16:50 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63325 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab1KVXQt (ORCPT
+	id S1758902Ab1KVXRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 18:17:00 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:39343 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab1KVXQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 18:16:49 -0500
+	Tue, 22 Nov 2011 18:16:59 -0500
+Date: Wed, 23 Nov 2011 08:16:56 +0900
+From: Norbert Preining <preining@logic.at>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [regression 3.1.0 -> 3.20rc] USB Oops
+Message-ID: <20111122231656.GB15722@gamma.logic.tuwien.ac.at>
+References: <20111122125256.GB32440@gamma.logic.tuwien.ac.at> <Pine.LNX.4.44L0.1111221131170.2466-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20111122.155426.1153643155035648664.davem@davemloft.net>
-References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
-	<1321917453.10276.3.camel@pjaxe>
-	<20111122.155426.1153643155035648664.davem@davemloft.net>
-Date: Wed, 23 Nov 2011 00:16:48 +0100
-Message-ID: <CAJfGthTb8PJXNq3gP_NPxTLQQNuVM600oF5Qx7cW-ykGe4n9gQ@mail.gmail.com>
-Subject: Re: softirq oops from b44_poll
-From: Xander Hover <lkml@hover.be>
-To: David Miller <davem@davemloft.net>
-Cc: peter.p.waskiewicz.jr@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1111221131170.2466-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Indeed will the in_irq() test will force dev_kfree_skb_any() to call
-dev_kfree_skb_irq().
-The kernel warning before this patch was applied, was also trigged by
-a WARN_ON_ONCE(in_irq()).
-I think David is right on this one.
+On Di, 22 Nov 2011, Alan Stern wrote:
+> > [   67.852328] BUG: unable to handle kernel NULL pointer dereference at 00000000000002d9
+> > [   67.853898] IP: [<ffffffffa0249e6b>] last_sector_hacks.part.2+0x72/0xe0 [usb_storage]
+> 
+> This is odd.  I've never seen a problem in that routine before.
+> 
+> What is "last_sector_hacks.part.2"?  In my kernel source tree there is
+> a last_sector_hacks() function in drivers/usb/storage/transport.c, but
+> what does the ".part.2" refer to?
 
+No idea, here I am compiling with default Debian sid gcc, that is
+gcc (Debian 4.6.2-4) 4.6.2
 
-On Tue, Nov 22, 2011 at 9:54 PM, David Miller <davem@davemloft.net> wrote:
-> From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Date: Mon, 21 Nov 2011 15:17:33 -0800
->
->> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb);
->> instead, since that will handle the in-interrupt case if that's where
->> we're stuck.
->
-> Caller is always b44_poll(), and that caller always does spin_lock_irqsave().
->
-> Adding the extra tests implied by dev_kfree_skb_any() therefore doesn't
-> make any sense, as it will always evaluate to dev_kfree_skb_irq().
->
+Anything else I can do? Should I hack something into the code?
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+HEATON PUNCHARDON (n.) A violent argument which breaks out in the car
+on the way home from a party between a couple who have had to be
+polite to each other in company all evening.
+			--- Douglas Adams, The Meaning of Liff
