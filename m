@@ -1,84 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1KVT44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:56:56 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:63212 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752118Ab1KVT4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:56:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkICAAf9y055LGY5gWdsb2JhbABEDoRzpVsjAQEWJiWBcgEBBSMPASMPFBAIAw4KAgImAgIUJQMhE6sGkW4SgR6CL4VtgRYElEKJBYhNSw
-Date: Wed, 23 Nov 2011 06:56:51 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [3.2-rc2] loop device balance_dirty_pages_nr throttling hang
-Message-ID: <20111122195651.GN2386@dastard>
-References: <20111121142056.GF2386@dastard>
- <20111122035629.GE20982@localhost>
- <20111122102931.GD8098@dastard>
- <20111122104921.GE8098@dastard>
- <ED3D1B07-DEC4-43C8-80A9-739C4973ABF9@mit.edu>
+	id S1756476Ab1KVT5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:57:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34533 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756160Ab1KVT5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 14:57:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="78918007"
+Date: Tue, 22 Nov 2011 11:57:14 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Aman Deep <amandeep3986@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] xHCI: Adding #define values used for hub descriptor
+Message-ID: <20111122195714.GA2815@xanatos>
+References: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <ED3D1B07-DEC4-43C8-80A9-739C4973ABF9@mit.edu>
+In-Reply-To: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 08:17:07AM -0500, Theodore Tso wrote:
+On Tue, Nov 22, 2011 at 07:33:36PM +0530, Aman Deep wrote:
+> xhci-hub used some numerical values for initialisation of root hub
+> descriptors. #define values are addded in usb 2.0 hub specification
+> file and these values are used for root hub characteristics
+> initialisation.
 > 
-> On Nov 22, 2011, at 5:49 AM, Dave Chinner wrote:
+> Also use some #defines in places where magic numbers are being used.
+
+Looks fine to me for the xHCI changes.  I copied most of the hub
+descriptor code from EHCI, so it will need the same treatment.
+
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+
+The #defines look a bit odd to me, like you're using spaces instead of
+tabs to separate the name and value, or your mail program is converting
+tabs to spaces.  Do the numbers line up for you?
+
+> Signed-off-by: Aman Deep <amandeep3986@gmail.com>
+> ---
+>  drivers/usb/host/xhci-hub.c |   18 ++++++++----------
+>  include/linux/usb/ch11.h    |   19 ++++++++++++++-----
+>  2 files changed, 22 insertions(+), 15 deletions(-)
 > 
-> > But, I just noticed that the discard that mkfs.ext4 will result
-> > in all the extents being discarded in the underlying image file
-> > (due to the fact the loopback device now supports hole
-> > punching), so the previous state of the image file is getting
-> > trashed by the mkfs.ext4 execution, too. I think I already had a
-> > ext4 filesystem in some state before I started running this
-> > manual prealloc test....
+> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+> index 430e88f..35e257f 100644
+> --- a/drivers/usb/host/xhci-hub.c
+> +++ b/drivers/usb/host/xhci-hub.c
+> @@ -57,17 +57,15 @@ static void xhci_common_hub_descriptor(struct xhci_hcd *xhci,
+>  	desc->bHubContrCurrent = 0;
+>  
+>  	desc->bNbrPorts = ports;
+> -	/* Ugh, these should be #defines, FIXME */
+> -	/* Using table 11-13 in USB 2.0 spec. */
+>  	temp = 0;
+> -	/* Bits 1:0 - support port power switching, or power always on */
+> +	/* Bits 1:0 - support per-port power switching, or power always on */
+>  	if (HCC_PPC(xhci->hcc_params))
+> -		temp |= 0x0001;
+> +		temp |= HUB_CHAR_INDV_PORT_LPSM;
+>  	else
+> -		temp |= 0x0002;
+> +		temp |= HUB_CHAR_NO_LPSM;
+>  	/* Bit  2 - root hubs are not part of a compound device */
+>  	/* Bits 4:3 - individual port over current protection */
+> -	temp |= 0x0008;
+> +	temp |= HUB_CHAR_INDV_PORT_OCPM;
+>  	/* Bits 6:5 - no TTs in root ports */
+>  	/* Bit  7 - no port indicators */
+>  	desc->wHubCharacteristics = cpu_to_le16(temp);
+> @@ -86,9 +84,9 @@ static void xhci_usb2_hub_descriptor(struct usb_hcd *hcd, struct xhci_hcd *xhci,
+>  	ports = xhci->num_usb2_ports;
+>  
+>  	xhci_common_hub_descriptor(xhci, desc, ports);
+> -	desc->bDescriptorType = 0x29;
+> +	desc->bDescriptorType = USB_DT_HUB;
+>  	temp = 1 + (ports / 8);
+> -	desc->bDescLength = 7 + 2 * temp;
+> +	desc->bDescLength = USB_DT_HUB_NONVAR_SIZE + 2 * temp;
+>  
+>  	/* The Device Removable bits are reported on a byte granularity.
+>  	 * If the port doesn't exist within that byte, the bit is set to 0.
+> @@ -137,8 +135,8 @@ static void xhci_usb3_hub_descriptor(struct usb_hcd *hcd, struct xhci_hcd *xhci,
+>  
+>  	ports = xhci->num_usb3_ports;
+>  	xhci_common_hub_descriptor(xhci, desc, ports);
+> -	desc->bDescriptorType = 0x2a;
+> -	desc->bDescLength = 12;
+> +	desc->bDescriptorType = USB_DT_SS_HUB;
+> +	desc->bDescLength = USB_DT_SS_HUB_SIZE;
+>  
+>  	/* header decode latency should be zero for roothubs,
+>  	 * see section 4.23.5.2.
+> diff --git a/include/linux/usb/ch11.h b/include/linux/usb/ch11.h
+> index 4ebaf08..537f354 100644
+> --- a/include/linux/usb/ch11.h
+> +++ b/include/linux/usb/ch11.h
+> @@ -165,11 +165,20 @@ struct usb_port_status {
+>   * wHubCharacteristics (masks)
+>   * See USB 2.0 spec Table 11-13, offset 3
+>   */
+> -#define HUB_CHAR_LPSM		0x0003 /* D1 .. D0 */
+> -#define HUB_CHAR_COMPOUND	0x0004 /* D2       */
+> -#define HUB_CHAR_OCPM		0x0018 /* D4 .. D3 */
+> -#define HUB_CHAR_TTTT           0x0060 /* D6 .. D5 */
+> -#define HUB_CHAR_PORTIND        0x0080 /* D7       */
+> +#define HUB_CHAR_LPSM		0x0003 /* Logical Power Switching Mode mask */
+> +#define HUB_CHAR_COMMON_LPSM	0x0000 /* All ports power control at once */
+> +#define HUB_CHAR_INDV_PORT_LPSM	0x0001 /* per-port power control */
+> +#define HUB_CHAR_NO_LPSM	0x0002 /* no power switching */
+> +
+> +#define HUB_CHAR_COMPOUND	0x0004 /* hub is part of a compound device */
+> +
+> +#define HUB_CHAR_OCPM		0x0018 /* Over-Current Protection Mode mask */
+> +#define HUB_CHAR_COMMON_OCPM	0x0000 /* All ports Over-Current reporting */
+> +#define HUB_CHAR_INDV_PORT_OCPM	0x0008 /* per-port Over-current reporting */
+> +#define HUB_CHAR_NO_OCPM	0x0010 /* No Over-current Protection support */
+> +
+> +#define HUB_CHAR_TTTT           0x0060 /* TT Think Time mask */
+> +#define HUB_CHAR_PORTIND        0x0080 /* per-port indicators (LEDs) */
+>  
+>  struct usb_hub_status {
+>  	__le16 wHubStatus;
+> -- 
+> 1.7.6
 > 
-> Which version of mkfs.ext4 are you using?   We've disabled the
-> discard by default (unless configured in via a command-line option
-> or a /etc/mke2fs.conf setting since no distribution apparently
-> wants to be responsible for running supplying a command that
-> causes a crap SSD to turning into a brick; personally, I'd blame
-> the manufacturer of the crap SSD, but….)
-
-Whatever I've got installed on my test machines. The machien I
-reproduced the problem originally on with sparse files is runningi
-mke2fs 1.42-WIP (16-Oct-2011) which is the latest in Debian
-unstable, the other that is using a real 17TB array is running
-mke2fs 1.42-WIP (02-Jul-2011). I saw the discard occurring
-
-BTW, on a 5PB sparse image file I get this error from the latest
-mke2fs above:
-
-$ ls -lh /mnt/scratch/scratch.img
--rw------- 1 root root 4.9P Nov 23 06:50 /mnt/scratch/scratch.img
-$ sudo mkfs.ext4 /dev/loop0
-mke2fs 1.42-WIP (16-Oct-2011)
-/dev/loop0: Cannot create filesystem with requested number of inodes while setting up superblock
-$
-
-This version does emit that it is discarding blocks:
-
-$ sudo mkfs.ext4 /dev/loop0
-mke2fs 1.42-WIP (16-Oct-2011)
-Discarding device blocks: done
-Filesystem label=
-.....
-
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
