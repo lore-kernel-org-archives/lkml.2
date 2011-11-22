@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab1KVUV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:21:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21662 "EHLO mga02.intel.com"
+	id S1757074Ab1KVUWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:22:43 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30192 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755475Ab1KVUV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:21:26 -0500
+	id S1754635Ab1KVUWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:22:41 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208,223";a="78947799"
+   d="scan'208";a="78948188"
 Subject: Re: 3.1+ iwlwifi lockup
 From: wwguy <wey-yi.w.guy@intel.com>
 To: Dave Jones <davej@redhat.com>
@@ -17,33 +17,22 @@ Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
         "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
 In-Reply-To: <20111031143408.GA17152@redhat.com>
 References: <20111031143408.GA17152@redhat.com>
-Content-Type: multipart/mixed; boundary="=-o4LIkKKc1RuFE17ipMrK"
-Date: Tue, 22 Nov 2011 12:15:02 -0800
-Message-ID: <1321992902.8072.7.camel@wwguy-ubuntu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Nov 2011 12:16:18 -0800
+Message-ID: <1321992978.8072.8.camel@wwguy-ubuntu>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-o4LIkKKc1RuFE17ipMrK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
 Hi Dave,
 
-Sorry for taking so long.
-it is a bogus command from the firmware which driver try to process it
-and cause problem. I am not sure how it happen. But could you please try
-the patch I attach here.
-
-For now I am just ignore the command, but not sure it is good enough,
-might has to reload the firmware, but not sure.
+Do you have a bugzilla# I can reference to?
 
 Thanks
 Wey
-
 
 On Mon, 2011-10-31 at 07:34 -0700, Dave Jones wrote:
 > I just got this trace, and a driver lockup that caused me to have to
@@ -228,46 +217,4 @@ On Mon, 2011-10-31 at 07:34 -0700, Dave Jones wrote:
 > [ 2670.798779] iwlwifi 0000:04:00.0: Radio type=0x0-0x2-0x0
 > 
 
-
---=-o4LIkKKc1RuFE17ipMrK
-Content-Disposition: attachment; filename="0001-iwlwifi-Detect-bogus-command-and-return.patch"
-Content-Type: text/x-patch; name="0001-iwlwifi-Detect-bogus-command-and-return.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 938ff5d1742cd27b66b70c2d17ec2bc4ee7d87a9 Mon Sep 17 00:00:00 2001
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Date: Tue, 22 Nov 2011 12:09:10 -0800
-Subject: [PATCH 1/1] iwlwifi: Detect bogus command and return
-
-If firmware error and sending bogus command, report and return.
-
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
----
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-index 049e3b6..2a65407 100644
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-@@ -925,11 +925,13 @@ void iwl_tx_cmd_complete(struct iwl_trans *trans, struct iwl_rx_mem_buffer *rxb,
- 	 * command queue then there a command routing bug has been introduced
- 	 * in the queue management code. */
- 	if (WARN(txq_id != trans->shrd->cmd_queue,
--		 "wrong command queue %d (should be %d), sequence 0x%X readp=%d writep=%d\n",
-+		 "wrong command queue %d (should be %d), "
-+		 "sequence 0x%X readp=%d writep=%d\n",
- 		  txq_id, trans->shrd->cmd_queue, sequence,
- 		  trans_pcie->txq[trans->shrd->cmd_queue].q.read_ptr,
- 		  trans_pcie->txq[trans->shrd->cmd_queue].q.write_ptr)) {
- 		iwl_print_hex_error(trans, pkt, 32);
-+		rxb->page = NULL;
- 		return;
- 	}
- 
--- 
-1.7.0.4
-
-
---=-o4LIkKKc1RuFE17ipMrK--
 
