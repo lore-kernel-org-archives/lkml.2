@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab1KVQRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 11:17:10 -0500
-Received: from xyratex197.xyratex.com ([194.131.166.197]:56481 "EHLO
-	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757646Ab1KVQRI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 11:17:08 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1757683Ab1KVQT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 11:19:29 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40793 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756822Ab1KVQT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 11:19:28 -0500
+Date: Tue, 22 Nov 2011 08:19:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: WANG Cong <xiyou.wangcong@gmail.com>, kexec@lists.infradead.org,
+        tim@edgecast.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: fix chunk range calculation
+Message-ID: <20111122161922.GC3250@google.com>
+References: <CAOS58YMOuJrvGxE1VxsU=ZPTLgY60HDJoLFjTowx9ZApUQ3tTw@mail.gmail.com>
+ <4EC491B3.705@redhat.com>
+ <CAMMEr5k_ynqg5-7Looar2DxXTGZcMqi5Lo+jtETn9awO_bsaGg@mail.gmail.com>
+ <4EC4B60C.3030706@redhat.com>
+ <1321548033.12208.12.camel@boudreau>
+ <4EC61AB6.4090808@redhat.com>
+ <4EC61B2A.7010000@redhat.com>
+ <20111118185535.GA27152@google.com>
+ <20111121211050.GK25776@google.com>
+ <4ECB0D7C.1020700@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating its implementation
-Date: Tue, 22 Nov 2011 08:17:03 -0800
-Message-ID: <FC1F9E38C0703341A1A750524E2525A901978CDE@XYUS-EX22.xyus.xyratex.com>
-In-Reply-To: <1321977410.1131.24.camel@Joe-Laptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating its implementation
-Thread-Index: AcypL4RgGkGfXoAEQSy9oy3ahjSgfQAAaT2g
-References: <1321569820.1624.290.camel@localhost.localdomain> <FC1F9E38C0703341A1A750524E2525A901978CD9@XYUS-EX22.xyus.xyratex.com> <1321977410.1131.24.camel@Joe-Laptop>
-From: "Mark Salyzyn" <mark_salyzyn@us.xyratex.com>
-To: "Joe Perches" <joe@perches.com>
-Cc: "Thomas Meyer" <thomas@m3y3r.de>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Achim Leubner" <Achim_Leubner@pmc-sierra.com>,
-        "Mahesh Rajashekhara" <Mahesh_Rajashekhara@pmc-sierra.com>
-X-OriginalArrivalTime: 22 Nov 2011 16:17:06.0422 (UTC) FILETIME=[2D879160:01CCA932]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECB0D7C.1020700@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aacraid@adaptec.com goes to them, I may have done a boo-boo by exposing
-the current underlying addressees. As it stands the patch was not
-addressed to any of the aacraid maintainers. The correct answer would
-have been for me to Cc: aacraid@adaptec.com.
+On Tue, Nov 22, 2011 at 10:48:28AM +0800, Dave Young wrote:
+> Tested-by: Dave Young <dyoung@redhat.com>
 
-The MAINTAINERS file is *correct*. It has dealt with the arbitrary
-transition of individual assigned maintainers within Adaptec (now PMC)
-for nearly a decade now.
+Thanks.  Applied to percpu/for-3.2-fixes with Tested-by added.
 
-Sincerely -- Mark Salyzyn (former maintainer, interested party now)
-
------Original Message-----
-From: linux-scsi-owner@vger.kernel.org
-[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Joe Perches
-Sent: Tuesday, November 22, 2011 10:57 AM
-To: Mark Salyzyn
-Cc: Thomas Meyer; JBottomley@parallels.com; linux-scsi@vger.kernel.org;
-linux-kernel@vger.kernel.org; Achim Leubner; Mahesh Rajashekhara
-Subject: RE: [PATCH] [SCSI] aacraid: Use kmemdup rather than duplicating
-its implementation
-
-> -----Original Message-----
-> The semantic patch that makes this change is available
-> in scripts/coccinelle/api/memdup.cocci.
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
-> 
-> diff -u -p a/drivers/scsi/aacraid/commctrl.c
-
-On Tue, 2011-11-22 at 06:24 -0800, Mark Salyzyn wrote:
-> This driver is maintained by Achim Leubner
-> <Achim_Leubner@pmc-sierra.com> and Mahesh Rajashekhara
-> <Mahesh_Rajashekhara@pmc-sierra.com>. I have added them so that either
-> one of them can have the opportunity to respond.
- 
-Really?  MAINTAINERS has:
-
-AACRAID SCSI RAID DRIVER
-M:	Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-L:	linux-scsi@vger.kernel.org
-W:	http://www.adaptec.com/
-S:	Supported
-F:	Documentation/scsi/aacraid.txt
-F:	drivers/scsi/aacraid/
-
-Should either or both Achim or Mahesh be added?
+-- 
+tejun
