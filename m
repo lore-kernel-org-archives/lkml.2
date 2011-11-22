@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab1KVSyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:54:43 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41923 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab1KVSyl (ORCPT
+	id S1754456Ab1KVSys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:54:48 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58883 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab1KVSyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:54:41 -0500
+	Tue, 22 Nov 2011 13:54:44 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
         Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [PATCH 2/3] reiserfs: Don't lock journal_init()
-Date: Tue, 22 Nov 2011 19:54:18 +0100
-Message-Id: <1321988059-13053-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/3] reiserfs: Don't lock root inode searching
+Date: Tue, 22 Nov 2011 19:54:19 +0100
+Message-Id: <1321988059-13053-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1321988059-13053-1-git-send-email-fweisbec@gmail.com>
 References: <1321988059-13053-1-git-send-email-fweisbec@gmail.com>
@@ -23,175 +24,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-journal_init() doesn't need the lock since no operation
-on the filesystem is involved there. journal_read() and
-get_list_bitmap() have yet to be reviewed carefully though
-before removing the lock there. Just keep the it around these
-two calls for safety.
+Nothing requires that we lock the filesystem until the root inode
+is provided.
 
+Also iget5_locked() triggers a warning because we are holding the
+filesystem lock while allocating the inode, which result in a lockdep
+suspicion that we have a lock inversion against the reclaim path:
+
+[ 1986.896979] =================================
+[ 1986.896990] [ INFO: inconsistent lock state ]
+[ 1986.896997] 3.1.1-main #8
+[ 1986.897001] ---------------------------------
+[ 1986.897007] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+[ 1986.897016] kswapd0/16 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[ 1986.897023]  (&REISERFS_SB(s)->lock){+.+.?.}, at: [<c01f8bd4>] reiserfs_write_lock+0x20/0x2a
+[ 1986.897044] {RECLAIM_FS-ON-W} state was registered at:
+[ 1986.897050]   [<c014a5b9>] mark_held_locks+0xae/0xd0
+[ 1986.897060]   [<c014aab3>] lockdep_trace_alloc+0x7d/0x91
+[ 1986.897068]   [<c0190ee0>] kmem_cache_alloc+0x1a/0x93
+[ 1986.897078]   [<c01e7728>] reiserfs_alloc_inode+0x13/0x3d
+[ 1986.897088]   [<c01a5b06>] alloc_inode+0x14/0x5f
+[ 1986.897097]   [<c01a5cb9>] iget5_locked+0x62/0x13a
+[ 1986.897106]   [<c01e99e0>] reiserfs_fill_super+0x410/0x8b9
+[ 1986.897114]   [<c01953da>] mount_bdev+0x10b/0x159
+[ 1986.897123]   [<c01e764d>] get_super_block+0x10/0x12
+[ 1986.897131]   [<c0195b38>] mount_fs+0x59/0x12d
+[ 1986.897138]   [<c01a80d1>] vfs_kern_mount+0x45/0x7a
+[ 1986.897147]   [<c01a83e3>] do_kern_mount+0x2f/0xb0
+[ 1986.897155]   [<c01a987a>] do_mount+0x5c2/0x612
+[ 1986.897163]   [<c01a9a72>] sys_mount+0x61/0x8f
+[ 1986.897170]   [<c044060c>] sysenter_do_call+0x12/0x32
+[ 1986.897181] irq event stamp: 7509691
+[ 1986.897186] hardirqs last  enabled at (7509691): [<c0190f34>] kmem_cache_alloc+0x6e/0x93
+[ 1986.897197] hardirqs last disabled at (7509690): [<c0190eea>] kmem_cache_alloc+0x24/0x93
+[ 1986.897209] softirqs last  enabled at (7508896): [<c01294bd>] __do_softirq+0xee/0xfd
+[ 1986.897222] softirqs last disabled at (7508859): [<c01030ed>] do_softirq+0x50/0x9d
+[ 1986.897234]
+[ 1986.897235] other info that might help us debug this:
+[ 1986.897242]  Possible unsafe locking scenario:
+[ 1986.897244]
+[ 1986.897250]        CPU0
+[ 1986.897254]        ----
+[ 1986.897257]   lock(&REISERFS_SB(s)->lock);
+[ 1986.897265] <Interrupt>
+[ 1986.897269]     lock(&REISERFS_SB(s)->lock);
+[ 1986.897276]
+[ 1986.897277]  *** DEADLOCK ***
+[ 1986.897278]
+[ 1986.897286] no locks held by kswapd0/16.
+[ 1986.897291]
+[ 1986.897292] stack backtrace:
+[ 1986.897299] Pid: 16, comm: kswapd0 Not tainted 3.1.1-main #8
+[ 1986.897306] Call Trace:
+[ 1986.897314]  [<c0439e76>] ? printk+0xf/0x11
+[ 1986.897324]  [<c01482d1>] print_usage_bug+0x20e/0x21a
+[ 1986.897332]  [<c01479b8>] ? print_irq_inversion_bug+0x172/0x172
+[ 1986.897341]  [<c014855c>] mark_lock+0x27f/0x483
+[ 1986.897349]  [<c0148d88>] __lock_acquire+0x628/0x1472
+[ 1986.897358]  [<c0149fae>] lock_acquire+0x47/0x5e
+[ 1986.897366]  [<c01f8bd4>] ? reiserfs_write_lock+0x20/0x2a
+[ 1986.897384]  [<c01f8bd4>] ? reiserfs_write_lock+0x20/0x2a
+[ 1986.897397]  [<c043b5ef>] mutex_lock_nested+0x35/0x26f
+[ 1986.897409]  [<c01f8bd4>] ? reiserfs_write_lock+0x20/0x2a
+[ 1986.897421]  [<c01f8bd4>] reiserfs_write_lock+0x20/0x2a
+[ 1986.897433]  [<c01e2edd>] map_block_for_writepage+0xc9/0x590
+[ 1986.897448]  [<c01b1706>] ? create_empty_buffers+0x33/0x8f
+[ 1986.897461]  [<c0121124>] ? get_parent_ip+0xb/0x31
+[ 1986.897472]  [<c043ef7f>] ? sub_preempt_count+0x81/0x8e
+[ 1986.897485]  [<c043cae0>] ? _raw_spin_unlock+0x27/0x3d
+[ 1986.897496]  [<c0121124>] ? get_parent_ip+0xb/0x31
+[ 1986.897508]  [<c01e355d>] reiserfs_writepage+0x1b9/0x3e7
+[ 1986.897521]  [<c0173b40>] ? clear_page_dirty_for_io+0xcb/0xde
+[ 1986.897533]  [<c014a6e3>] ? trace_hardirqs_on_caller+0x108/0x138
+[ 1986.897546]  [<c014a71e>] ? trace_hardirqs_on+0xb/0xd
+[ 1986.897559]  [<c0177b38>] shrink_page_list+0x34f/0x5e2
+[ 1986.897572]  [<c01780a7>] shrink_inactive_list+0x172/0x22c
+[ 1986.897585]  [<c0178464>] shrink_zone+0x303/0x3b1
+[ 1986.897597]  [<c043cae0>] ? _raw_spin_unlock+0x27/0x3d
+[ 1986.897611]  [<c01788c9>] kswapd+0x3b7/0x5f2
+
+The deadlock shouldn't happen since we are doing that allocation in
+the mount path, the filesystem is not available for any reclaim.
+Still the warning is annoying.
+
+To solve this, acquire the lock later only where we need it, right
+before calling reiserfs_read_locked_inode() that wants to lock to
+walk the tree.
+
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Jeff Mahoney <jeffm@suse.com>
 ---
- fs/reiserfs/journal.c |   53 ++++++++++++++++++------------------------------
- fs/reiserfs/super.c   |   21 ++++++++++---------
- 2 files changed, 31 insertions(+), 43 deletions(-)
+ fs/reiserfs/super.c |   28 +++++++++++++---------------
+ 1 files changed, 13 insertions(+), 15 deletions(-)
 
-diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
-index eb71106..728fb3fd 100644
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -2678,16 +2678,10 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
- 	char b[BDEVNAME_SIZE];
- 	int ret;
- 
--	/*
--	 * Unlock here to avoid various RECLAIM-FS-ON <-> IN-RECLAIM-FS
--	 * dependency inversion warnings.
--	 */
--	reiserfs_write_unlock(sb);
- 	journal = SB_JOURNAL(sb) = vzalloc(sizeof(struct reiserfs_journal));
- 	if (!journal) {
- 		reiserfs_warning(sb, "journal-1256",
- 				 "unable to get memory for journal structure");
--		reiserfs_write_lock(sb);
- 		return 1;
- 	}
- 	INIT_LIST_HEAD(&journal->j_bitmap_nodes);
-@@ -2695,10 +2689,8 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
- 	INIT_LIST_HEAD(&journal->j_working_list);
- 	INIT_LIST_HEAD(&journal->j_journal_list);
- 	journal->j_persistent_trans = 0;
--	ret = reiserfs_allocate_list_bitmaps(sb, journal->j_list_bitmap,
--					   reiserfs_bmap_count(sb));
--	reiserfs_write_lock(sb);
--	if (ret)
-+	if (reiserfs_allocate_list_bitmaps(sb, journal->j_list_bitmap,
-+					   reiserfs_bmap_count(sb)))
- 		goto free_and_return;
- 
- 	allocate_bitmap_nodes(sb);
-@@ -2727,27 +2719,11 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
- 		goto free_and_return;
- 	}
- 
--	/*
--	 * We need to unlock here to avoid creating the following
--	 * dependency:
--	 * reiserfs_lock -> sysfs_mutex
--	 * Because the reiserfs mmap path creates the following dependency:
--	 * mm->mmap -> reiserfs_lock, hence we have
--	 * mm->mmap -> reiserfs_lock ->sysfs_mutex
--	 * This would ends up in a circular dependency with sysfs readdir path
--	 * which does sysfs_mutex -> mm->mmap_sem
--	 * This is fine because the reiserfs lock is useless in mount path,
--	 * at least until we call journal_begin. We keep it for paranoid
--	 * reasons.
--	 */
--	reiserfs_write_unlock(sb);
- 	if (journal_init_dev(sb, journal, j_dev_name) != 0) {
--		reiserfs_write_lock(sb);
- 		reiserfs_warning(sb, "sh-462",
- 				 "unable to initialize jornal device");
- 		goto free_and_return;
- 	}
--	reiserfs_write_lock(sb);
- 
- 	rs = SB_DISK_SUPER_BLOCK(sb);
- 
-@@ -2829,9 +2805,7 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
- 	journal->j_mount_id = 10;
- 	journal->j_state = 0;
- 	atomic_set(&(journal->j_jlock), 0);
--	reiserfs_write_unlock(sb);
- 	journal->j_cnode_free_list = allocate_cnodes(num_cnodes);
--	reiserfs_write_lock(sb);
- 	journal->j_cnode_free_orig = journal->j_cnode_free_list;
- 	journal->j_cnode_free = journal->j_cnode_free_list ? num_cnodes : 0;
- 	journal->j_cnode_used = 0;
-@@ -2848,24 +2822,37 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
- 
- 	init_journal_hash(sb);
- 	jl = journal->j_current_jl;
-+
-+	/*
-+	 * get_list_bitmap() may call flush_commit_list() which
-+	 * requires the lock. Calling flush_commit_list() shouldn't happen
-+	 * this early but I like to be paranoid.
-+	 */
-+	reiserfs_write_lock(sb);
- 	jl->j_list_bitmap = get_list_bitmap(sb, jl);
-+	reiserfs_write_unlock(sb);
- 	if (!jl->j_list_bitmap) {
- 		reiserfs_warning(sb, "journal-2005",
- 				 "get_list_bitmap failed for journal list 0");
- 		goto free_and_return;
- 	}
--	if (journal_read(sb) < 0) {
-+
-+	/*
-+	 * Journal_read needs to be inspected in order to push down
-+	 * the lock further inside (or even remove it).
-+	 */
-+	reiserfs_write_lock(sb);
-+	ret = journal_read(sb);
-+	reiserfs_write_unlock(sb);
-+	if (ret < 0) {
- 		reiserfs_warning(sb, "reiserfs-2006",
- 				 "Replay Failure, unable to mount");
- 		goto free_and_return;
- 	}
- 
- 	reiserfs_mounted_fs_count++;
--	if (reiserfs_mounted_fs_count <= 1) {
--		reiserfs_write_unlock(sb);
-+	if (reiserfs_mounted_fs_count <= 1)
- 		commit_wq = alloc_workqueue("reiserfs", WQ_MEM_RECLAIM, 0);
--		reiserfs_write_lock(sb);
--	}
- 
- 	INIT_DELAYED_WORK(&journal->j_work, flush_async_commits);
- 	journal->j_work_sb = sb;
 diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 1f0d4fa..b5f167c 100644
+index b5f167c..7cd9313 100644
 --- a/fs/reiserfs/super.c
 +++ b/fs/reiserfs/super.c
-@@ -1727,6 +1727,17 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 		printk("reiserfs: using flush barriers\n");
+@@ -1428,9 +1428,7 @@ static int read_super_block(struct super_block *s, int offset)
+ static int reread_meta_blocks(struct super_block *s)
+ {
+ 	ll_rw_block(READ, 1, &(SB_BUFFER_WITH_SB(s)));
+-	reiserfs_write_unlock(s);
+ 	wait_on_buffer(SB_BUFFER_WITH_SB(s));
+-	reiserfs_write_lock(s);
+ 	if (!buffer_uptodate(SB_BUFFER_WITH_SB(s))) {
+ 		reiserfs_warning(s, "reiserfs-2504", "error reading the super");
+ 		return 1;
+@@ -1738,24 +1736,14 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
+ 				 */
  	}
  
-+	// set_device_ro(s->s_dev, 1) ;
-+	if (journal_init(s, jdev_name, old_format, commit_max_age)) {
-+		SWARN(silent, s, "sh-2022",
-+		      "unable to initialize journal space");
-+		goto error_unlocked;
-+	} else {
-+		jinit_done = 1;	/* once this is set, journal_release must be called
-+				 ** if we error out of the mount
-+				 */
-+	}
-+
- 	/*
- 	 * This path assumed to be called with the BKL in the old times.
- 	 * Now we have inherited the big reiserfs lock from it and many
-@@ -1737,16 +1748,6 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	 */
- 	reiserfs_write_lock(s);
- 
--	// set_device_ro(s->s_dev, 1) ;
--	if (journal_init(s, jdev_name, old_format, commit_max_age)) {
--		SWARN(silent, s, "sh-2022",
--		      "unable to initialize journal space");
--		goto error;
--	} else {
--		jinit_done = 1;	/* once this is set, journal_release must be called
--				 ** if we error out of the mount
--				 */
--	}
+-	/*
+-	 * This path assumed to be called with the BKL in the old times.
+-	 * Now we have inherited the big reiserfs lock from it and many
+-	 * reiserfs helpers called in the mount path and elsewhere require
+-	 * this lock to be held even if it's not always necessary. Let's be
+-	 * conservative and hold it early. The window can be reduced after
+-	 * careful review of the code.
+-	 */
+-	reiserfs_write_lock(s);
+-
  	if (reread_meta_blocks(s)) {
  		SWARN(silent, s, "jmacd-9",
  		      "unable to reread meta blocks after journal init");
+-		goto error;
++		goto error_unlocked;
+ 	}
+ 
+ 	if (replay_only(s))
+-		goto error;
++		goto error_unlocked;
+ 
+ 	if (bdev_read_only(s->s_bdev) && !(s->s_flags & MS_RDONLY)) {
+ 		SWARN(silent, s, "clm-7000",
+@@ -1769,9 +1757,19 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
+ 			 reiserfs_init_locked_inode, (void *)(&args));
+ 	if (!root_inode) {
+ 		SWARN(silent, s, "jmacd-10", "get root inode failed");
+-		goto error;
++		goto error_unlocked;
+ 	}
+ 
++	/*
++	 * This path assumed to be called with the BKL in the old times.
++	 * Now we have inherited the big reiserfs lock from it and many
++	 * reiserfs helpers called in the mount path and elsewhere require
++	 * this lock to be held even if it's not always necessary. Let's be
++	 * conservative and hold it early. The window can be reduced after
++	 * careful review of the code.
++	 */
++	reiserfs_write_lock(s);
++
+ 	if (root_inode->i_state & I_NEW) {
+ 		reiserfs_read_locked_inode(root_inode, &args);
+ 		unlock_new_inode(root_inode);
 -- 
 1.7.5.4
 
