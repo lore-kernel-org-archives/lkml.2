@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab1KVUuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:50:03 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:53763 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758356Ab1KVUuA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:50:00 -0500
-Date: Tue, 22 Nov 2011 15:49:47 -0500 (EST)
-Message-Id: <20111122.154947.1718064671878190578.davem@davemloft.net>
-To: david.decotigny@google.com
-Cc: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        peter.p.waskiewicz.jr@intel.com, alexander.h.duyck@intel.com,
-        john.ronciak@intel.com, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, ian.campbell@citrix.com,
-        paul.gortmaker@windriver.com
-Subject: Re: [PATCH net-next v1 0/4] e1000e: ethtool setfeatures fixes +
- loopback
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111122.154927.1808817488257424268.davem@davemloft.net>
-References: <cover.1321917278.git.david.decotigny@google.com>
-	<20111122.154927.1808817488257424268.davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1758524Ab1KVUuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:50:17 -0500
+Received: from lo.gmane.org ([80.91.229.12]:56276 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757232Ab1KVUuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:50:14 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Michael Basse <michael@alpha-unix.de>
+Subject: Re: Kernelpanic on eeePC and MSI Wind (both using rt2800pci) with
+ Linux 3.x
+Date: Tue, 22 Nov 2011 21:49:49 +0100
+Message-ID: <jah1te$h33$1@dough.gmane.org>
+References: <4EB4006F.3040602@alpha-unix.de> <j978hu$i23$1@dough.gmane.org> <j9o412$oum$1@dough.gmane.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 12:49:50 -0800 (PST)
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p5791742e.dip0.t-ipconnect.de
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+In-Reply-To: <j9o412$oum$1@dough.gmane.org>
+X-Enigmail-Version: 1.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Sorry I replied to the wrong posting :-/  My bad.
+just for the record. This thread is hopefully providing a patch
+
+http://thread.gmane.org/gmane.linux.kernel.wireless.general/80759
+
+already built the kernel and doing some testing now.
+
+Greetings
+
+Michael Basse
+
+
+
