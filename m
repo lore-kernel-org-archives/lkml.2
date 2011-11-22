@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab1KVUPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:15:38 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:53366 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab1KVUPg (ORCPT
+	id S1756508Ab1KVURE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:17:04 -0500
+Received: from mail209.messagelabs.com ([216.82.255.3]:61959 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252Ab1KVURC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:15:36 -0500
-Date: Tue, 22 Nov 2011 15:14:29 -0500 (EST)
-Message-Id: <20111122.151429.253381379981773726.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2011-11-22
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111122193505.GC8452@tuxdriver.com>
-References: <20111122193505.GC8452@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 12:14:32 -0800 (PST)
+	Tue, 22 Nov 2011 15:17:02 -0500
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-209.messagelabs.com!1321993011!16946914!13
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "rmallon@gmail.com" <rmallon@gmail.com>,
+        Rafal Prylowski <prylowski@metasoft.pl>
+Date: Tue, 22 Nov 2011 14:16:47 -0600
+Subject: RE: [PATCH 1/2] dma/ep93xx_dma: fix initialization of M2M control
+ register
+Thread-Topic: [PATCH 1/2] dma/ep93xx_dma: fix initialization of M2M control
+ register
+Thread-Index: AcypT17lZQnoBwcjQSuSFSjFyIeaLgABDduA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3E96DA6B2@AUSP01VMBX24.collaborationhost.net>
+References: <19bcd0ee953116fd71bc1c705636c5fec80608cb.1321990466.git.mika.westerberg@iki.fi>
+In-Reply-To: <19bcd0ee953116fd71bc1c705636c5fec80608cb.1321990466.git.mika.westerberg@iki.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 22 Nov 2011 14:35:05 -0500
-
-> Here is the latest batch of fixes intended for 3.2.  This includes a
-> correction for a user-visible error in mac80211's debugfs info, a fix
-> for a potential memory corrupter in prism54, an endian fix for rt2x00,
-> an endian fix for mac80211, a fix for a NULL derefernce in cfg80211, a
-> locking fix and a deadlock fix for p54spi, and a pair of rt2x00 fixes
-> for handling some spurious interrupts that hardware can generate.
+On Tuesday, November 22, 2011 12:46 PM, Mika Westerberg wrote:
+> From: Rafal Prylowski <prylowski@metasoft.pl>
 > 
-> Please let me know if there are problems!
+> Setting the flags in case of IDE didn't have any effect since the control
+> register is overwritten few lines below. So move these to be after the control
+> register is initialized.
+> 
+> Signed-off-by: Rafal Prylowski <prylowski@metasoft.pl>
+> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
 
-The rt2800pci change doesn't look correct.
-
-If the IRQ line is shared with another device, this change will make it
-never see interrupts.  Once you say "IRQ_HANDLED" the IRQ dispatch
-stops processing the interrupt handler list.
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
