@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab1KVG1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 01:27:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65395 "EHLO mx1.redhat.com"
+	id S1754087Ab1KVGlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 01:41:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61907 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab1KVG1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 01:27:53 -0500
-Date: Tue, 22 Nov 2011 08:29:08 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
-Message-ID: <20111122062907.GB11012@redhat.com>
-References: <patchbomb.1320306168@localhost6.localdomain6>
- <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
- <20111113210256.GA31621@redhat.com>
- <20111114065606.GA3779@redhat.com>
- <871ut8q5mh.fsf@rustcorp.com.au>
- <20111116071838.GE5433@redhat.com>
- <8739dib5z6.fsf@rustcorp.com.au>
- <20111121115702.GA27580@redhat.com>
- <87lir9xagv.fsf@rustcorp.com.au>
+	id S1752653Ab1KVGlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 01:41:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,551,1315206000"; 
+   d="scan'208";a="87991224"
+Date: Tue, 22 Nov 2011 14:41:49 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] writeback: balanced_rate cannot exceed write
+ bandwidth
+Message-ID: <20111122064149.GA12864@localhost>
+References: <20111121130342.211953629@intel.com>
+ <20111121131215.645601798@intel.com>
+ <20111121225049.GE4017@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87lir9xagv.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111121225049.GE4017@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 11:03:04AM +1030, Rusty Russell wrote:
-> On Mon, 21 Nov 2011 13:57:04 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Mon, Nov 21, 2011 at 12:18:45PM +1030, Rusty Russell wrote:
-> > > On Wed, 16 Nov 2011 09:18:38 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > My unlocked kick patches will trip this warning: they make
-> > > > virtio-net do add + get without kick.
-> > > 
-> > > Heh, it's a good sign if they do, since that means you're running really
-> > > well :)
+On Tue, Nov 22, 2011 at 06:50:49AM +0800, Jan Kara wrote:
+> On Mon 21-11-11 21:03:43, Wu Fengguang wrote:
+> > Add an upper limit to balanced_rate according to the below inequality.
+> > This filters out some rare but huge singular points, which at least
+> > enables more readable gnuplot figures.
 > > 
-> > They don't in fact, in my testing :(. But I think they can with luck.
+> > When there are N dd dirtiers,
 > > 
-> > > > I think block with unlocked kick can trip it too:
-> > > > add, lock is dropped and then an interrupt can get.
-> > > > 
-> > > > We also don't need a kick each num - each 2^15 is enough.
-> > > > Why don't we do this at start of add_buf:
-> > > > if (vq->num_added >= 0x7fff)
-> > > > 	return -ENOSPC;
-> > > 
-> > > The warning was there in case a driver is never doing a kick, and
-> > > getting away with it (mostly) because the device is polling.  Let's not
-> > > penalize good drivers to catch bad ones.
-> > > 
-> > > How about we do this properly, like so:
+> > 	balanced_dirty_ratelimit = write_bw / N
 > > 
-> > Absolutely. But I think we also need to handle num_added
-> > overflow of a 15 bit counter, no? Otherwise the
-> > vring_need_event logic might give us false negatives ....
-> > I'm guessing we can just assume we need a kick in that case.
-> 
-> You're right.  Thankyou.  My immediate reaction of "make it an unsigned
-> long" doesn't work.
-> 
-> Here's the diff to what I posted before:
-> 
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -254,9 +254,10 @@ add_head:
->  	vq->vring.avail->idx++;
->  	vq->num_added++;
->  
-> -	/* If you haven't kicked in this long, you're probably doing something
-> -	 * wrong. */
-> -	WARN_ON(vq->num_added > vq->vring.num);
-> +	/* This is very unlikely, but theoretically possible.  Kick
-> +	 * just in case. */
-> +	if (unlikely(vq->num_added == 65535))
+> > So it holds that
+> > 
+> > 	balanced_dirty_ratelimit <= write_bw
+>   The change makes sense, but do we understand why there are such huge
+> singular points? Are they due to errors in estimation of bandwidth or due
+> to errors in dirtying rate computations (e.g. due to truncates), or
+> something else?
 
-This is 0xffff but why use the decimal notation?
+Good point. I'll add this to the changelog:
 
-> +		virtqueue_kick(_vq);
->  
->  	pr_debug("Added buffer head %i to %p\n", head, vq);
->  	END_USE(vq);
+The singular points originate from dirty_rate in the below formular:
 
-We also still need to reset vq->num_added, right?
+        balanced_dirty_ratelimit = task_ratelimit * write_bw / dirty_rate
+where
+        dirty_rate = (number of page dirties in the past 200ms) / 200ms
 
--- 
-MST
+In the extreme case, if all dd tasks suddenly get blocked on something 
+else and hence no pages are dirtied at all, dirty_rate will be 0 and
+balanced_dirty_ratelimit will be inf. This could happen in reality.
+
+There won't be tiny singular points though, as long as the dirty pages
+lie inside the dirty control area (above the freerun region).
+Because there the dd tasks will be throttled by balanced_dirty_pages()
+and won't be able to suddenly dirty much more pages than average.
+
+Thanks,
+Fengguang
