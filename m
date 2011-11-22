@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab1KVERO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 23:17:14 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14695 "EHLO mga14.intel.com"
+	id S1753408Ab1KVE0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 23:26:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:20975 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab1KVERN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 23:17:13 -0500
+	id S1752591Ab1KVE0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 23:26:32 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,551,1315206000"; 
-   d="scan'208";a="39967528"
-Subject: Re: [PATCH] dmaengine/dw_dmac: Reconfigure interrupt and chan_cfg
- register on resume
+   d="scan'208";a="39968764"
+Subject: Re: [PATCH v2] dmaengine/ste_dma40: support pm in dma40
 From: Vinod Koul <vinod.koul@intel.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: linux-kernel@vger.kernel.org, armando.visconti@st.com,
-        shiraz.hashim@st.com, vipin.kumar@st.com, rajeev-dlh.kumar@st.com,
-        deepak.sikri@st.com, vipulkumar.samar@st.com, amit.virdi@st.com,
-        pratyush.anand@st.com, bhupesh.sharma@st.com, viresh.linux@gmail.com,
-        bhavna.yadav@st.com, vincenzo.frascino@st.com, mirko.gardi@st.com
-In-Reply-To: <69e29c139ba027029e11940c6693e9d50dc21613.1321525673.git.viresh.kumar@st.com>
-References: <69e29c139ba027029e11940c6693e9d50dc21613.1321525673.git.viresh.kumar@st.com>
+To: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        rabin.vincent@stericsson.com
+In-Reply-To: <1321531001-1090-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
+References: <1321531001-1090-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Nov 2011 09:43:26 +0530
-Message-ID: <1321935206.1516.217.camel@vkoul-udesk3>
+Date: Tue, 22 Nov 2011 09:52:49 +0530
+Message-ID: <1321935769.1516.218.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,186 +26,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 16:01 +0530, Viresh Kumar wrote:
-> In S2R all DMA registers are reset by hardware and thus they are required to be
-When are they reset, whenever you leave channel idle or once you come
-back from suspend?
+On Thu, 2011-11-17 at 17:26 +0530, Narayanan G wrote:
+> This patch adds power management support to the dma40
+> driver. The DMA registers are backed up and restored,
+> during suspend/resume. Also flags to track the dma usage
+> have been introduced to facilitate this. Patch also includes
+> few other minor changes, related to formatting, comments.
+> 
+> Change-Id: I4da140e5aca462c22490146b5c03cff72a7bd803
+> Signed-off-by: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org> 
 
-Otherwise seems fine
-> reprogrammed. The channels which aren't reprogrammed are channel configuration
-> and interrupt enable registers, which are currently programmed at chan_alloc
-> time.
-> 
-> This patch creates another routine to initialize a channel. It will try to
-> initialize channel on every dwc_dostart() call. If channel is already
-> initialised then it simply returns, otherwise it configures registers.
-> 
-> This routine will also initialize registers on wakeup from S2R, as we mark
-> channels as uninitialized on suspend.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> ---
-> 
-> Vinod,
-> 
-> This is rebased over your next branch with top commit:
-> 
-> commit 9b3fd2438c9cb19e7c7211c8dc33c45e1cb58bdf
-> Author: Ciaran McCormick <ciaranmccormick@gmail.com>
-> Date:   Mon Oct 31 19:29:26 2011 +0000
-> 
-> dma: fix spacing for method declaration, coding style issue in iop-adma.c
->         
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 9bfd6d3..8980893 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -166,6 +166,38 @@ dwc_assign_cookie(struct dw_dma_chan *dwc, struct dw_desc *desc)
->  	return cookie;
->  }
->  
-> +static void dwc_initialize(struct dw_dma_chan *dwc)
-> +{
-> +	struct dw_dma *dw = to_dw_dma(dwc->chan.device);
-> +	struct dw_dma_slave *dws = dwc->chan.private;
-> +	u32 cfghi = DWC_CFGH_FIFO_MODE;
-> +	u32 cfglo = DWC_CFGL_CH_PRIOR(dwc->priority);
-> +
-> +	if (dwc->initialized == true)
-> +		return;
-> +
-> +	if (dws) {
-> +		/*
-> +		 * We need controller-specific data to set up slave
-> +		 * transfers.
-> +		 */
-> +		BUG_ON(!dws->dma_dev || dws->dma_dev != dw->dma.dev);
-> +
-> +		cfghi = dws->cfg_hi;
-> +		cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
-> +	}
-> +
-> +	channel_writel(dwc, CFG_LO, cfglo);
-> +	channel_writel(dwc, CFG_HI, cfghi);
-> +
-> +	/* Enable interrupts */
-> +	channel_set_bit(dw, MASK.XFER, dwc->mask);
-> +	channel_set_bit(dw, MASK.BLOCK, dwc->mask);
-> +	channel_set_bit(dw, MASK.ERROR, dwc->mask);
-> +
-> +	dwc->initialized = true;
-> +}
-> +
->  /*----------------------------------------------------------------------*/
->  
->  /* Called with dwc->lock held and bh disabled */
-> @@ -189,6 +221,8 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
->  		return;
->  	}
->  
-> +	dwc_initialize(dwc);
-> +
->  	channel_writel(dwc, LLP, first->txd.phys);
->  	channel_writel(dwc, CTL_LO,
->  			DWC_CTLL_LLP_D_EN | DWC_CTLL_LLP_S_EN);
-> @@ -959,10 +993,7 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
->  	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
->  	struct dw_dma		*dw = to_dw_dma(chan->device);
->  	struct dw_desc		*desc;
-> -	struct dw_dma_slave	*dws;
->  	int			i;
-> -	u32			cfghi;
-> -	u32			cfglo;
->  	unsigned long		flags;
->  
->  	dev_vdbg(chan2dev(chan), "alloc_chan_resources\n");
-> @@ -975,26 +1006,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
->  
->  	dwc->completed = chan->cookie = 1;
->  
-> -	cfghi = DWC_CFGH_FIFO_MODE;
-> -	cfglo = 0;
-> -
-> -	dws = chan->private;
-> -	if (dws) {
-> -		/*
-> -		 * We need controller-specific data to set up slave
-> -		 * transfers.
-> -		 */
-> -		BUG_ON(!dws->dma_dev || dws->dma_dev != dw->dma.dev);
-> -
-> -		cfghi = dws->cfg_hi;
-> -		cfglo = dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
-> -	}
-> -
-> -	cfglo |= DWC_CFGL_CH_PRIOR(dwc->priority);
-> -
-> -	channel_writel(dwc, CFG_LO, cfglo);
-> -	channel_writel(dwc, CFG_HI, cfghi);
-> -
->  	/*
->  	 * NOTE: some controllers may have additional features that we
->  	 * need to initialize here, like "scatter-gather" (which
-> @@ -1026,11 +1037,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
->  		i = ++dwc->descs_allocated;
->  	}
->  
-> -	/* Enable interrupts */
-> -	channel_set_bit(dw, MASK.XFER, dwc->mask);
-> -	channel_set_bit(dw, MASK.BLOCK, dwc->mask);
-> -	channel_set_bit(dw, MASK.ERROR, dwc->mask);
-> -
->  	spin_unlock_irqrestore(&dwc->lock, flags);
->  
->  	dev_dbg(chan2dev(chan),
-> @@ -1058,6 +1064,7 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
->  	spin_lock_irqsave(&dwc->lock, flags);
->  	list_splice_init(&dwc->free_list, &list);
->  	dwc->descs_allocated = 0;
-> +	dwc->initialized = false;
->  
->  	/* Disable interrupts */
->  	channel_clear_bit(dw, MASK.XFER, dwc->mask);
-> @@ -1335,6 +1342,8 @@ EXPORT_SYMBOL(dw_dma_cyclic_free);
->  
->  static void dw_dma_off(struct dw_dma *dw)
->  {
-> +	int i;
-> +
->  	dma_writel(dw, CFG, 0);
->  
->  	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
-> @@ -1345,6 +1354,9 @@ static void dw_dma_off(struct dw_dma *dw)
->  
->  	while (dma_readl(dw, CFG) & DW_CFG_DMA_EN)
->  		cpu_relax();
-> +
-> +	for (i = 0; i < dw->dma.chancnt; i++)
-> +		dw->chan[i].initialized =01a01f9db7dd061e6ec6ae587deb773d2864e3a0 false;
->  }
->  
->  static int __init dw_probe(struct platform_device *pdev)
-> @@ -1533,6 +1545,7 @@ static int dw_suspend_noirq(struct device *dev)
->  
->  	dw_dma_off(platform_get_drvdata(pdev));
->  	clk_disable(dw->clk);
-> +
->  	return 0;
->  }
->  
-> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> index c341951..5eef694 100644
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-> @@ -140,6 +140,7 @@ struct dw_dma_chan {
->  	u8			mask;
->  	u8			priority;
->  	bool			paused;
-> +	bool			initialized;
->  
->  	spinlock_t		lock;
->  
-
+Applied after stripping the Change-ID
 
 -- 
 ~Vinod
