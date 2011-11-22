@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab1KVBny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:43:54 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:58320 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758055Ab1KVBnu (ORCPT
+	id S1758166Ab1KVBoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:44:04 -0500
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:58388 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755547Ab1KVBn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:43:50 -0500
+	Mon, 21 Nov 2011 20:43:59 -0500
 From: Mike Turquette <mturquette@ti.com>
 To: linux@arm.linux.org.uk
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         arnd.bergmann@linaro.org, eric.miao@linaro.org,
         richard.zhao@linaro.org, mturquette@ti.com,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v3 3/5] clk: introduce the common clock framework
-Date: Mon, 21 Nov 2011 17:40:45 -0800
-Message-Id: <1321926047-14211-4-git-send-email-mturquette@linaro.org>
+Subject: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
+Date: Mon, 21 Nov 2011 17:40:47 -0800
+Message-Id: <1321926047-14211-6-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
 References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
@@ -29,769 +29,338 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The common clk framework is an attempt to define a common struct clk
-which can be used by most platforms, and an API that drivers can always
-use safely for managing clks.
+Introduces kobject support for the common struct clk, exports per-clk
+data via read-only callbacks and models the clk tree topology in sysfs.
 
-The net result is consolidation of many different struct clk definitions
-and platform-specific clk framework implementations.
-
-This patch introduces the common struct clk, struct clk_hw_ops and
-definitions for the long-standing clk API in include/clk/clk.h.
-Platforms may define their own hardware-specific clk structure, so long
-as it wraps an instance of the common struct clk which is passed to
-clk_init at initialization time.  From this point on all of the usual
-clk APIs should be supported, so long as the platform supports them
-through hardware-specific callbacks in struct clk_hw_ops.
-
-See Documentation/clk.h for more details.
-
-This patch is based on the work of Jeremy Kerr, which in turn was based
-on the work of Ben Herrenschmidt.  Big thanks to both of them for
-kickstarting this effort.
+Also adds support for generating the clk tree in clk_init and migrating
+nodes when input sources are switches in clk_set_parent.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/Kconfig  |    4 +
- drivers/clk/Makefile |    1 +
- drivers/clk/clk.c    |  538 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk.h  |  134 ++++++++++++-
- 4 files changed, 673 insertions(+), 4 deletions(-)
- create mode 100644 drivers/clk/clk.c
+ drivers/clk/Kconfig     |   10 +++
+ drivers/clk/Makefile    |    1 +
+ drivers/clk/clk-sysfs.c |  199 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/clk.c       |    5 +-
+ include/linux/clk.h     |   36 ++++++++-
+ 5 files changed, 248 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/clk/clk-sysfs.c
 
 diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 7a9899bd..adc0586 100644
+index ba7eb8c..8f8e7ac 100644
 --- a/drivers/clk/Kconfig
 +++ b/drivers/clk/Kconfig
-@@ -8,3 +8,7 @@ config HAVE_MACH_CLKDEV
- 
- config HAVE_CLK_PREPARE
- 	bool
+@@ -19,3 +19,13 @@ config GENERIC_CLK_BASIC
+ 	help
+ 	   Allow use of basic, single-function clock types.  These
+ 	   common definitions can be used across many platforms.
 +
-+config GENERIC_CLK
-+	bool
-+	select HAVE_CLK_PREPARE
++config GENERIC_CLK_SYSFS
++	bool "Clock tree topology and debug info"
++	depends on EXPERIMENTAL && GENERIC_CLK
++	help
++	   Creates clock tree represenation in sysfs.  Directory names
++	   and hierarchy represent clock names and tree structure,
++	   respectively.  Each directory exports clock rate, flags,
++	   prepare_count and enable_count info as read-only for debug
++	   purposes.
 diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 07613fa..570d5b9 100644
+index 68b20a1..806a9999 100644
 --- a/drivers/clk/Makefile
 +++ b/drivers/clk/Makefile
-@@ -1,2 +1,3 @@
- 
- obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
-+obj-$(CONFIG_GENERIC_CLK)	+= clk.o
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+@@ -2,3 +2,4 @@
+ obj-$(CONFIG_CLKDEV_LOOKUP)		+= clkdev.o
+ obj-$(CONFIG_GENERIC_CLK)		+= clk.o
+ obj-$(CONFIG_GENERIC_CLK_BASIC)		+= clk-basic.o
++obj-$(CONFIG_GENERIC_CLK_SYSFS)		+= clk-sysfs.o
+diff --git a/drivers/clk/clk-sysfs.c b/drivers/clk/clk-sysfs.c
 new file mode 100644
-index 0000000..12c9994
+index 0000000..8ccf9e3
 --- /dev/null
-+++ b/drivers/clk/clk.c
-@@ -0,0 +1,538 @@
++++ b/drivers/clk/clk-sysfs.c
+@@ -0,0 +1,199 @@
 +/*
-+ * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
 + * Copyright (C) 2011 Linaro Ltd <mturquette@linaro.org>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Standard functionality for the common clock API.  See Documentation/clk.txt
++ * Clock tree topology and debug info for the common clock framework
 + */
 +
 +#include <linux/clk.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
 +#include <linux/err.h>
 +
-+static DEFINE_SPINLOCK(enable_lock);
-+static DEFINE_MUTEX(prepare_lock);
++#define MAX_STRING_LENGTH	32
 +
-+void __clk_unprepare(struct clk *clk)
++static struct kobject *clk_kobj;
++LIST_HEAD(kobj_list);
++
++struct clk_attribute {
++	struct attribute attr;
++	ssize_t (*show)(struct clk *clk, char *buf);
++};
++
++static ssize_t clk_rate_show(struct clk *clk, char *buf)
 +{
-+	if (!clk)
-+		return;
++	if (IS_ERR_OR_NULL(clk))
++		return -ENODEV;
 +
-+	if (WARN_ON(clk->prepare_count == 0))
-+		return;
-+
-+	if (--clk->prepare_count > 0)
-+		return;
-+
-+	WARN_ON(clk->enable_count > 0);
-+
-+	if (clk->ops->unprepare)
-+		clk->ops->unprepare(clk);
-+
-+	__clk_unprepare(clk->parent);
++	return snprintf(buf, MAX_STRING_LENGTH, "%lu\n", clk->rate);
 +}
 +
-+/**
-+ * clk_unprepare - perform the slow part of a clk gate
-+ * @clk: the clk being gated
-+ *
-+ * clk_unprepare may sleep, which differentiates it from clk_disable.  In a
-+ * simple case, clk_unprepare can be used instead of clk_disable to gate a clk
-+ * if the operation may sleep.  One example is a clk which is accessed over
-+ * I2c.  In the complex case a clk gate operation may require a fast and a slow
-+ * part.  It is this reason that clk_unprepare and clk_disable are not mutually
-+ * exclusive.  In fact clk_disable must be called before clk_unprepare.
-+ */
-+void clk_unprepare(struct clk *clk)
++static ssize_t clk_flags_show(struct clk *clk, char *buf)
 +{
-+	mutex_lock(&prepare_lock);
-+	__clk_unprepare(clk);
-+	mutex_unlock(&prepare_lock);
-+}
-+EXPORT_SYMBOL_GPL(clk_unprepare);
++	if (IS_ERR_OR_NULL(clk))
++		return -ENODEV;
 +
-+int __clk_prepare(struct clk *clk)
-+{
-+	int ret = 0;
-+
-+	if (!clk)
-+		return 0;
-+
-+	if (clk->prepare_count == 0) {
-+		ret = __clk_prepare(clk->parent);
-+		if (ret)
-+			return ret;
-+
-+		if (clk->ops->prepare) {
-+			ret = clk->ops->prepare(clk);
-+			if (ret) {
-+				__clk_unprepare(clk->parent);
-+				return ret;
-+			}
-+		}
-+	}
-+
-+	clk->prepare_count++;
-+
-+	return 0;
++	return snprintf(buf, MAX_STRING_LENGTH, "0x%lX\n", clk->flags);
 +}
 +
-+/**
-+ * clk_prepare - perform the slow part of a clk ungate
-+ * @clk: the clk being ungated
-+ *
-+ * clk_prepare may sleep, which differentiates it from clk_enable.  In a simple
-+ * case, clk_prepare can be used instead of clk_enable to ungate a clk if the
-+ * operation may sleep.  One example is a clk which is accessed over I2c.  In
-+ * the complex case a clk ungate operation may require a fast and a slow part.
-+ * It is this reason that clk_prepare and clk_enable are not mutually
-+ * exclusive.  In fact clk_prepare must be called before clk_enable.
-+ * Returns 0 on success, -EERROR otherwise.
-+ */
-+int clk_prepare(struct clk *clk)
++static ssize_t clk_prepare_count_show(struct clk *clk, char *buf)
 +{
-+	int ret;
++	if (IS_ERR_OR_NULL(clk))
++		return -ENODEV;
 +
-+	mutex_lock(&prepare_lock);
-+	ret = __clk_prepare(clk);
-+	mutex_unlock(&prepare_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(clk_prepare);
-+
-+void __clk_disable(struct clk *clk)
-+{
-+	if (!clk)
-+		return;
-+
-+	if (WARN_ON(clk->enable_count == 0))
-+		return;
-+
-+	if (--clk->enable_count > 0)
-+		return;
-+
-+	if (clk->ops->disable)
-+		clk->ops->disable(clk);
-+
-+	if (clk->parent)
-+		__clk_disable(clk->parent);
++	return snprintf(buf, MAX_STRING_LENGTH, "%d\n", clk->prepare_count);
 +}
 +
-+/**
-+ * clk_disable - perform the fast part of a clk gate
-+ * @clk: the clk being gated
-+ *
-+ * clk_disable must not sleep, which differentiates it from clk_unprepare.  In
-+ * a simple case, clk_disable can be used instead of clk_unprepare to gate a
-+ * clk if the operation is fast and will never sleep.  One example is a
-+ * SoC-internal clk which is controlled via simple register writes.  In the
-+ * complex case a clk gate operation may require a fast and a slow part.  It is
-+ * this reason that clk_unprepare and clk_disable are not mutually exclusive.
-+ * In fact clk_disable must be called before clk_unprepare.
-+ */
-+void clk_disable(struct clk *clk)
++static ssize_t clk_enable_count_show(struct clk *clk, char *buf)
 +{
-+	unsigned long flags;
++	if (IS_ERR_OR_NULL(clk))
++		return -ENODEV;
 +
-+	spin_lock_irqsave(&enable_lock, flags);
-+	__clk_disable(clk);
-+	spin_unlock_irqrestore(&enable_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(clk_disable);
-+
-+int __clk_enable(struct clk *clk)
-+{
-+	int ret = 0;
-+
-+	if (!clk)
-+		return 0;
-+
-+	if (WARN_ON(clk->prepare_count == 0))
-+		return -ESHUTDOWN;
-+
-+	if (clk->enable_count == 0) {
-+		if (clk->parent)
-+			ret = __clk_enable(clk->parent);
-+
-+		if (ret)
-+			return ret;
-+
-+		if (clk->ops->enable) {
-+			ret = clk->ops->enable(clk);
-+			if (ret) {
-+				__clk_disable(clk->parent);
-+				return ret;
-+			}
-+		}
-+	}
-+
-+	clk->enable_count++;
-+	return 0;
++	return snprintf(buf, MAX_STRING_LENGTH, "%d\n", clk->enable_count);
 +}
 +
-+/**
-+ * clk_enable - perform the slow part of a clk ungate
-+ * @clk: the clk being ungated
-+ *
-+ * clk_enable must not sleep, which differentiates it from clk_prepare.  In a
-+ * simple case, clk_enable can be used instead of clk_prepare to ungate a clk
-+ * if the operation will never sleep.  One example is a SoC-internal clk which
-+ * is controlled via simple register writes.  In the complex case a clk ungate
-+ * operation may require a fast and a slow part.  It is this reason that
-+ * clk_enable and clk_prepare are not mutually exclusive.  In fact clk_prepare
-+ * must be called before clk_enable.  Returns 0 on success, -EERROR
-+ * otherwise.
-+ */
-+int clk_enable(struct clk *clk)
++static ssize_t clk_show(struct kobject *kobj, struct attribute *attr,
++		char *buf)
 +{
-+	unsigned long flags;
-+	int ret;
++	struct clk *clk;
++	struct clk_attribute *clk_attr;
++	ssize_t ret = -EINVAL;
 +
-+	spin_lock_irqsave(&enable_lock, flags);
-+	ret = __clk_enable(clk);
-+	spin_unlock_irqrestore(&enable_lock, flags);
++	clk = container_of(kobj, struct clk, kobj);
++	clk_attr = container_of(attr, struct clk_attribute, attr);
 +
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(clk_enable);
-+
-+/**
-+ * clk_get_rate - return the rate of clk
-+ * @clk: the clk whose rate is being returned
-+ *
-+ * Simply returns the cached rate of the clk.  Does not query the hardware.  If
-+ * clk is NULL then returns 0.
-+ */
-+unsigned long clk_get_rate(struct clk *clk)
-+{
-+	if (!clk)
-+		return 0;
-+
-+	return clk->rate;
-+}
-+EXPORT_SYMBOL_GPL(clk_get_rate);
-+
-+/**
-+ * clk_round_rate - round the given rate for a clk
-+ * @clk: the clk for which we are rounding a rate
-+ * @rate: the rate which is to be rounded
-+ *
-+ * Takes in a rate as input and rounds it to a rate that the clk can actually
-+ * use which is then returned.  If clk doesn't support round_rate operation
-+ * then the rate passed in is returned.
-+ */
-+long clk_round_rate(struct clk *clk, unsigned long rate)
-+{
-+	if (clk && clk->ops->round_rate)
-+		return clk->ops->round_rate(clk, rate, NULL);
-+
-+	return rate;
-+}
-+EXPORT_SYMBOL_GPL(clk_round_rate);
-+
-+/**
-+ * clk_recalc_rates
-+ * @clk: first clk in the subtree
-+ *
-+ * Walks the subtree of clks starting with clk and recalculates rates as it
-+ * goes.  Note that if a clk does not implement the recalc_rate operation then
-+ * propagation of that subtree stops and all of that clks children will not
-+ * have their rates updated.  Caller must hold prepare_lock.
-+ */
-+static void clk_recalc_rates(struct clk *clk)
-+{
-+	unsigned long old_rate;
-+	struct hlist_node *tmp;
-+	struct clk *child;
-+
-+	old_rate = clk->rate;
-+
-+	if (clk->ops->recalc_rate)
-+		clk->rate = clk->ops->recalc_rate(clk);
-+
-+	if (old_rate == clk->rate)
-+		return;
-+
-+	/* FIXME add post-rate change notification here */
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node)
-+		clk_recalc_rates(child);
-+}
-+
-+/**
-+ * DOC: Using the CLK_PARENT_SET_RATE flag
-+ *
-+ * __clk_set_rate changes the child's rate before the parent's to more
-+ * easily handle failure conditions.
-+ *
-+ * This means clk might run out of spec for a short time if its rate is
-+ * increased before the parent's rate is updated.
-+ *
-+ * To prevent this consider setting the CLK_GATE_SET_RATE flag on any
-+ * clk where you also set the CLK_PARENT_SET_RATE flag
-+ */
-+struct clk *__clk_set_rate(struct clk *clk, unsigned long rate)
-+{
-+	struct clk *fail_clk = NULL;
-+	int ret;
-+	unsigned long old_rate = clk->rate;
-+	unsigned long new_rate;
-+	unsigned long parent_old_rate;
-+	unsigned long parent_new_rate = 0;
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+
-+	/* bail early if we can't change rate while clk is enabled */
-+	if ((clk->flags & CLK_GATE_SET_RATE) && clk->enable_count)
-+		return clk;
-+
-+	/* find the new rate and see if parent rate should change too */
-+	WARN_ON(!clk->ops->round_rate);
-+
-+	new_rate = clk->ops->round_rate(clk, rate, &parent_new_rate);
-+
-+	/* FIXME propagate pre-rate change notification here */
-+	/* XXX note that pre-rate change notifications will stack */
-+
-+	/* change the rate of this clk */
-+	ret = clk->ops->set_rate(clk, new_rate);
-+	if (ret)
-+		return clk;
-+
-+	/*
-+	 * change the rate of the parent clk if necessary
-+	 *
-+	 * hitting the nested 'if' path implies we have hit a .set_rate
-+	 * failure somewhere upstream while propagating __clk_set_rate
-+	 * up the clk tree.  roll back the clk rates one by one and
-+	 * return the pointer to the clk that failed.  clk_set_rate will
-+	 * use the pointer to propagate a rate-change abort notifier
-+	 * from the "highest" point.
-+	 */
-+	if ((clk->flags & CLK_PARENT_SET_RATE) && parent_new_rate) {
-+		parent_old_rate = clk->parent->rate;
-+		fail_clk = __clk_set_rate(clk->parent, parent_new_rate);
-+
-+		/* roll back changes if parent rate change failed */
-+		if (fail_clk) {
-+			pr_warn("%s: failed to set parent %s rate to %lu\n",
-+					__func__, fail_clk->name,
-+					parent_new_rate);
-+			clk->ops->set_rate(clk, old_rate);
-+		}
-+		return fail_clk;
-+	}
-+
-+	/*
-+	 * set clk's rate & recalculate the rates of clk's children
-+	 *
-+	 * hitting this path implies we have successfully finished
-+	 * propagating recursive calls to __clk_set_rate up the clk tree
-+	 * (if necessary) and it is safe to propagate clk_recalc_rates and
-+	 * post-rate change notifiers down the clk tree from this point.
-+	 */
-+	clk->rate = new_rate;
-+	/* FIXME propagate post-rate change notifier for only this clk */
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node)
-+		clk_recalc_rates(child);
-+
-+	return fail_clk;
-+}
-+
-+/**
-+ * clk_set_rate - specify a new rate for clk
-+ * @clk: the clk whose rate is being changed
-+ * @rate: the new rate for clk
-+ *
-+ * In the simplest case clk_set_rate will only change the rate of clk.
-+ *
-+ * If clk has the CLK_GATE_SET_RATE flag set and it is enabled this call
-+ * will fail; only when the clk is disabled will it be able to change
-+ * its rate.
-+ *
-+ * Setting the CLK_PARENT_SET_RATE flag allows clk_set_rate to
-+ * recursively propagate up to clk's parent; whether or not this happens
-+ * depends on the outcome of clk's .round_rate implementation.  If
-+ * *parent_rate is 0 after calling .round_rate then upstream parent
-+ * propagation is ignored.  If *parent_rate comes back with a new rate
-+ * for clk's parent then we propagate up to clk's parent and set it's
-+ * rate.  Upward propagation will continue until either a clk does not
-+ * support the CLK_PARENT_SET_RATE flag or .round_rate stops requesting
-+ * changes to clk's parent_rate.  If there is a failure during upstream
-+ * propagation then clk_set_rate will unwind and restore each clk's rate
-+ * that had been successfully changed.  Afterwards a rate change abort
-+ * notification will be propagated downstream, starting from the clk
-+ * that failed.
-+ *
-+ * At the end of all of the rate setting, clk_set_rate internally calls
-+ * clk_recalc_rates and propagates the rate changes downstream, starting
-+ * from the highest clk whose rate was changed.  This has the added
-+ * benefit of propagating post-rate change notifiers.
-+ *
-+ * Note that while post-rate change and rate change abort notifications
-+ * are guaranteed to be sent to a clk only once per call to
-+ * clk_set_rate, pre-change notifications will be sent for every clk
-+ * whose rate is changed.  Stacking pre-change notifications is noisy
-+ * for the drivers subscribed to them, but this allows drivers to react
-+ * to intermediate clk rate changes up until the point where the final
-+ * rate is achieved at the end of upstream propagation.
-+ *
-+ * Returns 0 on success, -EERROR otherwise.
-+ */
-+int clk_set_rate(struct clk *clk, unsigned long rate)
-+{
-+	struct clk *fail_clk;
-+	int ret = 0;
-+
-+	if (!clk->ops->set_rate)
-+		return -ENOSYS;
-+
-+	/* bail early if nothing to do */
-+	if (rate == clk->rate)
-+		return rate;
-+
-+	/* prevent racing with updates to the clock topology */
-+	mutex_lock(&prepare_lock);
-+	fail_clk = __clk_set_rate(clk, rate);
-+	if (fail_clk) {
-+		pr_warn("%s: failed to set %s rate to %lu\n",
-+				__func__, fail_clk->name, rate);
-+		/* FIXME propagate rate change abort notification here */
-+		ret = -EIO;
-+	}
-+	mutex_unlock(&prepare_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(clk_set_rate);
-+
-+/**
-+ * clk_get_parent - return the parent of a clk
-+ * @clk: the clk whose parent gets returned
-+ *
-+ * Simply returns clk->parent.  It is up to the caller to hold the
-+ * prepare_lock, if desired.  Returns NULL if clk is NULL.
-+ */
-+struct clk *clk_get_parent(struct clk *clk)
-+{
-+	if (!clk)
-+		return NULL;
-+
-+	return clk->parent;
-+}
-+EXPORT_SYMBOL_GPL(clk_get_parent);
-+
-+void __clk_reparent(struct clk *clk, struct clk *new_parent)
-+{
-+	hlist_del(&clk->child_node);
-+	hlist_add_head(&clk->child_node, &new_parent->children);
-+
-+	clk->parent = new_parent;
-+
-+	/* FIXME update sysfs clock topology */
-+}
-+
-+/**
-+ * clk_set_parent - switch the parent of a mux clk
-+ * @clk: the mux clk whose input we are switching
-+ * @parent: the new input to clk
-+ *
-+ * Re-parent clk to use parent as it's new input source.  If clk has the
-+ * CLK_GATE_SET_PARENT flag set then clk must be gated for this
-+ * operation to succeed.  After successfully changing clk's parent
-+ * clk_set_parent will update the clk topology, sysfs topology and
-+ * propagate rate recalculation via clk_recalc_rates.  Returns 0 on
-+ * success, -EERROR otherwise.
-+ */
-+int clk_set_parent(struct clk *clk, struct clk *parent)
-+{
-+	int ret = 0;
-+
-+	if (!clk || !clk->ops)
-+		return -EINVAL;
-+
-+	if (!clk->ops->set_parent)
-+		return -ENOSYS;
-+
-+	if (clk->parent == parent)
-+		return 0;
-+
-+	/* prevent racing with updates to the clock topology */
-+	mutex_lock(&prepare_lock);
-+
-+	/* FIXME add pre-rate change notification here */
-+
-+	/* only re-parent if the clock is not in use */
-+	if ((clk->flags & CLK_GATE_SET_PARENT) && clk->prepare_count)
-+		ret = -EBUSY;
-+	else
-+		ret = clk->ops->set_parent(clk, parent);
-+
-+	if (ret < 0)
-+		/* FIXME add rate change abort notification here */
++	if (!clk || !clk_attr)
 +		goto out;
 +
-+	/* update tree topology */
-+	__clk_reparent(clk, parent);
++	/* we don't do any locking for debug operations */
 +
-+	/*
-+	 * If successful recalculate the rates of the clock, including
-+	 * children.
-+	 */
-+	clk_recalc_rates(clk);
++	/* refcount++ */
++	kobject_get(&clk->kobj);
++
++	if (clk_attr->show)
++		ret = clk_attr->show(clk, buf);
++	else
++		ret = -EIO;
++
++	/* refcount-- */
++	kobject_put(&clk->kobj);
 +
 +out:
-+	mutex_unlock(&prepare_lock);
++	return ret;
++}
++
++static struct clk_attribute clk_rate = __ATTR_RO(clk_rate);
++static struct clk_attribute clk_flags = __ATTR_RO(clk_flags);
++static struct clk_attribute clk_prepare_count = __ATTR_RO(clk_prepare_count);
++static struct clk_attribute clk_enable_count = __ATTR_RO(clk_enable_count);
++
++static struct attribute *clk_default_attrs[] = {
++	&clk_rate.attr,
++	&clk_flags.attr,
++	&clk_prepare_count.attr,
++	&clk_enable_count.attr,
++	NULL,
++};
++
++static const struct sysfs_ops clk_ops = {
++	.show	= clk_show,
++};
++
++static void clk_release(struct kobject *kobj)
++{
++	struct clk *clk;
++
++	clk = container_of(kobj, struct clk, kobj);
++
++	complete(&clk->kobj_unregister);
++}
++
++static struct kobj_type clk_ktype = {
++	.sysfs_ops	= &clk_ops,
++	.default_attrs	= clk_default_attrs,
++	.release	= clk_release,
++};
++
++int clk_kobj_add(struct clk *clk)
++{
++	if (IS_ERR(clk))
++		return -EINVAL;
++
++	/*
++	 * Some kobject trickery!
++	 *
++	 * We want to (ab)use the kobject infrastructure to track our
++	 * tree topology for us, specifically the root clocks (which are
++	 * otherwise not remembered in a global list).
++	 *
++	 * Unfortunately we might not be able to allocate memory yet
++	 * when this path is hit.  This pretty much rules out anything
++	 * that looks or smells like kobject_add, since there are
++	 * allocations for kobject->name and a dependency on sysfs being
++	 * initialized.
++	 *
++	 * To get around this we initialize the kobjects and (ab)use
++	 * struct kobject's list_head member, "entry".  Later on we walk
++	 * this list in clk_sysfs_tree_create() to make proper
++	 * kobject_add calls once it is safe to do so.
++	 *
++	 * FIXME - this is starting to smell alot like clkdev (i.e.
++	 * tracking the clocks in a list)
++	 */
++
++	kobject_init(&clk->kobj, &clk_ktype);
++	list_add_tail(&clk->kobj.entry, &kobj_list);
++	return 0;
++}
++
++int clk_kobj_reparent(struct clk *clk, struct clk *parent)
++{
++	int ret;
++
++	if (!clk || !parent)
++		return -EINVAL;
++
++	ret = kobject_move(&clk->kobj, &parent->kobj);
++	if (ret)
++		pr_warning("%s: failed to reparent %s to %s in sysfs\n",
++				__func__, clk->name, parent->name);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(clk_set_parent);
 +
-+/**
-+ * clk_init - initialize the data structures in a struct clk
-+ * @dev: device initializing this clk, placeholder for now
-+ * @clk: clk being initialized
-+ *
-+ * Initializes the lists in struct clk, queries the hardware for the
-+ * parent and rate and sets them both.  Adds the clk to the sysfs tree
-+ * topology.
-+ *
-+ * Caller must populate clk->name and clk->flags before calling
-+ * clk_init.  A key assumption in the call to .get_parent is that clks
-+ * are being initialized in-order.
-+ */
-+void clk_init(struct device *dev, struct clk *clk)
++static int __init clk_sysfs_init(void)
 +{
-+	if (!clk)
-+		return;
++	struct list_head *tmp;
 +
-+	INIT_HLIST_HEAD(&clk->children);
-+	INIT_HLIST_NODE(&clk->child_node);
++	clk_kobj = kobject_create_and_add("clk", NULL);
 +
-+	mutex_lock(&prepare_lock);
++	WARN_ON(!clk_kobj);
 +
-+	if (clk->ops->get_parent) {
-+		clk->parent = clk->ops->get_parent(clk);
++	list_for_each(tmp, &kobj_list) {
++		struct kobject *kobj;
++		struct clk *clk;
++		struct kobject *parent_kobj = NULL;
++		int ret;
++
++		kobj = container_of(tmp, struct kobject, entry);
++
++		clk = container_of(kobj, struct clk, kobj);
++
++		/* assumes list is ordered */
 +		if (clk->parent)
-+			hlist_add_head(&clk->child_node,
-+					&clk->parent->children);
-+	} else
-+		clk->parent = NULL;
++			parent_kobj = &clk->parent->kobj;
++		else
++			parent_kobj = clk_kobj;
 +
-+	if (clk->ops->recalc_rate)
-+		clk->rate = clk->ops->recalc_rate(clk);
-+	else
-+		clk->rate = 0;
++		ret = kobject_add(kobj, parent_kobj, clk->name);
++		if (ret)
++			pr_warning("%s: failed to create sysfs entry for %s\n",
++					__func__, clk->name);
++	}
 +
-+	mutex_unlock(&prepare_lock);
-+
-+	return;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(clk_init);
++late_initcall(clk_sysfs_init);
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 12c9994..85dabdb 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -436,7 +436,8 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ 
+ 	clk->parent = new_parent;
+ 
+-	/* FIXME update sysfs clock topology */
++	/* update sysfs clock topology */
++	clk_kobj_reparent(clk, clk->parent);
+ }
+ 
+ /**
+@@ -531,6 +532,8 @@ void clk_init(struct device *dev, struct clk *clk)
+ 	else
+ 		clk->rate = 0;
+ 
++	clk_kobj_add(clk);
++
+ 	mutex_unlock(&prepare_lock);
+ 
+ 	return;
 diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 7213b52..3b0eb3f 100644
+index 8ed354a..99337ca 100644
 --- a/include/linux/clk.h
 +++ b/include/linux/clk.h
-@@ -3,6 +3,8 @@
-  *
-  *  Copyright (C) 2004 ARM Limited.
-  *  Written by Deep Blue Solutions Limited.
-+ *  Copyright (c) 2010-2011 Jeremy Kerr <jeremy.kerr@canonical.com>
-+ *  Copyright (C) 2011 Linaro Ltd <mturquette@linaro.org>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -13,17 +15,134 @@
+@@ -14,8 +14,8 @@
+ #define __LINUX_CLK_H
  
  #include <linux/kernel.h>
+-
+-#include <linux/kernel.h>
++#include <linux/kobject.h>
++#include <linux/completion.h>
+ #include <linux/errno.h>
  
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+
  struct device;
+@@ -46,6 +46,10 @@ struct clk {
+ 	unsigned int		prepare_count;
+ 	struct hlist_head	children;
+ 	struct hlist_node	child_node;
++#ifdef CONFIG_GENERIC_CLK_SYSFS
++	struct kobject		kobj;
++	struct completion	kobj_unregister;
++#endif
+ };
  
-+struct clk;
-+
-+#ifdef CONFIG_GENERIC_CLK
-+
- /*
-- * The base API.
-+ * flags used across common struct clk.  these flags should only affect the
-+ * top-level framework.  custom flags for dealing with hardware specifics
-+ * belong in struct clk_hw_your_unique_device
+ /**
+@@ -177,6 +181,34 @@ int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
   */
-+#define CLK_GATE_SET_RATE	BIT(0) /* must be gated across rate change */
-+#define CLK_GATE_SET_PARENT	BIT(1) /* must be gated across re-parent */
-+#define CLK_PARENT_SET_RATE	BIT(2) /* propagate rate change up one level */
-+#define CLK_IGNORE_UNUSED	BIT(3) /* do not gate even if unused */
+ void clk_init(struct device *dev, struct clk *clk);
  
-+#define CLK_GATE_RATE_CHANGE	(CLK_GATE_SET_RATE | CLK_GATE_SET_PARENT)
- 
--/*
-- * struct clk - an machine class defined object / cookie.
-+struct clk {
-+	const char		*name;
-+	const struct clk_hw_ops	*ops;
-+	struct clk		*parent;
-+	unsigned long		rate;
-+	unsigned long		flags;
-+	unsigned int		enable_count;
-+	unsigned int		prepare_count;
-+	struct hlist_head	children;
-+	struct hlist_node	child_node;
-+};
-+
++#ifdef CONFIG_GENERIC_CLK_SYSFS
 +/**
-+ * struct clk_hw_ops -  Callback operations for hardware clocks; these are to
-+ * be provided by the clock implementation, and will be called by drivers
-+ * through the clk_* API.
++ * clk_kobj_add - create a clk entry in sysfs
++ * @clk: clk to model in sysfs
 + *
-+ * @prepare:	Prepare the clock for enabling. This must not return until
-+ * 		the clock is fully prepared, and it's safe to call clk_enable.
-+ * 		This callback is intended to allow clock implementations to
-+ * 		do any initialisation that may sleep. Called with
-+ * 		prepare_lock held.
-+ *
-+ * @unprepare:	Release the clock from its prepared state. This will typically
-+ * 		undo any work done in the @prepare callback. Called with
-+ * 		prepare_lock held.
-+ *
-+ * @enable:	Enable the clock atomically. This must not return until the
-+ * 		clock is generating a valid clock signal, usable by consumer
-+ * 		devices. Called with enable_lock held. This function must not
-+ * 		sleep.
-+ *
-+ * @disable:	Disable the clock atomically. Called with enable_lock held.
-+ * 		This function must not sleep.
-+ *
-+ * @recalc_rate	Recalculate the rate of this clock, by quering hardware
-+ * 		and/or the clock's parent. It is up to the caller to insure
-+ * 		that the prepare_mutex is held across this call.  Returns the
-+ * 		calculated rate.  Optional, but recommended - if this op is not
-+ * 		set then clock rate will be initialized to 0.
-+ *
-+ * @round_rate	XXX FIXME
-+ *
-+ * @get_parent	Return the parent of this clock; for clocks with multiple
-+ * 		possible parents, query the hardware for the current parent.
-+ * 		Clocks with fixed parents should still implement this and
-+ * 		return something like struct clk *fixed_parent from their
-+ * 		respective struct clk_hw_* data.  Currently called only when
-+ * 		the clock is initialized.  Clocks that do not implement this
-+ * 		will have their parent set to NULL.
-+ *
-+ * @set_parent	Change the input source of this clock; for clocks with multiple
-+ * 		possible parents specify a new parent by passing in a struct
-+ * 		clk *parent.  Returns 0 on success, -EERROR otherwise.
-+ *
-+ * @set_rate	Change the rate of this clock. If this callback returns
-+ * 		CLK_PARENT_SET_RATE, the rate change will be propagated to the
-+ * 		parent clock (which may propagate again if the parent clock
-+ * 		also sets this flag). The requested rate of the parent is
-+ * 		passed back from the callback in the second 'unsigned long *'
-+ * 		argument.  Note that it is up to the hardware clock's set_rate
-+ * 		implementation to insure that clocks do not run out of spec
-+ * 		when propgating the call to set_rate up to the parent.  One way
-+ * 		to do this is to gate the clock (via clk_disable and/or
-+ * 		clk_unprepare) before calling clk_set_rate, then ungating it
-+ * 		afterward.  If your clock also has the CLK_GATE_SET_RATE flag
-+ * 		set then this will insure safety.  Returns 0 on success,
-+ * 		-EERROR otherwise.
-+ *
-+ * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-+ * implementations to split any work between atomic (enable) and sleepable
-+ * (prepare) contexts.  If enabling a clock requires code that might sleep,
-+ * this must be done in clk_prepare.  Clock enable code that will never be
-+ * called in a sleepable context may be implement in clk_enable.
-+ *
-+ * Typically, drivers will call clk_prepare when a clock may be needed later
-+ * (eg. when a device is opened), and clk_enable when the clock is actually
-+ * required (eg. from an interrupt). Note that clk_prepare MUST have been
-+ * called before clk_enable.
-  */
--struct clk;
-+struct clk_hw_ops {
-+	int		(*prepare)(struct clk *clk);
-+	void		(*unprepare)(struct clk *clk);
-+	int		(*enable)(struct clk *clk);
-+	void		(*disable)(struct clk *clk);
-+	unsigned long	(*recalc_rate)(struct clk *clk);
-+	long		(*round_rate)(struct clk *clk, unsigned long,
-+					unsigned long *);
-+	int		(*set_parent)(struct clk *clk, struct clk *);
-+	struct clk *	(*get_parent)(struct clk *clk);
-+	int		(*set_rate)(struct clk *clk, unsigned long);
-+};
-+
-+/**
-+ * clk_init - initialize the data structures in a struct clk
-+ * @dev: device initializing this clk, placeholder for now
-+ * @clk: clk being initialized
-+ *
-+ * Initializes the lists in struct clk, queries the hardware for the
-+ * parent and rate and sets them both.  Adds the clk to the sysfs tree
-+ * topology.
-+ *
-+ * Caller must populate .name, .flags and .ops before calling clk_init.
++ * Create a directory in sysfs with the same name as clk.  Also creates
++ * read-only entries for the common struct clk members (rate, flags,
++ * prepare_count & enable_count).  The topology of the tree is
++ * represented by the sysfs directory structure itself.
 + */
-+void clk_init(struct device *dev, struct clk *clk);
++int clk_kobj_add(struct clk *clk);
 +
-+#endif /* !CONFIG_GENERIC_CLK */
++/**
++ * clk_kobj_reparent - reparent a clk entry in sysfs
++ * @clk: the child clk that is switching parents
++ * @parent: the new parent clk
++ *
++ * Simple call to kobject_move to keep sysfs up to date with the
++ * hardware clock topology
++ */
++int clk_kobj_reparent(struct clk *clk, struct clk *parent);
++#else
++static inline int clk_kobj_add(struct clk *clk)
++{ return 0; }
++static inline int clk_kobj_reparent(struct clk *clk, struct clk *parent)
++{ return 0; }
++#endif
++
+ #endif /* !CONFIG_GENERIC_CLK */
  
  /**
-  * clk_get - lookup and obtain a reference to a clock producer.
-@@ -107,9 +226,16 @@ static inline void clk_unprepare(struct clk *clk)
- }
- #endif
- 
-+int __clk_enable(struct clk *clk);
-+void __clk_disable(struct clk *clk);
-+int __clk_prepare(struct clk *clk);
-+void __clk_unprepare(struct clk *clk);
-+void __clk_reparent(struct clk *clk, struct clk *new_parent);
-+
- /**
-  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
-  *		  This is only valid once the clock source has been enabled.
-+ *		  Returns zero if the clock rate is unknown.
-  * @clk: clock source
-  */
- unsigned long clk_get_rate(struct clk *clk);
 -- 
 1.7.4.1
 
