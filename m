@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750900Ab1KVFDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 00:03:09 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:39574 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750748Ab1KVFDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 00:03:07 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18i6x8jPJsiD4laECSXyi5OuSRsWVFUs4EdvmPAuQ
-	f8uGfcj7M7c8L2
-Subject: Re: [REGRESSION] sudden cpu hogging in kernel 3.2 rc-series
-From: Mike Galbraith <efault@gmx.de>
-To: Nicolas Kalkhof <nkalkhof@web.de>
-Cc: maciej.rutecki@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <615350841.1406384.1321911635013.JavaMail.fmail@mwmweb021>
-References: <615350841.1406384.1321911635013.JavaMail.fmail@mwmweb021>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Nov 2011 06:03:03 +0100
-Message-ID: <1321938183.4942.8.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1751189Ab1KVFE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 00:04:27 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:59205 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab1KVFEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 00:04:25 -0500
+Date: Tue, 22 Nov 2011 10:33:30 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v7 3.2-rc2 0/30] uprobes patchset with perf probe
+ support
+Message-ID: <20111122050330.GA24807@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112205-8974-0000-0000-00000290A482
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 22:40 +0100, Nicolas Kalkhof wrote:
-> This happens on my machine after some minutes, too when running X and
-> the trinity desktop. the cpu continuously uses up additional ~10 watts
-> comparing to older 3.1 kernels. The issue remains high even after I
-> kill X. A closer investigation shows that poll_idle uses up the cpu
-> (see dump below). Is it normal for poll_idle to use up all ressources?
+Hi Ingo, Thomas, Linus, Stephen, Peter,
 
-poll_idle should not consume cycles on i7 unless you booted idle=poll,
-or miss-configured the kernel.
+> This patchset resolves most of the comments on the previous posting
+> (https://lkml.org/lkml/2011/11/10/408) patchset applies on top of
+> commit cfcfc9eca2b
+> 
+> This patchset depends on bulkref patch from Paul McKenney
+> https://lkml.org/lkml/2011/11/2/365 and enable interrupts before
+> calling do_notify_resume on i686 patch
+> https://lkml.org/lkml/2011/10/25/265.
+> 
+> uprobes git is hosted at git://github.com/srikard/linux.git
+> with branch inode_uprobes_v32rc2.
+> (The previous patchset posted to lkml has been rebased to 3.2-rc2 is also
+> available at branch inode_uprobes_v32rc2_prev. This is to help the
+> reviewers of the previous patchsets to quickly identify the changes.)
+> 
+> Uprobes Patches
+> This patchset implements inode based uprobes which are specified as
+> <file>:<offset> where offset is the offset from start of the map.
 
-egrep 'IDLE|GOV' .config
+Given that uprobes has been reviewed several times on LKML and all
+comments till now have been addressed, can we push uprobes into either
+-tip or -next. This will help people to test and give more feedback and
+also provide a way for it to be pushed into 3.3. This also helps in
+resolving and pushing fixes faster.
 
-CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-CONFIG_ARCH_HAS_DEFAULT_IDLE=y
-CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
-# CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
-# CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
-# CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
-CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
-CONFIG_CPU_FREQ_GOV_POWERSAVE=m
-CONFIG_CPU_FREQ_GOV_USERSPACE=m
-CONFIG_CPU_FREQ_GOV_ONDEMAND=m
-CONFIG_CPU_FREQ_GOV_CONSERVATIVE=m
-CONFIG_CPU_IDLE=y
-CONFIG_CPU_IDLE_GOV_LADDER=y
-CONFIG_CPU_IDLE_GOV_MENU=y
-CONFIG_INTEL_IDLE=y
-CONFIG_I7300_IDLE_IOAT_CHANNEL=y
-CONFIG_I7300_IDLE=m
-CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND=y
-CONFIG_DEVFREQ_GOV_PERFORMANCE=y
-CONFIG_DEVFREQ_GOV_POWERSAVE=y
-CONFIG_DEVFREQ_GOV_USERSPACE=y
+If you have concerns, can you please voice them?
 
+-- 
+Thanks and Regards
+Srikar
 
