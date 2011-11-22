@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab1KVSJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:09:53 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59638 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab1KVSJv convert rfc822-to-8bit (ORCPT
+	id S1756085Ab1KVSKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:10:08 -0500
+Received: from 5.mo2.mail-out.ovh.net ([87.98.181.248]:56865 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754897Ab1KVSKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:09:51 -0500
+	Tue, 22 Nov 2011 13:10:04 -0500
+Date: Tue, 22 Nov 2011 19:09:49 +0100
+From: Marc Vertes <marc.vertes@sigfox.com>
+To: w.sang@pengutronix.de
+Cc: Wim@vger.kernel.org, wim@iguana.be, Welte@vger.kernel.org,
+        Van@vger.kernel.org, Sebroeck@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HaraldWelte@viatech.com, Harald@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
+Message-ID: <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
+References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
+ <20111122112212.GD2734@pengutronix.de>
+ <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
+ <20111122173029.GA14349@pengutronix.de>
+In-Reply-To: <20111122173029.GA14349@pengutronix.de>
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
-In-Reply-To: <20111122174544.GA19739@n2100.arm.linux.org.uk>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
- <20111122154259.GA18954@kroah.com> <20111122174544.GA19739@n2100.arm.linux.org.uk>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Tue, 22 Nov 2011 10:09:29 -0800
-Message-ID: <CAPtuhTgFPZA9U-8heNw1eNUnHLFv2w+LzXg5rdjSx3J53Xy+2g@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] common clk framework
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg KH <greg@kroah.com>, Mike Turquette <mturquette@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
-        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
-        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
-        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
-        paul@pwsan.com, grant.likely@secretlab.ca, sboyd@quicinc.com,
-        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 16532151282737268518
+X-Ovh-Remote: 92.103.90.130 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucculddquddttddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 9:45 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Nov 22, 2011 at 07:42:59AM -0800, Greg KH wrote:
->> On Mon, Nov 21, 2011 at 05:40:42PM -0800, Mike Turquette wrote:
->> >   .sysfs support.  Visualize your clk tree at /sys/clk!  Where would be
->> > a better place to put the clk tree besides the root of /sys/?
->>
->> Um, in the "proper" place for it under /sys/devices like the rest of the
->> device tree is?
+Wolfram Sang <w.sang@pengutronix.de> wrote:
+
+> > +	dev_info(&pdev->dev, "VIA Chipset watchdog MMIO: %x\n", mmio);
+> > +	if (mmio == 0) {
+> > +		dev_err(&pdev->dev, "watchdog timer is not enabled in BIOS\n");
+> > +		return -ENODEV;
+> > +	}
 >
-> I'd suggest that making the clock tree visible in sysfs (and therefore
-> part of the kernel ABI) is not a good idea.  Some of the nodes in there
-> will be specific to the implementation.  Exposing the clock nodes means
-> that if you have to change the clock tree structure, you change the
-> visible userspace ABI.
+> What about
+>
+> 	if (mmio != 0) {
+> 		dev_info("VIA Chipset...")
+> 	} else {
+> 		dev_err()
+> 		return -ENODEV;
+> 	}
+>
+> to only have the needed printouts.
+>
+Ok.
 
-It is true that the ABI will change dynamically.
+> > +	ret = watchdog_register_device(&wdt_dev);
+> > +	if (ret)
+> > +		return ret;
+>
+> You need to iounmap in the error-case.
+Yes. Good catch.
 
 >
-> So, I'd suggest that we need to see a justification for this, rather
-> than exposing this stuff via debugfs as has been done with existing
-> implementations.
+> > +	watchdog_set_drvdata(&wdt_dev, wdt_mem);
+> > +	if (readl(wdt_mem) & VIA_WDT_FIRED) {
+> > +		wdt_dev.bootstatus |= WDIOF_CARDRESET;
+> > +		dev_notice(&pdev->dev, "restarted by expired watchdog\n");
+>
+> Skip the printout. This can be detected using CARDRESET.
+>
+Ok.
 
-Userspace tools like powerdebug (and maybe someday powertop) hope to
-use a reliable-looking interface to view clk data.  There are obvious
-uses for this data in a debug tool, the most obvious of which is
-"which clk isn't turning off when it should?".
+> > +/*
+> > + * The driver has not been tested yet on CX700 and VX800.
+> > + */
+>
+> Then, I'd rather skip this comment and the IDs. Or if you are sure enough it
+> works, leave them in ;) Best option would be testers showing up.
+>
+Then I take the risk and remove the comments ;). This is stable stuff inherited
+from old models...
 
-I can migrate this stuff to debugfs, but it adds the burden of having
-debugfs enabled for folks that want to view this data.  I would also
-argue that sysfs is there to model various aspects of system topology
-and a clk tree certainly fits the bill.
-
-If others also agree that it should reside only in debugfs then I'll
-move it there for V4.
-
-Thanks,
-Mike
+> Regards,
+>
+>    Wolfram
+>
+Thanks for your comments, I'm preparing an update.
+--
+Marc
