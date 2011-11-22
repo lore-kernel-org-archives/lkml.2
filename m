@@ -1,172 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab1KVAxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:53:48 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54674 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab1KVAxr (ORCPT
+	id S1756785Ab1KVAzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:55:35 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36024 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab1KVAze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:53:47 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 22 Nov 2011 09:52:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Luis Henriques <henrix@camandro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: shorten preempt-disabled section around
- event checks
-Message-Id: <20111122095223.0baefec9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111121110954.GE1771@redhat.com>
-References: <20111121110954.GE1771@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Nov 2011 19:55:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <4ECAF15E.1070008@caviumnetworks.com>
+References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
+ <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com>
+ <4ECACF68.3020701@gmail.com> <CA+55aFwZxqHfEOemj+OJNKCj2toqGf3rkK-9iuS39L7iZsoH1Q@mail.gmail.com>
+ <4ECAE314.9060209@gmail.com> <CA+55aFx==PGGLX9YXv1GOeTja4W0PSW8U4i8zkmtiZwqmFwHFw@mail.gmail.com>
+ <4ECAF15E.1070008@caviumnetworks.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 Nov 2011 16:55:13 -0800
+X-Google-Sender-Auth: r5e_ivVufvRtZuHx83ZZAzJUmAk
+Message-ID: <CA+55aFyiV-W_7zOuu26jsUsCDTxHh41z8sEgL0D94xFooAJxFA@mail.gmail.com>
+Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and HPAGE_SIZE
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Robin Holt <holt@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011 12:09:54 +0100
-Johannes Weiner <jweiner@redhat.com> wrote:
+On Mon, Nov 21, 2011 at 4:48 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+>
+> Really Linus, did you read the other half of the message you quoted?
 
-> -rt ran into a problem with the soft limit spinlock inside the
-> non-preemptible section, because that is sleeping inside an atomic
-> context.  But I think it makes sense for vanilla, too, to keep the
-> non-preemptible section as short as possible.  Also, -3 lines.
-> 
-> Yong, Luis, could you add your Tested-bys?
-> 
-> ---
-> Only the ratelimit checks themselves have to run with preemption
-> disabled, the resulting actions - checking for usage thresholds,
-> updating the soft limit tree - can and should run with preemption
-> enabled.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Reported-by: Yong Zhang <yong.zhang0@gmail.com>
-> Reported-by: Luis Henriques <henrix@camandro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
+Sorry no. It was just an automatic reaction along the lines of "oh
+christ, is this argument still going on"?
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I'm ok with magic gcc function attributes, although I still don't see
+why you need that symbol so badly.
 
-> ---
->  mm/memcontrol.c |   73 ++++++++++++++++++++++++++----------------------------
->  1 files changed, 35 insertions(+), 38 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6aff93c..8e62d3e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -683,37 +683,32 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
->  	return total;
->  }
->  
-> -static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
-> +static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
-> +				       enum mem_cgroup_events_target target)
->  {
->  	unsigned long val, next;
->  
->  	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
->  	next = __this_cpu_read(memcg->stat->targets[target]);
->  	/* from time_after() in jiffies.h */
-> -	return ((long)next - (long)val < 0);
-> -}
-> -
-> -static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
-> -{
-> -	unsigned long val, next;
-> -
-> -	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
-> -
-> -	switch (target) {
-> -	case MEM_CGROUP_TARGET_THRESH:
-> -		next = val + THRESHOLDS_EVENTS_TARGET;
-> -		break;
-> -	case MEM_CGROUP_TARGET_SOFTLIMIT:
-> -		next = val + SOFTLIMIT_EVENTS_TARGET;
-> -		break;
-> -	case MEM_CGROUP_TARGET_NUMAINFO:
-> -		next = val + NUMAINFO_EVENTS_TARGET;
-> -		break;
-> -	default:
-> -		return;
-> +	if ((long)next - (long)val < 0) {
-> +		switch (target) {
-> +		case MEM_CGROUP_TARGET_THRESH:
-> +			next = val + THRESHOLDS_EVENTS_TARGET;
-> +			break;
-> +		case MEM_CGROUP_TARGET_SOFTLIMIT:
-> +			next = val + SOFTLIMIT_EVENTS_TARGET;
-> +			break;
-> +		case MEM_CGROUP_TARGET_NUMAINFO:
-> +			next = val + NUMAINFO_EVENTS_TARGET;
-> +			break;
-> +		default:
-> +			break;
-> +		}
-> +		__this_cpu_write(memcg->stat->targets[target], next);
-> +		return true;
->  	}
-> -
-> -	__this_cpu_write(memcg->stat->targets[target], next);
-> +	return false;
->  }
->  
->  /*
-> @@ -724,25 +719,27 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  {
->  	preempt_disable();
->  	/* threshold event is triggered in finer grain than soft limit */
-> -	if (unlikely(__memcg_event_check(memcg, MEM_CGROUP_TARGET_THRESH))) {
-> +	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_THRESH))) {
-> +		bool do_softlimit, do_numainfo;
-> +
-> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_SOFTLIMIT);
-> +#if MAX_NUMNODES > 1
-> +		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_NUMAINFO);
-> +#endif
-> +		preempt_enable();
-> +
->  		mem_cgroup_threshold(memcg);
-> -		__mem_cgroup_target_update(memcg, MEM_CGROUP_TARGET_THRESH);
-> -		if (unlikely(__memcg_event_check(memcg,
-> -			     MEM_CGROUP_TARGET_SOFTLIMIT))) {
-> +		if (unlikely(do_softlimit))
->  			mem_cgroup_update_tree(memcg, page);
-> -			__mem_cgroup_target_update(memcg,
-> -						   MEM_CGROUP_TARGET_SOFTLIMIT);
-> -		}
->  #if MAX_NUMNODES > 1
-> -		if (unlikely(__memcg_event_check(memcg,
-> -			MEM_CGROUP_TARGET_NUMAINFO))) {
-> +		if (unlikely(do_numainfo))
->  			atomic_inc(&memcg->numainfo_events);
-> -			__mem_cgroup_target_update(memcg,
-> -				MEM_CGROUP_TARGET_NUMAINFO);
-> -		}
->  #endif
-> -	}
-> -	preempt_enable();
-> +	} else
-> +		preempt_enable();
->  }
->  
->  static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Quite frankly, some MIPS-only patch is *not* important-enough to worry
+about this. I'd rather have the simpler "that symbol doesn't exist,
+and MIPS just needs an #ifdef".
 
+I realize that we *used* to have code that did that
+
+   if (something_that_evaluates_to_zero) {
+       .. use HPAGE_MASK ..
+
+but considering that we don't have that any more and people are happy,
+I'm not all that convinced that we need to try to re-introduce it.
+
+                     Linus
