@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab1KVBAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:00:03 -0500
-Received: from ozlabs.org ([203.10.76.45]:36935 "EHLO ozlabs.org"
+	id S1757723Ab1KVBAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:00:01 -0500
+Received: from ozlabs.org ([203.10.76.45]:51829 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757654Ab1KVA74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757666Ab1KVA74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Nov 2011 19:59:56 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
-In-Reply-To: <20111121115702.GA27580@redhat.com>
-References: <patchbomb.1320306168@localhost6.localdomain6> <f3831c1617c86a51d875.1320306173@localhost6.localdomain6> <20111113210256.GA31621@redhat.com> <20111114065606.GA3779@redhat.com> <871ut8q5mh.fsf@rustcorp.com.au> <20111116071838.GE5433@redhat.com> <8739dib5z6.fsf@rustcorp.com.au> <20111121115702.GA27580@redhat.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH] virtio-mmio: Devices parameter parsing
+In-Reply-To: <1321886688.3093.248.camel@hornet.cambridge.arm.com>
+References: <1321365185-2928-1-git-send-email-pawel.moll@arm.com> <87sjlooq3m.fsf@rustcorp.com.au> <1321467222.3137.417.camel@hornet.cambridge.arm.com> <87vcqe9ml9.fsf@rustcorp.com.au> <1321886688.3093.248.camel@hornet.cambridge.arm.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 22 Nov 2011 11:03:04 +1030
-Message-ID: <87lir9xagv.fsf@rustcorp.com.au>
+Date: Tue, 22 Nov 2011 11:14:18 +1030
+Message-ID: <87ipmdx9y5.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Nov 2011 13:57:04 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Mon, Nov 21, 2011 at 12:18:45PM +1030, Rusty Russell wrote:
-> > On Wed, 16 Nov 2011 09:18:38 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > My unlocked kick patches will trip this warning: they make
-> > > virtio-net do add + get without kick.
-> > 
-> > Heh, it's a good sign if they do, since that means you're running really
-> > well :)
+On Mon, 21 Nov 2011 14:44:48 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Mon, 2011-11-21 at 03:32 +0000, Rusty Russell wrote:
+> > 2) Doesn't leak mem on error paths.
 > 
-> They don't in fact, in my testing :(. But I think they can with luck.
+> Em, I don't think my code was leaking memory in any error case? (no
+> offence meant or taken ;-)
+
+You're right, I'm wrong.  In your original version, your innovative use
+of free() then strdup() worked as intended.
+
+> > 3) Handles error from platform_device_register_resndata().
 > 
-> > > I think block with unlocked kick can trip it too:
-> > > add, lock is dropped and then an interrupt can get.
-> > > 
-> > > We also don't need a kick each num - each 2^15 is enough.
-> > > Why don't we do this at start of add_buf:
-> > > if (vq->num_added >= 0x7fff)
-> > > 	return -ENOSPC;
-> > 
-> > The warning was there in case a driver is never doing a kick, and
-> > getting away with it (mostly) because the device is polling.  Let's not
-> > penalize good drivers to catch bad ones.
-> > 
-> > How about we do this properly, like so:
+> As my code was ignoring wrong descriptions (all the continues) I ignored
+> this result as well (the implementation complains on its own anyway),
+> but I get your point.
+
+I was referring to this:
+
+	  return platform_device_register_resndata(&virtio_mmio_cmdline_parent,
+			  "virtio-mmio", virtio_mmio_cmdline_id++,
+			  resources, ARRAY_SIZE(resources), NULL, 0) != NULL;
+
+The set function returns 0 or a -ve errno, not true/false.
+
+> > 4) Uses shorter names for static functions/variables.
 > 
-> Absolutely. But I think we also need to handle num_added
-> overflow of a 15 bit counter, no? Otherwise the
-> vring_need_event logic might give us false negatives ....
-> I'm guessing we can just assume we need a kick in that case.
+> Ah, I get the hint :-) I'm trying to keep the naming convention in
+> static symbols as well, as it makes cscope/ctags/grep usage easier...
+> I'll just use the abbreviated "vm_" prefixes then.
+> 
+> > See what you think...
+> 
+> Funnily enough when I proposed some string parser few years ago (totally
+> different story) I was flamed for using strchr() instead of strsep() ;-)
+> But ok, I don't mind getting back to basics.
+> 
+> > +static int set_cmdline_device(const char *device, const struct kernel_param *kp)
+> [...]
+> > +       delim = strchr(device, '@');
+> [...]
+> > +	*delim = '\0';
+> 
+> Ah. I forgot that strchr() takes const char * but returns "non-const"
+> char *... Cheating, that's what it is ;-), but will work. Probably what
+> we really want is something like
+> 	kstrtoull_delim(device, 0, &val, "@\0")
+> I'll have a look and may try to propose something of that sort, but
+> that's another story. Maybe I should just use simple_strtol() for the
+> time being?
 
-You're right.  Thankyou.  My immediate reaction of "make it an unsigned
-long" doesn't work.
+Or would it be simpler to enhance sscanf() with some weird format option
+for suffixing?  I haven't looked for similar cases, but I'd suspect a
+big win in general.
 
-Here's the diff to what I posted before:
+This would be neater than anything else we've got:
+        if (sscanf(device, "%llu@%llu[KMG]:%u", ...) != 3
+            && sscanf(device, "%llu@%llu[KMG]:%u:%u", ...) != 4)
+                return -EINVAL;
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -254,9 +254,10 @@ add_head:
- 	vq->vring.avail->idx++;
- 	vq->num_added++;
- 
--	/* If you haven't kicked in this long, you're probably doing something
--	 * wrong. */
--	WARN_ON(vq->num_added > vq->vring.num);
-+	/* This is very unlikely, but theoretically possible.  Kick
-+	 * just in case. */
-+	if (unlikely(vq->num_added == 65535))
-+		virtqueue_kick(_vq);
- 
- 	pr_debug("Added buffer head %i to %p\n", head, vq);
- 	END_USE(vq);
+Cheers,
+Rusty.
