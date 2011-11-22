@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab1KVIgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 03:36:35 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:55419 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553Ab1KVIgd (ORCPT
+	id S1756077Ab1KVIge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 03:36:34 -0500
+Received: from relay.medianet-world.de ([213.157.0.172]:52858 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755160Ab1KVIgc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 03:36:33 -0500
-Date: Tue, 22 Nov 2011 09:36:30 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111122083630.GA1672@x4.trippels.de>
-References: <1321836285.30341.554.camel@debian>
- <20111121080554.GB1625@x4.trippels.de>
- <20111121082445.GD1625@x4.trippels.de>
- <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121131531.GA1679@x4.trippels.de>
- <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121153621.GA1678@x4.trippels.de>
- <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121161036.GA1679@x4.trippels.de>
- <20111121163459.GA1679@x4.trippels.de>
+	Tue, 22 Nov 2011 03:36:32 -0500
+Thread-Index: Acyo8dUk8+00zeJqRqCZYodTF3n4rA==
+Thread-Topic: [PATCH 0/6] [ANNOUNCE] v3.0.9-rt26-rc2
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+Content-class: urn:content-classes:message
+Importance: normal
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/6] [ANNOUNCE] v3.0.9-rt26-rc2
+Date: Tue, 22 Nov 2011 09:36:03 +0100
+User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
+Cc: <linux-kernel@vger.kernel.org>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
+References: <20111121214420.124907956@goodmis.org>
+In-Reply-To: <20111121214420.124907956@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111121163459.GA1679@x4.trippels.de>
+Content-Type: text/Plain;
+	charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201111220936.03393.tim.sander@hbm.com>
+X-OriginalArrivalTime: 22 Nov 2011 08:36:30.0122 (UTC) FILETIME=[D502D8A0:01CCA8F1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.21 at 17:34 +0100, Markus Trippelsdorf wrote:
-> On 2011.11.21 at 17:10 +0100, Markus Trippelsdorf wrote:
-> > On 2011.11.21 at 16:48 +0100, Eric Dumazet wrote:
-> > > Le lundi 21 novembre 2011 à 16:36 +0100, Markus Trippelsdorf a écrit :
-> > > > On 2011.11.21 at 15:16 +0100, Eric Dumazet wrote:
-> > > > > Le lundi 21 novembre 2011 à 14:15 +0100, Markus Trippelsdorf a écrit :
-> > > > > 
-> > > > > > I've enabled CONFIG_SLUB_DEBUG_ON and this is what happend:
-> > > > > > 
-> > > > > 
-> > > > > Thanks
-> > > > > 
-> > > > > Please continue to provide more samples.
-> > > > > 
-> > > > > There is something wrong somewhere, but where exactly, its hard to say.
-> > > > 
-> > > > New sample. This one points to lib/idr.c:
-> > > > 
-> > > > =============================================================================
-> > > > BUG idr_layer_cache: Poison overwritten
-> > > > -----------------------------------------------------------------------------
-> > > 
-> > > Thanks, could you now add "CONFIG_DEBUG_PAGEALLOC=y" in your config as
-> > > well ?
-> > 
-> > Sure. This one happend with CONFIG_DEBUG_PAGEALLOC=y:
-> > 
-> > =============================================================================
-> > BUG task_struct: Poison overwritten
-> > -----------------------------------------------------------------------------
-> 
-> And sometimes this one that I've reported earlier already:
-> 
-> (see: http://thread.gmane.org/gmane.linux.kernel/1215023 )
-> 
->  ------------[ cut here ]------------
->  WARNING: at fs/sysfs/sysfs.h:195 sysfs_get_inode+0x136/0x140()
->  Hardware name: System Product Name
->  Pid: 1876, comm: slabinfo Not tainted 3.2.0-rc2-00274-g6fe4c6d #72
->  Call Trace:
->  [<ffffffff8106cac5>] warn_slowpath_common+0x75/0xb0
->  [<ffffffff8106cbc5>] warn_slowpath_null+0x15/0x20
->  [<ffffffff81163236>] sysfs_get_inode+0x136/0x140
->  [<ffffffff81164cef>] sysfs_lookup+0x6f/0x110
->  [<ffffffff811173f9>] d_alloc_and_lookup+0x39/0x80
->  [<ffffffff81118774>] do_lookup+0x294/0x3a0
->  [<ffffffff8111798a>] ? inode_permission+0x7a/0xb0
->  [<ffffffff8111a3f7>] do_last.isra.46+0x137/0x7f0
->  [<ffffffff8111ab76>] path_openat+0xc6/0x370
->  [<ffffffff81117606>] ? getname_flags+0x36/0x230
->  [<ffffffff810ec852>] ? handle_mm_fault+0x192/0x290
->  [<ffffffff8111ae5c>] do_filp_open+0x3c/0x90
->  [<ffffffff81127c8c>] ? alloc_fd+0xdc/0x120
->  [<ffffffff8110ce77>] do_sys_open+0xe7/0x1c0
->  [<ffffffff8110cf6b>] sys_open+0x1b/0x20
->  [<ffffffff814ccb7b>] system_call_fastpath+0x16/0x1b
->  ---[ end trace b1377eb8b131d37d ]---
+Hi Steven
 
-Hm, the "sysfs: use rb-tree" thing hit again during boot. Could this be
-the root cause of this all?
+Thanks for your release.
 
-I wrote down the following:
+I just have build and tested the release on an i.mx35 arm platform.
+The only thing to report is that i have nothing to report, which is a good 
+thing :-).
 
-RIP : rb_next
+Best regards
+Tim
 
-Trace:
- sysfs_dir_pos
- sysfs_readdir
- ? sys_ioctl
- vfs_readdir
- sys_getdents
+Please ignore this noise:
 
--- 
-Markus
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
