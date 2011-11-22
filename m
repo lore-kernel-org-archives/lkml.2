@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969Ab1KVXTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 18:19:08 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:55363 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758912Ab1KVXTG (ORCPT
+	id S1754149Ab1KVXfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 18:35:12 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54473 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab1KVXfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 18:19:06 -0500
-Date: Tue, 22 Nov 2011 18:17:57 -0500 (EST)
-Message-Id: <20111122.181757.1296497307756213535.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2011-11-22 #2
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111122224108.GJ8452@tuxdriver.com>
-References: <20111122215611.GI8452@tuxdriver.com>
-	<20111122.173729.1155753802137219940.davem@davemloft.net>
-	<20111122224108.GJ8452@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 15:18:02 -0800 (PST)
+	Tue, 22 Nov 2011 18:35:10 -0500
+Date: Wed, 23 Nov 2011 00:34:28 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Andrei Warkentin <andreiw@vmware.com>, linux-kernel@vger.kernel.org,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>, opensuse-kernel@opensuse.org,
+        Sergiu Iordache <sergiu@chromium.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Eddie Wai <eddie.wai@broadcom.com>,
+        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
+Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+In-Reply-To: <20111117150549.15528e81.akpm@linux-foundation.org>
+Message-ID: <Pine.LNX.4.64.1111230032200.29085@axis700.grange>
+References: <1321473366-31053-1-git-send-email-andreiw@vmware.com>
+ <20111117150549.15528e81.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:MedCpN9y59qFkg8CKT7yyaO7kkREfPJb5UYuJuLCxzq
+ Kw7NGQ4wQSK6r+I9+w5EunXrifr+SW17mB8MYPSPalM9W1vTQk
+ XugY21dLZgzvoBi2458jaDIPGQEVCmKzQvUk+OlfCDUSYnf/po
+ DeiU8TinDhGsq9iDvhM7ZW7nkf+Nvw/ug2lx9oQ/iJoXaB5lEL
+ YlFd4jp7VrEMom8l8j3a5R9JDT32O9uCzLyztQ6sF+IoFYCOG8
+ MBhoBLIgOGjywJq0fIoItZGA4uho4hnZbNZ3kVrakI7vQaoR4c
+ 93xgRz/WJa3OF0ielrUYeaF+OAsF3jS3YfcPoHQEWEc3kEOvP9
+ YSJusY+e7joJwufwjde3KJHmQxxyJqueycd5rHnXPpuud/765/
+ 4H24UQ0TTZWKQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 22 Nov 2011 17:41:08 -0500
+On Thu, 17 Nov 2011, Andrew Morton wrote:
 
-> On Tue, Nov 22, 2011 at 05:37:29PM -0500, David Miller wrote:
-> ...
-> They're here...
-> 
->> 0003-rt2x00-Fix-efuse-EEPROM-reading-on-PPC32.patch
->> 0004-p54spi-Add-missing-spin_lock_init.patch
->> 0005-p54spi-Fix-workqueue-deadlock.patch
->> 0006-mac80211-Fix-AMSDU-rate-printout-in-debugfs.patch
->> 0007-mac80211-Fix-endian-bug-in-radiotap-header-generatio.patch
->> 0008-cfg80211-fix-regulatory-NULL-dereference.patch
->> 0009-prism54-potential-memory-corruption-in-prism54_get_e.patch
->> 0010-Revert-rt2x00-handle-spurious-pci-interrupts.patch
->> 0011-Revert-rt2800pci-handle-spurious-interrupts.patch
-> 
-> And I revert them here.
-> 
-> Linus always says to live with our mistakes?  I was trying to avoid
-> a rebase both for my own pain and that of my downstream maintainers.
+[snip]
 
-Gotcha, I'll repull, thanks.
+> drivers/mmc/host/sh_mmcif.c unnecessarily uses __rounddown_pow_of_two()
+> then feeds the result into ilog2() in an apparent attempt to
+> reimplement fls().
+
+Yeah, I was wondering too, but wasn't sufficiently motivated to patch 
+it;-) I'll test this "obvious" patch tomorrow and submit then:
+
+diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
+index c021482..824fee5 100644
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -16,6 +16,7 @@
+  *
+  */
+ 
++#include <linux/bitops.h>
+ #include <linux/clk.h>
+ #include <linux/completion.h>
+ #include <linux/delay.h>
+@@ -386,7 +387,7 @@ static void sh_mmcif_clock_control(struct sh_mmcif_host *host, unsigned int clk)
+ 		sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_SUP_PCLK);
+ 	else
+ 		sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_CLEAR &
+-			(ilog2(__rounddown_pow_of_two(host->clk / clk)) << 16));
++				((fls(host->clk / clk) - 1) << 16));
+ 
+ 	sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_ENABLE);
+ }
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
