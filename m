@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab1KVTcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:32:35 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:51003 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1KVTcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:32:33 -0500
-Date: Tue, 22 Nov 2011 20:32:31 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: slub: Lockout validation scans during freeing of object
-Message-ID: <20111122193231.GB1627@x4.trippels.de>
-References: <alpine.DEB.2.00.1111221033350.28197@router.home>
- <alpine.DEB.2.00.1111221040300.28197@router.home>
- <alpine.DEB.2.00.1111221052130.28197@router.home>
- <1321982484.18002.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <alpine.DEB.2.00.1111221139240.28197@router.home>
- <20111122185540.GA1627@x4.trippels.de>
- <alpine.DEB.2.00.1111221319070.30368@router.home>
+	id S1755325Ab1KVTeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:34:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48585 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab1KVTea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 14:34:30 -0500
+Message-ID: <4ECBF979.1000903@suse.cz>
+Date: Tue, 22 Nov 2011 20:35:21 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1111221319070.30368@router.home>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: Alessandro Rubini <rubini@unipv.it>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
+ AMBA drivers
+References: <20111122120756.GF2066@localhost.localdomain> <1321961573-4562-1-git-send-email-dave.martin@linaro.org> <20111122115632.GA5165@mail.gnudd.com> <20111122151942.GA24821@mail.gnudd.com> <20111122183408.GI2066@localhost.localdomain>
+In-Reply-To: <20111122183408.GI2066@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.22 at 13:20 -0600, Christoph Lameter wrote:
-> On Tue, 22 Nov 2011, Markus Trippelsdorf wrote:
+Dne 22.11.2011 19:34, Dave Martin napsal(a):
+> On Tue, Nov 22, 2011 at 04:19:42PM +0100, Alessandro Rubini wrote:
+>>>>   lkml.org/lkml/2011/11/4/125 (0/2: description of the work)
+>>>>   lkml.org/lkml/2011/11/4/126 (1/2: turn the if plethora to table lookup)
+>>>>   lkml.org/lkml/2011/11/4/127 (2/2: partial split to type-specific files).
+>>>
+>>> Splitting this up doesn't look like a silly idea -- I thought it was
+>>> unfortunate to have to patch a core file just to add a bus type.
+>>>
+>>> I guess the question is how many new buses we get over time.
+>>
+>> Well, CERN will have 2 in a short time. And I'm sure the bus concept
+>> is so good that a number of them exists as external patches. Being
+>> forced to patch a core file is not good, with conflicts that accumulate
+>> over time.
+>>
+>> I'd better be able to drop in my own file and add a kconfig-aware line
+>> in Makefile.  I think the implementation is straightforward. Who should
+>> I send it to?
 > 
-> > On 2011.11.22 at 11:40 -0600, Christoph Lameter wrote:
-> > > On Tue, 22 Nov 2011, Eric Dumazet wrote:
-> > >
-> > > > This seems better, but I still have some warnings :
-> > >
-> > > Trying to reproduce with a kernel configured to do preempt. This is
-> > > actually quite interesting since its always off by 1.
-> >
-> > BTW there are some obvious overflows in the "slabinfo -l" output on my machine:
+> I'm afraid I can't help there -- I don't often dabble in core kernel stuff.
 > 
-> Could you get me the value of the "slabs" field for the slabs showing the
-> wierd values. I.e. do
+> I didn't receive any response on my patches to those files, so it's possible
+> I was CC'ing the wrong people.  I did do my best dith git blame/log,
+> get_maintainer.pl and the rest and posted to lkml a couple of times though.
+
+Sorry, I saw your patch, but didn't have time to look at it more closely.
+
 > 
-> cat /sys/kernel/slab/signal_cache/slabs
+> If I'm reading MAINTAINERS correctly, Michal Marek might be the default
+> maintainer for stuff in scripts/ not owned by other people... the way that
+> is described is not understood by get_maintainer.pl, it appears.
 > 
-> > signal_cache               268     920   360.4K 18446744073709551614/7/24   17 2  31  68 A
-> 
+> Marek, are you the correct person for scripts/mod/file2alias.c and related
+> stuff?
 
-It's quite easy to explain. You're using unsigned ints in:
-snprintf(dist_str, 40, "%lu/%lu/%d", s->slabs - s->cpu_slabs, s->partial, s->cpu_slabs);
+Me (default scripts/ suspect) or Rusty (modules maintainer). But people
+usually add an alias generator for their bus and don't ask anyone :).
+And I don't mind, because the changes tend to be no-brainers. That said,
+Alessandro's split of file2alias.c looks interesting. Please CC Rusty
+and me in the next iteration.
 
-and  (s->slabs - s->cpu_slabs) can get negative. For example:
-
-task_struct                269    1504   557.0K 18446744073709551601/5/32   21 3  29  72
-
-Here s-slabs is 17 and s->cpu_slabs is 32. 
-That gives: 17-32=18446744073709551601.
-
--- 
-Markus
+Michal
