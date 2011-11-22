@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab1KVA0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:26:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39189 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259Ab1KVA0Q (ORCPT
+	id S1756166Ab1KVA2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:28:21 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:42451 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab1KVA2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:26:16 -0500
-Message-ID: <4ECAECA6.7090109@solonet.org.ua>
-Date: Tue, 22 Nov 2011 02:28:22 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Mon, 21 Nov 2011 19:28:20 -0500
+Date: Tue, 22 Nov 2011 09:28:16 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: kdump.txt new web address for kexec-tools on kernel.org after
+ the hacking
+Message-ID: <20111122002816.GE8048@verge.net.au>
+References: <4EC89CC8.2090609@gmail.com>
+ <CAM_iQpVqkhSfYm=mVedRvGxVHd-5OjGdwq74-n71kzuUqz4HfQ@mail.gmail.com>
+ <20111121052858.GE11378@verge.net.au>
+ <4ECA7123.8020006@gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
- gpiolib
-References: <4EC572E1.1020209@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74E87@HQMAIL01.nvidia.com> <4EC6C785.5010801@solonet.org.ua> <4EC6D1D5.9060808@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FAD@HQMAIL01.nvidia.com> <4EC6DD8F.9070904@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF1740D74FE6@HQMAIL01.nvidia.com> <4EC6E75E.2080200@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF174F08C135@HQMAIL01.nvidia.com> <4ECAA894.4050500@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF174F08C246@HQMAIL01.nvidia.com> <4ECAD613.3030605@solonet.org.ua> <74CDBE0F657A3D45AFBB94109FB122FF174F08C2B4@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF174F08C2B4@HQMAIL01.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECA7123.8020006@gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 01:39 AM, Stephen Warren wrote:
-> Denis Kuzmenko wrote at Monday, November 21, 2011 3:52 PM:
-> ...
->>> I don't see any pulls being configured in the original code at all,
->>> unless some of the s3c2410_* function have unexpected side-effect. The
->>> only related thing is in probe:
->>>
->>>         /* no point in having a pull-up if we are always driving */
->>>
->>>         if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
->>> ..
->>>         } else {
->>>                 s3c2410_gpio_pullup(pdata->gpio, 0);
->>>
->>> which I assume disables an pull in the case where the pin is always driven.
->>>
->>> So, yes, I'd say submit v3 without any pull manipulation at all.
->>>
->>
->> Actually, "s3c2410_gpio_pullup(pdata->gpio, 0);" enables pull in the
->> same way I've done that. Here is it's code:
+On Mon, Nov 21, 2011 at 07:41:23AM -0800, Justin P. Mattock wrote:
+> On 11/20/2011 09:28 PM, Simon Horman wrote:
+> >On Sun, Nov 20, 2011 at 05:49:26PM +0800, Cong Wang wrote:
+> >>On Sun, Nov 20, 2011 at 2:23 PM, Justin P. Mattock
+> >><justinmattock@gmail.com>  wrote:
+> >>>seems kexec-tools has been moved somewhere else than any of the addresses on
+> >>>kdump.txt
+> >>>
+> >>>is there a new location? is the author know about this? I can supply a patch
+> >>>I just need some _legit_ addresses to use; google is giving me some, but im
+> >>>not sure what they are/or should I use them
+> >>
+> >>The git tree has been moved to,
+> >>git://github.com/horms/kexec-tools.git
+> >>
+> >>Simon, any plan to move back to kernel.org?
+> >
+> >Yes. I plan to attend the Automotive Linux Summit in Yokohama next monday
+> >and have my key signed at that event. After that I intend to re-establish
+> >my access to kernel.org and move the kexec-tools tree back to kernel.org.
+> >
 > 
-> So it does. That's extremely non-obvious if not broken.
-> 
-> Anyway, I guess that means that your patch V1 is at least a pure conversion
-> of the code from custom functions to gpiolib, even if what it was and still
-> is doing doesn't make much sense to me.
-> 
+> cool! so next week after the key signing, and kernel.org adds
+> kexec-tools back in.. then there is no need for a patch _if_ the
+> addresses are not changed, but if they are then I would imagine the
+> author has that taken care of then.
 
-So what do you suggest? Leave original behavior?
-I'd like to remove pull-related actions at all considering:
- - power consumption
- - we are both not able to find any sense in that code
- - s3c2410_gpio_pullup looks like deprecated
- - can't imagine situation where this change will break functionality
-(of course when this code used to drive actually LED and not something else)
+I plan to update the documentation if needed
+once the kexec-tools tree has moved back to kernel.org.
 
--- 
-Best regards, Denis Kuzmenko.
+Moving the kexec-tools tree to github was intended to be temporary.
+Although it has been a longer temporary arrangement
+than I anticipated for reasons outside of my control.
+
+I apologise for any confusion this has caused.
