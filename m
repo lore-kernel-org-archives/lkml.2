@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab1KVOko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 09:40:44 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:47366 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755641Ab1KVOkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 09:40:43 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: KURt3QoVM1mGahqifantOUXddtjnovBxHrAAJXI2LoeBeEf
- beCjOfUWimZKof6UwHxqw.Eal8pc5wdxKgGIOzvR1WumK4ZCzV82ps7g.0gA
- KwuaXzCjOL3gL3VZKfz.sO1.uPe6AGx_Ts5.8h6qNXrAoipWYHexP6mwqrEo
- M5eHm9PqEdhS9FesPQGMdm84emu.CI0yPAz5y5zTGsThoUG2LCnoibwo_17N
- QPWRRcbDrV6bw_Oeyp2oalDnQQ2FpSbfwPSNw5LY2hdDrf_z26l.4D.e7RaB
- QFdZnBeUB3ptHxkWIHjDe8aP2UpBY8bVtL9Vf1SAfSCq6x2iAlv5ISlU7lMB
- 26Lcap7GwugM3RyvwGbk3A1Amv3RSSs1LfWwXD5IFHjKPe.nY_hFf8M17SOu
- W4gNYTDVDU3EdlIVhYXZH6m4r0eTzmHTKXwTK
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 22 Nov 2011 08:40:41 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] slub: fix slub_max_order Documentation
-In-Reply-To: <1321941549.27077.17.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1111220840260.25785@router.home>
-References: <1321941549.27077.17.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756241Ab1KVOmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 09:42:35 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:39882 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754174Ab1KVOme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 09:42:34 -0500
+Subject: [PATCH 0/6] SUNPRC: cleanup PipeFS for network-namespace-aware users
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Tue, 22 Nov 2011 18:41:25 +0300
+Message-ID: <20111122134514.479.9848.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Nov 2011, Eric Dumazet wrote:
+This patch-set was created in context of clone of git
+branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+tag: v3.1
 
-> slub_max_order default is 3 (aka PAGE_ALLOC_COSTLY_ORDER), not 1
+This is cleanup precursor patch set. It's required for easier further
+implementation of network-namespace-aware SUNRPC PipeFS pipes creators.
+Generally, this patch set split SUNRPC PipeFS logic into two parts: working
+with pipes (new rpc_pipe structure with link to PipeFS dentry) and
+creating/destroying PipeFS dentries (old rpc_inode structure with link to
+rpc_pipe).
+With this patch-set kernel PipeFS pipes users initially creates
+rpc_pipe data and then creates Pipefs dentries. Later these dentries will be
+created in notifier callbacks on PipeFS mount event from user-space and in
+network namespace operations for such modules like nfs and blocklayout.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+The following series consists of:
+
+---
+
+Stanislav Kinsbursky (6):
+      SUNRPC: replace inode lock with pipe lock for RPC PipeFS operations
+      SUNRPC: split SUNPRC PipeFS pipe data and inode creation
+      SUNRPC: cleanup PipeFS redundant RPC inode usage
+      SUNPRC: cleanup RPC PipeFS pipes upcall interface
+      SUNRPC: cleanup GSS pipes usage
+      SUNRPC: split SUNPRC PipeFS dentry and private pipe data creation
+
+
+ fs/nfs/blocklayout/blocklayout.c    |   16 ++
+ fs/nfs/blocklayout/blocklayout.h    |    2 
+ fs/nfs/blocklayout/blocklayoutdev.c |    2 
+ fs/nfs/blocklayout/blocklayoutdm.c  |    2 
+ fs/nfs/idmap.c                      |   28 +++-
+ include/linux/sunrpc/rpc_pipe_fs.h  |   20 ++-
+ net/sunrpc/auth_gss/auth_gss.c      |  130 ++++++++++--------
+ net/sunrpc/rpc_pipe.c               |  258 +++++++++++++++++++----------------
+ 8 files changed, 262 insertions(+), 196 deletions(-)
+
+-- 
+Signature
