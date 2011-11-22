@@ -1,149 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103Ab1KVSeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:34:06 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39582 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab1KVSeE (ORCPT
+	id S1757444Ab1KVSeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:34:14 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40723 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757197Ab1KVSeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:34:04 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1 v5] arm: fault.c: Port OOM changes into do_page_fault
-Date: Tue, 22 Nov 2011 13:31:30 -0500
-Message-Id: <1321986690-6079-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 22 Nov 2011 13:34:12 -0500
+Date: Tue, 22 Nov 2011 18:34:08 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Alessandro Rubini <rubini@unipv.it>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
+ AMBA drivers
+Message-ID: <20111122183408.GI2066@localhost.localdomain>
+References: <20111122120756.GF2066@localhost.localdomain>
+ <1321961573-4562-1-git-send-email-dave.martin@linaro.org>
+ <20111122115632.GA5165@mail.gnudd.com>
+ <20111122151942.GA24821@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122151942.GA24821@mail.gnudd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
-(mm: retry page fault when blocking on disk transfer) and
-commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
-(x86,mm: make pagefault killable)
+On Tue, Nov 22, 2011 at 04:19:42PM +0100, Alessandro Rubini wrote:
+> >>   lkml.org/lkml/2011/11/4/125 (0/2: description of the work)
+> >>   lkml.org/lkml/2011/11/4/126 (1/2: turn the if plethora to table lookup)
+> >>   lkml.org/lkml/2011/11/4/127 (2/2: partial split to type-specific files).
+> > 
+> > Splitting this up doesn't look like a silly idea -- I thought it was
+> > unfortunate to have to patch a core file just to add a bus type.
+> >
+> > I guess the question is how many new buses we get over time.
+> 
+> Well, CERN will have 2 in a short time. And I'm sure the bus concept
+> is so good that a number of them exists as external patches. Being
+> forced to patch a core file is not good, with conflicts that accumulate
+> over time.
+> 
+> I'd better be able to drop in my own file and add a kconfig-aware line
+> in Makefile.  I think the implementation is straightforward. Who should
+> I send it to?
 
-The above commits introduced changes into the x86 pagefault handler
-for making the page fault handler retryable as well as killable.
+I'm afraid I can't help there -- I don't often dabble in core kernel stuff.
 
-These changes reduce the mmap_sem hold time, which is crucial
-during OOM killer invocation.
+I didn't receive any response on my patches to those files, so it's possible
+I was CC'ing the wrong people.  I did do my best dith git blame/log,
+get_maintainer.pl and the rest and posted to lkml a couple of times though.
 
-Port these changes to ARM.
+If I'm reading MAINTAINERS correctly, Michal Marek might be the default
+maintainer for stuff in scripts/ not owned by other people... the way that
+is described is not understood by get_maintainer.pl, it appears.
 
-Without these changes, my ARM board encounters many hang and livelock
-scenarios.
-After applying this patch, OOM feature performance improves according to
-my testing.
+Marek, are you the correct person for scripts/mod/file2alias.c and related
+stuff?
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- arch/arm/mm/fault.c |   58 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 39 insertions(+), 19 deletions(-)
-
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index aa33949..4aabeae 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -231,7 +231,7 @@ static inline bool access_error(unsigned int fsr, struct vm_area_struct *vma)
- 
- static int __kprobes
- __do_page_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
--		struct task_struct *tsk)
-+		unsigned int flags, struct task_struct *tsk)
- {
- 	struct vm_area_struct *vma;
- 	int fault;
-@@ -253,18 +253,7 @@ good_area:
- 		goto out;
- 	}
- 
--	/*
--	 * If for any reason at all we couldn't handle the fault, make
--	 * sure we exit gracefully rather than endlessly redo the fault.
--	 */
--	fault = handle_mm_fault(mm, vma, addr & PAGE_MASK, (fsr & FSR_WRITE) ? FAULT_FLAG_WRITE : 0);
--	if (unlikely(fault & VM_FAULT_ERROR))
--		return fault;
--	if (fault & VM_FAULT_MAJOR)
--		tsk->maj_flt++;
--	else
--		tsk->min_flt++;
--	return fault;
-+	return handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
- 
- check_stack:
- 	if (vma->vm_flags & VM_GROWSDOWN && !expand_stack(vma, addr))
-@@ -279,6 +268,9 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	int fault, sig, code;
-+	int write = fsr & FSR_WRITE;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				(write ? FAULT_FLAG_WRITE : 0);
- 
- 	if (notify_page_fault(regs, fsr))
- 		return 0;
-@@ -305,6 +297,7 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	if (!down_read_trylock(&mm->mmap_sem)) {
- 		if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
- 			goto no_context;
-+retry:
- 		down_read(&mm->mmap_sem);
- 	} else {
- 		/*
-@@ -320,14 +313,41 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- #endif
- 	}
- 
--	fault = __do_page_fault(mm, addr, fsr, tsk);
--	up_read(&mm->mmap_sem);
-+	fault = __do_page_fault(mm, addr, fsr, flags, tsk);
-+
-+	/* If we need to retry but a fatal signal is pending, handle the
-+	 * signal first. We do not need to release the mmap_sem because
-+	 * it would already be released in __lock_page_or_retry in
-+	 * mm/filemap.c. */
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
-+
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
- 
- 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
--	if (fault & VM_FAULT_MAJOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
--	else if (fault & VM_FAULT_MINOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
-+					regs, addr);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
-+					regs, addr);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			* of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			goto retry;
-+		}
-+	}
-+
-+	up_read(&mm->mmap_sem);
- 
- 	/*
- 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
--- 
-1.7.5.4
-
+Cheers
+---Dave
