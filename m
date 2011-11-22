@@ -1,122 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab1KVJC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 04:02:56 -0500
+	id S1757222Ab1KVJDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 04:03:23 -0500
 Received: from emcscan.emc.com.tw ([192.72.220.5]:44290 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab1KVJCx (ORCPT
+	with ESMTP id S1755452Ab1KVJCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 04:02:53 -0500
+	Tue, 22 Nov 2011 04:02:55 -0500
 From: JJ Ding <jj_ding@emc.com.tw>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Grant Likely <grant.likely@secretlab.ca>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        JJ Ding <jj_ding@emc.com.tw>
-Subject: [PATCH TRIVIAL 0/5] Input: use new macro module_platform_driver to save some boilerplate code
-Date: Tue, 22 Nov 2011 17:00:41 +0800
-Message-Id: <1321952446-7591-1-git-send-email-jj_ding@emc.com.tw>
+        JJ Ding <jj_ding@emc.com.tw>, JJ Ding <dgdunix@gmail.com>
+Subject: [PATCH TRIVIAL 3/5] Input: mouse: use macro module_platform_driver()
+Date: Tue, 22 Nov 2011 17:00:44 +0800
+Message-Id: <1321952446-7591-4-git-send-email-jj_ding@emc.com.tw>
 X-Mailer: git-send-email 1.7.8-rc2
+In-Reply-To: <1321952446-7591-1-git-send-email-jj_ding@emc.com.tw>
+References: <1321952446-7591-1-git-send-email-jj_ding@emc.com.tw>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi List,
+From: JJ Ding <dgdunix@gmail.com>
 
-With commit 940ab88962bc1aff3273a8356d64577a6e386736 Grant Likely added a new
-macro module_platform_driver to save some boilerplate code for platform_driver.
-This patchset converts these platform_driver's in input subsystem to use it.
+Commit 940ab88962bc1aff3273a8356d64577a6e386736 introduced a new macro to
+save some platform_driver boilerplate code. Use it.
 
-I am not quite sure if it's worth it to convert all these drivers, but I did it
-anyway, because:
- - by converting we encourage new code to use it.
- - as a kernel newbie I take it as exercises.
+Signed-off-by: JJ Ding <dgdunix@gmail.com>
+---
+ drivers/input/mouse/amimouse.c       |   16 ++--------------
+ drivers/input/mouse/gpio_mouse.c     |   13 +------------
+ drivers/input/mouse/pxa930_trkball.c |   14 +-------------
+ 3 files changed, 4 insertions(+), 39 deletions(-)
 
-Patches are against Linus' latest tree, I split the whole converting into 5
-patches for easier reviewing. Please take a look, thank you very much.
-
--jj
-
-JJ Ding (5):
-  Input: keyboard: use macro module_platform_driver()
-  Input: misc: use macro module_platform_driver()
-  Input: mouse: use macro module_platform_driver()
-  Input: serio: use macro module_platform_driver()
-  Input: touchscreen: use macro module_platform_driver()
-
- drivers/input/keyboard/adp5520-keys.c        |   13 +------------
- drivers/input/keyboard/amikbd.c              |   15 +--------------
- drivers/input/keyboard/bf54x-keys.c          |   14 +-------------
- drivers/input/keyboard/davinci_keyscan.c     |   13 +------------
- drivers/input/keyboard/ep93xx_keypad.c       |   14 +-------------
- drivers/input/keyboard/gpio_keys_polled.c    |   14 +-------------
- drivers/input/keyboard/imx_keypad.c          |   14 +-------------
- drivers/input/keyboard/jornada680_kbd.c      |   14 +-------------
- drivers/input/keyboard/jornada720_kbd.c      |   14 +-------------
- drivers/input/keyboard/matrix_keypad.c       |   14 +-------------
- drivers/input/keyboard/nomadik-ske-keypad.c  |   13 +------------
- drivers/input/keyboard/omap-keypad.c         |   15 +--------------
- drivers/input/keyboard/omap4-keypad.c        |   13 +------------
- drivers/input/keyboard/opencores-kbd.c       |   13 +------------
- drivers/input/keyboard/pmic8xxx-keypad.c     |   13 +------------
- drivers/input/keyboard/pxa27x_keypad.c       |   14 +-------------
- drivers/input/keyboard/pxa930_rotary.c       |   13 +------------
- drivers/input/keyboard/samsung-keypad.c      |   13 +------------
- drivers/input/keyboard/sh_keysc.c            |   14 +-------------
- drivers/input/keyboard/spear-keyboard.c      |   13 +------------
- drivers/input/keyboard/stmpe-keypad.c        |   13 +------------
- drivers/input/keyboard/tc3589x-keypad.c      |   13 +------------
- drivers/input/keyboard/tegra-kbc.c           |   13 +------------
- drivers/input/keyboard/tnetv107x-keypad.c    |   14 +-------------
- drivers/input/keyboard/twl4030_keypad.c      |   13 +------------
- drivers/input/keyboard/w90p910_keypad.c      |   14 +-------------
- drivers/input/misc/88pm860x_onkey.c          |   13 +------------
- drivers/input/misc/ab8500-ponkey.c           |   13 +------------
- drivers/input/misc/bfin_rotary.c             |   13 +------------
- drivers/input/misc/cobalt_btns.c             |   14 +-------------
- drivers/input/misc/dm355evm_keys.c           |   13 +------------
- drivers/input/misc/ixp4xx-beeper.c           |   13 +------------
- drivers/input/misc/max8925_onkey.c           |   13 +------------
- drivers/input/misc/pcap_keys.c               |   14 +-------------
- drivers/input/misc/pcf50633-input.c          |   13 +------------
- drivers/input/misc/pcspkr.c                  |   14 +-------------
- drivers/input/misc/pm8xxx-vibrator.c         |   13 +------------
- drivers/input/misc/pmic8xxx-pwrkey.c         |   13 +------------
- drivers/input/misc/pwm-beeper.c              |   13 +------------
- drivers/input/misc/rb532_button.c            |   14 +-------------
- drivers/input/misc/rotary_encoder.c          |   14 +-------------
- drivers/input/misc/sgi_btns.c                |   13 +------------
- drivers/input/misc/twl4030-pwrbutton.c       |   15 ++-------------
- drivers/input/misc/twl4030-vibra.c           |   14 +-------------
- drivers/input/misc/twl6040-vibra.c           |   13 +------------
- drivers/input/misc/wm831x-on.c               |   13 +------------
- drivers/input/mouse/amimouse.c               |   16 ++--------------
- drivers/input/mouse/gpio_mouse.c             |   13 +------------
- drivers/input/mouse/pxa930_trkball.c         |   14 +-------------
- drivers/input/serio/altera_ps2.c             |   13 +------------
- drivers/input/serio/at32psif.c               |   14 +-------------
- drivers/input/serio/rpckbd.c                 |   14 +-------------
- drivers/input/serio/xilinx_ps2.c             |   14 +-------------
- drivers/input/touchscreen/88pm860x-ts.c      |   13 +------------
- drivers/input/touchscreen/atmel-wm97xx.c     |   13 +------------
- drivers/input/touchscreen/atmel_tsadcc.c     |   15 +--------------
- drivers/input/touchscreen/da9034-ts.c        |   13 +------------
- drivers/input/touchscreen/intel-mid-touch.c  |   13 +------------
- drivers/input/touchscreen/jornada720_ts.c    |   14 +-------------
- drivers/input/touchscreen/lpc32xx_ts.c       |   13 +------------
- drivers/input/touchscreen/mainstone-wm97xx.c |   14 +-------------
- drivers/input/touchscreen/mc13783_ts.c       |   13 +------------
- drivers/input/touchscreen/pcap_ts.c          |   14 +-------------
- drivers/input/touchscreen/s3c2410_ts.c       |   14 +-------------
- drivers/input/touchscreen/stmpe-ts.c         |   15 +--------------
- drivers/input/touchscreen/tnetv107x-ts.c     |   14 +-------------
- drivers/input/touchscreen/tps6507x-ts.c      |   13 +------------
- drivers/input/touchscreen/ucb1400_ts.c       |   14 +-------------
- drivers/input/touchscreen/w90p910_ts.c       |   14 +-------------
- drivers/input/touchscreen/wm831x-ts.c        |   13 +------------
- drivers/input/touchscreen/zylonite-wm97xx.c  |   14 +-------------
- 71 files changed, 73 insertions(+), 892 deletions(-)
-
+diff --git a/drivers/input/mouse/amimouse.c b/drivers/input/mouse/amimouse.c
+index ff5f61a..39be7b8 100644
+--- a/drivers/input/mouse/amimouse.c
++++ b/drivers/input/mouse/amimouse.c
+@@ -140,25 +140,13 @@ static int __exit amimouse_remove(struct platform_device *pdev)
+ }
+ 
+ static struct platform_driver amimouse_driver = {
++	.probe = amimouse_probe,
+ 	.remove = __exit_p(amimouse_remove),
+ 	.driver   = {
+ 		.name	= "amiga-mouse",
+ 		.owner	= THIS_MODULE,
+ 	},
+ };
+-
+-static int __init amimouse_init(void)
+-{
+-	return platform_driver_probe(&amimouse_driver, amimouse_probe);
+-}
+-
+-module_init(amimouse_init);
+-
+-static void __exit amimouse_exit(void)
+-{
+-	platform_driver_unregister(&amimouse_driver);
+-}
+-
+-module_exit(amimouse_exit);
++module_platform_driver(amimouse_driver);
+ 
+ MODULE_ALIAS("platform:amiga-mouse");
+diff --git a/drivers/input/mouse/gpio_mouse.c b/drivers/input/mouse/gpio_mouse.c
+index 58902fb..a9ad8e1 100644
+--- a/drivers/input/mouse/gpio_mouse.c
++++ b/drivers/input/mouse/gpio_mouse.c
+@@ -178,18 +178,7 @@ static struct platform_driver gpio_mouse_device_driver = {
+ 		.owner	= THIS_MODULE,
+ 	}
+ };
+-
+-static int __init gpio_mouse_init(void)
+-{
+-	return platform_driver_register(&gpio_mouse_device_driver);
+-}
+-module_init(gpio_mouse_init);
+-
+-static void __exit gpio_mouse_exit(void)
+-{
+-	platform_driver_unregister(&gpio_mouse_device_driver);
+-}
+-module_exit(gpio_mouse_exit);
++module_platform_driver(gpio_mouse_device_driver);
+ 
+ MODULE_AUTHOR("Hans-Christian Egtvedt <egtvedt@samfundet.no>");
+ MODULE_DESCRIPTION("GPIO mouse driver");
+diff --git a/drivers/input/mouse/pxa930_trkball.c b/drivers/input/mouse/pxa930_trkball.c
+index ee3b0ca..a9e4bfd 100644
+--- a/drivers/input/mouse/pxa930_trkball.c
++++ b/drivers/input/mouse/pxa930_trkball.c
+@@ -250,19 +250,7 @@ static struct platform_driver pxa930_trkball_driver = {
+ 	.probe		= pxa930_trkball_probe,
+ 	.remove		= __devexit_p(pxa930_trkball_remove),
+ };
+-
+-static int __init pxa930_trkball_init(void)
+-{
+-	return platform_driver_register(&pxa930_trkball_driver);
+-}
+-
+-static void __exit pxa930_trkball_exit(void)
+-{
+-	platform_driver_unregister(&pxa930_trkball_driver);
+-}
+-
+-module_init(pxa930_trkball_init);
+-module_exit(pxa930_trkball_exit);
++module_platform_driver(pxa930_trkball_driver);
+ 
+ MODULE_AUTHOR("Yong Yao <yaoyong@marvell.com>");
+ MODULE_DESCRIPTION("PXA930 Trackball Mouse Driver");
 -- 
 1.7.8-rc2
 
