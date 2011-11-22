@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758936Ab1KVW7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:59:12 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49617 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab1KVW7L (ORCPT
+	id S1758946Ab1KVXAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 18:00:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33880 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab1KVXAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:59:11 -0500
-Message-ID: <1322002702.6445.95.camel@work-vm>
-Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-From: John Stultz <john.stultz@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Eric Anholt <eric@anholt.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Tue, 22 Nov 2011 14:58:22 -0800
-In-Reply-To: <20111122133909.ebe72517.akpm@linux-foundation.org>
-References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org>
-	 <20111122125209.7f70f3a7.akpm@linux-foundation.org>
-	 <1321997538.6445.90.camel@work-vm>
-	 <20111122133909.ebe72517.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11112222-7282-0000-0000-0000042BAC53
+	Tue, 22 Nov 2011 18:00:19 -0500
+Date: Tue, 22 Nov 2011 14:57:57 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-9147621c771c8b6a5c8985373af3a8200e8b4a41@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        mmarek@suse.cz, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mmarek@suse.cz
+In-Reply-To: <4ECA8991.20302@suse.cz>
+References: <4ECA8991.20302@suse.cz>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/syscall] kbuild, headers.sh: Don't make archheaders explicitly
+Git-Commit-ID: 9147621c771c8b6a5c8985373af3a8200e8b4a41
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 22 Nov 2011 14:58:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 13:39 -0800, Andrew Morton wrote:
-> On Tue, 22 Nov 2011 13:32:18 -0800
-> John Stultz <john.stultz@linaro.org> wrote:
-> 
-> > Very cool!  Yea. Dave brought up that the list was fairly inefficient,
-> > but I figured I'd get more feedback on the mechanism before spending too
-> > much time optimizing the structure. I'll look at your mumbletree code
-> > and see how it can be adapted. Other then apparently being a nod to the
-> > "original neo-grunge/indie-rock band from Rochester", is there a story
-> > to the name? :)
-> 
-> I was first!
+Commit-ID:  9147621c771c8b6a5c8985373af3a8200e8b4a41
+Gitweb:     http://git.kernel.org/tip/9147621c771c8b6a5c8985373af3a8200e8b4a41
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 22 Nov 2011 14:47:50 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 22 Nov 2011 14:47:50 -0800
 
-Sorry! Didn't realize it was the other way around. Hopefully reading the
-code will inform my listening. :)
+kbuild, headers.sh: Don't make archheaders explicitly
 
-> I was sure there was some correct term for such a tree in the
-> literature, but I didn't know what it was and the compiler didn't like
-> "*_tree".
-> 
-> > Again, I appreciate the feedback! Thanks so much!
-> 
-> I note you sneakily deleted the bit about posix/bsd file locking.
+We don't need to explicitly invoke the archheaders target because of
+the dependency on __headers in the Makefile.
 
-Oh, no sneakiness intended. I agree about the parallels, and didn't
-really have anything to add. Hopefully the needs here are a little bit
-simpler, since we can coalesce regions. Maybe that will let us avoid the
-worst of it?
+Reported-and-tested-by: Michal Marek <mmarek@suse.cz>
+Link: http://lkml.kernel.org/r/4ECA8991.20302@suse.cz
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ scripts/headers.sh |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-thanks
--john
-
-
+diff --git a/scripts/headers.sh b/scripts/headers.sh
+index af1ed88..978b42b 100755
+--- a/scripts/headers.sh
++++ b/scripts/headers.sh
+@@ -7,7 +7,6 @@ set -e
+ do_command()
+ {
+ 	if [ -f ${srctree}/arch/$2/include/asm/Kbuild ]; then
+-		make ARCH=$2 KBUILD_HEADERS=$1 archheaders
+ 		make ARCH=$2 KBUILD_HEADERS=$1 headers_$1
+ 	else
+ 		printf "Ignoring arch: %s\n" ${arch}
