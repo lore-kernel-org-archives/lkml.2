@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1KVNRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 08:17:08 -0500
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:45140 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751766Ab1KVNRG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 08:17:06 -0500
-X-AuditID: 12074425-b7f116d0000008fe-44-4ecba0d12154
-Subject: Re: [3.2-rc2] loop device balance_dirty_pages_nr throttling hang
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=windows-1252
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <20111122104921.GE8098@dastard>
-Date: Tue, 22 Nov 2011 08:17:07 -0500
-Cc: Theodore Tso <tytso@MIT.EDU>, Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+	id S1754880Ab1KVNYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 08:24:53 -0500
+Received: from dns1.mips.com ([12.201.5.69]:52644 "EHLO dns1.mips.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab1KVNYw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 08:24:52 -0500
+From: "Zhu, DengCheng" <dczhu@mips.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 5/5] perf: Enable applicable siblings when group
+ leader is enable-on-exec
+Thread-Topic: [PATCH v2 5/5] perf: Enable applicable siblings when group
+ leader is enable-on-exec
+Thread-Index: AQHMqMcPcUwfPrOJr0SdF29sueMmtJW5Pg2A//+cb6w=
+Date: Tue, 22 Nov 2011 13:24:19 +0000
+Message-ID: <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>
+References: <1321932601-21128-1-git-send-email-dczhu@mips.com>,<1321959115.5148.22.camel@twins>
+In-Reply-To: <1321959115.5148.22.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.36.79]
+x-ems-proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
+x-ems-stamp: EnuZ2AWUCv9BrsmJZ7WpmQ==
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <ED3D1B07-DEC4-43C8-80A9-739C4973ABF9@mit.edu>
-References: <20111121142056.GF2386@dastard> <20111122035629.GE20982@localhost> <20111122102931.GD8098@dastard> <20111122104921.GE8098@dastard>
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: Apple Mail (2.1251.1)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42IRYrdT0b244LSfwaseIYstx+4xWrx/vp7Z
-	Ys/ekywWl3fNYXNg8Ti1SMJj8Z6XTB6fN8kFMEdx2aSk5mSWpRbp2yVwZWzo6GUruMlWcW3e
-	bbYGxrWsXYycHBICJhJtt+eyQ9hiEhfurWfrYuTiEBLYxyix4vM0KGcDo8Th9pdMEM5pJokH
-	ly8DtXBwCAt4SiybpAjSzStgLLHm1jsWEJtZQE9ix/VfYBvYBJQk7nzaDxbnFNCRWLulE2wb
-	i4CqxPO9HxhBZjIL3GSUmPPiBBNEs7bEsoWvmUHm8wpYSXSt8YXY28co0fRlKthQEQE1iUmT
-	djBDnC0v0fL1DtsERsFZSO6YheSOWUjGLmBkXsUom5JbpZubmJlTnJqsW5ycmJeXWqRroZeb
-	WaKXmlK6iREc3C6qOxgnHFI6xCjAwajEw/tr8ik/IdbEsuLK3EOMkhxMSqK8C+ed9hPiS8pP
-	qcxILM6ILyrNSS0+xCjBwawkwnulHSjHm5JYWZValA+TkuZgURLnfb3DwU9IID2xJDU7NbUg
-	tQgmK8PBoSTBe3c+UKNgUWp6akVaZk4JQpqJgxNkOA/Q8IsgNbzFBYm5xZnpEPlTjIpS4rxP
-	QBICIImM0jy4XljyecUoDvSKMC8XMBUJ8QATF1z3K6DBTECDp609ATK4JBEhJdXAKPqwpmy9
-	iF/xq33rPA/W/LqRLfuzMtRC+OW9W/9bfl8WvVDsGHS/S2iC1Nm0zZ0nH31rdlGYfsFzw3n7
-	bCW7uI6fGvI2u+XetpZkbTCvj5/Zc7ZVlElqS4v2vie3ooPvBzi5ei4o8TO19Oi/rlkv2aaw
-	0u6Kzq1He6R3b1JP410kZliR7rdNiaU4I9FQi7moOBEAfDWymRkDAAA=
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> ________________________________________
+> From: Peter Zijlstra [a.p.zijlstra@chello.nl]
+> Sent: Tuesday, November 22, 2011 6:51 PM
+> To: Zhu, DengCheng
+> Cc: Barzilay, Eyal; Fortuna, Zenon; Paul Mackerras; Ingo Molnar; Arnaldo Carvalho de Melo; ralf@linux-mips.org; LKML
+> Subject: Re: [PATCH v2 5/5] perf: Enable applicable siblings when group leader is enable-on-exec
+>
+> On Tue, 2011-11-22 at 11:30 +0800, Deng-Cheng Zhu wrote:
+>> Currently, when grouped events are created disabled and enable-on-exec, the
+>> siblings won't be enabled on exec in fact. The problem looks like this:
+>
+> Arguably that's a daft thing to do, since if the leader is disabled the
+> group won't get scheduled anyway. But I guess we should at least try to
+> deal with it when people do do it.
 
-On Nov 22, 2011, at 5:49 AM, Dave Chinner wrote:
+Well, by "grouped events" I mean "all of the grouped events", not only the
+group leader. In fact the leader (and only the leader) will be enabled by
+going through ctx->flexible_groups in perf_event_enable_on_exec().
 
-> But, I just noticed that the discard that mkfs.ext4 will result in
-> all the extents being discarded in the underlying image file (due to
-> the fact the loopback device now supports hole punching), so the
-> previous state of the image file is getting trashed by the mkfs.ext4
-> execution, too. I think I already had a ext4 filesystem in some state
-> before I started running this manual prealloc test....
+>
+> Seems perf-stat is a bit daft this way.
+>
+>> This patch fixes it.
+>
+> I guess it does, but its not pretty, event_enable_on_exec() already
+> calls __perf_event_mark_enable(), now this recursion is limited because
+> siblings can't have a sibling list of their own, but still.
 
-Which version of mkfs.ext4 are you using?   We've disabled the discard by default (unless configured in via a command-line option or a /etc/mke2fs.conf setting since no distribution apparently wants to be responsible for running supplying a command that causes a crap SSD to turning into a brick; personally, I'd blame the manufacturer of the crap SSD, but….)
+I did it like this just by reading the code comment of
+__perf_event_mark_enabled(): "Enabling the leader of a group effectively
+enables all the group members that aren't explicitly disabled ... Note:
+this works for group members as well as group leaders since the non-leader
+members' sibling_lists will be empty."
 
--- Ted
+So I suppose dealing with siblings' state in this traversal is the right
+thing to do and introduces minimal code turmoil, although the latter is by
+no means critical.
 
+> The below is a somewhat larger patch that avoids the recursion (and does
+> a small cleanup by eradicating all those useless ctx arguments). Quick
+> testing seems to indicate it works, but please confirm.
+
+I have no objection of deleting the redundant ctx arguments, but that's
+another topic.
+
+
+Deng-Cheng
