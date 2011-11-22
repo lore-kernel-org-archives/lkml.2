@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1KVTXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:23:19 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53490 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755071Ab1KVTXP (ORCPT
+	id S1755601Ab1KVTXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:23:53 -0500
+Received: from mail-bw0-f74.google.com ([209.85.214.74]:60576 "EHLO
+	mail-bw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab1KVTXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:23:15 -0500
-X-Sasl-enc: 21OJbOiZPX6N3TiqBhTnXV8SYksdmP5XGDU6R6D82YkT 1321989794
-Date: Tue, 22 Nov 2011 11:23:00 -0800
-From: Greg KH <greg@kroah.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, siglesia@cern.ch, manohar.vanga@cern.ch
-Subject: Re: [RGC PATCH 0/2] split file2alias using elf sections
-Message-ID: <20111122192300.GA5052@kroah.com>
-References: <cover.1320408578.git.rubini@gnudd.com>
+	Tue, 22 Nov 2011 14:23:51 -0500
+From: David Decotigny <david.decotigny@google.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: David Decotigny <david.decotigny@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH net-next v2 0/4] e1000e: ethtool setfeatures fixes + loopback
+Date: Tue, 22 Nov 2011 11:23:34 -0800
+Message-Id: <cover.1321989502.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1320408578.git.rubini@gnudd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 01:23:00PM +0100, Alessandro Rubini wrote:
-> When adding a new bus type with autoloading of modules, people should
-> always change the global scripts/mod/file2alias.c source file, whereas
-> most of the new code is just new files and individual Makefile/Kconfig
-> lines.
-> 
-> The first patch turns all the "normal" alias generation in a
-> table-driven loop. The second patch moves a few alias types out of the
-> main file2alias.c source, as a demonstration that the thing works.
-> 
-> I didn't move all bus/alias types out of the main file, as it's a huge
-> work. But if the approach is going to be accepted I can do that (or
-> happily leave the task to who volunteers).
+This series fixes a bug in ethtool setfeatures and adds loopback
+support through ethtool setfeatures.
 
-Yes!!!!
+I believe these patches could easily be adapted to e1000, but I don't
+have the hardware to test.
 
-I've been wanting this for years, and so have others (Linus, Andrew,
-etc.)
+Changes since v1:
+  - simplification in patch 1/4 (from Michał Mirosław)
 
-I'll gladly take this through my driver-core tree, as it can handle
-cross-bus issues like this.
+############################################
+# Patch Set Summary:
 
-Do you feel this series is good enough to accept, or do you want to
-respin it again?
+David Decotigny (2):
+  net-e1000e: fix ethtool set_features taking new features into account
+    too late
+  net-e1000e: ethtool loopback support
 
-thanks,
+Maciej Żenczykowski (2):
+  net-e1000e: reworked carrier detection logic
+  net-e1000e: Report carrier in loopback mode
 
-greg k-h
+ drivers/net/ethernet/intel/e1000e/e1000.h   |    2 +
+ drivers/net/ethernet/intel/e1000e/ethtool.c |    6 +-
+ drivers/net/ethernet/intel/e1000e/netdev.c  |   32 +++++++++++-
+ drivers/net/ethernet/intel/e1000e/phy.c     |   69 +++++++++++++++++----------
+ 4 files changed, 78 insertions(+), 31 deletions(-)
+
+-- 
+1.7.3.1
+
