@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902Ab1KVXRA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 18:17:00 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:39343 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab1KVXQ7 (ORCPT
+	id S1758969Ab1KVXTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 18:19:08 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:55363 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758912Ab1KVXTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 18:16:59 -0500
-Date: Wed, 23 Nov 2011 08:16:56 +0900
-From: Norbert Preining <preining@logic.at>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [regression 3.1.0 -> 3.20rc] USB Oops
-Message-ID: <20111122231656.GB15722@gamma.logic.tuwien.ac.at>
-References: <20111122125256.GB32440@gamma.logic.tuwien.ac.at> <Pine.LNX.4.44L0.1111221131170.2466-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1111221131170.2466-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 22 Nov 2011 18:19:06 -0500
+Date: Tue, 22 Nov 2011 18:17:57 -0500 (EST)
+Message-Id: <20111122.181757.1296497307756213535.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-11-22 #2
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111122224108.GJ8452@tuxdriver.com>
+References: <20111122215611.GI8452@tuxdriver.com>
+	<20111122.173729.1155753802137219940.davem@davemloft.net>
+	<20111122224108.GJ8452@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 15:18:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 22 Nov 2011, Alan Stern wrote:
-> > [   67.852328] BUG: unable to handle kernel NULL pointer dereference at 00000000000002d9
-> > [   67.853898] IP: [<ffffffffa0249e6b>] last_sector_hacks.part.2+0x72/0xe0 [usb_storage]
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 22 Nov 2011 17:41:08 -0500
+
+> On Tue, Nov 22, 2011 at 05:37:29PM -0500, David Miller wrote:
+> ...
+> They're here...
 > 
-> This is odd.  I've never seen a problem in that routine before.
+>> 0003-rt2x00-Fix-efuse-EEPROM-reading-on-PPC32.patch
+>> 0004-p54spi-Add-missing-spin_lock_init.patch
+>> 0005-p54spi-Fix-workqueue-deadlock.patch
+>> 0006-mac80211-Fix-AMSDU-rate-printout-in-debugfs.patch
+>> 0007-mac80211-Fix-endian-bug-in-radiotap-header-generatio.patch
+>> 0008-cfg80211-fix-regulatory-NULL-dereference.patch
+>> 0009-prism54-potential-memory-corruption-in-prism54_get_e.patch
+>> 0010-Revert-rt2x00-handle-spurious-pci-interrupts.patch
+>> 0011-Revert-rt2800pci-handle-spurious-interrupts.patch
 > 
-> What is "last_sector_hacks.part.2"?  In my kernel source tree there is
-> a last_sector_hacks() function in drivers/usb/storage/transport.c, but
-> what does the ".part.2" refer to?
+> And I revert them here.
+> 
+> Linus always says to live with our mistakes?  I was trying to avoid
+> a rebase both for my own pain and that of my downstream maintainers.
 
-No idea, here I am compiling with default Debian sid gcc, that is
-gcc (Debian 4.6.2-4) 4.6.2
-
-Anything else I can do? Should I hack something into the code?
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-HEATON PUNCHARDON (n.) A violent argument which breaks out in the car
-on the way home from a party between a couple who have had to be
-polite to each other in company all evening.
-			--- Douglas Adams, The Meaning of Liff
+Gotcha, I'll repull, thanks.
