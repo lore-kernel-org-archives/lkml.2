@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1KVKCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:02:20 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:61879 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab1KVKCT (ORCPT
+	id S1756266Ab1KVKDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:03:38 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:50860 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751830Ab1KVKDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:02:19 -0500
-Message-ID: <4ECB7324.9080008@oracle.com>
-Date: Tue, 22 Nov 2011 18:02:12 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
+	Tue, 22 Nov 2011 05:03:36 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        John Stultz <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>, <stable@kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH] rtc: disable the alarm in the hardware
+Date: Tue, 22 Nov 2011 11:03:14 +0100
+Message-ID: <1321956194-8382-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Subject: Re: [PATCH 3/4] xen/granttable: Grant tables V2 implementation
-References: <4ECA416D.90602@oracle.com>	 <1321927161-3987-1-git-send-email-annie.li@oracle.com> <1321954186.3664.403.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1321954186.3664.403.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4ECB7327.0037,ss=1,re=0.000,fgs=0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
+Currently, the RTC code does not disable the alarm in the hardware.
 
-On 2011-11-22 17:29, Ian Campbell wrote:
-> On Tue, 2011-11-22 at 01:59 +0000, annie.li@oracle.com wrote:
-> [...]
->> +#ifdef CONFIG_X86
->> +		barrier();
->> +#else
->> +		mb();
->> +#endif
->> +		}
-> Niggle: Indentation of this final } is off.
-Sorry, I did not notice that.
-> Otherwise all 4 patches:
-> Acked-by: Ian Campbell<ian.campbell@citrix.com>
->
-> [...]
-Thanks, I will resend those patches after above indentation issue is fixed.
+This means that after a sequence such as the one below (the files are in the
+RTC sysfs), the box will boot up after 2 minutes even though we've
+asked for the alarm to be turned off.
 
-Thanks.
+	# echo $((`cat since_epoch`)+120) > wakealarm
+	# echo 0 > wakealarm
+	# poweroff
 
-Thanks
-Annie
+Fix this by disabling the alarm when there are no timers to run.
+
+Cc: stable@kernel.org
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+---
+ drivers/rtc/interface.c |   44 ++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 34 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 8e28625..fa4d9f3 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -319,6 +319,20 @@ int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ }
+ EXPORT_SYMBOL_GPL(rtc_read_alarm);
+ 
++static int ___rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
++{
++	int err;
++
++	if (!rtc->ops)
++		err = -ENODEV;
++	else if (!rtc->ops->set_alarm)
++		err = -EINVAL;
++	else
++		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
++
++	return err;
++}
++
+ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ {
+ 	struct rtc_time tm;
+@@ -342,14 +356,7 @@ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 	 * over right here, before we set the alarm.
+ 	 */
+ 
+-	if (!rtc->ops)
+-		err = -ENODEV;
+-	else if (!rtc->ops->set_alarm)
+-		err = -EINVAL;
+-	else
+-		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
+-
+-	return err;
++	return ___rtc_set_alarm(rtc, alarm);
+ }
+ 
+ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+@@ -763,6 +770,20 @@ static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
+ 	return 0;
+ }
+ 
++static void rtc_alarm_disable(struct rtc_device *rtc)
++{
++	struct rtc_wkalrm alarm;
++	struct rtc_time tm;
++
++	__rtc_read_time(rtc, &tm);
++
++	alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
++				     ktime_set(300, 0)));
++	alarm.enabled = 0;
++
++	___rtc_set_alarm(rtc, &alarm);
++}
++
+ /**
+  * rtc_timer_remove - Removes a rtc_timer from the rtc_device timerqueue
+  * @rtc rtc device
+@@ -784,8 +805,10 @@ static void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer)
+ 		struct rtc_wkalrm alarm;
+ 		int err;
+ 		next = timerqueue_getnext(&rtc->timerqueue);
+-		if (!next)
++		if (!next) {
++			rtc_alarm_disable(rtc);
+ 			return;
++		}
+ 		alarm.time = rtc_ktime_to_tm(next->expires);
+ 		alarm.enabled = 1;
+ 		err = __rtc_set_alarm(rtc, &alarm);
+@@ -847,7 +870,8 @@ again:
+ 		err = __rtc_set_alarm(rtc, &alarm);
+ 		if (err == -ETIME)
+ 			goto again;
+-	}
++	} else
++		rtc_alarm_disable(rtc);
+ 
+ 	mutex_unlock(&rtc->ops_lock);
+ }
+-- 
+1.7.3.2
+
