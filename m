@@ -1,59 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab1KVAzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:55:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36024 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab1KVAze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:55:34 -0500
+	id S1755490Ab1KVA4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:56:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751177Ab1KVA4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 19:56:05 -0500
+Message-ID: <4ECAF309.60908@redhat.com>
+Date: Mon, 21 Nov 2011 19:55:37 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <4ECAF15E.1070008@caviumnetworks.com>
-References: <1321567050-13197-1-git-send-email-ddaney.cavm@gmail.com>
- <alpine.DEB.2.00.1111171520130.20133@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1111171522131.20133@chino.kir.corp.google.com>
- <4ECACF68.3020701@gmail.com> <CA+55aFwZxqHfEOemj+OJNKCj2toqGf3rkK-9iuS39L7iZsoH1Q@mail.gmail.com>
- <4ECAE314.9060209@gmail.com> <CA+55aFx==PGGLX9YXv1GOeTja4W0PSW8U4i8zkmtiZwqmFwHFw@mail.gmail.com>
- <4ECAF15E.1070008@caviumnetworks.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 21 Nov 2011 16:55:13 -0800
-X-Google-Sender-Auth: r5e_ivVufvRtZuHx83ZZAzJUmAk
-Message-ID: <CA+55aFyiV-W_7zOuu26jsUsCDTxHh41z8sEgL0D94xFooAJxFA@mail.gmail.com>
-Subject: Re: [patch] hugetlb: remove dummy definitions of HPAGE_MASK and HPAGE_SIZE
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Robin Holt <holt@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: compaction: make buffer cache __GFP_MOVABLE
+References: <1321635524-8586-1-git-send-email-mgorman@suse.de> <1321635524-8586-5-git-send-email-mgorman@suse.de> <20111118213530.GA6323@redhat.com> <20111121111726.GA19415@suse.de> <20111121224545.GC8397@redhat.com>
+In-Reply-To: <20111121224545.GC8397@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 4:48 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+On 11/21/2011 05:45 PM, Andrea Arcangeli wrote:
+> On Mon, Nov 21, 2011 at 11:17:26AM +0000, Mel Gorman wrote:
+>> On Fri, Nov 18, 2011 at 10:35:30PM +0100, Andrea Arcangeli wrote:
+>>> folks who wants low latency or no memory overhead should simply
+>>> disable compaction.
+>>
+>> That strikes me as being somewhat heavy handed. Compaction should be as
+>> low latency as possible.
 >
-> Really Linus, did you read the other half of the message you quoted?
+> Yes I was meaning in the very short term. Optimizations are always
+> possible :) we've just to sort out some issues (as previous part of
+> the email discussed).
+>
+>> There might be some confusion on what commits were for. Commit
+>> [e0887c19: vmscan: limit direct reclaim for higher order allocations]
+>> was not about low latency but more about reclaim/compaction reclaiming
+>> too much memory. IIRC, Rik's main problem was that there was too much
+>> memory free on his machine when THP was enabled.
+>>
+>>> the __GFP_NO_KSWAPD check too should be dropped I think,
+>>
+>> Only if we can get rid of the major stalls. I haven't looked closely at
+>> your series yet but I'll be searching for a replacment for patch 3 of
+>> this series in it.
+>
+> I reduced the migrate loops, for both async and sync compactions. I
+> doubt it'll be very effective but it may help a bit.
+>
+> Also this one I also suggest it in the short term.
+>
+> I mean until async migrate can deal with all type of pages (the issues
+> you're trying to fix) the __GFP_NO_KSWAPD check would not be reliable
+> enough as part of the movable zone wouldn't be movable. It'd defeat
+> the reliability from the movable pageblock in compaction context. And
+> I doubt a more advanced async compaction will be ok for 3.2, so I
+> don't think 3.2 should have the __GFP_NO_KSWAPD and I tend to back
+> Andrew's argument. My patch OTOH that only reduces the loops and
+> doesn't alter the movable pageblock semantics in compaction context,
+> sounds safer. It won't help equally well though.
+>
+>> Ok. It's not even close to what I was testing but I can move to this
+>> test so we're looking at the same thing for allocation success rates.
+>
+> Note I guess we also need the below. This also should fix by practical
+> means Rik's trouble (he was using KVM without O_DIRECT on raw
+> blkdev). That explains why he experienced too much reclaim, the VM had
+> no choice but to do reclaim because the blkdev cache was not staying
+> in the movable pageblocks preventing compaction effectiveness (and
+> likely they used lots of ram).
+>
+> We may still have to limit reclaim but not like the patch that went
+> upstream implements. When compaction_suitable is happy about the
+> wmarks, the compaction loop isn't still as reliable as it could be in
+> the movable zone, and doing more reclaim helps a lot, the more free
+> pages the more compaction goes ahead and has a change to compact more
+> stuff before the two scans meets in the middle. With Rik we thought
+> about a way to do just a no-swapping reclaim to shrink caches like
+> slab.
+>
+> I mean the cp /dev/sda /dev/null scenario that happens without the
+> below patch can still materialize in a fileserver with very large slab
+> caches. We still have to invoke reclaim, maybe not too heavy, we
+> shouldn't end up swapping, basically it should be a light reclaim (the
+> opposite of lumpy reclaim). But with the current check upstream
+> reclaim practically won't run at all if compaction fails, so it's
+> normal the success rate goes down a lot. (btw I didn't verify yet at
+> runtime if migration succeeds on the blkdev pagecache)
+>
+> ====
+> mm: block_dev pagecache is movable
+>
+> Allow block_dev pagecache to go in movable pageblocks. If compaction
+> fails reclaim is invoked. So with raw devices being used without
+> O_DIRECT, reclaim would run too much and because the cache pages would
+> get mixed with slab and other not movable entities, the compaction
+> reliability would decrease.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+> ---
+>   fs/block_dev.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index b07f1da..f7111c4 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -565,7 +565,7 @@ struct block_device *bdget(dev_t dev)
+>   		inode->i_rdev = dev;
+>   		inode->i_bdev = bdev;
+>   		inode->i_data.a_ops =&def_blk_aops;
+> -		mapping_set_gfp_mask(&inode->i_data, GFP_USER);
+> +		mapping_set_gfp_mask(&inode->i_data, GFP_USER|__GFP_MOVABLE);
+>   		inode->i_data.backing_dev_info =&default_backing_dev_info;
+>   		spin_lock(&bdev_lock);
+>   		list_add(&bdev->bd_list,&all_bdevs);
 
-Sorry no. It was just an automatic reaction along the lines of "oh
-christ, is this argument still going on"?
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-I'm ok with magic gcc function attributes, although I still don't see
-why you need that symbol so badly.
+Maybe prettier done by defining a GFP_USER_MOVABLE in the
+proper include file and using that?
 
-Quite frankly, some MIPS-only patch is *not* important-enough to worry
-about this. I'd rather have the simpler "that symbol doesn't exist,
-and MIPS just needs an #ifdef".
+Still, we need this fix.
 
-I realize that we *used* to have code that did that
+I believe this is safe because all the users of buffer cache
+pages already need to protect the page against getting
+reclaimed (by taking a refcount), which also protects against
+migration.
 
-   if (something_that_evaluates_to_zero) {
-       .. use HPAGE_MASK ..
+Only pages without an extra refcount (not in current use by
+anyone) can be migrated.
 
-but considering that we don't have that any more and people are happy,
-I'm not all that convinced that we need to try to re-introduce it.
-
-                     Linus
+I do not believe this change could break any filesystem, but
+adding linux-fsdevel to the CC anyway just to check...
