@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab1KVVNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:13:43 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57044 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1KVVNl convert rfc822-to-8bit (ORCPT
+	id S932085Ab1KVVOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:14:39 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:54098 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab1KVVOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:13:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <1321994813.2304.90.camel@jtkirshe-mobl>
-References: <cover.1321989502.git.david.decotigny@google.com> <1321994813.2304.90.camel@jtkirshe-mobl>
-From: David Decotigny <david.decotigny@google.com>
-Date: Tue, 22 Nov 2011 13:13:19 -0800
-Message-ID: <CAG88wWY_6o_1Ecxe6+XiA8ga6+t4ua+L6fZ8AOOFyrKgZ8LDMQ@mail.gmail.com>
-Subject: Re: [PATCH net-next v2 0/4] e1000e: ethtool setfeatures fixes + loopback
-To: jeffrey.t.kirsher@intel.com
-Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mahesh Bandewar <maheshb@google.com>,
-        =?ISO-8859-2?Q?Maciej_=AFenczykowski?= <maze@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 22 Nov 2011 16:14:38 -0500
+Date: Tue, 22 Nov 2011 16:13:22 -0500 (EST)
+Message-Id: <20111122.161322.454163033398038634.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-11-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111122.160511.2302883259439708995.davem@davemloft.net>
+References: <20111122.151429.253381379981773726.davem@davemloft.net>
+	<20111122205655.GE8452@tuxdriver.com>
+	<20111122.160511.2302883259439708995.davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 13:13:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff, Bruce,
+From: David Miller <davem@davemloft.net>
+Date: Tue, 22 Nov 2011 16:05:11 -0500 (EST)
 
-Please drop this patch series as I was informed that:
- - http://patchwork.ozlabs.org/patch/95175/ already implemented
-loopback for ethtool and is under review. Please note, though, that
-the version (patch 2) I submitted builds on top of newer net-next
-changes
- - Maciej Żenczykowski would prefer not to use the version I sent for
-patches 3 and 4, and will provide an improved patch
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Tue, 22 Nov 2011 15:56:55 -0500
+> 
+>> On Tue, Nov 22, 2011 at 03:14:29PM -0500, David Miller wrote:
+>>> From: "John W. Linville" <linville@tuxdriver.com>
+>>> Date: Tue, 22 Nov 2011 14:35:05 -0500
+>>> 
+>>> > Here is the latest batch of fixes intended for 3.2.  This includes a
+>>> > correction for a user-visible error in mac80211's debugfs info, a fix
+>>> > for a potential memory corrupter in prism54, an endian fix for rt2x00,
+>>> > an endian fix for mac80211, a fix for a NULL derefernce in cfg80211, a
+>>> > locking fix and a deadlock fix for p54spi, and a pair of rt2x00 fixes
+>>> > for handling some spurious interrupts that hardware can generate.
+>>> > 
+>>> > Please let me know if there are problems!
+>>> 
+>>> The rt2800pci change doesn't look correct.
+>>> 
+>>> If the IRQ line is shared with another device, this change will make it
+>>> never see interrupts.  Once you say "IRQ_HANDLED" the IRQ dispatch
+>>> stops processing the interrupt handler list.
+>> 
+>> I thought this at first as well.  But looking at the code in
+>> kernel/irq/handle.c doesn't support that conclusion.  In fact, every
+>> handler gets invoked no matter what they all return.  All of the irq
+>> handler return values are ORed together and passed to note_interrupt.
+>> Only if every irq handler returns IRQ_NONE does the code in
+>> kernel/irq/spurious.c start getting involved.
+>> 
+>> Anyway, this seems to be safe even for shared interrupts.  That said,
+>> this is a bit ugly.  But it makes a serious difference in performance
+>> for those afflicted with this issue.
+> 
+> It just means that we won't notice spurious interrupts if the device
+> sharing the line with rt2800pci generates one.
+> 
+> This change is wrong.
 
-I will mark the series as rejected on patchwork and will resend patch
-1 (fix) as "v3".
+BTW, look at it this way, if what you say is true John then what's the point
+in returning any specific value at all?
 
-My apologies for this hick-up.
+Everyone can just return IRQ_HANDLED and everything would just work.
 
-Regards,
-
---
-David Decotigny
-
-
-
-On Tue, Nov 22, 2011 at 12:46 PM, Jeff Kirsher
-<jeffrey.t.kirsher@intel.com> wrote:
-> On Tue, 2011-11-22 at 11:23 -0800, David Decotigny wrote:
->> This series fixes a bug in ethtool setfeatures and adds loopback
->> support through ethtool setfeatures.
->>
->> I believe these patches could easily be adapted to e1000, but I don't
->> have the hardware to test.
->>
->> Changes since v1:
->>   - simplification in patch 1/4 (from Michał Mirosław)
->>
->> ############################################
->> # Patch Set Summary:
->>
->> David Decotigny (2):
->>   net-e1000e: fix ethtool set_features taking new features into account
->>     too late
->>   net-e1000e: ethtool loopback support
->>
->> Maciej Żenczykowski (2):
->>   net-e1000e: reworked carrier detection logic
->>   net-e1000e: Report carrier in loopback mode
->>
->>  drivers/net/ethernet/intel/e1000e/e1000.h   |    2 +
->>  drivers/net/ethernet/intel/e1000e/ethtool.c |    6 +-
->>  drivers/net/ethernet/intel/e1000e/netdev.c  |   32 +++++++++++-
->>  drivers/net/ethernet/intel/e1000e/phy.c     |   69 +++++++++++++++++----------
->>  4 files changed, 78 insertions(+), 31 deletions(-)
->>
->
-> Thanks David for the patch set.  I have added the e1000e patches to my
-> queue.  As an fyi, I want Bruce Allan to look over these patches and he
-> is out this week on vacation.
+But you know that's not the case, and that it's important that this value
+is returned accurately.
