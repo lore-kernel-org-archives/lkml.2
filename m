@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab1KVBMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:12:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41904 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757890Ab1KVBMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757885Ab1KVBMm (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 21 Nov 2011 20:12:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41861 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757793Ab1KVBMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 20:12:39 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 1/3] device.h: Fix struct member documentation
-Date: Mon, 21 Nov 2011 17:11:22 -0800
-Message-Id: <1321924284-26414-1-git-send-email-gregkh@suse.de>
+Cc: Claudio Scordino <claudio@evidence.eu.com>,
+        stable <stable@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 3/3] drivers/base/node.c: fix compilation error with older versions of gcc
+Date: Mon, 21 Nov 2011 17:11:24 -0800
+Message-Id: <1321924284-26414-3-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <20111122005858.GB25420@kroah.com>
+In-Reply-To: <1321924284-26414-1-git-send-email-gregkh@suse.de>
 References: <20111122005858.GB25420@kroah.com>
+ <1321924284-26414-1-git-send-email-gregkh@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcos Paulo de Souza <marcos.mage@gmail.com>
+From: Claudio Scordino <claudio@evidence.eu.com>
 
-Fix warning of make xmldocs of documention of the struct member iommu_ops from struct bus_type.
+Patch to fix the error message "directives may not be used inside a macro
+argument" which appears when the kernel is compiled for the cris architecture.
 
-Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/device.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/base/node.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index ffbcf95..2b88320 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -69,7 +69,7 @@ extern void bus_remove_file(struct bus_type *, struct bus_attribute *);
-  * @resume:	Called to bring a device on this bus out of sleep mode.
-  * @pm:		Power management operations of this bus, callback the specific
-  *		device driver's pm-ops.
-- * @iommu_ops   IOMMU specific operations for this bus, used to attach IOMMU
-+ * @iommu_ops:  IOMMU specific operations for this bus, used to attach IOMMU
-  *              driver implementations to a bus and allow the driver to do
-  *              bus-specific setup
-  * @p:		The private data of the driver core, only the driver core can
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 793f796..5693ece 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -127,12 +127,13 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+ 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+-		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+ 			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR
++			HPAGE_PMD_NR),
++#else
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
+ #endif
+-		       ),
+ 		       nid, K(node_page_state(nid, NR_SHMEM)),
+ 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+ 				THREAD_SIZE / 1024,
+@@ -143,13 +144,14 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
+ 				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
+-		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ 			, nid,
+ 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR)
++			HPAGE_PMD_NR));
++#else
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+ #endif
+-		       );
+ 	n += hugetlb_report_node_meminfo(nid, buf + n);
+ 	return n;
+ }
 -- 
 1.7.7.3
 
