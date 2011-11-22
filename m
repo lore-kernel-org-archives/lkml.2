@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab1KVSBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:01:53 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45880 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab1KVSBw (ORCPT
+	id S1755085Ab1KVSFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:05:35 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47848 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751355Ab1KVSFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:01:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6sOd6MiyYaok6BsihJtp-NNsm3WQf+aUPGMRFRpSLw2mQ@mail.gmail.com>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
- <1321926047-14211-6-git-send-email-mturquette@linaro.org> <CACxGe6sOd6MiyYaok6BsihJtp-NNsm3WQf+aUPGMRFRpSLw2mQ@mail.gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Tue, 22 Nov 2011 10:01:30 -0800
-Message-ID: <CAPtuhTheG-mvoGMaB2y9BSKF-abm2yigoN-SXaeCb+P5R6t_Dg@mail.gmail.com>
-Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mike Turquette <mturquette@ti.com>, broonie@opensource.wolfsonmicro.com,
-        sboyd@quicinc.com, eric.miao@linaro.org, linaro-dev@lists.linaro.org,
-        linux-omap@vger.kernel.org, arnd.bergmann@linaro.org,
-        jeremy.kerr@canonical.com, dsaxena@linaro.org, shawn.guo@freescale.com,
-        linus.walleij@stericsson.com, skannan@quicinc.com,
-        richard.zhao@linaro.org, linux-arm-kernel@lists.infradead.org,
-        tglx@linutronix.de, aul@pwsan.com, linux@arm.linux.org.uk,
-        magnus.damm@gmail.com, linux-kernel@vger.kernel.org,
-        amit.kucheria@linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Nov 2011 13:05:34 -0500
+Date: Tue, 22 Nov 2011 18:05:20 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.2-rc1
+Message-ID: <20111122180520.2c0c3e0f@pyx>
+In-Reply-To: <4ECAFDAD.5040801@panasas.com>
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+	<4EBAB5F7.80000@xenotime.net>
+	<CA+5PVA6tBx4i1XZ+AF=uaOsjYCshG9CzXHWjnJcsJ=z1qw1F4A@mail.gmail.com>
+	<4ECAFDAD.5040801@panasas.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 8:37 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->
-> On Nov 21, 2011 6:43 PM, "Mike Turquette" <mturquette@ti.com> wrote:
->>
->> Introduces kobject support for the common struct clk, exports per-clk
->> data via read-only callbacks and models the clk tree topology in sysfs.
->>
->> Also adds support for generating the clk tree in clk_init and migrating
->> nodes when input sources are switches in clk_set_parent.
->
-> I'm not convinced this is a good idea. What is the use case for exporting
-> the clock tree? If it is debug, then I suggest using debugfs to avoid abi
-> issues.
+> My god that totally-brain-dead Fedora Kernel rpm generation.
 
-Each clk exports clk_rate, clk_flags, clk_enable_count &
-clk_prepare_count as Read-Only.  I think this is very reasonable to
-have in sysfs, which maps the topology of the system with key details.
+It's designed to produce kernel packages for distribution. It is indeed
+useless for much else.
 
-Others have requested to have knobs made available for actually
-performing clk_enable/clk_disable and even clk_set_rate from
-userspace.  I hate this idea and won't implement it.  I encourage
-anyone that needs this to do it in debugfs.
+> I wish there was a strait forward way to point to a Kernel
+> git tree HEAD and say "make rpm", which is simply the tar
+> of the "make modules_install" and the "make install" output
+> + a simple script to manipulate grub.conf
 
-Does that work-split make sense to you, or do you still not like the
-idea of having topology and read-only info in sysfs?
+That's what the upstream make rpm tries to achieve. If it's not working
+right on Fedora then we should fix it to work around any Fedora brokenness
 
-Regards,
-Mike
+> Not today's Fedora-Kernel git tree which is not a Linux
+> git tree at all but those patches above + stable.
+> Any simple tree moments needs to involve black patch magic
+> and fear of hell. (Don't try this at home)
 
->
-> g.
+Fedora is now getting so weird and dependant on magic initrds it's become
+pretty unusable for kernel development work nowdays IMHO because it's
+undebuggable.
+
+However "make rpm" from the Linus tree is meant to be as far as possible
+generic.
+
+Alan
