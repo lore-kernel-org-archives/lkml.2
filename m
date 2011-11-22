@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab1KVVJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 16:09:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45683 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab1KVVJd (ORCPT
+	id S1757812Ab1KVVNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 16:13:43 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57044 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab1KVVNl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 16:09:33 -0500
-Date: Tue, 22 Nov 2011 21:09:30 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs fix
-Message-ID: <20111122210930.GJ2203@ZenIV.linux.org.uk>
-References: <20111122174419.GI2203@ZenIV.linux.org.uk>
- <CA+55aFz+9TN2z+q9vH2g0wMq6_X8AfYANrntGQd_et+U5+c74Q@mail.gmail.com>
+	Tue, 22 Nov 2011 16:13:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz+9TN2z+q9vH2g0wMq6_X8AfYANrntGQd_et+U5+c74Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1321994813.2304.90.camel@jtkirshe-mobl>
+References: <cover.1321989502.git.david.decotigny@google.com> <1321994813.2304.90.camel@jtkirshe-mobl>
+From: David Decotigny <david.decotigny@google.com>
+Date: Tue, 22 Nov 2011 13:13:19 -0800
+Message-ID: <CAG88wWY_6o_1Ecxe6+XiA8ga6+t4ua+L6fZ8AOOFyrKgZ8LDMQ@mail.gmail.com>
+Subject: Re: [PATCH net-next v2 0/4] e1000e: ethtool setfeatures fixes + loopback
+To: jeffrey.t.kirsher@intel.com
+Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mahesh Bandewar <maheshb@google.com>,
+        =?ISO-8859-2?Q?Maciej_=AFenczykowski?= <maze@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 09:48:36AM -0800, Linus Torvalds wrote:
-> On Tue, Nov 22, 2011 at 9:44 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > Really embarrassing braino; kudos to jlayton for catching that one.
-> > Please, pull from
-> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
-> >
-> > Al Viro (1):
-> > ? ? ?mount_subtree() pointless use-after-free
-> 
-> Hmm. That's not at all what I get.
-> 
-> Or rather, that's just *one* of the commits I get. I also get these two:
-> 
->       microblaze: bury asm/namei.h
->       iio: fix a leak due to improper use of anon_inode_getfd()
-> 
-> which look like they may be valid, but for all I know you meant to
-> leave them for the next merge window. So not pulled. Please check your
-> tree,
+Jeff, Bruce,
 
-Umm...  OK, I see what happened - buggered script generating
-shortlog/diffstat plus me not noticing that it hadn't reported a couple
-of fixes I'd put there yesterday.  All 3 are intended to be sent;
-iio is an outright bugfix, microblaze one could wait, in theory, but
-it's guaranteed to be safe (removal of header nothing includes, done on
-all architectures years ago, with microblaze tree apparently copying it
-from sparc and keeping all along) and the sooner such things are buried,
-the fewer places will copy that *again*...
+Please drop this patch series as I was informed that:
+ - http://patchwork.ozlabs.org/patch/95175/ already implemented
+loopback for ethtool and is under review. Please note, though, that
+the version (patch 2) I submitted builds on top of newer net-next
+changes
+ - Maciej Żenczykowski would prefer not to use the version I sent for
+patches 3 and 4, and will provide an improved patch
 
-Anyway, consider that a pull request for all 3 commits.  Proper shortlog
-and diffstat follow.
+I will mark the series as rejected on patchwork and will resend patch
+1 (fix) as "v3".
 
-Shortlog:
-Al Viro (3):
-      microblaze: bury asm/namei.h
-      iio: fix a leak due to improper use of anon_inode_getfd()
-      mount_subtree() pointless use-after-free
+My apologies for this hick-up.
 
-Diffstat:
- arch/microblaze/include/asm/namei.h     |   22 ----------------------
- drivers/staging/iio/industrialio-core.c |   10 +++++++++-
- fs/namespace.c                          |    6 ++++--
- 3 files changed, 13 insertions(+), 25 deletions(-)
+Regards,
+
+--
+David Decotigny
 
 
-FWIW, the fixed form of script follows; if you see any potential problems in
-it, please tell:
-echo Shortlog:
-base=`git merge-base origin "$1"`
-git log --pretty=short "$base..$1" | git shortlog
-echo Diffstat:
-git diff --stat -M "$base..$1"
+
+On Tue, Nov 22, 2011 at 12:46 PM, Jeff Kirsher
+<jeffrey.t.kirsher@intel.com> wrote:
+> On Tue, 2011-11-22 at 11:23 -0800, David Decotigny wrote:
+>> This series fixes a bug in ethtool setfeatures and adds loopback
+>> support through ethtool setfeatures.
+>>
+>> I believe these patches could easily be adapted to e1000, but I don't
+>> have the hardware to test.
+>>
+>> Changes since v1:
+>>   - simplification in patch 1/4 (from Michał Mirosław)
+>>
+>> ############################################
+>> # Patch Set Summary:
+>>
+>> David Decotigny (2):
+>>   net-e1000e: fix ethtool set_features taking new features into account
+>>     too late
+>>   net-e1000e: ethtool loopback support
+>>
+>> Maciej Żenczykowski (2):
+>>   net-e1000e: reworked carrier detection logic
+>>   net-e1000e: Report carrier in loopback mode
+>>
+>>  drivers/net/ethernet/intel/e1000e/e1000.h   |    2 +
+>>  drivers/net/ethernet/intel/e1000e/ethtool.c |    6 +-
+>>  drivers/net/ethernet/intel/e1000e/netdev.c  |   32 +++++++++++-
+>>  drivers/net/ethernet/intel/e1000e/phy.c     |   69 +++++++++++++++++----------
+>>  4 files changed, 78 insertions(+), 31 deletions(-)
+>>
+>
+> Thanks David for the patch set.  I have added the e1000e patches to my
+> queue.  As an fyi, I want Bruce Allan to look over these patches and he
+> is out this week on vacation.
