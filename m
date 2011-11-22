@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab1KVCSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 21:18:10 -0500
-Received: from gate.crashing.org ([63.228.1.57]:42725 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab1KVCSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 21:18:08 -0500
-Message-ID: <1321928235.13860.31.camel@pasglop>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Date: Tue, 22 Nov 2011 13:17:15 +1100
-In-Reply-To: <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-References: <20111121131531.GA1679@x4.trippels.de>
-	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121153621.GA1678@x4.trippels.de>
-	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121161036.GA1679@x4.trippels.de>
-	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121173556.GA1673@x4.trippels.de>
-	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121185215.GA1673@x4.trippels.de>
-	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
-	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1758170Ab1KVCSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 21:18:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64301 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757250Ab1KVCSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Nov 2011 21:18:16 -0500
+Message-ID: <4ECB06D2.6060106@cn.fujitsu.com>
+Date: Tue, 22 Nov 2011 10:20:02 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <htejun@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
+References: <1321480234-29241-1-git-send-email-mhocko@suse.cz> <20111121230709.GR25776@google.com>
+In-Reply-To: <20111121230709.GR25776@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-22 10:17:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-22 10:17:57,
+	Serialize complete at 2011-11-22 10:17:57
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 16:21 -0800, Christian Kujau wrote:
-> On Tue, 22 Nov 2011 at 07:27, Benjamin Herrenschmidt wrote:
-> > Note that I hit a similar looking crash (sorry, I couldn't capture a
-> > backtrace back then) on a PowerMac G5 (ppc64) while doing a large rsync
-> > transfer yesterday with -rc2-something (cfcfc9ec) and 
-> > Christian Kujau (CC) seems to be able to reproduce something similar on
-> > some other ppc platform (Christian, what is your setup ?)
+Tejun Heo wrote:
+> Hello, Michal.
 > 
-> I seem to hit it with heavy disk & cpu IO is in progress on this PowerBook 
-> G4. Full dmesg & .config: http://nerdbynature.de/bits/3.2.0-rc1/oops/
+> On Wed, Nov 16, 2011 at 10:50:34PM +0100, Michal Hocko wrote:
+>> +/* Task is frozen or will freeze immediately when next it gets woken */
+>> +static bool is_task_frozen_enough(struct task_struct *task)
+>> +{
+>> +	return frozen(task) ||
+>> +		(task_is_stopped_or_traced(task) && freezing(task));
+>> +}
 > 
-> I've enabled some debug options and now it really points to slub.c:2166
+> Hmmm... w/ pending freezer updates, the above would always return
+> %true if there's freezing in progress, which can't be right.  Maybe
+
+Only if the task is stopped/trace.
+
+If we try to freeze a stopped task, it will be kept in freezing state.
+
+> just test stopped/traced?
 > 
->    http://nerdbynature.de/bits/3.2.0-rc1/oops/oops4m.jpg
+
+This can trigger a BUG_ON in update_if_frozen(), because we always count a
+stopped task as frozen.
+
+>   http://git.kernel.org/?p=linux/kernel/git/tj/misc.git;a=shortlog;h=refs/heads/pm-freezer
 > 
-> With debug options enabled I'm currently in the xmon debugger, not sure 
-> what to make of it yet, I'll try to get something useful out of it :)
-
-Is your powerbook one of those who can actually use xmon ? (ie, keyboard
-is working ? If it's usb it won't but if it's adb it will).
-
-You probably landed there too late tho, after the corruption happened.
-
-What would be useful would be to see if you can reproduce with SLAB
-and/or after backing out the cpu partial functionality.
-
-Cheers,
-Ben.
-
-
-
+> Thanks.
+> 
