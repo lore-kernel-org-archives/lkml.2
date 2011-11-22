@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab1KVTUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 14:20:19 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:23071 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752871Ab1KVTUR (ORCPT
+	id S1754517Ab1KVTXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 14:23:06 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58796 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab1KVTXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 14:20:17 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: UsUnQkcVM1k1C18xz4U9HGiSKM5S9K87NBv0TopTIqiZQym
- tHdaKiJgPQfOHiJ.EysKiRS5he8hdhdsqQ.yrMbzuEVy_VV1lrACot6mWhyX
- A913zo0qpTJT.yzYvuSJSkucWEv19ay2VNjuEvoBzPNGRP7IycKSVGQMRHfs
- 9zeI1_KhaHgdmB.OzPQU.ZNCLGq_PCLlYeFpS1GbIQdFGCUBgPmxSGfGKEh8
- du5i5R0xCy8Dcw3aXph_PE4fcepzDPqhQ1Ghr35is91ikehqEfvCVupgRFK1
- hZuGUe4ZA9ceIAHO9wmGLKhep1OzpVHoTv0KC1TPkJtaHHRODwFNN4Jp3PkC
- vMOFV_N1Hs6JtsyVvz5CRlShzTB_rhrd9kAtWz.K.zIeljg--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 22 Nov 2011 13:20:12 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: slub: Lockout validation scans during freeing of object
-In-Reply-To: <20111122185540.GA1627@x4.trippels.de>
-Message-ID: <alpine.DEB.2.00.1111221319070.30368@router.home>
-References: <alpine.DEB.2.00.1111221033350.28197@router.home> <alpine.DEB.2.00.1111221040300.28197@router.home> <alpine.DEB.2.00.1111221052130.28197@router.home> <1321982484.18002.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.00.1111221139240.28197@router.home>
- <20111122185540.GA1627@x4.trippels.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 Nov 2011 14:23:05 -0500
+Date: Tue, 22 Nov 2011 23:20:28 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [RFC] Make Yama pid_ns aware
+Message-ID: <20111122192028.GA10458@albatros>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+ <20111121191811.GA24039@albatros>
+ <20111122181310.GA4235@sergelap>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122181310.GA4235@sergelap>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Nov 2011, Markus Trippelsdorf wrote:
+Hi Serge,
 
-> On 2011.11.22 at 11:40 -0600, Christoph Lameter wrote:
-> > On Tue, 22 Nov 2011, Eric Dumazet wrote:
-> >
-> > > This seems better, but I still have some warnings :
-> >
-> > Trying to reproduce with a kernel configured to do preempt. This is
-> > actually quite interesting since its always off by 1.
->
-> BTW there are some obvious overflows in the "slabinfo -l" output on my machine:
+On Tue, Nov 22, 2011 at 12:13 -0600, Serge Hallyn wrote:
+> Quoting Vasiliy Kulikov (segoon@openwall.com):
+> > As Yama's sysctls are about defining a security policy for the system,
+> > it is reasonable to define it per container in case of LXC containers
+> > (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+> > to pid namespace.  With per-pid_ns sysctls it is possible to create
+> > multiple containers with different ptrace, /tmp, etc. policies.
+> 
+> tying the ptrace policy to pidns makes some sense, but is it definately
+> what we want?
+> 
+> Is the idea that the container should never be able to bypass the
+> restrictions, or should root in the container eventually be able to
+> bypass it as he can on the host?
 
-Could you get me the value of the "slabs" field for the slabs showing the
-wierd values. I.e. do
+In-container root already has CAP_SYS_PTRACE, so he can avoid the check
+even if Yama's ptrace policy is enabled.
 
-cat /sys/kernel/slab/signal_cache/slabs
 
-> signal_cache               268     920   360.4K 18446744073709551614/7/24   17 2  31  68 A
+> Would a securebits interface be more or less suitable?  It would allow
+> per-process setting, inherited from parent on fork.
+
+IMHO securebits doesn't belong to such finegrained type of things.
+I don't find anything dangerous for privileged process (i.e. with
+CAP_SYS_ADMIN and CAP_SYS_PTRACE) to be able to fork from
+ptrace-restricted pid namespace, unshare pid namespace and relax ptrace
+policy.  Because (1) process which is able to do unshare is already able
+to ptrace everybody and (2) unshared namespace cannot explicitly
+interact with parent namespace.
+
+
+> It would however
+> not allow a root shell on the desktop, after the fact, saying that
+> a running gdb should be allowed to access firefox.  But, it would be
+> able to say "I, from now on, am exempt, so that I can debug the
+> running firefox", without the rest of the system having its setting
+> changed.
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
