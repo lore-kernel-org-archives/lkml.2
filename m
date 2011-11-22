@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab1KVBao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:30:44 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24748 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab1KVBam (ORCPT
+	id S1757933Ab1KVBbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:31:14 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52235 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab1KVBbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:30:42 -0500
-Date: Mon, 21 Nov 2011 20:30:31 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20111122013031.GG28259@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4ECAFB40.006D,ss=1,re=0.000,fgs=0
+	Mon, 21 Nov 2011 20:31:12 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: ralf@linux-mips.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 1/2] kernel.h: Add BUILD_BUG_ON_USED() macro.
+Date: Mon, 21 Nov 2011 17:31:05 -0800
+Message-Id: <1321925466-11280-2-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1321925466-11280-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1321925466-11280-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+From: David Daney <david.daney@cavium.com>
 
-The for-linus branch of the linux-btrfs repo has some important fixes:
+We can place this in definitions that we expect the compiler to remove
+by dead code elimination.  If this assertion fails, we get a nice
+error message at build time.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+The GCC function attribute error("message") was added in version 4.3,
+so we define a new macro __linktime_error(message) to expand to this
+for GCC-4.3 and later.  This will give us an error diagnostic from the
+compiler on the line that fails.  For other compilers
+__linktime_error(message) expands to nothing, and we have to be
+content with a link time error, but at least we will still get a build
+error.
 
-The most important in the bunch fixes the btrfs cache flushing.  This
-one probably explains many of the corruptions that have been reported,
-especially on multi-device filesystems.  I had a hard time hitting it
-locally, partially because it is much less likely to happen for fsync
-based commits and most of my tests used fsyncs to exercise the commit
-code.  Ceph users running with -o notreelog were dramatically more
-likely to trigger the corruptions.
+BUILD_BUG_ON_USED() expands to the undefined function
+__build_bug_on_used_failed() and will fail at link time if the
+compiler ever emits code for it.  On GCC-4.3 and later,
+attribute((error())) is used so that the failure will be noted at compile
+time instead.
 
-The problem was that btrfs was triggering cache flushes before the last
-copy of the super block, instead of doing them before the first copy.
-We also needed to be more careful about getting flushes done to all the
-devices in a multi-device FS before writing any of the supers.  To help
-verify the new code, I wrote up a writeback-caching elevator, which I
-sent posted earlier today for comments/review.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ include/linux/compiler-gcc4.h |    1 +
+ include/linux/compiler.h      |    4 +++-
+ include/linux/kernel.h        |   16 ++++++++++++++++
+ 3 files changed, 20 insertions(+), 1 deletions(-)
 
-Many thanks to Alexandre Oliva and Arne Jansen for helping nail this
-down.
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index dfadc96..2f40791 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -29,6 +29,7 @@
+    the kernel context */
+ #define __cold			__attribute__((__cold__))
+ 
++#define __linktime_error(message) __attribute__((__error__(message)))
+ 
+ #if __GNUC_MINOR__ >= 5
+ /*
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 320d6c9..4a24354 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -293,7 +293,9 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #ifndef __compiletime_error
+ # define __compiletime_error(message)
+ #endif
+-
++#ifndef __linktime_error
++# define __linktime_error(message)
++#endif
+ /*
+  * Prevent the compiler from merging or refetching accesses.  The compiler
+  * is also forbidden from reordering successive instances of ACCESS_ONCE(),
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index b93c66e..ebe54515 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -666,6 +666,7 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ #define BUILD_BUG_ON_ZERO(e) (0)
+ #define BUILD_BUG_ON_NULL(e) ((void*)0)
+ #define BUILD_BUG_ON(condition)
++#define BUILD_BUG_ON_USED() (0)
+ #else /* __CHECKER__ */
+ 
+ /* Force a compilation error if a constant expression is not a power of 2 */
+@@ -704,6 +705,21 @@ extern int __build_bug_on_failed;
+ 		if (condition) __build_bug_on_failed = 1;	\
+ 	} while(0)
+ #endif
++
++/**
++ * BUILD_BUG_ON_USED - break compile if used.
++ *
++ * If you have some code that you expect the compiler to eliminate at
++ * build time, you should use BUILD_BUG_ON_USED to detect if it is
++ * unexpectedly used.
++ */
++#define BUILD_BUG_ON_USED()						\
++	do {								\
++		extern void __build_bug_on_used_failed(void)		\
++			__linktime_error("BUILD_BUG_ON_USED failed");	\
++		__build_bug_on_used_failed();				\
++	} while (0)
++
+ #endif	/* __CHECKER__ */
+ 
+ /* Trap pasters of __FUNCTION__ at compile-time */
+-- 
+1.7.2.3
 
-Outside of the cache flushes, we also have a fix from Liu Bo for
-corruptions when snapshotting with mount -o inode_cache enabled.
-
-My for-linus branch is still against 3.1, but these were tested on Linus
-git as well.
-
-Josef Bacik (3) commits (+90/-42):
-    Btrfs: wait on caching if we're loading the free space cache (+81/-41)
-    Btrfs: clear pages dirty for io and set them extent mapped (+5/-0)
-    Btrfs: sectorsize align offsets in fiemap (+4/-1)
-
-Chris Mason (2) commits (+141/-18):
-    Btrfs: remove free-space-cache.c WARN during log replay (+7/-1)
-    Btrfs: fix barrier flushes (+134/-17)
-
-Li Zefan (2) commits (+16/-38):
-    Btrfs: avoid unnecessary bitmap search for cluster setup (+4/-38)
-    Btrfs: fix to search one more bitmap for cluster setup (+12/-0)
-
-Jan Schmidt (1) commits (+4/-4):
-    btrfs: mirror_num should be int, not u64
-
-Jeff Mahoney (1) commits (+9/-6):
-    btrfs: Fix up 32/64-bit compatibility for new ioctls
-
-Liu Bo (1) commits (+26/-1):
-    Btrfs: fix tree corruption after multi-thread snapshots and inode_cache flush
-
-Arnd Hannemann (1) commits (+3/-3):
-    Btrfs: prefix resize related printks with btrfs:
-
-David Sterba (1) commits (+4/-2):
-    btrfs: fix stat blocks accounting
-
-Total: (12) commits (+290/-111)
-
- fs/btrfs/backref.c          |    2 +-
- fs/btrfs/ctree.c            |   17 +++++-
- fs/btrfs/ctree.h            |    5 +-
- fs/btrfs/disk-io.c          |  147 +++++++++++++++++++++++++++++++++++++-----
- fs/btrfs/extent-tree.c      |  119 +++++++++++++++++++++++------------
- fs/btrfs/extent_io.c        |    9 ++-
- fs/btrfs/extent_io.h        |    2 +-
- fs/btrfs/free-space-cache.c |   63 ++++++++-----------
- fs/btrfs/inode.c            |    6 +-
- fs/btrfs/ioctl.c            |   15 +++--
- fs/btrfs/scrub.c            |    2 +-
- fs/btrfs/transaction.c      |    8 +++
- fs/btrfs/volumes.h          |    6 ++
- 13 files changed, 290 insertions(+), 111 deletions(-)
