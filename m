@@ -1,230 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1KVSNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:13:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60781 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab1KVSNS (ORCPT
+	id S1755477Ab1KVSOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:14:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65404 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1KVSOt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:13:18 -0500
-Date: Tue, 22 Nov 2011 12:13:10 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [RFC] Make Yama pid_ns aware
-Message-ID: <20111122181310.GA4235@sergelap>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
- <20111121191811.GA24039@albatros>
+	Tue, 22 Nov 2011 13:14:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121191811.GA24039@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4ECBDA7A.80504@gmail.com>
+References: <1321644698-13677-1-git-send-email-keescook@chromium.org>
+	<1321644698-13677-3-git-send-email-keescook@chromium.org>
+	<4EC77605.5090605@gmail.com>
+	<CAGXu5j+Dh2jbAymcreOwX_T6=7FA8bOuwUFnwshdsVonAD5_EA@mail.gmail.com>
+	<4ECBDA7A.80504@gmail.com>
+Date: Tue, 22 Nov 2011 10:14:48 -0800
+X-Google-Sender-Auth: lJEBAXqp6daxs4WR5RwcyE8-BQo
+Message-ID: <CAGXu5jKHaP4GsuSh9P=+3QJEWhaAy1F_RghuQJdSzmfh0wNAiQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ramoops: remove module parameters
+From: Kees Cook <keescook@chromium.org>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Vasiliy Kulikov (segoon@openwall.com):
-> Hi,
-> 
-> As Yama's sysctls are about defining a security policy for the system,
-> it is reasonable to define it per container in case of LXC containers
-> (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
-> to pid namespace.  With per-pid_ns sysctls it is possible to create
-> multiple containers with different ptrace, /tmp, etc. policies.
+On Tue, Nov 22, 2011 at 9:23 AM, Marco Stornelli
+<marco.stornelli@gmail.com> wrote:
+> Il 21/11/2011 19:11, Kees Cook ha scritto:
+>>
+>> On Sat, Nov 19, 2011 at 1:25 AM, Marco Stornelli
+>> <marco.stornelli@gmail.com>  wrote:
+>>>
+>>> Il 18/11/2011 20:31, Kees Cook ha scritto:
+>>>>
+>>>> The ramoops driver is intended to be used with platforms that define
+>>>> persistent memory regions. If memory regions were configurable with
+>>>> module parameters, it would be possible to read some RAM regions via
+>>>> the pstore interface without access to /dev/mem (which would result
+>>>> in a loss of kernel memory privacy when a system is built with
+>>>> STRICT_DEVMEM), so remove this ability completely.
+>>>>
+>>>
+>>> I don't like it very much. The loss of module parameters give us less
+>>> flexibility. The main goal of this driver is debug, so I think it should
+>>> be
+>>> fast to use. I mean it's not more possible reserve a memory region and
+>>> load
+>>> the module "on-the-fly", it needs a platform device, it's ok but I think
+>>> it's a little bit more complicated, (without talking about platforms
+>>> without
+>>> a device tree source).
+>>> I don't understand the problem of strict devmem. We shouldn't use kernel
+>>> memory region but only reserved ones and the driver doesn't use the
+>>> request_mem_region_exclusive, am I wrong?
+>>
+>> Hmmm, maybe I'm reading it backwards, but I think we want it to use
+>> ..._exclusive().
+>>
+>> int devmem_is_allowed(unsigned long pagenr)
+>> {
+>>         if (pagenr<= 256)
+>>                 return 1;
+>>         if (iomem_is_exclusive(pagenr<<  PAGE_SHIFT))
+>>                 return 0;
+>>         if (!page_is_ram(pagenr))
+>>                 return 1;
+>>         return 0;
+>> }
+>>
+>> If the region is exclusive, access is not allowed (return 0). ramoops
+>> currently uses request_mem_region() instead of
+>> request_mem_region_exclusive(). If we made that switch, I think I'd be
+>> happy. Would this create some problem I'm not seeing?
+>
+> I don't understand why we should use the exclusive version, to protect debug
+> data? You should provide a more valid reason to change, because the fact you
+> will be happier with this change is not enough for me :)
 
-tying the ptrace policy to pidns makes some sense, but is it definately
-what we want?
+I guess ..._exclusive() doesn't matter. My concern was that ramoops
+with the pstore interface and the module parameters could be used to
+bypass STRICT_DEVMEM if it were able to be loaded in some sensitive
+region of system memory. Perhaps the better approach would be to use a
+magic header so that uninitialized memory isn't visible? What do you
+think?
 
-Is the idea that the container should never be able to bypass the
-restrictions, or should root in the container eventually be able to
-bypass it as he can on the host?
+-Kees
 
-Would a securebits interface be more or less suitable?  It would allow
-per-process setting, inherited from parent on fork.  It would however
-not allow a root shell on the desktop, after the fact, saying that
-a running gdb should be allowed to access firefox.  But, it would be
-able to say "I, from now on, am exempt, so that I can debug the
-running firefox", without the rest of the system having its setting
-changed.
-
-> As Yama is not merged yet, I post the patch in this thread.
-> 
-> The patch is straightforward:
-> 
-> 1) all sysctl variables are moved from global vars to pid_namespace
-> fields.
-> 
-> 2) each cloned pid ns gets the settings of the parent.
-> 
-> 3) the variables of current pid ns are visible through sysctl interface.
-> 
-> proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
-> ipc/ipc_sysctl.c.
-> 
-> (The patch is not tested.)
-> 
-> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> index 38d1032..46edaf8 100644
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -30,6 +30,11 @@ struct pid_namespace {
->  #ifdef CONFIG_BSD_PROCESS_ACCT
->  	struct bsd_acct_struct *bacct;
->  #endif
-> +#ifdef CONFIG_SECURITY_YAMA
-> +	int ptrace_scope;
-> +	int protected_sticky_symlinks;
-> +	int protected_nonaccess_hardlinks;
-> +#endif
->  };
->  
->  extern struct pid_namespace init_pid_ns;
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index fa5f722..0cd8926 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
->  	.last_pid = 0,
->  	.level = 0,
->  	.child_reaper = &init_task,
-> +#ifdef CONFIG_SECURITY_YAMA
-> +	.ptrace_scope = 1,
-> +	.protected_sticky_symlinks = 1,
-> +	.protected_nonaccess_hardlinks = 1,
-> +#endif
->  };
->  EXPORT_SYMBOL_GPL(init_pid_ns);
->  
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index e9c9adc..73d47c4 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
->  	if (err)
->  		goto out_put_parent_pid_ns;
->  
-> +#ifdef CONFIG_SECURITY_YAMA
-> +	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
-> +	ns->protected_sticky_symlinks =
-> +		parent_pid_ns->protected_sticky_symlinks;
-> +	ns->protected_nonaccess_hardlinks =
-> +		parent_pid_ns->protected_nonaccess_hardlinks;
-> +#endif
-> +
->  	return ns;
->  
->  out_put_parent_pid_ns:
-> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-> index a92538c..cf99a8c 100644
-> --- a/security/yama/yama_lsm.c
-> +++ b/security/yama/yama_lsm.c
-> @@ -16,10 +16,7 @@
->  #include <linux/ptrace.h>
->  #include <linux/prctl.h>
->  #include <linux/ratelimit.h>
-> -
-> -static int ptrace_scope = 1;
-> -static int protected_sticky_symlinks = 1;
-> -static int protected_nonaccess_hardlinks = 1;
-> +#include <linux/pid_namespace.h>
->  
->  /* describe a PTRACE relationship for potential exception */
->  struct ptrace_relation {
-> @@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
->  
->  	/* require ptrace target be a child of ptracer on attach */
->  	if (mode == PTRACE_MODE_ATTACH &&
-> -	    ptrace_scope &&
-> +	    current->nsproxy->pid_ns->ptrace_scope &&
->  	    !capable(CAP_SYS_PTRACE) &&
->  	    !task_is_descendant(current, child) &&
->  	    !ptracer_exception_found(current, child))
-> @@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
->  	const struct inode *inode;
->  	const struct cred *cred;
->  
-> -	if (!protected_sticky_symlinks)
-> +	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
->  		return 0;
->  
->  	/* if inode isn't a symlink, don't try to evaluate blocking it */
-> @@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
->  	const int mode = inode->i_mode;
->  	const struct cred *cred = current_cred();
->  
-> -	if (!protected_nonaccess_hardlinks)
-> +	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
->  		return 0;
->  
->  	if (cred->fsuid != inode->i_uid &&
-> @@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
->  static int zero;
->  static int one = 1;
->  
-> +static void *get_pid_data(ctl_table *table)
-> +{
-> +	char *which = table->data;
-> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
-> +	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
-> +	return which;
-> +}
-> +
-> +static int proc_pid_dointvec_minmax(ctl_table *table, int write,
-> +	void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +	struct ctl_table pid_table;
-> +
-> +	memcpy(&pid_table, table, sizeof(pid_table));
-> +	pid_table.data = get_pid_data(table);
-> +
-> +	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
-> +}
-> +
-> +
->  struct ctl_path yama_sysctl_path[] = {
->  	{ .procname = "kernel", },
->  	{ .procname = "yama", },
-> @@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
->  static struct ctl_table yama_sysctl_table[] = {
->  	{
->  		.procname       = "protected_sticky_symlinks",
-> -		.data           = &protected_sticky_symlinks,
-> +		.data           = &init_pid_ns.protected_sticky_symlinks,
->  		.maxlen         = sizeof(int),
->  		.mode           = 0644,
-> -		.proc_handler   = proc_dointvec_minmax,
-> +		.proc_handler   = proc_pid_dointvec_minmax,
->  		.extra1         = &zero,
->  		.extra2         = &one,
->  	},
->  	{
->  		.procname       = "protected_nonaccess_hardlinks",
-> -		.data           = &protected_nonaccess_hardlinks,
-> +		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
->  		.maxlen         = sizeof(int),
->  		.mode           = 0644,
-> -		.proc_handler   = proc_dointvec_minmax,
-> +		.proc_handler   = proc_pid_dointvec_minmax,
->  		.extra1         = &zero,
->  		.extra2         = &one,
->  	},
->  	{
->  		.procname       = "ptrace_scope",
-> -		.data           = &ptrace_scope,
-> +		.data           = &init_pid_ns.ptrace_scope,
->  		.maxlen         = sizeof(int),
->  		.mode           = 0644,
-> -		.proc_handler   = proc_dointvec_minmax,
-> +		.proc_handler   = proc_pid_dointvec_minmax,
->  		.extra1         = &zero,
->  		.extra2         = &one,
->  	},
-> ---
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Kees Cook
+ChromeOS Security
