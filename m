@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab1KVHqB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 02:46:01 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52927 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab1KVHqA (ORCPT
+	id S1755415Ab1KVHsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 02:48:41 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39011 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab1KVHsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 02:46:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111122072730.GA32225@gamma.logic.tuwien.ac.at>
-References: <1320709047.31823.188.camel@wwguy-huron>
-	<20111108043233.GA21171@gamma.logic.tuwien.ac.at>
-	<CANUX_P0Q0wve4D6fZPsMv2Zw=02gb9u+3C2cjRv7UAmWqXnjzw@mail.gmail.com>
-	<CANUX_P06ww42p6N1k_P-Y1KMKOd1QgR_DxVWe19qtsEX2rfWpw@mail.gmail.com>
-	<20111109051152.GA16006@gamma.logic.tuwien.ac.at>
-	<CANUX_P2Yz9bWP_EmU1Acs7Mu2w78CXxO-njhiMt97b0TJHFYiQ@mail.gmail.com>
-	<20111121030640.GI32505@gamma.logic.tuwien.ac.at>
-	<CANUX_P2AA5stHwjegKdFhFGg7jxwdVU2Xr8OUtXUdEOKz_6E5A@mail.gmail.com>
-	<20111122051310.GA23705@gamma.logic.tuwien.ac.at>
-	<CANUX_P1RjcRD2tW1A6YYSEV9+aUZyTEro7tZXJWRoxk6gx-2jA@mail.gmail.com>
-	<CANUX_P2aFn84uSqgZA2gTBN7E4+0jGmJQTkx4eug4Ls0hK0==Q@mail.gmail.com>
-	<20111122072730.GA32225@gamma.logic.tuwien.ac.at>
-Date: Tue, 22 Nov 2011 09:45:58 +0200
-Message-ID: <CANUX_P15En9bHVx4bhq6=XKPZnC2u+QyVJ+jnm4ns=39DrOBtg@mail.gmail.com>
-Subject: Re: iwlagn is getting very shaky
-From: Emmanuel Grumbach <egrumbach@gmail.com>
-To: Norbert Preining <preining@logic.at>
-Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        David Rientjes <rientjes@google.com>,
+	Tue, 22 Nov 2011 02:48:39 -0500
+Message-ID: <1321948113.27077.24.camel@edumazet-laptop>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Christian Kujau <lists@nerdbynature.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Alex,Shi" <alex.shi@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Date: Tue, 22 Nov 2011 08:48:33 +0100
+In-Reply-To: <alpine.DEB.2.00.1111212105330.19606@router.home>
+References: <20111121131531.GA1679@x4.trippels.de>
+	  <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <20111121153621.GA1678@x4.trippels.de>
+	  <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <20111121161036.GA1679@x4.trippels.de>
+	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <20111121173556.GA1673@x4.trippels.de>
+	  <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <20111121185215.GA1673@x4.trippels.de>
+	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
+	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
+	 <alpine.DEB.2.00.1111212105330.19606@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 09:27, Norbert Preining <preining@logic.at> wrote:
-> HI Emmanuel,
->
-> On Di, 22 Nov 2011, Emmanuel Grumbach wrote:
->> Please apply the patch attached. It has been submitted upstream but
->> hasn't been merged in the tree you use apparently.
->
-> Does not apply against current git, as there is no iwl-mac80211.c:
-> [/usr/src/git-kernel/linux.git] patch -p1 --dry-run < ~/QUEUE_DEBUG.patch
-> patching file drivers/net/wireless/iwlwifi/iwl-agn-rx.c
-> patching file drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-> Hunk #1 succeeded at 116 (offset -1 lines).
-> Hunk #2 succeeded at 840 (offset -4 lines).
-> patching file drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-> Hunk #1 succeeded at 800 (offset -13 lines).
-> patching file drivers/net/wireless/iwlwifi/iwl-debug.h
-> Hunk #1 succeeded at 151 (offset -15 lines).
-> Hunk #2 succeeded at 188 (offset -15 lines).
-> can't find file to patch at input line 78
-> Perhaps you used the wrong -p or --strip option?
-> The text leading up to this was:
-> --------------------------
-> |diff --git a/drivers/net/wireless/iwlwifi/iwl-mac80211.c b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-> |index 073e827..05b1f0d 100644
-> |--- a/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-> |+++ b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-> --------------------------
-> File to patch:
->
+Le lundi 21 novembre 2011 à 21:18 -0600, Christoph Lameter a écrit :
 
-Glad it applied
->
->> Then please run with set the TXQUEUES debug flag: 0x8000000.
->
-> Is this a load options to iwlwifi module (debug=0x..... at module load time?)
-> or has to be set in /sys/kernel/debug/ieee80211/phy?/iwlwifi/debug/*
-> somewhere?
->
+> Hmmm... That means that c->page points to page not frozen. Per cpu
+> partial pages are frozen until they are reused or until the partial list
+> is flushed.
+> 
+> Does this ever happen on x86 or only on other platforms? In put_cpu_partial() the
+> this_cpu_cmpxchg really needs really to be irq safe. this_cpu_cmpxchg is
+> only preempt safe.
+> 
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2011-11-21 21:15:41.575673204 -0600
+> +++ linux-2.6/mm/slub.c	2011-11-21 21:16:33.442336849 -0600
+> @@ -1969,7 +1969,7 @@
+>  		page->pobjects = pobjects;
+>  		page->next = oldpage;
+> 
+> -	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+> +	} while (irqsafe_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+>  	stat(s, CPU_PARTIAL_FREE);
+>  	return pobjects;
+>  }
+> 
 
-yes it is a module parameter: modprobe iwlwifi debug=0x80000000
+For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
+machines.
 
->
->> Do you use any SoftAP / P2P feature ? HW queues can be stalled
->
-> No. Fixed AP with fixed IP and no special adaptions.
->
+this_cpu_cmpxchg16b_emu() claims to be IRQ safe, but may be buggy...
 
-Ok thanks
+Could we have somewhere a NMI handler calling kmalloc() ?
+
+Please Markus send us :
+
+cat /proc/cpuinfo
+
+
+
