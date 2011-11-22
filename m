@@ -1,345 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab1KVBoC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:44:02 -0500
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:36854 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754862Ab1KVBn7 (ORCPT
+	id S1758126Ab1KVBoy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:44:54 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36819 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab1KVBow convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:43:59 -0500
-From: Mike Turquette <mturquette@ti.com>
-To: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
-        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
-        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
-        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
-        aul@pwsan.com, grant.likely@secretlab.ca, sboyd@quicinc.com,
-        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, mturquette@ti.com,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v3 4/5] clk: basic gateable and fixed-rate clks
-Date: Mon, 21 Nov 2011 17:40:46 -0800
-Message-Id: <1321926047-14211-5-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
+	Mon, 21 Nov 2011 20:44:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <4ECA8CA4.5040804@linux.vnet.ibm.com>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
+	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+	<CAGBYx2b4+s+YSKFoPbNSw=vWVaCZyxHjQdKGMHhCztTppETT9Q@mail.gmail.com>
+	<4ECA8CA4.5040804@linux.vnet.ibm.com>
+Date: Tue, 22 Nov 2011 09:44:51 +0800
+Message-ID: <CAGBYx2YxTfEKPPwCe5kifwDgfpC7x+QtdpLhrJpcHGixhVS3gA@mail.gmail.com>
+Subject: Re: Bug with "fix partial page writes"
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>, Curt Wohlgemuth <curtw@google.com>,
+        "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many platforms support simple gateable clks and fixed-rate clks that
-should not be re-implemented by every platform.
+On Tue, Nov 22, 2011 at 1:38 AM, Allison Henderson
+<achender@linux.vnet.ibm.com> wrote:
+> On 11/20/2011 06:59 PM, Yongqiang Yang wrote:
+>>
+>> Hi,
+>>
+>> I am curious about the reason we need this operation in write_begin
+>> functions.    I had a look at the commit log just now.   The commit
+>> log explains the intention is to handle writes on a hole and writes on
+>> EOF.   Two cases can be handled successfully by block_write_begin.
+>>
+>>
+>> Yongqiang.
+>
+> Hi all,
+>
+> Sorry I missed the first note that came through.  I have not been able to
+> look at this in depth yet, but will do so when I get back from the holiday
+> break next Thurs.  Basically this patch was addressing a bug I found when I
+> was trying to get the punch hole patch through an overnight run of fsx.
+>
+> With out this patch, fsx fails (after about 6 or so hours, with punch hole
+> enabled).  The failure is triggered when a region of the test file that is
+> supposed to contain zeros, ends up containing garbage.  In this case what I
+> found was that a write operation that starts/ends in a hole or runs off the
+> edge of the file, is supposed to zero out the part of the page that is still
+> in the hole or beyond EOF.  But instead of zeroing to the end of the page,
+> it would only zero to the edge of the block.  So it would only appear to
+> work when blocksize = pagesize, but if blocksize < pagesize, we end up with
+> extra garbage in the page.
+Thank you for your response.
 
-This patch introduces a gateable clk with a common programming model of
-gate control via a write of 1 bit to a register.  Both set-to-enable and
-clear-to-enable are supported.
+Well.  According to code in vfs, do_mpage_readpage can handle this by
+calling block_read_full_page.   Consider that current code can not
+handle the case above, then if there is a hole in a file, ext4 with
+punching hole does not work as well.   I am suspecting punch hole do
+something abnormal, eg. setting false uptodate status or operating on
+a unlocked page.   Just a guess:-)   I will have a look at the code.
 
-Also introduced is a fixed-rate clk which has no reprogrammable aspects.
+Yongqiang.
+>
+> ext4_discard_partial_page_buffers_no_lock() and
+> ext4_discard_partial_page_buffers(), were modeled off of the original
+> ext4_block_zero_page_range routine, but modified to handle multiple blocks
+> for a page.  ext4_discard_partial_page_buffers is simply a wrapper that
+> locks the page before passing it to
+> ext4_discard_partial_page_buffers_no_lock.  In most cases I found that the
+> page needs to be locked, but for ext4_da_write_end and ext4_da_write_begin I
+> ran into deadlocks, so I added the wrapper for optional locking.  I will
+> look more into it when I get back, but perhaps all we need here is some more
+> logic to figure out if the page is present and needs locking.
+>
+> Allison Henderson
+>
+>>
+>> On Mon, Nov 21, 2011 at 4:59 AM, Hugh Dickins<hughd@google.com>  wrote:
+>>>
+>>> We've seen no response to this, so Cc'ing Ted and linux-kernel,
+>>> and I'll fill in some more detail below.
+>>>
+>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
+>>>>
+>>>> It appears that there's a bug with this patch:
+>>>>
+>>>> -------------------------------------------
+>>>> commit 02fac1297eb3f471a27368271aadd285548297b0
+>>>> Author: Allison Henderson<achender@linux.vnet.ibm.com>
+>>>> Date:   Tue Sep 6 21:53:01 2011 -0400
+>>>>
+>>>>     ext4: fix partial page writes
+>>>> ...
+>>>> -------------------------------------------
+>>>>
+>>>> Hugh Dickins found a bug with some nasty testing and lockdep that
+>>>
+>>> It's the tmpfs swapping test that I've been running, with variations,
+>>> for years.  System booted with mem=700M and 1.5G swap, two repetitious
+>>> make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
+>>> the balance of built to unbuilt source grows smaller with later kernels),
+>>> one directly in a tmpfs (irrelevant in this case, except for the added
+>>> pressure it generates), the other in a 1k-block ext2 (that I drive with
+>>> ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file.
+>>>
+>>> The first oops I got was indeed down in lockdep, but I've since seen
+>>> crashes from the same cause without lockdep configured in.  I've not
+>>> bothered to write down the stacks, beyond noting ext4_da_write_end()'s
+>>> call to ext4_discard_partial_page_buffers_no_lock() in them, since the
+>>> code there is clearly at fault as Curt describes.
+>>>
+>>>> crashed in ext4_da_write_end(), and after looking at the code with
+>>>> him, it appears that the call to
+>>>> ext4_discard_partial_page_buffers_no_lock() in this routine is
+>>>> manipulating an unlocked, and possibly non-existent page:
+>>>>
+>>>>
+>>>> -------------------------------------------
+>>>> ...
+>>>>       ret2 = generic_write_end(file, mapping, pos, len, copied,
+>>>>                                                       page, fsdata);
+>>>>
+>>>>       page_len = PAGE_CACHE_SIZE -
+>>>>                       ((pos + copied - 1)&  (PAGE_CACHE_SIZE - 1));
+>>>>
+>>>>       if (page_len>  0) {
+>>>>               ret = ext4_discard_partial_page_buffers_no_lock(handle,
+>>>>                       inode, page, pos + copied - 1, page_len,
+>>>>                       EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED);
+>>>>       }
+>>>> ...
+>>>> -------------------------------------------
+>>>>
+>>>> Note that generic_write_end() will unlock and release the page before
+>>>> it returns.
+>>>
+>>> Exactly.  And clearly the loop-on-tmpfs aspect of the test is
+>>> irrelevant, except in generating more pressure to trigger it.
+>>>
+>>>>
+>>>> I've no good answer for how to fix this properly, but I wanted to let
+>>>> Allison know about this, if she hadn't already.  I looked but didn't
+>>>> see any related email on the linux-ext4 list for this problem.
+>>>
+>>> There was a second problem I was seeing, more elusive and much harder
+>>> to attribute: occasionally the build on ext2 would fail with errors
+>>> from ld (almost always of the kind "In function `no symbol': multiple
+>>> definition of `no symbol'" and "Warning: size of symbol `' changed":
+>>> I don't know if there's anything to be deduced from that).  I took
+>>> these to indicate an error in filesystem or loop or tmpfs or swap.
+>>>
+>>> First suspect was loop changes from hch in 3.2-rc1, but backing those
+>>> out made no difference.  I thought I was facing a week's bisection
+>>> (since it would need at least a day to conclude any stage good), but
+>>> took a gamble on backing out *both* parts of 02fac1297eb3: page_len
+>>> additions to ext4_da_write_begin() as well as page_len additions to
+>>> ext4_da_write_end().
+>>>
+>>> That gamble paid off: the test then showed no problems in several
+>>> days running on two machines.  So, both parts of 02fac1297eb3 are
+>>> bad, but it's not so easy to see what's wrong with the write_begin.
+>>>
+>>> My *guess* is that the partial page fixes have interfered with the
+>>> subtle page-dirty buffer-dirty protocol in some way, which manifests
+>>> only under memory pressure.
+>>>
+>>> It's conceivable that loop and tmpfs and swap play a part in this
+>>> further error, but I don't think so: I have no evidence for that,
+>>> and no such problem was seen before 3.2-rc1.
+>>>
+>>> ---
+>>>
+>>> I wanted to find you an easier way to reproduce the problem, so I
+>>> tried fsx (I'm still using a pretty old fsx, no fallocate or punch
+>>> hole), run in ext2 on a kernel booted with mem=700M.  Sorry, I did
+>>> this a week ago, then didn't find time to write it up, and failed to
+>>> note when my ext2 was in /dev/loop0 and when it was directly on disk.
+>>>
+>>> fsx foo -q -c 100 -l 100000000&
+>>> while :
+>>> do      # memory hog mmaps and touches each page of 800MB private area
+>>>        swapout 800
+>>> done
+>>>
+>>> I did not reproduce either problem above with that.  Instead I found
+>>> that backing out 02fac1297eb3 made fsx on 3.2-rc1 fail in a few minutes.
+>>> But leaving 02fac1297eb3 in, fsx still failed in 20 minutes or an hour.
+>>> On 3.1, fsx failed in a few minutes.  On 3.0, fsx failed in half an hour.
+>>> On 2.6.39, fsx failed in a few minutes.  I had to go back to 2.6.38 for
+>>> fsx to run successfully under memory pressure for more than two hours.
+>>>
+>>> It looks as if ext4 testing has not been running fsx under memory
+>>> pressure recently.  And although I didn't reproduce my main problems
+>>> that way, it could well be that getting fsx to run reliably again
+>>> under memory pressure will be the way to fix those problems.
+>>>
+>>> Thanks,
+>>> Hugh
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>>
+>>
+>
+>
 
-The purpose of both types of clks is documented in drivers/clk/basic.c.
 
-TODO: add support for a simple divider, simple mux and a dummy clk for
-stubbing out platform support.
 
-Based on original patch by Jeremy Kerr contribution by Jamie Iles.
-
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
- drivers/clk/Kconfig     |    7 ++
- drivers/clk/Makefile    |    5 +-
- drivers/clk/clk-basic.c |  208 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk.h     |   35 ++++++++
- 4 files changed, 253 insertions(+), 2 deletions(-)
- create mode 100644 drivers/clk/clk-basic.c
-
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index adc0586..ba7eb8c 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -12,3 +12,10 @@ config HAVE_CLK_PREPARE
- config GENERIC_CLK
- 	bool
- 	select HAVE_CLK_PREPARE
-+
-+config GENERIC_CLK_BASIC
-+	bool "Basic clock definitions"
-+	depends on GENERIC_CLK
-+	help
-+	   Allow use of basic, single-function clock types.  These
-+	   common definitions can be used across many platforms.
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 570d5b9..68b20a1 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -1,3 +1,4 @@
- 
--obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
--obj-$(CONFIG_GENERIC_CLK)	+= clk.o
-+obj-$(CONFIG_CLKDEV_LOOKUP)		+= clkdev.o
-+obj-$(CONFIG_GENERIC_CLK)		+= clk.o
-+obj-$(CONFIG_GENERIC_CLK_BASIC)		+= clk-basic.o
-diff --git a/drivers/clk/clk-basic.c b/drivers/clk/clk-basic.c
-new file mode 100644
-index 0000000..c039f94
---- /dev/null
-+++ b/drivers/clk/clk-basic.c
-@@ -0,0 +1,208 @@
-+/*
-+ * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-+ * Copyright (C) 2011 Linaro Ltd <mturquette@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Basic single-function clk implementations
-+ */
-+
-+/* TODO add basic divider clk, basic mux clk and dummy clk */
-+
-+#include <linux/clk.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+
-+/*
-+ * NOTE: all of the basic clks here are just that: single-function
-+ * simple clks.  One assumption in their implementation is that existing
-+ * locking mechanisms (prepare_mutex and enable_spinlock) are enough to
-+ * prevent race conditions during register accesses.  If this is not
-+ * true for your platform then please implement your own version of
-+ * these clks which take such issues into account.
-+ */
-+
-+#define to_clk_hw_gate(ck) container_of(ck, struct clk_hw_gate, clk)
-+#define to_clk_hw_fixed(ck) container_of(ck, struct clk_hw_fixed, clk)
-+
-+/**
-+ * DOC: basic gatable clock which can gate and ungate it's ouput
-+ *
-+ * Traits of this clock:
-+ * prepare - clk_prepare & clk_unprepare do nothing
-+ * enable - clk_enable and clk_disable are functional & control gating
-+ * rate - inherits rate from parent.  No clk_set_rate support
-+ * parent - fixed parent.  No clk_set_parent support
-+ *
-+ * note: parent should not be NULL for this clock, but we check because we're
-+ * paranoid
-+ */
-+
-+static unsigned long clk_hw_gate_recalc_rate(struct clk *clk)
-+{
-+	if (clk->parent)
-+		return clk->parent->rate;
-+	else
-+		return 0;
-+}
-+
-+static struct clk *clk_hw_gate_get_parent(struct clk *clk)
-+{
-+	return to_clk_hw_gate(clk)->fixed_parent;
-+}
-+
-+static void clk_hw_gate_set_bit(struct clk *clk)
-+{
-+	struct clk_hw_gate *gate = to_clk_hw_gate(clk);
-+	u32 reg;
-+
-+	reg = __raw_readl(gate->reg);
-+	reg |= BIT(gate->bit_idx);
-+	__raw_writel(reg, gate->reg);
-+}
-+
-+static void clk_hw_gate_clear_bit(struct clk *clk)
-+{
-+	struct clk_hw_gate *gate = to_clk_hw_gate(clk);
-+	u32 reg;
-+
-+	reg = __raw_readl(gate->reg);
-+	reg &= ~BIT(gate->bit_idx);
-+	__raw_writel(reg, gate->reg);
-+}
-+
-+static int clk_hw_gate_enable_set(struct clk *clk)
-+{
-+	clk_hw_gate_set_bit(clk);
-+
-+	return 0;
-+}
-+
-+static void clk_hw_gate_disable_clear(struct clk *clk)
-+{
-+	clk_hw_gate_clear_bit(clk);
-+}
-+
-+struct clk_hw_ops clk_hw_gate_set_enable_ops = {
-+	.enable = clk_hw_gate_enable_set,
-+	.disable = clk_hw_gate_disable_clear,
-+	.recalc_rate = clk_hw_gate_recalc_rate,
-+	.get_parent = clk_hw_gate_get_parent,
-+};
-+EXPORT_SYMBOL_GPL(clk_hw_gate_set_enable_ops);
-+
-+static int clk_hw_gate_enable_clear(struct clk *clk)
-+{
-+	clk_hw_gate_clear_bit(clk);
-+
-+	return 0;
-+}
-+
-+static void clk_hw_gate_disable_set(struct clk *clk)
-+{
-+	clk_hw_gate_set_bit(clk);
-+}
-+
-+struct clk_hw_ops clk_hw_gate_set_disable_ops = {
-+	.enable = clk_hw_gate_enable_clear,
-+	.disable = clk_hw_gate_disable_set,
-+	.recalc_rate = clk_hw_gate_recalc_rate,
-+	.get_parent = clk_hw_gate_get_parent,
-+};
-+EXPORT_SYMBOL_GPL(clk_hw_gate_set_disable_ops);
-+
-+int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
-+		struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
-+		int set_to_enable)
-+{
-+	struct clk_hw_gate *gclk;
-+	struct clk *clk;
-+
-+	gclk = kmalloc(sizeof(struct clk_hw_gate), GFP_KERNEL);
-+
-+	if (!gclk) {
-+		pr_err("%s: could not allocate gated clk\n", __func__);
-+		return -ENOMEM;
-+	}
-+
-+	clk = &gclk->clk;
-+
-+	/* struct clk_hw_gate assignments */
-+	gclk->fixed_parent = fixed_parent;
-+	gclk->reg = reg;
-+	gclk->bit_idx = bit_idx;
-+
-+	/* struct clk assignments */
-+	clk->name = name;
-+	clk->flags = flags;
-+
-+	if (set_to_enable)
-+		clk->ops = &clk_hw_gate_set_enable_ops;
-+	else
-+		clk->ops = &clk_hw_gate_set_disable_ops;
-+
-+	clk_init(NULL, clk);
-+
-+	return 0;
-+}
-+
-+/*
-+ * DOC: basic fixed-rate clock that cannot gate
-+ *
-+ * Traits of this clock:
-+ * prepare - clock never gates.  clk_prepare & clk_unprepare do nothing
-+ * enable - clock never gates.  clk_enable & clk_disable do nothing
-+ * rate - rate is always a fixed value.  No clk_set_rate support
-+ * parent - fixed parent.  No clk_set_parent support
-+ *
-+ * note: parent can be NULL, which implies that this clock is a root clock.
-+ */
-+
-+static unsigned long clk_hw_fixed_recalc_rate(struct clk *clk)
-+{
-+	return to_clk_hw_fixed(clk)->fixed_rate;
-+}
-+
-+static struct clk *clk_hw_fixed_get_parent(struct clk *clk)
-+{
-+	return to_clk_hw_fixed(clk)->fixed_parent;
-+}
-+
-+struct clk_hw_ops clk_hw_fixed_ops = {
-+	.recalc_rate = clk_hw_fixed_recalc_rate,
-+	.get_parent = clk_hw_fixed_get_parent,
-+};
-+EXPORT_SYMBOL_GPL(clk_hw_fixed_ops);
-+
-+int clk_register_fixed(struct device *dev, const char *name,
-+		unsigned long flags, struct clk *fixed_parent,
-+		unsigned long fixed_rate)
-+{
-+	struct clk_hw_fixed *fclk;
-+	struct clk *clk;
-+
-+	fclk = kmalloc(sizeof(struct clk_hw_fixed), GFP_KERNEL);
-+
-+	if (!fclk) {
-+		pr_err("%s: could not allocate fixed clk\n", __func__);
-+		return -ENOMEM;
-+	}
-+
-+	clk = &fclk->clk;
-+
-+	/* struct clk_hw_fixed assignments */
-+	fclk->fixed_parent = fixed_parent;
-+	fclk->fixed_rate = fixed_rate;
-+
-+	/* struct clk assignments */
-+	clk->name = name;
-+	clk->flags = flags;
-+	clk->ops = &clk_hw_fixed_ops;
-+
-+	clk_init(NULL, clk);
-+
-+	return 0;
-+}
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 3b0eb3f..8ed354a 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -129,6 +129,41 @@ struct clk_hw_ops {
- 	int		(*set_rate)(struct clk *clk, unsigned long);
- };
- 
-+/*
-+ * Base clock implementations. Platform clock implementations can use these
-+ * directly, or 'subclass' as approprate
-+ */
-+
-+#ifdef CONFIG_GENERIC_CLK_BASIC
-+
-+struct clk_hw_fixed {
-+	struct clk	clk;
-+	struct clk	*fixed_parent;
-+	unsigned long	fixed_rate;
-+};
-+
-+extern struct clk_hw_ops clk_hw_fixed_ops;
-+
-+int clk_register_fixed(struct device *dev, const char *name,
-+		unsigned long flags, struct clk *fixed_parent,
-+		unsigned long fixed_rate);
-+
-+struct clk_hw_gate {
-+	struct clk	clk;
-+	struct clk	*fixed_parent;
-+	void __iomem	*reg;
-+	u8		bit_idx;
-+};
-+
-+extern struct clk_hw_ops clk_hw_gate_set_enable_ops;
-+extern struct clk_hw_ops clk_hw_gate_set_disable_ops;
-+
-+int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
-+		struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
-+		int set_to_enable);
-+
-+#endif
-+
- /**
-  * clk_init - initialize the data structures in a struct clk
-  * @dev: device initializing this clk, placeholder for now
 -- 
-1.7.4.1
-
+Best Wishes
+Yongqiang Yang
