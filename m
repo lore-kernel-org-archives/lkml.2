@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab1KVLAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:00:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34989 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1KVLAH convert rfc822-to-8bit (ORCPT
+	id S1758098Ab1KVLFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:05:54 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47809 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753859Ab1KVLFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:00:07 -0500
-Message-ID: <1321959598.5148.24.camel@twins>
-Subject: Re: [PATCH RFC] perf, core: disable pmu while context rotation only
- if needed
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Date: Tue, 22 Nov 2011 11:59:58 +0100
-In-Reply-To: <20111122105625.GC2557@redhat.com>
-References: <20111115113414.GD3225@redhat.com>
-	 <1321358833.1421.62.camel@twins> <20111115123814.GE3225@redhat.com>
-	 <1321361719.1421.67.camel@twins> <20111122105625.GC2557@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 22 Nov 2011 06:05:53 -0500
+Date: Tue, 22 Nov 2011 11:05:25 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
+Message-ID: <20111122110525.GA32577@arm.com>
+References: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 12:56 +0200, Gleb Natapov wrote:
-> Have you committed it somewhere? I do not see it in tip.git, but may be
-> I am looking in a wrong place. 
+Stephen,
 
-Its still in my queue, I guess I should poke mingo again to pick up.
-Also, I really ought to get my k.org account back up and write a script
-to push this queue of mine into a git tree for ease of use.
+On Tue, Nov 22, 2011 at 01:03:58AM +0000, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-lpae tree got a conflict in
+> arch/arm/mm/ioremap.c between commit 3afb51f744b6 ("ARM: add generic
+> ioremap optimization by reusing static mappings") from the arm tree and
+> commit ec93d80c4b07 ("ARM: LPAE: Page table maintenance for the 3-level
+> format") from the arm-lpae tree.
+> 
+> I guessed (probably incorrectly) about the fix up (see below).  Please
+> supply a better fix if necessary.
 
-For now you can have a peek at it through:
+The fix-up looks correct from an LPAE perspective. I cannot comment on
+the correctness of Nicolas' patch, that's to be discussed on the ARM
+Linux list.
 
-http://programming.kicks-ass.net/sekrit/patches.tar.bz2
+Thanks.
 
-
+-- 
+Catalin
