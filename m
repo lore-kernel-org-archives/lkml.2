@@ -1,212 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab1KVBTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 20:19:19 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:40587 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab1KVBTR (ORCPT
+	id S1757632Ab1KVBUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 20:20:32 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:39540 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752017Ab1KVBUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 20:19:17 -0500
-Date: Tue, 22 Nov 2011 12:19:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the at91 tree with the arm tree
-Message-Id: <20111122121900.f0946f93526d7f10e7cbfeb5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_Nov_2011_12_19_00_+1100_FciYZLPthIwXT6wg"
+	Mon, 21 Nov 2011 20:20:31 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18xr9JCIGgxbzBwJb7UfQ/Z4C2Pm1O5uLXxBpGwLx
+	RRgyaJcwSbCvqB
+Message-ID: <4ECAF8DB.4020909@gmx.de>
+Date: Tue, 22 Nov 2011 01:20:27 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+MIME-Version: 1.0
+To: Joonyoung Shim <jy0922.shim@samsung.com>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: Fix return value of fb_notifier_call_chain
+References: <1321858524-19368-1-git-send-email-jy0922.shim@samsung.com> <4ECAD9F0.9050508@gmx.de> <4ECAF3C6.4010507@samsung.com>
+In-Reply-To: <4ECAF3C6.4010507@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Nov_2011_12_19_00_+1100_FciYZLPthIwXT6wg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/22/2011 12:58 AM, Joonyoung Shim wrote:
+> 11/22/2011 08:08 AM, Florian Tobias Schandinat 쓴 글:
+>> On 11/21/2011 06:55 AM, Joonyoung Shim wrote:
+>>> The return value of blocking_notifier_call_chain isn't errno value, it
+>>> is just notify return value. The ret of fb_notifier_call_chain should is
+>>> restored to error value from notify return value using
+>>> notifier_to_errno().
+>> If I'm not wrong this patch would rather break things than fix them. As I
+>> understand the notifier_calls would be required to encode the return
+>> value with
+>> notifier_from_errno. This does not happen at the moment for fb
+>> clients, for
+>> example fbcon_event_notify in drivers/video/console/fbcon.c, so this
+>> patch would
+>> screw up the return values, I think.
+> 
+> OK, but it is wrong to return error value than notify value many
+> callback of fb notify clients and some fb notify clients returns notify
+> value, please see sh_mobile_lcdc_notify() and sh_hdmi_notify().
+> 
+> We should use only one, notify value or error value, i think it's right
+> to use notify value.
 
-Hi all,
+I agree. But all fb clients need to be checked and fixed up if needed at the
+same time you do the change you proposed, otherwise things are likely to break.
 
-Today's linux-next merge of the at91 tree got conflicts in
-arch/arm/mach-at91/at91cap9.c, arch/arm/mach-at91/at91sam9260.c,
-arch/arm/mach-at91/at91sam9261.c, arch/arm/mach-at91/at91sam9263.c,
-arch/arm/mach-at91/at91sam9g45.c and arch/arm/mach-at91/at91sam9rl.c
-between commit b91dfe91bb61 ("ARM: restart: at91: use new restart hook")
-from the arm tree and commit 92996c285e17 ("ARM: at91: make shutdown
-controler soc independent") from the at91 tree.
+$ grep -r fb_register_client .
+./include/linux/fb.h:extern int fb_register_client(struct notifier_block *nb);
+./arch/arm/mach-pxa/am200epd.c: fb_register_client(&am200_fb_notif);
+./drivers/leds/ledtrig-backlight.c:     ret = fb_register_client(&n->notifier);
+./drivers/video/sh_mobile_hdmi.c:       fb_register_client(&hdmi->notifier);
+./drivers/video/fb_notify.c: *  fb_register_client - register a client notifier
+./drivers/video/fb_notify.c:int fb_register_client(struct notifier_block *nb)
+./drivers/video/fb_notify.c:EXPORT_SYMBOL(fb_register_client);
+./drivers/video/console/fbcon.c:        fb_register_client(&fbcon_event_notifier);
+./drivers/video/sh_mobile_lcdcfb.c:     fb_register_client(&priv->notifier);
+./drivers/video/omap/omapfb_main.c:int omapfb_register_client(struct
+omapfb_notifier_block *omapfb_nb,
+./drivers/video/omap/omapfb_main.c:EXPORT_SYMBOL(omapfb_register_client);
+./drivers/video/omap/omapfb.h:extern int  omapfb_register_client(struct
+omapfb_notifier_block *nb,
+./drivers/video/backlight/backlight.c:  return fb_register_client(&bd->fb_notif);
+./drivers/video/backlight/lcd.c:        return fb_register_client(&ld->fb_notif);
+./drivers/staging/olpc_dcon/olpc_dcon.c:
+fb_register_client(&dcon->fbevent_nb);
 
-Just context changes.  I fixed it up (see below) and can carry the fixes
-as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-at91/at91cap9.c
-index 2937339,81a9f38..0000000
---- a/arch/arm/mach-at91/at91cap9.c
-+++ b/arch/arm/mach-at91/at91cap9.c
-@@@ -333,10 -326,16 +326,16 @@@ static void __init at91cap9_map_io(void
-  	at91_init_sram(0, AT91CAP9_SRAM_BASE, AT91CAP9_SRAM_SIZE);
-  }
- =20
-+ static void __init at91cap9_ioremap_registers(void)
-+ {
-+ 	at91_ioremap_shdwc(AT91CAP9_BASE_SHDWC);
-+ 	at91sam926x_ioremap_pit(AT91CAP9_BASE_PIT);
-+ 	at91sam9_ioremap_smc(0, AT91CAP9_BASE_SMC);
-+ }
-+=20
-  static void __init at91cap9_initialize(void)
-  {
- -	at91_arch_reset =3D at91cap9_reset;
- +	arm_pm_restart =3D at91cap9_restart;
-- 	pm_power_off =3D at91cap9_poweroff;
-  	at91_extern_irq =3D (1 << AT91CAP9_ID_IRQ0) | (1 << AT91CAP9_ID_IRQ1);
- =20
-  	/* Register GPIO subsystem */
-diff --cc arch/arm/mach-at91/at91sam9260.c
-index ec9e23d,5e25cef..0000000
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@@ -325,10 -318,16 +318,16 @@@ static void __init at91sam9260_map_io(v
-  	}
-  }
- =20
-+ static void __init at91sam9260_ioremap_registers(void)
-+ {
-+ 	at91_ioremap_shdwc(AT91SAM9260_BASE_SHDWC);
-+ 	at91sam926x_ioremap_pit(AT91SAM9260_BASE_PIT);
-+ 	at91sam9_ioremap_smc(0, AT91SAM9260_BASE_SMC);
-+ }
-+=20
-  static void __init at91sam9260_initialize(void)
-  {
- -	at91_arch_reset =3D at91sam9_alt_reset;
- +	arm_pm_restart =3D at91sam9_alt_restart;
-- 	pm_power_off =3D at91sam9260_poweroff;
-  	at91_extern_irq =3D (1 << AT91SAM9260_ID_IRQ0) | (1 << AT91SAM9260_ID_IR=
-Q1)
-  			| (1 << AT91SAM9260_ID_IRQ2);
- =20
-diff --cc arch/arm/mach-at91/at91sam9261.c
-index 19ac7c0,a0538c5..0000000
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@@ -285,10 -278,16 +278,16 @@@ static void __init at91sam9261_map_io(v
-  		at91_init_sram(0, AT91SAM9261_SRAM_BASE, AT91SAM9261_SRAM_SIZE);
-  }
- =20
-+ static void __init at91sam9261_ioremap_registers(void)
-+ {
-+ 	at91_ioremap_shdwc(AT91SAM9261_BASE_SHDWC);
-+ 	at91sam926x_ioremap_pit(AT91SAM9261_BASE_PIT);
-+ 	at91sam9_ioremap_smc(0, AT91SAM9261_BASE_SMC);
-+ }
-+=20
-  static void __init at91sam9261_initialize(void)
-  {
- -	at91_arch_reset =3D at91sam9_alt_reset;
- +	arm_pm_restart =3D at91sam9_alt_restart;
-- 	pm_power_off =3D at91sam9261_poweroff;
-  	at91_extern_irq =3D (1 << AT91SAM9261_ID_IRQ0) | (1 << AT91SAM9261_ID_IR=
-Q1)
-  			| (1 << AT91SAM9261_ID_IRQ2);
- =20
-diff --cc arch/arm/mach-at91/at91sam9263.c
-index 50d0163,0d90b6a..0000000
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@@ -303,10 -296,17 +296,17 @@@ static void __init at91sam9263_map_io(v
-  	at91_init_sram(1, AT91SAM9263_SRAM1_BASE, AT91SAM9263_SRAM1_SIZE);
-  }
- =20
-+ static void __init at91sam9263_ioremap_registers(void)
-+ {
-+ 	at91_ioremap_shdwc(AT91SAM9263_BASE_SHDWC);
-+ 	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
-+ 	at91sam9_ioremap_smc(0, AT91SAM9263_BASE_SMC0);
-+ 	at91sam9_ioremap_smc(1, AT91SAM9263_BASE_SMC1);
-+ }
-+=20
-  static void __init at91sam9263_initialize(void)
-  {
- -	at91_arch_reset =3D at91sam9_alt_reset;
- +	arm_pm_restart =3D at91sam9_alt_restart;
-- 	pm_power_off =3D at91sam9263_poweroff;
-  	at91_extern_irq =3D (1 << AT91SAM9263_ID_IRQ0) | (1 << AT91SAM9263_ID_IR=
-Q1);
- =20
-  	/* Register GPIO subsystem */
-diff --cc arch/arm/mach-at91/at91sam9g45.c
-index ff21f7a,72c3cce..0000000
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@@ -338,10 -331,16 +331,16 @@@ static void __init at91sam9g45_map_io(v
-  	init_consistent_dma_size(SZ_4M);
-  }
- =20
-+ static void __init at91sam9g45_ioremap_registers(void)
-+ {
-+ 	at91_ioremap_shdwc(AT91SAM9G45_BASE_SHDWC);
-+ 	at91sam926x_ioremap_pit(AT91SAM9G45_BASE_PIT);
-+ 	at91sam9_ioremap_smc(0, AT91SAM9G45_BASE_SMC);
-+ }
-+=20
-  static void __init at91sam9g45_initialize(void)
-  {
- -	at91_arch_reset =3D at91sam9g45_reset;
- +	arm_pm_restart =3D at91sam9g45_restart;
-- 	pm_power_off =3D at91sam9g45_poweroff;
-  	at91_extern_irq =3D (1 << AT91SAM9G45_ID_IRQ0);
- =20
-  	/* Register GPIO subsystem */
-diff --cc arch/arm/mach-at91/at91sam9rl.c
-index 61cbb46,96247f6..0000000
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@@ -290,10 -283,16 +283,16 @@@ static void __init at91sam9rl_map_io(vo
-  	at91_init_sram(0, AT91SAM9RL_SRAM_BASE, sram_size);
-  }
- =20
-+ static void __init at91sam9rl_ioremap_registers(void)
-+ {
-+ 	at91_ioremap_shdwc(AT91SAM9RL_BASE_SHDWC);
-+ 	at91sam926x_ioremap_pit(AT91SAM9RL_BASE_PIT);
-+ 	at91sam9_ioremap_smc(0, AT91SAM9RL_BASE_SMC);
-+ }
-+=20
-  static void __init at91sam9rl_initialize(void)
-  {
- -	at91_arch_reset =3D at91sam9_alt_reset;
- +	arm_pm_restart =3D at91sam9_alt_restart;
-- 	pm_power_off =3D at91sam9rl_poweroff;
-  	at91_extern_irq =3D (1 << AT91SAM9RL_ID_IRQ0);
- =20
-  	/* Register GPIO subsystem */
+Best regards,
 
---Signature=_Tue__22_Nov_2011_12_19_00_+1100_FciYZLPthIwXT6wg
-Content-Type: application/pgp-signature
+Florian Tobias Schandinat
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> 
+> Thanks.
+> 
+>>
+>> Best regards,
+>>
+>> Florian Tobias Schandinat
+>>
+>>> Signed-off-by: Joonyoung Shim<jy0922.shim@samsung.com>
+>>> ---
+>>>   drivers/video/fb_notify.c |    4 +++-
+>>>   1 files changed, 3 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/video/fb_notify.c b/drivers/video/fb_notify.c
+>>> index 74c2da5..49a64a3 100644
+>>> --- a/drivers/video/fb_notify.c
+>>> +++ b/drivers/video/fb_notify.c
+>>> @@ -42,6 +42,8 @@ EXPORT_SYMBOL(fb_unregister_client);
+>>>    */
+>>>   int fb_notifier_call_chain(unsigned long val, void *v)
+>>>   {
+>>> -    return blocking_notifier_call_chain(&fb_notifier_list, val, v);
+>>> +    int ret = blocking_notifier_call_chain(&fb_notifier_list, val, v);
+>>> +
+>>> +    return notifier_to_errno(ret);
+>>>   }
+>>>   EXPORT_SYMBOL_GPL(fb_notifier_call_chain);
+>>
+> 
+> 
 
-iQIcBAEBCAAGBQJOyviEAAoJEECxmPOUX5FE/AsP/3oI7XNxUogbPKp1DjsUGVB8
-3HPVN6zgWhCrayboldwudhc//FwOTWtkVEi09rXjMLCmSTbhIYMMm9ohNb6/Hu1j
-BWeNux1pItSg77XAWKZNasrittpeny11FwidJx5bixdbcdfgBzTbCdTkzJsqjm1g
-URcDhieFUNEpplYLCMZSuqUZTY9s0pX1tFXJokRgmEqIxUuoOInldhazjC/YM1Fr
-piJYIQjk1C6cV7NQVrDdXrGiH5RciHTvjqFyHWul1BA51oCXXkbJUw4DSHRJz10E
-XOc+fI+LzgqOJ3f29yHSyLMgYafgoZ/WkvtS/62A7Ah2Nt5o8ohcM/g5JbyCXlZA
-A9RLorEBeP3IRaGzSOEDcfs6/riBmhCb+kaZ0TQFiBmIDHfpEKxizsMdFHEljayC
-rTO+rFlcDm/oAwy6eSjEz8fiSUQyqBGcvm5/7L+SjEgSUy1BGzIltPKEbpCLhjQG
-mJ65jFUpkuFOoUkUqHtWb4PRAd5EbB7tOYbJV/w70MhZxjkjwKyYBACgfeBNtUDv
-QPkSW1fwQ2hr64pgucaTgU7gUz8KMdL+wmz51xITYB6qT0gVJPQqZh7U8Bfcbnit
-P/+E+1V/PYYxawoaIDmBef1ldQ1WjPXshGsUAGR/NZ3FG6Bq3MjjR0dZQHSdbz8q
-5sHR2vsY0voisWQofMj+
-=hSgj
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Nov_2011_12_19_00_+1100_FciYZLPthIwXT6wg--
