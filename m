@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab1KVJvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 04:51:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40894 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab1KVJvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 04:51:46 -0500
-Date: Tue, 22 Nov 2011 09:51:42 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] mm: compaction: avoid overwork in migrate sync mode
-Message-ID: <20111122095142.GI19415@suse.de>
-References: <1321635524-8586-1-git-send-email-mgorman@suse.de>
- <1321732460-14155-6-git-send-email-aarcange@redhat.com>
- <4ECAC9C8.5040202@redhat.com>
+	id S1756310Ab1KVJ6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 04:58:55 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38538 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751167Ab1KVJ6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 04:58:54 -0500
+Date: Tue, 22 Nov 2011 09:58:45 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
+Message-ID: <20111122095845.GC31064@arm.com>
+References: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
+ <20111122081317.GB22232@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ECAC9C8.5040202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111122081317.GB22232@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 04:59:36PM -0500, Rik van Riel wrote:
-> On 11/19/2011 02:54 PM, Andrea Arcangeli wrote:
-> >Add a lightweight sync migration (sync == 2) mode that avoids overwork
-> >so more suitable to be used by compaction to provide lower latency but
+On Tue, Nov 22, 2011 at 08:13:17AM +0000, Russell King wrote:
+> On Tue, Nov 22, 2011 at 12:03:58PM +1100, Stephen Rothwell wrote:
+> > diff --cc arch/arm/mm/ioremap.c
+> > index 12c7ad2,d1f78ba..0000000
+> > --- a/arch/arm/mm/ioremap.c
+> > +++ b/arch/arm/mm/ioremap.c
+> > @@@ -194,7 -208,14 +202,8 @@@ void __iomem * __arm_ioremap_pfn_caller
+> >   	 */
+> >   	if (pfn >= 0x100000 && (__pfn_to_phys(pfn) & ~SUPERSECTION_MASK))
+> >   		return NULL;
+> > + #endif
+> >   
+> >  -	/*
+> >  -	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
+> >  -	 */
+> >  -	if (WARN_ON(pfn_valid(pfn)))
+> >  -		return NULL;
+> >  -
 > 
-> >--- a/mm/compaction.c
-> >+++ b/mm/compaction.c
-> >@@ -552,7 +552,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
-> >  		nr_migrate = cc->nr_migratepages;
-> >  		err = migrate_pages(&cc->migratepages, compaction_alloc,
-> >  				(unsigned long)cc, false,
-> >-				cc->sync);
-> >+				cc->sync ? 2 : 0);
-> 
-> Great idea, but it would be good if these numbers got
-> a symbolic name so people trying to learn the code can
-> figure it out a little easier.
-> 
+> This certainly is not correct - if Catalin's lpae tree is removing this
+> then that needs to be fixed.
 
-I took the bulk of this patch and gave them symbolic names when trying
-to reconcile the two series. I didn't take all this patch such as
-varying the number of passes because even if that turns out to be of
-benefit, it should be a separate patch.
+No, my patch just adds the #endif. The combined diff above means that
+WARN_ON line above is only found in my version of ioremap.c (as my patch
+doesn't touch that line). The "if (WARN_ON))" block was removed in the
+"generic ioremap optimisation" patch and Stephen also removed it in the
+resulting ioremap.c after fixing the conflict.
 
 -- 
-Mel Gorman
-SUSE Labs
+Catalin
