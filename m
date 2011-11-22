@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab1KVA7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Nov 2011 19:59:37 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38978 "EHLO
+	id S1757614Ab1KVA7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Nov 2011 19:59:41 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49950 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752882Ab1KVA7f (ORCPT
+	by vger.kernel.org with ESMTP id S1756921Ab1KVA7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Nov 2011 19:59:35 -0500
-X-Sasl-enc: iTH1XuxSveR8Oa5qxjOHqrwIHtO467C/y8fm/T9PehOs 1321923574
-Date: Mon, 21 Nov 2011 16:58:58 -0800
+	Mon, 21 Nov 2011 19:59:38 -0500
+X-Sasl-enc: QiOYp2XXkvcJnKsbihHTP62LyrFr40lxlGBn/ko4YKqC 1321923577
+Date: Mon, 21 Nov 2011 16:59:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] driver core fixes for 3.2
-Message-ID: <20111122005858.GB25420@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/serial driver fixes for 3.2
+Message-ID: <20111122005917.GD25420@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,18 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some small driver core fixes for your 3.2 tree.
+Here are some tty/serial driver fixes for your 3.2 tree.
 
-Nothing major here, all is explained below in the shortlog.
+Not many patches here, just an assortment of fixes and a few new devices
+supported, full details are in the shortlog below.
 
 Please pull from:
-	git.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core.git/ driver-core-linus
+	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git tty-linus
 
-All of these patches have been in the linux-next and mm trees for a
-while now.
+All of these patches have been in the -mm and -next trees for a while.
 
-The patches will be sent as a follow-on to this message to lkml for
-people to see.
+Patches will be sent to the linux-serial mailing list, if anyone wants
+to see them.
 
 thanks,
 
@@ -42,19 +42,46 @@ greg k-h
 
 ------------
 
- Documentation/DocBook/uio-howto.tmpl |    7 ++++++-
- drivers/base/node.c                  |   14 ++++++++------
- include/linux/device.h               |    2 +-
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ Documentation/serial/serial-rs485.txt |   14 +++++++++++---
+ MAINTAINERS                           |    2 +-
+ drivers/tty/hvc/hvc_dcc.c             |    2 ++
+ drivers/tty/serial/Kconfig            |   14 +++++++-------
+ drivers/tty/serial/atmel_serial.c     |   16 +++-------------
+ drivers/tty/serial/crisv10.c          |   10 ++--------
+ drivers/tty/serial/mfd.c              |    4 +---
+ drivers/tty/serial/pch_uart.c         |   19 ++++++++++++++-----
+ drivers/tty/tty_ldisc.c               |   30 +++++++++++++++++++++++-------
+ include/linux/serial.h                |   14 ++++++++------
+ 10 files changed, 72 insertions(+), 53 deletions(-)
 
 ---------------
 
+Alan Cox (1):
+      serial,mfd: Fix CMSPAR setup
+
 Claudio Scordino (1):
-      drivers/base/node.c: fix compilation error with older versions of gcc
+      RS485: fix inconsistencies in the meaning of some variables
 
-Geoff Thorpe (1):
-      uio: documentation fixups
+Doug Anderson (1):
+      tty/serial: Prevent drop of DCD on suspend for Tegra UARTs
 
-Marcos Paulo de Souza (1):
-      device.h: Fix struct member documentation
+Greg Kroah-Hartman (1):
+      Revert "tty/serial: Prevent drop of DCD on suspend for Tegra UARTs"
+
+Jiri Slaby (3):
+      TTY: ldisc, allow waiting for ldisc arbitrarily long
+      TTY: ldisc, move wait idle to caller
+      TTY: ldisc, wait for ldisc infinitely in hangup
+
+Lucas Kannebley Tavares (1):
+      jsm: Change maintainership
+
+Stephen Boyd (1):
+      tty: hvc_dcc: Fix duplicate character inputs
+
+Tomoya MORINAGA (4):
+      pch_uart: Fix hw-flow control issue
+      pch_uart: Support new device LAPIS Semiconductor ML7831 IOH
+      pch_uart: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
+      pch_uart: Fix DMA resource leak issue
 
