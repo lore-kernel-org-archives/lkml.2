@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab1KVK14 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:27:56 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:65424 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab1KVK1z (ORCPT
+	id S1757502Ab1KVK3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:29:36 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:37930 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751179Ab1KVK3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:27:55 -0500
-From: annie.li@oracle.com
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org
-Cc: kurt.hackel@oracle.com, paul.durrant@citrix.com, Ian.Campbell@citrix.com,
-        annie.li@oracle.com
-Subject: [PATCH 4/4] xen/granttable: Keep code format clean
-Date: Tue, 22 Nov 2011 18:27:52 +0800
-Message-Id: <1321957672-10317-1-git-send-email-annie.li@oracle.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <4ECB77BB.9090401@oracle.com>
-References: <4ECB77BB.9090401@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4ECB7927.00E5,ss=1,re=0.000,fgs=0
+	Tue, 22 Nov 2011 05:29:35 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAPl2y055LGY5/2dsb2JhbABDqkyBBoFyAQEEATocDxQFCwgDGC4UJQMhE4gFtRISiVpjBJQ/iQWJGA
+Date: Tue, 22 Nov 2011 21:29:31 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [3.2-rc2] loop device balance_dirty_pages_nr throttling hang
+Message-ID: <20111122102931.GD8098@dastard>
+References: <20111121142056.GF2386@dastard>
+ <20111122035629.GE20982@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122035629.GE20982@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Annie Li <annie.li@oracle.com>
+On Tue, Nov 22, 2011 at 11:56:29AM +0800, Wu Fengguang wrote:
+> Hi Dave,
+> 
+> On Mon, Nov 21, 2011 at 10:20:56PM +0800, Dave Chinner wrote:
+> > Hi Fengguang,
+> > 
+> > I just found a way of hanging a system and taking it down. I haven't
+> > tried to narrow down the test case - it's pretty simple - because it
+> > time for sleep here.
+> 
+> Yeah, once the global dirty limit is exceeded, the system would appear
+> hang because many applications will block in balance_dirty_pages().
+> 
+> I created a script for this case, however cannot reproduce it..
+> 
+> The test box has 32GB memory and 110GB /dev/sda7, so I lowered
+> the dirty_bytes=400MB and xfs "-b size=10g" explicitly in the script.
 
-Signed-off-by: Annie Li <annie.li@oracle.com>
----
- drivers/xen/grant-table.c |    7 +++----
- include/xen/grant_table.h |    2 +-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+The VM I was running was a 2p, 2GB RAM config running on a 7200rpm
+SATA drive, so maybe all your extra RAM has some impact on it.
 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 94831b8..d747cf3 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -50,7 +50,6 @@
- #include <asm/pgtable.h>
- #include <asm/sync_bitops.h>
- 
--
- /* External tools reserve first few grant table entries. */
- #define NR_RESERVED_ENTRIES 8
- #define GNTTAB_LIST_END 0xffffffff
-@@ -598,8 +597,8 @@ unsigned int gnttab_max_grant_frames(void)
- EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
- 
- int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
--			struct gnttab_map_grant_ref *kmap_ops,
--			struct page **pages, unsigned int count)
-+		    struct gnttab_map_grant_ref *kmap_ops,
-+		    struct page **pages, unsigned int count)
- {
- 	int i, ret;
- 	pte_t *pte;
-@@ -649,7 +648,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- EXPORT_SYMBOL_GPL(gnttab_map_refs);
- 
- int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
--		struct page **pages, unsigned int count)
-+		      struct page **pages, unsigned int count)
- {
- 	int i, ret;
- 
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 5494c40..fea4954 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -157,7 +157,7 @@ unsigned int gnttab_max_grant_frames(void);
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
- 
- int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
--			struct gnttab_map_grant_ref *kmap_ops,
-+		    struct gnttab_map_grant_ref *kmap_ops,
- 		    struct page **pages, unsigned int count);
- int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 		      struct page **pages, unsigned int count);
+> During the test run on 3.2.0-rc1, I find the dirty pages rarely exceed
+> the background dirty threshold (200MB).
+
+Which means your IO rates are high enough to keep the number of
+dirty pages under control?
+
+> Would you try run this and see if this it's a problem of the test script?
+> 
+> root@snb /home/wfg# cat ./test-loop-fallocate.sh
+....
+
+Ok, so using your script my system doesn't hang, either.
+
+I suspect the difference is that I was reproducing this with a used
+image file. It had somewhere in the order of 750MB of space used
+prior to running the test. I'd been using the image to test large
+filesystem support for xfstests. I'd done a bunch of testing with
+XFS on the loop device, and was trying to get the ext4 support to
+work when I was seeing these hangs. I manually ran the
+losetup/mount/mkfs loopdev/mount/falloc step to get it to hang.
+
+So I think the state of the underlying image file has something to
+do with the hang. Most likely due to the IO rates, I think....
+
+I'll try to reproduce it by running xfstests on XFS on it again
+before trying ext4 again (your script blew away the old image file I
+had). Alternatively, you can try writing lots of small random blocks
+to the image file before running the ext4 portion of the test.
+
+Cheers,
+
+Dave.
 -- 
-1.7.6.4
-
+Dave Chinner
+david@fromorbit.com
