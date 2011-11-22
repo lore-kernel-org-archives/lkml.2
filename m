@@ -1,80 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1KVR3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 12:29:21 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53484 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab1KVR3U (ORCPT
+	id S1754732Ab1KVRa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 12:30:26 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33812 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab1KVRaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 12:29:20 -0500
-Message-ID: <4ECBDA7A.80504@gmail.com>
-Date: Tue, 22 Nov 2011 18:23:06 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	Tue, 22 Nov 2011 12:30:25 -0500
+Date: Wed, 23 Nov 2011 02:30:18 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Nai Xia <nai.xia@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] mm: compaction: make isolate_lru_page() filter-aware
+ again
+Message-ID: <20111122173018.GD15253@barrios-laptop.redhat.com>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+ <1321900608-27687-6-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 2/2] ramoops: remove module parameters
-References: <1321644698-13677-1-git-send-email-keescook@chromium.org>	<1321644698-13677-3-git-send-email-keescook@chromium.org>	<4EC77605.5090605@gmail.com> <CAGXu5j+Dh2jbAymcreOwX_T6=7FA8bOuwUFnwshdsVonAD5_EA@mail.gmail.com>
-In-Reply-To: <CAGXu5j+Dh2jbAymcreOwX_T6=7FA8bOuwUFnwshdsVonAD5_EA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321900608-27687-6-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/11/2011 19:11, Kees Cook ha scritto:
-> On Sat, Nov 19, 2011 at 1:25 AM, Marco Stornelli
-> <marco.stornelli@gmail.com>  wrote:
->> Il 18/11/2011 20:31, Kees Cook ha scritto:
->>>
->>> The ramoops driver is intended to be used with platforms that define
->>> persistent memory regions. If memory regions were configurable with
->>> module parameters, it would be possible to read some RAM regions via
->>> the pstore interface without access to /dev/mem (which would result
->>> in a loss of kernel memory privacy when a system is built with
->>> STRICT_DEVMEM), so remove this ability completely.
->>>
->>
->> I don't like it very much. The loss of module parameters give us less
->> flexibility. The main goal of this driver is debug, so I think it should be
->> fast to use. I mean it's not more possible reserve a memory region and load
->> the module "on-the-fly", it needs a platform device, it's ok but I think
->> it's a little bit more complicated, (without talking about platforms without
->> a device tree source).
->> I don't understand the problem of strict devmem. We shouldn't use kernel
->> memory region but only reserved ones and the driver doesn't use the
->> request_mem_region_exclusive, am I wrong?
->
-> Hmmm, maybe I'm reading it backwards, but I think we want it to use
-> ..._exclusive().
->
-> int devmem_is_allowed(unsigned long pagenr)
-> {
->          if (pagenr<= 256)
->                  return 1;
->          if (iomem_is_exclusive(pagenr<<  PAGE_SHIFT))
->                  return 0;
->          if (!page_is_ram(pagenr))
->                  return 1;
->          return 0;
-> }
->
-> If the region is exclusive, access is not allowed (return 0). ramoops
-> currently uses request_mem_region() instead of
-> request_mem_region_exclusive(). If we made that switch, I think I'd be
-> happy. Would this create some problem I'm not seeing?
->
-> -Kees
->
+On Mon, Nov 21, 2011 at 06:36:46PM +0000, Mel Gorman wrote:
+> Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
+> noted that compaction does not migrate dirty or writeback pages and
+> that is was meaningless to pick the page and re-add it to the LRU list.
+> This had to be partially reverted because some dirty pages can be
+> migrated by compaction without blocking.
+> 
+> This patch updates "mm: compaction: make isolate_lru_page" by skipping
+> over pages that migration has no possibility of migrating to minimise
+> LRU disruption.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  include/linux/mmzone.h |    2 ++
+>  mm/compaction.c        |    3 +++
+>  mm/vmscan.c            |   36 ++++++++++++++++++++++++++++++++++--
+>  3 files changed, 39 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 188cb2f..ac5b522 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -173,6 +173,8 @@ static inline int is_unevictable_lru(enum lru_list l)
+>  #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
+>  /* Isolate unmapped file */
+>  #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+> +/* Isolate for asynchronous migration */
+> +#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+>  
+>  /* LRU Isolation modes. */
+>  typedef unsigned __bitwise__ isolate_mode_t;
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 615502b..0379263 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -349,6 +349,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  			continue;
+>  		}
+>  
+> +		if (!cc->sync)
+> +			mode |= ISOLATE_ASYNC_MIGRATE;
+> +
+>  		/* Try isolate the page */
+>  		if (__isolate_lru_page(page, mode, 0) != 0)
+>  			continue;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3421746..28df0ed 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1061,8 +1061,40 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+>  
+>  	ret = -EBUSY;
+>  
+> -	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
+> -		return ret;
+> +	/*
+> +	 * To minimise LRU disruption, the caller can indicate that it only
+> +	 * wants to isolate pages it will be able to operate on without
+> +	 * blocking - clean pages for the most part.
+> +	 *
+> +	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
+> +	 * is used by reclaim when it is cannot write to backing storage
+> +	 *
+> +	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
+> +	 * that it is possible to migrate without blocking with a ->migratepage
+> +	 * handler
+> +	 */
+> +	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
+> +		/* All the caller can do on PageWriteback is block */
+> +		if (PageWriteback(page))
+> +			return ret;
+> +
+> +		if (PageDirty(page)) {
+> +			struct address_space *mapping;
+> +
+> +			/* ISOLATE_CLEAN means only clean pages */
+> +			if (mode & ISOLATE_CLEAN)
+> +				return ret;
+> +
+> +			/*
+> +			 * Only the ->migratepage callback knows if a dirty
+> +			 * page can be migrated without blocking. Skip the
+> +			 * page unless there is a ->migratepage callback.
+> +			 */
+> +			mapping = page_mapping(page);
+> +			if (!mapping || !mapping->a_ops->migratepage)
 
-I don't understand why we should use the exclusive version, to protect 
-debug data? You should provide a more valid reason to change, because 
-the fact you will be happier with this change is not enough for me :)
-
-Marco
+I didn't review 4/7 carefully yet.
+In case of page_mapping is NULL, move_to_new_page calls migrate_page
+which is non-blocking function. So, I guess it could be migrated without blocking.
+ 
+-- 
+Kind regards,
+Minchan Kim
