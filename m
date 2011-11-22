@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab1KVSjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 13:39:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39857 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab1KVSjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 13:39:19 -0500
-Date: Tue, 22 Nov 2011 20:40:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Jean-Francois Dagenais <jeff.dagenais@gmail.com>, Greg KH <gregkh@suse.de>,
-        tglx@linutronix.de, linux-pci@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: extra large DMA buffer for PCI-E device under UIO
-Message-ID: <20111122184040.GB5235@redhat.com>
-References: <B458B2F0-2DDA-461F-A125-8C6C4CDEB6C5@gmail.com>
- <20111118220849.GA25205@suse.de>
- <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
- <20111121173620.GA5028@suse.de>
- <20111121181724.GB12011@local>
- <4498E0C9-B5E9-44B5-8868-140D6416100E@gmail.com>
- <20111122153525.GB17268@redhat.com>
- <40906F5E-5E97-44CF-AB95-40355204B63F@gmail.com>
- <20111122173722.GA29068@redhat.com>
- <20111122175402.GC15508@local>
+	id S1752756Ab1KVSk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 13:40:59 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49499 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab1KVSk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 13:40:58 -0500
+Date: Tue, 22 Nov 2011 19:40:51 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Marc Vertes <marc.vertes@sigfox.com>, Wim@vger.kernel.org, wim@iguana.be,
+        Welte@vger.kernel.org, Van@vger.kernel.org, Sebroeck@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HaraldWelte@viatech.com, Harald@vger.kernel.org
+Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
+Message-ID: <20111122184051.GA30941@pengutronix.de>
+References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
+ <20111122112212.GD2734@pengutronix.de>
+ <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
+ <20111122173227.GK6624@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
 Content-Disposition: inline
-In-Reply-To: <20111122175402.GC15508@local>
+In-Reply-To: <20111122173227.GK6624@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 06:54:02PM +0100, Hans J. Koch wrote:
-> On Tue, Nov 22, 2011 at 07:37:23PM +0200, Michael S. Tsirkin wrote:
-> [...]
-> > > Or am I better off with a UIO solution?
-> > 
-> > You should probably write a proper kernel driver, not a UIO one.
-> > your kernel driver would have to prevent the device fom DMA into memory
-> > outside the allocated range, even if userspace is malicious.
-> > That's why UIO is generally not recommended for PCI devices that do DMA.
-> 
-> When UIO was designed, the main goal was the ability to handle interrupts
-> from userspace. There was no requirement for DMA. In fact, in five years I
-> didn't get one real world device on my desk that needed it. That doesn't
-> mean there are no such devices. Adding DMA support to the UIO core was
-> discussed several times but noone ever did it. Ideas are still welcome...
-> 
-> If parts of the driver should be in userspace, you should really try
-> to extend the UIO core instead of re-implementing UIO functionality in
-> a "proper kernel driver".
-> 
-> Thanks,
-> Hans
 
-Right, I really meant put all of the driver in the kernel.
-If parts are in userspace, and device can do DMA,
-you are faced with the problem as userspace suddenly
-can access arbitrary memory through the device.
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-MST
+On Tue, Nov 22, 2011 at 05:32:28PM +0000, Mark Brown wrote:
+> On Tue, Nov 22, 2011 at 06:05:48PM +0100, Marc Vertes wrote:
+>=20
+> > +static int wdt_start(struct watchdog_device *wdev)
+> > +{
+> > +	/* Nothing to do. The watchdog can only be started by the BIOS. */
+> > +	return 0;
+> > +}
+>=20
+> Shouldn't we just update the framework to cope with missing functions?
+
+For start(), I dunno. I don't have enough experience with watchdog drivers =
+to
+judge if this is acceptable, although I'd think so. For stop(), a few drive=
+rs
+already activate a timer to keep the watchdog happy; such a mechanism should
+definately go into the core. It's in my todo-list, but I won't be angry if
+someone is faster ;)
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--ibTvN161/egqYuK8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7L7LMACgkQD27XaX1/VRvxlwCfRsnYWSb04pvAYfS8KX8tBkM9
+S+kAnj7yElwOMX8Arz6p7DOQAdXGYxYM
+=sMx8
+-----END PGP SIGNATURE-----
+
+--ibTvN161/egqYuK8--
