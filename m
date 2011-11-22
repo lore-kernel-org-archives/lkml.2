@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353Ab1KVLJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 06:09:46 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38576 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1KVLJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 06:09:43 -0500
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v4 2/5] arm: Move arm over to generic on_each_cpu_mask
-Date: Tue, 22 Nov 2011 13:08:45 +0200
-Message-Id: <1321960128-15191-3-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+	id S1758366Ab1KVLLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 06:11:14 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:33844 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab1KVLLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 06:11:12 -0500
+Message-ID: <4ECB8346.8040806@parallels.com>
+Date: Tue, 22 Nov 2011 15:11:02 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given
+ pids
+References: <4EC4F2FB.408@parallels.com> <20111117154936.GB12325@redhat.com> <4EC52FBF.1010407@parallels.com> <20111118233055.GA29378@google.com> <4ECA1696.5060500@parallels.com> <20111121225019.GQ25776@google.com>
+In-Reply-To: <20111121225019.GQ25776@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note the generic version has the mask as first parameter
+>> +static int pid_ns_ctl_permissions(struct nsproxy *namespaces,
+>> +			struct ctl_table *table, int op)
+>> +{
+>> +	int mode = 0644;
+>> +
+>> +	if ((op & MAY_OPEN) &&
+>> +			current != namespaces->pid_ns->child_reaper)
+>> +		/*
+>> +		 * Writing to this sysctl is allowed only for init
+>> +		 * and to whoever it grands the open file
+>> +		 */
+>> +		mode &= ~0222;
+>> +
+>> +	return sysctl_test_perm(mode, op);
+>> +}
+>> +
+>> +static struct ctl_table_root pid_ns_root = {
+>> +	.permissions = pid_ns_ctl_permissions,
+>> +};
+> 
+> Hmmm... I hope this could be prettier.  I'm having trouble following
+> where the MAY_OPEN comes from.  Can you please explain?
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Christoph Lameter <cl@linux.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
-CC: linux-mm@kvack.org
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Matt Mackall <mpm@selenic.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Sasha Levin <levinsasha928@gmail.com>
----
- arch/arm/kernel/smp_tlb.c |   20 +++++---------------
- 1 files changed, 5 insertions(+), 15 deletions(-)
+>From this calltrace:
 
-diff --git a/arch/arm/kernel/smp_tlb.c b/arch/arm/kernel/smp_tlb.c
-index 7dcb352..02c5d2c 100644
---- a/arch/arm/kernel/smp_tlb.c
-+++ b/arch/arm/kernel/smp_tlb.c
-@@ -13,18 +13,6 @@
- #include <asm/smp_plat.h>
- #include <asm/tlbflush.h>
- 
--static void on_each_cpu_mask(void (*func)(void *), void *info, int wait,
--	const struct cpumask *mask)
--{
--	preempt_disable();
--
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(smp_processor_id(), mask))
--		func(info);
--
--	preempt_enable();
--}
--
- /**********************************************************************/
- 
- /*
-@@ -87,7 +75,7 @@ void flush_tlb_all(void)
- void flush_tlb_mm(struct mm_struct *mm)
- {
- 	if (tlb_ops_need_broadcast())
--		on_each_cpu_mask(ipi_flush_tlb_mm, mm, 1, mm_cpumask(mm));
-+		on_each_cpu_mask(mm_cpumask(mm), ipi_flush_tlb_mm, mm, 1);
- 	else
- 		local_flush_tlb_mm(mm);
- }
-@@ -98,7 +86,8 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
- 		struct tlb_args ta;
- 		ta.ta_vma = vma;
- 		ta.ta_start = uaddr;
--		on_each_cpu_mask(ipi_flush_tlb_page, &ta, 1, mm_cpumask(vma->vm_mm));
-+		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_page,
-+					&ta, 1);
- 	} else
- 		local_flush_tlb_page(vma, uaddr);
- }
-@@ -121,7 +110,8 @@ void flush_tlb_range(struct vm_area_struct *vma,
- 		ta.ta_vma = vma;
- 		ta.ta_start = start;
- 		ta.ta_end = end;
--		on_each_cpu_mask(ipi_flush_tlb_range, &ta, 1, mm_cpumask(vma->vm_mm));
-+		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_range,
-+					&ta, 1);
- 	} else
- 		local_flush_tlb_range(vma, start, end);
- }
--- 
-1.7.0.4
+ pid_ns_ctl_permissions
+ sysctl_perm
+ proc_sys_permission
+ inode_permission
+ do_last <<<<< MAY_OPEN appears here
+ path_openat
+ do_filp_open
+ do_sys_open
+ sys_open
+
+
+> Can't we for now allow this for root and then later allow CAP_CHECKPOINT 
+> that Cyrill suggested?  Or do we want to allow setting pids even w/o CR 
+> for NS creator?
+
+I think that systemd guys can play with it. E.g. respawning daemons with predefined
+pids sounds like an interesting thing to play with.
+
+>> +static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+>> +		     void __user *buffer, size_t *lenp, loff_t *ppos)
+>> +{
+>> +	struct ctl_table tmp = *table;
+>> +	tmp.data = &current->nsproxy->pid_ns->last_pid;
+>> +	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
+>> +}
+> 
+> Probably better to call set_last_pid() on write path instead?
+
+Why? The usage of this sysctl is going to be synchronized  by external locks,
+so why should we care?
+
+>> Well, after a bit more thinking I found one more pros for this
+>> sysctl - when restoring a container we'll have the possibility to
+>> set the last_pid to what we want to prevent the pids reuse after the
+>> restore.
+> 
+> Hmmm... I personally like this one better.  Restoring multilevel pids
+> would be more tedious but should still be possible and I really like
+> that it's staying out of clone path and all modifications are to ns
+> and pid code.  Oleg, what do you think?
+> 
+> Thank you.
+> 
 
