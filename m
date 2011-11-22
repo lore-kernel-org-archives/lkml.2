@@ -1,91 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab1KVWEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 17:04:44 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34546 "EHLO smtp5-g21.free.fr"
+	id S1758920Ab1KVWF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 17:05:26 -0500
+Received: from gate.crashing.org ([63.228.1.57]:34438 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758809Ab1KVWEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 17:04:11 -0500
-From: Corentin Chary <corentincj@iksaif.net>
-To: platform-driver-x86@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/15] samsung-laptop: dump model and version informations
-Date: Tue, 22 Nov 2011 23:02:45 +0100
-Message-Id: <1321999366-23784-15-git-send-email-corentincj@iksaif.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
-References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
+	id S1758871Ab1KVWFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 17:05:22 -0500
+Message-ID: <1321999502.14573.4.camel@pasglop>
+Subject: Re: powerpc: dts: Fix canyonlands EMAC interrupt map
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
+Date: Wed, 23 Nov 2011 09:05:02 +1100
+In-Reply-To: <CACoXjc=RBpB6eYu1zB-kCcYmsV8rdbzYtdxyBJDLTdt6uu04ig@mail.gmail.com>
+References: <1321945877-22802-1-git-send-email-tinamdar@apm.com>
+	 <CA+5PVA7BD9jNoV9LrXjk2+UPBW8MSTPkwpYPFj2y-CNkXCrAhA@mail.gmail.com>
+	 <CACoXjc=RBpB6eYu1zB-kCcYmsV8rdbzYtdxyBJDLTdt6uu04ig@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We still need to figure out exactly what each of different fields
-represent, but they contain at least model and version informatiosn.
+On Tue, 2011-11-22 at 19:45 +0530, Tanmay Inamdar wrote:
+> 
+> On Tue, Nov 22, 2011 at 5:00 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>         On Tue, Nov 22, 2011 at 2:11 AM, Tanmay Inamdar
+>         <tinamdar@apm.com> wrote:
+>         > Fixing interrupt mapping of EMAC for canyonlands
+>         >
+>         > Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>         
+>         
+>         As far as I can tell, your changes aren't really changing
+>         anything
+>         just making it a bit clearer, correct?  If so, do you mind if
+>         I change
+>         the commit log to "clear up" instead of fix?
+> 
+> Actually Rob Herring's commit
+> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=dc9372808412edbc653a675a526c2ee6c0c14a91) breaks the interrupt mapping in EMAC driver.
+> I am trying to fix this issue by mapping interrupts in different way.
 
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/platform/x86/samsung-laptop.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+No. This commit needs to be reverted. It breaks existing practices.
+Pointing to yourself as a parent in order to provide a map is an old
+trick and it should be supported.
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index 9940525..c03a466 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -326,6 +326,8 @@ struct samsung_laptop {
- 
- 	bool handle_backlight;
- 	bool has_stepping_quirk;
-+
-+	char sdiag[64];
- };
- 
- 
-@@ -1239,6 +1241,34 @@ static __init void samsung_sabi_infos(struct samsung_laptop *samsung, int loca,
- 	printk(KERN_DEBUG " SABI pointer = 0x%08x\n", ifaceP);
- }
- 
-+static void __init samsung_sabi_diag(struct samsung_laptop *samsung)
-+{
-+	int loca = find_signature(samsung->f0000_segment, "SDiaG@");
-+	int i;
-+
-+	if (loca == 0xffff)
-+		return ;
-+
-+	/* Example:
-+	 * Ident: @SDiaG@686XX-N90X3A/966-SEC-07HL-S90X3A
-+	 *
-+	 * Product name: 90X3A
-+	 * BIOS Version: 07HL
-+	 */
-+	loca += 1;
-+	for (i = 0; loca < 0xffff && i < sizeof(samsung->sdiag) - 1; loca++) {
-+		char temp = readb(samsung->f0000_segment + loca);
-+
-+		if (isalnum(temp) || temp == '/' || temp == '-')
-+			samsung->sdiag[i++] = temp;
-+		else
-+			break ;
-+	}
-+
-+	if (samsung->sdiag[0])
-+		pr_info("sdiag: %s", samsung->sdiag);
-+}
-+
- static int __init samsung_sabi_init(struct samsung_laptop *samsung)
- {
- 	const struct sabi_config *config = NULL;
-@@ -1256,6 +1286,8 @@ static int __init samsung_sabi_init(struct samsung_laptop *samsung)
- 		goto exit;
- 	}
- 
-+	samsung_sabi_diag(samsung);
-+
- 	/* Try to find one of the signatures in memory to find the header */
- 	for (i = 0; sabi_configs[i].test_string != 0; ++i) {
- 		samsung->config = &sabi_configs[i];
--- 
-1.7.5.4
+I'll ask Linus to revert.
+
+Cheers,
+Ben.
+
+> If you think "clear up" is fine, then please go ahead.
+> 
+> Thanks,
+> Tanmay
+> 
+>         
+>         josh
+>         
+>         
+>         > ---
+>         >  arch/powerpc/boot/dts/canyonlands.dts |   16
+>         ++++++----------
+>         >  1 files changed, 6 insertions(+), 10 deletions(-)
+>         >
+>         > diff --git a/arch/powerpc/boot/dts/canyonlands.dts
+>         b/arch/powerpc/boot/dts/canyonlands.dts
+>         > index 3dc75de..c76bbcd 100644
+>         > --- a/arch/powerpc/boot/dts/canyonlands.dts
+>         > +++ b/arch/powerpc/boot/dts/canyonlands.dts
+>         > @@ -360,13 +360,11 @@
+>         >                        EMAC0: ethernet@ef600e00 {
+>         >                                device_type = "network";
+>         >                                compatible =
+>         "ibm,emac-460ex", "ibm,emac4sync";
+>         > -                               interrupt-parent = <&EMAC0>;
+>         > -                               interrupts = <0x0 0x1>;
+>         > -                               #interrupt-cells = <1>;
+>         > +                               interrupt-parent = <&UIC2>;
+>         >                                #address-cells = <0>;
+>         >                                #size-cells = <0>;
+>         > -                               interrupt-map = </*Status*/
+>         0x0 &UIC2 0x10 0x4
+>         > -                                                /*Wake*/
+>         0x1 &UIC2 0x14 0x4>;
+>         > +                               interrupts = </*Status*/0x10
+>         0x4
+>         > +                                               /*Wake*/0x14
+>         0x4>;
+>         >                                reg = <0xef600e00
+>         0x000000c4>;
+>         >                                local-mac-address =
+>         [000000000000]; /* Filled in by U-Boot */
+>         >                                mal-device = <&MAL0>;
+>         > @@ -390,13 +388,11 @@
+>         >                        EMAC1: ethernet@ef600f00 {
+>         >                                device_type = "network";
+>         >                                compatible =
+>         "ibm,emac-460ex", "ibm,emac4sync";
+>         > -                               interrupt-parent = <&EMAC1>;
+>         > -                               interrupts = <0x0 0x1>;
+>         > -                               #interrupt-cells = <1>;
+>         > +                               interrupt-parent = <&UIC2>;
+>         >                                #address-cells = <0>;
+>         >                                #size-cells = <0>;
+>         > -                               interrupt-map = </*Status*/
+>         0x0 &UIC2 0x11 0x4
+>         > -                                                /*Wake*/
+>         0x1 &UIC2 0x15 0x4>;
+>         > +                               interrupts = </*Status*/0x11
+>         0x4
+>         > +                                               /*Wake*/0x15
+>         0x4>;
+>         >                                reg = <0xef600f00
+>         0x000000c4>;
+>         >                                local-mac-address =
+>         [000000000000]; /* Filled in by U-Boot */
+>         >                                mal-device = <&MAL0>;
+>         > --
+>         > 1.6.1.rc3
+>         >
+>         
+>         > --
+>         > To unsubscribe from this list: send the line "unsubscribe
+>         linux-kernel" in
+>         > the body of a message to majordomo@vger.kernel.org
+>         > More majordomo info at
+>          http://vger.kernel.org/majordomo-info.html
+>         > Please read the FAQ at  http://www.tux.org/lkml/
+>         >
+> 
+> CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
+> is for the sole use of the intended recipient(s) and contains information 
+> that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries. 
+> It is to be used solely for the purpose of furthering the parties' business relationship. 
+> All unauthorized review, use, disclosure or distribution is prohibited. 
+> If you are not the intended recipient, please contact the sender by reply e-mail 
+> and destroy all copies of the original message.
+
 
