@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab1KVUi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 15:38:56 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52350 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755661Ab1KVUiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 15:38:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH 5] PM: Update comments describing device power management callbacks
-Date: Tue, 22 Nov 2011 21:41:41 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-References: <201111200153.40224.rjw@sisk.pl> <201111210038.41490.rjw@sisk.pl> <CACVXFVNiCuQdXmjM9meO+Rcf6g8WnV10-wmxsOCwYuwuMfXUAA@mail.gmail.com>
-In-Reply-To: <CACVXFVNiCuQdXmjM9meO+Rcf6g8WnV10-wmxsOCwYuwuMfXUAA@mail.gmail.com>
+	id S1757673Ab1KVUkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 15:40:06 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:58301 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165Ab1KVUkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 15:40:04 -0500
+Message-ID: <4ECC0880.8050203@linux.vnet.ibm.com>
+Date: Tue, 22 Nov 2011 12:39:28 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Rik van Riel <riel@redhat.com>
+CC: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Love <rlove@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Eric Anholt <eric@anholt.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Johannes Weiner <jweiner@redhat.com>, Jon Masters <jcm@redhat.com>
+Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
+ flags
+References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org> <4ECB6D60.1010702@redhat.com> <4ECB7D48.6080307@redhat.com>
+In-Reply-To: <4ECB7D48.6080307@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111222141.41841.rjw@sisk.pl>
+x-cbid: 11112220-4242-0000-0000-0000002D44B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 22, 2011, Ming Lei wrote:
-> Hi,
-> 
-> On Mon, Nov 21, 2011 at 7:38 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> >  * @prepare: Prepare the device for the upcoming transition, but do NOT change
-> >  *     its hardware state.  Prevent new children of the device from being
-> > @@ -71,101 +78,118 @@ typedef struct pm_message {
-> >  *     probe method from being made too once @prepare() has succeeded).  If
-> >  *     @prepare() detects a situation it cannot handle (e.g. registration of a
-> >  *     child already in progress), it may return -EAGAIN, so that the PM core
-> > - *     can execute it once again (e.g. after the new child has been registered)
-> > + *     can execute it once again (e.g. after a new child has been registered)
-> >  *     to recover from the race condition.  This method is executed for all
-> >  *     kinds of suspend transitions and is followed by one of the suspend
-> >  *     callbacks: @suspend(), @freeze(), or @poweroff().
-> > - *     The PM core executes @prepare() for all devices before starting to
-> > - *     execute suspend callbacks for any of them, so drivers may assume all of
-> > - *     the other devices to be present and functional while @prepare() is being
-> > - *     executed.  In particular, it is safe to make GFP_KERNEL memory
-> > - *     allocations from within @prepare().  However, drivers may NOT assume
-> > - *     anything about the availability of the user space at that time and it
-> > - *     is not correct to request firmware from within @prepare() (it's too
-> > - *     late to do that).  [To work around this limitation, drivers may
-> > - *     register suspend and hibernation notifiers that are executed before the
-> > + *     The PM core executes subsystem-level @prepare() for all devices before
-> > + *     starting to execute suspend callbacks for any of them, so all devices
-> > + *     may be assumed to be present and functional while @prepare() is being
-> 
-> Devices aren't functional in runtime suspend state, so maybe the word of
-> 'functional' should be removed.
+On 11/22/2011 02:45 AM, Rik van Riel wrote:
+> 4) Virtualization.  Marking an object (and its pages)
+>     _VOLATILE inside a guest will not be visible on the
+>     host side, which means a virtual system may continue
+>     to suffer the performance penalty anyway.
 
-That's kind of complicated, see below.
+Yeah, I guess we still have to communicate it _somehow_.
 
-> > + *     executed.  However, device drivers may NOT assume anything about the
-> > + *     availability of user space at that time and it is NOT valid to request
-> > + *     firmware from within @prepare() (it's too late to do that).  It also is
-> > + *     NOT valid to allocate substantial amounts of memory from @prepare() in
-> > + *     the GFP_KERNEL mode.  [To work around these limitations, drivers may
-> > + *     register suspend and hibernation notifiers to be executed before the
-> >  *     freezing of tasks.]
-> 
-> 
-> >  * @resume: Executed after waking the system up from a sleep state in which the
-> > - *     contents of main memory were preserved.  Put the device into the
-> > - *     appropriate state, according to the information saved in memory by the
-> > - *     preceding @suspend().  The driver starts working again, responding to
-> > - *     hardware events and software requests.  The hardware may have gone
-> > - *     through a power-off reset, or it may have maintained state from the
-> > - *     previous suspend() which the driver may rely on while resuming.  On most
-> > - *     platforms, there are no restrictions on availability of resources like
-> > - *     clocks during @resume().
-> > + *     contents of main memory were preserved.  Undo the changes made by
-> > + *     the preceding @suspend() and cause the device to become operational
-> 
-> The device may still not be operational if it was runtime suspended
-> before running @suspend().
+I guess we could theoretically pass the calls up to the
+hypervisor and it could even make its own VOLATILE calls
+to the host kernel.  We'd also have to pass back down the
+"was this evicted" information during a re-pin. That seems
+messy to me.
 
-That's correct, but at the same time it's not 100% clear what @resume should
-do with devices that have been runtime-suspended before system suspend.
+Is it really any different of a problem than page cache?
+The guest has data sitting in RAM that it probably doesn't
+need.  If we passed up just the amount of unpinned data back
+up to the hypervisor, it would have a decent idea how much
+it could balloon the guest, for instance.  That would fit
+in well with some of the existing schemes that folks have
+and be *much* nicer than what they've got at the moment.
 
-For example, it may depend on what power configuration the device is in
-(it may be a member of a power domain that was off before the system suspend or
-something like this).
-
-I'm starting to think that it might be better to simply remove those comments
-altogether. :-)
-
-Thanks,
-Rafael
