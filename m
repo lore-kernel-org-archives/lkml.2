@@ -1,70 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab1KVKyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 05:54:45 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38139 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab1KVKyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 05:54:44 -0500
-Subject: Re: [PATCH] UBIFS: Use kmemdup rather than duplicating its
- implementation
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: adrian.hunter@intel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 Nov 2011 12:55:18 +0200
-In-Reply-To: <1321570852.1624.312.camel@localhost.localdomain>
-References: <1321570852.1624.312.camel@localhost.localdomain>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-rRlB0AxtFrp01fem53H+"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1321959323.24797.150.camel@sauron.fi.intel.com>
-Mime-Version: 1.0
+	id S1758000Ab1KVKzb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 05:55:31 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:3190 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab1KVKza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 05:55:30 -0500
+Message-ID: <4ECB7F89.6060408@atmel.com>
+Date: Tue, 22 Nov 2011 11:55:05 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: vinod.koul@intel.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/2] dmaengine: at_hdmac: platform data move to use
+ .id_table
+References: <4E9C258D.3030509@atmel.com> <7cc84d91b280c5dde075c39de4feae5a6e6603a6.1318855784.git.nicolas.ferre@atmel.com> <20111024093414.GF8708@ponder.secretlab.ca>
+In-Reply-To: <20111024093414.GF8708@ponder.secretlab.ca>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/24/2011 11:34 AM, Grant Likely :
+> On Mon, Oct 17, 2011 at 02:56:40PM +0200, Nicolas Ferre wrote:
+>> We remove the use of platform data from DMA controller driver.
+>> We now use of .id_table to distinguish between compatible
+>> types. The two implementations allow to determine the
+>> number of channels and the capabilities of the controller.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  drivers/dma/at_hdmac.c      |   48 ++++++++++++++++++++++++++++++++++---------
+>>  drivers/dma/at_hdmac_regs.h |    8 +++++++
+>>  2 files changed, 46 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+>> index fcfa0a8..d1869c5 100644
+>> --- a/drivers/dma/at_hdmac.c
+>> +++ b/drivers/dma/at_hdmac.c
+>> @@ -1175,6 +1175,18 @@ static void atc_free_chan_resources(struct dma_chan *chan)
+>>  
+>>  /*--  Module Management  -----------------------------------------------*/
+>>  
+>> +static struct platform_device_id atdma_devtypes[] = {
+>> +	{
+>> +		.name = "at91sam9rl_dma",
+>> +		.driver_data = ATDMA_DEVTYPE_SAM9RL,
+>> +	}, {
+>> +		.name = "at91sam9g45_dma",
+>> +		.driver_data = ATDMA_DEVTYPE_SAM9G45,
+>> +	}, {
+>> +		/* sentinel */
+>> +	}
+>> +};
+>> +
+>>  /**
+>>   * at_dma_off - disable DMA controller
+>>   * @atdma: the Atmel HDAMC device
+>> @@ -1193,18 +1205,32 @@ static void at_dma_off(struct at_dma *atdma)
+>>  
+>>  static int __init at_dma_probe(struct platform_device *pdev)
+>>  {
+>> -	struct at_dma_platform_data *pdata;
+>>  	struct resource		*io;
+>>  	struct at_dma		*atdma;
+>>  	size_t			size;
+>>  	int			irq;
+>>  	int			err;
+>>  	int			i;
+>> +	u32                     nr_channels;
+>> +	dma_cap_mask_t          cap_mask = {};
+>> +	enum atdma_devtype	atdmatype;
+>> +
+>> +	dma_cap_set(DMA_MEMCPY, cap_mask);
+>> +
+>> +	/* get DMA parameters from controller type */
+>> +	atdmatype = platform_get_device_id(pdev)->driver_data;
+>>  
+>> -	/* get DMA Controller parameters from platform */
+>> -	pdata = pdev->dev.platform_data;
+>> -	if (!pdata || pdata->nr_channels > AT_DMA_MAX_NR_CHANNELS)
+>> +	switch (atdmatype) {
+>> +	case ATDMA_DEVTYPE_SAM9RL:
+>> +		nr_channels = 2;
+>> +		break;
+>> +	case ATDMA_DEVTYPE_SAM9G45:
+>> +		nr_channels = 8;
+>> +		dma_cap_set(DMA_SLAVE, cap_mask);
+>> +		break;
+>> +	default:
+>>  		return -EINVAL;
+> 
+> Instead of this song and dance, why not make a configuration structure
+> and embed that into the platform_device_id table?  Like this:
+> 
+> struct at_dma_platform_data at91sam9rl_config {
+> 	.nr_channels = 2;
+> 	.cap_mask = 0;
+> };
+> struct at_dma_platform_data at91samg45_config {
+> 	.nr_channels = 8;
+> 	.cap_mask = DMA_SLAVE;
+> };
+> static struct platform_device_id atdma_devtypes[] = {
+> 	{
+> 		.name = "at91sam9rl_dma",
+> 		.driver_data = (unsigned long) at91sam9rl_config,
+> 		/*
+> 		 * Yes, I know, ugly cast; but one case will be needed
+> 		 * regardless when the of_device_id table is added.
+> 		 * It's due to the platform_device_id not using a
+> 		 * void*
+> 		 */
+> 	}, {
+> 		.name = "at91sam9g45_dma",
+> 		.driver_data = (unsigned long) at91sam9g45_config,
+> 	}, {
+> 		/* sentinel */
+> 	}
+> };
+> 
+> And then the enum can be eliminated entirely.
 
---=-rRlB0AxtFrp01fem53H+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+That looks nice!
 
-On Fri, 2011-11-18 at 00:00 +0100, Thomas Meyer wrote:
-> The semantic patch that makes this change is available
-> in scripts/coccinelle/api/memdup.cocci.
->=20
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+I send a patch that goes on top of this series to simplify things like
+you indicate.
 
-Pushed to the UBIFS git tree, thank you!
+Thanks for your review.
 
---=20
-Best Regards,
-Artem Bityutskiy
+>> +	}
+>>  
+>>  	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>  	if (!io)
+>> @@ -1215,14 +1241,15 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  		return irq;
+>>  
+>>  	size = sizeof(struct at_dma);
+>> -	size += pdata->nr_channels * sizeof(struct at_dma_chan);
+>> +	size += nr_channels * sizeof(struct at_dma_chan);
+>>  	atdma = kzalloc(size, GFP_KERNEL);
+>>  	if (!atdma)
+>>  		return -ENOMEM;
+>>  
+>> -	/* discover transaction capabilites from the platform data */
+>> -	atdma->dma_common.cap_mask = pdata->cap_mask;
+>> -	atdma->all_chan_mask = (1 << pdata->nr_channels) - 1;
+>> +	/* discover transaction capabilities */
+>> +	atdma->dma_common.cap_mask = cap_mask;
+>> +	atdma->all_chan_mask = (1 << nr_channels) - 1;
+>> +	atdma->devtype = atdmatype;
+>>  
+>>  	size = resource_size(io);
+>>  	if (!request_mem_region(io->start, size, pdev->dev.driver->name)) {
+>> @@ -1268,7 +1295,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  
+>>  	/* initialize channels related values */
+>>  	INIT_LIST_HEAD(&atdma->dma_common.channels);
+>> -	for (i = 0; i < pdata->nr_channels; i++) {
+>> +	for (i = 0; i < nr_channels; i++) {
+>>  		struct at_dma_chan	*atchan = &atdma->chan[i];
+>>  
+>>  		atchan->chan_common.device = &atdma->dma_common;
+>> @@ -1313,7 +1340,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  	dev_info(&pdev->dev, "Atmel AHB DMA Controller ( %s%s), %d channels\n",
+>>  	  dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask) ? "cpy " : "",
+>>  	  dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)  ? "slave " : "",
+>> -	  pdata->nr_channels);
+>> +	  nr_channels);
+>>  
+>>  	dma_async_device_register(&atdma->dma_common);
+>>  
+>> @@ -1495,6 +1522,7 @@ static const struct dev_pm_ops at_dma_dev_pm_ops = {
+>>  static struct platform_driver at_dma_driver = {
+>>  	.remove		= __exit_p(at_dma_remove),
+>>  	.shutdown	= at_dma_shutdown,
+>> +	.id_table	= atdma_devtypes,
+>>  	.driver = {
+>>  		.name	= "at_hdmac",
+>>  		.pm	= &at_dma_dev_pm_ops,
+>> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+>> index aa4c9ae..d7d6737 100644
+>> --- a/drivers/dma/at_hdmac_regs.h
+>> +++ b/drivers/dma/at_hdmac_regs.h
+>> @@ -248,9 +248,16 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
+>>  
+>>  /*--  Controller  ------------------------------------------------------*/
+>>  
+>> +enum atdma_devtype {
+>> +	ATDMA_DEVTYPE_UNDEFINED = 0,
+>> +	ATDMA_DEVTYPE_SAM9RL,	/* compatible with SAM9RL DMA controller */
+>> +	ATDMA_DEVTYPE_SAM9G45,	/* compatible with SAM9G45 DMA controller */
+>> +};
+>> +
+>>  /**
+>>   * struct at_dma - internal representation of an Atmel HDMA Controller
+>>   * @chan_common: common dmaengine dma_device object members
+>> + * @atdma_devtype: identifier of DMA controller compatibility
+>>   * @ch_regs: memory mapped register base
+>>   * @clk: dma controller clock
+>>   * @save_imr: interrupt mask register that is saved on suspend/resume cycle
+>> @@ -260,6 +267,7 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
+>>   */
+>>  struct at_dma {
+>>  	struct dma_device	dma_common;
+>> +	enum atdma_devtype	devtype;
+>>  	void __iomem		*regs;
+>>  	struct clk		*clk;
+>>  	u32			save_imr;
+>> -- 
+>> 1.7.5.4
+>>
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
---=-rRlB0AxtFrp01fem53H+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOy3+WAAoJECmIfjd9wqK0kfUQAKN45LnYb9g/+DkiUMncar8w
-F/qwKeIb82hxo/vafhuptm709TqdksRdUIPllbMp1X4g5euvneAigo1e1OTcq67j
-Cu89lmJZ5UvSleKuouCxBbo/sgrboTir7q8kRkEGmBsuQyqTW6I4tievGGlQsRJU
-djDcmXaQvcjV/uzQPS9J51ZWo4Z8msnF4oM9ziRfnu5Ch6uBM7u+o24UKdxzf4dD
-4XMSQnQE+4erS/Ebwbr9MNr/pIAp1Qa+RtuTOfoNt26ID8urIEI5OZBZOaU9pDFU
-yLBS3zEU39OtnwS9rCU5SL7MKNURMskxzAO8L41OFA2hCbXtK6LBmt2uIGHahhFK
-FUn5Ks41H/6z8F3UfBimxo+tBz8sYkTsqQzxO8F0uZOT3WJfZV7sVdWLA6oPxHdt
-f7KolL9x1PGareMgduGWD5CKczdbhIUuyQcohd4Z7b0vyichaTcvDAiM64vnNd5k
-Ph7pef8w3WRXqFnLL6CK4tGgBRipixrftKj71gYFMwBoLiFM9eyF03/R5L4pg1Ew
-2KnnY6Xy4FPKWKXsn+7hElMbHPENcT7K6Qsi7hpEc95ke8KFgbRDZ/qXJg6ITHtg
-6jrUWjkGffanrYgFGH/EoXLlXgeEyGEqfwRRlb+aOf65c1LcX3mNf614onRAf9Js
-dTKhWIPQyMsjP7wUdOZP
-=L0G/
------END PGP SIGNATURE-----
-
---=-rRlB0AxtFrp01fem53H+--
-
+-- 
+Nicolas Ferre
