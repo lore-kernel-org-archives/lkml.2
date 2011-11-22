@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab1KVO3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 09:29:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42453 "EHLO mx2.suse.de"
+	id S1756444Ab1KVO3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 09:29:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42525 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756233Ab1KVO3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 09:29:18 -0500
-Subject: [patch 4/7] sched: convert rq->avg_idle to rq->avg_event
+	id S1756343Ab1KVO3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 09:29:34 -0500
+Subject: [patch 7/7] sched: only use TTWU_QUEUE when waker/wakee CPUs do
+ not share top level cache
 From: Mike Galbraith <mgalbraith@suse.de>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
@@ -27,8 +28,8 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321630552.2197.15.camel@twins>
 	 <1321971445.6855.14.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Nov 2011 15:22:31 +0100
-Message-ID: <1321971751.6855.19.camel@marge.simson.net>
+Date: Tue, 22 Nov 2011 15:26:25 +0100
+Message-ID: <1321971985.6855.26.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
@@ -37,140 +38,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-We update rq->clock only at points of interest to the scheduler.
-Using this distance has the same effect as measuring idle time
-for idle_balance() throttling, and allows other uses as well.
+TTWU_QUEUE IPI overhead was measured to be as much as 13% of netperf TCP_RR
+overhead when waking to a shared cache.  Don't IPI unless we're waking cross
+cache, where it can be a winner.
+
+Suggested by Peterz, tested by /me.
 
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 
 ---
- kernel/sched/core.c  |   29 ++++++++++-------------------
- kernel/sched/debug.c |    2 +-
- kernel/sched/fair.c  |    8 ++------
- kernel/sched/sched.h |    3 +--
- 4 files changed, 14 insertions(+), 28 deletions(-)
+ kernel/sched/core.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
 Index: linux-3.0-tip/kernel/sched/core.c
 ===================================================================
 --- linux-3.0-tip.orig/kernel/sched/core.c
 +++ linux-3.0-tip/kernel/sched/core.c
-@@ -107,6 +107,14 @@ void start_bandwidth_timer(struct hrtime
- DEFINE_MUTEX(sched_domains_mutex);
- DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
+@@ -1479,12 +1479,34 @@ static int ttwu_activate_remote(struct t
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ #endif /* CONFIG_SMP */
  
-+static void update_avg(u64 *avg, u64 sample)
++static int ttwu_share_cache(int this_cpu, int cpu)
 +{
-+#ifdef CONFIG_SMP
-+	s64 diff = sample - *avg;
-+	*avg += diff >> 3;
++#ifndef CONFIG_X86
++	struct sched_domain *sd;
++	int ret = 0;
++
++	rcu_read_lock();
++	for_each_domain(this_cpu, sd) {
++		if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
++			continue;
++
++		ret = (sd->flags & SD_SHARE_PKG_RESOURCES);
++		break;
++	}
++	rcu_read_unlock();
++
++	return ret;
++#else
++	return per_cpu(cpu_llc_id, this_cpu) == per_cpu(cpu_llc_id, cpu);
 +#endif
 +}
 +
- static void update_rq_clock_task(struct rq *rq, s64 delta);
+ static void ttwu_queue(struct task_struct *p, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
  
- void update_rq_clock(struct rq *rq)
-@@ -119,6 +127,7 @@ void update_rq_clock(struct rq *rq)
- 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
- 	rq->clock += delta;
- 	update_rq_clock_task(rq, delta);
-+	update_avg(&rq->avg_event, delta);
- }
- 
- /*
-@@ -1287,12 +1296,6 @@ int select_task_rq(struct task_struct *p
- 
- 	return cpu;
- }
--
--static void update_avg(u64 *avg, u64 sample)
--{
--	s64 diff = sample - *avg;
--	*avg += diff >> 3;
--}
- #endif
- 
- static void
-@@ -1358,17 +1361,6 @@ ttwu_do_wakeup(struct rq *rq, struct tas
- #ifdef CONFIG_SMP
- 	if (p->sched_class->task_woken)
- 		p->sched_class->task_woken(rq, p);
--
--	if (rq->idle_stamp) {
--		u64 delta = rq->clock - rq->idle_stamp;
--		u64 max = 2*sysctl_sched_migration_cost;
--
--		if (delta > max)
--			rq->avg_idle = max;
--		else
--			update_avg(&rq->avg_idle, delta);
--		rq->idle_stamp = 0;
--	}
- #endif
- }
- 
-@@ -6835,8 +6827,7 @@ void __init sched_init(void)
- 		rq->push_cpu = 0;
- 		rq->cpu = i;
- 		rq->online = 0;
--		rq->idle_stamp = 0;
--		rq->avg_idle = 2*sysctl_sched_migration_cost;
-+		rq->avg_event = 0;
- 		rq_attach_root(rq, &def_root_domain);
- #ifdef CONFIG_NO_HZ
- 		rq->nohz_balance_kick = 0;
-Index: linux-3.0-tip/kernel/sched/debug.c
-===================================================================
---- linux-3.0-tip.orig/kernel/sched/debug.c
-+++ linux-3.0-tip/kernel/sched/debug.c
-@@ -292,7 +292,7 @@ static void print_cpu(struct seq_file *m
- 	P(sched_count);
- 	P(sched_goidle);
- #ifdef CONFIG_SMP
--	P64(avg_idle);
-+	P64(avg_event);
- #endif
- 
- 	P(ttwu_count);
-Index: linux-3.0-tip/kernel/sched/fair.c
-===================================================================
---- linux-3.0-tip.orig/kernel/sched/fair.c
-+++ linux-3.0-tip/kernel/sched/fair.c
-@@ -4605,9 +4605,7 @@ void idle_balance(int this_cpu, struct r
- 	int pulled_task = 0;
- 	unsigned long next_balance = jiffies + HZ;
- 
--	this_rq->idle_stamp = this_rq->clock;
--
--	if (this_rq->avg_idle < sysctl_sched_migration_cost)
-+	if (this_rq->avg_event < sysctl_sched_migration_cost)
+ #if defined(CONFIG_SMP)
+-	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
++	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
+ 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+ 		ttwu_queue_remote(p, cpu);
  		return;
- 
- 	/*
-@@ -4633,10 +4631,8 @@ void idle_balance(int this_cpu, struct r
- 		interval = msecs_to_jiffies(sd->balance_interval);
- 		if (time_after(next_balance, sd->last_balance + interval))
- 			next_balance = sd->last_balance + interval;
--		if (pulled_task) {
--			this_rq->idle_stamp = 0;
-+		if (pulled_task)
- 			break;
--		}
- 	}
- 	rcu_read_unlock();
- 
-Index: linux-3.0-tip/kernel/sched/sched.h
-===================================================================
---- linux-3.0-tip.orig/kernel/sched/sched.h
-+++ linux-3.0-tip/kernel/sched/sched.h
-@@ -426,8 +426,7 @@ struct rq {
- 
- 	u64 rt_avg;
- 	u64 age_stamp;
--	u64 idle_stamp;
--	u64 avg_idle;
-+	u64 avg_event;
- #endif
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
 
 
