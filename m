@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab1KVPsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 10:48:15 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45620 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756789Ab1KVPsM (ORCPT
+	id S1757485Ab1KVPtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 10:49:13 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:21480 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757372Ab1KVPtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 10:48:12 -0500
-Date: Tue, 22 Nov 2011 07:48:06 -0800
-From: Tejun Heo <htejun@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        Tomasz Buchert <tomasz.buchert@inria.fr>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
-Message-ID: <20111122154748.GF322@google.com>
-References: <1321480234-29241-1-git-send-email-mhocko@suse.cz>
- <20111121230709.GR25776@google.com>
- <4ECB06D2.6060106@cn.fujitsu.com>
- <20111122022118.GT25776@google.com>
- <20111122090522.GA26768@tiehlicka.suse.cz>
- <20111122153948.GE322@google.com>
+	Tue, 22 Nov 2011 10:49:11 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: oOOkC0IVM1mffel.1juZNLf3uQViUqPRaLqLE_Ak3vaa.8R
+ ORR86kjduDFZALDN4_jmTMbhms_cX8lwmVQ2yvMClTVfL0XxdnF3_SkEuVZn
+ MiCSBf9Zqn66SPqd3jpBabd5VY0TYPhC1LeezzJC4bvkWDS46J9UKwE4rLoe
+ PKlZbj89HsOFxe3eSSTKH.snbTwEz8pOdeHaFbwCvgkOZR208y4p_mJAJqg6
+ Gpfll0ZnhyUPB0oM56O_vt5crpN_xB_CFf7.7x2RDL8U2ycba.GuUqh3_hDg
+ uGruN3hrII7jpmBfn5B61t7H1qGJKC2Y.PsWTvj5tGpdB7YmftzD0Nvd4z.i
+ 6_t0shQga2O5AHIEdnjY_ZbA9CGQSsQxMvm1C8p6WYksH6VTuaLbFvtPSi3J
+ Yug7WCZxBmHuTO4t4kDVNaw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 22 Nov 2011 09:49:08 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [RFC, PATCH] slub: unfreeze_partials() uses a wrong param
+In-Reply-To: <1321976189.2474.35.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <alpine.DEB.2.00.1111220948240.25785@router.home>
+References: <1321976189.2474.35.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122153948.GE322@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 07:39:48AM -0800, Tejun Heo wrote:
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
-> > Cc: Paul Menage <paul@paulmenage.org>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Tejun Heo <htejun@gmail.com>
-> 
-> Applying to cgroup/for-3.2-fixes.
+On Tue, 22 Nov 2011, Eric Dumazet wrote:
 
-I'll apply the original version in cgroup/for-3.2-fixes and deal with
-conflict once pm-freezer branch is merged.  Li, can you please ack
-this?
+> unfreeze_partials() calls add_partial(..., 1) while it should use
+> DEACTIVATE_TO_TAIL or DEACTIVATE_TO_HEAD
 
-Thank you.
-
--- 
-tejun
+Something like that must already be pending in Pekka's tree. I have seen
+this patch a couple of times before.
