@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab1KVJrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 04:47:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51993 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1KVJrp convert rfc822-to-8bit (ORCPT
+	id S1757907Ab1KVJsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 04:48:00 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37064 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119Ab1KVJr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 04:47:45 -0500
+	Tue, 22 Nov 2011 04:47:59 -0500
+Date: Tue, 22 Nov 2011 09:47:38 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
+Message-ID: <20111122094738.GB31064@arm.com>
+References: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1321864620-8925-1-git-send-email-zhzhl555@gmail.com>
-References: <1321864620-8925-1-git-send-email-zhzhl555@gmail.com>
-Date: Tue, 22 Nov 2011 10:47:45 +0100
-Message-ID: <CACRpkda_M0voVTFAHUU8XaMrpgTfac2fiQY7-RhkwZ_BHYT+0w@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: Add RTC support for loongson1B
-From: Linus Walleij <linus.walleij@linaro.org>
-To: zhzhl555@gmail.com
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, keguang.zhang@gmail.com, wuzhangjin@gmail.com,
-        r0bertz@gentoo.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122120358.aa2cefdcdace9a98acafd4b9@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 9:37 AM,  <zhzhl555@gmail.com> wrote:
+Hi Stephen,
 
-> From: zhao zhang <zhzhl555@gmail.com>
->
-> This patch add RTC support(TOY counter0) for loongson1B
-> Signed-off-by: zhao zhang <zhzhl555@gmail.com>
-(...)
-> +       __raw_writel(v, SYS_TOYWRITE0);
+On Tue, Nov 22, 2011 at 01:03:58AM +0000, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-lpae tree got a conflict in
+> arch/arm/mm/ioremap.c between commit 3afb51f744b6 ("ARM: add generic
+> ioremap optimization by reusing static mappings") from the arm tree and
+> commit ec93d80c4b07 ("ARM: LPAE: Page table maintenance for the 3-level
+> format") from the arm-lpae tree.
+> 
+> I guessed (probably incorrectly) about the fix up (see below).  Please
+> supply a better fix if necessary.
 
-Why are you using __raw_* accessors everywhere?
-Is something wrong with just writel()/readl() on loongson?
+Thanks for pointing out. I'll have a look at the conflict and let you
+know.
 
-When I look in arch/mips/include/asm/io.h they actually
-seem to be #defined to their __raw_* counterparts anyway
-so it cannot hurt.
+> More generally, is the LPAE stuff going to be merged soon?  
 
-Yours,
-Linus Walleij
+Hopefully I get it merged during the upcoming merging window (for
+3.3-rc1) but it does not depend only on me.
+
+> The above
+> arm-lpae commit dates from February (though it was recommitted on Nov
+> 15) ...
+
+Maybe I should do a 'git rebase --ignore-date', it doesn't make much
+sense for a reworked patch to still keep the original author date.
+
+-- 
+Catalin
