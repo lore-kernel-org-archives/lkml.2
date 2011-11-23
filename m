@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab1KWWm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 17:42:57 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:52143 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752726Ab1KWWmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 17:42:55 -0500
-Date: Wed, 23 Nov 2011 14:44:17 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] PCI fixes
-Message-ID: <20111123144417.2da5958c@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/d+ylh1iReJ.d=yqJl4HmXps"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1756562Ab1KWWnE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 17:43:04 -0500
+Received: from nm7-vm0.bullet.mail.ird.yahoo.com ([77.238.189.222]:29602 "HELO
+	nm7-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756531Ab1KWWm6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 17:42:58 -0500
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Nov 2011 17:42:58 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 377542.94548.bm@omp1008.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=bt+ZkkRgxIg5o+VlChzjkVnoI5/N0ZAPioEaJYL7UznpDpl0PgE2BMy+w7p2rF/evuUVSC9uba+4N+Aq7sD+0zR6qVGJk+BwWVmoayvEAlVYF/f44sQTrAPeFUZKL4TGBWek6+F8ZYYYgGpgSyeNfhXpmRb0h+KWKBA00C5x5Dw=;
+X-YMail-OSG: XNUTJH8VM1nDfk8tTZAiSgfOT3oef6_GMrU21rUdZracO9p
+ ZOoBfu_1igJ2EcAZo8yFVHBsvU5Ds9w0WNH8H93uIsn7sZd0rA0SZ70EEDMF
+ HwzDmtjGUI2oP_PlYOPyZbpw9jan_n04vOtUAC5n2CCkUJXDEzTJctSdFmdA
+ QrDth4ZYb4_CJch_zJ7OISpdJSRVwOgFeQ8L1DeD14279o2tda9CvbjQmgGD
+ PxzLwuH4cpE0kQjpUAUULaosFR6Y5UQeNDCAhKoI8Ku5OUqW_ZFe5GTKpvY0
+ _2TJWAxcxekb3kPcnJ2eJbioHoAseiGD145KYwjFgtY_ntgF0VlxV8WyhmPk
+ Khy4Ry.2xsjD7ZnSnsnSDzO14G56emYc9PNUyFSQug77XzC_sEjYSaCT8d3R
+ aF2YuH_3c3oJx7UGV8RrZkQ--
+X-Mailer: YahooMailClassic/15.0.4 YahooMailWebService/0.8.115.325013
+Message-ID: <1322087835.12141.YahooMailClassic@web29020.mail.ird.yahoo.com>
+Date: Wed, 23 Nov 2011 22:37:15 +0000 (GMT)
+From: Paul Parsons <lost.distance@yahoo.com>
+Subject: [PATCH] power/ds2760_battery: Add rated capacity of the hx4700 3600mAh battery
+To: linux-kernel@vger.kernel.org
+Cc: philipp.zabel@gmail.com, mad_soft@inbox.ru, koen@dominion.thruhere.net,
+        cbouatmailru@gmail.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/d+ylh1iReJ.d=yqJl4HmXps
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Add rated capacity of the HP iPAQ hx4700 3.7V 3600mAh (359114-001) battery.
+For this battery the value of the rated capacity EEPROM register at 0x32 is 14;
+thus rated_capacities[14] = 3600.
 
-The following changes since commit
-839d8810747bbf39e0a5a7f223b67bffa7945f8d:
+Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+---
+diff -uprN clean-3.2-rc2/drivers/power/ds2760_battery.c linux-3.2-rc2/drivers/power/ds2760_battery.c
+--- clean-3.2-rc2/drivers/power/ds2760_battery.c	2011-11-15 17:02:59.000000000 +0000
++++ linux-3.2-rc2/drivers/power/ds2760_battery.c	2011-11-23 22:06:46.816841888 +0000
+@@ -95,7 +95,11 @@ static int rated_capacities[] = {
+ 	2880,	/* Samsung */
+ 	2880,	/* BYD */
+ 	2880,	/* Lishen */
+-	2880	/* NEC */
++	2880,	/* NEC */
++#ifdef CONFIG_MACH_H4700
++	0,
++	3600,	/* HP iPAQ hx4700 3.7V 3600mAh (359114-001) */
++#endif
+ };
+ 
+ /* array is level at temps 0°C, 10°C, 20°C, 30°C, 40°C
 
-  Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel=
-/git/jdelvare/staging (2011-10-30 15:54:59 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci for-linus
-
-Nothing too exciting this time, mostly some minor fixes for things
-normal people don't really hit.  Happy Thanksgiving.
-
-Bjorn Helgaas (1):
-      PCI hotplug: shpchp: don't blindly claim non-AMD 0x7450 device IDs
-
-Joerg Roedel (2):
-      PCI: Fix compile errors with PCI_ATS and !PCI_IOV
-      PCI: Let PCI_PRI depend on PCI
-
-Kenji Kaneshige (2):
-      PCI: pciehp: wait 1000 ms before Link Training check
-      PCI: pciehp: wait 100 ms after Link Training check
-
-Rafael J. Wysocki (1):
-      PCI / ACPI: Make acpiphp ignore root bridges using PCIe native hotplug
-
-Yinghai Lu (1):
-      PCI: pciehp: Retrieve link speed after link is trained
-
- drivers/pci/Kconfig                |    1 +
- drivers/pci/hotplug/acpiphp_glue.c |   29 ++++++++++++++++++++++++-----
- drivers/pci/hotplug/pciehp_ctrl.c  |    3 ---
- drivers/pci/hotplug/pciehp_hpc.c   |   27 ++++++++++++++++++---------
- drivers/pci/hotplug/shpchp_core.c  |    4 ++--
- drivers/pci/hotplug/shpchp_hpc.c   |    4 ++--
- include/linux/pci-ats.h            |    6 +++---
- include/linux/pci.h                |    2 +-
- 8 files changed, 51 insertions(+), 25 deletions(-)
-
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/d+ylh1iReJ.d=yqJl4HmXps
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOzXdBAAoJEIEoDkX4Qk9hw70P/RLjV0R+wAJhB2EIDJjA1iGr
-jQhoU6dFAC6Y+u77ay2ZxnahbXMR3GJp3cp+L5xPRAJaP8CgEZGoM912p7lslPhe
-alvp36J4TOp09jYXFOPKcar7pwXW4gebu0Os+tN6sSP7Z1EBYnm9Tw01P3UoMs0x
-DPWlVe4QLsPKwyXjLELc5FsKDtG0MxIcWNgUd5g+f6vGZlevU4OD6FDdfDFobhBX
-y9BqTs33HMQuqBtUALpp2UyRi1I0WziovxCsx9YwlwD7yFqlCCT0up5VH9je5Toj
-0yzFHvAr02ibVvdUr1NabdUTjlZfTjfji/za7y0pd0sGrdfw2gbiPT7f+pyOsJ7G
-JiF8uO4yZONN3VO6UXTFMyNSkE7UEGNK/88M2q8qiODtFuLtHvqj+xUOlPHxAOWW
-sqav2L0bg98kr/NHNjcT3HnhTp/ISSrTqLZIVtmCc0xPz6H25NC/2qNmBYPh49vh
-59egFOWh2NDkcsoN0a6V8RW9j121On+YIN+jR5xEiucAQ7qFMH5hd5RpmJyMgkVo
-6H/XmOQxhTIq6E+7bv3XZECL81NxbKb96E8uCJPgYhnwbCan7dwE67cE2ZNVQEGs
-Rq7VGLQ2VhZcnxAXMp487uLrGr6lWgzvEpSjFDl1CoEBF2ay4gIo3aO8LV2wPV4i
-7Wz9awFsyBYdNHtJBXLd
-=GPYh
------END PGP SIGNATURE-----
-
---Sig_/d+ylh1iReJ.d=yqJl4HmXps--
