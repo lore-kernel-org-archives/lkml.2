@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab1KWRT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:19:57 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:15565 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397Ab1KWRT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:19:56 -0500
-Message-ID: <4ECD2AF1.9090101@parallels.com>
-Date: Wed, 23 Nov 2011 21:18:41 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1755300Ab1KWRZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:25:40 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64342 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab1KWRZj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 12:25:39 -0500
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/6] SUNRPC: make RPC clients use network-namespace-aware
- PipeFS routines
-References: <20111123104945.11077.10270.stgit@localhost6.localdomain6> <20111123162711.GA30672@fieldses.org>
-In-Reply-To: <20111123162711.GA30672@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF174F08C6DC@HQMAIL01.nvidia.com>
+References: <CAN1soZyX-jJAw4UcQUkgaYC9YosB1znbcFwiijjkyvidPXgp4w@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF174F08C6DC@HQMAIL01.nvidia.com>
+Date: Thu, 24 Nov 2011 01:25:38 +0800
+Message-ID: <CAN1soZyM_E8Y6RvOKXPCsJ5o590QmeLV8JfnAnOhE1y9PJ44Aw@mail.gmail.com>
+Subject: Re: bug of gpio transition in pinmux driver
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-23.11.2011 20:27, J. Bruce Fields Ð¿Ð¸ÑˆÐµÑ‚:
-> On Wed, Nov 23, 2011 at 02:51:10PM +0300, Stanislav Kinsbursky wrote:
->> This patch set was created in context of clone of git
->> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
->> tag: v3.1
+On Thu, Nov 24, 2011 at 1:13 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> Haojian Zhuang wrote at Wednesday, November 23, 2011 6:13 AM:
+>> Hi Linus & Stephen,
 >>
->> This patch set depends on previous patch sets titled:
->> 1) "SUNRPC: initial part of making pipefs work in net ns"
->> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+>> There's a bug in pinmux driver. We can request gpio via
+>> pinmux_request_gpio(@gpio). @gpio is the gpio number.
+>>
+>> In pinmux_request_gpio():
+>>     pin = @gpio - range->base;
+>>     pin_request(pin);
+>>
+>> This pin is the index of pinctrl_pin_desc[]. What's the definition of
+>> pinctrl_pin_desc's index? It's the index of PAD, not GPIO. Since the
+>> goal of pinmux_request_gpio() is to avoid define too much gpio groups.
+>> We need to add the transition between gpio and pad. It's clear that
+>> the transition of "pin = @gpio - range->base" can't fit every silicon.
 >
-> Do you have a git tree set up with all of these applied?
+>> Especially, one gpio can be routed to two pads in PXA silicon.
+>
+> That particular case isn't really covered yet; we've been discussing how
+> to solve that case; see:
+>
+> https://lkml.org/lkml/2011/11/21/370
+>
+> --
+> nvpublic
+>
 >
 
-I have, but no external access to it yet.
+Thanks a lot for your quick reply. If you could cc linux-arm-kernel
+mailist for the later discussion of pinmux, it would be better.
 
-> (If I want to take a quick look it would personally be easier for me to
-> fetch your git tree than to get those patches out of old email.)
->
-
-Will check tomorrow, is it possible to organize it.
-
-> --b.
->
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Best Regards
+Haojian
