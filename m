@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1KWR6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:58:14 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56378 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab1KWR6M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:58:12 -0500
+	id S1755584Ab1KWR7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:59:40 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:23937 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753608Ab1KWR7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 12:59:39 -0500
+Message-ID: <4ECD3441.80405@parallels.com>
+Date: Wed, 23 Nov 2011 21:58:25 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <4ECCC6F3.8000403@suse.cz>
-References: <20111123033850.GA11380@redhat.com>
-	<CAFQmdRYTgQOb53kQOvk1jubZbvaOrfjVCq4aG1H0ceshw2vVPA@mail.gmail.com>
-	<4ECCC6F3.8000403@suse.cz>
-Date: Wed, 23 Nov 2011 09:58:11 -0800
-Message-ID: <CAFQmdRbkYiOArK09smfMvf2DJ8h-bYvKyXRN_nmX-bPG8ENmjA@mail.gmail.com>
-Subject: Re: tty related lockdep trace during bootup on 3.2-rc2
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/6] SUNRPC: make RPC clients use network-namespace-aware
+ PipeFS routines
+References: <20111123104945.11077.10270.stgit@localhost6.localdomain6> <20111123163632.GB30672@fieldses.org>
+In-Reply-To: <20111123163632.GB30672@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 2:12 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> Oh, how it can be? You should vhangup the device on disconnect. Then you
-> will be sure all close calls were performed before freeing the port.
-> Then you can free the port, right?
+23.11.2011 20:36, J. Bruce Fields пишет:
+> On Wed, Nov 23, 2011 at 02:51:10PM +0300, Stanislav Kinsbursky wrote:
+>> This patch set was created in context of clone of git
+>> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+>> tag: v3.1
+>>
+>> This patch set depends on previous patch sets titled:
+>> 1) "SUNRPC: initial part of making pipefs work in net ns"
+>> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+>>
+>> This patch set is a first part of reworking SUNPRC PipeFS users.
+>> It makes SUNRPC clients using PipeFS nofitications for directory and GSS pipes
+>> dentries creation. With this patch set RPC clients and GSS auth creations
+>> routines doesn't force SUNRPC PipeFS mount point creation which actually means,
+>> that they now can work without PipeFS dentries.
 >
-> Like:
-> * forbid further opens
-> * tty_vhangup
-> * stop the device
-> * free the device state
+> I'm not following very well.  (My fault, I haven't been paying
+> attention.)  Could you summarize the itended behavior of pipefs after
+> all this is done?
+>
+> So there's a separate superblock (and separate dentries) for each
+> namespace?
+>
 
-Ok, interesting. It seems pretty different from what the driver is
-currently doing. I'll see if I can figure out how to rework the
-disconnect code.
+Yes, you right.
+So, here is a brief summary of what will be at the end:
 
-I guess one remaining concern is that someone might still hold the
-device open after hangup, so if we free the device state, which
-includes the tty_port, something bad might happen, no?
+1) PipeFS superblock will be per net ns.
 
-> Also it looks like you have a leak in disconnect when there are users
-> still. If I am looking correctly?
+2) Superblock holds net ns, which is taken from current. Struct net will have 
+link ot pipefs superblock (it can be NULL, if PipeFS wasn't mounted yet or 
+already unmounted).
 
-Funny you should say that. I'm also trying to investigate a case in
-which the driver appears to leak tty devices, i.e. after a few days of
-stress testing, /sys/class/tty is full of dangling ttyACMx symlinks
-and new devices are ignored because acm_table is full.
+3) Notifications will be send on superblock creation and destruction.
 
-Havard
+4) All kernel mount point creation and destruction calls (rpc_get_mount() and 
+rpc_put_mount()) will be removed. I.e. this superblock will be created only from 
+user-space.
+
+5) Kernel pipes and dentries will be created or destroyed:
+1. During per-net operations (only for static NFS stuff: dns_resolve cache, pnfs 
+blocklayout and idmap pipes).
+2. On notification events (all directories, files and pipes in proper 
+callbacks). Notification subscribers:
+a. rpc clients (responsible for client dentries and gss pipes creation),
+b. nfs clients (responsible nfs idmap pipes),
+c. nfs dns_resolve cache,
+d. pnfs blocklayout pipes,
+
+6) PipeFS dentries creation logic:
+a) All directories and files creators - will try to create them as usual. But if 
+fail - then no problem here. I.e. dentries will be created on PipeFS mount 
+notification call.
+b) Pipes creators - will create new structure rpc_pipe (all pipe stuff from rpc 
+inode) nad then try to create pipe denties. If fail - then, again, no problem. 
+Dentries will be be created on PipeFS mount notification call.
+
+
+Almost all (exept 5.2.b - forgot about it during debasing and resending) is done 
+and ready to send.
+
+> What decides which clients are visible in which network namespaces?
+>
+
+Clients dentries will be created in proper superblock from the beginning. I.e. 
+rpc clients transports have struct net reference. NFS clients will have such 
+reference too. Struct net will have reference to pipefs superblock.
+Currently, for dentry creation all we need is parent dentry. Some of creators 
+(like GSS pipes) takes parent dentry from associated struct (like rpc_clnt). For 
+others parent dentry can be found by simple d_lookup() starting from sb->root 
+(reminder: sb can be taken from net).
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
