@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab1KWAm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:42:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43110 "EHLO mx2.suse.de"
+	id S932846Ab1KWAok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:44:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43107 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932747Ab1KWAmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:42:52 -0500
+	id S1755656Ab1KWAmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:42:49 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
-Message-Id: <20111123002407.797466179@clark.kroah.org>
+Message-Id: <20111123002407.703596659@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:41 -0800
+Date: Tue, 22 Nov 2011 16:23:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wang YanQing <Udknight@gmail.com>
-Subject: [34/53] USB: serial: pl2303: rm duplicate id
+        alan@lxorguk.ukuu.org.uk, Ferenc Wagner <wferi@niif.hu>
+Subject: [33/53] USB: option: add PID of Huawei E173s 3G modem
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,58 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: wangyanqing <udknight@gmail.com>
+From: Ferenc Wagner <wferi@niif.hu>
 
-commit 0c16595539b612fe948559433dda08ff96a8bdc7 upstream.
+commit 4aa3648c719265bac9c2742c9ebb043e6dbdd790 upstream.
 
-I get report from customer that his usb-serial
-converter doesn't work well,it sometimes work,
-but sometimes it doesn't.
-
-The usb-serial converter's id:
-vendor_id product_id
-0x4348    0x5523
-
-Then I search the usb-serial codes, and there are
-two drivers announce support this device, pl2303
-and ch341, commit 026dfaf1 cause it. Through many
-times to test, ch341 works well with this device,
-and pl2303 doesn't work quite often(it just work quite little).
-
-ch341 works well with this device, so we doesn't
-need pl2303 to support.I try to revert 026dfaf1 first,
-but it failed. So I prepare this patch by hand to revert it.
-
-Signed-off-by: Wang YanQing <Udknight@gmail.com>
+Signed-off-by: Ferenc Wagner <wferi@niif.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/pl2303.c |    1 -
- drivers/usb/serial/pl2303.h |    4 ----
- 2 files changed, 5 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -91,7 +91,6 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
- 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
- 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
--	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
- 	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -145,10 +145,6 @@
- #define ADLINK_VENDOR_ID		0x0b63
- #define ADLINK_ND6530_PRODUCT_ID	0x6530
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -156,6 +156,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K4511			0x14CC
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
+ #define HUAWEI_PRODUCT_E353			0x1506
++#define HUAWEI_PRODUCT_E173S			0x1C05
  
--/* WinChipHead USB->RS 232 adapter */
--#define WINCHIPHEAD_VENDOR_ID		0x4348
--#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
--
- /* SMART USB Serial Adapter */
- #define SMART_VENDOR_ID	0x0b8c
- #define SMART_PRODUCT_ID	0x2303
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -637,6 +638,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
 
 
