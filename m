@@ -1,73 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759004Ab1KWBSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:18:22 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:60940 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752877Ab1KWBSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 20:18:21 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-omap@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de> (supporter:USB SUBSYSTEM),
-        linux-usb@vger.kernel.org (open list:MUSB MULTIPOINT H...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] usb: musb: PM: fix context save/restore in suspend/resume path
-Date: Tue, 22 Nov 2011 17:18:24 -0800
-Message-Id: <1322011104-21817-1-git-send-email-khilman@ti.com>
-X-Mailer: git-send-email 1.7.6
+	id S1759090Ab1KWBVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:21:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753460Ab1KWBVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 20:21:08 -0500
+Message-ID: <4ECC4AF8.4010109@redhat.com>
+Date: Wed, 23 Nov 2011 09:23:04 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: David Rientjes <rientjes@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Mike Snitzer <snitzer@redhat.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: BUG:  zonelist->_zonerefs == 0x1c08
+References: <4ECB5C80.8080609@redhat.com> <alpine.DEB.2.00.1111220140470.4306@chino.kir.corp.google.com> <20111122152739.GA5663@redhat.com>
+In-Reply-To: <20111122152739.GA5663@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the driver tries to save context in the suspend path, but
-will cause an abort if the device is already runtime suspended.  This
-happens, for example, if MUSB loaded/compiled-in, in host mode, but no
-USB devices are attached.  MUSB will be runtime suspended, but then
-attempting a system suspend will crash due to the context save
-being attempted while the device is disabled.
+On 11/22/2011 11:27 PM, Vivek Goyal wrote:
 
-On OMAP, as of v3.1, the driver's ->runtime_suspend() callback will be
-called late in the suspend path (by the PM domain layer) if the driver
-is not already runtime suspended, ensuring a full shutdown.
+> On Tue, Nov 22, 2011 at 02:00:24AM -0800, David Rientjes wrote:
+>> On Tue, 22 Nov 2011, Dave Young wrote:
+>>
+>>> [    0.000000] Linux version 3.2.0-rc2+ (dave@darkstar) (gcc version
+>>> 4.5.2 (GCC) ) #256 SMP
+>>> [    0.000000] Command line: ro root=/dev/mapper/vg_dellper71001-lv_root
+>>> rd_LVM_LV=vg_dellp
+>>> [    0.000000] KERNEL supported cpus:
+>>> [    0.000000]   Intel GenuineIntel
+>>> [    0.000000]   AMD AuthenticAMD
+>>> [    0.000000]   Centaur CentaurHauls
+>>> [    0.000000] BIOS-provided physical RAM map:
+>>> [    0.000000]  BIOS-e820: 0000000000000100 - 00000000000a0000 (usable)
+>>> [    0.000000]  BIOS-e820: 0000000000100000 - 00000000cf379000 (usable)
+>>> [    0.000000]  BIOS-e820: 00000000cf379000 - 00000000cf38f000 (reserved)
+>>> [    0.000000]  BIOS-e820: 00000000cf38f000 - 00000000cf3ce000 (ACPI data)
+>>> [    0.000000]  BIOS-e820: 00000000cf3ce000 - 00000000d0000000 (reserved)
+>>> [    0.000000]  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
+>>> [    0.000000]  BIOS-e820: 00000000fe000000 - 0000000100000000 (reserved)
+>>> [    0.000000]  BIOS-e820: 0000000100000000 - 0000000630000000 (usable)
+>>> [    0.000000] last_pfn = 0x630000 max_arch_pfn = 0x400000000
+>>> [    0.000000] NX (Execute Disable) protection: active
+>>> [    0.000000] user-defined physical RAM map:
+>>> [    0.000000]  user: 0000000000000000 - 0000000000010000 (reserved)
+>>> [    0.000000]  user: 0000000000010000 - 00000000000a0000 (usable)
+>>> [    0.000000]  user: 0000000003090000 - 000000000affb000 (usable)
+>>> [    0.000000]  user: 00000000cf379000 - 00000000cf38f000 (reserved)
+>>> [    0.000000]  user: 00000000cf38f000 - 00000000cf3ce000 (ACPI data)
+>>> [    0.000000]  user: 00000000cf3ce000 - 00000000d0000000 (reserved)
+>>> [    0.000000]  user: 00000000e0000000 - 00000000f0000000 (reserved)
+>>> [    0.000000]  user: 00000000fe000000 - 0000000100000000 (reserved)
+>>> [    0.000000] DMI 2.6 present.
+>>> [    0.000000] No AGP bridge found
+>>> [    0.000000] last_pfn = 0xaffb max_arch_pfn = 0x400000000
+>>> [    0.000000] x86 PAT enabled: cpu 0, old 0x7010600070106, new
+>>> 0x7010600070106
+>>> [    0.000000] found SMP MP-table at [ffff8800000fe710] fe710
+>>> [    0.000000] Using GB pages for direct mapping
+>>> [    0.000000] init_memory_mapping: 0000000000000000-000000000affb000
+>>> [    0.000000] RAMDISK: 0ac79000 - 0afef000
+>>> [    0.000000] ACPI: RSDP 00000000000f1240 00024 (v02 DELL  )
+>>> [    0.000000] ACPI: XSDT 00000000000f1344 0009C (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: FACP 00000000cf3b3f9c 000F4 (v03 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: DSDT 00000000cf38f000 03D72 (v01 DELL   PE_SC3
+>>> 00000001 INTL 2005062
+>>> [    0.000000] ACPI: FACS 00000000cf3b6000 00040
+>>> [    0.000000] ACPI: APIC 00000000cf3b3478 0015E (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: SPCR 00000000cf3b35d8 00050 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: HPET 00000000cf3b362c 00038 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: DMAR 00000000cf3b3668 001C0 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: MCFG 00000000cf3b38c4 0003C (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: WD__ 00000000cf3b3904 00134 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: SLIC 00000000cf3b3a3c 00176 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: ERST 00000000cf392ef4 00270 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: HEST 00000000cf393164 003A8 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: BERT 00000000cf392d74 00030 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: EINJ 00000000cf392da4 00150 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: SRAT 00000000cf3b3bc0 00370 (v01 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: TCPA 00000000cf3b3f34 00064 (v02 DELL   PE_SC3
+>>> 00000001 DELL 0000000
+>>> [    0.000000] ACPI: SSDT 00000000cf3b7000 02A4C (v01  INTEL PPM RCM
+>>> 80000001 INTL 2006110
+>>> [    0.000000] SRAT: PXM 1 -> APIC 0x20 -> Node 0
+>>> [    0.000000] SRAT: PXM 2 -> APIC 0x00 -> Node 1
+>>> [    0.000000] SRAT: PXM 1 -> APIC 0x34 -> Node 0
+>>> [    0.000000] SRAT: PXM 2 -> APIC 0x14 -> Node 1
+>>> [    0.000000] SRAT: PXM 1 -> APIC 0x21 -> Node 0
+>>> [    0.000000] SRAT: PXM 2 -> APIC 0x01 -> Node 1
+>>> [    0.000000] SRAT: PXM 1 -> APIC 0x35 -> Node 0
+>>> [    0.000000] SRAT: PXM 2 -> APIC 0x15 -> Node 1
+>>> [    0.000000] SRAT: Node 1 PXM 2 0-d0000000
+>>> [    0.000000] SRAT: Node 1 PXM 2 100000000-330000000
+>>> [    0.000000] SRAT: Node 0 PXM 1 330000000-630000000
+>>> [    0.000000] Initmem setup node 1 0000000000000000-000000000affb000
+>>> [    0.000000]   NODE_DATA [000000000aff6000 - 000000000affafff]
+>>
+>> blk_throtl_init() is trying to allocate on a specific node and it appears 
+>> like its zonelists were never built successfully.  I'd guess it's trying 
+>> to allocate on node 0 since it's not onlined above, probably because this 
+>> is the crashkernel.  Your SRAT maps two different nodes but it's only 
+>> onlining node 1 and not node 0.
+>>
+>> The problem is that blk_alloc_queue_node() allocs the requeue_queue with 
+>> __GFP_ZERO, which zeros it and never initialized the node field so it 
+>> remains zero.  blk_throtl_init() then calls kzalloc_node() on node 0 which 
+>> doesn't have initialized zonelists.
+>>
+>> Maybe try this?
+>>
+>> diff --git a/block/blk-core.c b/block/blk-core.c
+>> index ea70e6c..99c1881 100644
+>> --- a/block/blk-core.c
+>> +++ b/block/blk-core.c
+>> @@ -467,6 +467,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+>>  	q->backing_dev_info.state = 0;
+>>  	q->backing_dev_info.capabilities = BDI_CAP_MAP_COPY;
+>>  	q->backing_dev_info.name = "block";
+>> +	q->node = node_id;
+>>  
+> 
+> Storing q->node info at queue allocation time makes sense to me. In fact
+> it might make sense to clean it up from blk_init_allocated_queue_node
+> and assume that passed queue has queue->node set at the allocation time.
+> 
+> CCing Mike Snitzer who introduced blk_init_allocated_queue_node(). Mike
+> what do you think. I am not sure it makes sense to pass in nodeid, both
+> at queue allocation and queue initialization time. To me, it should make
+> more sense to allocate the queue at one node and that becomes the default
+> node for reset of the initialization.
+> 
+> I am wondering why node0 is not coming up in kdump kernel. Assuming that
+> you must have reserved memory in node0 in first kernel, shouldn't it come
+> up in second kernel?
 
-Therefore, the context save is not needed in the ->suspend() method
-since it will be called in the ->runtime_suspend() method anyways
-(similarily for resume.)
 
-NOTE: this leaves the suspend/resume methods basically empty (with
-      some FIXMEs and comments, but I'll leave it to the maintainers
-      to decide whether to remove them.
+Vivek, the reserved memory stay in node1 in first kernel also:
+see following kmsg:
+	SRAT: Node 1 PXM 2 0-d0000000
+	SRAT: Node 1 PXM 2 100000000-330000000
+	SRAT: Node 0 PXM 1 330000000-630000000>
 
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
- drivers/usb/musb/musb_core.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+> Thanks
+> Vivek
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 20a2873..a057a5a 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -2302,18 +2302,12 @@ static int musb_suspend(struct device *dev)
- 		 */
- 	}
- 
--	musb_save_context(musb);
--
- 	spin_unlock_irqrestore(&musb->lock, flags);
- 	return 0;
- }
- 
- static int musb_resume_noirq(struct device *dev)
- {
--	struct musb	*musb = dev_to_musb(dev);
--
--	musb_restore_context(musb);
--
- 	/* for static cmos like DaVinci, register values were preserved
- 	 * unless for some reason the whole soc powered down or the USB
- 	 * module got reset through the PSC (vs just being disabled).
+
+
 -- 
-1.7.6
-
+Thanks
+Dave
