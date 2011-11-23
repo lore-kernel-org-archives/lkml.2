@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758720Ab1KWIN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:13:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8968 "EHLO mga09.intel.com"
+	id S1758783Ab1KWIOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:14:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:55163 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586Ab1KWIN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:13:26 -0500
+	id S1753387Ab1KWIOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:14:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="p7s'?scan'208";a="79138531"
+   d="p7s'?scan'208";a="79138926"
 Subject: Re: softirq oops from b44_poll
 From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: "lkml@hover.be" <lkml@hover.be>,
+To: Xander Hover <lkml@hover.be>
+Cc: David Miller <davem@davemloft.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <20111122.155426.1153643155035648664.davem@davemloft.net>
+In-Reply-To: <CAJfGthTb8PJXNq3gP_NPxTLQQNuVM600oF5Qx7cW-ykGe4n9gQ@mail.gmail.com>
 References: <CAJfGthSxanFbL2vKCpOQbP9K5oNAxeaYt7OMdmdoCb4eLQ_Fww@mail.gmail.com>
 	 <1321917453.10276.3.camel@pjaxe>
 	 <20111122.155426.1153643155035648664.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-T2W7Q0HLxyXPu6ebm9ov"
-Date: Wed, 23 Nov 2011 00:13:10 -0800
-Message-ID: <1322035990.29851.0.camel@ppwaskie-mobl2>
+	 <CAJfGthTb8PJXNq3gP_NPxTLQQNuVM600oF5Qx7cW-ykGe4n9gQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-AjLu1SfYbvW+ou+H+Wrh"
+Date: Wed, 23 Nov 2011 00:14:26 -0800
+Message-ID: <1322036066.29851.2.camel@ppwaskie-mobl2>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,30 +30,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-T2W7Q0HLxyXPu6ebm9ov
+--=-AjLu1SfYbvW+ou+H+Wrh
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2011-11-22 at 12:54 -0800, David Miller wrote:
-> From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Date: Mon, 21 Nov 2011 15:17:33 -0800
->=20
-> > I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb)=
-;
-> > instead, since that will handle the in-interrupt case if that's where
-> > we're stuck.
->=20
-> Caller is always b44_poll(), and that caller always does spin_lock_irqsav=
-e().
->=20
-> Adding the extra tests implied by dev_kfree_skb_any() therefore doesn't
-> make any sense, as it will always evaluate to dev_kfree_skb_irq().
+On Tue, 2011-11-22 at 15:16 -0800, Xander Hover wrote:
+> Indeed will the in_irq() test will force dev_kfree_skb_any() to call
+> dev_kfree_skb_irq().
+> The kernel warning before this patch was applied, was also trigged by
+> a WARN_ON_ONCE(in_irq()).
+> I think David is right on this one.
 
-Agreed, I didn't dig enough through the code.  Thanks Dave.
+Of course he is.  :)
+
+I think your patch should be submitted to fix the warning.  I'd send it
+to the netdev list (cc'd) to make sure David and the rest of those folks
+see it.
 
 -PJ
 
---=-T2W7Q0HLxyXPu6ebm9ov
+>=20
+> On Tue, Nov 22, 2011 at 9:54 PM, David Miller <davem@davemloft.net> wrote=
+:
+> > From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> > Date: Mon, 21 Nov 2011 15:17:33 -0800
+> >
+> >> I suspect the "right" way to fix this is to call dev_kfree_skb_any(skb=
+);
+> >> instead, since that will handle the in-interrupt case if that's where
+> >> we're stuck.
+> >
+> > Caller is always b44_poll(), and that caller always does spin_lock_irqs=
+ave().
+> >
+> > Adding the extra tests implied by dev_kfree_skb_any() therefore doesn't
+> > make any sense, as it will always evaluate to dev_kfree_skb_irq().
+> >
+
+--=20
+Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+LAN Access Division, Intel Corporation
+
+--=-AjLu1SfYbvW+ou+H+Wrh
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -128,14 +147,14 @@ EY0z7VFdjsZjJH9EQA0UbF1aYcshv0a/M2deKN9TdYuJ1eTKRSZdzSiRG5w75xujFMYZgo4ETlu1
 Behgey1jvJiyWdOsPt7at08QMYIB6jCCAeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
 SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
 Q0EgM0ICCn9HrP0AAQAAURUwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEw
-HAYJKoZIhvcNAQkFMQ8XDTExMTEyMzA4MTMwN1owIwYJKoZIhvcNAQkEMRYEFNIvzNwebnxNyIzW
-Pj60NhgHowoCMA0GCSqGSIb3DQEBAQUABIIBACtNllMXtagLtlSiiGcw6fIYVLwOFuXa0GMUQQxL
-AZWLbEjYpbyOLX9r/G8SzpcEhAY1sFzDjE/OeQE9nx28fPtQVGq1kfDQpDtz1MPlSEbEAwBZUgYB
-6SgL9l7kGvFhVIN6hH/vmXeDnvU7dAQkMpg+QwU63WpdSKEIHT1Kr87p19Sw6smpTmXyAVOcyMOF
-yATiKa4CapyZDprW7f5BOj6e+4rVy8EyBpk87eOMuxQgKomMSM3ZT+HE+4eXkjwHTZfSRuVpIbX1
-jFUcCp8hyoYs8VSQydQupbxUF5vvdO62EYQUsd8IIDaI9lpIULyBVXS5knups1OCJ10NJg65rooA
+HAYJKoZIhvcNAQkFMQ8XDTExMTEyMzA4MTQyNlowIwYJKoZIhvcNAQkEMRYEFP4eEITIIZGVXglW
+4uHnnW4bl8RrMA0GCSqGSIb3DQEBAQUABIIBAE8mtxxa+ym7gF2WtW4MYQVYazKXRzqosf0ZlhIa
+qeha9G8zcUeeDMDZOtV1ennhy5XLuVS7U8pChMVhbG6Mzsr4pEK7hLsXf3SviL9pNDsNdK7ImGFS
+AaM52vas/ZWmsKBOeSu/hVPP3VPPYqxzo1t0uX7Y+/6SFDTuNqDi1MuBDTqvnEF0zlzX1nl+uf4e
+orjSEU6nutrXAAQdffGifUmAdEcc8yEvXIloUB4mwY7BocxF7v9S03oy18ahycHeZR7+1u3uZ5Ho
+sQhCVQplhWisMYHEYAIu/+dSbioriswoXNrokV2mHz7X0nMLEoEUvYIT+FBqWZ+ym7DXOjj5JPIA
 AAAAAAA=
 
 
---=-T2W7Q0HLxyXPu6ebm9ov--
+--=-AjLu1SfYbvW+ou+H+Wrh--
 
