@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab1KWMvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:51:36 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57610 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab1KWMve convert rfc822-to-8bit (ORCPT
+	id S1755290Ab1KWMv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:51:57 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:4683 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752960Ab1KWMvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:51:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111123110041.GM19415@suse.de>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
-	<1321900608-27687-8-git-send-email-mgorman@suse.de>
-	<1321945011.22361.335.camel@sli10-conroe>
-	<CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
-	<20111123110041.GM19415@suse.de>
-Date: Wed, 23 Nov 2011 20:51:34 +0800
-Message-ID: <CAPQyPG50Fme_zU3awoSbSxPN69S+gEEMSSEYQOYRNqBJd7H-aA@mail.gmail.com>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
- use by compaction
-From: Nai Xia <nai.xia@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Nov 2011 07:51:55 -0500
+X-Mailer: QUALCOMM Windows Eudora Version 7.1.0.9
+Date: Wed, 23 Nov 2011 13:51:50 +0100
+To: Sasha Levin <levinsasha928@gmail.com>
+From: "N. Coesel" <nico@nctdev.nl>
+Subject: Re: Fast memcpy patch
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1322050241.3581.15.camel@lappy>
+References: <CPSMTPM-CMT101y332G000633f8@CPSMTPM-CMT101.kpnxchange.com>
+ <1322050241.3581.15.camel@lappy>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Message-ID: <CPSMTPM-CMT109vpIa300062dcf@CPSMTPM-CMT109.kpnxchange.com>
+X-OriginalArrivalTime: 23 Nov 2011 12:51:50.0280 (UTC) FILETIME=[AAF33080:01CCA9DE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 7:00 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Wed, Nov 23, 2011 at 10:01:53AM +0800, Nai Xia wrote:
->> On Tue, Nov 22, 2011 at 2:56 PM, Shaohua Li <shaohua.li@intel.com> wrote:
->> > On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
->> >> This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
->> >> mode that avoids writing back pages to backing storage. Async
->> >> compaction maps to MIGRATE_ASYNC while sync compaction maps to
->> >> MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
->> >> hotplug, MIGRATE_SYNC is used.
->> >>
->> >> This avoids sync compaction stalling for an excessive length of time,
->> >> particularly when copying files to a USB stick where there might be
->> >> a large number of dirty pages backed by a filesystem that does not
->> >> support ->writepages.
->> > Hi,
->> > from my understanding, with this, even writes
->> > to /proc/sys/vm/compact_memory doesn't wait for pageout, is this
->> > intended?
->> > on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
->> > lock, so could wait on page read. page read and page out have the same
->> > latency, why takes them different?
->>
->> So for the problem you raised, I think my suggestion to Mel is to adopt the
->> following logic:
->>
->>            if (!trylock_page(page) && !PageUptodate(page))
->>                       we are quite likely to block on read, so we
->>                       depend on yet another MIGRATE_SYNC_MODE to decide
->>                       if we really want to lock_page() and wait for this IO.
->>
->> How do you think ?
->>
+Sasha,
+
+At 13:10 23-11-2011, Sasha Levin wrote:
+>On Wed, 2011-11-23 at 12:25 +0100, N. Coesel wrote:
+> > Dear readers,
+> > I noticed the Linux kernel still uses a byte-by-byte copy method for
+> > memcpy. Since most memory allocations are aligned to the integer size
+> > of a cpu it is often faster to copy by using the CPU's native word
+> > size. The patch below does that. The code is already at work in many
+> > 16 and 32 bit embedded products. It should also work for 64 bit
+> > platforms. So far I only tested 16 and 32 bit platforms.
 >
-> Where are you adding this check?
+>[snip]
 >
-> If you mean in __unmap_and_move(), the check is unnecessary unless
-> another subsystem starts using sync-light compaction. With this series,
-> only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
+>memcpy (along with other mem* functions) are arch specific - for
+>example, look at arch/x86/lib/memcpy_64.S for the implementation(s) for
+>x86.
+>
+>The code under lib/string.c is simple and should work on all platforms
+>(and is probably not being used anywhere anymore).
+
+Thanks for pointing that out. Currently my primary target is ARM. It 
+seems the memcpy for that arch uses byte-by-byte copying as well with 
+some loop unrolling. I modified the code so it tries to use 
+word-by-word copy if the pointers are aligned on word boundaries, if 
+not it reverts to the old method. For clarity: by word I mean the 
+CPU's native bus width. In case of ARM that's (still) 32 bit.
+
+Nico Coesel
 
 
-Oh, Yes, I think I did not pay enough attention that direction compaction
-is the *only* user after I saw your comment on MIGRATE_SYNC_LIGHT
-of "allow blocking on most operations".... I guess Shaohua also missed
-this point too....
-
-Then MIGRATE_SYNC_LIGHT now is solely  for ruling out writeout for
-dirty pages. My suggestion would be reserved for future if anyone
-doing originally async compaction becomes willing to wait some time for
-transient page locking to improve success rate.
-
-
-> not up to date, it is also locked during the IO and unlocked after
-> setting Uptodate in the IO completion handler.
->
-> As the page is locked, compaction will fail trylock_page, do the
-> PF_MEMALLOC check and bail as it is not safe for direct compaction
-> to call lock_page as the comment in __unmap_and_move explains. This
-> should avoid the stall.
->
-> Did I misunderstand your suggestion?
->
-> --
-> Mel Gorman
-> SUSE Labs
->
