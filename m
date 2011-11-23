@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759012Ab1KWAdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:33:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42161 "EHLO mx2.suse.de"
+	id S1759424Ab1KWBCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:02:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42149 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758996Ab1KWAds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:33:48 -0500
+	id S932249Ab1KWAdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:33:46 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:09 2011
-Message-Id: <20111123002209.054134905@clark.kroah.org>
+Message-Id: <20111123002208.948901234@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:21:12 -0800
+Date: Tue, 22 Nov 2011 16:21:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [22/25] USB: add quirk for Logitech C600 web cam
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [21/25] usb-storage: Accept 8020i-protocol commands longer than 12 bytes
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,34 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 823
-Lines: 27
+Content-Length: 1895
+Lines: 50
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 60c71ca972a2dd3fd9d0165b405361c8ad48349b upstream.
+commit 2f640bf4c94324aeaa1b6385c10aab8c5ad1e1cf upstream.
 
-We've had another report of the "chipmunk" sound on a Logitech C600 webcam.
-This patch resolves the issue.
+The 8020i protocol (also 8070i and QIC-157) uses 12-byte commands;
+shorter commands must be padded.  Simon Detheridge reports that his
+3-TB USB disk drive claims to use the 8020i protocol (which is
+normally meant for ATAPI devices like CD drives), and because of its
+large size, the disk drive requires the use of 16-byte commands.
+However the usb_stor_pad12_command() routine in usb-storage always
+sets the command length to 12, making the drive impossible to use.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Since the SFF-8020i specification allows for 16-byte commands in
+future extensions, we may as well accept them.  This patch (as1490)
+changes usb_stor_pad12_command() to leave commands larger than 12
+bytes alone rather than truncating them.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Simon Detheridge <simon@widgit.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/storage/protocol.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -47,6 +47,9 @@ static const struct usb_device_id usb_qu
- 	/* Logitech Webcam B/C500 */
- 	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/drivers/usb/storage/protocol.c
++++ b/drivers/usb/storage/protocol.c
+@@ -58,7 +58,9 @@
  
-+	/* Logitech Webcam C600 */
-+	{ USB_DEVICE(0x046d, 0x0808), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Webcam Pro 9000 */
- 	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
+ void usb_stor_pad12_command(struct scsi_cmnd *srb, struct us_data *us)
+ {
+-	/* Pad the SCSI command with zeros out to 12 bytes
++	/*
++	 * Pad the SCSI command with zeros out to 12 bytes.  If the
++	 * command already is 12 bytes or longer, leave it alone.
+ 	 *
+ 	 * NOTE: This only works because a scsi_cmnd struct field contains
+ 	 * a unsigned char cmnd[16], so we know we have storage available
+@@ -66,9 +68,6 @@ void usb_stor_pad12_command(struct scsi_
+ 	for (; srb->cmd_len<12; srb->cmd_len++)
+ 		srb->cmnd[srb->cmd_len] = 0;
  
+-	/* set command length to 12 bytes */
+-	srb->cmd_len = 12;
+-
+ 	/* send the command to the transport layer */
+ 	usb_stor_invoke_transport(srb, us);
+ }
 
 
