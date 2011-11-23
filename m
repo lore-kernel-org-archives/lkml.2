@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1KWM5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:57:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55469 "EHLO mx2.suse.de"
+	id S1755340Ab1KWM5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:57:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52166 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab1KWM5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:57:13 -0500
-Subject: Re: [patch 4/7] sched: convert rq->avg_idle to rq->avg_event
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-In-Reply-To: <1322051246.14799.58.camel@twins>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1321629441.7080.15.camel@marge.simson.net>
-	 <1321630552.2197.15.camel@twins>
-	 <1321971445.6855.14.camel@marge.simson.net>
-	 <1321971751.6855.19.camel@marge.simson.net>
-	 <1322049330.14799.43.camel@twins>
-	 <1322050165.7041.5.camel@marge.simson.net>
-	 <1322051246.14799.58.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Nov 2011 13:57:10 +0100
-Message-ID: <1322053030.7041.32.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1752960Ab1KWM5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 07:57:22 -0500
+Date: Wed, 23 Nov 2011 18:26:57 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Miche Baker-Harvey <miche@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Anton Blanchard <anton@samba.org>, Mike Waychison <mikew@google.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Eric Northrup <digitaleric@google.com>
+Subject: Re: [PATCH v3 2/3] hvc_init(): Enforce one-time initialization.
+Message-ID: <20111123125657.GH16665@amit-x200.redhat.com>
+References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
+ <20111108214504.28884.61814.stgit@miche.sea.corp.google.com>
+ <874nybqo0o.fsf@rustcorp.com.au>
+ <CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
+ <20111123103852.GG16665@amit-x200.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111123103852.GG16665@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 13:27 +0100, Peter Zijlstra wrote:
-> On Wed, 2011-11-23 at 13:09 +0100, Mike Galbraith wrote:
-> > On Wed, 2011-11-23 at 12:55 +0100, Peter Zijlstra wrote:
-> > > On Tue, 2011-11-22 at 15:22 +0100, Mike Galbraith wrote:
-> > > > We update rq->clock only at points of interest to the scheduler.
-> > > > Using this distance has the same effect as measuring idle time
-> > > > for idle_balance() throttling, and allows other uses as well. 
-> > > 
-> > > I'm not sure I follow, suppose we're happily context switching away, how
-> > > is the avg distance between context switches related to idle time?
-> > 
-> > Average idle time can't be larger.
+On (Wed) 23 Nov 2011 [16:08:52], Amit Shah wrote:
+> With this setup, with and without patches, I can spawn two consoles
+> via:
 > 
-> True :-)
+> /sbin/agetty /dev/hvc0 9600 vt100
+> /sbin/agetty /dev/hvc1 9600 vt100
 > 
-> But it can be _much MUCH_ smaller. So the value is a fair upper limit on
-> the idle time, but has no relation to the actual idle duration.
+> (Strange thing is, the second one gives a 'password incorrect' error
+> on login attempts, while the first one logs in fine.  I do remember
+> testing multiple consoles just fine a year and a half back, so no idea
+> why this isn't behaving as expected -- but it mostly looks like a
+> userspace issue rather than kernel one.)
 
-Yup, none.
+Right -- when I test this on the Fedora 11 VM I used back then, the
+two consoles work just fine without these patches.  When I use
+something newer (F14), I get the weird password rejection, with and
+without your patches.
 
-> Now this value seems to be used in 5 to throttle select_idle_sibling(),
-> which is again something unrelated to actual idle duration, but also
-> unrelated to the avg update_rq_clock() interval.
-
-Yup.  Clock update is a thing we do at sched event-of-interest, so this
-seemed like a good spot to create a multi-purpose number.
-
-> In patch 6 we use this value to guestimate if we should enter nohz,
-> since its a wild over estimation of the actual idle duration it'll be
-> less effective and might not hard much.
-> 
-> Also, patch 6's use of sched_migration_cost to reflect the nohz
-> enter/exit cost is somewhat iffy, but that's another issue.
-
-Yup.
-
-> Now I'm not saying this all isn't worth it, just saying my brain is
-> having difficulty seeing how it all makes sense :-)
-
-They make sense only in that one cheap number generator bandaids three
-owies.  It's fugly but effective :)
-
-	-Mike
-
+		Amit
