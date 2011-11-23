@@ -1,97 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab1KWIc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:32:27 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45691 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1KWIc0 (ORCPT
+	id S1755260Ab1KWIcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:32:42 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56899 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab1KWIck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:32:26 -0500
-Date: Wed, 23 Nov 2011 10:32:21 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Christoph Lameter <cl@linux.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christian Kujau <lists@nerdbynature.de>, markus@trippelsdorf.de,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH V2] slub: avoid potential NULL dereference or
- corruption
-In-Reply-To: <1321974122.2474.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Message-ID: <alpine.LFD.2.02.1111231030370.14209@tux.localdomain>
-References: <1321973629.2474.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <alpine.DEB.2.00.1111220855460.25785@router.home> <1321974122.2474.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Wed, 23 Nov 2011 03:32:40 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 23 Nov 2011 17:31:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>
+Subject: [RFC][PATCH 1/3] add cgroup_xxxx_disabled functions
+Message-Id: <20111123173133.e7ba96df.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Nov 2011, Eric Dumazet wrote:
-> show_slab_objects() can trigger NULL dereferences or memory corruption.
->
-> Another cpu can change its c->page to NULL or c->node to NUMA_NO_NODE
-> while we use them.
->
-> Use ACCESS_ONCE(c->page) and ACCESS_ONCE(c->node) to make sure this
-> cannot happen.
->
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>From 1a9e228c2a28bb918ea8cb9aecc11fd80444acaa Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 23 Nov 2011 15:36:22 +0900
+Subject: [PATCH 1/3] add cgroup_xxxx_disabled() functions
 
-Did someone test this patch? Does it fix any of the reported issues?
+Now, memory cgroup uses mem_cgroup_disabled() for checking
+cgroup is disabled or not. This patch adds cgroup_xxxx_disabled()
+functions for all subsys. After all works, mem_cgroup_disabled()
+can be disappeared.
 
-> ---
-> V2: remove a not needed "if (!c)" test
->
-> mm/slub.c |   21 +++++++++++----------
-> 1 file changed, 11 insertions(+), 10 deletions(-)
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 7d2a996..9deef7d 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -4435,30 +4435,31 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
->
-> 		for_each_possible_cpu(cpu) {
-> 			struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-> +			int node = ACCESS_ONCE(c->node);
-> 			struct page *page;
->
-> -			if (!c || c->node < 0)
-> +			if (node < 0)
-> 				continue;
-> -
-> -			if (c->page) {
-> -					if (flags & SO_TOTAL)
-> -						x = c->page->objects;
-> +			page = ACCESS_ONCE(c->page);
-> +			if (page) {
-> +				if (flags & SO_TOTAL)
-> +					x = page->objects;
-> 				else if (flags & SO_OBJECTS)
-> -					x = c->page->inuse;
-> +					x = page->inuse;
-> 				else
-> 					x = 1;
->
-> 				total += x;
-> -				nodes[c->node] += x;
-> +				nodes[node] += x;
-> 			}
-> 			page = c->partial;
->
-> 			if (page) {
-> 				x = page->pobjects;
-> -                                total += x;
-> -                                nodes[c->node] += x;
-> +				total += x;
-> +				nodes[node] += x;
-> 			}
-> -			per_cpu[c->node]++;
-> +			per_cpu[node]++;
-> 		}
-> 	}
->
->
->
->
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/cgroup.h        |   18 ++++++++++++++++++
+ include/linux/cgroup_subsys.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 1b7f9d5..9eaa6fe 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -526,6 +526,16 @@ struct cgroup_subsys {
+ #include <linux/cgroup_subsys.h>
+ #undef SUBSYS
+ 
++#define SUBSYS(_x)\
++	static inline bool cgroup_ ## _x ## _disabled(void){\
++		return _x ## _subsys.disabled;}
++#define SUBSYS_UNDEFINED(_x)\
++	static inline bool cgroup_ ## _x ## _disabled(void){\
++		return true;}
++#include <linux/cgroup_subsys.h>
++#undef SUBSYS
++#undef SUBSYS_UNDEFINED
++
+ static inline struct cgroup_subsys_state *cgroup_subsys_state(
+ 	struct cgroup *cgrp, int subsys_id)
+ {
+@@ -655,6 +665,14 @@ static inline int cgroup_attach_task_current_cg(struct task_struct *t)
+ 	return 0;
+ }
+ 
++#define SUBSYS(_x)
++#define SUBSYS_UNDEFINED(_x)\
++	static inline bool cgroup_ ## _x ## _disabled(void){\
++		return true;}
++#include <linux/cgroup_subsys.h>
++#undef SUBSYS
++#undef SUBSYS_UNDEFINED
++
+ #endif /* !CONFIG_CGROUPS */
+ 
+ #endif /* _LINUX_CGROUP_H */
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index ac663c1..f3eaee8 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -9,58 +9,98 @@
+ 
+ #ifdef CONFIG_CPUSETS
+ SUBSYS(cpuset)
++#else
++#ifdef SUBSYS_DEFINED
++SUBSYS_UNDEFINED(cpuset)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_CGROUP_DEBUG
+ SUBSYS(debug)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(debug)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+ SUBSYS(cpu_cgroup)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(cpu_cgroup)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_CGROUP_CPUACCT
+ SUBSYS(cpuacct)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(cpuacct)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+ SUBSYS(mem_cgroup)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(mem_cgroup)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_CGROUP_DEVICE
+ SUBSYS(devices)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(devices)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_CGROUP_FREEZER
+ SUBSYS(freezer)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(freezer)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_NET_CLS_CGROUP
+ SUBSYS(net_cls)
++#else
++#ifdef SUBSYS_DEFINED
++SUBSYS_UNDEFINED(net_cls)
++#endif
+ #endif
+ 
+ /* */
+ 
+ #ifdef CONFIG_BLK_CGROUP
+ SUBSYS(blkio)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(blkio)
++#endif
+ #endif
+ 
+ #ifdef CONFIG_CGROUP_PERF
+ SUBSYS(perf)
++#else
++#ifdef SUBSYS_UNDEFINED
++SUBSYS_UNDEFINED(perf)
++#endif
+ #endif
+ 
+ /* */
+-- 
+1.7.4.1
+
+
