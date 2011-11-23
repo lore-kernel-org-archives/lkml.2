@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab1KWI2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:28:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab1KWI2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:28:43 -0500
-Date: Wed, 23 Nov 2011 10:30:06 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 5 of 5] virtio: expose added descriptors immediately
-Message-ID: <20111123083005.GD22734@redhat.com>
-References: <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
- <20111113210256.GA31621@redhat.com>
- <20111114065606.GA3779@redhat.com>
- <871ut8q5mh.fsf@rustcorp.com.au>
- <20111116071838.GE5433@redhat.com>
- <8739dib5z6.fsf@rustcorp.com.au>
- <20111121115702.GA27580@redhat.com>
- <87lir9xagv.fsf@rustcorp.com.au>
- <20111122062907.GB11012@redhat.com>
- <87ty5v1vqy.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ty5v1vqy.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758819Ab1KWI3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:29:50 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56850 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab1KWI3t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:29:49 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 23 Nov 2011 17:28:40 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: cgroups@vger.kernel.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>
+Subject: [RFC][PATCH 0/3] impelemnt cgroup_(subsys)_disabled in generic.
+Message-Id: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 11:49:01AM +1030, Rusty Russell wrote:
-> On Tue, 22 Nov 2011 08:29:08 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Tue, Nov 22, 2011 at 11:03:04AM +1030, Rusty Russell wrote:
-> > > -	/* If you haven't kicked in this long, you're probably doing something
-> > > -	 * wrong. */
-> > > -	WARN_ON(vq->num_added > vq->vring.num);
-> > > +	/* This is very unlikely, but theoretically possible.  Kick
-> > > +	 * just in case. */
-> > > +	if (unlikely(vq->num_added == 65535))
-> > 
-> > This is 0xffff but why use the decimal notation?
-> 
-> Interesting.  Why use hex?  Feels more like binary?
 
-Just easier to see it's the largest 16 bit number.
+Now, memory cgroup has 'mem_cgroup_disabled()' in memcontrol.h
 
-> But I've changed it to "(1 << 16) - 1" to be clear.
+I made a brief trial to use static_branch() for that function. At doing that,
+I thought it will be better to implement generic cgroup functions rather
+than having memory cgroup's its own one.
 
-That's even better.
+This series consists of 3 patches
+1 .... implement cgroup_xxxx_disabled() in generic.
+2 .... use jump_label for cgroup_xxxx_disabled()
+3 .... remove mem_cgroup_disabled() in memcontrol.c
 
-> > > +		virtqueue_kick(_vq);
-> > >  
-> > >  	pr_debug("Added buffer head %i to %p\n", head, vq);
-> > >  	END_USE(vq);
-> > 
-> > We also still need to reset vq->num_added, right?
-> 
-> virtqueue_kick does that for us.
-> 
-> Cheers,
-> Rusty.
+And I post this series for getting review/comments.
+I'm not sure patches for using jump_label is worth to be merged.
 
-Right.
+I did a test to run a loop
+	while(-) {
+		mmap(1M)
+		touch all pages
+		munmap()
+	}
+
+and measured performance score in ROOT cgroup. Here,
+
+(Before patch)
+   182,932,842,128 cycles                    #    0.000 GHz                     [33.33%]
+   192,711,643,877 instructions              #    1.05  insns per cycle         [49.99%]
+       761,483,416 cache-references                                             [49.98%]
+           159,908 cache-misses              #    0.021 % of all cache refs     [50.00%]
+    33,253,084,874 branches                                                     [33.34%]
+       109,796,792 branch-misses             #    0.33% of all branches         [33.34%]
+
+      58.289265709 seconds time elapsed
+
+(After patch)
+ Performance counter stats for './malloc 1':
+
+   183,068,407,487 cycles                    #    0.000 GHz                     [33.33%]
+   191,834,248,678 instructions              #    1.05  insns per cycle         [50.00%]
+       798,635,028 cache-references                                             [49.98%]
+            95,562 cache-misses              #    0.012 % of all cache refs     [50.00%]
+    32,755,318,286 branches                                                     [33.34%]
+        77,774,624 branch-misses             #    0.24% of all branches         [33.34%]
+
+      58.332356996 seconds time elapsed
+
+There is no differece in 'time' ;) 
+But I got an impression that 'branch' score gets better in several tests.
+
+Thanks,
+-Kame
+
+P.S. maybe I can replace 'do_swap_account' with jump_label, too.
+
+
+
