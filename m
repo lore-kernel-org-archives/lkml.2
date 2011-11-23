@@ -1,82 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab1KWPIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:08:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41600 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756177Ab1KWPIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:08:15 -0500
-Date: Wed, 23 Nov 2011 15:08:10 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
- use by compaction
-Message-ID: <20111123150810.GO19415@suse.de>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
- <1321900608-27687-8-git-send-email-mgorman@suse.de>
- <1321945011.22361.335.camel@sli10-conroe>
- <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
- <20111123110041.GM19415@suse.de>
- <CAPQyPG588_q1diT8KyPirUD9MLME6SanO-cSw1twzhFiTBWgCw@mail.gmail.com>
- <20111123134512.GN19415@suse.de>
- <CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756391Ab1KWPKO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:10:14 -0500
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:41636 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab1KWPKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 10:10:13 -0500
+Date: Wed, 23 Nov 2011 16:09:50 +0100
+From: Udo Steinberg <udo@hypervisor.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Subject: MCE/Package power limit notification
+Message-ID: <20111123160950.67860131@x220>
+X-Mailer: X-Mailer 5.0 Gold
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/tvOSRwUVBmlo7oFRV6kuxmK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 10:35:37PM +0800, Nai Xia wrote:
-> On Wed, Nov 23, 2011 at 9:45 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > On Wed, Nov 23, 2011 at 09:05:08PM +0800, Nai Xia wrote:
-> >> > <SNIP>
-> >> >
-> >> > Where are you adding this check?
-> >> >
-> >> > If you mean in __unmap_and_move(), the check is unnecessary unless
-> >> > another subsystem starts using sync-light compaction. With this series,
-> >> > only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
-> >>
-> >> But I am still a little bit confused that if MIGRATE_SYNC_LIGHT is only
-> >> used by direct compaction and  another mode can be used by it:
-> >> MIGRATE_ASYNC also does not write dirty pages, then why not also
-> >> do an (current->flags & PF_MEMALLOC) test before writing out pages,
-> >
-> > Why would it be necessary?
-> > Why would it be better than what is there now?
-> 
-> I mean, if
->    MIGRATE_SYNC_LIGHT --> (current->flags & PF_MEMALLOC) and
->    MIGRATE_SYNC_LIGHT --> no dirty writeback, and (current->flags & PF_MEMALLOC)
->                       --> (MIGRATE_SYNC_LIGHT || MIGRATE_ASYNC)
->    MIGRATE_ASYNC      --> no dirty writeback, then
-> why not simply  (current->flags & PF_MEMALLOC) ---> no dirty writeback
-> and keep the sync meaning as it was?
-> 
+--Sig_/tvOSRwUVBmlo7oFRV6kuxmK
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I see what you mean. Instead of making MIGRATE_SYNC_LIGHT part of
-the API, we could instead special case within migrate.c how to behave if
-MIGRATE_SYNC && PF_MEMALLOC.
+Hi,
 
-This would be functionally equivalent and satisfy THP users
-but I do not see it as being easier to understand or easier
-to maintain than updating the API. If someone in the future
-wanted to use migration without significant stalls without
-being PF_MEMALLOC, they would need to update the API like this.
-There are no users like this today but automatic NUMA migration
-might want to leverage something like MIGRATE_SYNC_LIGHT
-(http://comments.gmane.org/gmane.linux.kernel.mm/70239)
+After half an hour of compiling code on an Intel SNB machine, at which time
+the machine was more or less permanently running with turbo boost active,
+I've gotten the following in my dmesg with Linux-3.1.0:
 
--- 
-Mel Gorman
-SUSE Labs
+CPU2: Package power limit notification (total events =3D 1)
+CPU3: Package power limit notification (total events =3D 1)
+CPU1: Package power limit notification (total events =3D 1)
+CPU0: Package power limit notification (total events =3D 1)
+CPU2: Package power limit normal
+CPU3: Package power limit normal
+CPU1: Package power limit normal
+CPU0: Package power limit normal
+[Hardware Error]: Machine check events logged
+CPU1: Package power limit notification (total events =3D 655)
+CPU2: Package power limit notification (total events =3D 655)
+CPU3: Package power limit notification (total events =3D 655)
+CPU0: Package power limit notification (total events =3D 655)
+CPU3: Package power limit normal
+CPU2: Package power limit normal
+CPU1: Package power limit normal
+CPU0: Package power limit normal
+[Hardware Error]: Machine check events logged
+
+Below is the output from mcelog. Is there anything that can be done about i=
+t?
+
+Cheers,
+
+	- Udo
+
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 0
+CPU 3 THERMAL EVENT TSC 179fecf42d7=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 3 below trip temperature. Throttling disabled
+STATUS c0000000880c0c00 MCGSTATUS 0
+MCGCAP c07 APICID 3 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 1
+CPU 1 THERMAL EVENT TSC 179fecf5d95=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 1 below trip temperature. Throttling disabled
+STATUS c0000000880c0c00 MCGSTATUS 0
+MCGCAP c07 APICID 1 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 2
+CPU 0 THERMAL EVENT TSC 179fecf72fb=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 0 below trip temperature. Throttling disabled
+STATUS c0000000880c0c00 MCGSTATUS 0
+MCGCAP c07 APICID 0 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 3
+CPU 2 THERMAL EVENT TSC 179fecf88a9=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 2 below trip temperature. Throttling disabled
+STATUS c0000000880c0c00 MCGSTATUS 0
+MCGCAP c07 APICID 2 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 4
+CPU 3 THERMAL EVENT TSC 179fef2e964=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 3 below trip temperature. Throttling disabled
+STATUS c0000000880c0800 MCGSTATUS 0
+MCGCAP c07 APICID 3 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 5
+CPU 1 THERMAL EVENT TSC 179fef2fd56=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 1 below trip temperature. Throttling disabled
+STATUS c0000000880c0800 MCGSTATUS 0
+MCGCAP c07 APICID 1 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 6
+CPU 0 THERMAL EVENT TSC 179fef30d22=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 0 below trip temperature. Throttling disabled
+STATUS c0000000880c0800 MCGSTATUS 0
+MCGCAP c07 APICID 0 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 7
+CPU 2 THERMAL EVENT TSC 179fef311bd=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 2 below trip temperature. Throttling disabled
+STATUS c0000000880c0800 MCGSTATUS 0
+MCGCAP c07 APICID 2 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 8
+CPU 2 THERMAL EVENT TSC 31a70403488=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 2 below trip temperature. Throttling disabled
+STATUS c000000088080c02 MCGSTATUS 0
+MCGCAP c07 APICID 2 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 9
+CPU 3 THERMAL EVENT TSC 31a7040468b=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 3 below trip temperature. Throttling disabled
+STATUS c000000088080c02 MCGSTATUS 0
+MCGCAP c07 APICID 3 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 10
+CPU 0 THERMAL EVENT TSC 31a704059b1=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 0 below trip temperature. Throttling disabled
+STATUS c000000088080c02 MCGSTATUS 0
+MCGCAP c07 APICID 0 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 11
+CPU 1 THERMAL EVENT TSC 31a70407082=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 1 below trip temperature. Throttling disabled
+STATUS c000000088080c02 MCGSTATUS 0
+MCGCAP c07 APICID 1 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 12
+CPU 2 THERMAL EVENT TSC 31a705416f8=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 2 below trip temperature. Throttling disabled
+STATUS c000000088080802 MCGSTATUS 0
+MCGCAP c07 APICID 2 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 13
+CPU 1 THERMAL EVENT TSC 31a70542907=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 1 below trip temperature. Throttling disabled
+STATUS c000000088080802 MCGSTATUS 0
+MCGCAP c07 APICID 1 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 14
+CPU 0 THERMAL EVENT TSC 31a70543945=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 0 below trip temperature. Throttling disabled
+STATUS c000000088080802 MCGSTATUS 0
+MCGCAP c07 APICID 0 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+mcelog: Unsupported new Family 6 Model 2a CPU: only decoding architectural =
+errors
+HARDWARE ERROR. This is *NOT* a software problem!
+Please contact your hardware vendor
+MCE 15
+CPU 3 THERMAL EVENT TSC 31a70543cab=20
+TIME 1322060688 Wed Nov 23 16:04:48 2011
+Processor 3 below trip temperature. Throttling disabled
+STATUS c000000088080802 MCGSTATUS 0
+MCGCAP c07 APICID 3 SOCKETID 0=20
+CPUID Vendor Intel Family 6 Model 42
+
+--Sig_/tvOSRwUVBmlo7oFRV6kuxmK
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7NDL8ACgkQnhRzXSM7nSl3FgCfS8whdb0m6gB47AP70Si+MJ84
+muIAoIEyXFbewgViqV4w9eMK8PSlU5w9
+=sr0a
+-----END PGP SIGNATURE-----
+
+--Sig_/tvOSRwUVBmlo7oFRV6kuxmK--
