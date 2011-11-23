@@ -1,48 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759693Ab1KWDcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 22:32:22 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:45098 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab1KWDcU (ORCPT
+	id S1759611Ab1KWDcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 22:32:45 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64715 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759734Ab1KWDco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 22:32:20 -0500
-Message-ID: <1322019132.6445.106.camel@work-vm>
-Subject: [GIT PULL] RTC fixes for 3.2
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Date: Tue, 22 Nov 2011 19:32:12 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
-x-cbid: 11112303-1780-0000-0000-000001218764
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000234; HX=3.00000178; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00089946; UDB=6.00024041; UTC=2011-11-23
- 03:32:18
+	Tue, 22 Nov 2011 22:32:44 -0500
+Date: Tue, 22 Nov 2011 19:32:40 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
+ for mempolicy or disjoint nodemask
+In-Reply-To: <4ECC5FC8.9070500@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com>
+ <4ECC5FC8.9070500@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	I've queued two RTC fixes from Arve and Rabin for 3.2, against
-tip/timers/urgent which are available in the git repository at:
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.2/tip/timers/urgent
+On Wed, 23 Nov 2011, Miao Xie wrote:
 
-thanks
--john
+> Yes, what you said is right.
+> But in fact, on the kernel where MAX_NUMNODES <= BITS_PER_LONG, the same problem
+> can also occur.
+> 	task1			task1's mems	task2
+> 	alloc page		2-3
+> 	  alloc on node1? NO	2-3
+> 				2-3		change mems from 2-3 to 1-2
+> 				1-2		rebind task1's mpol
+> 				1-2		  set new bits
+> 				1-2		change mems from 0-1 to 0
+> 				1-2		rebind task1's mpol
+> 				0-1		  set new bits
+> 	  alloc on node2? NO	0-1
+> 	  ...
+> 	can't alloc page
+> 	  goto oom
+> 
 
-Arve Hjønnevåg (1):
-      rtc: Fix some bugs that allowed accumulating time drift in suspend/resume
+One of the major reasons why changing cpuset.mems can take >30s is because 
+of lengthy delays in the page allocator because it continuously loops 
+while trying reclaim or killing a thread and trying to allocate a page.
 
-Rabin Vincent (1):
-      rtc: Disable the alarm in the hardware
+I think we should be able to optimize this by dropping it when it's not 
+required and moving it to get_page_from_freelist() which is the only thing 
+that cares about cpuset_zone_allowed_softwall().
 
- drivers/rtc/class.c     |   10 +++++-----
- drivers/rtc/interface.c |   44 ++++++++++++++++++++++++++++++++++----------
- 2 files changed, 39 insertions(+), 15 deletions(-)
+Something like this:
 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1643,17 +1643,29 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+ static struct page *
+ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
+-		struct zone *preferred_zone, int migratetype)
++		struct zone **preferred_zone, int migratetype)
+ {
+ 	struct zoneref *z;
+ 	struct page *page = NULL;
+ 	int classzone_idx;
+ 	struct zone *zone;
+-	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
++	nodemask_t *allowednodes = NULL;
+ 	int zlc_active = 0;		/* set if using zonelist_cache */
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+ 
+-	classzone_idx = zone_idx(preferred_zone);
++	get_mems_allowed();
++	/*
++	 * preferred_zone must come from an allowed node if the allocation is
++	 * constrained to either a mempolicy (nodemask != NULL) or otherwise
++	 * limited by cpusets.
++	 */
++	if (alloc_flags & ALLOC_CPUSET)
++		allowednodes = nodemask ? : &cpuset_current_mems_allowed;
++
++	first_zones_zonelist(zonelist, high_zoneidx, allowednodes, 
++				preferred_zone);
++	classzone_idx = zone_idx(*preferred_zone);
++	allowednodes = NULL;
+ zonelist_scan:
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+@@ -1717,7 +1729,7 @@ zonelist_scan:
+ 		}
+ 
+ try_this_zone:
+-		page = buffered_rmqueue(preferred_zone, zone, order,
++		page = buffered_rmqueue(*preferred_zone, zone, order,
+ 						gfp_mask, migratetype);
+ 		if (page)
+ 			break;
+@@ -1731,6 +1743,7 @@ this_zone_full:
+ 		zlc_active = 0;
+ 		goto zonelist_scan;
+ 	}
++	put_mems_allowed();
+ 	return page;
+ }
+ 
+@@ -1832,7 +1845,7 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+ static inline struct page *
+ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, struct zone *preferred_zone,
++	nodemask_t *nodemask, struct zone **preferred_zone,
+ 	int migratetype)
+ {
+ 	struct page *page;
+@@ -1885,13 +1898,13 @@ out:
+ static struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
++	nodemask_t *nodemask, int alloc_flags, struct zone **preferred_zone,
+ 	int migratetype, unsigned long *did_some_progress,
+ 	bool sync_migration)
+ {
+ 	struct page *page;
+ 
+-	if (!order || compaction_deferred(preferred_zone))
++	if (!order || compaction_deferred(*preferred_zone))
+ 		return NULL;
+ 
+ 	current->flags |= PF_MEMALLOC;
+@@ -1909,8 +1922,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 				alloc_flags, preferred_zone,
+ 				migratetype);
+ 		if (page) {
+-			preferred_zone->compact_considered = 0;
+-			preferred_zone->compact_defer_shift = 0;
++			*preferred_zone->compact_considered = 0;
++			*preferred_zone->compact_defer_shift = 0;
+ 			count_vm_event(COMPACTSUCCESS);
+ 			return page;
+ 		}
+@@ -1921,7 +1934,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 		 * but not enough to satisfy watermarks.
+ 		 */
+ 		count_vm_event(COMPACTFAIL);
+-		defer_compaction(preferred_zone);
++		defer_compaction(*preferred_zone);
+ 
+ 		cond_resched();
+ 	}
+@@ -1932,7 +1945,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ static inline struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
++	nodemask_t *nodemask, int alloc_flags, struct zone **preferred_zone,
+ 	int migratetype, unsigned long *did_some_progress,
+ 	bool sync_migration)
+ {
+@@ -1944,7 +1957,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ static inline struct page *
+ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
++	nodemask_t *nodemask, int alloc_flags, struct zone **preferred_zone,
+ 	int migratetype, unsigned long *did_some_progress)
+ {
+ 	struct page *page = NULL;
+@@ -2001,7 +2014,7 @@ retry:
+ static inline struct page *
+ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, struct zone *preferred_zone,
++	nodemask_t *nodemask, struct zone **preferred_zone,
+ 	int migratetype)
+ {
+ 	struct page *page;
+@@ -2012,7 +2025,8 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 			preferred_zone, migratetype);
+ 
+ 		if (!page && gfp_mask & __GFP_NOFAIL)
+-			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
++			wait_iff_congested(*preferred_zone, BLK_RW_ASYNC,
++					   HZ/50);
+ 	} while (!page && (gfp_mask & __GFP_NOFAIL));
+ 
+ 	return page;
+@@ -2075,7 +2089,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ static inline struct page *
+ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+-	nodemask_t *nodemask, struct zone *preferred_zone,
++	nodemask_t *nodemask, struct zone **preferred_zone,
+ 	int migratetype)
+ {
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
+@@ -2110,7 +2124,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ restart:
+ 	if (!(gfp_mask & __GFP_NO_KSWAPD))
+ 		wake_all_kswapd(order, zonelist, high_zoneidx,
+-						zone_idx(preferred_zone));
++						zone_idx(*preferred_zone));
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -2119,14 +2133,6 @@ restart:
+ 	 */
+ 	alloc_flags = gfp_to_alloc_flags(gfp_mask);
+ 
+-	/*
+-	 * Find the true preferred zone if the allocation is unconstrained by
+-	 * cpusets.
+-	 */
+-	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask)
+-		first_zones_zonelist(zonelist, high_zoneidx, NULL,
+-					&preferred_zone);
+-
+ rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+@@ -2220,7 +2226,7 @@ rebalance:
+ 	pages_reclaimed += did_some_progress;
+ 	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
+ 		/* Wait for some write requests to complete then retry */
+-		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
++		wait_iff_congested(*preferred_zone, BLK_RW_ASYNC, HZ/50);
+ 		goto rebalance;
+ 	} else {
+ 		/*
+@@ -2277,25 +2283,17 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	if (unlikely(!zonelist->_zonerefs->zone))
+ 		return NULL;
+ 
+-	get_mems_allowed();
+-	/* The preferred zone is used for statistics later */
+-	first_zones_zonelist(zonelist, high_zoneidx,
+-				nodemask ? : &cpuset_current_mems_allowed,
+-				&preferred_zone);
+-	if (!preferred_zone) {
+-		put_mems_allowed();
+-		return NULL;
+-	}
+-
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, ALLOC_WMARK_LOW|ALLOC_CPUSET,
+-			preferred_zone, migratetype);
+-	if (unlikely(!page))
++			&preferred_zone, migratetype);
++	if (unlikely(!page)) {
++		if (!preferred_zone)
++			return NULL;
+ 		page = __alloc_pages_slowpath(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+-				preferred_zone, migratetype);
+-	put_mems_allowed();
++				&preferred_zone, migratetype);
++	}
+ 
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ 	return page;
+
+This would significantly reduce the amount of time that it takes to write 
+to cpuset.mems because we drop get_mems_allowed() between allocation 
+attempts.  We really, really want to do this anyway because it's possible 
+that a cpuset is being expanded to a larger set of nodes and they are 
+inaccessible to concurrent memory allocations because the page allocator 
+is holding get_mems_allowed() while looping and trying to find more 
+memory.
+
+Comments?
