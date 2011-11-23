@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab1KWRQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:16:49 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40111 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab1KWRQs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:16:48 -0500
-Date: Wed, 23 Nov 2011 17:16:45 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: regulator tree has moved back to kernel.org
-Message-ID: <20111123171645.GA1065@sirena.org.uk>
+	id S1755187Ab1KWRT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:19:57 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:15565 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752397Ab1KWRT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 12:19:56 -0500
+Message-ID: <4ECD2AF1.9090101@parallels.com>
+Date: Wed, 23 Nov 2011 21:18:41 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Cookie: You were s'posed to laugh!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/6] SUNRPC: make RPC clients use network-namespace-aware
+ PipeFS routines
+References: <20111123104945.11077.10270.stgit@localhost6.localdomain6> <20111123162711.GA30672@fieldses.org>
+In-Reply-To: <20111123162711.GA30672@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+23.11.2011 20:27, J. Bruce Fields пишет:
+> On Wed, Nov 23, 2011 at 02:51:10PM +0300, Stanislav Kinsbursky wrote:
+>> This patch set was created in context of clone of git
+>> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+>> tag: v3.1
+>>
+>> This patch set depends on previous patch sets titled:
+>> 1) "SUNRPC: initial part of making pipefs work in net ns"
+>> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+>
+> Do you have a git tree set up with all of these applied?
+>
 
-Please update the regulator tree in -next to use kernel.org again:
+I have, but no external access to it yet.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git for-next
+> (If I want to take a quick look it would personally be easier for me to
+> fetch your git tree than to get those patches out of old email.)
+>
 
-While Liam has his kernel.org account back now he's currently busy
-rennovating his house so I'm still looking after the tree and it seems
-better to host it on kernel.org.
+Will check tomorrow, is it possible to organize it.
 
-Thanks,
-Mark
+> --b.
+>
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
