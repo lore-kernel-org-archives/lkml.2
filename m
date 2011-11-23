@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932647Ab1KWAhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:37:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42612 "EHLO mx2.suse.de"
+	id S932726Ab1KWAgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42586 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932547Ab1KWAhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:37:00 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:58 2011
-Message-Id: <20111123002557.917179781@clark.kroah.org>
+	id S932710Ab1KWAgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:49 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
+Message-Id: <20111123002554.883816835@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:53 -0800
+Date: Tue, 22 Nov 2011 16:25:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [53/53] vmscan: fix shrinker callback bug in fs/super.c
+        alan@lxorguk.ukuu.org.uk,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [21/53] pch_uart: Support new device LAPIS Semiconductor ML7831 IOH
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 
-commit 09f363c7363eb10cfb4b82094bd7064e5608258b upstream.
+commit 8249f743f732ccbc3056428945ab1d9bd36d46bf upstream.
 
-The callback must not return -1 when nr_to_scan is zero. Fix the bug in
-fs/super.c and add this requirement to the callback specification.
+ML7831 is companion chip for Intel Atom E6xx series.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/super.c               |    2 +-
- include/linux/shrinker.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/serial/Kconfig    |   14 +++++++-------
+ drivers/tty/serial/pch_uart.c |    8 ++++++++
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -61,7 +61,7 @@ static int prune_super(struct shrinker *
- 		return -1;
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1570,7 +1570,7 @@ config SERIAL_IFX6X60
+ 	  Support for the IFX6x60 modem devices on Intel MID platforms.
  
- 	if (!grab_super_passive(sb))
--		return -1;
-+		return !sc->nr_to_scan ? 0 : -1;
+ config SERIAL_PCH_UART
+-	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223) UART"
++	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) UART"
+ 	depends on PCI
+ 	select SERIAL_CORE
+ 	help
+@@ -1578,12 +1578,12 @@ config SERIAL_PCH_UART
+ 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+ 	  Enabling PCH_DMA, this PCH UART works as DMA mode.
  
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
- 		fs_objects = sb->s_op->nr_cached_objects(sb);
---- a/include/linux/shrinker.h
-+++ b/include/linux/shrinker.h
-@@ -20,6 +20,7 @@ struct shrink_control {
-  * 'nr_to_scan' entries and attempt to free them up.  It should return
-  * the number of objects which remain in the cache.  If it returns -1, it means
-  * it cannot do any scanning at this time (eg. there is a risk of deadlock).
-+ * The callback must not return -1 if nr_to_scan is zero.
-  *
-  * The 'gfpmask' refers to the allocation we are currently trying to
-  * fulfil.
+-	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+-	  Output Hub), ML7213 and ML7223.
+-	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
+-	  for MP(Media Phone) use.
+-	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
+-	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
++	  This driver also can be used for LAPIS Semiconductor IOH(Input/
++	  Output Hub), ML7213, ML7223 and ML7831.
++	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use, ML7223 IOH is
++	  for MP(Media Phone) use and ML7831 IOH is for general purpose use.
++	  ML7213/ML7223/ML7831 is companion chip for Intel Atom E6xx series.
++	  ML7213/ML7223/ML7831 is completely compatible for Intel EG20T PCH.
+ 
+ config SERIAL_MSM_SMD
+ 	bool "Enable tty device interface for some SMD ports"
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -256,6 +256,8 @@ enum pch_uart_num_t {
+ 	pch_ml7213_uart2,
+ 	pch_ml7223_uart0,
+ 	pch_ml7223_uart1,
++	pch_ml7831_uart0,
++	pch_ml7831_uart1,
+ };
+ 
+ static struct pch_uart_driver_data drv_dat[] = {
+@@ -268,6 +270,8 @@ static struct pch_uart_driver_data drv_d
+ 	[pch_ml7213_uart2] = {PCH_UART_2LINE, 2},
+ 	[pch_ml7223_uart0] = {PCH_UART_8LINE, 0},
+ 	[pch_ml7223_uart1] = {PCH_UART_2LINE, 1},
++	[pch_ml7831_uart0] = {PCH_UART_8LINE, 0},
++	[pch_ml7831_uart1] = {PCH_UART_2LINE, 1},
+ };
+ 
+ static unsigned int default_baud = 9600;
+@@ -1551,6 +1555,10 @@ static DEFINE_PCI_DEVICE_TABLE(pch_uart_
+ 	 .driver_data = pch_ml7223_uart0},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x800D),
+ 	 .driver_data = pch_ml7223_uart1},
++	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8811),
++	 .driver_data = pch_ml7831_uart0},
++	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8812),
++	 .driver_data = pch_ml7831_uart1},
+ 	{0,},
+ };
+ 
 
 
