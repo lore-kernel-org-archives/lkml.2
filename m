@@ -1,46 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1KWSoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 13:44:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53763 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751088Ab1KWSoT (ORCPT
+	id S1755924Ab1KWSw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 13:52:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53813 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab1KWSw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 13:44:19 -0500
-Date: Wed, 23 Nov 2011 18:44:17 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: grant.likely@secretlab.ca, robherring2@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, lrg@ti.com,
-        b-cousson@ti.com, patches@linaro.org, linux-kernel@vger.kernel.org,
-        shawn.guo@freescale.com, linaro-dev@lists.linaro.org, olof@lixom.net
-Subject: Re: [PATCH v5 4/4] regulator: map consumer regulator based on device
- tree
-Message-ID: <20111123184416.GA17587@opensource.wolfsonmicro.com>
-References: <1321615040-13257-1-git-send-email-rnayak@ti.com>
- <1321615040-13257-5-git-send-email-rnayak@ti.com>
+	Wed, 23 Nov 2011 13:52:58 -0500
+Date: Wed, 23 Nov 2011 10:52:39 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/8] mm: memcg: modify PageCgroupAcctLRU non-atomically
+In-Reply-To: <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
+Message-ID: <alpine.LSU.2.00.1111231039390.2175@sister.anvils>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org> <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321615040-13257-5-git-send-email-rnayak@ti.com>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 04:47:20PM +0530, Rajendra Nayak wrote:
+On Wed, 23 Nov 2011, Johannes Weiner wrote:
 
-> +	struct device_node *regnode = NULL;
-> +	char prop_name[32]; /* 32 is max size of property name */
+> From: Johannes Weiner <jweiner@redhat.com>
+> 
+> This bit is protected by zone->lru_lock, there is no need for locked
+> operations when setting and clearing it.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-There ought to be a #define for that though I can't see one right now -
-this can't be the only place where we need to do stuff like this.
+Unless there are special considerations which you have not mentioned at
+all in the description above, this 7/8 and the similar 8/8 are mistaken.
 
-> +
-> +	dev_dbg(dev, "Looking up %s-supply from device tree\n", supply);
-> +
-> +	snprintf(prop_name, 32, "%s-supply", supply);
+The atomic operation is not for guaranteeing the setting and clearing
+of the bit in question: it's for guaranteeing that you don't accidentally
+set or clear any of the other bits in the same word when you're doing so,
+if another task is updating them at the same time as you're doing this.
 
-sizeof().
+There are circumstances when non-atomic shortcuts can be taken, when
+you're sure the field cannot yet be visible to other tasks (we do that
+when setting PageLocked on a freshly allocated page, for example - but
+even then have to rely on others using get_page_unless_zero properly).
+But I don't think that's the case here.
+
+Hugh
+
+> ---
+>  include/linux/page_cgroup.h |   16 ++++++++++++----
+>  mm/memcontrol.c             |    4 ++--
+>  2 files changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index aaa60da..a0bc9d0 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -57,14 +57,23 @@ static inline int PageCgroup##uname(struct page_cgroup *pc)	\
+>  #define SETPCGFLAG(uname, lname)			\
+>  static inline void SetPageCgroup##uname(struct page_cgroup *pc)\
+>  	{ set_bit(PCG_##lname, &pc->flags);  }
+> +#define __SETPCGFLAG(uname, lname)			\
+> +static inline void __SetPageCgroup##uname(struct page_cgroup *pc)\
+> +	{ __set_bit(PCG_##lname, &pc->flags);  }
+>  
+>  #define CLEARPCGFLAG(uname, lname)			\
+>  static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
+>  	{ clear_bit(PCG_##lname, &pc->flags);  }
+> +#define __CLEARPCGFLAG(uname, lname)			\
+> +static inline void __ClearPageCgroup##uname(struct page_cgroup *pc)	\
+> +	{ __clear_bit(PCG_##lname, &pc->flags);  }
+>  
+>  #define TESTCLEARPCGFLAG(uname, lname)			\
+>  static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+>  	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+> +#define __TESTCLEARPCGFLAG(uname, lname)			\
+> +static inline int __TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+> +	{ return __test_and_clear_bit(PCG_##lname, &pc->flags);  }
+>  
+>  /* Cache flag is set only once (at allocation) */
+>  TESTPCGFLAG(Cache, CACHE)
+> @@ -75,11 +84,10 @@ TESTPCGFLAG(Used, USED)
+>  CLEARPCGFLAG(Used, USED)
+>  SETPCGFLAG(Used, USED)
+>  
+> -SETPCGFLAG(AcctLRU, ACCT_LRU)
+> -CLEARPCGFLAG(AcctLRU, ACCT_LRU)
+> +__SETPCGFLAG(AcctLRU, ACCT_LRU)
+> +__CLEARPCGFLAG(AcctLRU, ACCT_LRU)
+>  TESTPCGFLAG(AcctLRU, ACCT_LRU)
+> -TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
+> -
+> +__TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
+>  
+>  SETPCGFLAG(FileMapped, FILE_MAPPED)
+>  CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b9a3b94..51aba19 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -995,7 +995,7 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+>  		/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
+>  		smp_rmb();
+>  		memcg = pc->mem_cgroup;
+> -		SetPageCgroupAcctLRU(pc);
+> +		__SetPageCgroupAcctLRU(pc);
+>  	} else
+>  		memcg = root_mem_cgroup;
+>  	mz = page_cgroup_zoneinfo(memcg, page);
+> @@ -1031,7 +1031,7 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
+>  	 * LRU-accounting happened against pc->mem_cgroup or
+>  	 * root_mem_cgroup.
+>  	 */
+> -	if (TestClearPageCgroupAcctLRU(pc)) {
+> +	if (__TestClearPageCgroupAcctLRU(pc)) {
+>  		VM_BUG_ON(!pc->mem_cgroup);
+>  		memcg = pc->mem_cgroup;
+>  	} else
+> -- 
+> 1.7.6.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
