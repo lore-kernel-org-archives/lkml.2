@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab1KWPXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:23:21 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44378 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab1KWPXU convert rfc822-to-8bit (ORCPT
+	id S1756574Ab1KWPag (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:30:36 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47156 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751974Ab1KWPaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:23:20 -0500
+	Wed, 23 Nov 2011 10:30:35 -0500
+Date: Wed, 23 Nov 2011 15:30:16 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: HW perf initialisation as early_initcall
+Message-ID: <20111123153016.GQ25848@mudshark.cambridge.arm.com>
+References: <20111123145658.GM25848@mudshark.cambridge.arm.com>
+ <1322060889.14799.73.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20111123150810.GO19415@suse.de>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
-	<1321900608-27687-8-git-send-email-mgorman@suse.de>
-	<1321945011.22361.335.camel@sli10-conroe>
-	<CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
-	<20111123110041.GM19415@suse.de>
-	<CAPQyPG588_q1diT8KyPirUD9MLME6SanO-cSw1twzhFiTBWgCw@mail.gmail.com>
-	<20111123134512.GN19415@suse.de>
-	<CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
-	<20111123150810.GO19415@suse.de>
-Date: Wed, 23 Nov 2011 23:23:19 +0800
-Message-ID: <CAPQyPG58cjEQ8jPFhxGB6URcFoNt=NBC1L+T8aEWVUtPfBNh-Q@mail.gmail.com>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
- use by compaction
-From: Nai Xia <nai.xia@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322060889.14799.73.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 11:08 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Wed, Nov 23, 2011 at 10:35:37PM +0800, Nai Xia wrote:
->> On Wed, Nov 23, 2011 at 9:45 PM, Mel Gorman <mgorman@suse.de> wrote:
->> > On Wed, Nov 23, 2011 at 09:05:08PM +0800, Nai Xia wrote:
->> >> > <SNIP>
->> >> >
->> >> > Where are you adding this check?
->> >> >
->> >> > If you mean in __unmap_and_move(), the check is unnecessary unless
->> >> > another subsystem starts using sync-light compaction. With this series,
->> >> > only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
->> >>
->> >> But I am still a little bit confused that if MIGRATE_SYNC_LIGHT is only
->> >> used by direct compaction and  another mode can be used by it:
->> >> MIGRATE_ASYNC also does not write dirty pages, then why not also
->> >> do an (current->flags & PF_MEMALLOC) test before writing out pages,
->> >
->> > Why would it be necessary?
->> > Why would it be better than what is there now?
->>
->> I mean, if
->>    MIGRATE_SYNC_LIGHT --> (current->flags & PF_MEMALLOC) and
->>    MIGRATE_SYNC_LIGHT --> no dirty writeback, and (current->flags & PF_MEMALLOC)
->>                       --> (MIGRATE_SYNC_LIGHT || MIGRATE_ASYNC)
->>    MIGRATE_ASYNC      --> no dirty writeback, then
->> why not simply  (current->flags & PF_MEMALLOC) ---> no dirty writeback
->> and keep the sync meaning as it was?
->>
->
-> Ok, I see what you mean. Instead of making MIGRATE_SYNC_LIGHT part of
-> the API, we could instead special case within migrate.c how to behave if
-> MIGRATE_SYNC && PF_MEMALLOC.
+On Wed, Nov 23, 2011 at 03:08:09PM +0000, Peter Zijlstra wrote:
+> On Wed, 2011-11-23 at 14:56 +0000, Will Deacon wrote:
+> > In commit 004417a6 ("perf, arch: Cleanup perf-pmu init vs lockup-detector"),
+> > you moved the arch hw perf initialisation into an early initcall to satisfy a
+> > race with the NMI lock detector (I'm not clear on what the relationship is).
+> 
+> NMI watchdog uses perf, getting the NMI watchdog up early is good,
+> getting it up before perf is initialized, not so very good :-)
 
-Yeah~
+Ah, ok. We don't use this on ARM so I'm not familiar with it.
 
->
-> This would be functionally equivalent and satisfy THP users
-> but I do not see it as being easier to understand or easier
-> to maintain than updating the API. If someone in the future
-> wanted to use migration without significant stalls without
-> being PF_MEMALLOC, they would need to update the API like this.
-> There are no users like this today but automatic NUMA migration
-> might want to leverage something like MIGRATE_SYNC_LIGHT
-> (http://comments.gmane.org/gmane.linux.kernel.mm/70239)
+> > Anyway, with ARM big/little platforms on the horizon we have the fun of
+> > heterogeneous PMUs in the sense that:
+> > 
+> > 	- They may have different numbers of event counters
+> > 	- They may support different event types (possibly a distinct set)
+> > 	- The event encodings for the generalised events may be different
+> > 
+> > The latter two points I think can be solved in the back-end by making events
+> > affine to a particular PMU type (that is, they are only scheduled when the
+> > profiled task is running on a given PMU type), although I'm not sure how this
+> > will be exposed to userspace yet. It might be nice to register a separate
+> > PMU with perf altogether, but I don't think the userspace tools are there
+> > yet in terms of specifying the destination PMU for an event.
+> 
+> Ow gawd, that's horrid, will you please kick your cpu folks for me.
 
-I see.
-So could I say that might be the time and users for my suggestion of
-page uptodate check to fit into?
+Just keep telling yourself that it makes the software more interesting :)
 
+> > The first point is part of a bigger problem, namely that we can only find
+> > out the PMU topology of the system by probing the device tree. For older
+> > platforms, we will still probe the PMU of the boot CPU by inspecting the ID
+> > registers.
+> 
+> And here I throught DT was up _waaay_ early because its used to bring up
+> the platform itself, do I need to re-educate myself?
 
+Well, I can probably probe the tree manually if I need to, it would just be
+nice to use the same probe function for DT and platform_device
+initialisation.
 
-Thanks,
+> > My question is: does the hw perf initialisation really need to be an
+> > early_initcall and, if so, how much of the perf backend needs to be up and
+> > running? It may be that the early initcall assumes all PMUs are the same and
+> > then later on I go and rewrite things like the number of counters.
+> 
+> I think you can get away with doing it later, since you don't use the
+> NMI watchdog (although if you ever get NMI like functionality you really
+> should).
 
-Nai
->
-> --
-> Mel Gorman
-> SUSE Labs
->
+Ok, thanks. I'm still just thinking my way around the problem but that's
+useful to know.
+
+> > Of course, any ideas regarding the above are more than welcome!
+> 
+> Yeah, I'll try and let it soak in my brain, who knows what it'll come up
+> with ;-)
+
+Cheers. I think a key point to bear in mind is that it doesn't make sense to
+combine event counts from the two PMUs. The microarchitectures are different
+so we want to record them separately, even if the event encoding is the
+same (then you could see how many cycles you spent on big and how many on
+little, for example). An additional software event for cluster switch may
+also be useful.
+
+The main problem I'm having is fitting this into userspace where we probably
+want to specify the PMU for each event and also have some method for
+handling the generic events.
+
+Will
