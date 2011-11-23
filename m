@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab1KWLE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:04:56 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48560 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab1KWLEz (ORCPT
+	id S1752222Ab1KWLFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:05:50 -0500
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:57229 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab1KWLFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:04:55 -0500
-Message-ID: <1322046284.27165.1.camel@phoenix>
-Subject: [PATCH] ARM: tegra: remove declaration of tegra_assert_system_reset
- in board.h
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 23 Nov 2011 19:04:44 +0800
+	Wed, 23 Nov 2011 06:05:49 -0500
+Message-ID: <1322046346.1753.59.camel@x61.thuisdomein>
+Subject: Re: [PATCH] sound: drop support for PlayPaq with WM8510
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 23 Nov 2011 12:05:46 +0100
+In-Reply-To: <20111123102933.GI4332@opensource.wolfsonmicro.com>
+References: <1322041150.1753.25.camel@x61.thuisdomein>
+	 <20111123102933.GI4332@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit b2f745 "ARM: restart: tegra: use new restart hook"
-changed tegra_assert_system_reset to be static but forgot to
-remove the declaration in arch/arm/mach-tegra/board.h.
+On Wed, 2011-11-23 at 10:29 +0000, Mark Brown wrote:
+> Applied, thanks.  Please do always use subject lines which match the
+> subsystem you're submitting against.
 
-Remove the declaration of tegra_assert_system_reset in
-arch/arm/mach-tegra/board.h to fix below build error:
-
-  CC      arch/arm/mach-tegra/common.o
-arch/arm/mach-tegra/common.c:34: error: static declaration of 'tegra_assert_system_reset' follows non-static declaration
-arch/arm/mach-tegra/board.h:26: note: previous declaration of 'tegra_assert_system_reset' was here
-make[1]: *** [arch/arm/mach-tegra/common.o] Error 1
-make: *** [arch/arm/mach-tegra] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I got the build error on linux-next tree.
-This patch is against linux-next 20111123.
-
- arch/arm/mach-tegra/board.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
-index 1d14df7..f159577 100644
---- a/arch/arm/mach-tegra/board.h
-+++ b/arch/arm/mach-tegra/board.h
-@@ -23,8 +23,6 @@
- 
- #include <linux/types.h>
- 
--void tegra_assert_system_reset(char mode, const char *cmd);
--
- void __init tegra_init_early(void);
- void __init tegra_map_common_io(void);
- void __init tegra_init_irq(void);
--- 
-1.7.5.4
+I'll try to do that. But I'm not so familiar with the sound system. What
+actually is the subsystem I should have used here?
 
 
+Paul Bolle
 
