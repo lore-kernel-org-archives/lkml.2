@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab1KWAeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:34:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42208 "EHLO mx2.suse.de"
+	id S932366Ab1KWAe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:34:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42253 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759036Ab1KWAeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:34:06 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:07 2011
-Message-Id: <20111123002207.381859654@clark.kroah.org>
+	id S932310Ab1KWAe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:34:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:08 2011
+Message-Id: <20111123002207.931408601@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:20:54 -0800
+Date: Tue, 22 Nov 2011 16:21:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Graf <tgraf@suug.ch>, Johannes Berg <johannes.berg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [04/25] netlink: validate NLA_MSECS length
+        Dan Williams <dan.j.williams@intel.com>, NeilBrown <neilb@suse.de>
+Subject: [10/25] md/raid5: abort any pending parity operations when array fails.
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +24,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1138
-Lines: 39
+Content-Length: 2351
+Lines: 71
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit c30bc94758ae2a38a5eb31767c1985c0aae0950b upstream.
+commit 9a3f530f39f4490eaa18b02719fb74ce5f4d2d86 upstream.
 
-L2TP for example uses NLA_MSECS like this:
-policy:
-        [L2TP_ATTR_RECV_TIMEOUT]        = { .type = NLA_MSECS, },
-code:
-        if (info->attrs[L2TP_ATTR_RECV_TIMEOUT])
-                cfg.reorder_timeout = nla_get_msecs(info->attrs[L2TP_ATTR_RECV_TIMEOUT]);
+When the number of failed devices exceeds the allowed number
+we must abort any active parity operations (checks or updates) as they
+are no longer meaningful, and can lead to a BUG_ON in
+handle_parity_checks6.
 
-As nla_get_msecs() is essentially nla_get_u64() plus the
-conversion to a HZ-based value, this will not properly
-reject attributes from userspace that aren't long enough
-and might overrun the message.
+This bug was introduce by commit 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
+in 2.6.29.
 
-Add NLA_MSECS to the attribute minlen array to check the
-size properly.
-
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Manish Katiyar <mkatiyar@gmail.com>
+Tested-by: Manish Katiyar <mkatiyar@gmail.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- lib/nlattr.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/raid5.c |   32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -20,6 +20,7 @@ static u16 nla_attr_minlen[NLA_TYPE_MAX+
- 	[NLA_U16]	= sizeof(u16),
- 	[NLA_U32]	= sizeof(u32),
- 	[NLA_U64]	= sizeof(u64),
-+	[NLA_MSECS]	= sizeof(u64),
- 	[NLA_NESTED]	= NLA_HDRLEN,
- };
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3038,12 +3038,16 @@ static void handle_stripe5(struct stripe
+ 	/* check if the array has lost two devices and, if so, some requests might
+ 	 * need to be failed
+ 	 */
+-	if (s.failed > 1 && s.to_read+s.to_write+s.written)
+-		handle_failed_stripe(conf, sh, &s, disks, &return_bi);
+-	if (s.failed > 1 && s.syncing) {
+-		md_done_sync(conf->mddev, STRIPE_SECTORS,0);
+-		clear_bit(STRIPE_SYNCING, &sh->state);
+-		s.syncing = 0;
++	if (s.failed > 1) {
++		sh->check_state = 0;
++		sh->reconstruct_state = 0;
++		if (s.to_read+s.to_write+s.written)
++			handle_failed_stripe(conf, sh, &s, disks, &return_bi);
++		if (s.syncing) {
++			md_done_sync(conf->mddev, STRIPE_SECTORS,0);
++			clear_bit(STRIPE_SYNCING, &sh->state);
++			s.syncing = 0;
++		}
+ 	}
  
+ 	/* might be able to return some write requests if the parity block
+@@ -3314,12 +3318,16 @@ static void handle_stripe6(struct stripe
+ 	/* check if the array has lost >2 devices and, if so, some requests
+ 	 * might need to be failed
+ 	 */
+-	if (s.failed > 2 && s.to_read+s.to_write+s.written)
+-		handle_failed_stripe(conf, sh, &s, disks, &return_bi);
+-	if (s.failed > 2 && s.syncing) {
+-		md_done_sync(conf->mddev, STRIPE_SECTORS,0);
+-		clear_bit(STRIPE_SYNCING, &sh->state);
+-		s.syncing = 0;
++	if (s.failed > 2) {
++		sh->check_state = 0;
++		sh->reconstruct_state = 0;
++		if (s.to_read+s.to_write+s.written)
++			handle_failed_stripe(conf, sh, &s, disks, &return_bi);
++		if (s.syncing) {
++			md_done_sync(conf->mddev, STRIPE_SECTORS,0);
++			clear_bit(STRIPE_SYNCING, &sh->state);
++			s.syncing = 0;
++		}
+ 	}
+ 
+ 	/*
 
 
