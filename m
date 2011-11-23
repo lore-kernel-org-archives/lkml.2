@@ -1,198 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759618Ab1KWB6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:58:22 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45393 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab1KWB6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 20:58:20 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4ECC5328.40406@jp.fujitsu.com>
-Date: Wed, 23 Nov 2011 10:58:00 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1759629Ab1KWB6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:58:33 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63930 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759551Ab1KWB6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 20:58:30 -0500
+Message-ID: <4ECC53B4.5060406@cn.fujitsu.com>
+Date: Wed, 23 Nov 2011 10:00:20 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai.lu@oracle.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] PCI: Make sriov work with hotplug remove
-References: <4E9A3092.4080309@oracle.com> <4E9A3408.9080905@oracle.com> <CAErSpo5XdM+1OFmoU+rN_QNWCJ0Wzv1VwKxsTo9hTq=2=7KEHA@mail.gmail.com> <4E9C6F0E.40501@oracle.com> <CAErSpo7ofdVixyGR74_mc6ND5C3LROiR9PVzwNZaDe23ptJ2=Q@mail.gmail.com> <4E9CAB21.2020302@oracle.com> <CAErSpo4PLDfapndXJp-sXS-SJtv0a7PaD=UKX0HV0OV34an3kQ@mail.gmail.com> <4E9DB11A.7030505@oracle.com> <4EBD8D09.9060903@oracle.com> <4EC35024.8090004@jp.fujitsu.com> <4EC429DC.9020607@oracle.com>
-In-Reply-To: <4EC429DC.9020607@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <htejun@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
+References: <1321480234-29241-1-git-send-email-mhocko@suse.cz> <20111121230709.GR25776@google.com> <4ECB06D2.6060106@cn.fujitsu.com> <20111122022118.GT25776@google.com> <20111122090522.GA26768@tiehlicka.suse.cz> <20111122153948.GE322@google.com> <20111122154748.GF322@google.com>
+In-Reply-To: <20111122154748.GF322@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-23 09:58:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-23 09:58:11,
+	Serialize complete at 2011-11-23 09:58:11
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/11/17 6:23), Yinghai Lu wrote:
-> On 11/15/2011 09:54 PM, Kenji Kaneshige wrote:
->
->> Sorry for the delayed comment.
+Tejun Heo wrote:
+> On Tue, Nov 22, 2011 at 07:39:48AM -0800, Tejun Heo wrote:
+>>> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+>>> Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
+>>> Cc: Paul Menage <paul@paulmenage.org>
+>>> Cc: Li Zefan <lizf@cn.fujitsu.com>
+>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>> Cc: Tejun Heo <htejun@gmail.com>
 >>
->> I don't think allocating new memory for device removal is good idea. And
->> your code doesn't seem to work if memory allocation failed. What about
->> something like below? Note that it is not tested at all, sorry.
->>
->
-> Yes, it should work.
->
-> I updated the patch, use list_entry_for_each directly. also remove VF checking.
->
-> Please check it.
->
-> Thanks
->
-> Yinghai
->
-> Subject: [PATCH -v3] PCI: Make sriov work with hotplug remove
->
-> When hot remove pci express module that have pcie switch and support SRIOV, got
->
-> [ 5918.610127] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 1
-> [ 5918.615779] pciehp 0000:80:02.2:pcie04: Attention button interrupt received
-> [ 5918.622730] pciehp 0000:80:02.2:pcie04: Button pressed on Slot(3)
-> [ 5918.629002] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 1f9
-> [ 5918.637416] pciehp 0000:80:02.2:pcie04: PCI slot #3 - powering off due to button press.
-> [ 5918.647125] pciehp 0000:80:02.2:pcie04: pcie_isr: intr_loc 10
-> [ 5918.653039] pciehp 0000:80:02.2:pcie04: pciehp_green_led_blink: SLOTCTRL a8 write cmd 200
-> [ 5918.661229] pciehp 0000:80:02.2:pcie04: pciehp_set_attention_status: SLOTCTRL a8 write cmd c0
-> [ 5924.667627] pciehp 0000:80:02.2:pcie04: Disabling domain:bus:device=0000:b0:00
-> [ 5924.674909] pciehp 0000:80:02.2:pcie04: pciehp_get_power_status: SLOTCTRL a8 value read 2f9
-> [ 5924.683262] pciehp 0000:80:02.2:pcie04: pciehp_unconfigure_device: domain:bus:dev = 0000:b0:00
-> [ 5924.693976] libfcoe_device_notification: NETDEV_UNREGISTER eth6
-> [ 5924.764979] libfcoe_device_notification: NETDEV_UNREGISTER eth14
-> [ 5924.873539] libfcoe_device_notification: NETDEV_UNREGISTER eth15
-> [ 5924.995209] libfcoe_device_notification: NETDEV_UNREGISTER eth16
-> [ 5926.114407] sxge 0000:b2:00.0: PCI INT A disabled
-> [ 5926.119342] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [ 5926.127189] IP: [<ffffffff81353a3b>] pci_stop_bus_device+0x33/0x83
-> [ 5926.133377] PGD 0
-> [ 5926.135402] Oops: 0000 [#1] SMP
-> [ 5926.138659] CPU 2
-> [ 5926.140499] Modules linked in:
-> ...
-> [ 5926.143754]
-> [ 5926.275823] Call Trace:
-> [ 5926.278267]  [<ffffffff81353a38>] pci_stop_bus_device+0x30/0x83
-> [ 5926.284180]  [<ffffffff81353af4>] pci_remove_bus_device+0x1a/0xba
-> [ 5926.290264]  [<ffffffff81366311>] pciehp_unconfigure_device+0x110/0x17b
-> [ 5926.296866]  [<ffffffff81365dd9>] ? pciehp_disable_slot+0x188/0x188
-> [ 5926.303123]  [<ffffffff81365d6f>] pciehp_disable_slot+0x11e/0x188
-> [ 5926.309206]  [<ffffffff81365e68>] pciehp_power_thread+0x8f/0xe0
-> ...
->
->   +-[0000:80]-+-00.0-[81-8f]--
->   |           +-01.0-[90-9f]--
->   |           +-02.0-[a0-af]--
->   |           +-02.2-[b0-bf]----00.0-[b1-b3]--+-02.0-[b2]--+-00.0 Device
->   |           |                               |            +-00.1 Device
->   |           |                               |            +-00.2 Device
->   |           |                               |            \-00.3 Device
->   |           |                               \-03.0-[b3]--+-00.0 Device
->   |           |                                            +-00.1 Device
->   |           |                                            +-00.2 Device
->   |           |                                            \-00.3 Device
->
-> root complex: 80:02.2
-> pci express modules: have pcie switch and are listed as b0:00.0, b1:02.0 and b1:03.0.
->                  end devices  are b2:00.0 and b3.00.0.
->                  VFs are: b2:00.1,... b2:00.3, and b3:00.1,...,b3:00.3
->
-> Root cause: when doing pci_stop_bus_device() with phys fn, it will stop virt fn and
-> remove the fn, so
-> 	list_for_each_safe(l, n,&bus->devices)
-> will have problem to refer freed n that is pointed to vf entry.
->
-> Solution is just replacing list_for_each_safe() with list_for_each().
-> 	pci_stop_bus_device(dev) will not remove dev from bus->devices list,
-> 	so We only need use for_each here.
->
-> During reviewing the patch, Bjorn said:
-> |   The PCI hot-remove path calls pci_stop_bus_devices() via
-> |   pci_remove_bus_device().
-> |
-> |   pci_stop_bus_devices() traverses the bus->devices list (point A below),
-> |   stopping each device in turn, which calls the driver remove() method.  When
-> |   the device is an SR-IOV PF, the driver calls pci_disable_sriov(), which
-> |   also uses pci_remove_bus_device() to remove the VF devices from the
-> |   bus->devices list (point B).
-> |
-> |       pci_remove_bus_device
-> |         pci_stop_bus_device
-> |           pci_stop_bus_devices(subordinate)
-> |             list_for_each(bus->devices)<-- A
-> |               pci_stop_bus_device(PF)
-> |                 ...
-> |                   driver->remove
-> |                     pci_disable_sriov
-> |                       ...
-> |                         pci_remove_bus_device(VF)
-> |<remove from bus_list>   <-- B
-> |
-> |   At B, we're changing the same list we're iterating through at A, so when
-> |   the driver remove() method returns, the pci_stop_bus_devices() iterator has
-> |   a pointer to a list entry that has already been freed.
->
-> Discussion thread can be found : https://lkml.org/lkml/2011/10/15/141
->
-> -v2: updated changelog.
-> -v3: According to Kenji, do not allocate another list for PF.
->       Also We don't need to check dev->is_virtfn anymore, because PF should come first
-> 	in the list, and even VF come first, it is still ok.
+>> Applying to cgroup/for-3.2-fixes.
+> 
+> I'll apply the original version in cgroup/for-3.2-fixes and deal with
+> conflict once pm-freezer branch is merged.  Li, can you please ack
+> this?
+> 
 
-I think we should not have an assumption that PF comes first in
-the list. So I think dev->is_virtfn check is needed.
+Sure.
 
-On the other hand, if we add the dev->is_virtfn check,
-pci_stop_bus_devices() doesn't work for buses whose &bus->devices
-list have only VFs(, though I think pci_stop_bus_devices() is not
-used for this kind of bus currently). How about adding the
-pci_stop_bus_device() loop for VFs after the loop for PFs, as you
-did in your first try?
-
->
-> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
->
-> ---
->   drivers/pci/remove.c |   17 +++++++++++++++--
->   1 file changed, 15 insertions(+), 2 deletions(-)
->
-> Index: linux-2.6/drivers/pci/remove.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/remove.c
-> +++ linux-2.6/drivers/pci/remove.c
-> @@ -122,11 +122,24 @@ void pci_remove_behind_bridge(struct pci
->
->   static void pci_stop_bus_devices(struct pci_bus *bus)
->   {
-> -	struct list_head *l, *n;
-> +	struct list_head *l;
->
-> -	list_for_each_safe(l, n,&bus->devices) {
-> +	/*
-> +	 * pci_stop_bus_device(dev) will not remove dev from bus->devices list,
-> +	 *  so We don't need use _safe version for_each here.
-> +	 * Also _safe version has problem when pci_stop_bus_device() for PF try
-> +	 *  to remove VFs.
-> +	 */
-> +	list_for_each(l,&bus->devices) {
->   		struct pci_dev *dev = pci_dev_b(l);
->   		pci_stop_bus_device(dev);
-> +		/*
-> +		 * VFs are removed by pci_remove_bus_device() in the
-> +		 *  pci_stop_bus_devices() code path for PF.
-> +		 *  aka, bus->devices get updated in the process.
-> +		 * barrier() will make sure we get right next from that list.
-> +		 */
-> +		barrier();
-
-I think we should not use list_for_each() because
-
-   - difficult to understand the intention of the barrier().
-   - might not work if list_for_each() implementation were changed.
-
-Regards,
-Kenji Kaneshige
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
