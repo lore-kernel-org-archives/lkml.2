@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759457Ab1KWAmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:42:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43007 "EHLO mx2.suse.de"
+	id S1759509Ab1KWAr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:47:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43013 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759388Ab1KWAmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:42:03 -0500
+	id S1759446Ab1KWAmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:42:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:08 2011
-Message-Id: <20111123002408.543810251@clark.kroah.org>
+Message-Id: <20111123002408.631967363@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:49 -0800
+Date: Tue, 22 Nov 2011 16:23:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, sordna <sordna@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [42/53] USB: quirks: adding more quirky webcams to avoid squeaky audio
+        alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
+        Ajeet Yadav <ajeet.yadav.77@gmail.com>, Alex Elder <aelder@sgi.com>
+Subject: [43/53] xfs: fix error handling for synchronous writes
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: sordna <sordna@gmail.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 0d145d7d4a241c321c832a810bb6edad18e2217b upstream.
+If removed storage while synchronous buffer write underway,
+"xfslogd" hangs.
 
-The following patch contains additional affected webcam models, on top of the
-patches commited to linux-next 2394d67e446bf616a0885167d5f0d397bdacfdfc
-and 5b253d88cc6c65a23cefc457a5a4ef139913c5fc
+Detailed log http://oss.sgi.com/archives/xfs/2011-07/msg00740.html
 
-Signed-off-by: sordna <sordna@gmail.com>
-Cc: Oliver Neukum <oliver@neukum.org>
+Related work bfc60177f8ab509bc225becbb58f7e53a0e33e81
+"xfs: fix error handling for synchronous writes"
+
+Given that xfs_bwrite actually does the shutdown already after
+waiting for the b_iodone completion and given that we actually
+found that calling xfs_force_shutdown from inside
+xfs_buf_iodone_callbacks was a major contributor the problem
+it better to drop this call.
+
+Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/usb/core/quirks.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ fs/xfs/xfs_buf_item.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -56,12 +56,36 @@ static const struct usb_device_id usb_qu
- 	/* Logitech Webcam Pro 9000 */
- 	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/fs/xfs/xfs_buf_item.c
++++ b/fs/xfs/xfs_buf_item.c
+@@ -1023,7 +1023,6 @@ xfs_buf_iodone_callbacks(
+ 	XFS_BUF_UNDELAYWRITE(bp);
  
-+	/* Logitech Webcam C905 */
-+	{ USB_DEVICE(0x046d, 0x080a), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C210 */
-+	{ USB_DEVICE(0x046d, 0x0819), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C260 */
-+	{ USB_DEVICE(0x046d, 0x081a), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Webcam C310 */
- 	{ USB_DEVICE(0x046d, 0x081b), .driver_info = USB_QUIRK_RESET_RESUME },
+ 	trace_xfs_buf_error_relse(bp, _RET_IP_);
+-	xfs_force_shutdown(mp, SHUTDOWN_META_IO_ERROR);
  
-+	/* Logitech Webcam C910 */
-+	{ USB_DEVICE(0x046d, 0x0821), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C160 */
-+	{ USB_DEVICE(0x046d, 0x0824), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Webcam C270 */
- 	{ USB_DEVICE(0x046d, 0x0825), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Logitech Quickcam Pro 9000 */
-+	{ USB_DEVICE(0x046d, 0x0990), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Quickcam E3500 */
-+	{ USB_DEVICE(0x046d, 0x09a4), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Quickcam Vision Pro */
-+	{ USB_DEVICE(0x046d, 0x09a6), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Harmony 700-series */
- 	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
- 
+ do_callbacks:
+ 	xfs_buf_do_callbacks(bp);
 
 
