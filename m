@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab1KWHm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:42:56 -0500
-Received: from home.keithp.com ([63.227.221.253]:49228 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752816Ab1KWHmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:42:55 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: David Woodhouse <dwmw2@infradead.org>, dri-devel@lists.freedesktop.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: Bisected regression: hang on i915 between 3.1.0-rc9 and 3.1.0
-In-Reply-To: <alpine.SOC.1.00.1111230911390.12655@math.ut.ee>
-References: <alpine.SOC.1.00.1111221207090.6490@math.ut.ee> <alpine.SOC.1.00.1111221306410.8925@math.ut.ee> <86vcqcf3da.fsf@sumi.keithp.com> <alpine.SOC.1.00.1111230911390.12655@math.ut.ee>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 22 Nov 2011 23:42:56 -0800
-Message-ID: <86obw3e133.fsf@sumi.keithp.com>
+	id S1759578Ab1KWHpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:45:13 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:38615 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab1KWHpL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 02:45:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+In-Reply-To: <1321960128-15191-6-git-send-email-gilad@benyossef.com>
+References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+	<1321960128-15191-6-git-send-email-gilad@benyossef.com>
+Date: Wed, 23 Nov 2011 09:45:10 +0200
+X-Google-Sender-Auth: aYfzD292Oz3C6mPKp5vZQx04rDY
+Message-ID: <CAOJsxLG1dCkUb=_08Sry+p8X6LzjFjA8wgoFmHL=xexJfQTUxg@mail.gmail.com>
+Subject: Re: [PATCH v4 5/5] mm: Only IPI CPUs to drain local pages if they exist
+From: Pekka Enberg <penberg@kernel.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 22, 2011 at 1:08 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+> Calculate a cpumask of CPUs with per-cpu pages in any zone and only send an IPI requesting CPUs to drain these pages to the buddy allocator if they actually have pages when asked to flush.
+>
+> The code path of memory allocation failure for CPUMASK_OFFSTACK=y config was tested using fault injection framework.
+>
+> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
+> CC: Chris Metcalf <cmetcalf@tilera.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: linux-mm@kvack.org
+> CC: Pekka Enberg <penberg@kernel.org>
+> CC: Matt Mackall <mpm@selenic.com>
+> CC: Sasha Levin <levinsasha928@gmail.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Andi Kleen <andi@firstfloor.org>
 
-On Wed, 23 Nov 2011 09:28:52 +0200 (EET), Meelis Roos <mroos@linux.ee> wrot=
-e:
+I'm adding Mel and Andrew to CC.
 
-> Yes, VT-x and VT-d are both enabled from BIOS setup.
+> ---
+>  mm/page_alloc.c |   18 +++++++++++++++++-
+>  1 files changed, 17 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 9dd443d..a3efdf1 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1119,7 +1119,23 @@ void drain_local_pages(void *arg)
+>  */
+>  void drain_all_pages(void)
+>  {
+> -       on_each_cpu(drain_local_pages, NULL, 1);
+> +       int cpu;
+> +       struct zone *zone;
+> +       cpumask_var_t cpus;
+> +       struct per_cpu_pageset *pcp;
+> +
+> +       if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
 
-Any reason for that? We've found all kinds of problems with DMAR enabled
-on these machines that is only resolved by completely turning it
-off. You might try with intel_iommu=3Doff and make sure that's stable.
+__GFP_NOWARN
 
-=2D-=20
-keith.packard@intel.com
+> +               for_each_online_cpu(cpu) {
+> +                       for_each_populated_zone(zone) {
+> +                               pcp = per_cpu_ptr(zone->pageset, cpu);
+> +                               if (pcp->pcp.count)
+> +                                       cpumask_set_cpu(cpu, cpus);
+> +               }
+> +       }
+> +               on_each_cpu_mask(cpus, drain_local_pages, NULL, 1);
+> +               free_cpumask_var(cpus);
+> +       } else
+> +               on_each_cpu(drain_local_pages, NULL, 1);
+>  }
+>
+>  #ifdef CONFIG_HIBERNATION
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTsykADYtFsjWk68qAQjnnhAAsK0o+vB01L++73j0ub/hKMfQF76W0l46
-I+EPKLq+CBRYnWgqGSYSEy+U8BXyIQLCXidce8ZvaWR1pJx50Ai5aCov/NIDemQ5
-aVAA6b4nvjpFAqxSsl+5QQ+i3eaXmcOsx3zids5IgB4dorf+4To7mb3MGqORkUl8
-+AmRnlXQZbDM5YTC8uEjF+SRIzpatq0GA7KYDPf4Q3/eOX5NTCqQ0K7o37BqWbUI
-myqMV/+FKJ0JHu220BZf2Es4xEWR7D206sUY+GBZbOQEHtmHasr2WI/Zw+KrY4Sn
-9HHHASrw5tTp6GkllZESV0cHeKVOPzfRjlXLMbwi4ZATldDl/n/08z1qqu30DTMU
-DiVYVilB4uRqu0PkLFC6mAjQKHGpVUjHKMOtQc7ZVzXu4osd1ifWcZS+b5rU4bZ0
-c+9YjvjcBuGJac11nGjqZ0lGZ9tTmjmkKo1dUgA8dXsQiC/I1P0lAeLEGTKVtlOt
-pm1lL6eBSAPydcHdz31QBb9rDzu752V+EiFtYBFHR59DRNE4hlIQJi2fNKDxmWmx
-mFPEAKpODmTaqcb0LcuHtnnnVHgjyKLJmY++4mLTeh1AKmH4o5akB3oFhe+z+Lpq
-GV7e3YiSSMjzhgvpScjIWx5b64/c6m1yG+QZyhLbNkC7XtfPcuY/GBCm9IMyIV0u
-YVaPKCgt94k=
-=8kab
------END PGP SIGNATURE-----
---=-=-=--
+Acked-by: Pekka Enberg <penberg@kernel.org>
