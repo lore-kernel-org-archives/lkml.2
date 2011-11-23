@@ -1,45 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab1KWXQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 18:16:03 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37030 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab1KWXQA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 18:16:00 -0500
-Date: Wed, 23 Nov 2011 15:15:57 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, Christian Kujau <lists@nerdbynature.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Alex,Shi" <alex.shi@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Matt Mackall <mpm@selenic.com>,
-        netdev@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: slub: use irqsafe_cpu_cmpxchg for put_cpu_partial
-In-Reply-To: <alpine.DEB.2.00.1111230907330.16139@router.home>
-Message-ID: <alpine.DEB.2.00.1111231515250.24794@chino.kir.corp.google.com>
-References: <20111121131531.GA1679@x4.trippels.de> <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111121161036.GA1679@x4.trippels.de> <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121173556.GA1673@x4.trippels.de> <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111121185215.GA1673@x4.trippels.de> <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop> <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
- <alpine.DEB.2.00.1111212105330.19606@router.home> <1321948113.27077.24.camel@edumazet-laptop> <1321999085.14573.2.camel@pasglop> <alpine.DEB.2.01.1111221511070.8000@trent.utfs.org> <1322007501.14573.15.camel@pasglop> <alpine.DEB.2.01.1111222145470.8000@trent.utfs.org>
- <CAOJsxLGWTRuwQ04Mg26fNhZEmo7yVXG5vSZgF7Q5GESCk65odA@mail.gmail.com> <alpine.DEB.2.00.1111230907330.16139@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753443Ab1KWXcs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 18:32:48 -0500
+Received: from trinity.fluff.org ([89.16.178.74]:44043 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab1KWXcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 18:32:47 -0500
+Date: Wed, 23 Nov 2011 23:32:38 +0000
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Nikolaus Voss <n.voss@weinmann.de>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ben-linux@fluff.org,
+        carsten.behling@garz-fricke.com
+Subject: Re: [PATCH v7 0/5] AT91: replace broken TWI driver i2c-at91.c
+Message-ID: <20111123233238.GL19115@trinity.fluff.org>
+References: <cover.1322062555.git.n.voss@weinmann.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1322062555.git.n.voss@weinmann.de>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011, Christoph Lameter wrote:
 
-> Subject: slub: use irqsafe_cpu_cmpxchg for put_cpu_partial
+On Wed, Nov 23, 2011 at 04:35:55PM +0100, Nikolaus Voss wrote:
+> The old driver has two main deficencies:
+> i)  No repeated start (Sr) condiction is possible, this makes it unusable
+>     e.g. for most SMBus transfers.
+> ii) I/O was done with polling/busy waiting what caused over-/underruns
+>     even at light system loads and clock speeds.
 > 
-> The cmpxchg must be irq safe. The fallback for this_cpu_cmpxchg only
-> disables preemption which results in per cpu partial page operation
-> potentially failing on non x86 platforms.
+> The new driver overcomes these deficencies and in addition allows for
+> more than one TWI interface.
 > 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> A remaining limitation is the fact, that only one repeated start is
+> possible (two concatenated messages). This limitation is imposed by
+> the hardware. However, this should not be a problem as all common
+> i2c-client communication does not rely on more than one repeated start.
+> 
+> v7: Patch 4/5: i)  fix bug if internal address > 1 byte
+>                ii) send stop when len == 1
+>                    (both reported by Carsten Behling)
+> v6: Patch 5/5: support for I2C_SMBUS_BLOCK_DATA transfers.
+>     Better use of clk_(un)prepare().
+>     More sensible transfer timeout.
+> v5: Another round of review comments from Ryan Mallon, Felipe Balbi
+>     and Russell King: convert twi clk to use .dev_id, cleanups
+> v4: Integrated more review comments from Ryan Mallon and Felipe Balbi:
+>     Moved register include file to local include, code cleanups
+> v3: Integrated review comments from Ryan Mallon and Felipe Balbi
+> v2: Fixed whitespace issue
+> 
+> Nikolaus Voss (5):
+>   drivers/i2c/busses/i2c-at91.c: remove broken driver
+>   Replace clk_lookup.con_id with clk_lookup.dev_id entries for twi clk
+>   drivers/i2c/busses/i2c-at91.c: add new driver
+>   G45 TWI: remove open drain setting for twi function gpios
+>   i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
 
-Acked-by: David Rientjes <rientjes@google.com>
+Is the original driver so broken that the two could not co-exist, or are
+we making so many changes that there's no point in keeping the original
+one?
+ 
+>  arch/arm/mach-at91/at91cap9.c              |    1 +
+>  arch/arm/mach-at91/at91rm9200.c            |    1 +
+>  arch/arm/mach-at91/at91sam9260.c           |    1 +
+>  arch/arm/mach-at91/at91sam9261.c           |    1 +
+>  arch/arm/mach-at91/at91sam9263.c           |    1 +
+>  arch/arm/mach-at91/at91sam9g45.c           |    2 +
+>  arch/arm/mach-at91/at91sam9g45_devices.c   |    6 -
+>  arch/arm/mach-at91/at91sam9rl.c            |    2 +
+>  arch/arm/mach-at91/include/mach/at91_twi.h |   68 ----
+>  drivers/i2c/busses/Kconfig                 |   11 +-
+>  drivers/i2c/busses/i2c-at91.c              |  529 +++++++++++++++++-----------
+>  drivers/i2c/busses/i2c-at91.h              |   80 +++++
+>  12 files changed, 408 insertions(+), 295 deletions(-)
+>  delete mode 100644 arch/arm/mach-at91/include/mach/at91_twi.h
+>  create mode 100644 drivers/i2c/busses/i2c-at91.h
+> 
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+
+Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+
