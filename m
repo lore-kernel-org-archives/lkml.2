@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab1KWIQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:16:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45855 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab1KWIQv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:16:51 -0500
+	id S1758799Ab1KWITK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:19:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576Ab1KWITI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:19:08 -0500
+Date: Wed, 23 Nov 2011 10:20:21 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Jean-Francois Dagenais <jeff.dagenais@gmail.com>, Greg KH <gregkh@suse.de>,
+        tglx@linutronix.de, linux-pci@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: extra large DMA buffer for PCI-E device under UIO
+Message-ID: <20111123082020.GA22734@redhat.com>
+References: <9E9C8A95-723C-427A-AD01-17284EDF7E4F@gmail.com>
+ <20111121173620.GA5028@suse.de>
+ <20111121181724.GB12011@local>
+ <4498E0C9-B5E9-44B5-8868-140D6416100E@gmail.com>
+ <20111122153525.GB17268@redhat.com>
+ <40906F5E-5E97-44CF-AB95-40355204B63F@gmail.com>
+ <20111122173722.GA29068@redhat.com>
+ <20111122175402.GC15508@local>
+ <20111122184040.GB5235@redhat.com>
+ <20111122185244.GD15508@local>
 MIME-Version: 1.0
-In-Reply-To: <1322035395.1298.50.camel@edumazet-laptop>
-References: <CACna6ryTdLcWVYgHu=_mRFga1sFivpE_DyZOY-HMmKggkWAJAw@mail.gmail.com>
-	<CACna6rwDjqwypAr_03NEA=x8J_2DpL2LjgSMiQmLHHGv3AA7GA@mail.gmail.com>
-	<1322035395.1298.50.camel@edumazet-laptop>
-Date: Wed, 23 Nov 2011 09:16:49 +0100
-Message-ID: <CACna6rzwsLGWXCwn9uuUBmA_nvNN2C_KRyaOoDWT47V+qB=96A@mail.gmail.com>
-Subject: Re: [3.1-rc8 REGRESSION] sky2 hangs machine on turning off or suspending
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122185244.GD15508@local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 23 listopada 2011 09:03 użytkownik Eric Dumazet
-<eric.dumazet@gmail.com> napisał:
-> Le mercredi 23 novembre 2011 à 08:43 +0100, Rafał Miłecki a écrit :
->
->> The bug was resolved by:
->> sky2: fix hang in napi_disable
->>
->> Stephen, two comments to you:
->>
->> 1) I really hoped to get some info about resolving this issue. You
->> could just ping me that something worth testing was posted.
->>
->
-> I agree 100%, I am verry sorry this happened.
->
-> Stephen, we must show toal respect to bug reporters, they do their part
-> of the job.
->
-> We need more bug reports :)
->
-> A "Reported-by:" tag is mandatory, not counting a CC on mails
->
-> As Rafal spent incredible time to bisect the bug, another tag is welcome
-> as well :
->
-> "Bisected-by:" ...
->
-> This takes maybe 20 seconds, while the bug fix took far more...
+On Tue, Nov 22, 2011 at 07:52:45PM +0100, Hans J. Koch wrote:
+> On Tue, Nov 22, 2011 at 08:40:40PM +0200, Michael S. Tsirkin wrote:
+> > On Tue, Nov 22, 2011 at 06:54:02PM +0100, Hans J. Koch wrote:
+> > > On Tue, Nov 22, 2011 at 07:37:23PM +0200, Michael S. Tsirkin wrote:
+> > > [...]
+> > > > > Or am I better off with a UIO solution?
+> > > > 
+> > > > You should probably write a proper kernel driver, not a UIO one.
+> > > > your kernel driver would have to prevent the device fom DMA into memory
+> > > > outside the allocated range, even if userspace is malicious.
+> > > > That's why UIO is generally not recommended for PCI devices that do DMA.
+> > > 
+> > > When UIO was designed, the main goal was the ability to handle interrupts
+> > > from userspace. There was no requirement for DMA. In fact, in five years I
+> > > didn't get one real world device on my desk that needed it. That doesn't
+> > > mean there are no such devices. Adding DMA support to the UIO core was
+> > > discussed several times but noone ever did it. Ideas are still welcome...
+> > > 
+> > > If parts of the driver should be in userspace, you should really try
+> > > to extend the UIO core instead of re-implementing UIO functionality in
+> > > a "proper kernel driver".
+> > > 
+> > > Thanks,
+> > > Hans
+> > 
+> > Right, I really meant put all of the driver in the kernel.
+> > If parts are in userspace, and device can do DMA,
+> > you are faced with the problem as userspace suddenly
+> > can access arbitrary memory through the device.
+> 
+> That's nothing UIO specific. You have the same problem with /dev/mem
+> or graphic cards. If you're root, you can do lots of things that can
+> compromise security or crash your system.
+> 
+> Thanks,
+> Hans
 
-Nice we agree, thanks :) You know, it can be a little confusing when
-you don't get any feedback for almost 2 weeks.
-
-
->> 2) Update your e-mail address in MAINTAINERS please.
->>
->
-> What do you mean, it seems OK to me (Stephen Hemminger
-> <shemminger@vyatta.com>) ?
-
-Ah, so it was already updated, OK :)
-
-In some linville's tree I saw address at linux-foundation.org domain
-which doesn't work.
-
-
-Thanks for your work and for the driver! :)
+With an appropriate security policy, you might not be able to,
+or your attempt to do so might be logged. Even without, people
+can use permissions to give non-root access to devices.
+One doesn't normally expect chown mst /dev/foobar
+to give mst full root on a box.
 
 -- 
-Rafał
+MST
