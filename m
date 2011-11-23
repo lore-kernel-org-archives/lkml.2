@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab1KWLzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:55:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59506 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab1KWLzi convert rfc822-to-8bit (ORCPT
+	id S1754394Ab1KWL4B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:56:01 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56886 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120Ab1KWLz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:55:38 -0500
-Message-ID: <1322049330.14799.43.camel@twins>
-Subject: Re: [patch 4/7] sched: convert rq->avg_idle to rq->avg_event
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Wed, 23 Nov 2011 12:55:30 +0100
-In-Reply-To: <1321971751.6855.19.camel@marge.simson.net>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1321629441.7080.15.camel@marge.simson.net>
-	 <1321630552.2197.15.camel@twins>
-	 <1321971445.6855.14.camel@marge.simson.net>
-	 <1321971751.6855.19.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Wed, 23 Nov 2011 06:55:59 -0500
+Date: Wed, 23 Nov 2011 12:55:55 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Carsten Emde <C.Emde@osadl.org>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>, kernel@pengutronix.de
+Subject: Re: [ANNOUNCE] 3.0.10-rt27
+Message-ID: <20111123115555.GN19986@pengutronix.de>
+References: <1322010805.20742.40.camel@frodo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1322010805.20742.40.camel@frodo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 15:22 +0100, Mike Galbraith wrote:
-> We update rq->clock only at points of interest to the scheduler.
-> Using this distance has the same effect as measuring idle time
-> for idle_balance() throttling, and allows other uses as well. 
+Hello,
 
-I'm not sure I follow, suppose we're happily context switching away, how
-is the avg distance between context switches related to idle time?
+On Tue, Nov 22, 2011 at 08:13:25PM -0500, Steven Rostedt wrote:
+> I'm please to announce the 3.0.10-rt27 stable release.
+As Debian unstable already switched to 3.1 I provided this release on a
+Pengutronix server.
+
+If you want it, you can just add
+
+	deb http://debian.pengutronix.de/debian sid main
+
+to your apt's sources list and after an list update install
+
+	linux-image-3.0.0-2-rt-amd64
+
+(and pengutronix-archive-keyring if you're embarrassed by the warnings
+about untrusted sources).
+
+Alternatively just download
+
+	http://debian.pengutronix.de/debian/pool/main/l/linux-2.6/linux-image-3.0.0-2-rt-amd64_3.0.0-6ptx3_amd64.deb
+
+and install it using dpkg.
+
+Version 3.0.0-6ptx3 includes 3.0.10-rt27 (well in fact it's 3.0.9-rt26 +
+3.0.10, but the result is the same).
+
+It should integrate well with a squeeze system, but note that I only
+tested it lightly. If you have any problems or suggestions free to
+report them to me via this list.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
