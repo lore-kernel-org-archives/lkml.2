@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab1KWG7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:59:43 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48048 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758635Ab1KWG7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:59:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.01.1111222145470.8000@trent.utfs.org>
-References: <20111121131531.GA1679@x4.trippels.de>
-	<1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121153621.GA1678@x4.trippels.de>
-	<1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121161036.GA1679@x4.trippels.de>
-	<1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121173556.GA1673@x4.trippels.de>
-	<1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121185215.GA1673@x4.trippels.de>
-	<20111121195113.GA1678@x4.trippels.de>
-	<1321907275.13860.12.camel@pasglop>
-	<alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-	<alpine.DEB.2.00.1111212105330.19606@router.home>
-	<1321948113.27077.24.camel@edumazet-laptop>
-	<1321999085.14573.2.camel@pasglop>
-	<alpine.DEB.2.01.1111221511070.8000@trent.utfs.org>
-	<1322007501.14573.15.camel@pasglop>
-	<alpine.DEB.2.01.1111222145470.8000@trent.utfs.org>
-Date: Wed, 23 Nov 2011 08:59:40 +0200
-X-Google-Sender-Auth: VR5i2PMQO4UJ0SEsm7GK3E0Ofmk
-Message-ID: <CAOJsxLGWTRuwQ04Mg26fNhZEmo7yVXG5vSZgF7Q5GESCk65odA@mail.gmail.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Pekka Enberg <penberg@kernel.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758376Ab1KWHBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:01:37 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8690 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab1KWHBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 02:01:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="79083119"
+From: Lin Ming <ming.m.lin@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH v3 1/6] ata: make ata port as parent device of scsi host
+Date: Wed, 23 Nov 2011 15:01:21 +0800
+Message-Id: <1322031686-28233-2-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1322031686-28233-1-git-send-email-ming.m.lin@intel.com>
+References: <1322031686-28233-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/23 Christian Kujau <lists@nerdbynature.de>:
-> OK, with Christoph's patch applied, 3.2.0-rc2-00274-g6fe4c6d-dirty survives
-> on this machine, with the disk & cpu workload that caused the machine to
-> panic w/o the patch. Load was at 4-5 this time, which is expected for this
-> box. I'll run a few more tests later on, but it seems ok for now.
->
-> I couldn't resist and ran "slabinfo" anyway (after the workload!) - the
-> box survived, nothing was printed in syslog either. Output attached.
+Currently, the device tree of ata port and scsi host looks as below,
 
-Christoph, Eric, would you mind sending me the final patches that
-Christian tested? Maybe CC David too for extra pair of eyes.
+        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+        |-- ata1                                (ata port)
+        |-- host0                               (scsi host)
+           |-- target0:0:0                      (scsi target)
+               |-- 0:0:0:0                      (disk)
 
-                                Pekka
+This patch makes ata port as parent device of scsi host, then it becomes
+
+        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+        |-- ata1                                (ata port)
+            |-- host0                           (scsi host)
+                |-- target0:0:0                 (scsi target)
+                    |-- 0:0:0:0                 (disk)
+
+With this change, the ata port runtime PM is easier.
+For example, the ata port runtime suspend will happen as,
+
+disk suspend --> scsi target suspend --> scsi host suspend --> ata port
+suspend.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/ata/libata-scsi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 2a5412e..7ae1e77 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3398,7 +3398,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
+ 		 */
+ 		shost->max_host_blocked = 1;
+ 
+-		rc = scsi_add_host(ap->scsi_host, ap->host->dev);
++		rc = scsi_add_host(ap->scsi_host, &ap->tdev);
+ 		if (rc)
+ 			goto err_add;
+ 	}
+-- 
+1.7.2.5
+
