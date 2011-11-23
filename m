@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab1KWAeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:34:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42237 "EHLO mx2.suse.de"
+	id S932384Ab1KWAef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:34:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42263 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932310Ab1KWAeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:34:20 -0500
+	id S932365Ab1KWAe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:34:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:07 2011
-Message-Id: <20111123002207.735751460@clark.kroah.org>
+Message-Id: <20111123002207.094973608@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:20:58 -0800
+Date: Tue, 22 Nov 2011 16:20:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Jones <davej@redhat.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [08/25] kbuild: Disable -Wunused-but-set-variable for gcc 4.6.0
+        Petr Uzel <petr.uzel@suse.cz>,
+        =?UTF-8?q?Kai=20M=C3=A4kisara?= <kai.makisara@kolumbus.fi>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [01/25] [SCSI] st: fix race in st_scsi_execute_end
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 983
-Lines: 33
+Content-Length: 1355
+Lines: 44
 
-From: Dave Jones <davej@redhat.com>
+From: Petr Uzel <petr.uzel@suse.cz>
 
-commit af0e5d565d2fffcd97d1e2d89669d627cc04e8b8 upstream.
+commit c68bf8eeaa57c852e74adcf597237be149eef830 upstream.
 
-Disable the new -Wunused-but-set-variable that was added in gcc 4.6.0
-It produces more false positives than useful warnings.
+The call to complete() in st_scsi_execute_end() wakes up sleeping thread
+in write_behind_check(), which frees the st_request, thus invalidating
+the pointer to the associated bio structure, which is then passed to the
+blk_rq_unmap_user(). Fix by storing pointer to bio structure into
+temporary local variable.
 
-This can still be enabled using W=1
-[gregkh - No it can not for 2.6.32, but we don't care]
+This bug is present since at least linux-2.6.32.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-Tested-by: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
+Reported-by: Juergen Groß <juergen.gross@ts.fujitsu.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Acked-by: Kai Mäkisara <kai.makisara@kolumbus.fi>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Makefile |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/st.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/Makefile
-+++ b/Makefile
-@@ -537,6 +537,9 @@ ifndef CONFIG_CC_STACKPROTECTOR
- KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
- endif
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -461,14 +461,16 @@ static void st_scsi_execute_end(struct r
+ {
+ 	struct st_request *SRpnt = req->end_io_data;
+ 	struct scsi_tape *STp = SRpnt->stp;
++	struct bio *tmp;
  
-+# This warning generated too much noise in a regular build.
-+KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
-+
- ifdef CONFIG_FRAME_POINTER
- KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
- else
+ 	STp->buffer->cmdstat.midlevel_result = SRpnt->result = req->errors;
+ 	STp->buffer->cmdstat.residual = req->resid_len;
+ 
++	tmp = SRpnt->bio;
+ 	if (SRpnt->waiting)
+ 		complete(SRpnt->waiting);
+ 
+-	blk_rq_unmap_user(SRpnt->bio);
++	blk_rq_unmap_user(tmp);
+ 	__blk_put_request(req->q, req);
+ }
+ 
 
 
