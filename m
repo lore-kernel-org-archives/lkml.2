@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab1KWK4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:56:24 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:16770
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752654Ab1KWK4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:56:22 -0500
-X-SpamScore: -13
-X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LV411Q-01-2KM-02
-X-M-MSG: 
-Date: Wed, 23 Nov 2011 11:56:12 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Chris Wright <chrisw@sous-sol.org>
-CC: Joerg Roedel <joro@8bytes.org>, <linux-pci@vger.kernel.org>,
-        <dwmw2@infradead.org>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
- iommu groups
-Message-ID: <20111123105612.GD11876@amd.com>
-References: <20111117170800.3125.84150.stgit@bling.home>
- <20111118104651.GJ5627@amd.com>
- <1321628190.26410.63.camel@bling.home>
- <20111118152710.GA5098@amd.com>
- <1321633956.26410.126.camel@bling.home>
- <20111120120043.GB20535@8bytes.org>
- <20111121233505.GG3344@sequoia.sous-sol.org>
+	id S1754376Ab1KWLAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:00:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46138 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab1KWLAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 06:00:49 -0500
+Date: Wed, 23 Nov 2011 11:00:41 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+Message-ID: <20111123110041.GM19415@suse.de>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+ <1321900608-27687-8-git-send-email-mgorman@suse.de>
+ <1321945011.22361.335.camel@sli10-conroe>
+ <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20111121233505.GG3344@sequoia.sous-sol.org>
+In-Reply-To: <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 03:35:05PM -0800, Chris Wright wrote:
+On Wed, Nov 23, 2011 at 10:01:53AM +0800, Nai Xia wrote:
+> On Tue, Nov 22, 2011 at 2:56 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> > On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
+> >> This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
+> >> mode that avoids writing back pages to backing storage. Async
+> >> compaction maps to MIGRATE_ASYNC while sync compaction maps to
+> >> MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
+> >> hotplug, MIGRATE_SYNC is used.
+> >>
+> >> This avoids sync compaction stalling for an excessive length of time,
+> >> particularly when copying files to a USB stick where there might be
+> >> a large number of dirty pages backed by a filesystem that does not
+> >> support ->writepages.
+> > Hi,
+> > from my understanding, with this, even writes
+> > to /proc/sys/vm/compact_memory doesn't wait for pageout, is this
+> > intended?
+> > on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
+> > lock, so could wait on page read. page read and page out have the same
+> > latency, why takes them different?
+> 
+> So for the problem you raised, I think my suggestion to Mel is to adopt the
+> following logic:
+> 
+>            if (!trylock_page(page) && !PageUptodate(page))
+>                       we are quite likely to block on read, so we
+>                       depend on yet another MIGRATE_SYNC_MODE to decide
+>                       if we really want to lock_page() and wait for this IO.
+> 
+> How do you think ?
+> 
 
-> What is the value of a group w/out complete isolation?
+Where are you adding this check?
 
-There is still isolation for DMA. This may be sufficient for non-KVM
-use-cases like a device driver partially implemented in userspace. There
-is no no guest then that can attack the host with wrong interrupts.
+If you mean in __unmap_and_move(), the check is unnecessary unless
+another subsystem starts using sync-light compaction. With this series,
+only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
+not up to date, it is also locked during the IO and unlocked after
+setting Uptodate in the IO completion handler.
 
-> Is there a practical problem w/ conflating the subtleties above?
+As the page is locked, compaction will fail trylock_page, do the
+PF_MEMALLOC check and bail as it is not safe for direct compaction
+to call lock_page as the comment in __unmap_and_move explains. This
+should avoid the stall.
 
-Same argument as above. It ties the the iommu_group interface to the KVM
-use case. Another more pratical impact of this patch is that a reboot is
-required to re-enable iommu-groups. When the check happens in VFIO it is
-a simple module-reload.
-
-
-	Joerg
+Did I misunderstand your suggestion?
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Mel Gorman
+SUSE Labs
