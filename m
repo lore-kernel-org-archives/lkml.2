@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1KWKgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:36:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46335 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab1KWKgx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754231Ab1KWKgx (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 Nov 2011 05:36:53 -0500
-Message-ID: <1322044606.14799.26.camel@twins>
-Subject: Re: [PATCH] perf_event: fix loss of notification with multi-event
- sampling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
-Date: Wed, 23 Nov 2011 11:36:46 +0100
-In-Reply-To: <CABPqkBRE6bH8WV1ZMeUKrEuF3D4M8WymxzkZOOjsnbya-cOSYg@mail.gmail.com>
-References: <20111116145320.GA20146@quad> <1321958457.5148.17.camel@twins>
-	 <CABPqkBT-ZPZC2Ku6NjyMygWUU+kMr3h9FCdKTAjvhR6ywFmNqw@mail.gmail.com>
-	 <1321968559.14799.2.camel@twins>
-	 <CABPqkBTWqPNhMBEsLmto+3=2FYjyy_b2hzq2KLbKWDFSKNktsg@mail.gmail.com>
-	 <1322042767.14799.25.camel@twins>
-	 <CABPqkBRE6bH8WV1ZMeUKrEuF3D4M8WymxzkZOOjsnbya-cOSYg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+Received: from mailout.artfiles.de ([80.252.97.80]:37436 "EHLO
+	mailout.artfiles.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab1KWKgv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:36:51 -0500
+X-Greylist: delayed 3903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Nov 2011 05:36:51 EST
+From: Carsten Behling <carsten.behling@garz-fricke.com>
+To: "Voss, Nikolaus" <N.Voss@weinmann.de>
+CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Nov 2011 10:31:44 +0100
+Subject: AW: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Thread-Topic: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Thread-Index: AcypMG7f1j3pt+VZTlOvrrSAA2wmYwAAZ+ewACQAp5A=
+Message-ID: <D99582E5322435468A77E74BB0039E7B1D1655BFBB@SRV02.hamburg.garz-fricke.de>
+References: <D99582E5322435468A77E74BB0039E7B1D1655BF4D@SRV02.hamburg.garz-fricke.de>
+ <EF2E73589CA71846A15D0B2CDF79505D087B40D16B@wm021.weinmann.com>
+In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B40D16B@wm021.weinmann.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 11:10 +0100, Stephane Eranian wrote:
-> On Wed, Nov 23, 2011 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, 2011-11-23 at 10:30 +0100, Stephane Eranian wrote:
-> >>
-> >> In the case of perf_event, we are not in a producer-consumer model, so
-> >> it seems like the behavior we have now is correct. The caller of poll()
-> >> gets stuck if the file descriptor is closed.
-> >
-> > But wouldn't out event->waitq still be referenced by that waiting task?
-> > Even though we freed it in our fops->release() callback?
-> >
-> I suspect you don't end up in fops->release() if you have an ongoing poll
-> because you've probably increment the file's refcount along the way.
+> this case is already catched in at91_do_twi_transfer():
 
-You're quite right, poll does that internally. Ok, so we don't need to
-worry about this bit then.
+Sorry, I did not found this code in your patch.
+(http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg06556.html):
+
+> +       if (is_read) {
+> +               if (!dev->buf_len)
+> +                       at91_twi_write(dev, AT91_TWI_CR,
+> +                                      AT91_TWI_START | AT91_TWI_STOP);
+> +               else
+> +                       at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_START);
+> +               at91_twi_write(dev, AT91_TWI_IER,
+> +                              AT91_TWI_TXCOMP | AT91_TWI_RXRDY);
+> +       } else {
+> +               at91_twi_write_next_byte(dev);
+> +               at91_twi_write(dev, AT91_TWI_IER,
+> +                              AT91_TWI_TXCOMP | AT91_TWI_TXRDY);
+> +       }
+
+Is there a more recent version ?
+
+Mit freundlichen Grüßen / Best regards
+Carsten Behling
+
+Development Engineer
+Garz & Fricke GmbH
+Tempowerkring 2, 21079 Hamburg - Germany
+Amtsgericht Hamburg HRB 60514
+Geschäftsführer: Manfred Garz, Matthias Fricke
+Phone: +49 (0) 40 791 899 - 56
+Fax:    +49 40 / 791 899 - 39
+www.garz-fricke.com 
+
+ 
+
+
+-----Ursprüngliche Nachricht-----
+Von: Voss, Nikolaus [mailto:N.Voss@weinmann.de] 
+Gesendet: Dienstag, 22. November 2011 17:26
+An: Carsten Behling
+Cc: 'linux-i2c@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-kernel@vger.kernel.org'
+Betreff: RE: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+
+Hi,
+
+Carsten Behling wrote on 2011-11-22:
+> +static void at91_twi_read_next_byte(struct at91_twi_dev *dev)
+> +{
+> +       *dev->buf = at91_twi_read(dev, AT91_TWI_RHR) & 0xff;
+> +
+> +       /* send stop if second but last byte has been read */
+> +       if (--dev->buf_len == 1)
+> +               at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
+> 
+> 
+> 
+> If dev->buf_len =1 at the beginning of a read transfer, a stop condition will
+> never be send.
+
+this case is already catched in at91_do_twi_transfer():
+
++       if (dev->msg->flags & I2C_M_RD) {
++               unsigned start_flags = AT91_TWI_START;
++
++               /* if only one byte is to be read, immediately stop transfer */
++               if (dev->buf_len <= 1 && !(dev->msg->flags & I2C_M_RECV_LEN))
++                       start_flags |= AT91_TWI_STOP;
++               at91_twi_write(dev, AT91_TWI_CR, start_flags);
+
+Thanks for reviewing,
+Niko
+
