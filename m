@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab1KWSJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 13:09:00 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:53702 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab1KWSI7 convert rfc822-to-8bit (ORCPT
+	id S1755848Ab1KWSJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 13:09:05 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64556 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab1KWSJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 13:08:59 -0500
-Subject: Re: [PATCH] virtio-mmio: Devices parameter parsing
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-In-Reply-To: <87fwhhx9is.fsf@rustcorp.com.au>
-References: <1321365185-2928-1-git-send-email-pawel.moll@arm.com>
-	 <87sjlooq3m.fsf@rustcorp.com.au>
-	 <1321467222.3137.417.camel@hornet.cambridge.arm.com>
-	 <87vcqe9ml9.fsf@rustcorp.com.au>
-	 <1321886688.3093.248.camel@hornet.cambridge.arm.com>
-	 <1321898210.3093.263.camel@hornet.cambridge.arm.com>
-	 <87fwhhx9is.fsf@rustcorp.com.au>
-Date: Wed, 23 Nov 2011 18:08:52 +0000
-Message-ID: <1322071732.3093.491.camel@hornet.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 23 Nov 2011 18:08:53.0160 (UTC) FILETIME=[F5785280:01CCAA0A]
-X-MC-Unique: 111112318085602601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Nov 2011 13:09:02 -0500
+Message-ID: <4ECD374F.5060208@solonet.org.ua>
+Date: Wed, 23 Nov 2011 20:11:27 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH resend] arm: s3c24xx: Add new LCD (W35i) support for Mini2440
+ board
+References: <4EC588A8.3030907@solonet.org.ua>
+In-Reply-To: <4EC588A8.3030907@solonet.org.ua>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 00:53 +0000, Rusty Russell wrote:
-> > Any ideas?
-> Perhaps not today.  So, we will need a linked list of devices and
-> resources.  Yeah, that means allocating, which means YA
-> slab_is_available()/alloc_bootmem() hack.
+Add new LCD (W35i) support for Mini2440 board
 
-Hm. It doesn't sound like a good deal, really... Loads of tricks to get
-data I need quite late in the boot process...
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+---
 
-> Think of yourself as a pioneer...
+I need to refer this patch but can't find it on lkml.org
+Maybe I haven't send it...
+Sorry for bothering if I did so.
 
-I had a vague idea of "late parameters" last night, which would be
-parsed once whole machinery is up and running. Will look around and try
-to propose something.
-
-On Tue, 2011-11-22 at 00:44 +0000, Rusty Russell wrote: 
-> Or would it be simpler to enhance sscanf() with some weird format option
-> for suffixing?  I haven't looked for similar cases, but I'd suspect a
-> big win in general.
-> 
-> This would be neater than anything else we've got:
->         if (sscanf(device, "%llu@%llu[KMG]:%u", ...) != 3
->             && sscanf(device, "%llu@%llu[KMG]:%u:%u", ...) != 4)
->                 return -EINVAL;
-
-sscanf was a good hint! Thanks, why haven't I thought of it myself? ;-)
-
-That's what I came up with:
-
-static int vm_cmdline_set(const char *device,
-                const struct kernel_param *kp)
-{
-        struct resource resources[2] = {};
-        char *str;
-        long long int base;
-        int processed, consumed = 0;
-        struct platform_device *pdev;
-        
-        resources[0].flags = IORESOURCE_MEM;
-        resources[1].flags = IORESOURCE_IRQ;
-        
-        resources[0].end = memparse(device, &str) - 1;
-        
-        processed = sscanf(str, "@%lli:%u%n:%d%n", 
-                        &base, &resources[1].start, &consumed,
-                        &vm_cmdline_id, &consumed);
-                        
-        if (processed < 2 || processed > 3 || str[consumed])
-                return -EINVAL;
-                
-        resources[0].start = base;
-        resources[0].end += base;
-        resources[1].end = resources[1].start;
-
-The only bit missing from sscanf() would be some sort of "%m" format,
-which behaved like memparse and also processed unsigned number with "0
-base" (hard to believe but the only "universal" - as in octal, dec and
-hex - format is %i, which is signed). But still, looks quite neat
-already :-)
-
-I'll try to have a look at the "late parameters" idea tomorrow. Any
-early warnings?
-
-Cheers!
-
-Pawel
-
-
+diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
+index fc2dc0b..951eadd 100644
+--- a/arch/arm/mach-s3c2440/mach-mini2440.c
++++ b/arch/arm/mach-s3c2440/mach-mini2440.c
+@@ -167,6 +167,24 @@ static struct s3c2410fb_display mini2440_lcd_cfg[] __initdata = {
+ 		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
+ 				   S3C2410_LCDCON5_HWSWP),
+ 	},
++	/* mini2440 + 3.5" TFT (LCD-W35i, LQ035Q1DG06 type) + touchscreen*/
++	[3] = {
++		_LCD_DECLARE(
++			/* clock */
++			7,
++			/* xres, margin_right, margin_left, hsync */
++			320, 68, 66, 4,
++			/* yres, margin_top, margin_bottom, vsync */
++			240, 4, 4, 9,
++			/* refresh rate */
++			60),
++		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
++				   S3C2410_LCDCON5_INVVDEN |
++				   S3C2410_LCDCON5_INVVFRAME |
++				   S3C2410_LCDCON5_INVVLINE |
++				   S3C2410_LCDCON5_INVVCLK |
++				   S3C2410_LCDCON5_HWSWP),
++	},
+ };
+ 
+ /* todo - put into gpio header */
