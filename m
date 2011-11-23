@@ -1,181 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab1KWPfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:35:14 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39207 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab1KWPfL convert rfc822-to-8bit (ORCPT
+	id S1756658Ab1KWPgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:36:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55690 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab1KWPgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:35:11 -0500
-MIME-Version: 1.0
-X-Originating-IP: [93.173.4.235]
-In-Reply-To: <4ECC6838.1010009@codeaurora.org>
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
- <1319536106-25802-2-git-send-email-ohad@wizery.com> <4ECC6838.1010009@codeaurora.org>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 23 Nov 2011 17:34:50 +0200
-Message-ID: <CAK=WgbbzLKA_D85vOR02fuoCeGugS-rDUup9RihN+Q6TaSudnQ@mail.gmail.com>
-Subject: Re: [PATCH 1/7] amp/remoteproc: add framework for controlling remote processors
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Greg KH <greg@kroah.com>,
-        Saravana Kannan <skannan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Nov 2011 10:36:23 -0500
+Message-ID: <1322062573.15493.173.camel@shinybook.infradead.org>
+Subject: Re: [PATCH] drm/i915: By default, enable RC6 on IVB and SNB when
+ reasonable
+From: David Woodhouse <dwmw2@infradead.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: rajesh.sankaran@intel.com, Keith Packard <keithp@keithp.com>,
+        Matthew Garrett <mjg@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Date: Wed, 23 Nov 2011 15:36:13 +0000
+In-Reply-To: <20111123153154.GF3864@phenom.ffwll.local>
+References: <1321684889-18691-1-git-send-email-keithp@keithp.com>
+	 <20111122201531.GD5547@srcf.ucam.org> <861uszfrah.fsf@sumi.keithp.com>
+	 <20111123102643.GB3864@phenom.ffwll.local>
+	 <1322056914.15493.158.camel@shinybook.infradead.org>
+	 <20111123143931.GE3864@phenom.ffwll.local>
+	 <1322060623.15493.168.camel@shinybook.infradead.org>
+	 <20111123153154.GF3864@phenom.ffwll.local>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-qRUJGKbOHwuVzedqWTwh"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
 
-Thanks for the review !
+--=-qRUJGKbOHwuVzedqWTwh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 23, 2011 at 5:27 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> How big are the images you're loading? I had to split the memcpy up into
-> megabyte chunks because I was running out of virtual memory to map in
-> two huge chunks (one for the firmware and one for the image's resting
-> place). This may work for now, but I think it will fail for limited
-> virtual memory environments. Unless CMA solves this problem?
+On Wed, 2011-11-23 at 16:31 +0100, Daniel Vetter wrote:
+>=20
+> Things I've tried that don't work around the issue:
+> - Disable dmar for the igfx with intel_iommu=3Digfx_off
+> - Apply the ilk workaround (i.e. synchronous dmar tlb flushes + gpu
+> idling while flushing).
 
-It definitely should.
+Well, the ILK workaround was only ensuring that the gfx was idle while
+the *graphics* IOTLB was flushed. We are still flushing the IOTLB for
+*other* IOMMUs at arbitrary times.=20
 
-The images we specifically load aren't that big (~5MB) but some of the
-use cases we have do require around a whopping 100MB, and with CMA
-things just work (we do have to reserve a private CMA pool obviously,
-but it's a no brainer).
+Might be interesting to go for *deferred* IOTLB flushes (i.e. the normal
+mode without the workaround or 'intel_iommu=3Dstrict' on the command
+line), *BUT* to make sure the batched flush (the flush_unmaps() call)
+can *only* happen when the GPU is quiescent. You could do that with a
+dirty hack for testing, and if *that* fixes the issue.... well, $DEITY
+knows, someone still needs a good kicking, but at least we'll have
+learned something :)
+=20
+--=20
+dwmw2
 
-> Also, this code assumes the firmware is actually as big as the elf
-> header says it is. It should be checking to make sure the elf_data is
-> actually big enough to copy from.
+--=-qRUJGKbOHwuVzedqWTwh
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
-Good point, thanks.
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITvzCCBi0w
+ggQVoAMCAQICAwCtOTANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwG
+A1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290
+MB4XDTEwMDYxMjEwMDMwMFoXDTEyMDYxMTEwMDMwMFowgegxGDAWBgNVBAMTD0RhdmlkIFdvb2Ro
+b3VzZTEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFkLm9yZzEfMB0GCSqGSIb3DQEJARYQ
+ZGF2aWRAd29vZGhvdS5zZTEoMCYGCSqGSIb3DQEJARYZZGF2aWQud29vZGhvdXNlQGludGVsLmNv
+bTEkMCIGCSqGSIb3DQEJARYVZHdtdzJAbGludXguaW50ZWwuY29tMTcwNQYJKoZIhvcNAQkBFigx
+MDg3MmEwN2Y2ZDdlMWUwN2Y1NWZmMTcyYTAzYjMwMGVlYWFkMjAzMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEA29OPhNvMxBMW83psWdVhZDtmJvgN+tBEp1r6MZamONsR0k81a6fDFwJz
+M0fEzEbV/bDG102QyX/xXC/0IpKV4acnqESC+sTHUmRwxfRKGNmR6t2iwEs2Y5kQDF31JxbCt49w
+AlhLMAa+e1MBZ7vO0uDmRuJpS7+ZdHboq7cdk6dyoeumGv5sl6U/SPK9rL4KzULtqQaw6Wucd6MJ
+irIggEHfCNqeT5a+TyuH4zKCwv9nblIGXq9wt+yqu5t/RicGaKPnXSqo/WpJAGggaO8g92mnYlVl
+Wu/b9bYVISwQ8LI0sEtjN1WnP5AQO2f59bdPAVk4Rn25HceOO4NvlG47LwIDAQABo4IBcTCCAW0w
+DAYDVR0TAQH/BAIwADBWBglghkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRl
+IGZvciBGUkVFIGhlYWQgb3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0lBDkwNwYI
+KwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhCBAEwMgYI
+KwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIGOBgNVHREE
+gYYwgYOBE2R3bXcyQGluZnJhZGVhZC5vcmeBEGRhdmlkQHdvb2Rob3Uuc2WBGWRhdmlkLndvb2Ro
+b3VzZUBpbnRlbC5jb22BFWR3bXcyQGxpbnV4LmludGVsLmNvbYEoMTA4NzJhMDdmNmQ3ZTFlMDdm
+NTVmZjE3MmEwM2IzMDBlZWFhZDIwMzANBgkqhkiG9w0BAQUFAAOCAgEAXm+SUO1/TSeGJK0D9pAm
+E9LTFkdlgbaD6HXGbS0TNUDyfLFkacc2F1JLoWcoFwcL6Rup5o/Rt4QYDBPWgF9EXFvqsc9SLrSe
+X6VwRj7vI40x19ThE2A1Y8DzBJ9+2MzIR6hd5n9axATCOIRhmZVjX1cRkwshEGvAn8mTYGhWttkx
+WhBcaAuCd9OOQqUwfxTUXiSfVumPUNrrbuvaH6MjrNjDrXdvicL26Y+AzFSJn3o8DShjjMhkUx9l
+qV46BpjSGIuvkHhcLkGJ3Y1YmtOX1hwT+Z+d/10WJh8ZG2FqIlJtPtqvHK5ol/KvdzMwmMBd4qFj
+YAO32vf7zde+jdTHNp2Mb15bJHhNdGOsZicpGue42fg3deZQFe1E2KBl9VO09fjncjt9YdhCUtxO
+buDnoOixY6YSJgSmGJB2Xs+TE5gps4UiiOYen+NeJkuwg5x9vmyraU061Uc0csfc/E5IoxhTX/Pc
+H+zXiER8aSjA/9MXQfrJM2xkY6UNKlDbCYSLKnH/O02eu7Hma6lB4wtcY8ECu7LJuFY2448Quolv
+SQfQLRvKauGFGUAhbPClOxObuv/fNzA+lfg8DX2y5jXDutnpvBGgsplKxoah01SZfR9zNqxodPx2
+srKhujBNB+WiAZntMf0xp4e0JPMlTFxm3tbY9wuBSyTJyueO9hUkbN4wggYtMIIEFaADAgECAgMA
+rTkwDQYJKoZIhvcNAQEFBQAwVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6
+Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdDAeFw0xMDA2MTIx
+MDAzMDBaFw0xMjA2MTExMDAzMDBaMIHoMRgwFgYDVQQDEw9EYXZpZCBXb29kaG91c2UxIjAgBgkq
+hkiG9w0BCQEWE2R3bXcyQGluZnJhZGVhZC5vcmcxHzAdBgkqhkiG9w0BCQEWEGRhdmlkQHdvb2Ro
+b3Uuc2UxKDAmBgkqhkiG9w0BCQEWGWRhdmlkLndvb2Rob3VzZUBpbnRlbC5jb20xJDAiBgkqhkiG
+9w0BCQEWFWR3bXcyQGxpbnV4LmludGVsLmNvbTE3MDUGCSqGSIb3DQEJARYoMTA4NzJhMDdmNmQ3
+ZTFlMDdmNTVmZjE3MmEwM2IzMDBlZWFhZDIwMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+ggEBANvTj4TbzMQTFvN6bFnVYWQ7Zib4DfrQRKda+jGWpjjbEdJPNWunwxcCczNHxMxG1f2wxtdN
+kMl/8Vwv9CKSleGnJ6hEgvrEx1JkcMX0ShjZkerdosBLNmOZEAxd9ScWwrePcAJYSzAGvntTAWe7
+ztLg5kbiaUu/mXR26Ku3HZOncqHrphr+bJelP0jyvay+Cs1C7akGsOlrnHejCYqyIIBB3wjank+W
+vk8rh+MygsL/Z25SBl6vcLfsqrubf0YnBmij510qqP1qSQBoIGjvIPdpp2JVZVrv2/W2FSEsEPCy
+NLBLYzdVpz+QEDtn+fW3TwFZOEZ9uR3HjjuDb5RuOy8CAwEAAaOCAXEwggFtMAwGA1UdEwEB/wQC
+MAAwVgYJYIZIAYb4QgENBEkWR1RvIGdldCB5b3VyIG93biBjZXJ0aWZpY2F0ZSBmb3IgRlJFRSBo
+ZWFkIG92ZXIgdG8gaHR0cDovL3d3dy5DQWNlcnQub3JnMEAGA1UdJQQ5MDcGCCsGAQUFBwMEBggr
+BgEFBQcDAgYKKwYBBAGCNwoDBAYKKwYBBAGCNwoDAwYJYIZIAYb4QgQBMDIGCCsGAQUFBwEBBCYw
+JDAiBggrBgEFBQcwAYYWaHR0cDovL29jc3AuY2FjZXJ0Lm9yZzCBjgYDVR0RBIGGMIGDgRNkd213
+MkBpbmZyYWRlYWQub3JngRBkYXZpZEB3b29kaG91LnNlgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
+Y29tgRVkd213MkBsaW51eC5pbnRlbC5jb22BKDEwODcyYTA3ZjZkN2UxZTA3ZjU1ZmYxNzJhMDNi
+MzAwZWVhYWQyMDMwDQYJKoZIhvcNAQEFBQADggIBAF5vklDtf00nhiStA/aQJhPS0xZHZYG2g+h1
+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
+AAAAAA==
 
-> This is a bit odd. If I understand correctly, you load the firmware at
-> least twice. Once to see if the firmware has any virtio devices in the
-> resource table, and again when the image is actually loaded into RAM.
 
-Right; the firmware is loaded once at boot time, and then every time
-the remote processor is powered up.
+--=-qRUJGKbOHwuVzedqWTwh--
 
-The former is required since we publish the remote services and their
-configurations (i.e. virtio devices, features and configurations) in
-the firmware, as a separate section (i.e. the "resource table"). We
-could use a separate file for this table, but we chose to couple it
-with the firmware in order to eliminate potential problems where the
-wrong resource table is loaded for a given firmware. It really makes
-sense since the resource table reflects the capabilities/requirements
-of the firmware.
-
-> Is
-> there any way to avoid loading it twice? I ask because we have something
-> like a 20Mb image that needs to be loaded and I'd like to avoid loading
-> it twice just to read a section out of it the first time.
-
-Sure, we could think of several approaches to optimize this, e.g.
-either keep the firmware loaded after boot (possibly to some limited
-period of time) or just allow platforms to provide their resource
-table as a separate file.
-
-Though frankly I'd just prefer to trust the page cache to eliminate
-any redundant overhead (at least when the rproc is powered up close
-enough to boot time), or just ignore this issue completely: since this
-overhead happens only once on boot, and users tend not to really power
-off their devices so much, i'm not sure how painful it really is ?
-
-> What do you do if dev goes away?
-
-Call rproc_unregister(), which blocks if request_firmware_nowait()
-didn't complete yet.
-
-> What do you think about making remoteproc into a bus?
-
-That's a really interesting idea, with some nice properties.
-
-But I'm not sure if the bus model fits our use cases: buses
-exclusively couple a single driver to any given hardware instance
-(i.e. device), and I think that a remote processor is more like an
-IOMMU: it's a hardware device that is being used by many drivers, and
-not exclusively driven by a single one. So we really end up having
-several (completely different) drivers that depend on this hardware
-block, and need some API to power it up, rather than having a single
-driver that manipulates it exclusively.
-
-> I imagine this function
-> would allocate a struct device and then rproc_register() would actually
-> hook it into the device layer. Then we could use the device we allocate
-> here for the firmware requests and we also have a nice namespace for all
-> remote processors in the system. Plus all the management code for
-> refcounting would come for free with the device layer (modulo the
-> rproc_boot() count).
-
-We can probably still do this even without turning remoteproc into a
-bus (i.e. by creating this device inside rproc_register()). I
-originally pondered whether to do this or not, as many other kernel
-frameworks do this too when their ->register() API is invoked, but I
-couldn't think of any strong advantages in doing so. Sounds like it
-does worth exploring thought, thanks for the comment.
-
-> What is RSC_VIRTIO_CFG?
-
-Sorry, that's an undocumented (and unused) resource entry that is going away.
-
-It was supposed to specify virtio device features for a given virtio
-device, but I'm removing it as part of the resource table overhaul I'm
-doing: once the resource entries will have a variable length, the
-virtio header will just be an inherent part of the virtio device
-resource entry.
-
-> For MSM I see two main pain points:
->
->  * CMA is new and untested on MSM. I imagine in MSM's situation we would
-> carve out the memory chunks early on for each processor and then only
-> remove that memory if the processor is booted? I hope that just works
-> somehow.
-
-For ARM v6+, CMA just works. It's really simple and straight forward to use.
-
->  * rproc is tied to virtio fairly closely.
-
-Only for firmwares that supports virtio. If yours doesn't, you can
-probably just ignore the virtio parts (though I really recommend to
-think of supporting it in the next relevant generation of chipsets of
-yours. It really is great.)
-
-> We probably won't be using
-> virtio anytime soon on MSM, unless we can do smd over virtio or
-> something. I'm not particularly knowledgeable about that though. Would
-> something like that be possible?
-
-Virtio today is highly coupled with its vring transport, which defines
-the shared memory "wire" protocol. Using it as-is pretty much means
-replacing smd completely (I assume that by smd you mostly care about
-keeping your firmware images as-is, which pretty much means using the
-smd's shared memory transport).
-
-But there's another way: virtio was originally designed to support
-several different transports, and actually had pluggable virtqueue ops
-which allowed several different transport implementations to co-exist.
-Since virtio_ring was the only transport that anyone ever used for a
-few years, the virtqueue ops were squashed and today virtio directly
-calls virtio_vring (see 7c5e9ed0c84e7d70d887878574590638d5572659).
-
-By reverting the aforementioned commit, you can potentially do virtio
-over smd, where smd will plug as another virtqueue_ops implementation.
-This is probably worth exploring, as you could then use rpmsg and the
-plethora of virtio drivers without really changing your firmware.
-
-> We would also have to keep using the rproc_get_by_name() approach until
-> we can actually start tying rproc devices to other devices in the kernel.
-
-I kept rproc_get_by_name() mainly for you guys :)
-
-I'd really want us to scrutinize its use cases though and see if we
-can get rid of it, as explained in the commentary.
-
-Thanks again for your review,
-Ohad.
