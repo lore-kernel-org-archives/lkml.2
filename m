@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab1KWW2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 17:28:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59126 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756338Ab1KWW2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 17:28:37 -0500
-Date: Wed, 23 Nov 2011 12:30:12 -0800
-From: Greg KH <gregkh@suse.de>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/15] samsung-laptop: don't handle backlight if handled
- by acpi/video
-Message-ID: <20111123203012.GB1355@suse.de>
-References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
- <1321999366-23784-4-git-send-email-corentincj@iksaif.net>
- <20111122221633.GA24283@suse.de>
- <CAHR064jucMdu3KKctTTE=peNjhZ8TNvh6WecUrGc+HQp9BFpvg@mail.gmail.com>
+	id S1756512Ab1KWW31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 17:29:27 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58279 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab1KWW30 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 17:29:26 -0500
+Date: Wed, 23 Nov 2011 14:29:23 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christian Kujau <lists@nerdbynature.de>, markus@trippelsdorf.de
+Subject: Re: [PATCH V2] slub: avoid potential NULL dereference or
+ corruption
+In-Reply-To: <1322083191.1428.125.camel@jaguar>
+Message-ID: <alpine.DEB.2.00.1111231428440.5261@chino.kir.corp.google.com>
+References: <1321973629.2474.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.00.1111220855460.25785@router.home> <1321974122.2474.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LFD.2.02.1111231030370.14209@tux.localdomain>
+ <alpine.DEB.2.00.1111230916220.16139@router.home> <1322083191.1428.125.camel@jaguar>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHR064jucMdu3KKctTTE=peNjhZ8TNvh6WecUrGc+HQp9BFpvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 07:58:20AM +0100, Corentin Chary wrote:
-> On Tue, Nov 22, 2011 at 11:16 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Tue, Nov 22, 2011 at 11:02:34PM +0100, Corentin Chary wrote:
-> >> samsung-laptop is not at all related to ACPI, but since this interface
-> >> is not documented at all, and the driver has to use it at load to
-> >> understand how it works on the laptop, I think it's a good idea to
-> >> disable it if a better solution is available.
-> >
-> > I wish this would work, but on the machine that I had, there was a valid
-> > ACPI table for the video device, yet I was told to "ignore it, it
-> > doesn't work and use the sabi interface instead", so this patch would
-> > break that machine :(
-> 
-> Well, it's why acpi_backlight=vendor is here: to enable and use the
-> vendor backlight instead of using the standard ACPI interface.
-> And nowadays, even gpu drivers provide a backlight class (at least for
-> intel, nvidia/nouveau, and maybe radeon.
-> 
-> > We might want to trigger off of the machine type for this kind of
-> > thing, that's the only way I can see this working properly.
-> 
-> But, yes, this is a "regression". Maybe we should do that:
-> - enable the backlight by default for all SECLINUX models
-> - disable it by default for swsmi, but let the user be able to enable
-> it with acpi_backlight=vendor (this is what is done with this patch).
+On Wed, 23 Nov 2011, Pekka Enberg wrote:
 
-That sounds reasonable.
+> Yes, you did. I'm just trying to figure out which ones are going
+> straight to Linus and which ones can wait for v3.3.
+> 
 
-thanks,
-
-greg k-h
+I think it's 3.2-rc material since it can trigger a NULL pointer by 
+reading a file from userspace, it's not limited only to debugging.
