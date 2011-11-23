@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1KWKG2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:06:28 -0500
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:37757 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab1KWKG0 (ORCPT
+	id S1752373Ab1KWKKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:10:18 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42616 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab1KWKKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:06:26 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] hid-multitouch: add support for the MSI Windpad 110W
-Date: Wed, 23 Nov 2011 10:54:33 +0100
-Message-Id: <1322042074-3759-8-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
+	Wed, 23 Nov 2011 05:10:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <1322042767.14799.25.camel@twins>
+References: <20111116145320.GA20146@quad>
+	<1321958457.5148.17.camel@twins>
+	<CABPqkBT-ZPZC2Ku6NjyMygWUU+kMr3h9FCdKTAjvhR6ywFmNqw@mail.gmail.com>
+	<1321968559.14799.2.camel@twins>
+	<CABPqkBTWqPNhMBEsLmto+3=2FYjyy_b2hzq2KLbKWDFSKNktsg@mail.gmail.com>
+	<1322042767.14799.25.camel@twins>
+Date: Wed, 23 Nov 2011 11:10:15 +0100
+Message-ID: <CABPqkBRE6bH8WV1ZMeUKrEuF3D4M8WymxzkZOOjsnbya-cOSYg@mail.gmail.com>
+Subject: Re: [PATCH] perf_event: fix loss of notification with multi-event sampling
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just another eGalax device.
-Please note that adding this device to have_special_driver
-in hid-core.c is not required anymore.
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
- drivers/hid/hid-ids.h        |    1 +
- drivers/hid/hid-multitouch.c |    3 +++
- 2 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index fc49ab3..cf8c866 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -235,6 +235,7 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C	0x720c
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B	0x726b
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1	0x72a1
-+#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA	0x72fa
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302	0x7302
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
- 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 8e920cd..77210d6 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -701,6 +701,9 @@ static const struct hid_device_id mt_devices[] = {
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
- 	{ .driver_data = MT_CLS_EGALAX,
- 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA) },
-+	{ .driver_data = MT_CLS_EGALAX,
-+		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302) },
- 	{ .driver_data = MT_CLS_EGALAX,
- 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
--- 
-1.7.4.4
-
+On Wed, Nov 23, 2011 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-11-23 at 10:30 +0100, Stephane Eranian wrote:
+>>
+>> In the case of perf_event, we are not in a producer-consumer model, so
+>> it seems like the behavior we have now is correct. The caller of poll()
+>> gets stuck if the file descriptor is closed.
+>
+> But wouldn't out event->waitq still be referenced by that waiting task?
+> Even though we freed it in our fops->release() callback?
+>
+I suspect you don't end up in fops->release() if you have an ongoing poll
+because you've probably increment the file's refcount along the way.
