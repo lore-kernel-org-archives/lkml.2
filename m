@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1KWQ1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:27:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56796 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab1KWQ13 convert rfc822-to-8bit (ORCPT
+	id S1754068Ab1KWQ1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:27:36 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46990 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753866Ab1KWQ1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:27:29 -0500
-Message-ID: <1322065625.14799.82.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 3/30] uprobes: register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Wed, 23 Nov 2011 17:27:05 +0100
-In-Reply-To: <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Wed, 23 Nov 2011 11:27:33 -0500
+Date: Wed, 23 Nov 2011 11:27:32 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Norbert Preining <preining@logic.at>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>
+Subject: Re: [regression 3.1.0 -> 3.20rc] USB Oops
+In-Reply-To: <20111122231656.GB15722@gamma.logic.tuwien.ac.at>
+Message-ID: <Pine.LNX.4.44L0.1111231126470.2111-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> +void unregister_uprobe(struct inode *inode, loff_t offset,
-> +                               struct uprobe_consumer *consumer)
-> +{
-> +       struct uprobe *uprobe = NULL;
-> +
-> +       inode = igrab(inode);
-> +       if (!inode || !consumer)
-> +               goto unreg_out;
+On Wed, 23 Nov 2011, Norbert Preining wrote:
 
-Why do you take a reference on the inode here? Surely inode is already
-made stable by whoever calls us?
+> On Di, 22 Nov 2011, Alan Stern wrote:
+> > > [   67.852328] BUG: unable to handle kernel NULL pointer dereference at 00000000000002d9
+> > > [   67.853898] IP: [<ffffffffa0249e6b>] last_sector_hacks.part.2+0x72/0xe0 [usb_storage]
+> > 
+> > This is odd.  I've never seen a problem in that routine before.
+> > 
+> > What is "last_sector_hacks.part.2"?  In my kernel source tree there is
+> > a last_sector_hacks() function in drivers/usb/storage/transport.c, but
+> > what does the ".part.2" refer to?
+> 
+> No idea, here I am compiling with default Debian sid gcc, that is
+> gcc (Debian 4.6.2-4) 4.6.2
+> 
+> Anything else I can do? Should I hack something into the code?
 
-> +       uprobe = find_uprobe(inode, offset);
-> +       if (!uprobe)
-> +               goto unreg_out;
-> +
-> +       mutex_lock(uprobes_hash(inode));
-> +       if (!del_consumer(uprobe, consumer)) {
-> +               mutex_unlock(uprobes_hash(inode));
-> +               goto unreg_out;
-> +       }
-> +
-> +       if (!uprobe->consumers)
-> +               __unregister_uprobe(inode, offset, uprobe);
-> +
-> +       mutex_unlock(uprobes_hash(inode));
-> +
-> +unreg_out:
-> +       if (uprobe)
-> +               put_uprobe(uprobe);
-> +       if (inode)
-> +               iput(inode);
-> +} 
+See the other questions in my previous email message (you cut them out
+of this reply).
+
+Alan Stern
+
