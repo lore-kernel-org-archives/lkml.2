@@ -1,165 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab1KWIym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:54:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab1KWIyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:54:40 -0500
-From: Cong Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Hugh Dickins <hughd@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        WANG Cong <amwang@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 2/2] fs: wire up .truncate_range and .fallocate
-Date: Wed, 23 Nov 2011 16:53:31 +0800
-Message-Id: <1322038412-29013-2-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322038412-29013-1-git-send-email-amwang@redhat.com>
-References: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+	id S1758796Ab1KWIzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:55:53 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43761 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab1KWIzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:55:51 -0500
+X-AuditID: b753bd60-a1286ba000000655-51-4eccb51561bd
+X-AuditID: b753bd60-a1286ba000000655-51-4eccb51561bd
+Message-ID: <4ECCB507.6040701@hitachi.com>
+Date: Wed, 23 Nov 2011 17:55:35 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Jason Baron <jbaron@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 0/5] x86: check stack overflows more reliably
+References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp> <CAOJsxLGH6maRZPx0TX4r6Zy=AiXQMRssoySeOmjn02O-BkBDEA@mail.gmail.com> <4EB8DB84.6070300@hitachi.com> <20111117165938.GA2441@redhat.com>
+In-Reply-To: <20111117165938.GA2441@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Hugh suggested, with FALLOC_FL_PUNCH_HOLE, we can use do_fallocate()
-to implement madvise_remove and finally remove .truncate_range call back.
+Hi Jason,
 
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: WANG Cong <amwang@redhat.com>
+> Another thought might be to make stack_overflow_check() depend on a jump
+> label. Its not something that going to be switch on/off often, and then perhaps
+> we wouldn't even need DEBUG_STACKOVERFLOW...It seems like a good
+> use-case to me.
 
----
- include/linux/fs.h |    1 -
- include/linux/mm.h |    3 ++-
- mm/madvise.c       |    8 +++++---
- mm/shmem.c         |    1 -
- mm/truncate.c      |   21 +++++++++++++--------
- 5 files changed, 20 insertions(+), 14 deletions(-)
+It is interesting to use a jump label for stack overflow checking...
+However, I'd like to implement this detail-check simply using
+DEBUG_STACKOVERFLOW option because I guess stack_overflow_check() will
+be seldom switched on/off after the system operation starts, as you said.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e313022..266df73 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1635,7 +1635,6 @@ struct inode_operations {
- 	ssize_t (*getxattr) (struct dentry *, const char *, void *, size_t);
- 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
- 	int (*removexattr) (struct dentry *, const char *);
--	void (*truncate_range)(struct inode *, loff_t, loff_t);
- 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
- 		      u64 len);
- } ____cacheline_aligned;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 3dc3a8c..a47f744 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -951,7 +951,8 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
- extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
- extern void truncate_setsize(struct inode *inode, loff_t newsize);
- extern int vmtruncate(struct inode *inode, loff_t offset);
--extern int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end);
-+extern int vmtruncate_file_range(struct file *file, struct inode *inode,
-+			loff_t offset, loff_t end);
- 
- int truncate_inode_page(struct address_space *mapping, struct page *page);
- int generic_error_remove_page(struct address_space *mapping, struct page *page);
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 74bf193..05610d3 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -194,7 +194,8 @@ static long madvise_remove(struct vm_area_struct *vma,
- 				struct vm_area_struct **prev,
- 				unsigned long start, unsigned long end)
- {
--	struct address_space *mapping;
-+	struct file *file;
-+	struct inode *inode;
- 	loff_t offset, endoff;
- 	int error;
- 
-@@ -211,7 +212,8 @@ static long madvise_remove(struct vm_area_struct *vma,
- 	if ((vma->vm_flags & (VM_SHARED|VM_WRITE)) != (VM_SHARED|VM_WRITE))
- 		return -EACCES;
- 
--	mapping = vma->vm_file->f_mapping;
-+	file = vma->vm_file;
-+	inode = file->f_mapping->host;
- 
- 	offset = (loff_t)(start - vma->vm_start)
- 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
-@@ -220,7 +222,7 @@ static long madvise_remove(struct vm_area_struct *vma,
- 
- 	/* vmtruncate_range needs to take i_mutex */
- 	up_read(&current->mm->mmap_sem);
--	error = vmtruncate_range(mapping->host, offset, endoff);
-+	error = vmtruncate_file_range(file, inode, offset, endoff);
- 	down_read(&current->mm->mmap_sem);
- 	return error;
- }
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 65f7a27..fce5667 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2356,7 +2356,6 @@ static const struct file_operations shmem_file_operations = {
- 
- static const struct inode_operations shmem_inode_operations = {
- 	.setattr	= shmem_setattr,
--	.truncate_range	= shmem_truncate_range,
- #ifdef CONFIG_TMPFS_XATTR
- 	.setxattr	= shmem_setxattr,
- 	.getxattr	= shmem_getxattr,
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 632b15e..7c46539 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -20,6 +20,7 @@
- #include <linux/buffer_head.h>	/* grr. try_to_release_page,
- 				   do_invalidatepage */
- #include <linux/cleancache.h>
-+#include <linux/falloc.h>
- #include "internal.h"
- 
- 
-@@ -602,24 +603,28 @@ int vmtruncate(struct inode *inode, loff_t newsize)
- }
- EXPORT_SYMBOL(vmtruncate);
- 
--int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
-+int vmtruncate_file_range(struct file *file, struct inode *inode,
-+		     loff_t lstart, loff_t lend)
- {
- 	struct address_space *mapping = inode->i_mapping;
- 	loff_t holebegin = round_up(lstart, PAGE_SIZE);
- 	loff_t holelen = 1 + lend - holebegin;
-+	int err;
- 
--	/*
--	 * If the underlying filesystem is not going to provide
--	 * a way to truncate a range of blocks (punch a hole) -
--	 * we should return failure right now.
--	 */
--	if (!inode->i_op->truncate_range)
-+	if (!file->f_op->fallocate)
- 		return -ENOSYS;
- 
- 	mutex_lock(&inode->i_mutex);
- 	inode_dio_wait(inode);
- 	unmap_mapping_range(mapping, holebegin, holelen, 1);
--	inode->i_op->truncate_range(inode, lstart, lend);
-+	mutex_unlock(&inode->i_mutex);
-+
-+	err = do_fallocate(file, FALLOC_FL_KEEP_SIZE|FALLOC_FL_PUNCH_HOLE,
-+		     holebegin, holelen);
-+	if (err)
-+		return err;
-+
-+	mutex_lock(&inode->i_mutex);
- 	/* unmap again to remove racily COWed private pages */
- 	unmap_mapping_range(mapping, holebegin, holelen, 1);
- 	mutex_unlock(&inode->i_mutex);
--- 
-1.7.4.4
+In addition, I will change the default overflow checking to the
+detail-check instead of the original one if the option is enabled in
+Kconfig. This is because it turned out that the additional checking
+overhead is negligible (about 17 cycles) from the evaluation below.
+
+
+[Evaluation]
+
+The performance of the detail-check was compared to original one
+which checks kernel stack only, on the following conditions.
+
+- Measure the worst performance using tsc.
+  In the detail-check, all stack type were checked for every IRQ
+  even if the stack pointer pointed to all available stacks.
+  That is, the patch was changed a little for this evaluation.
+- Calculate the average from the 30,000 IRQ evaluations.
+
+The results show the performance regression of the detail-check
+for a IRQ is 17 cycles compared to the original one.
+
+
+	| Original | Detail Check |
+-----------------------------------
+Average	|    49    |      66      |
+(cycles)
+
+I think this overhead can be ignored.
+
+Thanks
+
+(2011/11/18 1:59), Jason Baron wrote:
+> On Tue, Nov 08, 2011 at 04:34:28PM +0900, HAYASAKA Mitsuo wrote:
+>> Hi Pekka,
+>>
+>> Thank you for your comments.
+>>
+>> (2011/11/07 16:00), Pekka Enberg wrote:
+>>> On Mon, Nov 7, 2011 at 7:51 AM, Mitsuo Hayasaka
+>>> <mitsuo.hayasaka.hu@hitachi.com> wrote:
+>>>> (2) check stack overflow in detail
+>>>>    Currently, only kernel stack is checked for the overflow,
+>>>>    which is not sufficient for enterprise systems. To enhance
+>>>>    reliability, expand stack overflow checking to IRQ and
+>>>>    exception stacks optionally. This is disabled by default
+>>>>    in Kconfig.
+>>>
+>>> This sounds useful. What's the reason for not enabling this by
+>>> default? Performance regressions?
+>>
+>> I'm worried about performance regressions because this patch checks 
+>> a stack overflow in detail.
+>>
+>> However, I guess there is no problem for enabling it by default 
+>> since this option is for debug and appears only if a DEBUG_STACKOVERFLOW
+>> option is enabled.
+>>
+>> So, I'd like to send the revised patch if it does not have any further problem.
+>>
+>>
+> 
+> Another thought might be to make stack_overflow_check() depend on a jump
+> label. Its not something that going to be switch on/off often, and then perhaps
+> we wouldn't even need DEBUG_STACKOVERFLOW...It seems like a good
+> use-case to me.
+> 
+> Thanks,
+> 
+> -Jason
+> 
 
