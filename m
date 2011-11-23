@@ -1,134 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab1KWSw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 13:52:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53813 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab1KWSw6 (ORCPT
+	id S1754194Ab1KWSzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 13:55:37 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26318 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751397Ab1KWSzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 13:52:58 -0500
-Date: Wed, 23 Nov 2011 10:52:39 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 7/8] mm: memcg: modify PageCgroupAcctLRU non-atomically
-In-Reply-To: <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
-Message-ID: <alpine.LSU.2.00.1111231039390.2175@sister.anvils>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org> <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 23 Nov 2011 13:55:36 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX181s8b1wi+74VxR+AKCbTdl
+Date: Wed, 23 Nov 2011 10:55:19 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg KH <greg@kroah.com>, Mike Turquette <mturquette@linaro.org>,
+        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, jeremy.kerr@canonical.com,
+        Mike Turquette <mturquette@ti.com>, sboyd@quicinc.com,
+        magnus.damm@gmail.com, dsaxena@linaro.org,
+        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
+        patches@linaro.org, tglx@linutronix.de, linux-omap@vger.kernel.org,
+        richard.zhao@linaro.org, shawn.guo@freescale.com, paul@pwsan.com,
+        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
+        skannan@quicinc.com
+Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
+Message-ID: <20111123185518.GG31337@atomide.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
+ <1321926047-14211-6-git-send-email-mturquette@linaro.org>
+ <20111122154900.GB18954@kroah.com>
+ <CAPtuhThPQtWwihE8aGru55k87oV7QOr=O836TTJ+=30d6dtVhA@mail.gmail.com>
+ <20111122191347.GB4844@kroah.com>
+ <20111123165903.GF31337@atomide.com>
+ <20111123180651.GB19739@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111123180651.GB19739@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011, Johannes Weiner wrote:
-
-> From: Johannes Weiner <jweiner@redhat.com>
+* Russell King - ARM Linux <linux@arm.linux.org.uk> [111123 09:31]:
+> On Wed, Nov 23, 2011 at 08:59:04AM -0800, Tony Lindgren wrote:
+> > ..let's plan on getting rid of the early usage of clocks instead so
+> > you don't have the issue of deferring stuff.
 > 
-> This bit is protected by zone->lru_lock, there is no need for locked
-> operations when setting and clearing it.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> No - we have too many platforms already using them early to do a change
+> like this - and to do such a change will force them to invent some other
+> way.  That's just stupid.
 
-Unless there are special considerations which you have not mentioned at
-all in the description above, this 7/8 and the similar 8/8 are mistaken.
+Not necessarily for all the systems. For omap2+ we should be able to
+boot the system initially with the perf counter as the clockevent and
+32KiHz always running timer. Then a dmtimer using proper clockevent
+driver could take over.
+ 
+> Keep the clk API as a fundamental thing which should be initialized early
+> so we don't have to invent new clk APIs to get around its unavailability.
 
-The atomic operation is not for guaranteeing the setting and clearing
-of the bit in question: it's for guaranteeing that you don't accidentally
-set or clear any of the other bits in the same word when you're doing so,
-if another task is updating them at the same time as you're doing this.
+What else are you aware of that is really needed early for clocks other
+than clockevent?
 
-There are circumstances when non-atomic shortcuts can be taken, when
-you're sure the field cannot yet be visible to other tasks (we do that
-when setting PageLocked on a freshly allocated page, for example - but
-even then have to rely on others using get_page_unless_zero properly).
-But I don't think that's the case here.
+We've already proven that SRAM init can be moved to happen later. The
+optional debug serial port is already enabled by the bootloader.
 
-Hugh
+Regards,
 
-> ---
->  include/linux/page_cgroup.h |   16 ++++++++++++----
->  mm/memcontrol.c             |    4 ++--
->  2 files changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index aaa60da..a0bc9d0 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -57,14 +57,23 @@ static inline int PageCgroup##uname(struct page_cgroup *pc)	\
->  #define SETPCGFLAG(uname, lname)			\
->  static inline void SetPageCgroup##uname(struct page_cgroup *pc)\
->  	{ set_bit(PCG_##lname, &pc->flags);  }
-> +#define __SETPCGFLAG(uname, lname)			\
-> +static inline void __SetPageCgroup##uname(struct page_cgroup *pc)\
-> +	{ __set_bit(PCG_##lname, &pc->flags);  }
->  
->  #define CLEARPCGFLAG(uname, lname)			\
->  static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
->  	{ clear_bit(PCG_##lname, &pc->flags);  }
-> +#define __CLEARPCGFLAG(uname, lname)			\
-> +static inline void __ClearPageCgroup##uname(struct page_cgroup *pc)	\
-> +	{ __clear_bit(PCG_##lname, &pc->flags);  }
->  
->  #define TESTCLEARPCGFLAG(uname, lname)			\
->  static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
->  	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
-> +#define __TESTCLEARPCGFLAG(uname, lname)			\
-> +static inline int __TestClearPageCgroup##uname(struct page_cgroup *pc)	\
-> +	{ return __test_and_clear_bit(PCG_##lname, &pc->flags);  }
->  
->  /* Cache flag is set only once (at allocation) */
->  TESTPCGFLAG(Cache, CACHE)
-> @@ -75,11 +84,10 @@ TESTPCGFLAG(Used, USED)
->  CLEARPCGFLAG(Used, USED)
->  SETPCGFLAG(Used, USED)
->  
-> -SETPCGFLAG(AcctLRU, ACCT_LRU)
-> -CLEARPCGFLAG(AcctLRU, ACCT_LRU)
-> +__SETPCGFLAG(AcctLRU, ACCT_LRU)
-> +__CLEARPCGFLAG(AcctLRU, ACCT_LRU)
->  TESTPCGFLAG(AcctLRU, ACCT_LRU)
-> -TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
-> -
-> +__TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
->  
->  SETPCGFLAG(FileMapped, FILE_MAPPED)
->  CLEARPCGFLAG(FileMapped, FILE_MAPPED)
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b9a3b94..51aba19 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -995,7 +995,7 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
->  		/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
->  		smp_rmb();
->  		memcg = pc->mem_cgroup;
-> -		SetPageCgroupAcctLRU(pc);
-> +		__SetPageCgroupAcctLRU(pc);
->  	} else
->  		memcg = root_mem_cgroup;
->  	mz = page_cgroup_zoneinfo(memcg, page);
-> @@ -1031,7 +1031,7 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
->  	 * LRU-accounting happened against pc->mem_cgroup or
->  	 * root_mem_cgroup.
->  	 */
-> -	if (TestClearPageCgroupAcctLRU(pc)) {
-> +	if (__TestClearPageCgroupAcctLRU(pc)) {
->  		VM_BUG_ON(!pc->mem_cgroup);
->  		memcg = pc->mem_cgroup;
->  	} else
-> -- 
-> 1.7.6.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Tony
