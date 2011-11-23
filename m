@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab1KWAgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42544 "EHLO mx2.suse.de"
+	id S932638Ab1KWAgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42508 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932684Ab1KWAgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:39 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
-Message-Id: <20111123002554.605341318@clark.kroah.org>
+	id S932581Ab1KWAgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
+Message-Id: <20111123002556.667710202@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:18 -0800
+Date: Tue, 22 Nov 2011 16:25:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Masayuki Ohtak <masa-korg@dsn.okisemi.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Denis Turischev <denis@compulab.co.il>
-Subject: [18/53] pch_phub: Fix MAC address writing issue for LAPIS ML7831
+        alan@lxorguk.ukuu.org.uk, Bart Hartgers <bart.hartgers@gmail.com>
+Subject: [40/53] USB: ark3116 initialisation fix
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +24,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Bart Hartgers <bart.hartgers@gmail.com>
 
-commit 2a9887919457c6e1bd482e8448223be59d19010a upstream.
+commit 583182ba5f02c8c9be82ea550f2051eaec15b975 upstream.
 
-ISSUE:
-Using ML7831, MAC address writing doesn't work well.
+This patch for the usb serial ark3116 driver fixes an initialisation
+ordering bug that gets triggered on hotplug when using at least recent
+debian/ubuntu userspace. Without it, ark3116 serial cables don't work.
 
-CAUSE:
-ML7831 and EG20T have the same register map for MAC address access.
-However, this driver processes the writing the same as ML7223.
-This is not true.
-This driver must process the writing the same as EG20T.
-This patch fixes the issue.
-
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: Denis Turischev <denis@compulab.co.il>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Bart Hartgers <bart.hartgers@gmail.com>
+Tested-by: law_ence.dev@ntlworld.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/pch_phub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ark3116.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -467,7 +467,7 @@ static int pch_phub_write_gbe_mac_addr(s
- 	int retval;
- 	int i;
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -42,7 +42,7 @@ static int debug;
+  * Version information
+  */
  
--	if (chip->ioh_type == 1) /* EG20T */
-+	if ((chip->ioh_type == 1) || (chip->ioh_type == 5)) /* EG20T or ML7831*/
- 		retval = pch_phub_gbe_serial_rom_conf(chip);
- 	else	/* ML7223 */
- 		retval = pch_phub_gbe_serial_rom_conf_mp(chip);
+-#define DRIVER_VERSION "v0.6"
++#define DRIVER_VERSION "v0.7"
+ #define DRIVER_AUTHOR "Bart Hartgers <bart.hartgers+ark3116@gmail.com>"
+ #define DRIVER_DESC "USB ARK3116 serial/IrDA driver"
+ #define DRIVER_DEV_DESC "ARK3116 RS232/IrDA"
+@@ -380,10 +380,6 @@ static int ark3116_open(struct tty_struc
+ 		goto err_out;
+ 	}
+ 
+-	/* setup termios */
+-	if (tty)
+-		ark3116_set_termios(tty, port, NULL);
+-
+ 	/* remove any data still left: also clears error state */
+ 	ark3116_read_reg(serial, UART_RX, buf);
+ 
+@@ -406,6 +402,10 @@ static int ark3116_open(struct tty_struc
+ 	/* enable DMA */
+ 	ark3116_write_reg(port->serial, UART_FCR, UART_FCR_DMA_SELECT);
+ 
++	/* setup termios */
++	if (tty)
++		ark3116_set_termios(tty, port, NULL);
++
+ err_out:
+ 	kfree(buf);
+ 	return result;
 
 
