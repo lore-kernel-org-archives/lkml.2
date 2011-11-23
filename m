@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1KWLwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:52:33 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51381 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab1KWLwc (ORCPT
+	id S1754105Ab1KWLxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:53:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58947 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab1KWLxR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:52:32 -0500
-MIME-Version: 1.0
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Wed, 23 Nov 2011 12:52:10 +0100
-Message-ID: <CAH9NwWfe3ahy6OAN=5au84b9pmGbbMvnRKoRUC95kNAZOFORjA@mail.gmail.com>
-Subject: [PATCH] lxfb: add support for LQ057V3DG01 panel
-To: linux-fbdev@vger.kernel.org
-Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Nov 2011 06:53:17 -0500
+Message-ID: <1322049186.14799.42.camel@twins>
+Subject: Re: [patch 3/7] sched: set skip_clock_update in yield_task_fair()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Date: Wed, 23 Nov 2011 12:53:06 +0100
+In-Reply-To: <1321971686.6855.18.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629441.7080.15.camel@marge.simson.net>
+	 <1321630552.2197.15.camel@twins>
+	 <1321971445.6855.14.camel@marge.simson.net>
+	 <1321971686.6855.18.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 47df48b6fe482a108a0889bf2fdecfbde4aea8ee Mon Sep 17 00:00:00 2001
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Wed, 23 Nov 2011 12:44:14 +0100
-Subject: [PATCH] lxfb: add support for LQ057V3DG01 panel
+On Tue, 2011-11-22 at 15:21 +0100, Mike Galbraith wrote:
+> +++ linux-3.0-tip/kernel/sched/core.c
+> @@ -4547,7 +4547,13 @@ again: 
 
-The LQ057V3DG01 panel needs some different timing
-values so that the picture is centered.
+Could you add:
 
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
----
- drivers/video/geode/lxfb_core.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+QUILT_DIFF_OPTS="-F ^[[:alpha:]\$_].*[^:]\$"
 
-diff --git a/drivers/video/geode/lxfb_core.c b/drivers/video/geode/lxfb_core.c
-index 416851c..7b75bae 100644
---- a/drivers/video/geode/lxfb_core.c
-+++ b/drivers/video/geode/lxfb_core.c
-@@ -40,6 +40,10 @@ static struct fb_videomode geode_modedb[] __devinitdata = {
- 	{ NULL, 60, 640, 480, 39682, 48, 8, 25, 2, 88, 2,
- 	  FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
- 	  FB_VMODE_NONINTERLACED, 0 },
-+	/* 640x480-60 adapted for LQ057V3DG01 panel */
-+	{ "LQ057V3DG01", 60, 640, 480, 39682, 48, 16, 34, 10, 88, 2,
-+	  FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
-+	  FB_VMODE_NONINTERLACED, 0 },
- 	/* 640x400-70 */
- 	{ NULL, 70, 640, 400, 39770, 40, 8, 28, 5, 96, 2,
- 	  FB_SYNC_HOR_HIGH_ACT,
--- 
-1.7.5.4
+
+to your quiltrc ?
