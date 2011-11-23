@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab1KWPuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:50:15 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52121 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab1KWPuN convert rfc822-to-8bit (ORCPT
+	id S1756826Ab1KWPwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:52:11 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:61683 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab1KWPwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:50:13 -0500
+	Wed, 23 Nov 2011 10:52:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
-References: <20111121182910.GA2856@Boggieman>
-	<20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
-Date: Wed, 23 Nov 2011 16:50:12 +0100
-Message-ID: <CAMeQTsb64v_9NQKU1xtBQdEPcnjxDAQZ8HBuMJBsD6_m117SRQ@mail.gmail.com>
-Subject: Re: GMA500 support
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        linux-kernel@vger.kernel.org, greg@kroah.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4ECC40B0.5040108@redhat.com>
+References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org>
+	<4ECB6D60.1010702@redhat.com>
+	<CAG6tG3xTkW1J=6xmUmmJoswJyR6ii5RDXvAsYrcH0CkVuUmJrQ@mail.gmail.com>
+	<4ECC40B0.5040108@redhat.com>
+Date: Wed, 23 Nov 2011 10:52:08 -0500
+Message-ID: <CAG6tG3y7gX=xdyJnTgGnyRix961eLiz1HOZC0iYTx-gXiiyQog@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: Robert Love <rlove@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Johannes Weiner <jweiner@redhat.com>, Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 12:28 PM, Alan Cox wrote:
-> On Mon, 21 Nov 2011 19:29:10 +0100
-> Kristoffer Ericson wrote:
->
->> Greetings,
->>
->> Im syncing my gma500 tree to all the patches I see pass through the kernel mailinglist and
->> its progressing well.
->> However, It would be nice with an todo list or a more practical this-works list. I know
->> its not a priority but would simplify alot for end users.
->
-> If you configure it in the following should work on GMA500/600
-> - internal laptop displays including backlight
-> - external svga
+Hi, Rik.
 
-Worth pointing out is that DDC for external displays isn't working until my
-fixes for SDVO gets in there. Manually setting a mode works fine. Otherwise
-you'll default to 1280x1024 (or was it 1024x768?).
-
-> - mode setting via KMS
-> - framebuffer console
-> - the framebuffer X server (and once out generally Dave Airlie's generic
->  KMS X server)
-> - suspend/resume
-
-- Sync to vblank is supported on gma500
-
+On Tue, Nov 22, 2011 at 7:39 PM, Rik van Riel <riel@redhat.com> wrote:
+> At first glance, it sounds like a great idea to have a program
+> like Firefox create a new object for every tab.
 >
-> The following I know don't work
-> - Huge external displays so large they won't fit in 8MB at init time
->  (causes a crash)
-> - Using the vesa X server with it - this confuses stuff and isn't
->  fixable, it's a "wrong user configuration"
+> However, this quickly runs into the practical problem that
+> Firefox does not know in advance how much memory each tab will
+> require.
 >
-> Unsupported
-> - 2D hardware acceleration except console scrolling (as it seems to be
->  too slow to be useful). I may add some 2D bits later where they do help
->  (eg back to front blitting may be worth it just about)
-> - 3D engine (no public documentation)
-> - Video playback acceleration. In theory there is enough info in the
->  VAAPI code for GMA500/600 that has been published and in the old
->  'binary X/source kernel' driver to do this but someone will have to
->  work on it if they want it
-> - Dell Mini HDMI port. This seems to be some kind of external bridge
->  chip. Being a TV luddite I don't yet own an HDMI capable display to
->  test.
+> Without a good way to size each mapping in advance, it may not
+> be practical to group related bits of memory together.
 
-I suspect this is just DVI with a HDMI connector. That is the case for Fit-PC2.
-It is hooked up to the SDVO and provides video but no audio.
+On Android (and Firefox for Android for that matter) we manage just
+about every resource (such as images, rendered web pages, etc) through
+ashmem. I don't recall the details of how the various subsystems that
+utilize ashmem decide whether to use a mapping-per-object versus
+packing multiple objects into a single mapping, but it works.
 
+> Never mind that it would require userspace programs to grow new
+> memory allocators...
+
+Agreed.
+
+> Yes, this characterization is correct.
 >
-> And I'm sure we have a few bugs left !
+> Note how in the object I proposed, when there is no memory
+> pressure, userspace can hold on to freed pages and quickly
+> reuse them for something else.
 >
-> Alan
+> There is no need for pages to be handed back to the kernel,
+> and then zeroed again when they get handed back to userspace
+> later on.
+
+Agreed, this is a nice benefit. However, couldn't user-space do the
+same thing now with MADV_DONTNEED?
+
+I do think we have two different features here, and we may want both.
+
+I'm concerned your proposal isn't ideal for Android or similar
+systems. It is heavy, and will involve too much process involvement.
+Remember, these systems are always running at memory capacity and are
+constantly LRU-freeing small amounts of pages. Having a way to say to
+the kernel, "you can toss these pages if you must, just let me know
+later if I try to reuse them" -- in a way that is very simple and very
+cheap -- is really valuable.
+
+> There is also no need to write a new memory allocator for
+> programs that want to pack related objects together in one
+> _VOLATILE mapping.
 >
+> The reason is that, on memory pressure, any arbitrary set of
+> pages can be nuked from userspace, so any memory allocator will
+> be compatible.
+
+In ashmem, you can pin and unpin any arbitrary set of pages. You don't
+have to pin the whole mapping, allowing user-space to pack arbitrary
+mappings into a single mapping and have the kernel jettison only the
+unused objects.
+
+>> That last point, btw, is why user-space developers like ashmem: It fits
+>> their models of how they do work. They pin/unpin objects as part of
+>> their normal access and repopulating is tied into the re-pin path, which
+>> is where it makes sense.
+>
+> Which userspace programs work that way already?
+
+What I mean is, user-space implicitly (if not explicitly) has get and
+put methods via things like reference counting, locking & unlocking,
+or the RAII pattern. And user-space already has a concept of "populate
+this object." So adding ashmem pin and unpin calls is often very
+simple, because the ashmem use case maps very nicely on top of how
+user-space applications are already managing resources.
+
+      Robert
