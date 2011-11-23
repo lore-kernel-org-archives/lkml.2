@@ -1,37 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758764Ab1KWIyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:54:15 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:34746 "EHLO smtp2.it.da.ut.ee"
+	id S1758806Ab1KWIym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:54:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51927 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab1KWIyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:54:12 -0500
-Date: Wed, 23 Nov 2011 10:54:10 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Keith Packard <keithp@keithp.com>
-cc: David Woodhouse <dwmw2@infradead.org>, dri-devel@lists.freedesktop.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: Bisected regression: hang on i915 between 3.1.0-rc9 and 3.1.0
-In-Reply-To: <86obw3e133.fsf@sumi.keithp.com>
-Message-ID: <alpine.SOC.1.00.1111231053020.15939@math.ut.ee>
-References: <alpine.SOC.1.00.1111221207090.6490@math.ut.ee> <alpine.SOC.1.00.1111221306410.8925@math.ut.ee> <86vcqcf3da.fsf@sumi.keithp.com> <alpine.SOC.1.00.1111230911390.12655@math.ut.ee> <86obw3e133.fsf@sumi.keithp.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753348Ab1KWIyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:54:40 -0500
+From: Cong Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Hugh Dickins <hughd@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        WANG Cong <amwang@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 2/2] fs: wire up .truncate_range and .fallocate
+Date: Wed, 23 Nov 2011 16:53:31 +0800
+Message-Id: <1322038412-29013-2-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+References: <1322038412-29013-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Yes, VT-x and VT-d are both enabled from BIOS setup.
-> 
-> Any reason for that? We've found all kinds of problems with DMAR enabled
-> on these machines that is only resolved by completely turning it
-> off. You might try with intel_iommu=off and make sure that's stable.
+As Hugh suggested, with FALLOC_FL_PUNCH_HOLE, we can use do_fallocate()
+to implement madvise_remove and finally remove .truncate_range call back.
 
-Well, there is reason for VT-x but actually none for VT-d because I am 
-not giving out any PCI devices to virtual machines. Will also test 
-witout it.
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
+---
+ include/linux/fs.h |    1 -
+ include/linux/mm.h |    3 ++-
+ mm/madvise.c       |    8 +++++---
+ mm/shmem.c         |    1 -
+ mm/truncate.c      |   21 +++++++++++++--------
+ 5 files changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e313022..266df73 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1635,7 +1635,6 @@ struct inode_operations {
+ 	ssize_t (*getxattr) (struct dentry *, const char *, void *, size_t);
+ 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
+ 	int (*removexattr) (struct dentry *, const char *);
+-	void (*truncate_range)(struct inode *, loff_t, loff_t);
+ 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
+ 		      u64 len);
+ } ____cacheline_aligned;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..a47f744 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -951,7 +951,8 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
+ extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
+ extern int vmtruncate(struct inode *inode, loff_t offset);
+-extern int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end);
++extern int vmtruncate_file_range(struct file *file, struct inode *inode,
++			loff_t offset, loff_t end);
+ 
+ int truncate_inode_page(struct address_space *mapping, struct page *page);
+ int generic_error_remove_page(struct address_space *mapping, struct page *page);
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 74bf193..05610d3 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -194,7 +194,8 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 				struct vm_area_struct **prev,
+ 				unsigned long start, unsigned long end)
+ {
+-	struct address_space *mapping;
++	struct file *file;
++	struct inode *inode;
+ 	loff_t offset, endoff;
+ 	int error;
+ 
+@@ -211,7 +212,8 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 	if ((vma->vm_flags & (VM_SHARED|VM_WRITE)) != (VM_SHARED|VM_WRITE))
+ 		return -EACCES;
+ 
+-	mapping = vma->vm_file->f_mapping;
++	file = vma->vm_file;
++	inode = file->f_mapping->host;
+ 
+ 	offset = (loff_t)(start - vma->vm_start)
+ 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+@@ -220,7 +222,7 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 
+ 	/* vmtruncate_range needs to take i_mutex */
+ 	up_read(&current->mm->mmap_sem);
+-	error = vmtruncate_range(mapping->host, offset, endoff);
++	error = vmtruncate_file_range(file, inode, offset, endoff);
+ 	down_read(&current->mm->mmap_sem);
+ 	return error;
+ }
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 65f7a27..fce5667 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2356,7 +2356,6 @@ static const struct file_operations shmem_file_operations = {
+ 
+ static const struct inode_operations shmem_inode_operations = {
+ 	.setattr	= shmem_setattr,
+-	.truncate_range	= shmem_truncate_range,
+ #ifdef CONFIG_TMPFS_XATTR
+ 	.setxattr	= shmem_setxattr,
+ 	.getxattr	= shmem_getxattr,
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 632b15e..7c46539 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -20,6 +20,7 @@
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
++#include <linux/falloc.h>
+ #include "internal.h"
+ 
+ 
+@@ -602,24 +603,28 @@ int vmtruncate(struct inode *inode, loff_t newsize)
+ }
+ EXPORT_SYMBOL(vmtruncate);
+ 
+-int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
++int vmtruncate_file_range(struct file *file, struct inode *inode,
++		     loff_t lstart, loff_t lend)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
+ 	loff_t holebegin = round_up(lstart, PAGE_SIZE);
+ 	loff_t holelen = 1 + lend - holebegin;
++	int err;
+ 
+-	/*
+-	 * If the underlying filesystem is not going to provide
+-	 * a way to truncate a range of blocks (punch a hole) -
+-	 * we should return failure right now.
+-	 */
+-	if (!inode->i_op->truncate_range)
++	if (!file->f_op->fallocate)
+ 		return -ENOSYS;
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 	inode_dio_wait(inode);
+ 	unmap_mapping_range(mapping, holebegin, holelen, 1);
+-	inode->i_op->truncate_range(inode, lstart, lend);
++	mutex_unlock(&inode->i_mutex);
++
++	err = do_fallocate(file, FALLOC_FL_KEEP_SIZE|FALLOC_FL_PUNCH_HOLE,
++		     holebegin, holelen);
++	if (err)
++		return err;
++
++	mutex_lock(&inode->i_mutex);
+ 	/* unmap again to remove racily COWed private pages */
+ 	unmap_mapping_range(mapping, holebegin, holelen, 1);
+ 	mutex_unlock(&inode->i_mutex);
 -- 
-Meelis Roos (mroos@linux.ee)
+1.7.4.4
+
