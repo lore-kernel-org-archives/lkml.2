@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759879Ab1KWHwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:52:49 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65470 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588Ab1KWHws convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:52:48 -0500
+	id S1758757Ab1KWIBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:01:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab1KWIBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:01:35 -0500
+Date: Wed, 23 Nov 2011 09:03:54 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: Larry.Finger@lwfinger.net, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>, hedayaty@gmail.com
+Subject: Re: pull request: wireless 2011-11-22
+Message-ID: <20111123080353.GA3752@redhat.com>
+References: <20111122.160511.2302883259439708995.davem@davemloft.net>
+ <20111122.161322.454163033398038634.davem@davemloft.net>
+ <4ECC1479.8090209@lwfinger.net>
+ <20111122.164057.1411098663938026383.davem@davemloft.net>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <CAOJsxLFJimmLDev2UjgTYam37zv90gWGnKTPvjKOBre4_Uv81A@mail.gmail.com>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-	<1321960128-15191-5-git-send-email-gilad@benyossef.com>
-	<alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
-	<CAOJsxLFJimmLDev2UjgTYam37zv90gWGnKTPvjKOBre4_Uv81A@mail.gmail.com>
-Date: Wed, 23 Nov 2011 09:52:47 +0200
-Message-ID: <CAOtvUMfYw-QNCq+zXZZrZJaz-i--HSpeH_mdPgN7Bc0Z=u+TjQ@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122.164057.1411098663938026383.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 8:57 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Wed, Nov 23, 2011 at 8:23 AM, Pekka Enberg <penberg@kernel.org> wrote:
->> On Tue, 22 Nov 2011, Gilad Ben-Yossef wrote:
->>>
->>> static void flush_all(struct kmem_cache *s)
->>> {
->>> -       on_each_cpu(flush_cpu_slab, s, 1);
->>> +       cpumask_var_t cpus;
->>> +       struct kmem_cache_cpu *c;
->>> +       int cpu;
->>> +
->>> +       if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
->>
->> __GFP_NOWARN too maybe?
->>
+On Tue, Nov 22, 2011 at 04:40:57PM -0500, David Miller wrote:
+> >>> It just means that we won't notice spurious interrupts if the device
+> >>> sharing the line with rt2800pci generates one.
+> >>>
+> >>> This change is wrong.
 
-Right, the allocation failure here is harmless. I should probably do
-the same for the page_alloc.c case as well.
+Ehh, I had a feeling that I was doing something wrong ... 
 
->>> +               for_each_online_cpu(cpu) {
->>> +                       c = per_cpu_ptr(s->cpu_slab, cpu);
->>> +                       if (c->page)
->>> +                               cpumask_set_cpu(cpu, cpus);
->>> +               }
->>> +               on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
->>> +               free_cpumask_var(cpus);
->>> +       } else
->>> +               on_each_cpu(flush_cpu_slab, s, 1);
->>> }
->>
->> Acked-by: Pekka Enberg <penberg@kernel.org>
->>
->> I can't take the patch because it depends on a new API introduced in the
->> first patch.
->>
->> I'm CC'ing Andrew.
+> >> BTW, look at it this way, if what you say is true John then what's the
+> >> point
+> >> in returning any specific value at all?
+> >>
+> >> Everyone can just return IRQ_HANDLED and everything would just work.
+> >>
+> >> But you know that's not the case, and that it's important that this
+> >> value
+> >> is returned accurately.
+> > 
+> > I was trying to find the thread that reported the improvement in
+> > performance with this change, but failed. Is it possible that their
+> > change just papered over an interrupt storm from some other device
+> > that shared that interrupt?
+> 
+> It doesn't fix a performance problem, it fixes a problem wherein the
+> IRQ line is disabled by the generic IRQ code because all handlers
+> return IRQ_NONE.
 
-Thanks!
+According to Amir, who reports this problem patch fix the performance
+(https://bugzilla.redhat.com/show_bug.cgi?id=658451),
+from very bad to expected on wifi link. It can be explained, if we
+disable interrupt line, driver still operate, but read TX/RX statuses
+from hardware when internal driver watchdog timeout. Hence we operate,
+but very slow. If we prevent to disable interrupt by IRQ controller
+driver, device operate normally.
 
-There's a git tree of these over at: git://github.com/gby/linux.git
-branch ipi_noise_v4 in case that helps.
+The main problem here, that we have hardware (or firmware) that
+generate interrupt with empty interrupt status register, so we can
+not detect if interrupt is really generated by Ralink device.
 
-I will send v5 (and create a new git branch for it) with the above
-changes and the Arm patch  description update once I get an Ack from
-Russel K.
+Perhaps exist good fix for that problem, i.e. we can write to some
+register to stop hardware generating spurious interrupts, or exist
+other way than reading status register to find out if Ralink device
+generated interrupt. But that require detailed hardware knowledge,
+and I'm not sure if we ever can get such informations. Also this 
+could be a hardware bug, device just generate spurious interrupts
+and we can not do anything about it. I looked at driver from Ralink
+site, and it do exactly that, it return IRQ_HANDLED if status register
+is empty.
 
-Cheers,
-Gilad
+Ok, I'm thinking about other fix now ...
 
->
-
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+Stanislaw
