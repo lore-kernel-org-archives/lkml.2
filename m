@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759654Ab1KWCAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 21:00:34 -0500
-Received: from ozlabs.org ([203.10.76.45]:58015 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759633Ab1KWCAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 21:00:32 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 0/7] Introducing a generic AMP framework
-In-Reply-To: <CAK=WgbaF=yvGXvJdENrMoi4wWxaQa3UpbtsRm3mcA3cFdDCitA@mail.gmail.com>
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com> <874nywpfkd.fsf@rustcorp.com.au> <CAK=WgbaF=yvGXvJdENrMoi4wWxaQa3UpbtsRm3mcA3cFdDCitA@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 23 Nov 2011 12:03:22 +1030
-Message-ID: <87obw31v31.fsf@rustcorp.com.au>
+	id S1759708Ab1KWCB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 21:01:56 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63604 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab1KWCBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 21:01:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1321945011.22361.335.camel@sli10-conroe>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+	<1321900608-27687-8-git-send-email-mgorman@suse.de>
+	<1321945011.22361.335.camel@sli10-conroe>
+Date: Wed, 23 Nov 2011 10:01:53 +0800
+Message-ID: <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+From: Nai Xia <nai.xia@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Nov 2011 13:40:04 +0200, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> At this point I know of at least four vendors (besides TI) who are
-> actively looking into supporting this, and it's getting a bit hard to
-> collaborate, so I plan to get this into linux-next later this week
-> (minus the virtio-spec.txt change which I'll send directly to you,
-> Rusty) in the hope of getting this merged into 3.3.
+On Tue, Nov 22, 2011 at 2:56 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
+>> This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
+>> mode that avoids writing back pages to backing storage. Async
+>> compaction maps to MIGRATE_ASYNC while sync compaction maps to
+>> MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
+>> hotplug, MIGRATE_SYNC is used.
+>>
+>> This avoids sync compaction stalling for an excessive length of time,
+>> particularly when copying files to a USB stick where there might be
+>> a large number of dirty pages backed by a filesystem that does not
+>> support ->writepages.
+> Hi,
+> from my understanding, with this, even writes
+> to /proc/sys/vm/compact_memory doesn't wait for pageout, is this
+> intended?
+> on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
+> lock, so could wait on page read. page read and page out have the same
+> latency, why takes them different?
 
-Good.  Thanks.
+So for the problem you raised, I think my suggestion to Mel is to adopt the
+following logic:
 
-> >, but no objections here
-> 
-> Can I add your Acked-by on the virtio parts (mainly patches 3 and 6) ?
+           if (!trylock_page(page) && !PageUptodate(page))
+                      we are quite likely to block on read, so we
+                      depend on yet another MIGRATE_SYNC_MODE to decide
+                      if we really want to lock_page() and wait for this IO.
 
-That would imply that I'd done more than glance over them, and
-unfortunately I haven't :(
+How do you think ?
+
 
 Thanks,
-Rusty.
+
+Nai
+>
+> Thanks,
+> Shaohua
+>
+>
