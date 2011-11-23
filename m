@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab1KWAve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:51:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42842 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759098Ab1KWAkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759063Ab1KWAkz (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Nov 2011 19:40:55 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:06 2011
-Message-Id: <20111123002406.590288296@clark.kroah.org>
+Received: from cantor2.suse.de ([195.135.220.15]:42840 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759246Ab1KWAkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:40:52 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:04 2011
+Message-Id: <20111123002404.779095515@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:28 -0800
+Date: Tue, 22 Nov 2011 16:23:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [21/53] tty: hvc_dcc: Fix duplicate character inputs
+        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
+Subject: [02/53] [SCSI] fix WARNING: at drivers/scsi/scsi_lib.c:1704
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +24,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-commit c2a3e84f950e7ddba1f3914b005861d46ae60359 upstream.
+commit 4e6c82b3614a18740ef63109d58743a359266daf upstream.
 
-Reading from the DCC grabs a character from the buffer and
-clears the status bit. Since this is a context-changing
-operation, instructions following the character read that rely on
-the status bit being accurate need to be synchronized with an
-ISB.
+On Mon, 2011-11-07 at 17:24 +1100, Stephen Rothwell wrote:
+> Hi all,
+>
+> Starting some time last week I am getting the following during boot on
+> our PPC970 blade:
+>
+> calling  .ipr_init+0x0/0x68 @ 1
+> ipr: IBM Power RAID SCSI Device Driver version: 2.5.2 (April 27, 2011)
+> ipr 0000:01:01.0: Found IOA with IRQ: 26
+> ipr 0000:01:01.0: Starting IOA initialization sequence.
+> ipr 0000:01:01.0: Adapter firmware version: 06160039
+> ipr 0000:01:01.0: IOA initialized.
+> scsi0 : IBM 572E Storage Adapter
+> ------------[ cut here ]------------
+> WARNING: at drivers/scsi/scsi_lib.c:1704
+> Modules linked in:
+> NIP: c00000000053b3d4 LR: c00000000053e5b0 CTR: c000000000541d70
+> REGS: c0000000783c2f60 TRAP: 0700   Not tainted  (3.1.0-autokern1)
+> MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24002024  XER: 20000002
+> TASK = c0000000783b8000[1] 'swapper' THREAD: c0000000783c0000 CPU: 0
+> GPR00: 0000000000000001 c0000000783c31e0 c000000000cf38b0 c00000000239a9d0
+> GPR04: c000000000cbe8f8 0000000000000000 c0000000783c3040 0000000000000000
+> GPR08: c000000075daf488 c000000078a3b7ff c000000000bcacc8 0000000000000000
+> GPR12: 0000000044002028 c000000007ffb000 0000000002e40000 000000000099b800
+> GPR16: 0000000000000000 c000000000bba5fc c000000000a61db8 0000000000000000
+> GPR20: 0000000001b77200 0000000000000000 c000000078990000 0000000000000001
+> GPR24: c000000002396828 0000000000000000 0000000000000000 c000000078a3b938
+> GPR28: fffffffffffffffa c0000000008ad2c0 c000000000c7faa8 c00000000239a9d0
+> NIP [c00000000053b3d4] .scsi_free_queue+0x24/0x90
+> LR [c00000000053e5b0] .scsi_alloc_sdev+0x280/0x2e0
+> Call Trace:
+> [c0000000783c31e0] [c000000000c7faa8] wireless_seq_fops+0x278d0/0x2eb88 (unreliable)
+> [c0000000783c3270] [c00000000053e5b0] .scsi_alloc_sdev+0x280/0x2e0
+> [c0000000783c3330] [c00000000053eba0] .scsi_probe_and_add_lun+0x390/0xb40
+> [c0000000783c34a0] [c00000000053f7ec] .__scsi_scan_target+0x16c/0x650
+> [c0000000783c35f0] [c00000000053fd90] .scsi_scan_channel+0xc0/0x100
+> [c0000000783c36a0] [c00000000053fefc] .scsi_scan_host_selected+0x12c/0x1c0
+> [c0000000783c3750] [c00000000083dcb4] .ipr_probe+0x2c0/0x390
+> [c0000000783c3830] [c0000000003f50b4] .local_pci_probe+0x34/0x50
+> [c0000000783c38a0] [c0000000003f5f78] .pci_device_probe+0x148/0x150
+> [c0000000783c3950] [c0000000004e1e8c] .driver_probe_device+0xdc/0x210
+> [c0000000783c39f0] [c0000000004e20cc] .__driver_attach+0x10c/0x110
+> [c0000000783c3a80] [c0000000004e1228] .bus_for_each_dev+0x98/0xf0
+> [c0000000783c3b30] [c0000000004e1bf8] .driver_attach+0x28/0x40
+> [c0000000783c3bb0] [c0000000004e07d8] .bus_add_driver+0x218/0x340
+> [c0000000783c3c60] [c0000000004e2a2c] .driver_register+0x9c/0x1b0
+> [c0000000783c3d00] [c0000000003f62d4] .__pci_register_driver+0x64/0x140
+> [c0000000783c3da0] [c000000000b99f88] .ipr_init+0x4c/0x68
+> [c0000000783c3e20] [c00000000000ad24] .do_one_initcall+0x1a4/0x1e0
+> [c0000000783c3ee0] [c000000000b512d0] .kernel_init+0x14c/0x1fc
+> [c0000000783c3f90] [c000000000022468] .kernel_thread+0x54/0x70
+> Instruction dump:
+> ebe1fff8 7c0803a6 4e800020 7c0802a6 fba1ffe8 fbe1fff8 7c7f1b78 f8010010
+> f821ff71 e8030398 3120ffff 7c090110 <0b000000> e86303b0 482de065 60000000
+> ---[ end trace 759bed76a85e8dec ]---
+> scsi 0:0:1:0: Direct-Access     IBM-ESXS MAY2036RC        T106 PQ: 0 ANSI: 5
+> ------------[ cut here ]------------
+>
+> I get lots more of these.  The obvious commit to point the finger at
+> is 3308511c93e6 ("[SCSI] Make scsi_free_queue() kill pending SCSI
+> commands") but the root cause may be something different.
 
-In this case, the status bit check needs to execute after the
-character read otherwise we run the risk of reading the character
-and checking the status bit before the read can clear the status
-bit in the first place. When this happens, the user will see the
-same character they typed twice, instead of once.
+Caused by
 
-Add an ISB after the read and the write, so that the status check
-is synchronized with the read/write operations.
+commit f7c9c6bb14f3104608a3a83cadea10a6943d2804
+Author: Anton Blanchard <anton@samba.org>
+Date:   Thu Nov 3 08:56:22 2011 +1100
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+    [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
+
+Doesn't completely do the teardown.  The true fix is to do a proper
+teardown instead of hand rolling it
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/hvc/hvc_dcc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/scsi_scan.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/tty/hvc/hvc_dcc.c
-+++ b/drivers/tty/hvc/hvc_dcc.c
-@@ -46,6 +46,7 @@ static inline char __dcc_getchar(void)
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -319,11 +319,7 @@ static struct scsi_device *scsi_alloc_sd
+ 	return sdev;
  
- 	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
- 		: "=r" (__c));
-+	isb();
- 
- 	return __c;
- }
-@@ -55,6 +56,7 @@ static inline void __dcc_putchar(char c)
- 	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
- 		: /* no output register */
- 		: "r" (c));
-+	isb();
- }
- 
- static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
+ out_device_destroy:
+-	scsi_device_set_state(sdev, SDEV_DEL);
+-	transport_destroy_device(&sdev->sdev_gendev);
+-	put_device(&sdev->sdev_dev);
+-	scsi_free_queue(sdev->request_queue);
+-	put_device(&sdev->sdev_gendev);
++	__scsi_remove_device(sdev);
+ out:
+ 	if (display_failure_msg)
+ 		printk(ALLOC_FAILURE_MSG, __func__);
 
 
