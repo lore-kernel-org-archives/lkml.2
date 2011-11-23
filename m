@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759103Ab1KWAhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:37:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42652 "EHLO mx2.suse.de"
+	id S1759087Ab1KWAhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:37:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42637 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759057Ab1KWAhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:37:20 -0500
+	id S1759057Ab1KWAhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:37:13 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
-Message-Id: <20111123002557.423041928@clark.kroah.org>
+Message-Id: <20111123002557.219181678@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:48 -0800
+Date: Tue, 22 Nov 2011 16:25:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Antonio Quartulli <ordex@autistici.org>,
-        Junkeun Song <jun361@gmail.com>,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: [48/53] batman-adv: fix tt_local_reset_flags() function
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        Robert Hooker <robert.hooker@canonical.com>
+Subject: [46/53] drm/i915: fix IVB cursor support
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <ordex@autistici.org>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 31901264511cf20c5ed33b8649a3ca9ce28df60b upstream.
+commit 65a21cd65316145f9302594be8e69074369e1050 upstream.
 
-Currently the counter of tt_local_entry structures (tt_local_num) is incremented
-each time the tt_local_reset_flags() is invoked causing the node to send wrong
-TT_REPONSE packets containing a copy of non-initialised memory thus corrupting
-other nodes global translation table and making higher level communication
-impossible.
+The cursor regs have moved around, add the offsets and new macros for
+getting at them.
 
-Reported-by: Junkeun Song <jun361@gmail.com>
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
-Acked-by: Junkeun Song <jun361@gmail.com>
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-By: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Reviewed-By: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Robert Hooker <robert.hooker@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/batman-adv/translation-table.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    8 +++++++
+ drivers/gpu/drm/i915/intel_display.c |   40 ++++++++++++++++++++++++++++++-----
+ 2 files changed, 43 insertions(+), 5 deletions(-)
 
---- a/net/batman-adv/translation-table.c
-+++ b/net/batman-adv/translation-table.c
-@@ -1668,6 +1668,8 @@ static void tt_local_reset_flags(struct
- 		rcu_read_lock();
- 		hlist_for_each_entry_rcu(tt_local_entry, node,
- 					 head, hash_entry) {
-+			if (!(tt_local_entry->flags & flags))
-+				continue;
- 			tt_local_entry->flags &= ~flags;
- 			atomic_inc(&bat_priv->num_local_tt);
- 		}
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2554,10 +2554,18 @@
+ #define _CURBBASE		0x700c4
+ #define _CURBPOS			0x700c8
+ 
++#define _CURBCNTR_IVB		0x71080
++#define _CURBBASE_IVB		0x71084
++#define _CURBPOS_IVB		0x71088
++
+ #define CURCNTR(pipe) _PIPE(pipe, _CURACNTR, _CURBCNTR)
+ #define CURBASE(pipe) _PIPE(pipe, _CURABASE, _CURBBASE)
+ #define CURPOS(pipe) _PIPE(pipe, _CURAPOS, _CURBPOS)
+ 
++#define CURCNTR_IVB(pipe) _PIPE(pipe, _CURACNTR, _CURBCNTR_IVB)
++#define CURBASE_IVB(pipe) _PIPE(pipe, _CURABASE, _CURBBASE_IVB)
++#define CURPOS_IVB(pipe) _PIPE(pipe, _CURAPOS, _CURBPOS_IVB)
++
+ /* Display A control */
+ #define _DSPACNTR                0x70180
+ #define   DISPLAY_PLANE_ENABLE			(1<<31)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -5758,6 +5758,31 @@ static void i9xx_update_cursor(struct dr
+ 	I915_WRITE(CURBASE(pipe), base);
+ }
+ 
++static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
++	int pipe = intel_crtc->pipe;
++	bool visible = base != 0;
++
++	if (intel_crtc->cursor_visible != visible) {
++		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
++		if (base) {
++			cntl &= ~CURSOR_MODE;
++			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++		} else {
++			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
++			cntl |= CURSOR_MODE_DISABLE;
++		}
++		I915_WRITE(CURCNTR_IVB(pipe), cntl);
++
++		intel_crtc->cursor_visible = visible;
++	}
++	/* and commit changes on next vblank */
++	I915_WRITE(CURBASE_IVB(pipe), base);
++}
++
+ /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
+ static void intel_crtc_update_cursor(struct drm_crtc *crtc,
+ 				     bool on)
+@@ -5805,11 +5830,16 @@ static void intel_crtc_update_cursor(str
+ 	if (!visible && !intel_crtc->cursor_visible)
+ 		return;
+ 
+-	I915_WRITE(CURPOS(pipe), pos);
+-	if (IS_845G(dev) || IS_I865G(dev))
+-		i845_update_cursor(crtc, base);
+-	else
+-		i9xx_update_cursor(crtc, base);
++	if (IS_IVYBRIDGE(dev)) {
++		I915_WRITE(CURPOS_IVB(pipe), pos);
++		ivb_update_cursor(crtc, base);
++	} else {
++		I915_WRITE(CURPOS(pipe), pos);
++		if (IS_845G(dev) || IS_I865G(dev))
++			i845_update_cursor(crtc, base);
++		else
++			i9xx_update_cursor(crtc, base);
++	}
+ 
+ 	if (visible)
+ 		intel_mark_busy(dev, to_intel_framebuffer(crtc->fb)->obj);
 
 
