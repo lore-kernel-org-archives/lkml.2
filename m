@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab1KWBDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:03:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42109 "EHLO mx2.suse.de"
+	id S1759436Ab1KWBDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:03:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42094 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932154Ab1KWAdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:33:32 -0500
+	id S932114Ab1KWAdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:33:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:08 2011
-Message-Id: <20111123002208.684095615@clark.kroah.org>
+Message-Id: <20111123002208.497629241@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:21:08 -0800
+Date: Tue, 22 Nov 2011 16:21:06 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Marek <mmarek@suse.cz>
-Subject: [18/25] kbuild: Fix passing -Wno-* options to gcc 4.4+
+        stable@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        David Rientjes <rientjes@google.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [16/25] mm: avoid null pointer access in vm_struct via /proc/vmallocinfo
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,85 +29,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 3254
-Lines: 78
+Content-Length: 5721
+Lines: 166
 
-From: Michal Marek <mmarek@suse.cz>
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
 
-commit 8417da6f2128008c431c7d130af6cd3d9079922e upstream.
+commit f5252e009d5b87071a919221e4f6624184005368 upstream
 
-Starting with 4.4, gcc will happily accept -Wno-<anything> in the
-cc-option test and complain later when compiling a file that has some
-other warning. This rather unexpected behavior is intentional as per
-http://gcc.gnu.org/PR28322, so work around it by testing for support of
-the opposite option (without the no-). Introduce a new Makefile function
-cc-disable-warning that does this and update two uses of cc-option in
-the toplevel Makefile.
+The /proc/vmallocinfo shows information about vmalloc allocations in vmlist
+that is a linklist of vm_struct. It, however, may access pages field of
+vm_struct where a page was not allocated. This results in a null pointer
+access and leads to a kernel panic.
 
-Reported-and-tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Why this happen:
+In __vmalloc_node() called from vmalloc(), newly allocated vm_struct
+is added to vmlist at __get_vm_area_node() and then, some fields of
+vm_struct such as nr_pages and pages are set at __vmalloc_area_node(). In
+other words, it is added to vmlist before it is fully initialized. At the
+same time, when the /proc/vmallocinfo is read, it accesses the pages field
+of vm_struct according to the nr_pages field at show_numa_info(). Thus, a
+null pointer access happens.
+
+Patch:
+This patch adds newly allocated vm_struct to the vmlist *after* it is fully
+initialized. So, it can avoid accessing the pages field with unallocated
+page when show_numa_info() is called.
+
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- Documentation/kbuild/makefiles.txt |   12 ++++++++++++
- Makefile                           |    4 ++--
- scripts/Kbuild.include             |    5 +++++
- 3 files changed, 19 insertions(+), 2 deletions(-)
 
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -502,6 +502,18 @@ more details, with real examples.
- 	gcc >= 3.00. For gcc < 3.00, -malign-functions=4 is used.
- 	Note: cc-option-align uses KBUILD_CFLAGS for $(CC) options
+ include/linux/vmalloc.h |    1 
+ mm/vmalloc.c            |   67 +++++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 51 insertions(+), 17 deletions(-)
+
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -13,6 +13,7 @@ struct vm_area_struct;		/* vma defining
+ #define VM_MAP		0x00000004	/* vmap()ed pages */
+ #define VM_USERMAP	0x00000008	/* suitable for remap_vmalloc_range */
+ #define VM_VPAGES	0x00000010	/* buffer for pages was vmalloc'ed */
++#define VM_UNLIST	0x00000020	/* vm_struct is not listed in vmlist */
+ /* bits [20..32] reserved for arch specific ioremap internals */
  
-+    cc-disable-warning
-+	cc-disable-warning checks if gcc supports a given warning and returns
-+	the commandline switch to disable it. This special function is needed,
-+	because gcc 4.4 and later accept any unknown -Wno-* option and only
-+	warn about it if there is another warning in the source file.
+ /*
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1203,17 +1203,22 @@ EXPORT_SYMBOL_GPL(map_vm_area);
+ DEFINE_RWLOCK(vmlist_lock);
+ struct vm_struct *vmlist;
+ 
+-static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
++static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+ 			      unsigned long flags, void *caller)
+ {
+-	struct vm_struct *tmp, **p;
+-
+ 	vm->flags = flags;
+ 	vm->addr = (void *)va->va_start;
+ 	vm->size = va->va_end - va->va_start;
+ 	vm->caller = caller;
+ 	va->private = vm;
+ 	va->flags |= VM_VM_AREA;
++}
 +
-+	Example:
-+		KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
++static void insert_vmalloc_vmlist(struct vm_struct *vm)
++{
++	struct vm_struct *tmp, **p;
 +
-+	In the above example, -Wno-unused-but-set-variable will be added to
-+	KBUILD_CFLAGS only if gcc really accepts it.
++	vm->flags &= ~VM_UNLIST;
+ 
+ 	write_lock(&vmlist_lock);
+ 	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
+@@ -1225,6 +1230,13 @@ static void insert_vmalloc_vm(struct vm_
+ 	write_unlock(&vmlist_lock);
+ }
+ 
++static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
++			      unsigned long flags, void *caller)
++{
++	setup_vmalloc_vm(vm, va, flags, caller);
++	insert_vmalloc_vmlist(vm);
++}
 +
-     cc-version
- 	cc-version returns a numerical version of the $(CC) compiler version.
- 	The format is <major><minor> where both are two digits. So for example
---- a/Makefile
-+++ b/Makefile
-@@ -538,7 +538,7 @@ KBUILD_CFLAGS += $(call cc-option, -fno-
- endif
+ static struct vm_struct *__get_vm_area_node(unsigned long size,
+ 		unsigned long align, unsigned long flags, unsigned long start,
+ 		unsigned long end, int node, gfp_t gfp_mask, void *caller)
+@@ -1263,7 +1275,18 @@ static struct vm_struct *__get_vm_area_n
+ 		return NULL;
+ 	}
  
- # This warning generated too much noise in a regular build.
--KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
-+KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
- 
- ifdef CONFIG_FRAME_POINTER
- KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
-@@ -568,7 +568,7 @@ CHECKFLAGS     += $(NOSTDINC_FLAGS)
- KBUILD_CFLAGS += $(call cc-option,-Wdeclaration-after-statement,)
- 
- # disable pointer signed / unsigned warnings in gcc 4.0
--KBUILD_CFLAGS += $(call cc-option,-Wno-pointer-sign,)
-+KBUILD_CFLAGS += $(call cc-disable-warning, pointer-sign)
- 
- # disable invalid "can't wrap" optimizations for signed / pointers
- KBUILD_CFLAGS	+= $(call cc-option,-fno-strict-overflow)
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -118,6 +118,11 @@ cc-option-yn = $(call try-run,\
- cc-option-align = $(subst -functions=0,,\
- 	$(call cc-option,-falign-functions=0,-malign-functions=0))
- 
-+# cc-disable-warning
-+# Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
-+cc-disable-warning = $(call try-run,\
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
+-	insert_vmalloc_vm(area, va, flags, caller);
++	/*
++	 * When this function is called from __vmalloc_node,
++	 * we do not add vm_struct to vmlist here to avoid
++	 * accessing uninitialized members of vm_struct such as
++	 * pages and nr_pages fields. They will be set later.
++	 * To distinguish it from others, we use a VM_UNLIST flag.
++	 */
++	if (flags & VM_UNLIST)
++		setup_vmalloc_vm(area, va, flags, caller);
++	else
++		insert_vmalloc_vm(area, va, flags, caller);
 +
- # cc-version
- # Usage gcc-ver := $(call cc-version)
- cc-version = $(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-version.sh $(CC))
+ 	return area;
+ }
+ 
+@@ -1338,17 +1361,20 @@ struct vm_struct *remove_vm_area(const v
+ 	va = find_vmap_area((unsigned long)addr);
+ 	if (va && va->flags & VM_VM_AREA) {
+ 		struct vm_struct *vm = va->private;
+-		struct vm_struct *tmp, **p;
+-		/*
+-		 * remove from list and disallow access to this vm_struct
+-		 * before unmap. (address range confliction is maintained by
+-		 * vmap.)
+-		 */
+-		write_lock(&vmlist_lock);
+-		for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
+-			;
+-		*p = tmp->next;
+-		write_unlock(&vmlist_lock);
++
++		if (!(vm->flags & VM_UNLIST)) {
++			struct vm_struct *tmp, **p;
++			/*
++			 * remove from list and disallow access to
++			 * this vm_struct before unmap. (address range
++			 * confliction is maintained by vmap.)
++			 */
++			write_lock(&vmlist_lock);
++			for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
++				;
++			*p = tmp->next;
++			write_unlock(&vmlist_lock);
++		}
+ 
+ 		vmap_debug_free_range(va->va_start, va->va_end);
+ 		free_unmap_vmap_area(va);
+@@ -1568,8 +1594,9 @@ static void *__vmalloc_node(unsigned lon
+ 	if (!size || (size >> PAGE_SHIFT) > totalram_pages)
+ 		return NULL;
+ 
+-	area = __get_vm_area_node(size, align, VM_ALLOC, VMALLOC_START,
+-				  VMALLOC_END, node, gfp_mask, caller);
++	area = __get_vm_area_node(size, align, VM_ALLOC | VM_UNLIST,
++				  VMALLOC_START, VMALLOC_END, node,
++				  gfp_mask, caller);
+ 
+ 	if (!area)
+ 		return NULL;
+@@ -1577,6 +1604,12 @@ static void *__vmalloc_node(unsigned lon
+ 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
+ 
+ 	/*
++	 * In this function, newly allocated vm_struct is not added
++	 * to vmlist at __get_vm_area_node(). so, it is added here.
++	 */
++	insert_vmalloc_vmlist(area);
++
++	/*
+ 	 * A ref_count = 3 is needed because the vm_struct and vmap_area
+ 	 * structures allocated in the __get_vm_area_node() function contain
+ 	 * references to the virtual address of the vmalloc'ed block.
 
 
