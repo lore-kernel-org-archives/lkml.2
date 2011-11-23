@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab1KWAdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:33:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42100 "EHLO mx2.suse.de"
+	id S932238Ab1KWAdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:33:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42126 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758997Ab1KWAd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:33:28 -0500
+	id S932182Ab1KWAdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:33:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:08 2011
-Message-Id: <20111123002208.595716630@clark.kroah.org>
+Message-Id: <20111123002208.869478627@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:21:07 -0800
+Date: Tue, 22 Nov 2011 16:21:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shan Wei <shanwei@cn.fujitsu.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [17/25] ipv6: udp: fix the wrong headroom check
+        Andrew Worsley <amworsley@gmail.com>
+Subject: [20/25] USB: Fix Corruption issue in USB ftdi driver ftdi_sio.c
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +24,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1099
-Lines: 35
+Content-Length: 2222
+Lines: 62
 
-From: Shan Wei <shanwei@cn.fujitsu.com>
+From: Andrew Worsley <amworsley@gmail.com>
 
-commit a9cf73ea7ff78f52662c8658d93c226effbbedde upstream.
+commit b1ffb4c851f185e9051ba837c16d9b84ef688d26 upstream.
 
-At this point, skb->data points to skb_transport_header.
-So, headroom check is wrong.
+Fix for ftdi_set_termios() glitching output
 
-For some case:bridge(UFO is on) + eth device(UFO is off),
-there is no enough headroom for IPv6 frag head.
-But headroom check is always false.
+ftdi_set_termios() is constantly setting the baud rate, data bits and parity
+unnecessarily on every call, . When called while characters are being
+transmitted can cause the FTDI chip to corrupt the serial port bit stream
+output by stalling the output half a bit during the output of a character.
+Simple fix by skipping this setting if the baud rate/data bits/parity are
+unchanged.
 
-This will bring about data be moved to there prior to skb->head,
-when adding IPv6 frag header to skb.
-
-Signed-off-by: Shan Wei <shanwei@cn.fujitsu.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrew Worsley <amworsley@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/udp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1141,7 +1141,7 @@ static struct sk_buff *udp6_ufo_fragment
- 	skb->ip_summed = CHECKSUM_NONE;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2355,13 +2355,19 @@ static void ftdi_set_termios(struct tty_
  
- 	/* Check if there is enough headroom to insert fragment header. */
--	if ((skb_headroom(skb) < frag_hdr_sz) &&
-+	if ((skb_mac_header(skb) < skb->head + frag_hdr_sz) &&
- 	    pskb_expand_head(skb, frag_hdr_sz, 0, GFP_ATOMIC))
- 		goto out;
+ 	cflag = termios->c_cflag;
  
+-	/* FIXME -For this cut I don't care if the line is really changing or
+-	   not  - so just do the change regardless  - should be able to
+-	   compare old_termios and tty->termios */
++	if (old_termios->c_cflag == termios->c_cflag
++	    && old_termios->c_ispeed == termios->c_ispeed
++	    && old_termios->c_ospeed == termios->c_ospeed)
++		goto no_c_cflag_changes;
++
+ 	/* NOTE These routines can get interrupted by
+ 	   ftdi_sio_read_bulk_callback  - need to examine what this means -
+ 	   don't see any problems yet */
+ 
++	if ((old_termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)) ==
++	    (termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)))
++		goto no_data_parity_stop_changes;
++
+ 	/* Set number of data bits, parity, stop bits */
+ 
+ 	termios->c_cflag &= ~CMSPAR;
+@@ -2398,6 +2404,7 @@ static void ftdi_set_termios(struct tty_
+ 	}
+ 
+ 	/* Now do the baudrate */
++no_data_parity_stop_changes:
+ 	if ((cflag & CBAUD) == B0) {
+ 		/* Disable flow control */
+ 		if (usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+@@ -2423,6 +2430,7 @@ static void ftdi_set_termios(struct tty_
+ 
+ 	/* Set flow control */
+ 	/* Note device also supports DTR/CD (ugh) and Xon/Xoff in hardware */
++no_c_cflag_changes:
+ 	if (cflag & CRTSCTS) {
+ 		dbg("%s Setting to CRTSCTS flow control", __func__);
+ 		if (usb_control_msg(dev,
 
 
