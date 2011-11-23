@@ -1,108 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab1KWR7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:59:40 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:23937 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753608Ab1KWR7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:59:39 -0500
-Message-ID: <4ECD3441.80405@parallels.com>
-Date: Wed, 23 Nov 2011 21:58:25 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1755672Ab1KWSEK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 13:04:10 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45544 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab1KWSEH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 13:04:07 -0500
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/6] SUNRPC: make RPC clients use network-namespace-aware
- PipeFS routines
-References: <20111123104945.11077.10270.stgit@localhost6.localdomain6> <20111123163632.GB30672@fieldses.org>
-In-Reply-To: <20111123163632.GB30672@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <87zkfuhhpq.fsf@laptop.org>
+References: <1321544210.31090.6.camel@sven>
+	<87zkfuhhpq.fsf@laptop.org>
+Date: Wed, 23 Nov 2011 19:04:06 +0100
+Message-ID: <CACTFLAP+WKh9=SDeTnFca_czKEAGb6OKgOz-nqqxXG=4MTCUTA@mail.gmail.com>
+Subject: Re: Oops on suspend with libertas SDIO (Linux 3.2-rc2)
+From: Daniel Mack <zonque@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Sven Neumann <s.neumann@raumfeld.com>, Daniel Drake <dsd@laptop.org>,
+        Dan Williams <dcbw@redhat.com>, linux-mmc@vger.kernel.org,
+        libertas-dev@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "linux-pm >> Linux PM mailing list" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-23.11.2011 20:36, J. Bruce Fields Ð¿Ð¸ÑˆÐµÑ‚:
-> On Wed, Nov 23, 2011 at 02:51:10PM +0300, Stanislav Kinsbursky wrote:
->> This patch set was created in context of clone of git
->> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
->> tag: v3.1
+On Thu, Nov 17, 2011 at 4:49 PM, Chris Ball <cjb@laptop.org> wrote:
+> Hi,
+>
+> On Thu, Nov 17 2011, Sven Neumann wrote:
+>> I've given 3.2-rc2 a try today and the kernel oopsed when going into suspend:
 >>
->> This patch set depends on previous patch sets titled:
->> 1) "SUNRPC: initial part of making pipefs work in net ns"
->> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+>> [   20.387912] Freezing user space processes ... (elapsed 0.01 seconds) done.
+>> [ 20.408759] Freezing remaining freezable tasks ... (elapsed 0.01
+>> seconds) done.
+>> [   20.432966] libertas_sdio mmc0:0001:1: mmc0:0001:1: suspend: PM flags = 0x0
+>> [ 20.439978] libertas_sdio mmc0:0001:1: Suspend without wake params --
+>> powering down card
+>> [   23.456061] libertas_sdio mmc0:0001:1: wlan0: command 0x0010 timed out
+>> [ 23.462626] libertas_sdio mmc0:0001:1: wlan0: Timeout submitting
+>> command 0x0010
+>> [   23.470026] libertas_sdio: Resetting card...
+>> [   23.474140] ------------[ cut here ]------------
+>> [   23.479002] WARNING: at fs/sysfs/group.c:138 sysfs_remove_group+0x50/0x11c()
+>> [   23.486045] sysfs group c05cb5c8 not found for kobject 'mmc0:0001:1'
+>> [   23.492358] Modules linked in: libertas_sdio libertas pxamci
+>> [ 23.498091] [<c000dbb4>] (unwind_backtrace+0x0/0xec) from
+>> [<c001ca10>] (warn_slowpath_common+0x4c/0x64)
+>> [ 23.507467] [<c001ca10>] (warn_slowpath_common+0x4c/0x64) from
+>> [<c001cabc>] (warn_slowpath_fmt+0x30/0x40)
+>> [ 23.517021] [<c001cabc>] (warn_slowpath_fmt+0x30/0x40) from
+>> [<c00d369c>] (sysfs_remove_group+0x50/0x11c)
+>> [ 23.526504] [<c00d369c>] (sysfs_remove_group+0x50/0x11c) from
+>> [<c0202ec4>] (device_del+0x3c/0x1a4)
+>> [ 23.535437] [<c0202ec4>] (device_del+0x3c/0x1a4) from [<c0295dfc>]
+>> (sdio_remove_func+0x1c/0x2c)
+>> [ 23.544127] [<c0295dfc>] (sdio_remove_func+0x1c/0x2c) from
+>> [<c0295110>] (mmc_sdio_remove+0x44/0x78)
+>> [ 23.553161] [<c0295110>] (mmc_sdio_remove+0x44/0x78) from
+>> [<c028f0e4>] (mmc_stop_host+0xd0/0x22c)
+>> [ 23.562016] [<c028f0e4>] (mmc_stop_host+0xd0/0x22c) from [<c0290578>]
+>> (mmc_remove_host+0x18/0x2c)
+>> [ 23.570898] [<c0290578>] (mmc_remove_host+0x18/0x2c) from
+>> [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio])
+>> [ 23.582138] [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c
+>> [libertas_sdio]) from [<c00302fc>] (process_one_work+0x260/0x3c8)
+>> [ 23.593594] [<c00302fc>] (process_one_work+0x260/0x3c8) from
+>> [<c0030ac8>] (worker_thread+0x224/0x458)
+>> [ 23.602816] [<c0030ac8>] (worker_thread+0x224/0x458) from
+>> [<c0036a00>] (kthread+0x80/0x88)
+>> [ 23.611078] [<c0036a00>] (kthread+0x80/0x88) from [<c0009ca8>]
+>> (kernel_thread_exit+0x0/0x8)
+>> [   23.619409] ---[ end trace 78598ef84f325bdd ]---
+>> [ 23.624011] Unable to handle kernel NULL pointer dereference at
+>> virtual address 0000000c
+>> [   23.632079] pgd = c0004000
+>> [   23.634762] [0000000c] *pgd=00000000
+>> [   23.638351] Internal error: Oops: 17 [#1] PREEMPT
+>> [   23.643016] Modules linked in: libertas_sdio libertas pxamci
+>> [   23.648666] CPU: 0    Tainted: G        W     (3.2.0-rc2 #2)
+>> [   23.654316] PC is at klist_put+0x18/0x9c
+>> [   23.658213] LR is at device_del+0x50/0x1a4
+>> [   23.662287] pc : [<c03ca8fc>]    lr : [<c0202ed8>]    psr: a0000013
+>> [   23.662298] sp : c6569f18  ip : 40000013  fp : c602e605
+>> [   23.673688] r10: 00000000  r9 : bf019458  r8 : c602e600
+>> [   23.678876] r7 : 00000000  r6 : c6447408  r5 : c64bbe50  r4 : 00000001
+>> [   23.685363] r3 : 00000000  r2 : 00000200  r1 : 00000001  r0 : 00000001
+>> [ 23.691844] Flags: NzCv IRQs on FIQs on Mode SVC_32 ISA ARM Segment
+>> kernel
+>> [   23.699106] Control: 0000397f  Table: a65a0018  DAC: 00000035
+>> [   23.704817] Process kworker/0:2 (pid: 1204, stack limit = 0xc6568278)
+>> [   23.711218] Stack: (0xc6569f18 to 0xc656a000)
+>> [ 23.715547] 9f00: c65fe008 c6447000
+>> [ 23.723677] 9f20: c6447408 c0202ed8 c65fe008 c6447000 00000084
+>> c0295dfc 00000001 c0295110
+>> [ 23.731810] 9f40: c63e8f00 c6447000 60000013 00000000 00000009
+>> c028f0e4 c6447000 c6447000
+>> [ 23.739944] 9f60: c63e8f00 c0290578 bf019c9c bf019470 bf019af0
+>> c00302fc c05c1b38 c63e8f00
+>> [ 23.748076] 9f80: c05c1b38 c05c1b38 00000009 c6568000 c63e8f10
+>> c05c1b38 c63e8f10 c0030ac8
+>> [ 23.756208] 9fa0: c6083f14 c6569fd4 c6083f14 c63e8f00 c00308a4
+>> 00000000 00000000 00000000
+>> [ 23.764341] 9fc0: 00000000 c0036a00 c0009ca8 00000000 c63e8f00
+>> 00000000 c6569fd8 c6569fd8
+>> [ 23.772475] 9fe0: 00000000 c6083f14 c0036980 c0009ca8 00000013
+>> c0009ca8 0340f30e 153b5900
+>> [ 23.780618] [<c03ca8fc>] (klist_put+0x18/0x9c) from [<c0202ed8>]
+>> (device_del+0x50/0x1a4)
+>> [ 23.788675] [<c0202ed8>] (device_del+0x50/0x1a4) from [<c0295dfc>]
+>> (sdio_remove_func+0x1c/0x2c)
+>> [ 23.797327] [<c0295dfc>] (sdio_remove_func+0x1c/0x2c) from
+>> [<c0295110>] (mmc_sdio_remove+0x44/0x78)
+>> [ 23.806328] [<c0295110>] (mmc_sdio_remove+0x44/0x78) from
+>> [<c028f0e4>] (mmc_stop_host+0xd0/0x22c)
+>> [ 23.815148] [<c028f0e4>] (mmc_stop_host+0xd0/0x22c) from [<c0290578>]
+>> (mmc_remove_host+0x18/0x2c)
+>> [ 23.823987] [<c0290578>] (mmc_remove_host+0x18/0x2c) from
+>> [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c [libertas_sdio])
+>> [ 23.835164] [<bf019470>] (if_sdio_reset_card_worker+0x18/0x2c
+>> [libertas_sdio]) from [<c00302fc>] (process_one_work+0x260/0x3c8)
+>> [ 23.846584] [<c00302fc>] (process_one_work+0x260/0x3c8) from
+>> [<c0030ac8>] (worker_thread+0x224/0x458)
+>> [ 23.855760] [<c0030ac8>] (worker_thread+0x224/0x458) from
+>> [<c0036a00>] (kthread+0x80/0x88)
+>> [ 23.863984] [<c0036a00>] (kthread+0x80/0x88) from [<c0009ca8>]
+>> (kernel_thread_exit+0x0/0x8)
+>> [   23.872292] Code: e1a05000 e3a00001 e3c33001 e1a04001 (e593600c)
+>> [   23.878402] ---[ end trace 78598ef84f325bde ]---
+>> [ 23.883135] Unable to handle kernel paging request at virtual address
+>> fffffffc
+>> [   23.890313] pgd = c0004000
+>> [   23.893000] [fffffffc] *pgd=a7ffe821, *pte=00000000, *ppte=00000000
+>> [   23.899244] Internal error: Oops: 17 [#2] PREEMPT
+>> [   23.903915] Modules linked in: libertas_sdio libertas pxamci
+>> [   23.909564] CPU: 0    Tainted: G      D W     (3.2.0-rc2 #2)
+>> [   23.915199] PC is at kthread_data+0x4/0xc
+>> [   23.919186] LR is at wq_worker_sleeping+0xc/0xb4
+>> [   23.923772] pc : [<c003648c>]    lr : [<c0032ee0>]    psr: 20000093
+>> [   23.923783] sp : c6569d60  ip : c05bff98  fp : c6569d94
+>> [   23.935174] r10: c60336ec  r9 : c05bff98  r8 : c6568000
+>> [   23.940361] r7 : c6032000  r6 : c6033768  r5 : c6033600  r4 : 00000000
+>> [   23.946848] r3 : 00000000  r2 : c05bff98  r1 : 00000000  r0 : c6033600
+>> [ 23.953329] Flags: nzCv IRQs off FIQs on Mode SVC_32 ISA ARM Segment
+>> user
+>> [   23.960504] Control: 0000397f  Table: a65a0018  DAC: 00000015
+>> [   23.966207] Process kworker/0:2 (pid: 1204, stack limit = 0xc6568278)
+>> [...]
 >>
->> This patch set is a first part of reworking SUNPRC PipeFS users.
->> It makes SUNRPC clients using PipeFS nofitications for directory and GSS pipes
->> dentries creation. With this patch set RPC clients and GSS auth creations
->> routines doesn't force SUNRPC PipeFS mount point creation which actually means,
->> that they now can work without PipeFS dentries.
+>> Hardware is a PXA300 with a Marvell 8868 Wifi module attached over SDIO.
 >
-> I'm not following very well.  (My fault, I haven't been paying
-> attention.)  Could you summarize the itended behavior of pipefs after
-> all this is done?
+> Adding Daniel Drake to CC, for 9a821f5d0fc ("libertas: add sd8686
+> reset_card support").
 >
-> So there's a separate superblock (and separate dentries) for each
-> namespace?
->
+> Looks like mmc_sdio_remove() calls mmc_remove_card() after the
+> reset_card function has called mmc_remove_host() already.  Maybe
+> if_sdio_reset_card_worker() should call mmc_free_host() as well?
 
-Yes, you right.
-So, here is a brief summary of what will be at the end:
-
-1) PipeFS superblock will be per net ns.
-
-2) Superblock holds net ns, which is taken from current. Struct net will have 
-link ot pipefs superblock (it can be NULL, if PipeFS wasn't mounted yet or 
-already unmounted).
-
-3) Notifications will be send on superblock creation and destruction.
-
-4) All kernel mount point creation and destruction calls (rpc_get_mount() and 
-rpc_put_mount()) will be removed. I.e. this superblock will be created only from 
-user-space.
-
-5) Kernel pipes and dentries will be created or destroyed:
-1. During per-net operations (only for static NFS stuff: dns_resolve cache, pnfs 
-blocklayout and idmap pipes).
-2. On notification events (all directories, files and pipes in proper 
-callbacks). Notification subscribers:
-a. rpc clients (responsible for client dentries and gss pipes creation),
-b. nfs clients (responsible nfs idmap pipes),
-c. nfs dns_resolve cache,
-d. pnfs blocklayout pipes,
-
-6) PipeFS dentries creation logic:
-a) All directories and files creators - will try to create them as usual. But if 
-fail - then no problem here. I.e. dentries will be created on PipeFS mount 
-notification call.
-b) Pipes creators - will create new structure rpc_pipe (all pipe stuff from rpc 
-inode) nad then try to create pipe denties. If fail - then, again, no problem. 
-Dentries will be be created on PipeFS mount notification call.
-
-
-Almost all (exept 5.2.b - forgot about it during debasing and resending) is done 
-and ready to send.
-
-> What decides which clients are visible in which network namespaces?
->
-
-Clients dentries will be created in proper superblock from the beginning. I.e. 
-rpc clients transports have struct net reference. NFS clients will have such 
-reference too. Struct net will have reference to pipefs superblock.
-Currently, for dentry creation all we need is parent dentry. Some of creators 
-(like GSS pipes) takes parent dentry from associated struct (like rpc_clnt). For 
-others parent dentry can be found by simple d_lookup() starting from sb->root 
-(reminder: sb can be taken from net).
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Or simply mmc_hw_reset()?
