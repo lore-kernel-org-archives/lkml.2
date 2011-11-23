@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759780Ab1KWDo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 22:44:28 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:60901 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab1KWDo0 (ORCPT
+	id S1756292Ab1KWDsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 22:48:54 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57215 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab1KWDsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 22:44:26 -0500
-Date: Wed, 23 Nov 2011 14:44:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (uprobes
- tree related)
-Message-Id: <20111123144409.7d1816bef960a2f277aaf1b9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_Nov_2011_14_44_09_+1100_gNqV92jV.htmRQIF"
+	Tue, 22 Nov 2011 22:48:53 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6538"; a="140175450"
+Message-ID: <4ECC6D24.9030509@codeaurora.org>
+Date: Tue, 22 Nov 2011 19:48:52 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Mike Turquette <mturquette@linaro.org>, linaro-dev@lists.linaro.org,
+        eric.miao@linaro.org, grant.likely@secretlab.ca,
+        jeremy.kerr@canonical.com, Mike Turquette <mturquette@ti.com>,
+        linux@arm.linux.org.uk, sboyd@quicinc.com, magnus.damm@gmail.com,
+        dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        arnd.bergmann@linaro.org, patches@linaro.org, tglx@linutronix.de,
+        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
+        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        amit.kucheria@linaro.org, skannan@quicinc.com
+Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-6-git-send-email-mturquette@linaro.org> <20111122154900.GB18954@kroah.com> <CAPtuhThPQtWwihE8aGru55k87oV7QOr=O836TTJ+=30d6dtVhA@mail.gmail.com> <20111122191347.GB4844@kroah.com>
+In-Reply-To: <20111122191347.GB4844@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Nov_2011_14_44_09_+1100_gNqV92jV.htmRQIF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/22/2011 11:13 AM, Greg KH wrote:
+> On Tue, Nov 22, 2011 at 09:57:41AM -0800, Mike Turquette wrote:
+>>> Ah, comments like this warm my heart.
+>>>
+>>> Come on, no abusing the kobject code please, if have problems with how
+>>> the kernel core works, and it doesn't do things you want it to, then why
+>>> not change it to work properly for you, or at the least, ASK ME!!!
+>>
+>> Ok, I'm asking you now.  There are two ways to solve this problem:
+>>
+>> 1) have kobject core create the lists linking the objects but defer
+>> allocations and any interactions with sysfs until later in the boot
+>> sequence, OR
+>>
+>> 2) my code can create a list of clks (the same way that clkdev does)
+>> and defer kobject/sysfs stuff until later, which walks the list made
+>> during early-boot
+>>
+>> #1 is most closely aligned with the code I have here, #2 presents
+>> challenges that I haven't really though through.  I know that OMAP
+>> uses the clk framework VERY early in it's boot sequence, but as long
+>> as the per-clk data is properly initialized then it should be OK.
+>>
+>> What do you think?
+>
+> #3 - use debugfs and don't try to create a sysfs interface for the clock
+> structures :)
 
-Hi Srikar,
+I would prefer debugfs too, but for my own selfish reasons. In our 
+current implementation, we have debugfs files: turn on/off a clock, to 
+measure a clock (yeah, we have a "measuring" hw block inside the SoC), 
+list the supported rates of a clock, etc. We use these files to test the 
+clock driver. These certainly would not be acceptable candidates for sysfs.
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+If the common clock framework uses sysfs for the tree, then the mach-msm 
+will have to have its own implementation of debugfs. That's not so nice 
+for two reasons:
+1. I think these files would be useful for other arch/machs too, but it 
+would be odd for the common clock code to expose sysfs and debugfs files 
+for each clock.
+2. Since it won't be in the common code, each arch/mach will be 
+repeating the debugfs code to expose their own enable/disable files.
 
-In file included from include/linux/mm_types.h:15:0,
-                 from include/linux/sched.h:64,
-                 from arch/powerpc/mm/mem.c:21:
-include/linux/uprobes.h:174:49: error: 'struct mm_struct' declared inside p=
-arameter list [-Werror]
-include/linux/uprobes.h:174:49: error: its scope is only this definition or=
- declaration, which is probably not what you want [-Werror]
+To me, the ideal choice would be for each clocks to have a directory 
+under /debug/clk/ without following the clock topology. Then, inside 
+each clock specific directory, there will be an enable, rate, parent 
+(symlink to parent clock dir under /debug/clk/) files.
 
-And many more similar.
+The clock specific drivers will be able to get the handle to the clk 
+specific debugfs directory and add their own extra files. Or could be 
+made to pass a list of file/ops/perms as part of the 
+clock_init/registration.
 
-Caused by commit 61fafad13005 ("uprobes_xol" - "uprobes: slot allocation").
+Thanks,
+Saravana
 
-I have added the following patch for today:
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 23 Nov 2011 14:35:01 +1100
-Subject: [PATCH] uprobes: declare mm_struct before its use in uprobes.h
-
-Since there is a circular dependency between uprobes.h and mm_type.h
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/uprobes.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 20bdd0a..091dfb8 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -26,6 +26,7 @@
- #include <linux/rbtree.h>
-=20
- struct vm_area_struct;
-+struct mm_struct;
- #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
- #include <asm/uprobes.h>
- #else
---=20
-1.7.7.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__23_Nov_2011_14_44_09_+1100_gNqV92jV.htmRQIF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOzGwJAAoJEECxmPOUX5FEk3UP/1hl3ohHAGntNYHJ9JnmTwx/
-dTufdIt8BLWXDOOocM1JufPupyrj5kKQDenzJBJ4mo6p5KCcgvnzCtAkb5BY4GfW
-K9NCT6Zrk8CXQ3Y5uQwbNrF5trwCwIK4tUOj/C8I5k5xABM6IlH1x/5/VgSFMp7h
-q2hIdwKPOMq4ifuUdaWS/QLoUhJUvXRblMGqzcbT38hV5LeSldoDBEMhpJHr3V1u
-XKgsJkePwSeGtvA2+P+AKctNgSx75yoiOvBd24oPSGdokXaU0oRZ2xbbU02lqOhf
-e3Kd/eJ6HtyCsRCoPe8dh/bqhhRm9GYkHx4JprZHfsfY/n4HIqX7Fs+A74+wqu7l
-OkMfHXuCeD1CI4vdaT0bb2N/lOcQwDEmyvjpWZSykI/nyyDndYAmXq2xUf91fndl
-E2zkozrNw0ypHX8ettH4c+V8TfvwO++aNzzcID7D1aaWIgesTaaon3MuWmvMvTg7
-vnosJA4ygWkyJDXD8XXFjIVswvukydgO91AM7vmm+jrgvneR4z3FSWYkIcceUtmZ
-LyVxtDK1HJ9lyTDGxNrdK6EQQvEIKSY6tP+4A1OjuZfqqbFQU1wg9m9v3f1Ycnfo
-At0QEKfObhL1bl9Sa8lKagi2VgicF5zh/Duq8FfQgsa48joJDXikuyWx4WPKexGJ
-omnmvVM+7w5wXSqVv9kS
-=ULd/
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_Nov_2011_14_44_09_+1100_gNqV92jV.htmRQIF--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
