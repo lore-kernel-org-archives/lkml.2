@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab1KWGZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:25:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35645 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756481Ab1KWGZt (ORCPT
+	id S1758618Ab1KWG1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:27:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38212 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758516Ab1KWG1h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:25:49 -0500
-Date: Tue, 22 Nov 2011 22:25:46 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miao Xie <miaox@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-In-Reply-To: <4ECC7B1E.6020108@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com>
- <4ECC5FC8.9070500@cn.fujitsu.com> <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com> <4ECC7B1E.6020108@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 23 Nov 2011 01:27:37 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20111122222048.GF24283@suse.de>
+References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
+	<1321999366-23784-7-git-send-email-corentincj@iksaif.net>
+	<20111122222048.GF24283@suse.de>
+Date: Wed, 23 Nov 2011 07:27:35 +0100
+Message-ID: <CAHR064i7sVOyGdhbSAj8gCeTqpYeGuJUd_q_=On+K8j32R9vEw@mail.gmail.com>
+Subject: Re: [PATCH 06/15] samsung-laptop: add small debugfs interface
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011, Miao Xie wrote:
+On Tue, Nov 22, 2011 at 11:20 PM, Greg KH <gregkh@suse.de> wrote:
+> On Tue, Nov 22, 2011 at 11:02:37PM +0100, Corentin Chary wrote:
+>> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+>
+> You should describe what the debugfs interface does please.
+>
+> I have an idea, and I like it a lot, but still, it would be nice to let
+> the others know :)
+>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
 
-> This is a good idea. But I worry that oom will happen easily, because we do
-> direct reclamation and compact by mems_allowed.
-> 
+It's in the code:
 
-Memory compaction actually iterates through each zone regardless of 
-whether it's allowed or not in the current context.  Recall that the 
-nodemask passed into __alloc_pages_nodemask() is non-NULL only when there 
-is a mempolicy that restricts the allocations by MPOL_BIND.  That nodemask 
-is not protected by get_mems_allowed(), so there's no change in 
-compaction's behavior with my patch.
++/*+ * samsung-laptop/    - debugfs root directory+ *   f0000_segment
+  - dump f0000 segment+ *   command          - current command+ *
+data             - current data+ *   d0, d1, d2, d3   - data fields+ *
+  call             - call SABI using command and data+ */
+But maybe I should add it to the changelog and add an example on how to use it.
 
-Direct reclaim does, however, require mems_allowed staying constant 
-without the risk of early oom as you mentioned.  It has its own 
-get_mems_allowed(), though, so it doesn't have the opportunity to change 
-until returning to the page allocator.  It's possible that mems_allowed 
-will be different on the next call to get_pages_from_freelist() but we 
-don't know anything about that context: it's entirely possible that the 
-set of new mems has an abundance of free memory or are completely depleted 
-as well.  So there's no strict need for consistency between the set of 
-allowed nodes during reclaim and the subsequent allocation attempt.  All 
-we care about is that reclaim has a consistent set of allowed nodes to 
-determine whether it's making progress or not.
+But yeah, it was very useful for experimentation.
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
