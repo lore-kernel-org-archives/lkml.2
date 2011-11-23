@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1KWXnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 18:43:32 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59881 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab1KWXnb (ORCPT
+	id S1752094Ab1KWXpB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 18:45:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50718 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab1KWXpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 18:43:31 -0500
+	Wed, 23 Nov 2011 18:45:00 -0500
 MIME-Version: 1.0
-Date: Thu, 24 Nov 2011 00:43:31 +0100
-Message-ID: <CAGPN=9Q8gB_xsbB1BrMJSo_Qs=7Tu49RX4x3VqNB9adzVdm6kg@mail.gmail.com>
-Subject: i915: RC6 causes sudden shutdowns
+Date: Thu, 24 Nov 2011 00:44:59 +0100
+Message-ID: <CAGPN=9Q1HMVO27jr0e8az4SV9TyC_JL48mKWZHi8kHRfhQddMQ@mail.gmail.com>
+Subject: EHCI powersave causes shutdown to freeze
 From: Patrik Kullman <patrik.kullman@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -20,22 +20,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-I recently acquired the Asus Zenbook UX31E but have been looking for
-ways to extend the battery life.
+After creating a powersave script based on PowerTOP Tunables, this
+particular line prevented the system from being able to shutdown (Asus
+Zenbook UX31E, kernels 3.0 - 3.1.2):
 
-I read that the i915_enable_rc6 parameter could decrease power usage
-significantly and tried it with the 3.1.1 and 3.1.2 kernels, and
-indeed it does.
-However, I (and the other Zenbook-owners from the Ubuntu forums)
-experience sudden, unexpected shutdowns (for me, 1-4 times per day)
-with this parameter.
-It's as sudden as a power loss.
+### Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced
+Host Controller #1
+echo auto > /sys/bus/pci/devices/0000:00:1d.0/power/control
 
-It happens both when pcie_aspm=force is supplied and when it's not.
-What also is a bit concerning is that I read that RC6 is going to be
-enabled by default from 3.2 onward?
 
-How would we go about troubleshooting this?
+Kernel prints the "Power Down." message but machine doesn't power down.
 
-Or is the only option to blacklist the machine from RC6 if it doesn't
-work as is?
+Is this a known bug?
+Could this be fixed in the driver instead of:
+
+echo on > /sys/bus/pci/devices/0000:00:1d.0/power/control
+
+on system shutdown?
