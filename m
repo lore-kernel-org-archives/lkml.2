@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab1KWGYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:24:19 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63126 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758504Ab1KWGYR (ORCPT
+	id S1758574Ab1KWGZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:25:50 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35645 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756481Ab1KWGZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:24:17 -0500
-Date: Wed, 23 Nov 2011 15:24:05 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "open list:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] vmscan: add task name to warn_scan_unevictable() messages
-Message-ID: <20111123062405.GA25067@barrios-laptop.redhat.com>
-References: <1322027721-23677-1-git-send-email-kosaki.motohiro@jp.fujitsu.com>
+	Wed, 23 Nov 2011 01:25:49 -0500
+Date: Tue, 22 Nov 2011 22:25:46 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
+ for mempolicy or disjoint nodemask
+In-Reply-To: <4ECC7B1E.6020108@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com>
+ <4ECC5FC8.9070500@cn.fujitsu.com> <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com> <4ECC7B1E.6020108@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322027721-23677-1-git-send-email-kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 12:55:20AM -0500, KOSAKI Motohiro wrote:
-> If we need to know a usecase, caller program name is critical important.
-> Show it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/vmscan.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a1893c0..29d163e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -3448,9 +3448,10 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
->  static void warn_scan_unevictable_pages(void)
->  {
->  	printk_once(KERN_WARNING
-> -		    "The scan_unevictable_pages sysctl/node-interface has been "
-> +		    "%s: The scan_unevictable_pages sysctl/node-interface has been "
->  		    "disabled for lack of a legitimate use case.  If you have "
-> -		    "one, please send an email to linux-mm@kvack.org.\n");
-> +		    "one, please send an email to linux-mm@kvack.org.\n",
-> +		    current->comm);
->  }
+On Wed, 23 Nov 2011, Miao Xie wrote:
 
-Just nitpick:
-How about using WARN_ONCE instead of custom warning?
-It can show more exact call path as well as comm.
-I guess it's more noticible to users.
-Anyway, either is okay to me.
+> This is a good idea. But I worry that oom will happen easily, because we do
+> direct reclamation and compact by mems_allowed.
+> 
 
--- 
-Kind regards,
-Minchan Kim
+Memory compaction actually iterates through each zone regardless of 
+whether it's allowed or not in the current context.  Recall that the 
+nodemask passed into __alloc_pages_nodemask() is non-NULL only when there 
+is a mempolicy that restricts the allocations by MPOL_BIND.  That nodemask 
+is not protected by get_mems_allowed(), so there's no change in 
+compaction's behavior with my patch.
+
+Direct reclaim does, however, require mems_allowed staying constant 
+without the risk of early oom as you mentioned.  It has its own 
+get_mems_allowed(), though, so it doesn't have the opportunity to change 
+until returning to the page allocator.  It's possible that mems_allowed 
+will be different on the next call to get_pages_from_freelist() but we 
+don't know anything about that context: it's entirely possible that the 
+set of new mems has an abundance of free memory or are completely depleted 
+as well.  So there's no strict need for consistency between the set of 
+allowed nodes during reclaim and the subsequent allocation attempt.  All 
+we care about is that reclaim has a consistent set of allowed nodes to 
+determine whether it's making progress or not.
