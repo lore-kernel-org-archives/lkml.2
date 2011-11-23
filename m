@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab1KWTBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 14:01:31 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54134 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751935Ab1KWTBa (ORCPT
+	id S1755596Ab1KWTHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 14:07:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49803 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab1KWTHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 14:01:30 -0500
-Date: Wed, 23 Nov 2011 19:01:14 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: grant.likely@secretlab.ca, robherring2@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, lrg@ti.com,
-        b-cousson@ti.com, patches@linaro.org, linux-kernel@vger.kernel.org,
-        shawn.guo@freescale.com, linaro-dev@lists.linaro.org, olof@lixom.net
-Subject: Re: [PATCH v5 0/4] Device tree support for regulators
-Message-ID: <20111123190114.GB17587@opensource.wolfsonmicro.com>
-References: <1321615040-13257-1-git-send-email-rnayak@ti.com>
+	Wed, 23 Nov 2011 14:07:23 -0500
+Date: Wed, 23 Nov 2011 11:07:05 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Cong Wang <amwang@redhat.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [V3 PATCH 1/2] tmpfs: add fallocate support
+In-Reply-To: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+Message-ID: <alpine.LSU.2.00.1111231100110.2226@sister.anvils>
+References: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321615040-13257-1-git-send-email-rnayak@ti.com>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 04:47:16PM +0530, Rajendra Nayak wrote:
+On Wed, 23 Nov 2011, Cong Wang wrote:
+> +
+> +	while (index < end) {
+> +		ret = shmem_getpage(inode, index, &page, SGP_WRITE, NULL);
+> +		if (ret) {
+> +			if (ret == -ENOSPC)
+> +				goto undo;
+...
+> +undo:
+> +	while (index > start) {
+> +		shmem_truncate_page(inode, index);
+> +		index--;
+> +	}
 
-> For the first 2 patches (1/4 and 2/4) I have dropped
-> Acks from Mark, since they have changed to some extent
-> from the last post and retained the Acks recieved on the
-> last 2 patches (3/4 and 4/4) as they remain unchanged.
+As I said before, I won't actually be reviewing and testing this for
+a week or two; but before this goes any further, must point out how
+wrong it is.  Here you'll be deleting any pages in the range that were
+already present before the failing fallocate().
 
-Looks good and nobody complained yet so I've dropped this into -next to
-get it a bit of exposure.  I'm reasonably happy that the DT people have
-already had a good chance to look at this stuff on previous iterations.
-Unless there's any major changes or we need to back it out later on
-for some other reason please send incremental patches.
+Hugh
