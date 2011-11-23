@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab1KWAlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:41:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42892 "EHLO mx2.suse.de"
+	id S1759294Ab1KWAlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:41:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42858 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759237Ab1KWAlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
-Message-Id: <20111123002407.235076567@clark.kroah.org>
+	id S1759237Ab1KWAlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:01 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:06 2011
+Message-Id: <20111123002406.776880320@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:35 -0800
+Date: Tue, 22 Nov 2011 16:23:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [28/53] xhci: Set slot and ep0 flags for address command.
+        alan@lxorguk.ukuu.org.uk, Jiri Slaby <jslaby@suse.cz>,
+        Dave Young <hidave.darkstar@gmail.com>, Dave Jones <davej@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Dmitriy Matrosov <sgf.dma@gmail.com>
+Subject: [23/53] TTY: ldisc, move wait idle to caller
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,111 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit d31c285b3a71cf9056e6a060de41f37780b0af86 upstream.
+commit 300420722e0734a4254f3b634e0f82664495d210 upstream.
 
-Matt's AsMedia xHCI host controller was responding with a Context Error
-to an address device command after a configured device reset.  Some
-sequence of events leads both the slot and endpoint zero add flags
-cleared to zero, which the AsMedia host doesn't like:
+It is the only place where reinit is called from. And we really need
+to wait for the old ldisc to go once. Actually this is the place where
+the waiting originally was (before removed and re-added later).
 
-[  223.701839] xhci_hcd 0000:03:00.0: Slot ID 1 Input Context:
-[  223.701841] xhci_hcd 0000:03:00.0: @ffff880137b25000 (virt) @ffffc000 (dma) 0x000000 - drop flags
-[  223.701843] xhci_hcd 0000:03:00.0: @ffff880137b25004 (virt) @ffffc004 (dma) 0x000000 - add flags
-[  223.701846] xhci_hcd 0000:03:00.0: @ffff880137b25008 (virt) @ffffc008 (dma) 0x000000 - rsvd2[0]
-[  223.701848] xhci_hcd 0000:03:00.0: @ffff880137b2500c (virt) @ffffc00c (dma) 0x000000 - rsvd2[1]
-[  223.701850] xhci_hcd 0000:03:00.0: @ffff880137b25010 (virt) @ffffc010 (dma) 0x000000 - rsvd2[2]
-[  223.701852] xhci_hcd 0000:03:00.0: @ffff880137b25014 (virt) @ffffc014 (dma) 0x000000 - rsvd2[3]
-[  223.701854] xhci_hcd 0000:03:00.0: @ffff880137b25018 (virt) @ffffc018 (dma) 0x000000 - rsvd2[4]
-[  223.701857] xhci_hcd 0000:03:00.0: @ffff880137b2501c (virt) @ffffc01c (dma) 0x000000 - rsvd2[5]
-[  223.701858] xhci_hcd 0000:03:00.0: Slot Context:
-[  223.701860] xhci_hcd 0000:03:00.0: @ffff880137b25020 (virt) @ffffc020 (dma) 0x8400000 - dev_info
-[  223.701862] xhci_hcd 0000:03:00.0: @ffff880137b25024 (virt) @ffffc024 (dma) 0x010000 - dev_info2
-[  223.701864] xhci_hcd 0000:03:00.0: @ffff880137b25028 (virt) @ffffc028 (dma) 0x000000 - tt_info
-[  223.701866] xhci_hcd 0000:03:00.0: @ffff880137b2502c (virt) @ffffc02c (dma) 0x000000 - dev_state
-[  223.701869] xhci_hcd 0000:03:00.0: @ffff880137b25030 (virt) @ffffc030 (dma) 0x000000 - rsvd[0]
-[  223.701871] xhci_hcd 0000:03:00.0: @ffff880137b25034 (virt) @ffffc034 (dma) 0x000000 - rsvd[1]
-[  223.701873] xhci_hcd 0000:03:00.0: @ffff880137b25038 (virt) @ffffc038 (dma) 0x000000 - rsvd[2]
-[  223.701875] xhci_hcd 0000:03:00.0: @ffff880137b2503c (virt) @ffffc03c (dma) 0x000000 - rsvd[3]
-[  223.701877] xhci_hcd 0000:03:00.0: Endpoint 00 Context:
-[  223.701879] xhci_hcd 0000:03:00.0: @ffff880137b25040 (virt) @ffffc040 (dma) 0x000000 - ep_info
-[  223.701881] xhci_hcd 0000:03:00.0: @ffff880137b25044 (virt) @ffffc044 (dma) 0x2000026 - ep_info2
-[  223.701883] xhci_hcd 0000:03:00.0: @ffff880137b25048 (virt) @ffffc048 (dma) 0xffffe8e0 - deq
-[  223.701885] xhci_hcd 0000:03:00.0: @ffff880137b25050 (virt) @ffffc050 (dma) 0x000000 - tx_info
-[  223.701887] xhci_hcd 0000:03:00.0: @ffff880137b25054 (virt) @ffffc054 (dma) 0x000000 - rsvd[0]
-[  223.701889] xhci_hcd 0000:03:00.0: @ffff880137b25058 (virt) @ffffc058 (dma) 0x000000 - rsvd[1]
-[  223.701892] xhci_hcd 0000:03:00.0: @ffff880137b2505c (virt) @ffffc05c (dma) 0x000000 - rsvd[2]
-...
-[  223.701927] xhci_hcd 0000:03:00.0: // Ding dong!
-[  223.701992] xhci_hcd 0000:03:00.0: Setup ERROR: address device command for slot 1.
+This will make the fix in the following patch easier to implement.
 
-The xHCI spec says that both flags must be set to one for the Address
-Device command.  When the device is first enumerated,
-xhci_setup_addressable_virt_dev() does set those flags.  However, when
-the device is addressed after it has been reset in the configured state,
-xhci_setup_addressable_virt_dev() is not called, and
-xhci_copy_ep0_dequeue_into_input_ctx() is called instead.  That function
-relies on the flags being set up by previous commands, which apparently
-isn't a good assumption.
-
-Move the setting of the flags into the common parent function.
-
-This should be queued for stable kernels as old as 2.6.35, since that
-was the first introduction of xhci_copy_ep0_dequeue_into_input_ctx.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Matt <mdm@iinet.net.au>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Dave Young <hidave.darkstar@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Dmitriy Matrosov <sgf.dma@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |    5 -----
- drivers/usb/host/xhci.c     |    5 ++++-
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/tty/tty_ldisc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -875,7 +875,6 @@ int xhci_setup_addressable_virt_dev(stru
- 	struct xhci_virt_device *dev;
- 	struct xhci_ep_ctx	*ep0_ctx;
- 	struct xhci_slot_ctx    *slot_ctx;
--	struct xhci_input_control_ctx *ctrl_ctx;
- 	u32			port_num;
- 	struct usb_device *top_dev;
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -764,8 +764,6 @@ static int tty_ldisc_reinit(struct tty_s
+ 	if (IS_ERR(ld))
+ 		return -1;
  
-@@ -887,12 +886,8 @@ int xhci_setup_addressable_virt_dev(stru
- 		return -EINVAL;
- 	}
- 	ep0_ctx = xhci_get_ep_ctx(xhci, dev->in_ctx, 0);
--	ctrl_ctx = xhci_get_input_control_ctx(xhci, dev->in_ctx);
- 	slot_ctx = xhci_get_slot_ctx(xhci, dev->in_ctx);
- 
--	/* 2) New slot context and endpoint 0 context are valid*/
--	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
+-	WARN_ON_ONCE(tty_ldisc_wait_idle(tty, 5 * HZ));
 -
- 	/* 3) Only the control endpoint is valid - one endpoint context */
- 	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(1) | (u32) udev->route);
- 	switch (udev->speed) {
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2875,6 +2875,10 @@ int xhci_address_device(struct usb_hcd *
- 	/* Otherwise, update the control endpoint ring enqueue pointer. */
- 	else
- 		xhci_copy_ep0_dequeue_into_input_ctx(xhci, udev);
-+	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
-+	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
-+	ctrl_ctx->drop_flags = 0;
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+ 	tty->ldisc = NULL;
+@@ -849,6 +847,8 @@ void tty_ldisc_hangup(struct tty_struct
+ 	   it means auditing a lot of other paths so this is
+ 	   a FIXME */
+ 	if (tty->ldisc) {	/* Not yet closed */
++		WARN_ON_ONCE(tty_ldisc_wait_idle(tty, 5 * HZ));
 +
- 	xhci_dbg(xhci, "Slot ID %d Input Context:\n", udev->slot_id);
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 		if (reset == 0) {
  
-@@ -2956,7 +2960,6 @@ int xhci_address_device(struct usb_hcd *
- 	virt_dev->address = (le32_to_cpu(slot_ctx->dev_state) & DEV_ADDR_MASK)
- 		+ 1;
- 	/* Zero the input context control for later use */
--	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
- 	ctrl_ctx->add_flags = 0;
- 	ctrl_ctx->drop_flags = 0;
- 
+ 			if (!tty_ldisc_reinit(tty, tty->termios->c_line))
 
 
