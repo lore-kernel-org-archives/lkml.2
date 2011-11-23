@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab1KWVBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 16:01:47 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:38755 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535Ab1KWVBq (ORCPT
+	id S1755469Ab1KWVD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 16:03:29 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54754 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab1KWVD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 16:01:46 -0500
-Date: Wed, 23 Nov 2011 16:01:43 -0500 (EST)
-Message-Id: <20111123.160143.58902472755124590.davem@davemloft.net>
-To: gdfuego@gmail.com
-Cc: richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Finding a hidden bound TCP socket
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CALmbKGVUuZs+wigpkr0WPfn2pYP=tQh5-MsYWeRxbug=HskVQQ@mail.gmail.com>
-References: <CALmbKGV0g2nfNAghF5dGrt=TCyrms6RznOL8jSkg+gkgyfekLg@mail.gmail.com>
-	<CAFLxGvynabpEcX2RwiLxatjOEzizj95jAVY6E4D9ymDpn8s9UA@mail.gmail.com>
-	<CALmbKGVUuZs+wigpkr0WPfn2pYP=tQh5-MsYWeRxbug=HskVQQ@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 23 Nov 2011 13:01:45 -0800 (PST)
+	Wed, 23 Nov 2011 16:03:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111123194423.158002cf@bob.linux.org.uk>
+References: <CAFQmdRbkYiOArK09smfMvf2DJ8h-bYvKyXRN_nmX-bPG8ENmjA@mail.gmail.com>
+	<1322074412-10873-1-git-send-email-hskinnemoen@google.com>
+	<20111123192233.44f512b7@bob.linux.org.uk>
+	<CAFQmdRYh3vSz4s-ks5dbz7bXJx-EZNHEGzsr5bcpEYquXmB6Fg@mail.gmail.com>
+	<20111123194423.158002cf@bob.linux.org.uk>
+Date: Wed, 23 Nov 2011 13:03:27 -0800
+Message-ID: <CAFQmdRZEk53fxa6CdFxMNWFH4y9eUu+MeKRxFnnYrgn8J1sAvw@mail.gmail.com>
+Subject: Re: [RFC] cdc-acm: Fix potential deadlock (lockdep warning)
+From: Havard Skinnemoen <hskinnemoen@google.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "G. D. Fuego" <gdfuego@gmail.com>
-Date: Wed, 23 Nov 2011 15:27:33 -0500
+On Wed, Nov 23, 2011 at 11:44 AM, Alan Cox <alan@linux.intel.com> wrote:
+> Any data owned by the USB part needs to be handled by the USB driver.
+> In the case of usb-serial it keeps its own krefs for that because the
+> lifetime of the port/USB serial data is not the same as the lifetime of
+> the tty itself.
 
-> Any comments?  The behavior seems broken.  At the very least its very
-> inconsistent with other Unixes.
+Yes, exactly. But since tty_port already has a kref, why not use that?
+It doesn't have any other use currently.
 
-Until the socket has a full final tuple it is bound to, there is no
-reason to list it.
+Hmm, a quick grep tells me tty_port_get() and tty_port_put() are
+completely unused. What was the intention behind them?
 
-No UNIX lists a socket which is partially bound and hasn't either
-performed a listen() or a connect().
-
-Nobody has any comments because nobody thinks it's worth worrying about.
+Havard
