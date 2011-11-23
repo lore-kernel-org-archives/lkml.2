@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab1KWA4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:56:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42460 "EHLO mx2.suse.de"
+	id S932603Ab1KWA4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:56:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42443 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932251Ab1KWAfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
-Message-Id: <20111123002555.922127922@clark.kroah.org>
+	id S1759047Ab1KWAfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:35:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:55 2011
+Message-Id: <20111123002555.737538108@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:32 -0800
+Date: Tue, 22 Nov 2011 16:25:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Don Zickus <dzickus@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [32/53] usb, xhci: fix lockdep warning on endpoint timeout
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [30/53] xhci: Set slot and ep0 flags for address command.
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,178 +24,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Don Zickus <dzickus@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit f43d623164022dcbf6750ef220b7a1133a1183eb upstream.
+commit d31c285b3a71cf9056e6a060de41f37780b0af86 upstream.
 
-While debugging a usb3 problem, I stumbled upon this lockdep warning.
+Matt's AsMedia xHCI host controller was responding with a Context Error
+to an address device command after a configured device reset.  Some
+sequence of events leads both the slot and endpoint zero add flags
+cleared to zero, which the AsMedia host doesn't like:
 
-Oct 18 21:41:17 dhcp47-74 kernel: =================================
-Oct 18 21:41:17 dhcp47-74 kernel: [ INFO: inconsistent lock state ]
-Oct 18 21:41:17 dhcp47-74 kernel: 3.1.0-rc4nmi+ #456
-Oct 18 21:41:17 dhcp47-74 kernel: ---------------------------------
-Oct 18 21:41:17 dhcp47-74 kernel: inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
-Oct 18 21:41:17 dhcp47-74 kernel: swapper/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-Oct 18 21:41:17 dhcp47-74 kernel: (&(&xhci->lock)->rlock){?.-...}, at: [<ffffffffa0228990>] xhci_stop_endpoint_command_watchdog+0x30/0x340 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel: {IN-HARDIRQ-W} state was registered at:
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8109a941>] __lock_acquire+0x781/0x1660
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8109bed7>] lock_acquire+0x97/0x170
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff81501b46>] _raw_spin_lock+0x46/0x80
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffffa02299fa>] xhci_irq+0x3a/0x1960 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffffa022b351>] xhci_msi_irq+0x31/0x40 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff810d2305>] handle_irq_event_percpu+0x85/0x320
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff810d25e8>] handle_irq_event+0x48/0x70
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff810d537d>] handle_edge_irq+0x6d/0x130
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff810048c9>] handle_irq+0x49/0xa0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8150d56d>] do_IRQ+0x5d/0xe0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff815029b0>] ret_from_intr+0x0/0x13
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff81388aca>] usb_set_device_state+0x8a/0x180
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8138f038>] usb_add_hcd+0x2b8/0x730
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffffa022ed7e>] xhci_pci_probe+0x9e/0xd4 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8127915f>] local_pci_probe+0x5f/0xd0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8127a569>] pci_device_probe+0x119/0x120
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff81334473>] driver_probe_device+0xa3/0x2c0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8133473b>] __driver_attach+0xab/0xb0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8133373c>] bus_for_each_dev+0x6c/0xa0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff813341fe>] driver_attach+0x1e/0x20
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff81333b88>] bus_add_driver+0x1f8/0x2b0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff81334df6>] driver_register+0x76/0x140
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8127a7c6>] __pci_register_driver+0x66/0xe0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffffa013c04a>] snd_timer_find+0x4a/0x70 [snd_timer]
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffffa013c00e>] snd_timer_find+0xe/0x70 [snd_timer]
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff810001d3>] do_one_initcall+0x43/0x180
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff810a9ed2>] sys_init_module+0x92/0x1f0
-Oct 18 21:41:17 dhcp47-74 kernel:  [<ffffffff8150ab6b>] system_call_fastpath+0x16/0x1b
-Oct 18 21:41:17 dhcp47-74 kernel: irq event stamp: 631984
-Oct 18 21:41:17 dhcp47-74 kernel: hardirqs last  enabled at (631984): [<ffffffff81502720>] _raw_spin_unlock_irq+0x30/0x50
-Oct 18 21:41:17 dhcp47-74 kernel: hardirqs last disabled at (631983): [<ffffffff81501c49>] _raw_spin_lock_irq+0x19/0x90
-Oct 18 21:41:17 dhcp47-74 kernel: softirqs last  enabled at (631980): [<ffffffff8105ff63>] _local_bh_enable+0x13/0x20
-Oct 18 21:41:17 dhcp47-74 kernel: softirqs last disabled at (631981): [<ffffffff8150ce6c>] call_softirq+0x1c/0x30
-Oct 18 21:41:17 dhcp47-74 kernel:
-Oct 18 21:41:17 dhcp47-74 kernel: other info that might help us debug this:
-Oct 18 21:41:17 dhcp47-74 kernel: Possible unsafe locking scenario:
-Oct 18 21:41:17 dhcp47-74 kernel:
-Oct 18 21:41:17 dhcp47-74 kernel:       CPU0
-Oct 18 21:41:17 dhcp47-74 kernel:       ----
-Oct 18 21:41:17 dhcp47-74 kernel:  lock(&(&xhci->lock)->rlock);
-Oct 18 21:41:17 dhcp47-74 kernel:  <Interrupt>
-Oct 18 21:41:17 dhcp47-74 kernel:    lock(&(&xhci->lock)->rlock);
-Oct 18 21:41:17 dhcp47-74 kernel:
-Oct 18 21:41:17 dhcp47-74 kernel: *** DEADLOCK ***
-Oct 18 21:41:17 dhcp47-74 kernel:
-Oct 18 21:41:17 dhcp47-74 kernel: 1 lock held by swapper/0:
-Oct 18 21:41:17 dhcp47-74 kernel: #0:  (&ep->stop_cmd_timer){+.-...}, at: [<ffffffff8106abf2>] run_timer_softirq+0x162/0x570
-Oct 18 21:41:17 dhcp47-74 kernel:
-Oct 18 21:41:17 dhcp47-74 kernel: stack backtrace:
-Oct 18 21:41:17 dhcp47-74 kernel: Pid: 0, comm: swapper Tainted: G        W   3.1.0-rc4nmi+ #456
-Oct 18 21:41:17 dhcp47-74 kernel: Call Trace:
-Oct 18 21:41:17 dhcp47-74 kernel: <IRQ>  [<ffffffff81098ed7>] print_usage_bug+0x227/0x270
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff810999c6>] mark_lock+0x346/0x410
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8109a7de>] __lock_acquire+0x61e/0x1660
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81099893>] ? mark_lock+0x213/0x410
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8109bed7>] lock_acquire+0x97/0x170
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffffa0228990>] ? xhci_stop_endpoint_command_watchdog+0x30/0x340 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81501b46>] _raw_spin_lock+0x46/0x80
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffffa0228990>] ? xhci_stop_endpoint_command_watchdog+0x30/0x340 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffffa0228990>] xhci_stop_endpoint_command_watchdog+0x30/0x340 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8106abf2>] ? run_timer_softirq+0x162/0x570
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8106ac9d>] run_timer_softirq+0x20d/0x570
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8106abf2>] ? run_timer_softirq+0x162/0x570
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffffa0228960>] ? xhci_queue_isoc_tx_prepare+0x8e0/0x8e0 [xhci_hcd]
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff810604d2>] __do_softirq+0xf2/0x3f0
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81020edd>] ? lapic_next_event+0x1d/0x30
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81090d4e>] ? clockevents_program_event+0x5e/0x90
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8150ce6c>] call_softirq+0x1c/0x30
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8100484d>] do_softirq+0x8d/0xc0
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8105ff35>] irq_exit+0xe5/0x100
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8150d65e>] smp_apic_timer_interrupt+0x6e/0x99
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff8150b6f0>] apic_timer_interrupt+0x70/0x80
-Oct 18 21:41:17 dhcp47-74 kernel: <EOI>  [<ffffffff81095d8d>] ? trace_hardirqs_off+0xd/0x10
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff812ddb76>] ? acpi_idle_enter_bm+0x227/0x25b
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff812ddb71>] ? acpi_idle_enter_bm+0x222/0x25b
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff813eda63>] cpuidle_idle_call+0x103/0x290
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81002155>] cpu_idle+0xe5/0x160
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff814e7f50>] rest_init+0xe0/0xf0
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff814e7e70>] ? csum_partial_copy_generic+0x170/0x170
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81df8e23>] start_kernel+0x3fc/0x407
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81df8321>] x86_64_start_reservations+0x131/0x135
-Oct 18 21:41:17 dhcp47-74 kernel: [<ffffffff81df8412>] x86_64_start_kernel+0xed/0xf4
-Oct 18 21:41:17 dhcp47-74 kernel: xhci_hcd 0000:00:14.0: xHCI host not responding to stop endpoint command.
-Oct 18 21:41:17 dhcp47-74 kernel: xhci_hcd 0000:00:14.0: Assuming host is dying, halting host.
-Oct 18 21:41:17 dhcp47-74 kernel: xhci_hcd 0000:00:14.0: HC died; cleaning up
-Oct 18 21:41:17 dhcp47-74 kernel: usb 3-4: device descriptor read/8, error -110
-Oct 18 21:41:17 dhcp47-74 kernel: usb 3-4: device descriptor read/8, error -22
-Oct 18 21:41:17 dhcp47-74 kernel: hub 3-0:1.0: cannot disable port 4 (err = -19)
+[  223.701839] xhci_hcd 0000:03:00.0: Slot ID 1 Input Context:
+[  223.701841] xhci_hcd 0000:03:00.0: @ffff880137b25000 (virt) @ffffc000 (dma) 0x000000 - drop flags
+[  223.701843] xhci_hcd 0000:03:00.0: @ffff880137b25004 (virt) @ffffc004 (dma) 0x000000 - add flags
+[  223.701846] xhci_hcd 0000:03:00.0: @ffff880137b25008 (virt) @ffffc008 (dma) 0x000000 - rsvd2[0]
+[  223.701848] xhci_hcd 0000:03:00.0: @ffff880137b2500c (virt) @ffffc00c (dma) 0x000000 - rsvd2[1]
+[  223.701850] xhci_hcd 0000:03:00.0: @ffff880137b25010 (virt) @ffffc010 (dma) 0x000000 - rsvd2[2]
+[  223.701852] xhci_hcd 0000:03:00.0: @ffff880137b25014 (virt) @ffffc014 (dma) 0x000000 - rsvd2[3]
+[  223.701854] xhci_hcd 0000:03:00.0: @ffff880137b25018 (virt) @ffffc018 (dma) 0x000000 - rsvd2[4]
+[  223.701857] xhci_hcd 0000:03:00.0: @ffff880137b2501c (virt) @ffffc01c (dma) 0x000000 - rsvd2[5]
+[  223.701858] xhci_hcd 0000:03:00.0: Slot Context:
+[  223.701860] xhci_hcd 0000:03:00.0: @ffff880137b25020 (virt) @ffffc020 (dma) 0x8400000 - dev_info
+[  223.701862] xhci_hcd 0000:03:00.0: @ffff880137b25024 (virt) @ffffc024 (dma) 0x010000 - dev_info2
+[  223.701864] xhci_hcd 0000:03:00.0: @ffff880137b25028 (virt) @ffffc028 (dma) 0x000000 - tt_info
+[  223.701866] xhci_hcd 0000:03:00.0: @ffff880137b2502c (virt) @ffffc02c (dma) 0x000000 - dev_state
+[  223.701869] xhci_hcd 0000:03:00.0: @ffff880137b25030 (virt) @ffffc030 (dma) 0x000000 - rsvd[0]
+[  223.701871] xhci_hcd 0000:03:00.0: @ffff880137b25034 (virt) @ffffc034 (dma) 0x000000 - rsvd[1]
+[  223.701873] xhci_hcd 0000:03:00.0: @ffff880137b25038 (virt) @ffffc038 (dma) 0x000000 - rsvd[2]
+[  223.701875] xhci_hcd 0000:03:00.0: @ffff880137b2503c (virt) @ffffc03c (dma) 0x000000 - rsvd[3]
+[  223.701877] xhci_hcd 0000:03:00.0: Endpoint 00 Context:
+[  223.701879] xhci_hcd 0000:03:00.0: @ffff880137b25040 (virt) @ffffc040 (dma) 0x000000 - ep_info
+[  223.701881] xhci_hcd 0000:03:00.0: @ffff880137b25044 (virt) @ffffc044 (dma) 0x2000026 - ep_info2
+[  223.701883] xhci_hcd 0000:03:00.0: @ffff880137b25048 (virt) @ffffc048 (dma) 0xffffe8e0 - deq
+[  223.701885] xhci_hcd 0000:03:00.0: @ffff880137b25050 (virt) @ffffc050 (dma) 0x000000 - tx_info
+[  223.701887] xhci_hcd 0000:03:00.0: @ffff880137b25054 (virt) @ffffc054 (dma) 0x000000 - rsvd[0]
+[  223.701889] xhci_hcd 0000:03:00.0: @ffff880137b25058 (virt) @ffffc058 (dma) 0x000000 - rsvd[1]
+[  223.701892] xhci_hcd 0000:03:00.0: @ffff880137b2505c (virt) @ffffc05c (dma) 0x000000 - rsvd[2]
+...
+[  223.701927] xhci_hcd 0000:03:00.0: // Ding dong!
+[  223.701992] xhci_hcd 0000:03:00.0: Setup ERROR: address device command for slot 1.
 
-Basically what is happening is in xhci_stop_endpoint_command_watchdog()
-the xhci->lock is grabbed with just spin_lock.  What lockdep deduces is
-that if an interrupt occurred while in this function it would deadlock
-with xhci_irq because that function also grabs the xhci->lock.
+The xHCI spec says that both flags must be set to one for the Address
+Device command.  When the device is first enumerated,
+xhci_setup_addressable_virt_dev() does set those flags.  However, when
+the device is addressed after it has been reset in the configured state,
+xhci_setup_addressable_virt_dev() is not called, and
+xhci_copy_ep0_dequeue_into_input_ctx() is called instead.  That function
+relies on the flags being set up by previous commands, which apparently
+isn't a good assumption.
 
-Fixing it is trivial by using spin_lock_irqsave instead.
+Move the setting of the flags into the common parent function.
 
-This should be queued to stable kernels as far back as 2.6.33.
+This should be queued for stable kernels as old as 2.6.35, since that
+was the first introduction of xhci_copy_ep0_dequeue_into_input_ctx.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Matt <mdm@iinet.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/usb/host/xhci-mem.c |    5 -----
+ drivers/usb/host/xhci.c     |    5 ++++-
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -816,23 +816,24 @@ void xhci_stop_endpoint_command_watchdog
- 	struct xhci_ring *ring;
- 	struct xhci_td *cur_td;
- 	int ret, i, j;
-+	unsigned long flags;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -875,7 +875,6 @@ int xhci_setup_addressable_virt_dev(stru
+ 	struct xhci_virt_device *dev;
+ 	struct xhci_ep_ctx	*ep0_ctx;
+ 	struct xhci_slot_ctx    *slot_ctx;
+-	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u32			port_num;
+ 	struct usb_device *top_dev;
  
- 	ep = (struct xhci_virt_ep *) arg;
- 	xhci = ep->xhci;
- 
--	spin_lock(&xhci->lock);
-+	spin_lock_irqsave(&xhci->lock, flags);
- 
- 	ep->stop_cmds_pending--;
- 	if (xhci->xhc_state & XHCI_STATE_DYING) {
- 		xhci_dbg(xhci, "Stop EP timer ran, but another timer marked "
- 				"xHCI as DYING, exiting.\n");
--		spin_unlock(&xhci->lock);
-+		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return;
+@@ -887,12 +886,8 @@ int xhci_setup_addressable_virt_dev(stru
+ 		return -EINVAL;
  	}
- 	if (!(ep->stop_cmds_pending == 0 && (ep->ep_state & EP_HALT_PENDING))) {
- 		xhci_dbg(xhci, "Stop EP timer ran, but no command pending, "
- 				"exiting.\n");
--		spin_unlock(&xhci->lock);
-+		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return;
- 	}
+ 	ep0_ctx = xhci_get_ep_ctx(xhci, dev->in_ctx, 0);
+-	ctrl_ctx = xhci_get_input_control_ctx(xhci, dev->in_ctx);
+ 	slot_ctx = xhci_get_slot_ctx(xhci, dev->in_ctx);
  
-@@ -844,11 +845,11 @@ void xhci_stop_endpoint_command_watchdog
- 	xhci->xhc_state |= XHCI_STATE_DYING;
- 	/* Disable interrupts from the host controller and start halting it */
- 	xhci_quiesce(xhci);
--	spin_unlock(&xhci->lock);
-+	spin_unlock_irqrestore(&xhci->lock, flags);
+-	/* 2) New slot context and endpoint 0 context are valid*/
+-	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
+-
+ 	/* 3) Only the control endpoint is valid - one endpoint context */
+ 	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(1) | udev->route);
+ 	switch (udev->speed) {
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2873,6 +2873,10 @@ int xhci_address_device(struct usb_hcd *
+ 	/* Otherwise, update the control endpoint ring enqueue pointer. */
+ 	else
+ 		xhci_copy_ep0_dequeue_into_input_ctx(xhci, udev);
++	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
++	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
++	ctrl_ctx->drop_flags = 0;
++
+ 	xhci_dbg(xhci, "Slot ID %d Input Context:\n", udev->slot_id);
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
  
- 	ret = xhci_halt(xhci);
+@@ -2954,7 +2958,6 @@ int xhci_address_device(struct usb_hcd *
+ 	virt_dev->address = (le32_to_cpu(slot_ctx->dev_state) & DEV_ADDR_MASK)
+ 		+ 1;
+ 	/* Zero the input context control for later use */
+-	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
+ 	ctrl_ctx->add_flags = 0;
+ 	ctrl_ctx->drop_flags = 0;
  
--	spin_lock(&xhci->lock);
-+	spin_lock_irqsave(&xhci->lock, flags);
- 	if (ret < 0) {
- 		/* This is bad; the host is not responding to commands and it's
- 		 * not allowing itself to be halted.  At least interrupts are
-@@ -896,7 +897,7 @@ void xhci_stop_endpoint_command_watchdog
- 			}
- 		}
- 	}
--	spin_unlock(&xhci->lock);
-+	spin_unlock_irqrestore(&xhci->lock, flags);
- 	xhci_dbg(xhci, "Calling usb_hc_died()\n");
- 	usb_hc_died(xhci_to_hcd(xhci)->primary_hcd);
- 	xhci_dbg(xhci, "xHCI host controller is dead.\n");
 
 
