@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab1KWAg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42602 "EHLO mx2.suse.de"
+	id S932647Ab1KWAhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:37:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42612 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932547Ab1KWAg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
-Message-Id: <20111123002557.806616502@clark.kroah.org>
+	id S932547Ab1KWAhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:37:00 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:58 2011
+Message-Id: <20111123002557.917179781@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:52 -0800
+Date: Tue, 22 Nov 2011 16:25:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Antonio Quartulli <ordex@autistici.org>,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: [52/53] batman-adv: unify hash_entry field position in tt_local/global_entry
+        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [53/53] vmscan: fix shrinker callback bug in fs/super.c
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <ordex@autistici.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 93840ac40bb0d0f177ef8af74e64671be67e8c37 upstream.
+commit 09f363c7363eb10cfb4b82094bd7064e5608258b upstream.
 
-Function tt_response_fill_table() actually uses a tt_local_entry pointer to
-iterate either over the local or the global table entries (it depends on the
-what hash table is passed as argument). To iterate over such entries the
-hlist_for_each_entry_rcu() macro has to access their "hash_entry" field which
-MUST be at the same position in both the tt_global/local_entry structures.
+The callback must not return -1 when nr_to_scan is zero. Fix the bug in
+fs/super.c and add this requirement to the callback specification.
 
-Reported-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/batman-adv/types.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/super.c               |    2 +-
+ include/linux/shrinker.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/batman-adv/types.h
-+++ b/net/batman-adv/types.h
-@@ -223,22 +223,22 @@ struct socket_packet {
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -61,7 +61,7 @@ static int prune_super(struct shrinker *
+ 		return -1;
  
- struct tt_local_entry {
- 	uint8_t addr[ETH_ALEN];
-+	struct hlist_node hash_entry;
- 	unsigned long last_seen;
- 	uint16_t flags;
- 	atomic_t refcount;
- 	struct rcu_head rcu;
--	struct hlist_node hash_entry;
- };
+ 	if (!grab_super_passive(sb))
+-		return -1;
++		return !sc->nr_to_scan ? 0 : -1;
  
- struct tt_global_entry {
- 	uint8_t addr[ETH_ALEN];
-+	struct hlist_node hash_entry; /* entry in the global table */
- 	struct orig_node *orig_node;
- 	uint8_t ttvn;
- 	uint16_t flags; /* only TT_GLOBAL_ROAM is used */
- 	unsigned long roam_at; /* time at which TT_GLOBAL_ROAM was set */
- 	atomic_t refcount;
- 	struct rcu_head rcu;
--	struct hlist_node hash_entry; /* entry in the global table */
- };
- 
- struct tt_change_node {
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+ 		fs_objects = sb->s_op->nr_cached_objects(sb);
+--- a/include/linux/shrinker.h
++++ b/include/linux/shrinker.h
+@@ -20,6 +20,7 @@ struct shrink_control {
+  * 'nr_to_scan' entries and attempt to free them up.  It should return
+  * the number of objects which remain in the cache.  If it returns -1, it means
+  * it cannot do any scanning at this time (eg. there is a risk of deadlock).
++ * The callback must not return -1 if nr_to_scan is zero.
+  *
+  * The 'gfpmask' refers to the allocation we are currently trying to
+  * fulfil.
 
 
