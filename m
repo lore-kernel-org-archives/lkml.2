@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab1KWVTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 16:19:54 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61828 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab1KWVTx (ORCPT
+	id S1756089Ab1KWVT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 16:19:56 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:56269 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab1KWVTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 16:19:53 -0500
-Message-ID: <4ECD6375.5050404@suse.cz>
-Date: Wed, 23 Nov 2011 22:19:49 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111114 Thunderbird/9.0
-MIME-Version: 1.0
-To: Havard Skinnemoen <hskinnemoen@google.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>
-Subject: Re: [RFC] cdc-acm: Fix potential deadlock (lockdep warning)
-References: <CAFQmdRbkYiOArK09smfMvf2DJ8h-bYvKyXRN_nmX-bPG8ENmjA@mail.gmail.com> <1322074412-10873-1-git-send-email-hskinnemoen@google.com> <4ECD4FCD.7040602@suse.cz> <CAFQmdRbP3qXc2n_Qto0o3Lg1280gg7mPHVSY28S8nBT39YPPQQ@mail.gmail.com> <4ECD6198.20309@suse.cz>
-In-Reply-To: <4ECD6198.20309@suse.cz>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Nov 2011 16:19:54 -0500
+Subject: Re: [PATCH V2] slub: avoid potential NULL dereference or corruption
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christian Kujau <lists@nerdbynature.de>, markus@trippelsdorf.de,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <alpine.DEB.2.00.1111230916220.16139@router.home>
+References: <1321973629.2474.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <alpine.DEB.2.00.1111220855460.25785@router.home>
+	 <1321974122.2474.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <alpine.LFD.2.02.1111231030370.14209@tux.localdomain>
+	 <alpine.DEB.2.00.1111230916220.16139@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 23 Nov 2011 23:19:51 +0200
+Message-ID: <1322083191.1428.125.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 10:11 PM, Jiri Slaby wrote:
-> On 11/23/2011 10:08 PM, Havard Skinnemoen wrote:
->> tty_port_close_start() takes port->lock, so if we try to do that,
->> we'll turn a potential deadlock into a real one. Or did you mean
->> something else?
+On Wed, 2011-11-23 at 09:17 -0600, Christoph Lameter wrote:
+> On Wed, 23 Nov 2011, Pekka Enberg wrote:
 > 
-> I mean the other uses of port->count in your driver.
+> > On Tue, 22 Nov 2011, Eric Dumazet wrote:
+> > > show_slab_objects() can trigger NULL dereferences or memory corruption.
+> > >
+> > > Another cpu can change its c->page to NULL or c->node to NUMA_NO_NODE
+> > > while we use them.
+> > >
+> > > Use ACCESS_ONCE(c->page) and ACCESS_ONCE(c->node) to make sure this
+> > > cannot happen.
+> > >
+> > > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> >
+> > Did someone test this patch? Does it fix any of the reported issues?
 > 
->> I think I'll try to follow Alan's advice and use tty_port_close()
->> instead of the split functions.
+> It does not fix any current issues but it is safe against potential
+> compiler refetching of variables that we have already checked against
+> bad values.
 > 
-> Yes, that's indeed the best approach. However you have to use them all:
-> tty_port_open, tty_port_hangup, tty_port_close. OR you would have to do
-> the locking of count properly.
+> I thought I acked it already?
 
-And I see now that the driver uses tty_port_hangup (count under
-port->lock) and tty_port_close_start (count under open_mutex and
-port->lock). But doesn't use tty_port_open (count under open_mutex and
-acm->mutex). Hence there was always a race hangup vs. open wrt. port
-counting.
+Yes, you did. I'm just trying to figure out which ones are going
+straight to Linus and which ones can wait for v3.3.
 
-thanks,
--- 
-js
-suse labs
+			Pekka
+
