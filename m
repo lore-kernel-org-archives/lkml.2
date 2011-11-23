@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab1KWA6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:58:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42347 "EHLO mx2.suse.de"
+	id S932485Ab1KWA7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:59:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42334 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429Ab1KWAfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:03 -0500
+	id S932432Ab1KWAfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:35:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:53 2011
-Message-Id: <20111123002553.729423242@clark.kroah.org>
+Message-Id: <20111123002553.623761759@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:09 -0800
+Date: Tue, 22 Nov 2011 16:25:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesper Juhl <jj@chaosbits.net>,
-        Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [09/53] Net, libertas: Resolve memory leak in if_spi_host_to_card()
+        alan@lxorguk.ukuu.org.uk, Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [08/53] ARM: 7150/1: Allow kernel unaligned accesses on ARMv6+
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.1-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ processors
 
-From: Jesper Juhl <jj@chaosbits.net>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit fe09b32a4361bea44169b2063e8c867cabb6a8ba upstream.
+commit 8428e84d42179c2a00f5f6450866e70d802d1d05 upstream.
 
-If we hit the default case in the switch in if_spi_host_to_card() we'll leak
-the memory we allocated for 'packet'. This patch resolves the leak by freeing
-the allocated memory in that case.
+Recent gcc versions generate unaligned accesses by default on ARMv6 and
+later processors. This patch ensures that the SCTLR.A bit is always
+cleared on such processors to avoid kernel traping before
+alignment_init() is called.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Acked-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested-by: John Linn <John.Linn@xilinx.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/libertas/if_spi.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/kernel/head.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/libertas/if_spi.c
-+++ b/drivers/net/wireless/libertas/if_spi.c
-@@ -999,6 +999,7 @@ static int if_spi_host_to_card(struct lb
- 		spin_unlock_irqrestore(&card->buffer_lock, flags);
- 		break;
- 	default:
-+		kfree(packet);
- 		netdev_err(priv->dev, "can't transfer buffer of type %d\n",
- 			   type);
- 		err = -EINVAL;
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -356,7 +356,7 @@ __secondary_data:
+  *  r13 = *virtual* address to jump to upon completion
+  */
+ __enable_mmu:
+-#ifdef CONFIG_ALIGNMENT_TRAP
++#if defined(CONFIG_ALIGNMENT_TRAP) && __LINUX_ARM_ARCH__ < 6
+ 	orr	r0, r0, #CR_A
+ #else
+ 	bic	r0, r0, #CR_A
 
 
