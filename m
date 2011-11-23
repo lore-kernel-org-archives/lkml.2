@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1KWQTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:19:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47339 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab1KWQTm convert rfc822-to-8bit (ORCPT
+	id S1753304Ab1KWQU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:20:57 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:54999 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab1KWQUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:19:42 -0500
+	Wed, 23 Nov 2011 11:20:55 -0500
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given pids
+Date: Wed, 23 Nov 2011 16:20:44 +0000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-12-generic; KDE/4.7.2; x86_64; ; )
+Cc: Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+References: <4EC4F2FB.408@parallels.com> <201111221204.39235.pedro@codesourcery.com> <20111122153326.GD322@google.com>
+In-Reply-To: <20111122153326.GD322@google.com>
 MIME-Version: 1.0
-In-Reply-To: <1321999366-23784-11-git-send-email-corentincj@iksaif.net>
-References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
-	<1321999366-23784-11-git-send-email-corentincj@iksaif.net>
-Date: Wed, 23 Nov 2011 17:19:40 +0100
-Message-ID: <CANq1E4TwHt8RhW2nn_7W0MqiLd5d6VEw1c7QUP7JYniA2yZK=Q@mail.gmail.com>
-Subject: Re: [PATCH 10/15] samsung-laptop: cleanup KConfig
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Corentin Chary <corentincj@iksaif.net>
-Cc: platform-driver-x86@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111231620.45440.pedro@codesourcery.com>
+X-OriginalArrivalTime: 23 Nov 2011 16:20:47.0918 (UTC) FILETIME=[DBF6ECE0:01CCA9FB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 11:02 PM, Corentin Chary <corentincj@iksaif.net> wrote:
-> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-> ---
->  drivers/platform/x86/Kconfig |   11 +++++++----
->  1 files changed, 7 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 7f43cf8..2f7a9a7 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -744,13 +744,16 @@ config XO15_EBOOK
->
->  config SAMSUNG_LAPTOP
->        tristate "Samsung Laptop driver"
-> -       depends on RFKILL && BACKLIGHT_CLASS_DEVICE && X86
-> +       depends on X86
-> +       depends on RFKILL || RFKILL = n
-> +       depends on BACKLIGHT_CLASS_DEVICE
->        ---help---
->          This module implements a driver for a wide range of different
->          Samsung laptops.  It offers control over the different
-> -         function keys, wireless LED, LCD backlight level, and
-> -         sometimes provides a "performance_control" sysfs file to allow
-> -         the performance level of the laptop to be changed.
-> +         function keys, wireless LED, LCD backlight level.
-> +
-> +         It may also provides some sysfs files described in
+Hello Tejun,
 
-If you are resending this anyway:
-"provide"
+On Tuesday 22 November 2011 15:33:26, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Nov 22, 2011 at 12:04:38PM +0000, Pedro Alves wrote:
+> > This whole userspace C/R stuff and being able to set the child's pid has potential
+> > of being very useful for GDB too, allowing a much better reimplementation of its
+> > old checkpointing feature [*], and allowing for a faster reverse debugging
+> > implementation, by being able to do faster rewinding -- restore snapshot and replay
+> > instructions up to N (by single stepping or running to breakpoint), rather than
+> > manually undoing the effects of each instruction, one by one.
+> > 
+> > IOW, root only would be a shame from GDB's perspective.
+> 
+> Would CAP_CHECKPOINT be a shame too?  
 
-> +         <file:Documentation/ABI/testing/sysfs-platform-samsung-laptop>
->
->          To compile this driver as a module, choose M here: the module
->          will be called samsung-laptop.
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I think CAP_CHECKPOINT (or something through some LSM) would be
+definitely better.
 
-Cheers
-David
+> I'm reluctant about priviledge
+> through fd inheritance mostly because of its unusualness.  I don't
+> think priv management is a good problem space for small creative
+> solutions.  We're much better off with mundane mechanisms which people
+> are already familiar with and is easy to account for.
+
+fd inheritance wouldn't work for gdb; a user spawned gdb
+wouldn't inherit an open fd to kernel.ns_last_pid from anywhere.
+
+-- 
+Pedro Alves
