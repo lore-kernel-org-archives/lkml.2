@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1KWVlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 16:41:40 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:57643 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751660Ab1KWVlj (ORCPT
+	id S1756161Ab1KWVnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 16:43:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38925 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab1KWVnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 16:41:39 -0500
-Message-ID: <4ECD6873.7080106@metafoo.de>
-Date: Wed, 23 Nov 2011 22:41:07 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+	Wed, 23 Nov 2011 16:43:06 -0500
+Date: Wed, 23 Nov 2011 22:43:01 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+Cc: Marc Vertes <marc.vertes@sigfox.com>, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HaraldWelte@viatech.com, broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
+Message-ID: <20111123214301.GA32669@pengutronix.de>
+References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
+ <20111122112212.GD2734@pengutronix.de>
+ <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
+ <20111122173029.GA14349@pengutronix.de>
+ <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
+ <4ecbf011.dZASXe6D5kH4Uxve%marc.vertes@sigfox.com>
+ <20111123121051.GA18320@rainbow>
+ <4eccff3f.MbLR7E9v8jus19P8%marc.vertes@sigfox.com>
+ <20111123192550.GA9918@rainbow>
 MIME-Version: 1.0
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, Xi Wang <xi.wang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        "security@kernel.org" <security@kernel.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ian Abbott <ian.abbott@mev.co.uk>,
-        Franky Lin <frankyl@broadcom.com>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
-        Mark Pearson <markpearson_de@yahoo.de>
-Subject: Re: [PATCH] comedi: integer overflow in do_insnlist_ioctl()
-References: <5C0D372F-F03E-4EB8-8440-83A8D1C95363@gmail.com> <20111123061355.GA3295@mwanda> <CAKU6vyZdC64piK-mn6kLMt1-RhhM8D-4KbAGxje087FJ9X=fNA@mail.gmail.com> <20111123145020.GA3258@mwanda> <4ECD1A01.3060503@mev.co.uk>
-In-Reply-To: <4ECD1A01.3060503@mev.co.uk>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+Content-Disposition: inline
+In-Reply-To: <20111123192550.GA9918@rainbow>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 05:06 PM, Ian Abbott wrote:
-> On 2011-11-23 14:50, Dan Carpenter wrote:
->> On Wed, Nov 23, 2011 at 08:59:52AM -0500, Xi Wang wrote:
->>> Thanks for the pointer.  However you cannot do the overflow check using
->>>
->>>    if (sizeof(struct comedi_insn) * insnlist.n_insns < 
->>> insnlist.n_insns)
->>>
->>> Let's assume 32-bit system, sizeof(struct comedi_insn) = 32, and
->>> insnlist.n_insns = 0x7fffffff.
->>>
->>> Note that 32 * 0x7fffffff = 0xffffffe0 overflows but bypasses your
->>> check.
->>>
->>
->> Argh...  You're right, my check is wrong.  What I like about my patch
->> though is that it doesn't introduce an arbitrary limit.  Could you
->> redo your check without the MAX_INSNS?
-> 
-> Could use something like:
-> 
->     if (insnlist.n_insns <= ULONG_MAX / sizeof(struct comedi_insn))
->         insns =
->             kmalloc(sizeof(struct comedi_insn) * insnlist.n_insns,
->                 GFP_KERNEL);
->     if (!insns)
->         ...
-> 
-> (note that insns is initialized to NULL).
-> 
 
-Just use kcalloc, it will do the right thing for you.
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-- Lars
+> Ok. Thanks to you and Harald for explaining! That's sad HW doesn't
+> behave according to datasheets. Maybe it's worth to add a note about this
+> in the driver to warn future hackers? :)
+
+Yes, please.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7NaOUACgkQD27XaX1/VRugDQCfXRMHUgEr1TVG+PAykH373Mnl
+fCEAn3MAs0gBBV8k2tk26VDwklj5YOS1
+=Yeen
+-----END PGP SIGNATURE-----
+
+--cNdxnHkX5QqsyA0e--
