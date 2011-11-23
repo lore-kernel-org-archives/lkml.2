@@ -1,160 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab1KWKxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:53:19 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13571 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759Ab1KWKxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:53:16 -0500
-Subject: [PATCH 6/6] SUNRPC: remove RPC PipeFS mount point reference from RPC
-	client
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Date: Wed, 23 Nov 2011 14:52:04 +0300
-Message-ID: <20111123105204.11077.54113.stgit@localhost6.localdomain6>
-In-Reply-To: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
-References: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1754441Ab1KWK4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:56:24 -0500
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:16770
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752654Ab1KWK4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:56:22 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LV411Q-01-2KM-02
+X-M-MSG: 
+Date: Wed, 23 Nov 2011 11:56:12 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Chris Wright <chrisw@sous-sol.org>
+CC: Joerg Roedel <joro@8bytes.org>, <linux-pci@vger.kernel.org>,
+        <dwmw2@infradead.org>, <iommu@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iommu: Include MSI susceptibility to DMA in creating
+ iommu groups
+Message-ID: <20111123105612.GD11876@amd.com>
+References: <20111117170800.3125.84150.stgit@bling.home>
+ <20111118104651.GJ5627@amd.com>
+ <1321628190.26410.63.camel@bling.home>
+ <20111118152710.GA5098@amd.com>
+ <1321633956.26410.126.camel@bling.home>
+ <20111120120043.GB20535@8bytes.org>
+ <20111121233505.GG3344@sequoia.sous-sol.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111121233505.GG3344@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch. We don't need this reference anymore.
+On Mon, Nov 21, 2011 at 03:35:05PM -0800, Chris Wright wrote:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> What is the value of a group w/out complete isolation?
 
----
- fs/nfs/idmap.c                 |    4 ++--
- include/linux/sunrpc/clnt.h    |    2 +-
- net/sunrpc/auth_gss/auth_gss.c |    8 ++++----
- net/sunrpc/clnt.c              |   21 ++++++++++-----------
- 4 files changed, 17 insertions(+), 18 deletions(-)
+There is still isolation for DMA. This may be sufficient for non-KVM
+use-cases like a device driver partially implemented in userspace. There
+is no no guest then that can attack the host with wrong interrupts.
 
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index b09a7f1..60698a1 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -370,8 +370,8 @@ nfs_idmap_new(struct nfs_client *clp)
- 		return error;
- 	}
- 
--	if (clp->cl_rpcclient->cl_path.dentry)
--		pipe->dentry = rpc_mkpipe_dentry(clp->cl_rpcclient->cl_path.dentry,
-+	if (clp->cl_rpcclient->cl_dentry)
-+		pipe->dentry = rpc_mkpipe_dentry(clp->cl_rpcclient->cl_dentry,
- 				"idmap", idmap, pipe);
- 	if (IS_ERR(pipe->dentry)) {
- 		error = PTR_ERR(pipe->dentry);
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index db7bcaf..9fe39bc 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -56,7 +56,7 @@ struct rpc_clnt {
- 
- 	int			cl_nodelen;	/* nodename length */
- 	char 			cl_nodename[UNX_MAXNODENAME];
--	struct path		cl_path;
-+	struct dentry *		cl_dentry;
- 	struct rpc_clnt *	cl_parent;	/* Points to parent of clones */
- 	struct rpc_rtt		cl_rtt_default;
- 	struct rpc_timeout	cl_timeout_default;
-diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index 66293dc..8673220 100644
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -799,12 +799,12 @@ static int gss_pipes_dentries_create(struct rpc_auth *auth)
- 	gss_auth = container_of(auth, struct gss_auth, rpc_auth);
- 	clnt = gss_auth->client;
- 
--	gss_auth->pipe[1]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
-+	gss_auth->pipe[1]->dentry = rpc_mkpipe_dentry(clnt->cl_dentry,
- 						      "gssd",
- 						      clnt, gss_auth->pipe[1]);
- 	if (IS_ERR(gss_auth->pipe[1]->dentry))
- 		return PTR_ERR(gss_auth->pipe[1]->dentry);
--	gss_auth->pipe[0]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
-+	gss_auth->pipe[0]->dentry = rpc_mkpipe_dentry(clnt->cl_dentry,
- 						      gss_auth->mech->gm_name,
- 						      clnt, gss_auth->pipe[0]);
- 	if (IS_ERR(gss_auth->pipe[0]->dentry)) {
-@@ -826,7 +826,7 @@ static void gss_pipes_dentries_destroy_net(struct rpc_clnt *clnt,
- 
- 	sb = rpc_get_sb_net(net);
- 	if (sb) {
--		if (clnt->cl_path.dentry)
-+		if (clnt->cl_dentry)
- 			gss_pipes_dentries_destroy(auth);
- 		rpc_put_sb_net(net);
- 	}
-@@ -841,7 +841,7 @@ static int gss_pipes_dentries_create_net(struct rpc_clnt *clnt,
- 
- 	sb = rpc_get_sb_net(net);
- 	if (sb) {
--		if (clnt->cl_path.dentry)
-+		if (clnt->cl_dentry)
- 			err = gss_pipes_dentries_create(auth);
- 		rpc_put_sb_net(net);
- 	}
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index eb2595f..3971aaa 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -95,12 +95,12 @@ static void rpc_unregister_client(struct rpc_clnt *clnt)
- 
- static void __rpc_clnt_remove_pipedir(struct rpc_clnt *clnt)
- {
--	if (clnt->cl_path.dentry) {
-+	if (clnt->cl_dentry) {
- 		if (clnt->cl_auth && clnt->cl_auth->au_ops->pipes_destroy)
- 			clnt->cl_auth->au_ops->pipes_destroy(clnt->cl_auth);
--		rpc_remove_client_dir(clnt->cl_path.dentry);
-+		rpc_remove_client_dir(clnt->cl_dentry);
- 	}
--	clnt->cl_path.dentry = NULL;
-+	clnt->cl_dentry = NULL;
- }
- 
- static void rpc_clnt_remove_pipedir(struct rpc_clnt *clnt)
-@@ -151,20 +151,19 @@ static int
- rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
- {
- 	struct super_block *pipefs_sb;
--	struct path path;
-+	struct dentry *dentry;
- 
--	clnt->cl_path.mnt = ERR_PTR(-ENOENT);
--	clnt->cl_path.dentry = NULL;
-+	clnt->cl_dentry = NULL;
- 	if (dir_name == NULL)
- 		return 0;
- 	pipefs_sb = rpc_get_sb_net(clnt->cl_xprt->xprt_net);
- 	if (!pipefs_sb)
- 		return 0;
--	path.dentry = rpc_setup_pipedir_sb(pipefs_sb, clnt, dir_name);
-+	dentry = rpc_setup_pipedir_sb(pipefs_sb, clnt, dir_name);
- 	rpc_put_sb_net(clnt->cl_xprt->xprt_net);
--	if (IS_ERR(path.dentry))
--		return PTR_ERR(path.dentry);
--	clnt->cl_path = path;
-+	if (IS_ERR(dentry))
-+		return PTR_ERR(dentry);
-+	clnt->cl_dentry = dentry;
- 	return 0;
- }
- 
-@@ -183,7 +182,7 @@ static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
- 		BUG_ON(dentry == NULL);
- 		if (IS_ERR(dentry))
- 			return PTR_ERR(dentry);
--		clnt->cl_path.dentry = dentry;
-+		clnt->cl_dentry = dentry;
- 		if (clnt->cl_auth->au_ops->pipes_create) {
- 			err = clnt->cl_auth->au_ops->pipes_create(clnt->cl_auth);
- 			if (err)
+> Is there a practical problem w/ conflating the subtleties above?
+
+Same argument as above. It ties the the iommu_group interface to the KVM
+use case. Another more pratical impact of this patch is that a reboot is
+required to re-enable iommu-groups. When the check happens in VFIO it is
+a simple module-reload.
+
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
