@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1KWKdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:33:40 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:40942 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753357Ab1KWKdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:33:39 -0500
-Message-ID: <4ECCCBDA.5060604@parallels.com>
-Date: Wed, 23 Nov 2011 08:32:58 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753997Ab1KWKeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:34:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49380 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab1KWKeM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:34:12 -0500
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>
-Subject: Re: [RFC][PATCH 0/3] impelemnt cgroup_(subsys)_disabled in generic.
-References: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+In-Reply-To: <CAKYAXd98n+zPJPhuNXrtUNZjukXODNFQzLVPJKyP-+QKiYbQiA@mail.gmail.com>
+References: <9A609E6D-DF91-4AF9-855A-6D28E9B95D15@cam.ac.uk>
+	<81357503-810A-477A-A320-D39F2CD69547@cam.ac.uk>
+	<20111103134056.178ee9e3@barsoom.rdu.redhat.com>
+	<A2505FE2-FE28-4C23-879E-357C9D3AA03F@cam.ac.uk>
+	<CAH2r5mtye1DHKbPYMKnkcZjfVKBqek=a7DWGPJvxCsoLEhzDXA@mail.gmail.com>
+	<CAKYAXd98n+zPJPhuNXrtUNZjukXODNFQzLVPJKyP-+QKiYbQiA@mail.gmail.com>
+Date: Wed, 23 Nov 2011 19:34:10 +0900
+Message-ID: <CAKYAXd965Md2D4mnDbROoNcKZPQs2dERh8y7aDHtoJ+FJcK1QQ@mail.gmail.com>
+Subject: Re: CIFS: Rename bug on servers not supporting inode numbers
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: stern@rowland.harvard.edu
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Unix Support <unix-support@ucs.cam.ac.uk>,
+        Steve French <smfrench@gmail.com>, akpm@linux-foundation.org,
+        Anton Altaparmakov <aia21@cam.ac.uk>, ashishsangwan2@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 06:28 AM, KAMEZAWA Hiroyuki wrote:
->
-> Now, memory cgroup has 'mem_cgroup_disabled()' in memcontrol.h
->
-> I made a brief trial to use static_branch() for that function. At doing that,
-> I thought it will be better to implement generic cgroup functions rather
-> than having memory cgroup's its own one.
->
-> This series consists of 3 patches
-> 1 .... implement cgroup_xxxx_disabled() in generic.
-> 2 .... use jump_label for cgroup_xxxx_disabled()
-> 3 .... remove mem_cgroup_disabled() in memcontrol.c
->
-> And I post this series for getting review/comments.
-> I'm not sure patches for using jump_label is worth to be merged.
->
-> I did a test to run a loop
-> 	while(-) {
-> 		mmap(1M)
-> 		touch all pages
-> 		munmap()
-> 	}
->
-> and measured performance score in ROOT cgroup. Here,
->
-> (Before patch)
->     182,932,842,128 cycles                    #    0.000 GHz                     [33.33%]
->     192,711,643,877 instructions              #    1.05  insns per cycle         [49.99%]
->         761,483,416 cache-references                                             [49.98%]
->             159,908 cache-misses              #    0.021 % of all cache refs     [50.00%]
->      33,253,084,874 branches                                                     [33.34%]
->         109,796,792 branch-misses             #    0.33% of all branches         [33.34%]
->
->        58.289265709 seconds time elapsed
->
-> (After patch)
->   Performance counter stats for './malloc 1':
->
->     183,068,407,487 cycles                    #    0.000 GHz                     [33.33%]
->     191,834,248,678 instructions              #    1.05  insns per cycle         [50.00%]
->         798,635,028 cache-references                                             [49.98%]
->              95,562 cache-misses              #    0.012 % of all cache refs     [50.00%]
->      32,755,318,286 branches                                                     [33.34%]
->          77,774,624 branch-misses             #    0.24% of all branches         [33.34%]
->
->        58.332356996 seconds time elapsed
->
-> There is no differece in 'time' ;)
-> But I got an impression that 'branch' score gets better in several tests.
->
+Hi. Alan.
+Would you know why there is no upper/lower case table in nls utf8 ?
+And Currently Surrogate pair is not supported also in nls utf8. Is
+there the reason ?
 
-branch and cache misses are a lot smaller as well. I think this is a win.
-
+2011/11/4 NamJae Jeon <linkinjeon@gmail.com>:
+> 2011/11/4 Steve French <smfrench@gmail.com>:
+>> What is the actual sequence of events from the wire perspective (the
+>> actual smb requests sent)?
+>>
+>>
+>> On Thu, Nov 3, 2011 at 6:25 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+>>> Hi,
+>>>
+>>> On 3 Nov 2011, at 17:40, Jeff Layton wrote:
+>>>> On Thu, 3 Nov 2011 15:42:13 +0000 Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+>>>>>
+>>>>> I should add that we are using iocharset=utf8 mount option which means that the dcache hash/compare functions done in the cifs module do not work because it uses nls_tolower() and nls_strnicmp() both of which for utf8 NLS in the kernel do not do anything at all and effectively behave case sensitively!
+>>>>>
+>>>>> Thus this bug/problem in all likelyhood only affects utf8 iocharset users on a case-insensitive but case-preserving CIFS server that does not support server inode numbers.
+>
+> Hi.
+> There is no upper/lower case table on nls utf8. so If you use iocharset=utf8,
+> filesystem will be case sensitive.
+> so we can add upper/lower case table like other charset.
+> And Currently surrogate pair is not working on nls utf8.
+> because it is limited by MAX_WCHAR_T in nls utf8
+> I think that upper/lower case table and surrogate pair support should
+> be fixed on nls utf8.
+> I should know Andrew's opinion to fix these problem.
+>>>>>
+>>>>> That probably explains why it has not been noticed before!
+>>>>>
+>>>>> We need utf8 thus we still need to fix this issue.
+>>>
+>>>> I'm confused...
+>>>>
+>>>> If the filesystem being served out by the server is using utf8, then
+>>>> how is it handling the case-insensitivity?
+>>>
+>>>
+>>> The file system being served is NSS (the Netware one but now mounted on Open Enterprise Server with Linux kernel rather than actual Netware kernel).  No idea how it works I am afraid.  It supports lots of different namespaces as well as being case-insensitive and case preserving when using the LONG name space (which is now being served through CIFS).
+>>>
+>>> If it was NTFS or exFAT I could tell you exactly how they work (each volume has an upcase table mapping the 65536 UCS-2 Unicode characters to their upper case equivalents and each 16-bit character is upper-cased individually, more recently Windows has switched to using UTF-16 instead of UCS-2 and the upcase table changed when that happened though it remained the same size and I think for file system purposes the fact that there are surrogates in the above UCS-2   Unicode range is simply ignored)...
+>>>
+>>> Best regards,
+>>>
+>>>        Anton
+>>> --
+>>> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+>>> Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+>>> Linux NTFS maintainer, http://www.linux-ntfs.org/
+>>>
+>>>
+>>
+>>
+>>
+>> --
+>> Thanks,
+>>
+>> Steve
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
