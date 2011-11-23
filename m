@@ -1,111 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1KWLjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:39:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49240 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279Ab1KWLjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:39:43 -0500
-Date: Wed, 23 Nov 2011 12:39:39 +0100
-From: Jan Kara <jack@suse.cz>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+	id S1753551Ab1KWLkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:40:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54195 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab1KWLkE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 06:40:04 -0500
+Message-ID: <1322048382.14799.41.camel@twins>
+Subject: Re: [PATCH v2 5/5] perf: Enable applicable siblings when group
+ leader is enable-on-exec
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Deng-Cheng Zhu <dczhu@mips.com>
+Cc: "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
- use by compaction
-Message-ID: <20111123113939.GC9775@quack.suse.cz>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
- <20111122101451.GJ19415@suse.de>
- <20111122115427.GA8058@quack.suse.cz>
- <201111222159.24987.nai.xia@gmail.com>
- <20111122191302.GF8058@quack.suse.cz>
- <CAPQyPG6EComwoD7+SS7qDqU-G5OYrHbAWJG0gfmJPh9_2N=RZA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPQyPG6EComwoD7+SS7qDqU-G5OYrHbAWJG0gfmJPh9_2N=RZA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 23 Nov 2011 12:39:42 +0100
+In-Reply-To: <4ECC6AAC.4010504@mips.com>
+References: <1321932601-21128-1-git-send-email-dczhu@mips.com>
+		 ,<1321959115.5148.22.camel@twins>
+		 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>
+		,<1321969559.14799.7.camel@twins>
+		 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA871@exchdb03.mips.com>
+	 <1321971798.14799.12.camel@twins> <4ECC6AAC.4010504@mips.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-11-11 06:44:23, Nai Xia wrote:
-> >> So that amounts to the following calculation that is important to the
-> >> statistical stall time for the compaction:
-> >>
-> >>      page_nr *  average_stall_window_time
-> >>
-> >> where average_stall_window_time is the window for a page between
-> >> NotUptoDate ---> UptoDate or Dirty --> Clean. And page_nr is the
-> >> number of pages in stall window for read or write.
-> >>
-> >> So for general cases,
-> >> Fact 1) may ensure that the page_nr is smaller for read, while
-> >> fact 2) may ensure the same for average_locking_window_time.
-> >  Well, page_nr really depends on the load. If the workload is only reads,
-> > clearly number of read pages is going to be higher than number of written
-> > pages. Once workload does heavy writing, I agree number of pages under
-> > writeback is likely going to be higher.
-> 
-> Think about process A linearly scans 100MB mapped file pages
-> area for read, and another process B linearly writes to a same sized area.
-> If there is no readahead, the read page in stall window in memory is only
-> *one* page each time.
-  Yes, I understand this. But in a situation where there is *no* process
-writing and *hundred* processes reading, you clearly have more pages locked
-for reading than for writing. All I wanted to say is that your broad
-statement that the number of pages read from disk is lower than the number
-of pages written is not true in general. It depends on the workload.
+On Wed, 2011-11-23 at 11:38 +0800, Deng-Cheng Zhu wrote:
 
-> However, 100MB dirty pages can be hold in memory
-> waiting to be write which may stall the compaction for fallback_migrate_page().
-> Even for buffer_migrate_page() these pages are much more likely to get locked
-> by other behaviors like you said for IO submission,etc.
-> 
-> I was not sure about readahead, of course,  I only theoretically
-> expected its still not
-> comparable to the totally async write behavior.
-> 
-> >
-> >> I am not sure this will be the same case for all workloads,
-> >> don't know if Mel has tested large readahead workloads which
-> >> has more async read IOs and less writebacks.
-> >>
-> >> But theoretically I expect things are not that bad even for large
-> >> readahead, because readahead is triggered by the readahead TAG in
-> >> linear order, which means for a process to generating readahead IO,
-> >> its speed is still somewhat govened by the read IO speed. While
-> >> for a process writing to a file mapped memory area, it may well
-> >> exceed the speed of its backing-store writing speed.
-> >>
-> >>
-> >> Aside from that, I think the relation between page locking and
-> >> page read is not 1-to-1, in other words, there maybe quite some
-> >> transient page locking is caused by mmap and then page fault into
-> >> already good-state pages requiring no IO at all. For these
-> >> transient page lockings I think it's reasonable to have light
-> >> waiting.
-> >  Definitely there are other lockings than for read. E.g. to write a page,
-> > we lock it first, submit IO (which can actually block waiting for request
-> > to get freed), set PageWriteback, and unlock the page. And there are more
-> > transient ones like you mention above...
-> 
-> Yes, you are right.
-> But I think we were talking about distinguishing page locking from page read
-> IO?
-> 
-> Well, I might also want to suggest that do an early dirty test before
-> taking the lock...but, I expect page NotUpToDate is much more likely an
-> indication that we are going to block for IO on the following page lock.
-> Dirty test is not that strong. Do you agree ?
-  Yes, I agree with this.
+> +	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+> +		ret = event_enable_on_exec(event, ctx);
+> +		if (ret)
+> +			enabled = 1;
+> +	}
+> +
+>   	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
+>   		ret = event_enable_on_exec(event, ctx);
+>   		if (ret)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+This isn't correct either, in this case you should then remove the other
+two iterations of pinned/flexible group lists.
+
+Also your use of list_for_each_entry_rcu() is incorrect, either you then
+should also use rcu_read_lock(), or its not needed and not use the _rcu
+list primitive at all.
+
+Now since event_list is modified under ctx->lock, and we hold that lock
+no fancy stuff is needed and we can do without.
+
+---
+Subject: perf: Fix enable_on_exec for sibling events
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Tue Nov 22 11:25:43 CET 2011
+
+Deng-Cheng Zhu reported that sibling events that were created disabled
+with enable_on_exec would never get enabled. Iterate all events instead
+of the group lists.
+
+Reported-by: Deng-Cheng Zhu <dczhu@mips.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-299rxrpmmle8hp3spyxfo202@git.kernel.org
+---
+ kernel/events/core.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+Index: linux-2.6/kernel/events/core.c
+===================================================================
+--- linux-2.6.orig/kernel/events/core.c
++++ linux-2.6/kernel/events/core.c
+@@ -2494,13 +2494,7 @@ static void perf_event_enable_on_exec(st
+ 	raw_spin_lock(&ctx->lock);
+ 	task_ctx_sched_out(ctx);
+ 
+-	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
+-		ret = event_enable_on_exec(event, ctx);
+-		if (ret)
+-			enabled = 1;
+-	}
+-
+-	list_for_each_entry(event, &ctx->flexible_groups, group_entry) {
++	list_for_each_entry(event, &ctx->event_list, group_entry) {
+ 		ret = event_enable_on_exec(event, ctx);
+ 		if (ret)
+ 			enabled = 1;
+
