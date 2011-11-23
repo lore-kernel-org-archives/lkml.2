@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab1KWA6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:58:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42368 "EHLO mx2.suse.de"
+	id S932504Ab1KWA6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:58:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42358 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932479Ab1KWAfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:17 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:55 2011
-Message-Id: <20111123002555.070455211@clark.kroah.org>
+	id S932086Ab1KWAfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:35:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:53 2011
+Message-Id: <20111123002552.948558271@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:23 -0800
+Date: Tue, 22 Nov 2011 16:25:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Slaby <jslaby@suse.cz>,
-        Dave Young <hidave.darkstar@gmail.com>, Dave Jones <davej@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Dmitriy Matrosov <sgf.dma@gmail.com>
-Subject: [23/53] TTY: ldisc, allow waiting for ldisc arbitrarily long
+        alan@lxorguk.ukuu.org.uk, Edward Donovan <edward.donovan@numble.net>,
+        maciej.rutecki@gmail.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: [01/53] genirq: Fix irqfixup, irqpoll regression
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,68 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Edward Donovan <edward.donovan@numble.net>
 
-commit df92d0561de364de53c42abc5d43e04ab6f326a5 upstream.
+commit c75d720fca8a91ce99196d33adea383621027bf2 upstream.
 
-To fix a nasty bug in ldisc hup vs. reinit we need to wait infinitely
-long for ldisc to be gone. So here we add a parameter to
-tty_ldisc_wait_idle to allow that.
+commit d05c65fff0 ("genirq: spurious: Run only one poller at a time")
+introduced a regression, leaving the boot options 'irqfixup' and
+'irqpoll' non-functional. The patch placed tests in each function, to
+exit if the function is already running. The test in 'misrouted_irq'
+exited when it should have proceeded, effectively disabling
+'misrouted_irq' and 'poll_spurious_irqs'.
 
-This is only a preparation for the real fix which is done in the
-following patches.
+The check for an already running poller needs to be "!= 1" not "== 1"
+as "1" is the value when the first poller starts running.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Dave Young <hidave.darkstar@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Dmitriy Matrosov <sgf.dma@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Edward Donovan <edward.donovan@numble.net>
+Cc: maciej.rutecki@gmail.com
+Link: http://lkml.kernel.org/r/1320175784-6745-1-git-send-email-edward.donovan@numble.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/tty_ldisc.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ kernel/irq/spurious.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -548,15 +548,16 @@ static void tty_ldisc_flush_works(struct
- /**
-  *	tty_ldisc_wait_idle	-	wait for the ldisc to become idle
-  *	@tty: tty to wait for
-+ *	@timeout: for how long to wait at most
-  *
-  *	Wait for the line discipline to become idle. The discipline must
-  *	have been halted for this to guarantee it remains idle.
-  */
--static int tty_ldisc_wait_idle(struct tty_struct *tty)
-+static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
- {
--	int ret;
-+	long ret;
- 	ret = wait_event_timeout(tty_ldisc_idle,
--			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
-+			atomic_read(&tty->ldisc->users) == 1, timeout);
- 	if (ret < 0)
- 		return ret;
- 	return ret > 0 ? 0 : -EBUSY;
-@@ -666,7 +667,7 @@ int tty_set_ldisc(struct tty_struct *tty
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -115,7 +115,7 @@ static int misrouted_irq(int irq)
+ 	struct irq_desc *desc;
+ 	int i, ok = 0;
  
- 	tty_ldisc_flush_works(tty);
+-	if (atomic_inc_return(&irq_poll_active) == 1)
++	if (atomic_inc_return(&irq_poll_active) != 1)
+ 		goto out;
  
--	retval = tty_ldisc_wait_idle(tty);
-+	retval = tty_ldisc_wait_idle(tty, 5 * HZ);
- 
- 	tty_lock();
- 	mutex_lock(&tty->ldisc_mutex);
-@@ -763,7 +764,7 @@ static int tty_ldisc_reinit(struct tty_s
- 	if (IS_ERR(ld))
- 		return -1;
- 
--	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
-+	WARN_ON_ONCE(tty_ldisc_wait_idle(tty, 5 * HZ));
- 
- 	tty_ldisc_close(tty, tty->ldisc);
- 	tty_ldisc_put(tty->ldisc);
+ 	irq_poll_cpu = smp_processor_id();
 
 
