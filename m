@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab1KWHrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:47:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62255 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab1KWHro (ORCPT
+	id S1759839Ab1KWHsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:48:12 -0500
+Received: from mga07.intel.com ([143.182.124.22]:32436 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755592Ab1KWHsK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:47:44 -0500
-Date: Wed, 23 Nov 2011 11:45:10 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [RFC] Make Yama pid_ns aware
-Message-ID: <20111123074510.GA2356@albatros>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
- <20111121191811.GA24039@albatros>
- <20111122181310.GA4235@sergelap>
- <20111122192028.GA10458@albatros>
- <20111122201007.GA21722@sergelap>
+	Wed, 23 Nov 2011 02:48:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111122201007.GA21722@sergelap>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111121184316.GH15314@google.com>
+References: <20111121184316.GH15314@google.com>
+Date: Tue, 22 Nov 2011 23:48:07 -0800
+Message-ID: <CABE8wwu-ZH47tFkaEmYfWtXzgeR9KmEWXbtXD5FEQc3R9tV7aQ@mail.gmail.com>
+Subject: Re: [PATCH] dmatest: don't use set_freezable_with_signal()
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 14:10 -0600, Serge Hallyn wrote:
-> Quoting Vasiliy Kulikov (segoon@openwall.com):
-> > Hi Serge,
-> > 
-> > On Tue, Nov 22, 2011 at 12:13 -0600, Serge Hallyn wrote:
-> > > Quoting Vasiliy Kulikov (segoon@openwall.com):
-> > > > As Yama's sysctls are about defining a security policy for the system,
-> > > > it is reasonable to define it per container in case of LXC containers
-> > > > (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
-> > > > to pid namespace.  With per-pid_ns sysctls it is possible to create
-> > > > multiple containers with different ptrace, /tmp, etc. policies.
-> > > 
-> > > tying the ptrace policy to pidns makes some sense, but is it definately
-> > > what we want?
-> > > 
-> > > Is the idea that the container should never be able to bypass the
-> > > restrictions, or should root in the container eventually be able to
-> > > bypass it as he can on the host?
-> > 
-> > In-container root already has CAP_SYS_PTRACE, so he can avoid the check
-> > even if Yama's ptrace policy is enabled.
-> 
-> Well, not necessarily  :)  But in general.
+On Mon, Nov 21, 2011 at 10:43 AM, Tejun Heo <tj@kernel.org> wrote:
+> Commit 981ed70d8e (dmatest: make dmatest threads freezable) made
+> dmatest kthread use set_freezable_with_signal(); however, the
+> interface is scheduled to be removed in the next merge window.
+>
+> The problem is that unlike userland tasks there's no default place
+> which handles signal pending state and it isn't clear who owns and/or
+> is responsible for clearing TIF_SIGPENDING.  For example, in the
+> current code, try_to_freeze() clears TIF_SIGPENDING but it isn't sure
+> whether it actually owns the TIF_SIGPENDING nor is it race-free -
+> ie. the task may continue to run with TIF_SIGPENDING set after the
+> freezable section.
+>
+> Unfortunately, we don't have wait_for_completion_freezable_timeout().
+> This patch open codes it and uses wait_event_freezable_timeout()
+> instead and removes timeout reloading - wait_event_freezable_timeout()
+> won't return across freezing events (currently racy but fix scheduled)
+> and timer doesn't decrement while the task is in freezer.  Although
+> this does lose timer-reset-over-freezing, given that timeout is
+> supposed to be long enough and failure to finish inside is considered
+> irrecoverable, I don't think this is worth the complexity.
+>
+> While at it, move completion to outer scope and explain that we're
+> ignoring dangling pointer problem after timeout.  This should give
+> slightly better chance at avoiding oops after timeout.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+> Guennadi, Dan, how does this look?  If it's okay, do you guys mind
+> routing this through pm tree?  I have some patches stacked on top
+> removal of freezable_with_signal and it would be much easier to route
+> these together.
+>
+> Thank you.
 
-This is the question is what in-container root is :-)  Until LXC root is
-restricted up to the case where he is unable to get out of the container
-in the mainline kernel, I assume we're talking about an abstract entity
-which has full control over the container.  It includes stuff like
-CAP_CHOWN, CAP_KILL, CAP_SYS_PTRACE, CAP_NET_ADMIN, etc. etc.  The
-debatable thing is what parts of CAP_SYS_ADMIN belong to in-container
-root, like ability to mount/umount.  But CAP_SYS_PTRACE is surely
-belongs to the in-container root.
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 
-
-> But still, is turning this on and off per-container, and leaving it off
-> on the host, something people will reasonably want to do?
-
-Probably we need strict rules like ptrace is relaxed iff in both source
-ns and dest ns ptrace is relaxed.
-
-
-> I'm just
-> wondering whether adding the extra data on the pidns is worth it.  It's
-> fine if it is, but I'm having a hard time imagining someone using it
-> like that.
-
-We have already very big net_namespace with all kind of per-ns stuff.
-Yama's variables don't significantly increase the size of container.
-
-
-Actually, what concerns me is not ptrace, but symlink/hardling
-protection.  There is no interaction between namespaces in case of
-containers via symlinks in the basic case.  In case of ptrace I don't
-think the child ns may weaken the parent ns - child ns may not access
-processes of the parent namespace and everything it may ptrace is
-already inside of this ns.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+(for the revised commit a75ca055 on
+git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer)
