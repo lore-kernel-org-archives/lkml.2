@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab1KWASu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:18:50 -0500
-Received: from gate.crashing.org ([63.228.1.57]:60452 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab1KWASs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:18:48 -0500
-Message-ID: <1322007501.14573.15.camel@pasglop>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Date: Wed, 23 Nov 2011 11:18:21 +1100
-In-Reply-To: <alpine.DEB.2.01.1111221511070.8000@trent.utfs.org>
-References: <20111121131531.GA1679@x4.trippels.de>
-	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121153621.GA1678@x4.trippels.de>
-	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121161036.GA1679@x4.trippels.de>
-	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121173556.GA1673@x4.trippels.de>
-	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121185215.GA1673@x4.trippels.de>
-	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
-	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-	 <alpine.DEB.2.00.1111212105330.19606@router.home>
-	 <1321948113.27077.24.camel@edumazet-laptop>
-	 <1321999085.14573.2.camel@pasglop>
-	 <alpine.DEB.2.01.1111221511070.8000@trent.utfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1757813Ab1KWA0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:26:05 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:55894 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab1KWA0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:26:03 -0500
+Date: Tue, 22 Nov 2011 19:23:56 -0500 (EST)
+Message-Id: <20111122.192356.1964321544725536133.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, maze@google.com, adobriyan@gmail.com
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111123111751.60b1e8ba032f6077fa03ca13@canb.auug.org.au>
+References: <20111123111751.60b1e8ba032f6077fa03ca13@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 16:23:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 15:12 -0800, Christian Kujau wrote:
-> On Wed, 23 Nov 2011 at 08:58, Benjamin Herrenschmidt wrote:
-> > > > --- linux-2.6.orig/mm/slub.c	2011-11-21 21:15:41.575673204 -0600
-> > > > +++ linux-2.6/mm/slub.c	2011-11-21 21:16:33.442336849 -0600
-> [...]
-> > > > -	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
-> > > > +	} while (irqsafe_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
-> > 
-> > Christian, can you try it see if that helps in your case ?
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 23 Nov 2011 11:17:51 +1100
+
+> Hi all,
 > 
-> Only this one-liner from Christoph or any of the other patches that were 
-> proposed in this thread?
+> Today's linux-next merge of the net-next tree got a conflict in
+> net/ipv4/inet_diag.c between commit 717b6d836646 ("net-netlink: fix diag
+> to export IPv4 tos for dual-stack IPv6 sockets") from the net tree and
+> commit 4e3fd7a06dc2 ("net: remove ipv6_addr_copy()") from the net-next
+> tree.
 > 
-> Will test...but this might take a while...
+> Just context changes.  I fixed it up (see below) can can carry the fix as
+> necessary,
 
-I'd say only this one liner for now, just don't do slabinfo :-) I just
-want to see whether your network + heavy IO load problem goes away with
-that one patch.
-
-Thanks !
-
-Cheers,
-Ben.
-
+Yep, I anticipated this one too, thanks Stephen.
