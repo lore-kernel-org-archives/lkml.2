@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab1KWMqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:46:36 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:47779 "EHLO mail.wdtv.com"
+	id S1755160Ab1KWMrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:47:55 -0500
+Received: from mga14.intel.com ([143.182.124.37]:47502 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742Ab1KWMqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:46:35 -0500
-From: Gene Heskett <gene.heskett@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Please, am I in danger of losing data?
-Date: Wed, 23 Nov 2011 07:46:30 -0500
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
-References: <4ECCDF65.2050208@davidkrider.com>
-In-Reply-To: <4ECCDF65.2050208@davidkrider.com>
+	id S1752766Ab1KWMrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 07:47:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,559,1315206000"; 
+   d="scan'208";a="78361239"
+Date: Wed, 23 Nov 2011 20:47:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] readahead: replace ra->mmap_miss with ra->ra_flags
+Message-ID: <20111123124745.GB7174@localhost>
+References: <20111121091819.394895091@intel.com>
+ <20111121093846.378529145@intel.com>
+ <20111121150116.094cf194.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111230746.31030.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111121150116.094cf194.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 23, 2011, David Krider wrote:
->I get an lot of these messages these days. They don't fill me with
->confidence. I've searched the internet far and wide. I've filed bug
->reports with the kernel and the Ubuntu bugzillas. I've posted to this
->list. I'm not finding any solutions. At this point, can anyone just
->please tell me: Am I in danger of losing data? If so, I guess I can
->shelve my SSD until this stuff gets sorted.
->
->[    7.630904] ata1: EH in SWNCQ mode,QC:qc_active 0xE sactive 0xE
->[    7.630987] ata1: SWNCQ:qc_active 0x6 defer_bits 0x8 last_issue_tag
->0x2 [    7.630988]   dhfis 0x6 dmafis 0x6 sdbfis 0x1
->[    7.631131] ata1: ATA_REG 0x41 ERR_REG 0x84
->[    7.631201] ata1: tag : dhfis dmafis sdbfis sacitve
->[    7.631273] ata1: tag 0x1: 1 1 0 1
->[    7.631342] ata1: tag 0x2: 1 1 0 1
->[    7.631417] ata1.00: exception Emask 0x1 SAct 0xe SErr 0x0 action 0x6
->frozen
->[    7.631492] ata1.00: Ata error. fis:0x21
->[    7.631563] ata1.00: failed command: READ FPDMA QUEUED
->[    7.631637] ata1.00: cmd 60/08:08:b0:48:33/00:00:10:00:00/40 tag 1
->ncq 4096 in
->[    7.631637]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
->0x10 (ATA bus error)
->[    7.631811] ata1.00: status: { DRDY ERR }
->[    7.631880] ata1.00: error: { ICRC ABRT }
->[    7.631950] ata1.00: failed command: READ FPDMA QUEUED
->[    7.632024] ata1.00: cmd 60/08:10:e0:64:f3/00:00:0f:00:00/40 tag 2
->ncq 4096 in
->[    7.632025]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
->0x10 (ATA bus error)
->[    7.632198] ata1.00: status: { DRDY ERR }
->[    7.632268] ata1.00: error: { ICRC ABRT }
->[    7.632338] ata1.00: failed command: READ FPDMA QUEUED
->[    7.632411] ata1.00: cmd 60/08:18:f0:a6:b6/00:00:10:00:00/40 tag 3
->ncq 4096 in
->[    7.632412]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
->0x10 (ATA bus error)
->[    7.632585] ata1.00: status: { DRDY ERR }
->[    7.632655] ata1.00: error: { ICRC ABRT }
->[    7.632727] ata1: hard resetting link
->[    7.632728] ata1: nv: skipping hardreset on occupied port
->[    8.130020] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->[    8.161465] ata1.00: configured for UDMA/133
->[    8.161480] ata1: EH complete
->
-The SSD may be about worn out, or it could be a flaky sata cable.  I'm 
-using rotating media, and I have so far collected 4 bad sata cables hanging 
-on a cabinet knob, all made of the exact shade of the infamous copper 
-eating red plastic I've had trouble with for 40+ years.  If your cables are 
-red with a hint of magenta, give some other color of cable a try.  The red 
-ones?  At 3 years old you can get any resistance you want on an ohmmeter, 
-just flex them.
+On Mon, Nov 21, 2011 at 03:01:16PM -0800, Andrew Morton wrote:
+> On Mon, 21 Nov 2011 17:18:22 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > Introduce a readahead flags field and embed the existing mmap_miss in it
+> > (mainly to save space).
+> 
+> What an ugly patch.
 
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->in the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+Indeed..
 
+> > It will be possible to lose the flags in race conditions, however the
+> > impact should be limited.  For the race to happen, there must be two
+> > threads sharing the same file descriptor to be in page fault or
+> > readahead at the same time.
+> > 
+> > Note that it has always been racy for "page faults" at the same time.
+> > 
+> > And if ever the race happen, we'll lose one mmap_miss++ or mmap_miss--.
+> > Which may change some concrete readahead behavior, but won't really
+> > impact overall I/O performance.
+> > 
+> > CC: Andi Kleen <andi@firstfloor.org>
+> > CC: Steven Whitehouse <swhiteho@redhat.com>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  include/linux/fs.h |   31 ++++++++++++++++++++++++++++++-
+> >  mm/filemap.c       |    9 ++-------
+> >  2 files changed, 32 insertions(+), 8 deletions(-)
+> > 
+> > --- linux-next.orig/include/linux/fs.h	2011-11-20 11:30:55.000000000 +0800
+> > +++ linux-next/include/linux/fs.h	2011-11-20 11:48:53.000000000 +0800
+> > @@ -945,10 +945,39 @@ struct file_ra_state {
+> >  					   there are only # of pages ahead */
+> >  
+> >  	unsigned int ra_pages;		/* Maximum readahead window */
+> > -	unsigned int mmap_miss;		/* Cache miss stat for mmap accesses */
+> > +	unsigned int ra_flags;
+> 
+> And it doesn't actually save any space, unless ra_flags gets used for
+> something else in a subsequent patch.  And if it does, perhaps ra_flags
 
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene>
-Anyone can do any amount of work provided it isn't the work he is supposed 
-to be doing at the moment.
-		-- Robert Benchley
+Because it's a preparation patch. There will be more fields defined later.
+
+> should be ulong, which is compatible with the bitops.h code.
+> Or perhaps we should use a bitfield and let the compiler do the work.
+
+What if we do
+
+        u16     mmap_miss;
+        u16     ra_flags;
+
+That would get rid of this patch. I'd still like to pack the various
+flags as well as pattern into one single ra_flags, which makes it
+convenient to pass things around (as one single parameter).
+
+> >  	loff_t prev_pos;		/* Cache last read() position */
+> >  };
+> >  
+> > +/* ra_flags bits */
+> > +#define	READAHEAD_MMAP_MISS	0x000003ff /* cache misses for mmap access */
+> > +
+> > +/*
+> > + * Don't do ra_flags++ directly to avoid possible overflow:
+> > + * the ra fields can be accessed concurrently in a racy way.
+> > + */
+> > +static inline unsigned int ra_mmap_miss_inc(struct file_ra_state *ra)
+> > +{
+> > +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
+> > +
+> > +	/* the upper bound avoids banging the cache line unnecessarily */
+> > +	if (miss < READAHEAD_MMAP_MISS) {
+> > +		miss++;
+> > +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
+> > +	}
+> > +	return miss;
+> > +}
+> > +
+> > +static inline void ra_mmap_miss_dec(struct file_ra_state *ra)
+> > +{
+> > +	unsigned int miss = ra->ra_flags & READAHEAD_MMAP_MISS;
+> > +
+> > +	if (miss) {
+> > +		miss--;
+> > +		ra->ra_flags = miss | (ra->ra_flags & ~READAHEAD_MMAP_MISS);
+> > +	}
+> > +}
+> 
+> It's strange that ra_mmap_miss_inc() returns the new value whereas
+> ra_mmap_miss_dec() returns void.
+
+Simply because no one need to check the return value of ra_mmap_miss_dec()...
+But yeah it's good to make them look symmetry.
+
+Thanks,
+Fengguang
