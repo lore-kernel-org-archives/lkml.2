@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758321Ab1KWGwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:52:33 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33666 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184Ab1KWGwc convert rfc822-to-8bit (ORCPT
+	id S1758607Ab1KWGwy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:52:54 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:56768 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758387Ab1KWGww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:52:32 -0500
+	Wed, 23 Nov 2011 01:52:52 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX184/WFs1Ik4derCj3sRUdZ9pW9uBZ/SAvowMyWkOd
+	+WY/vV+GJStqSA
+Message-ID: <4ECC983F.1080602@gmx.de>
+Date: Wed, 23 Nov 2011 06:52:47 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <4ECC4E1B.9050405@tilera.com>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-	<4ECC4E1B.9050405@tilera.com>
-Date: Wed, 23 Nov 2011 08:52:31 +0200
-Message-ID: <CAOtvUMdj--5O6xB6zzrk+kYDASHWxxRMAkN2K-2z3z5hSwzcyw@mail.gmail.com>
-Subject: Re: [PATCH v4 0/5] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
+To: Zac Storer <zac.3.14159@gmail.com>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] Drivers: video: sbuslib: fixed a brace coding style
+ issue
+References: <1321591138-8334-1-git-send-email-zac.3.14159@gmail.com>
+In-Reply-To: <1321591138-8334-1-git-send-email-zac.3.14159@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 11/18/2011 04:38 AM, Zac Storer wrote:
+> Fixed a brace coding style issue.
+> 
+> Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
 
-On Wed, Nov 23, 2011 at 3:36 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 11/22/2011 6:08 AM, Gilad Ben-Yossef wrote:
->> We have lots of infrastructure in place to partition a multi-core system such that we have a group of CPUs that are dedicated to
->
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
->
-> I think this kind of work is very important as more and more processing
-> moves to isolated cpus that need protection from miscellaneous kernel
-> interrupts.  Keep at it! :-)
+Applied.
 
-Thank you very much. I believe it also has some small contribution to
-keeping idle CPUs idle in a multi-core system. I consider this my
-personal carbon offset effort :-)
-
-My current plan is to take a look at each invocation of on_each_cpu in
-core kernel code and see if it makes sense to give it a similar
-treatment.
 
 Thanks,
-Gilad
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+Florian Tobias Schandinat
 
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+> ---
+>  drivers/video/sbuslib.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/sbuslib.c b/drivers/video/sbuslib.c
+> index 37d764a..3c1de98 100644
+> --- a/drivers/video/sbuslib.c
+> +++ b/drivers/video/sbuslib.c
+> @@ -76,7 +76,7 @@ int sbusfb_mmap_helper(struct sbus_mmap_map *map,
+>  				map_offset = (physbase + map[i].poff) & POFF_MASK;
+>  				break;
+>  			}
+> -		if (!map_size){
+> +		if (!map_size) {
+>  			page += PAGE_SIZE;
+>  			continue;
+>  		}
+
