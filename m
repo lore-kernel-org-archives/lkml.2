@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1KWNQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 08:16:39 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37290 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab1KWNQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 08:16:38 -0500
-Date: Wed, 23 Nov 2011 14:16:28 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v2] printk: add console output tracing
-Message-ID: <20111123131622.GA10669@somewhere.redhat.com>
-References: <1321473443.4181.38.camel@frodo>
- <1321478719.4502.20.camel@jlt3.sipsolutions.net>
- <20111117145502.GA18437@somewhere>
- <1321541877.3997.31.camel@jlt3.sipsolutions.net>
- <20111117150040.GB18437@somewhere>
- <1321543268.3997.40.camel@jlt3.sipsolutions.net>
- <20111118184401.GA24787@somewhere.redhat.com>
- <1321641975.10266.73.camel@jlt3.sipsolutions.net>
- <20111118185449.GB24787@somewhere.redhat.com>
- <1321642752.10266.75.camel@jlt3.sipsolutions.net>
+	id S1755467Ab1KWNRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 08:17:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:5147 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755145Ab1KWNRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 08:17:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,559,1315206000"; 
+   d="scan'208";a="78370340"
+Date: Wed, 23 Nov 2011 21:17:09 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] writeback: balanced_rate cannot exceed write
+ bandwidth
+Message-ID: <20111123131709.GB22170@localhost>
+References: <20111121130342.211953629@intel.com>
+ <20111121131215.645601798@intel.com>
+ <20111121225049.GE4017@quack.suse.cz>
+ <20111122064149.GA12864@localhost>
+ <20111122210437.GH8058@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321642752.10266.75.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111122210437.GH8058@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 07:59:12PM +0100, Johannes Berg wrote:
-> On Fri, 2011-11-18 at 19:54 +0100, Frederic Weisbecker wrote:
-> > On Fri, Nov 18, 2011 at 07:46:15PM +0100, Johannes Berg wrote:
-> > > On Fri, 2011-11-18 at 19:44 +0100, Frederic Weisbecker wrote:
-> > > 
-> > > > > +TRACE_EVENT_CONDITION(console,
-> > > > > +	TP_PROTO(const char *log_buf, unsigned start, unsigned end,
-> > > > > +		 unsigned log_buf_len),
-> > > > > +
-> > > > > +	TP_ARGS(log_buf, start, end, log_buf_len),
-> > > > > +
-> > > > > +	TP_CONDITION(start != end),
-> > > > > +
-> > > > > +	TP_STRUCT__entry(
-> > > > > +		__dynamic_array(char, msg,
-> > > > > +				((end - start + log_buf_len) &
-> > > > > +				 (log_buf_len - 1)) + 1)
+On Tue, Nov 22, 2011 at 10:04:37PM +0100, Jan Kara wrote:
+> On Tue 22-11-11 14:41:49, Wu Fengguang wrote:
+> > On Tue, Nov 22, 2011 at 06:50:49AM +0800, Jan Kara wrote:
+> > > On Mon 21-11-11 21:03:43, Wu Fengguang wrote:
+> > > > Add an upper limit to balanced_rate according to the below inequality.
+> > > > This filters out some rare but huge singular points, which at least
+> > > > enables more readable gnuplot figures.
 > > > > 
-> > > > Is all that care about log_buf_len necessary? It seems that
-> > > > printk ensures that log_end - con_start never exceeds log_buf_len,
-> > > > looking at emit_log_char()
-> > > 
-> > > I think it is. The buffer can wrap around so in that case end < start,
-> > > which just end-start won't handle here.
+> > > > When there are N dd dirtiers,
+> > > > 
+> > > > 	balanced_dirty_ratelimit = write_bw / N
+> > > > 
+> > > > So it holds that
+> > > > 
+> > > > 	balanced_dirty_ratelimit <= write_bw
+> > >   The change makes sense, but do we understand why there are such huge
+> > > singular points? Are they due to errors in estimation of bandwidth or due
+> > > to errors in dirtying rate computations (e.g. due to truncates), or
+> > > something else?
 > > 
-> > Even if it wraps, end - start should always give a positive result.
+> > Good point. I'll add this to the changelog:
 > > 
-> > We have that check in call_console_drivers():
+> > The singular points originate from dirty_rate in the below formular:
 > > 
-> > 	BUG_ON(((int)(start - end)) > 0)
-> 
-> That's .. confusing, start - end > 0 <=> start > end ??
+> >         balanced_dirty_ratelimit = task_ratelimit * write_bw / dirty_rate
+> > where
+> >         dirty_rate = (number of page dirties in the past 200ms) / 200ms
+> > 
+> > In the extreme case, if all dd tasks suddenly get blocked on something 
+> > else and hence no pages are dirtied at all, dirty_rate will be 0 and
+> > balanced_dirty_ratelimit will be inf. This could happen in reality.
+> > 
+> > There won't be tiny singular points though, as long as the dirty pages
+> > lie inside the dirty control area (above the freerun region).
+> > Because there the dd tasks will be throttled by balanced_dirty_pages()
+> > and won't be able to suddenly dirty much more pages than average.
+>   OK, I see. Thanks for explanation.
 
-Yeah. Both are unsigned, so converting the result into an int
-and getting a positive value means we have wrapped INT_MAX.
+I'd like to comment that these huge singular points is not a real
+threat, since they are _guaranteed_ to be filtered out by these lines
+in bdi_update_dirty_ratelimit():
 
-> 
-> Also, call_console_drivers() doesn't pass this start/end through to
-> _call_console_drivers(), it has loops and stuff there...
+         * |task_ratelimit - dirty_ratelimit| is used to limit the step size
+         * and filter out the sigular points of balanced_dirty_ratelimit. Which
+         * keeps jumping around randomly and can even leap far away at times
+         * due to the small 200ms estimation period of dirty_rate (we want to
+         * keep that period small to reduce time lags).
+         */
+        step = 0;
+        if (dirty < setpoint) {
+                x = min(bdi->balanced_dirty_ratelimit,
+==>                      min(balanced_dirty_ratelimit, task_ratelimit));
+                if (dirty_ratelimit < x)
+                        step = x - dirty_ratelimit;
+        } else {
+                x = max(bdi->balanced_dirty_ratelimit,
+                         max(balanced_dirty_ratelimit, task_ratelimit));
+                if (dirty_ratelimit > x)
+                        step = dirty_ratelimit - x;
+        }
 
-Yeah but looking at the loop there, start and end passed to
-__call_console_drivers() are bounded between start and end passed to
-call_console_drivers().
+The caveat is, task_ratelimit which is based on the number of dirty
+pages will never _suddenly_ fly away like balanced_dirty_ratelimit.
+So any weirdly large balanced_dirty_ratelimit will be cut down to the
+level of task_ratelimit.
 
-> 
-> In any case -- feel free to clean it all up, I basically copied the
-> logic from _call_console_drivers assuming it was needed.
-
-I'm just reviewing and suggesting a way to keep the patch more simple.
-Outside that, I don't really need that patch myself ;)
-
-> I don't really want to know about the printk details :-)
-
-Well, it's like working out outside in winter. It may not sound
-very entertaining in the beginning but then it quickly becomes
-invigorating, toning and good for the mood...I think...
+Thanks,
+Fengguang
