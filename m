@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759640Ab1KWD0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 22:26:01 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51308 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759606Ab1KWDZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 22:25:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,556,1315206000"; 
-   d="scan'208";a="88363907"
-Subject: Re: [RFC]numa: improve I/O performance by optimizing numa
- interleave allocation
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
-        "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>
-In-Reply-To: <1321839585.22361.328.camel@sli10-conroe>
-References: <1321600332.22361.309.camel@sli10-conroe>
-	 <20111118173013.GB25022@alboin.amr.corp.intel.com>
-	 <1321839585.22361.328.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Nov 2011 11:36:23 +0800
-Message-ID: <1322019383.22361.346.camel@sli10-conroe>
+	id S1759701Ab1KWD15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 22:27:57 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:51287 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756714Ab1KWD1y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 22:27:54 -0500
+Date: Wed, 23 Nov 2011 14:27:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the akpm tree with the net-next tree
+Message-Id: <20111123142742.9b4fb79fd3748325753a896a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Nov_2011_14_27_42_+1100_cMGT=Q/OnerWj4Hw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 09:39 +0800, Shaohua Li wrote:
-> On Sat, 2011-11-19 at 01:30 +0800, Andi Kleen wrote:
-> > On Fri, Nov 18, 2011 at 03:12:12PM +0800, Shaohua Li wrote:
-> > > If mem plicy is interleaves, we will allocated pages from nodes in a round
-> > > robin way. This surely can do interleave fairly, but not optimal.
-> > > 
-> > > Say the pages will be used for I/O later. Interleave allocation for two pages
-> > > are allocated from two nodes, so the pages are not physically continuous. Later
-> > > each page needs one segment for DMA scatter-gathering. But maxium hardware
-> > > segment number is limited. The non-continuous pages will use up maxium
-> > > hardware segment number soon and we can't merge I/O to bigger DMA. Allocating
-> > > pages from one node hasn't such issue. The memory allocator pcp list makes
-> > > we can get physically continuous pages in several alloc quite likely.
-> > 
-> > FWIW it depends a lot on the IO hardware if the SG limitation
-> > really makes a measurable difference for IO performance. I saw some wins from 
-> > clustering using the IOMMU before, but that was a long time ago. I wouldn't 
-> > consider it a truth without strong numbers, and then also only
-> > for that particular device measured.
-> > 
-> > My understanding is that modern IO devices like NHM Express will
-> > be faster at large SG lists.
-> This is a LSI SAS1068E HBA card attaching some hard disks. The
-> clustering has real benefit here. I/O throughput increases 3% or so.
-> Not sure about NHM Express, wondering why large SG list could be faster.
-> doesn't large SG means large DMA descriptor?
-> 
-> > > So can we make both interleave fairness and continuous allocation happy?
-> > > Simplily we can adjust the round robin algorithm. We switch to another node
-> > > after several (N) allocation happens. If N isn't too big, we can still get
-> > > fair allocation. And we get N continuous pages. I use N=8 in below patch.
-> > > I thought 8 isn't too big for modern NUMA machine. Applications which use
-> > > interleave are unlikely run short time, so I thought fairness still works.
-> > 
-> > It depends a lot on the CPU access pattern.
-> > 
-> > Some workloads seem to do reasonable well with 2MB huge page interleaving.
-> > But others actually prefer the cache line interleaving supplied by 
-> > the BIOS.
-> > 
-> > So you can have a trade off between IO and CPU performance.
-> > When in doubt I usually opt for CPU performance by default.
-> Can you elaborate this more? the cache line interleaving can only be
-> supplied by BIOS. OS can provide N*PAGE_SIZE interleave. I'm wondering
-> what's the difference for example a 4k or 8k interleave for CPU
-> performance. Actually if adjacent pages interleaved in two nodes could
-> be in the same coloring, while two adjacent pages allocated from one
-> node not. So clustering could be more cache efficient from coloring
-> point of view.
-> 
-> > I definitely wouldn't make it default, but if there are workloads
-> > that benefits a lot it could be an additional parameter to the
-> > interleave policy.
-> Christoph suggested the same way. the problem is we need change the API,
-> right? And how are users supposed to use it? It would be difficult to
-> determine the correct parameter.
-> 
-> If 8 pages clustering is too big, maybe we can use small. I guess a 2
-> pages clustering is a big win too.
-> 
-> And I didn't change the allocation with a VMA case, which is supposed to
-> be used for anonymous pages.
-I tried a 2 pages clustering, it has the same effect like 8 page
-clustering in my test environment.
-would making the clustering a config option or sysctl be better?
+--Signature=_Wed__23_Nov_2011_14_27_42_+1100_cMGT=Q/OnerWj4Hw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Shaohua
+Hi Andrew,
 
+Today's linux-next merge of the akpm got a conflict in
+include/linux/cgroup_subsys.h between commit 5bc1421e34ec ("net: add
+network priority cgroup infrastructure (v4)") from the net-next tree and
+commit 22a20a26f21c ("cgroups: add a task counter subsystem") from the
+akpm tree.
 
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/cgroup_subsys.h
+index 0bd390c,5425822..0000000
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@@ -67,8 -67,8 +67,14 @@@ SUBSYS(perf
+ =20
+  /* */
+ =20
+ +#ifdef CONFIG_NETPRIO_CGROUP
+ +SUBSYS(net_prio)
+ +#endif
+ +
+ +/* */
+++
++ #ifdef CONFIG_CGROUP_TASK_COUNTER
++ SUBSYS(tasks)
++ #endif
++=20
++ /* */
+
+--Signature=_Wed__23_Nov_2011_14_27_42_+1100_cMGT=Q/OnerWj4Hw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOzGguAAoJEECxmPOUX5FE1rEQAJTVVX35i0vcp2ba53PuE5K8
+6udjOmvxpbUARONSKzBt4KT1y/XXdF0kU3qUBQEDyAPJKXaf0yJr1X+kyu4Z9LKG
+XQoll455vi73vaH3ywY1szfoLwHr58JejIwm3hmPXyC+XKgU3OHsEJAnTPZ/WixL
+W5OdppmqA6h2n/8K2ul3IrZosz09jf22ozwdMoPPRDDixPFEti9L/FPd+/lRWhBc
+ai9T/mpTJFlOm0xpk8YE2FcBcW6E/8sBCApbWUGUCCqH4SpZg0nsTwsY/FZtTOfX
+L//RgGFLP95qQwYHx2Yws+sKjqwjX1ImnMNzr/Fwxa2idImswxJ9PP7hFRvbVSfm
+TKdASpGkcywR4/c8JY01fPHJ6z9JeYPBFDVpt564PQinX1tCSrfIIWVeuw5s0YNc
+hbZdFdhccD5BQ7646xsTCjlv3Wzgqwb0IDQvTUhq0au/hP4dYt3Sxq/sanHrhlPk
+hLD2qz0bxPmnzH2KtNFZEz3hjVNcg78UJV3lJ8zifUKhpCpOkKHsXKYbfl4FwLJf
+GAwmlSkyfB/9QNQoL92whgG5XqigsHZSbLxNAPMVvs1rOMmDsuucynCjRnDO/zgz
+YpMh5wQZSWzUMmsVw7njfQ2Ngr1krK6RAp+q/oot6vXn1u7auaEHUsHMRBvMw3Km
+GtgqhGaYSok+hzy25C6g
+=cYn7
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Nov_2011_14_27_42_+1100_cMGT=Q/OnerWj4Hw--
