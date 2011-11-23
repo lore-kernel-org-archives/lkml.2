@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462Ab1KWAsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:48:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42976 "EHLO mx2.suse.de"
+	id S1759361Ab1KWAlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:41:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42918 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759342Ab1KWAlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:49 -0500
+	id S1759346Ab1KWAl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:05 2011
-Message-Id: <20111123002405.543519561@clark.kroah.org>
+Message-Id: <20111123002404.983321912@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:17 -0800
+Date: Tue, 22 Nov 2011 16:23:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [10/53] mac80211: fix NULL dereference in radiotap code
+        alan@lxorguk.ukuu.org.uk, Vasily Averin <vvs@sw.ru>,
+        Matthew Garrett <mjg@redhat.com>,
+        Achim Leubner <Achim_Leubner@pmc-sierra.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [04/53] [SCSI] aacraid: controller hangs if kernel uses non-default ASPM policy
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Vasily Averin <vvs@parallels.com>
 
-commit f8d1ccf15568268c76f913b45ecdd33134387f1a upstream.
+commit cf16123c9c8e346ed1dd171295a678d77648d7f8 upstream.
 
-When receiving failed PLCP frames is enabled, there
-won't be a rate pointer when we add the radiotap
-header and thus the kernel will crash. Fix this by
-not assuming the rate pointer is always valid. It's
-still always valid for frames that have good PLCP
-though, and that is checked & enforced.
+Aacraid controller can hang on some nodes if kernel uses non-default
+(powersave) ASPM policy.  Controller hangs shortly after successful load and
+hardware detection. Scsi error handler detects this hang and tries to restart
+hardware but it does not help.
 
-This was broken by my
-commit fc88518916793af8ad6a02e05ff254d95c36d875
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Fri Jul 30 13:23:12 2010 +0200
+Initially it was noticed on RHEL6-based openVZ kernel after backporting
+aacraid driver from mainline (RHEL6 kernel with original driver works well)
+http://bugzilla.openvz.org/show_bug.cgi?id=2043
 
-    mac80211: don't check rates on PLCP error frames
+This issue happens because default ASPM policy was changed in Red Hat
+kernels. Therefore guys from Red Hat have noticed this problem long time ago:
+on Fedora 12
+ https://bugzilla.redhat.com/show_bug.cgi?id=540478
+on Fedora 14
+ https://bugzilla.redhat.com/show_bug.cgi?id=679385
 
-where I removed the check in this case but didn't
-take into account that the rate info would be used.
+In RHEL6 kernel this issue was fixed, ASPM was disabled in aacraid driver. In
+kernel changelog I've found that seems it was done by Matthew Garrett: -
+[scsi] aacraid: Disable ASPM by default (Matthew Garrett) [599735]
 
-Reported-by: Xiaokang Qin <xiaokang.qin@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+However seems this patch was not submitted to mainline. I've reproduced this
+issue on vanilla 3.1.0 kernel booted with "pcie_aspm.policy=powersave" option,
+So I believe it makes sense to do it now.
+
+Signed-off-by:	Vasily Averin <vvs@sw.ru>
+[mjg: Checking the Windows drivers indicates that they disable ASPM under all
+circumstances, so:]
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Acked-by: Achim Leubner <Achim_Leubner@pmc-sierra.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/rx.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/scsi/aacraid/linit.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -140,8 +140,9 @@ ieee80211_add_rx_radiotap_header(struct
- 	pos++;
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -38,6 +38,7 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/pci.h>
++#include <linux/pci-aspm.h>
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+ #include <linux/spinlock.h>
+@@ -1108,6 +1109,9 @@ static int __devinit aac_probe_one(struc
+ 		unique_id++;
+ 	}
  
- 	/* IEEE80211_RADIOTAP_RATE */
--	if (status->flag & RX_FLAG_HT) {
-+	if (!rate || status->flag & RX_FLAG_HT) {
- 		/*
-+		 * Without rate information don't add it. If we have,
- 		 * MCS information is a separate field in radiotap,
- 		 * added below. The byte here is needed as padding
- 		 * for the channel though, so initialise it to 0.
-@@ -162,12 +163,14 @@ ieee80211_add_rx_radiotap_header(struct
- 	else if (status->flag & RX_FLAG_HT)
- 		put_unaligned_le16(IEEE80211_CHAN_DYN | IEEE80211_CHAN_2GHZ,
- 				   pos);
--	else if (rate->flags & IEEE80211_RATE_ERP_G)
-+	else if (rate && rate->flags & IEEE80211_RATE_ERP_G)
- 		put_unaligned_le16(IEEE80211_CHAN_OFDM | IEEE80211_CHAN_2GHZ,
- 				   pos);
--	else
-+	else if (rate)
- 		put_unaligned_le16(IEEE80211_CHAN_CCK | IEEE80211_CHAN_2GHZ,
- 				   pos);
-+	else
-+		put_unaligned_le16(IEEE80211_CHAN_2GHZ, pos);
- 	pos += 2;
- 
- 	/* IEEE80211_RADIOTAP_DBM_ANTSIGNAL */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++			       PCIE_LINK_STATE_CLKPM);
++
+ 	error = pci_enable_device(pdev);
+ 	if (error)
+ 		goto out;
 
 
