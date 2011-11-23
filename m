@@ -1,119 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759663Ab1KWEAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 23:00:19 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:36247 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640Ab1KWEAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 23:00:17 -0500
-Date: Wed, 23 Nov 2011 15:00:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: linux-next: build failure after merge of the final tree (net-next
- tree related)
-Message-Id: <20111123150004.59be04eb36c480ec44edc9d5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6"
+	id S1759636Ab1KWEAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 23:00:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:25988 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756113Ab1KWEAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 23:00:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,557,1315206000"; 
+   d="scan'208";a="78229599"
+Date: Wed, 23 Nov 2011 12:00:37 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] writeback: hard throttle 1000+ dd on a slow USB stick
+Message-ID: <20111123040037.GA18053@localhost>
+References: <20111117115914.GA24502@localhost>
+ <20111121203742.GD4017@quack.suse.cz>
+ <20111122022053.GA20982@localhost>
+ <20111122192736.GG8058@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122192736.GG8058@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 23, 2011 at 03:27:36AM +0800, Jan Kara wrote:
+> On Tue 22-11-11 10:20:53, Wu Fengguang wrote:
+> > On Tue, Nov 22, 2011 at 04:37:42AM +0800, Jan Kara wrote:
+> > > On Thu 17-11-11 19:59:14, Wu Fengguang wrote:
+> > > > The sleep based balance_dirty_pages() can pause at most MAX_PAUSE=200ms
+> > > > on every 1 4KB-page, which means it cannot throttle a task under
+> > > > 4KB/200ms=20KB/s. So when there are more than 512 dd writing to a
+> > > > 10MB/s USB stick, its bdi dirty pages could grow out of control.
+> > > > 
+> > > > Even if we can increase MAX_PAUSE, the minimal (task_ratelimit = 1)
+> > > > means a limit of 4KB/s.
+> > > > 
+> > > > They can eventually be safeguarded by the global limit check
+> > > > (nr_dirty < dirty_thresh). However if someone is also writing to an
+> > > > HDD at the same time, it'll get poor HDD write performance.
+> > > > 
+> > > > We at least want to maintain good write performance for other devices
+> > > > when one device is attacked by some "massive parallel" workload, or
+> > > > suffers from slow write bandwidth, or somehow get stalled due to some
+> > > > error condition (eg. NFS server not responding).
+> > > > 
+> > > > For a stalled device, we need to completely block its dirtiers, too,
+> > > > before its bdi dirty pages grow all the way up to the global limit and
+> > > > leave no space for the other functional devices.
+> > >   This is a fundamental question - how much do you allow dirty cache of one
+> > > device to grow when other devices are relatively idle? Every choice has
+> > > advantages and disadvantages. If you allow device to occupy lot of the
+> > > cache, you may later find yourself short on dirtiable memory when other
+> > > devices become active. On the other hand allowing more dirty memory can
+> > > improve IO pattern and thus writeout speed. So whatever choice we make,
+> > > we should explain our choice somewhere in the code and stick to that...
+> > 
+> > The answer lies in bdi_thresh and will continue to be so with this patch :)
+> >
+> > Basically we let active devices to grow its quota of dirty pages and
+> > stalled/inactive devices to decrease its quota over time. That's the
+> > backing rational for Peter's "floating proportions".
+>   Sure, but how we use bdi_thresh was changing in the past. For example at
+> which global level of dirty pages we decide to enforce bdi_thresh. Now you
+> again slightly change the logic when bdi_thresh is enforced and when not...
+> So my suggestion was more aiming at having somewhere documented, when we
+> enforce bdi_thresh and when not, together with description of goals we try
+> to achieve with this setting.
 
-Hi all,
+Yes it deserves some document. I write up some comments on this,
+please review :)
 
-After merging the final tree, today's linux-next build (powerpc allnoconfig)
-failed like this:
-
-In file included from include/linux/netdevice.h:53:0,
-                 from include/linux/icmpv6.h:173,
-                 from include/linux/ipv6.h:220,
-                 from include/net/ipv6.h:16,
-                 from include/linux/sunrpc/clnt.h:26,
-                 from include/linux/nfs_fs.h:50,
-                 from init/do_mounts.c:20:
-include/net/netprio_cgroup.h:23:29: error: field 'css' has incomplete type
-
-And several more similar.
-
-Caused by commit 5bc1421e34ec ("net: add network priority cgroup
-infrastructure (v4)").
-
-I have added the following (minimal, but probably not optimal) patch for
-today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 23 Nov 2011 14:49:49 +1100
-Subject: [PATCH] net: fix build error in network priority cgroup
- infrastructure
-
-Fixes this error:
-
-In file included from include/linux/netdevice.h:53:0,
-                 from include/linux/icmpv6.h:173,
-                 from include/linux/ipv6.h:220,
-                 from include/net/ipv6.h:16,
-                 from include/linux/sunrpc/clnt.h:26,
-                 from include/linux/nfs_fs.h:50,
-                 from init/do_mounts.c:20:
-include/net/netprio_cgroup.h:23:29: error: field 'css' has incomplete type
-
-When CONFIG_CGROUPS is not set.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- include/net/netprio_cgroup.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Subject: writeback: comment on the bdi dirty threshold
+Date: Wed Nov 23 11:44:41 CST 2011
 
-diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
-index c432e99..da71b91 100644
---- a/include/net/netprio_cgroup.h
-+++ b/include/net/netprio_cgroup.h
-@@ -20,7 +20,9 @@
-=20
- struct cgroup_netprio_state
- {
-+#ifdef CONFIG_CGROUPS
- 	struct cgroup_subsys_state css;
-+#endif
- 	u32 prioidx;
- };
-=20
---=20
-1.7.7.3
+We do "floating proportions" to let active devices to grow its target
+share of dirty pages and stalled/inactive devices to decrease its target
+share over time.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+It works well except in the case of "an inactive disk suddenly goes
+busy", where the initial target share may be too small. To mitigate
+this, bdi_position_ratio() has the below line to raise a small
+bdi_thresh when it's safe to do so, so that the disk be feed with enough
+dirty pages for efficient IO and in turn fast rampup of bdi_thresh:
 
---Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6
-Content-Type: application/pgp-signature
+        bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+balance_dirty_pages() normally does negative feedback control which
+adjusts ratelimit to balance the bdi dirty pages around the target.
+In some extreme cases when that is not enough, it will have to block 
+the tasks completely until the bdi dirty pages drop below bdi_thresh.
 
-iQIcBAEBCAAGBQJOzG/EAAoJEECxmPOUX5FE8CoP/iSK5UWvw1Ed2P6C7JCkRkT2
-Nk1h+6C8ocC8r7cP0vplLtIYW92J1VyKnEw9FfsTgvxZ7LHfL5dTRDyckLbYJkK0
-US9a5t7QLFhlE1RzzJCGZm6731tpSbyapQZrNls0G0MjAG56ChSNcwvh7h5x9IC9
-I8HqMGWcA1kgNZoawetJFgUcZnY3sNZ78LpteZ8afW/imQXGLU7OiZUnGx19u7CX
-paD/RBKJqqKB5ms4qvFk3QSh46HswrVSpvWwn911GPkYkLzrwwi+CntJ/sdUbAyD
-I+Wm4Md20Wo/riPMCYVtGrjr9Ms5Sxa2c2xAU0Foa8p6Ab/IERtHsI6PMO/+dl4Y
-hVFPa46u5XEK9uDHFmZK1Wh89pCKdSjDvtGDDStjUg7htPKfJZNYiiYqF9AxW3dE
-MOavcFzwOQWNUL2gpaANVy8ao2xsmU0VIuR7sEOjgsd3uRxarrGVz7eAFh1hpgUv
-Hzj95FwZ4nL/WJnAneGaJOrG+ljIDcF7S1PmDp1M7KJnzajMEdzXJ1GKdqNCfYg7
-frFIKgFfm2bLHG20UYpJezsJdX7xmznUnPNMCK6fPhkpsbC9moxEnSlCEhrNCE6P
-DCcO0f8Ww9rKZCeJxnnJXfJnivfv9HEkKmNL65ftP48nVCGmqiGVurK5/XAZuovM
-BXgnso3EhwEN3VEERWW2
-=937q
------END PGP SIGNATURE-----
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6--
+--- linux-next.orig/mm/page-writeback.c	2011-11-23 10:57:41.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-11-23 11:44:39.000000000 +0800
+@@ -411,8 +411,13 @@ void global_dirty_limits(unsigned long *
+  *
+  * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
+  * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
+- * And the "limit" in the name is not seriously taken as hard limit in
+- * balance_dirty_pages().
++ *
++ * Note that balance_dirty_pages() will only seriously take it as a hard limit
++ * when sleeping max_pause per page is not enough to keep the dirty pages under
++ * control. For example, when the device is completely stalled due to some error
++ * conditions, or when there are 1000 dd tasks writing to a slow 10MB/s USB key.
++ * In the other normal situations, it acts more gently by throttling the tasks
++ * more (rather than completely block them) when the bdi dirty pages go high.
+  *
+  * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+@@ -594,6 +599,13 @@ static unsigned long bdi_position_ratio(
+ 	 */
+ 	if (unlikely(bdi_thresh > thresh))
+ 		bdi_thresh = thresh;
++	/*
++	 * It's very possible that bdi_thresh is close to 0 not because the
++	 * device is slow, but that it has remained inactive for long time.
++	 * Honour such devices a reasonable good (hopefully IO efficient)
++	 * threshold, so that the occasional writes won't be blocked and active
++	 * writes can rampup the threshold quickly.
++	 */
+ 	bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
+ 	/*
+ 	 * scale global setpoint to bdi's:
