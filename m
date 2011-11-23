@@ -1,149 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab1KWOCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 09:02:22 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53915 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab1KWOCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 09:02:19 -0500
-Date: Wed, 23 Nov 2011 15:02:05 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 03/10] threadgroup: extend threadgroup_lock() to cover
- exit and exec
-Message-ID: <20111123140139.GB10669@somewhere.redhat.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
- <20111113164426.GB9446@somewhere>
- <20111121215839.GL25776@google.com>
+	id S1755923Ab1KWODd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 09:03:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755543Ab1KWODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 09:03:32 -0500
+Message-ID: <4ECCFD1E.4030908@redhat.com>
+Date: Wed, 23 Nov 2011 22:03:10 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121215839.GL25776@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: holzheu@linux.vnet.ibm.com
+CC: heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        akpm@linux-foundation.org, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v2] kdump: crashk_res init check for /sys/kernel/kexec_crash_size
+References: <1322043068.10119.7.camel@br98xy6r>	 <20111123102214.GA4914@verge.net.au> <1322054283.10119.11.camel@br98xy6r>	 <4ECCF669.6080007@redhat.com> <1322055976.10119.17.camel@br98xy6r>
+In-Reply-To: <1322055976.10119.17.camel@br98xy6r>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 01:58:39PM -0800, Tejun Heo wrote:
-> > but IMHO the races involved in exit and exec
-> > are too different, specific and complicated on their own to be solved in a
-> > single one patch. This should be split in two things.
-> > 
-> > The specific problems and their fix need to be described more in detail
-> > in the changelog because the issues are very tricky.
-> > 
-> > The exec case:
-> > 
-> > IIUC, the race in exec is about the group leader that can be changed
-> > to become the exec'ing thread, making while_each_thread() unsafe.
+On 11/23/2011 09:46 PM, Michael Holzheu wrote:
+
+> Hi Dave,
 > 
-> Not only that, pid changes, sighand struct may get swapped, and other
-> weird things which aren't usually expected for a live task happen.
-> It's basically semi-killed and then resurrected.
-
-Right. I've no problem with the fact you want to make the threadgroup
-more stable against subsystem attachment. Just please put more
-detailed comments about what you are protecting. It took me quite
-some time to precisely identify the race involved in that game in
-order to consciously review your patches. And I'm thinking about
-the next people who will work on this piece of code.
-
-This:
-
- static inline void threadgroup_lock(struct task_struct *tsk)                                                                
- {                                                                                                                           
-+       /* exec uses exit for de-threading, grab cred_guard_mutex first */                                                   
-+       mutex_lock(&tsk->signal->cred_guard_mutex);                                                                          
-        down_write(&tsk->signal->group_rwsem);
-
-is really not obvious.
-
-Just point out we want to synchronize against the leader, pid and the sighand
-that may change concurrently.
-
-> > We also have other things happening there like all the other threads
-> > in the group that get killed, but that should be handled by the threadgroup_change_begin()
-> > you put in the exit path.
-> > The old leader is also killed but release_task() -> __unhash_process() is called
-> > for it manually from the exec path. However this thread too should be covered by your
-> > synchronisation in exit().
-> > 
-> > So after your protection in the exit path, the only thing to protect against in exec
-> > is that group_leader that can change concurrently. But I may be missing something in the picture.
+> On Wed, 2011-11-23 at 21:34 +0800, Dave Young wrote:
+>> On 11/23/2011 09:18 PM, Michael Holzheu wrote:
+>>
+>>> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+>>>
+>>> Currently it is possible to set the crash_size via the sysfs
+>>> /sys/kernel/kexec_crash_size even if no crash kernel memory has
+>>> been defined with the "crashkernel" parameter. In this case
+>>> "crashk_res" is not initialized and crashk_res.start = crashk_res.end = 0.
+>>> Unfortunately resource_size(&crashk_res) returns 1 in this case.
+>>> This breaks the s390 implementation of crash_(un)map_reserved_pages().
+>>>
+>>> To fix the problem the correct "old_size" is now calculated in
+>>> crash_shrink_memory(). "old_size is set to "0" if crashk_res is
+>>> not initialized. With this change crash_shrink_memory() will do nothing,
+>>> when "crashk_res" is not initialized. It will return "0" for
+>>> "echo 0 > /sys/kernel/kexec_crash_size" and -EINVAL for
+>>> "echo [not zero] > /sys/kernel/kexec_crash_size".
+>>>
+>>> In addition to that this patch also simplifies the "ret = -EINVAL"
+>>> vs. "ret = 0" logic as suggested by Simon Horman.
+>>>
+>>> Cc: Simon Horman <horms@verge.net.au>
+>>> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+>>> ---
+>>>  kernel/kexec.c |   10 ++++------
+>>>  1 file changed, 4 insertions(+), 6 deletions(-)
+>>>
+>>> --- a/kernel/kexec.c
+>>> +++ b/kernel/kexec.c
+>>> @@ -1131,7 +1131,7 @@ void __weak crash_free_reserved_phys_ran
+>>>  int crash_shrink_memory(unsigned long new_size)
+>>>  {
+>>>  	int ret = 0;
+>>> -	unsigned long start, end;
+>>> +	unsigned long start, end, old_size;
+>>
+>>
+>> Sorry for jump in a little late, instead of introduce a new variable,
+>> why not add something like:
+>>
+>> if (!end)
+>> 	return -EINVAL;
 > 
-> Hmm... an exec'ing task goes through transitions which usually aren't
-> allowed to happen.  It assumes exclusive access to group-shared data
-> structures and may ditch the current one and create a new one.
+> If the crashkernel parameter is not set, "/sys/kernel/kexec_crash_size"
+> returns zero:
 > 
-> Sure, it's possible to make every cgroup method correct w.r.t. all
-> those via explicit locking or by being more careful but I don't see
-> much point in such excercise.  If the code is sitting in some hot path
-> and the added exclusion is gonna add significant amount of contention,
-> sure, we should trade off easiness for better performance /
-> scalability but this is for cgroup modifications, a fundamentally cold
-> path, and the added locking is per-task or per-threadgroup.  I don't
-> see any reason not to be easy here.
-
-Sure. I have no problem with that. I just wish we can precisely identify
-what we are protecting against, and not have a foggy locking. Especially
-when it's about such a very core issue.
-
-> Please read on.
+> cat /sys/kernel/kexec_crash_size
+> 0
 > 
-> > Also note this is currently protected by the tasklist readlock. Cred
-> > guard mutex is certainly better, I just don't remember if you remove
-> > the tasklist lock in a further patch.
-> 
-> I don't remove tasklist_lock.
+> So I think if we set it again to zero we should *not* return -EINVAL:
 
-I believe you can do it after using the cred guard mutex. That needs to
-be double checked though. I think it was mostly there to keep while_each_thread()
-stable non-racy against leader change. cred_guard_mutex should handle that
-now.
+
+Thanks, I missed this case. fair enough.
+
+Reviewed-by: Dave Young <dyoung@redhat.com>
 
 > 
-> > The exit case:
-> > 
-> > There the issue is about racing against cgroup_exit() where the task can be
-> > assigned to the root cgroup. Is this really a problem in fact? I don't know
-> > if subsystems care about that. Perhaps some of them are buggy in that
-> > regard. At least the task counter handles that and it needs a
-> > ->cancel_attach_task() for this purpose in the case the migration fails due to exit.
-> > Not sure about others. A real synchronization against exit is less error prone for sure.
-> > In the end that's probably a win.
+> echo 0 > /sys/kernel/kexec_crash_size
+> --> Exit code should be zero in this case
 > 
-> This is the same story.  Yes, we can narrow the locking and try to
-> make sure everyone handles partially destroyed tasks properly in all
-> methods, but for what?  If we can give stable threadgroups to all
-> cgroup methods without introducing performance or scalability
-> bottleneck, that's the right thing to do.  Please also note that bugs
-> stemming from failure to handle those corner cases properly will be
-> subtle, difficult to reproduce and track down.
-
-Agreed.
-
-> In general, for any subsystem with pluggable interface, I think it's
-> best to put as much complexity as possible into the core layer to make
-> things eaiser for its customers.  It becomes excruciatingly painful if
-> the API invites subtle corner case bugs and the subsystem grows
-> several dozen clients down the road.
-
-Sure.
-
+> Otherwise we would change the current behavior.
 > 
-> So, to me, what seems more important is how to make it easier for each
-> cgroup client instead of what's the minimal that's necessary right
-> now.
+> And besides of that, I think introducing the "old_size" variable makes
+> the code more readable.
 > 
-> Heh, did I make any sense? :)
+> Michael
+> 
+> 
 
-Yep, fine for me :)
-Just wanted to ensure I (and others) understood and identified well the issues
-and the fixes.
+
+
+-- 
+Thanks
+Dave
