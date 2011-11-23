@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1KWL5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:57:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59693 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab1KWL5t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:57:49 -0500
-Message-ID: <1322049459.14799.45.camel@twins>
-Subject: Re: [patch 6/7] sched: use rq->avg_event to resurrect nohz
- ratelimiting
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <mgalbraith@suse.de>
+	id S1754597Ab1KWMGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:06:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51496 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754309Ab1KWMGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 07:06:07 -0500
+Subject: Re: [patch 3/7] sched: set skip_clock_update in yield_task_fair()
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Wed, 23 Nov 2011 12:57:39 +0100
-In-Reply-To: <1321971893.6855.24.camel@marge.simson.net>
+In-Reply-To: <1322049186.14799.42.camel@twins>
 References: <1321350377.1421.55.camel@twins>
 	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
 	 <1321435455.5072.64.camel@marge.simson.net>
@@ -30,22 +26,34 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321629441.7080.15.camel@marge.simson.net>
 	 <1321630552.2197.15.camel@twins>
 	 <1321971445.6855.14.camel@marge.simson.net>
-	 <1321971893.6855.24.camel@marge.simson.net>
+	 <1321971686.6855.18.camel@marge.simson.net>
+	 <1322049186.14799.42.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
+Date: Wed, 23 Nov 2011 13:06:04 +0100
+Message-ID: <1322049964.7041.2.camel@marge.simson.net>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 15:24 +0100, Mike Galbraith wrote:
-> Entering nohz at high frequency eats cycles, ratelimit it
-> just as we do idle_balance(), and for the same reason.
+On Wed, 2011-11-23 at 12:53 +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-22 at 15:21 +0100, Mike Galbraith wrote:
+> > +++ linux-3.0-tip/kernel/sched/core.c
+> > @@ -4547,7 +4547,13 @@ again: 
+> 
+> Could you add:
+> 
+> QUILT_DIFF_OPTS="-F ^[[:alpha:]\$_].*[^:]\$"
+> 
+> 
+> to your quiltrc ?
 
-ideally we should have some per-arch information on how costly it
-actually is to enter/leave nohz.
+Done, I now have a ~/.quiltrc with one whole line in it.
 
-Also, can you confirm, or otherwise run this by whoemever reported that
-power-usage regression the last time we tried this?
+	Thanks,
+
+	-Mike
+
 
