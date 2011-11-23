@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759038Ab1KWAeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:34:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42195 "EHLO mx2.suse.de"
+	id S932303Ab1KWAeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:34:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42208 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759021Ab1KWAeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:34:03 -0500
+	id S1759036Ab1KWAeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:34:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:07 2011
-Message-Id: <20111123002207.287522277@clark.kroah.org>
+Message-Id: <20111123002207.381859654@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:20:53 -0800
+Date: Tue, 22 Nov 2011 16:20:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [03/25] NFS/sunrpc: dont use a credential with extra groups.
+        Thomas Graf <tgraf@suug.ch>, Johannes Berg <johannes.berg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [04/25] netlink: validate NLA_MSECS length
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1289
+Content-Length: 1138
 Lines: 39
 
-From: NeilBrown <neilb@suse.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit dc6f55e9f8dac4b6479be67c5c9128ad37bb491f upstream.
+commit c30bc94758ae2a38a5eb31767c1985c0aae0950b upstream.
 
-The sunrpc layer keeps a cache of recently used credentials and
-'unx_match' is used to find the credential which matches the current
-process.
+L2TP for example uses NLA_MSECS like this:
+policy:
+        [L2TP_ATTR_RECV_TIMEOUT]        = { .type = NLA_MSECS, },
+code:
+        if (info->attrs[L2TP_ATTR_RECV_TIMEOUT])
+                cfg.reorder_timeout = nla_get_msecs(info->attrs[L2TP_ATTR_RECV_TIMEOUT]);
 
-However unx_match allows a match when the cached credential has extra
-groups at the end of uc_gids list which are not in the process group list.
+As nla_get_msecs() is essentially nla_get_u64() plus the
+conversion to a HZ-based value, this will not properly
+reject attributes from userspace that aren't long enough
+and might overrun the message.
 
-So if a process with a list of (say) 4 group accesses a file and gains
-access because of the last group in the list, then another process
-with the same uid and gid, and a gid list being the first tree of the
-gids of the original process tries to access the file, it will be
-granted access even though it shouldn't as the wrong rpc credential
-will be used.
+Add NLA_MSECS to the attribute minlen array to check the
+size properly.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/auth_unix.c |    3 +++
- 1 file changed, 3 insertions(+)
+ lib/nlattr.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/sunrpc/auth_unix.c
-+++ b/net/sunrpc/auth_unix.c
-@@ -129,6 +129,9 @@ unx_match(struct auth_cred *acred, struc
- 	for (i = 0; i < groups ; i++)
- 		if (cred->uc_gids[i] != GROUP_AT(acred->group_info, i))
- 			return 0;
-+	if (groups < NFS_NGROUPS &&
-+	    cred->uc_gids[groups] != NOGROUP)
-+		return 0;
- 	return 1;
- }
+--- a/lib/nlattr.c
++++ b/lib/nlattr.c
+@@ -20,6 +20,7 @@ static u16 nla_attr_minlen[NLA_TYPE_MAX+
+ 	[NLA_U16]	= sizeof(u16),
+ 	[NLA_U32]	= sizeof(u32),
+ 	[NLA_U64]	= sizeof(u64),
++	[NLA_MSECS]	= sizeof(u64),
+ 	[NLA_NESTED]	= NLA_HDRLEN,
+ };
  
 
 
