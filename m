@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab1KWAgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42466 "EHLO mx2.suse.de"
+	id S1759053Ab1KWAfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:35:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42437 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932532Ab1KWAfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:54 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
-Message-Id: <20111123002556.016284343@clark.kroah.org>
+	id S932251Ab1KWAfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:35:37 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:55 2011
+Message-Id: <20111123002555.638857883@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:33 -0800
+Date: Tue, 22 Nov 2011 16:25:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [33/53] USB: XHCI: resume root hubs when the controller resumes
+        alan@lxorguk.ukuu.org.uk, Claudio Scordino <claudio@evidence.eu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [29/53] drivers/base/node.c: fix compilation error with older versions of gcc
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Claudio Scordino <claudio@evidence.eu.com>
 
-commit f69e3120df82391a0ee8118e0a156239a06b2afb upstream.
+commit 91a13c281d7d4648c0b32dede11a0144c4e7984c upstream.
 
-This patch (as1494) fixes a problem in xhci-hcd's resume routine.
-When the controller is runtime-resumed, this can only mean that one of
-the two root hubs has made a wakeup request and therefore needs to be
-resumed as well.  Rather than try to determine which root hub requires
-attention (which might be difficult in the case where a new
-non-SuperSpeed device has been plugged in), the patch simply resumes
-both root hubs.
+Patch to fix the error message "directives may not be used inside a macro
+argument" which appears when the kernel is compiled for the cris architecture.
 
-Without this change, there is a race: The controller might be put back
-to sleep before it can activate its IRQ line, and the wakeup condition
-might never get handled.
-
-The patch also simplifies the logic in xhci_resume a little, combining
-some repeated flag settings into a single pair of statements.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |   29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ drivers/base/node.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -749,7 +749,7 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 	u32			command, temp = 0;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
--	int			retval;
-+	int			retval = 0;
- 
- 	/* Wait a bit if either of the roothubs need to settle from the
- 	 * transition into bus suspend.
-@@ -759,6 +759,9 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 				xhci->bus_state[1].next_statechange))
- 		msleep(100);
- 
-+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags);
-+
- 	spin_lock_irq(&xhci->lock);
- 	if (xhci->quirks & XHCI_RESET_ON_RESUME)
- 		hibernated = true;
-@@ -828,20 +831,13 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 			return retval;
- 		xhci_dbg(xhci, "Start the primary HCD\n");
- 		retval = xhci_run(hcd->primary_hcd);
--		if (retval)
--			goto failed_restart;
--
--		xhci_dbg(xhci, "Start the secondary HCD\n");
--		retval = xhci_run(secondary_hcd);
- 		if (!retval) {
--			set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--			set_bit(HCD_FLAG_HW_ACCESSIBLE,
--					&xhci->shared_hcd->flags);
-+			xhci_dbg(xhci, "Start the secondary HCD\n");
-+			retval = xhci_run(secondary_hcd);
- 		}
--failed_restart:
- 		hcd->state = HC_STATE_SUSPENDED;
- 		xhci->shared_hcd->state = HC_STATE_SUSPENDED;
--		return retval;
-+		goto done;
- 	}
- 
- 	/* step 4: set Run/Stop bit */
-@@ -860,11 +856,14 @@ failed_restart:
- 	 * Running endpoints by ringing their doorbells
- 	 */
- 
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags);
--
- 	spin_unlock_irq(&xhci->lock);
--	return 0;
-+
-+ done:
-+	if (retval == 0) {
-+		usb_hcd_resume_root_hub(hcd);
-+		usb_hcd_resume_root_hub(xhci->shared_hcd);
-+	}
-+	return retval;
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -127,12 +127,13 @@ static ssize_t node_read_meminfo(struct
+ 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+ 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+-		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+ 			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR
++			HPAGE_PMD_NR),
++#else
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
+ #endif
+-		       ),
+ 		       nid, K(node_page_state(nid, NR_SHMEM)),
+ 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+ 				THREAD_SIZE / 1024,
+@@ -143,13 +144,14 @@ static ssize_t node_read_meminfo(struct
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
+ 				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
+-		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ 			, nid,
+ 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR)
++			HPAGE_PMD_NR));
++#else
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+ #endif
+-		       );
+ 	n += hugetlb_report_node_meminfo(nid, buf + n);
+ 	return n;
  }
- #endif	/* CONFIG_PM */
- 
 
 
