@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab1KWKn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:43:27 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39662 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752076Ab1KWKnZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:43:25 -0500
-Date: Wed, 23 Nov 2011 10:44:49 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Joerg Reuter <jreuter@yaina.de>,
-        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        linux-hams@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] ax25: integer overflows in ax25_setsockopt()
-Message-ID: <20111123104449.5e845a0f@lxorguk.ukuu.org.uk>
-In-Reply-To: <7187C142-99F1-4A96-9BE6-650B10C9B22D@gmail.com>
-References: <7187C142-99F1-4A96-9BE6-650B10C9B22D@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753992Ab1KWKnn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:43:43 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53586 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753621Ab1KWKnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:43:41 -0500
+Date: Wed, 23 Nov 2011 16:12:06 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (uprobes tree related)
+Message-ID: <20111123104206.GB22971@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20111123144409.7d1816bef960a2f277aaf1b9@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20111123144409.7d1816bef960a2f277aaf1b9@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112310-7182-0000-0000-0000003E218D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  	case AX25_T1:
-> -		if (opt < 1) {
-> +		if (opt < 1 || opt > 30) {
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> In file included from include/linux/mm_types.h:15:0,
+>                  from include/linux/sched.h:64,
+>                  from arch/powerpc/mm/mem.c:21:
+> include/linux/uprobes.h:174:49: error: 'struct mm_struct' declared inside parameter list [-Werror]
+> include/linux/uprobes.h:174:49: error: its scope is only this definition or declaration, which is probably not what you want [-Werror]
+> 
+> And many more similar.
+> 
+> Caused by commit 61fafad13005 ("uprobes_xol" - "uprobes: slot allocation").
 
-Where do these values come from ? If they are from some 'standard' then
-really we should avoid restricting needlessly to it, particularly as
-AX.25 isn't well defined and is used for all sorts of crazy stuff where
-the usual range of settings isn't useful.
 
-Restricting to the point it would overflow makes sense however.
+Thanks for reporting this. 
+I have folded your fix into the patch.
 
-Alan
+-- 
+Thanks and Regards
+Srikar
 
