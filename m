@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab1KWUwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 15:52:45 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60325 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1KWUwo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 15:52:44 -0500
-Message-ID: <1322081530.14799.97.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 5/30] uprobes: copy of the original
- instruction.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Wed, 23 Nov 2011 21:52:10 +0100
-In-Reply-To: <1322077748.20742.68.camel@frodo>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110733.10512.11835.sendpatchset@srdronam.in.ibm.com>
-	 <1322073616.14799.96.camel@twins> <1322077748.20742.68.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
+	id S1755268Ab1KWVAH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 16:00:07 -0500
+Received: from zougloub.eu ([188.165.233.99]:41060 "EHLO zougloub.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752535Ab1KWVAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 16:00:06 -0500
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Nov 2011 16:00:06 EST
+Date: Wed, 23 Nov 2011 15:52:43 -0500
+From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: tglx@linutronix.de
+Subject: Q: Process creation and soft hot CPU affinity
+Message-ID: <20111123155243.46421a6d@Bidule>
+Organization: CS Communications & =?UTF-8?B?U3lzdMOobWVz?= Canada Inc.
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.3; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 14:49 -0500, Steven Rostedt wrote:
-> On Wed, 2011-11-23 at 19:40 +0100, Peter Zijlstra wrote:
-> > On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> > > +               /* TODO : Analysis and verification of instruction */
-> > 
-> > As in refuse to set a breakpoint on an instruction we can't deal with?
-> > 
-> > Do we care? The worst case we'll crash the program, but if we're allowed
-> > setting uprobes we already have enough privileges to do that anyway,
-> > right?
-> 
-> Well, I wouldn't be happy if I was running a server, and needed to
-> analyze something it was doing, and because I screwed up the location of
-> my probe, I crash the server, made lots of people unhappy and lose my
-> job over it.
-> 
-> I think we do care, but it can be a TODO item.
+Hi,
 
-But but but, why not let userspace sort it? And if you're going to
-provide the kernel with inode:offset data yourself, you're already well
-aware of wtf you're doing.
+I noticed something this night.
+The process executions during a ./configure get spread among all the machine CPUs.
+When launching processes sequentially, why aren't they put to run on the same CPU ?
+I naively assume that the CPU has just finished its work and it's "hot".
+The others could continue resting in their C-states/P-states, or whatever.
 
+To measure the performance impact of the current scheduling choices, I ran a little benchmark.
+I ran a time ./configure with/without cgroup CPU affinity and got significant difference.
 
+benchmark_setup() {
+  cgrp=1cpu
+  ncpus=8
+  cgroup_mnt=/sys/fs/cgroup
+  coreutils_tar=/var/paludis/distfiles/coreutils-8.13.tar.xz
+
+  mkdir -p $cgroup_mnt/$cgrp
+  echo 0 > $cgroup_mnt/$cgrp/cpuset.mems
+  echo $$ > $cgroup_mnt/$cgrp/tasks
+
+  cd /dev/shm
+}
+
+benchmark() {
+  tar xf $coreutils_tar
+
+  pushd coreutils* > /dev/null
+  echo $* > $cgroup_mnt/$cgrp/cpuset.cpus
+  echo 3 > /proc/sys/vm/drop_caches
+  time sh ./configure > /dev/null
+  popd > /dev/null
+
+  rm -rf coreutils*
+}
+
+benchmark 0
+benchmark $(cat $cgroup_mnt/cpuset.cpus)
+
+Results:
+
+with affinity to 1CPU:
+real    0m40.229s
+user    0m15.222s
+sys     0m9.409s
+
+with affinity to all CPUs:
+real    1m20.832s
+user    0m31.089s
+sys     0m37.582s
+
+Is there something that can be done ?
+I just want to start a discussion on this matter, perhaps I'll play with the scheduler if I get a few hints.
+
+Regards,
+
+-- 
+cJ
+3.2.0-rc2-Bidule-00400-g866d43c #1 SMP PREEMPT Tue Nov 22 13:51:00 EST 2011 x86_64
