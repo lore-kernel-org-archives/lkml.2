@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab1KWBfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:35:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41166 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759044Ab1KWBfH (ORCPT
+	id S1759216Ab1KWBgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:36:33 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:8315 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab1KWBgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 20:35:07 -0500
-Date: Tue, 22 Nov 2011 17:35:04 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: David Daney <ddaney.cavm@gmail.com>
-cc: ralf@linux-mips.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, DM <dm.n9107@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v2 2/2] hugetlb: Replace BUG() with BUILD_BUG() for dummy
- definitions.
-In-Reply-To: <1321985686-798-3-git-send-email-ddaney.cavm@gmail.com>
-Message-ID: <alpine.DEB.2.00.1111221734310.18644@chino.kir.corp.google.com>
-References: <1321985686-798-1-git-send-email-ddaney.cavm@gmail.com> <1321985686-798-3-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 Nov 2011 20:36:32 -0500
+Message-ID: <4ECC4E1B.9050405@tilera.com>
+Date: Tue, 22 Nov 2011 20:36:27 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v4 0/5] Reduce cross CPU IPI interference
+References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Nov 2011, David Daney wrote:
+On 11/22/2011 6:08 AM, Gilad Ben-Yossef wrote:
+> We have lots of infrastructure in place to partition a multi-core system such that we have a group of CPUs that are dedicated to specific task: cgroups, scheduler and interrupt affinity and cpuisol boot parameter. Still, kernel code will some time interrupt all CPUs in the system via IPIs for various needs. These IPIs are useful and cannot be avoided altogether, but in certain cases it is possible to interrupt only specific CPUs that have useful work to
+> do and not the entire system.
+>
+> This patch set, inspired by discussions with Peter Zijlstra and Frederic Weisbecker when testing the nohz task patch set, is a first stab at trying to explore doing this by locating the places where such global IPI calls are being made and turning a global IPI into an IPI for a specific group of CPUs.  The purpose of the patch set is to get feedback if this is the right way to go for dealing with this issue and indeed, if the issue is even worth dealing with at all. Based on the feedback from this patch set I plan to offer further patches that address similar issue in other code paths.
+>
+> The patch creates an on_each_cpu_mask infrastructure API (derived from existing arch specific versions in Tile and Arm) and uses it to turn two global
+> IPI invocation to per CPU group invocations.
 
-> From: David Daney <david.daney@cavium.com>
-> 
-> The file linux/hugetlb.h has many places where dummy symbols were
-> defined so that the main source code would contain fewer:
-> 
->     #ifdef CONFIG_HUGETLBFS
-> 
-> or
-> 
->     #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> 
-> If there were any misuse of these symbols, the only symptom would be
-> an OOPS at runtime.  Change the BUG() to BUILD_BUG() to catch
-> any such abuse at compile time instead.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Acked-by: David Rientjes <rientjes@google.com>
+I think this kind of work is very important as more and more processing
+moves to isolated cpus that need protection from miscellaneous kernel
+interrupts.  Keep at it! :-)
 
-> @@ -186,7 +186,7 @@ static inline void set_file_hugepages(struct file *file)
->  #else /* !CONFIG_HUGETLBFS */
->  
->  #define is_file_hugepages(file)			0
-> -#define set_file_hugepages(file)		BUG()
-> +#define set_file_hugepages(file)		BUILD_BUG()
->  static inline struct file *hugetlb_file_setup(const char *name, size_t size,
->  		vm_flags_t acctflag, struct user_struct **user, int creat_flags)
->  {
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Looks like this symbol can just be removed entirely, it's not referenced 
-anywhere.
