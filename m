@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1KWMny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:43:54 -0500
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:37899 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742Ab1KWMnw (ORCPT
+	id S1755137Ab1KWMoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:44:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42012 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab1KWMoT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:43:52 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAAXpzE5tg6zW/2dsb2JhbABEqmqBBoFyAQEEATocIxAIAw44FCUDIS6HagK0MBKKUASUR5IM
-Date: Wed, 23 Nov 2011 13:40:37 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Marc Vertes <marc.vertes@sigfox.com>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        HaraldWelte@viatech.com
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <20111123124037.GN23376@infomag.iguana.be>
-References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com> <20111122112212.GD2734@pengutronix.de> <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com> <20111122173227.GK6624@sirena.org.uk> <20111122184051.GA30941@pengutronix.de> <4eccc3f0.iApQ//mCzaN3UsrB%marc.vertes@sigfox.com> <20111123104926.GB4063@pengutronix.de> <20111123121329.GM23376@infomag.iguana.be> <20111123122018.GA12227@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111123122018.GA12227@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 23 Nov 2011 07:44:19 -0500
+Message-ID: <1322052249.14799.59.camel@twins>
+Subject: Re: [PATCH 0/5] dirty throttling bits for 3.3
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Nov 2011 13:44:09 +0100
+In-Reply-To: <20111121130342.211953629@intel.com>
+References: <20111121130342.211953629@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
-
-> > Bottom line: Yes, there is hardware available that can only be pinged
-> > and not be stopped, but No, Userspace needs the start/stop and ping
-> > functionality so that a watchdog daemon can work correctly (which is
-> > important because some watchdog daemons also do application testing.
+On Mon, 2011-11-21 at 21:03 +0800, Wu Fengguang wrote:
+> Hi,
 > 
-> Right, but if the hardware doesn't support this functionality it seems
-> better to have the core deal with this rather than requiring the driver
-> to implement empty operations.
+> I'd like to push these 5 dirty throttling improvements to linux-next,
+> targeting for inclusion in Linux 3.3.
+> 
+> It's a comfortably small series for review ;) And there are no changes since
+> the last v12 post. (I went through them once again but find nothing to change.)
+> 
+>  [PATCH 1/5] writeback: balanced_rate cannot exceed write bandwidth
+>  [PATCH 2/5] writeback: charge leaked page dirties to active tasks
+>  [PATCH 3/5] writeback: fix dirtied pages accounting on sub-page writes
+>  [PATCH 4/5] writeback: fix dirtied pages accounting on redirty
+>  [PATCH 5/5] writeback: dirty ratelimit - think time compensation
 
-As said, should indeed become part of the core, but the core needs to be
-able to handle multiple devices and then this becomes more complex (because
-some devices need and and other's don't).
+Given the updates I'm ok with this series,
 
-Coming back to now: if the driver incorporates the timer (like all other
-devices that can be started but not stopped once started do), then the start
-and stop functions are not empty.
-The timer (with the example that I prepared as part of the generic code) is
-not so difficult and will be a good solution for the time being. (Unless
-Dmitry Artamonow's comment about the fact that the watchdog could perhaps
-be started and stopped is correct... This should be investigated first imho).
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Kind regards,
-Wim.
-
+Thanks!
