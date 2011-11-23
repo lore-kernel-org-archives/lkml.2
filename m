@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab1KWAwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:52:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42791 "EHLO mx2.suse.de"
+	id S1759289Ab1KWAxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:53:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42776 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759153Ab1KWAk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:40:28 -0500
+	id S1755397Ab1KWAkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:40:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:05 2011
-Message-Id: <20111123002405.910599157@clark.kroah.org>
+Message-Id: <20111123002405.728956547@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:21 -0800
+Date: Tue, 22 Nov 2011 16:23:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [14/53] ip6_tunnel: copy parms.name after register_netdevice
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [12/53] nl80211: fix HT capability attribute validation
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,76 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 731abb9cb27aef6013ce60808a04e04a545f3f4e upstream.
+commit 6c7394197af90f6a332180e33f5d025d3037d883 upstream.
 
-Commit 1c5cae815d removed an explicit call to dev_alloc_name in ip6_tnl_create
-because register_netdevice will now create a valid name.  This works for the
-net_device itself.
+Since the NL80211_ATTR_HT_CAPABILITY attribute is
+used as a struct, it needs a minimum, not maximum
+length. Enforce that properly. Not doing so could
+potentially lead to reading after the buffer.
 
-However the tunnel keeps a copy of the name in the parms structure for the
-ip6_tnl associated with the tunnel.  parms.name is set by copying the net_device
-name in ip6_tnl_dev_init_gen.  That function is called from ip6_tnl_dev_init in
-ip6_tnl_create, but it is done before register_netdevice is called so the name
-is set to a bogus value in the parms.name structure.
-
-This shows up if you do a simple tunnel add, followed by a tunnel show:
-
-[root@localhost ~]# ip -6 tunnel add remote fec0::100 local fec0::200
-[root@localhost ~]# ip -6 tunnel show
-ip6tnl0: ipv6/ipv6 remote :: local :: encaplimit 0 hoplimit 0 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
-ip6tnl%d: ipv6/ipv6 remote fec0::100 local fec0::200 encaplimit 4 hoplimit 64 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
-[root@localhost ~]#
-
-Fix this by moving the strcpy out of ip6_tnl_dev_init_gen, and calling it after
-register_netdevice has successfully returned.
-
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/ip6_tunnel.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/wireless/nl80211.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -289,6 +289,8 @@ static struct ip6_tnl *ip6_tnl_create(st
- 	if ((err = register_netdevice(dev)) < 0)
- 		goto failed_free;
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -126,8 +126,7 @@ static const struct nla_policy nl80211_p
+ 	[NL80211_ATTR_MESH_CONFIG] = { .type = NLA_NESTED },
+ 	[NL80211_ATTR_SUPPORT_MESH_AUTH] = { .type = NLA_FLAG },
  
-+	strcpy(t->parms.name, dev->name);
-+
- 	dev_hold(dev);
- 	ip6_tnl_link(ip6n, t);
- 	return t;
-@@ -1397,7 +1399,6 @@ ip6_tnl_dev_init_gen(struct net_device *
- 	struct ip6_tnl *t = netdev_priv(dev);
+-	[NL80211_ATTR_HT_CAPABILITY] = { .type = NLA_BINARY,
+-					 .len = NL80211_HT_CAPABILITY_LEN },
++	[NL80211_ATTR_HT_CAPABILITY] = { .len = NL80211_HT_CAPABILITY_LEN },
  
- 	t->dev = dev;
--	strcpy(t->parms.name, dev->name);
- 	dev->tstats = alloc_percpu(struct pcpu_tstats);
- 	if (!dev->tstats)
- 		return -ENOMEM;
-@@ -1477,6 +1478,7 @@ static void __net_exit ip6_tnl_destroy_t
- static int __net_init ip6_tnl_init_net(struct net *net)
- {
- 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
-+	struct ip6_tnl *t = NULL;
- 	int err;
- 
- 	ip6n->tnls[0] = ip6n->tnls_wc;
-@@ -1497,6 +1499,10 @@ static int __net_init ip6_tnl_init_net(s
- 	err = register_netdev(ip6n->fb_tnl_dev);
- 	if (err < 0)
- 		goto err_register;
-+
-+	t = netdev_priv(ip6n->fb_tnl_dev);
-+
-+	strcpy(t->parms.name, ip6n->fb_tnl_dev->name);
- 	return 0;
- 
- err_register:
+ 	[NL80211_ATTR_MGMT_SUBTYPE] = { .type = NLA_U8 },
+ 	[NL80211_ATTR_IE] = { .type = NLA_BINARY,
 
 
