@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab1KWAg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42514 "EHLO mx2.suse.de"
+	id S932686Ab1KWAgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42540 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab1KWAgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:22 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
-Message-Id: <20111123002556.755840884@clark.kroah.org>
+	id S932581Ab1KWAgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:36 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
+Message-Id: <20111123002554.512426370@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:41 -0800
+Date: Tue, 22 Nov 2011 16:25:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrew Worsley <amworsley@gmail.com>
-Subject: [41/53] USB: Fix Corruption issue in USB ftdi driver ftdi_sio.c
+        alan@lxorguk.ukuu.org.uk,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Subject: [17/53] pch_phub: Support new device LAPIS Semiconductor ML7831 IOH
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,66 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Worsley <amworsley@gmail.com>
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 
-commit b1ffb4c851f185e9051ba837c16d9b84ef688d26 upstream.
+commit 584ad00ce4bfe594e4c4a89944b3c635187a1ca1 upstream.
 
-Fix for ftdi_set_termios() glitching output
+ML7831 is companion chip for Intel Atom E6xx series.
 
-ftdi_set_termios() is constantly setting the baud rate, data bits and parity
-unnecessarily on every call, . When called while characters are being
-transmitted can cause the FTDI chip to corrupt the serial port bit stream
-output by stalling the output half a bit during the output of a character.
-Simple fix by skipping this setting if the baud rate/data bits/parity are
-unchanged.
-
-Signed-off-by: Andrew Worsley <amworsley@gmail.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/misc/Kconfig    |   15 ++++++++-------
+ drivers/misc/pch_phub.c |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2083,13 +2083,19 @@ static void ftdi_set_termios(struct tty_
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -472,7 +472,7 @@ config BMP085
+ 	  module will be called bmp085.
  
- 	cflag = termios->c_cflag;
+ config PCH_PHUB
+-	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223) PHUB"
++	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) PHUB"
+ 	depends on PCI
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) PHUB(Packet Hub) of
+@@ -480,12 +480,13 @@ config PCH_PHUB
+ 	  processor. The Topcliff has MAC address and Option ROM data in SROM.
+ 	  This driver can access MAC address and Option ROM data in SROM.
  
--	/* FIXME -For this cut I don't care if the line is really changing or
--	   not  - so just do the change regardless  - should be able to
--	   compare old_termios and tty->termios */
-+	if (old_termios->c_cflag == termios->c_cflag
-+	    && old_termios->c_ispeed == termios->c_ispeed
-+	    && old_termios->c_ospeed == termios->c_ospeed)
-+		goto no_c_cflag_changes;
+-	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+-	  Output Hub), ML7213 and ML7223.
+-	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
+-	  for MP(Media Phone) use.
+-	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
+-	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
++	  This driver also can be used for LAPIS Semiconductor's IOH,
++	  ML7213/ML7223/ML7831.
++	  ML7213 which is for IVI(In-Vehicle Infotainment) use.
++	  ML7223 IOH is for MP(Media Phone) use.
++	  ML7831 IOH is for general purpose use.
++	  ML7213/ML7223/ML7831 is companion chip for Intel Atom E6xx series.
++	  ML7213/ML7223/ML7831 is completely compatible for Intel EG20T PCH.
+ 
+ 	  To compile this driver as a module, choose M here: the module will
+ 	  be called pch_phub.
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -73,6 +73,9 @@
+ #define PCI_DEVICE_ID_ROHM_ML7223_mPHUB	0x8012 /* for Bus-m */
+ #define PCI_DEVICE_ID_ROHM_ML7223_nPHUB	0x8002 /* for Bus-n */
+ 
++/* Macros for ML7831 */
++#define PCI_DEVICE_ID_ROHM_ML7831_PHUB 0x8801
 +
- 	/* NOTE These routines can get interrupted by
- 	   ftdi_sio_read_bulk_callback  - need to examine what this means -
- 	   don't see any problems yet */
+ /* SROM ACCESS Macro */
+ #define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
  
-+	if ((old_termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)) ==
-+	    (termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)))
-+		goto no_data_parity_stop_changes;
+@@ -757,6 +760,22 @@ static int __devinit pch_phub_probe(stru
+ 		chip->pch_opt_rom_start_address =\
+ 						 PCH_PHUB_ROM_START_ADDR_ML7223;
+ 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
++	} else if (id->driver_data == 5) { /* ML7831 */
++		retval = sysfs_create_file(&pdev->dev.kobj,
++					   &dev_attr_pch_mac.attr);
++		if (retval)
++			goto err_sysfs_create;
 +
- 	/* Set number of data bits, parity, stop bits */
- 
- 	urb_value = 0;
-@@ -2130,6 +2136,7 @@ static void ftdi_set_termios(struct tty_
++		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (retval)
++			goto exit_bin_attr;
++
++		/* set the prefech value */
++		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
++		/* set the interrupt delay value */
++		iowrite32(0x25, chip->pch_phub_base_address + 0x44);
++		chip->pch_opt_rom_start_address = PCH_PHUB_ROM_START_ADDR_EG20T;
++		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_EG20T;
  	}
  
- 	/* Now do the baudrate */
-+no_data_parity_stop_changes:
- 	if ((cflag & CBAUD) == B0) {
- 		/* Disable flow control */
- 		if (usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-@@ -2157,6 +2164,7 @@ static void ftdi_set_termios(struct tty_
- 
- 	/* Set flow control */
- 	/* Note device also supports DTR/CD (ugh) and Xon/Xoff in hardware */
-+no_c_cflag_changes:
- 	if (cflag & CRTSCTS) {
- 		dbg("%s Setting to CRTSCTS flow control", __func__);
- 		if (usb_control_msg(dev,
+ 	chip->ioh_type = id->driver_data;
+@@ -841,6 +860,7 @@ static struct pci_device_id pch_phub_pci
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_mPHUB), 3,  },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_nPHUB), 4,  },
++	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7831_PHUB), 5,  },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(pci, pch_phub_pcidev_id);
 
 
