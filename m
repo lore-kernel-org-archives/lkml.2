@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab1KWQ1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:27:16 -0500
-Received: from fieldses.org ([174.143.236.118]:45493 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab1KWQ1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:27:14 -0500
-Date: Wed, 23 Nov 2011 11:27:11 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Subject: Re: [PATCH 0/6] SUNRPC: make RPC clients use
- network-namespace-aware PipeFS routines
-Message-ID: <20111123162711.GA30672@fieldses.org>
-References: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753958Ab1KWQ1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:27:31 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56796 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1KWQ13 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 11:27:29 -0500
+Message-ID: <1322065625.14799.82.camel@twins>
+Subject: Re: [PATCH v7 3.2-rc2 3/30] uprobes: register/unregister probes.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Date: Wed, 23 Nov 2011 17:27:05 +0100
+In-Reply-To: <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+	 <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 02:51:10PM +0300, Stanislav Kinsbursky wrote:
-> This patch set was created in context of clone of git
-> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
-> tag: v3.1
-> 
-> This patch set depends on previous patch sets titled:
-> 1) "SUNRPC: initial part of making pipefs work in net ns"
-> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
+> +void unregister_uprobe(struct inode *inode, loff_t offset,
+> +                               struct uprobe_consumer *consumer)
+> +{
+> +       struct uprobe *uprobe = NULL;
+> +
+> +       inode = igrab(inode);
+> +       if (!inode || !consumer)
+> +               goto unreg_out;
 
-Do you have a git tree set up with all of these applied?
+Why do you take a reference on the inode here? Surely inode is already
+made stable by whoever calls us?
 
-(If I want to take a quick look it would personally be easier for me to
-fetch your git tree than to get those patches out of old email.)
-
---b.
-
-> 
-> This patch set is a first part of reworking SUNPRC PipeFS users.
-> It makes SUNRPC clients using PipeFS nofitications for directory and GSS pipes
-> dentries creation. With this patch set RPC clients and GSS auth creations
-> routines doesn't force SUNRPC PipeFS mount point creation which actually means,
-> that they now can work without PipeFS dentries.
-> 
-> The following series consists of:
-> 
-> ---
-> 
-> Stanislav Kinsbursky (6):
->       SUNRPC: handle RPC client pipefs dentries by network namespace aware routines
->       SUNRPC: handle GSS AUTH pipes by network namespace aware routines
->       SUNRPC: subscribe RPC clients to pipefs notifications
->       SUNRPC: remove RPC client pipefs dentries after unregister
->       SUNRPC: remove RPC pipefs mount point manipulations from RPC clients code
->       SUNRPC: remove RPC PipeFS mount point reference from RPC client
-> 
-> 
->  fs/nfs/idmap.c                 |    4 +
->  fs/nfsd/nfs4callback.c         |    2 -
->  include/linux/nfs.h            |    2 -
->  include/linux/sunrpc/auth.h    |    2 +
->  include/linux/sunrpc/clnt.h    |    2 -
->  net/sunrpc/auth_gss/auth_gss.c |  101 +++++++++++++++++++++------
->  net/sunrpc/clnt.c              |  151 +++++++++++++++++++++++++++++++---------
->  net/sunrpc/rpc_pipe.c          |   19 +++--
->  net/sunrpc/sunrpc.h            |    2 +
->  9 files changed, 218 insertions(+), 67 deletions(-)
-> 
-> -- 
-> Signature
+> +       uprobe = find_uprobe(inode, offset);
+> +       if (!uprobe)
+> +               goto unreg_out;
+> +
+> +       mutex_lock(uprobes_hash(inode));
+> +       if (!del_consumer(uprobe, consumer)) {
+> +               mutex_unlock(uprobes_hash(inode));
+> +               goto unreg_out;
+> +       }
+> +
+> +       if (!uprobe->consumers)
+> +               __unregister_uprobe(inode, offset, uprobe);
+> +
+> +       mutex_unlock(uprobes_hash(inode));
+> +
+> +unreg_out:
+> +       if (uprobe)
+> +               put_uprobe(uprobe);
+> +       if (inode)
+> +               iput(inode);
+> +} 
