@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab1KWAmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:42:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43095 "EHLO mx2.suse.de"
+	id S1759534Ab1KWAnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:43:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43132 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932758Ab1KWAmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:42:42 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:09 2011
-Message-Id: <20111123002409.555984417@clark.kroah.org>
+	id S1759517Ab1KWAnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:43:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:08 2011
+Message-Id: <20111123002408.078949615@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:24:00 -0800
+Date: Tue, 22 Nov 2011 16:23:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Robert Hooker <robert.hooker@canonical.com>
-Subject: [53/53] drm/i915: always set FDI composite sync bit
+        alan@lxorguk.ukuu.org.uk, Bart Hartgers <bart.hartgers@gmail.com>
+Subject: [37/53] USB: ark3116 initialisation fix
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +24,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Bart Hartgers <bart.hartgers@gmail.com>
 
-commit c4f9c4c2b3f1831e932e04db992cf6fe92c2a95a upstream.
+commit 583182ba5f02c8c9be82ea550f2051eaec15b975 upstream.
 
-It's needed for 3 pipe support as well as just regular functionality
-(e.g. DisplayPort).
+This patch for the usb serial ark3116 driver fixes an initialisation
+ordering bug that gets triggered on hotplug when using at least recent
+debian/ubuntu userspace. Without it, ark3116 serial cables don't work.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Adam Jackson <ajax@redhat.com>
-Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Robert Hooker <robert.hooker@canonical.com>
+Signed-off-by: Bart Hartgers <bart.hartgers@gmail.com>
+Tested-by: law_ence.dev@ntlworld.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/usb/serial/ark3116.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3141,6 +3141,7 @@
- #define  FDI_LINK_TRAIN_NONE_IVB            (3<<8)
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -42,7 +42,7 @@ static int debug;
+  * Version information
+  */
  
- /* both Tx and Rx */
-+#define  FDI_COMPOSITE_SYNC		(1<<11)
- #define  FDI_LINK_TRAIN_AUTO		(1<<10)
- #define  FDI_SCRAMBLING_ENABLE          (0<<7)
- #define  FDI_SCRAMBLING_DISABLE         (1<<7)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2340,6 +2340,7 @@ static void ivb_manual_fdi_link_train(st
- 	temp |= FDI_LINK_TRAIN_PATTERN_1_IVB;
- 	temp &= ~FDI_LINK_TRAIN_VOL_EMP_MASK;
- 	temp |= FDI_LINK_TRAIN_400MV_0DB_SNB_B;
-+	temp |= FDI_COMPOSITE_SYNC;
- 	I915_WRITE(reg, temp | FDI_TX_ENABLE);
+-#define DRIVER_VERSION "v0.6"
++#define DRIVER_VERSION "v0.7"
+ #define DRIVER_AUTHOR "Bart Hartgers <bart.hartgers+ark3116@gmail.com>"
+ #define DRIVER_DESC "USB ARK3116 serial/IrDA driver"
+ #define DRIVER_DEV_DESC "ARK3116 RS232/IrDA"
+@@ -380,10 +380,6 @@ static int ark3116_open(struct tty_struc
+ 		goto err_out;
+ 	}
  
- 	reg = FDI_RX_CTL(pipe);
-@@ -2347,6 +2348,7 @@ static void ivb_manual_fdi_link_train(st
- 	temp &= ~FDI_LINK_TRAIN_AUTO;
- 	temp &= ~FDI_LINK_TRAIN_PATTERN_MASK_CPT;
- 	temp |= FDI_LINK_TRAIN_PATTERN_1_CPT;
-+	temp |= FDI_COMPOSITE_SYNC;
- 	I915_WRITE(reg, temp | FDI_RX_ENABLE);
+-	/* setup termios */
+-	if (tty)
+-		ark3116_set_termios(tty, port, NULL);
+-
+ 	/* remove any data still left: also clears error state */
+ 	ark3116_read_reg(serial, UART_RX, buf);
  
- 	POSTING_READ(reg);
+@@ -406,6 +402,10 @@ static int ark3116_open(struct tty_struc
+ 	/* enable DMA */
+ 	ark3116_write_reg(port->serial, UART_FCR, UART_FCR_DMA_SELECT);
+ 
++	/* setup termios */
++	if (tty)
++		ark3116_set_termios(tty, port, NULL);
++
+ err_out:
+ 	kfree(buf);
+ 	return result;
 
 
