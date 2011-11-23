@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab1KWAl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:41:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42996 "EHLO mx2.suse.de"
+	id S1759481Ab1KWAmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:42:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43021 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759388Ab1KWAl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:56 -0500
+	id S1759469Ab1KWAmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:42:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:08 2011
-Message-Id: <20111123002408.355354370@clark.kroah.org>
+Message-Id: <20111123002408.725504127@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:47 -0800
+Date: Tue, 22 Nov 2011 16:23:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthieu Castet <matthieu.castet@parrot.com>,
-        Thomas Poussevin <thomas.poussevin@parrot.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [40/53] USB: EHCI: fix HUB TT scheduling issue with iso transfer
+        alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [44/53] xfs: fix xfs_mark_inode_dirty during umount
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Poussevin <thomas.poussevin@parrot.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 811c926c538f7e8d3c08b630dd5844efd7e000f6 upstream.
+commit 866e4ed77448a0c311e1b055eb72ea05423fd799 upstream.
 
-The current TT scheduling doesn't allow to play and then record on a
-full-speed device connected to a high speed hub.
+During umount we do not add a dirty inode to the lru and wait for it to
+become clean first, but force writeback of data and metadata with
+I_WILL_FREE set.  Currently there is no way for XFS to detect that the
+inode has been redirtied for metadata operations, as we skip the
+mark_inode_dirty call during teardown.  Fix this by setting i_update_core
+nanually in that case, so that the inode gets flushed during inode reclaim.
 
-The IN iso stream can only start on the first uframe (0-2 for a 165 us)
-because of CSPLIT transactions.
-For the OUT iso stream there no such restriction. uframe 0-5 are possible.
+Alternatively we could enable calling mark_inode_dirty for inodes in
+I_WILL_FREE state, and let the VFS dirty tracking handle this.  I decided
+against this as we will get better I/O patterns from reclaim compared to
+the synchronous writeout in write_inode_now, and always marking the inode
+dirty in some way from xfs_mark_inode_dirty is a better safetly net in
+either case.
 
-The idea of this patch is that the first uframe are precious (for IN TT iso
-stream) and we should allocate the last uframes first if possible.
-
-For that we reverse the order of uframe allocation (last uframe first).
-
-Here an example :
-
-hid interrupt stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame | 13  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
-----------------------------------------------------------------------
-
-iso OUT stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame | 13  | 125 |  39 |  0  |  0  |  0  |  0  |  0  |
-----------------------------------------------------------------------
-
-There no place for iso IN stream  (uframe 0-2 are used) and we got "cannot
-submit datapipe for urb 0, error -28: not enough bandwidth" error.
-
-With the patch this become.
-
-iso OUT stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame |  13 |  0  |  0  |  0  | 125 |  39 |  0  |  0  |
-----------------------------------------------------------------------
-
-iso IN stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame |  13 |  0  | 125 | 40  | 125 |  39 |  0  |  0  |
-----------------------------------------------------------------------
-
-Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
-Signed-off-by: Thomas Poussevin <thomas.poussevin@parrot.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/usb/host/ehci-sched.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/xfs/linux-2.6/xfs_iops.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1483,10 +1483,15 @@ iso_stream_schedule (
+--- a/fs/xfs/linux-2.6/xfs_iops.c
++++ b/fs/xfs/linux-2.6/xfs_iops.c
+@@ -69,9 +69,8 @@ xfs_synchronize_times(
+ }
  
- 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
+ /*
+- * If the linux inode is valid, mark it dirty.
+- * Used when committing a dirty inode into a transaction so that
+- * the inode will get written back by the linux code
++ * If the linux inode is valid, mark it dirty, else mark the dirty state
++ * in the XFS inode to make sure we pick it up when reclaiming the inode.
+  */
+ void
+ xfs_mark_inode_dirty_sync(
+@@ -81,6 +80,10 @@ xfs_mark_inode_dirty_sync(
  
--		/* find a uframe slot with enough bandwidth */
--		next = start + period;
--		for (; start < next; start++) {
--
-+		/* find a uframe slot with enough bandwidth.
-+		 * Early uframes are more precious because full-speed
-+		 * iso IN transfers can't use late uframes,
-+		 * and therefore they should be allocated last.
-+		 */
-+		next = start;
-+		start += period;
-+		do {
-+			start--;
- 			/* check schedule: enough space? */
- 			if (stream->highspeed) {
- 				if (itd_slot_ok(ehci, mod, start,
-@@ -1499,7 +1504,7 @@ iso_stream_schedule (
- 						start, sched, period))
- 					break;
- 			}
--		}
-+		} while (start > next);
+ 	if (!(inode->i_state & (I_WILL_FREE|I_FREEING)))
+ 		mark_inode_dirty_sync(inode);
++	else {
++		barrier();
++		ip->i_update_core = 1;
++	}
+ }
  
- 		/* no room in the schedule */
- 		if (start == next) {
+ void
+@@ -91,6 +94,11 @@ xfs_mark_inode_dirty(
+ 
+ 	if (!(inode->i_state & (I_WILL_FREE|I_FREEING)))
+ 		mark_inode_dirty(inode);
++	else {
++		barrier();
++		ip->i_update_core = 1;
++	}
++
+ }
+ 
+ /*
 
 
