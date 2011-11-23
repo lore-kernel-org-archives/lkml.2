@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab1KWDZt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 22:25:49 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:3466 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab1KWDZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 22:25:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6538"; a="140171774"
-Message-ID: <4ECC67B9.4050306@codeaurora.org>
-Date: Tue, 22 Nov 2011 19:25:45 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Grant Likely <grant.likely@secretlab.ca>, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/7] Introducing a generic AMP framework
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
-In-Reply-To: <1319536106-25802-1-git-send-email-ohad@wizery.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1759640Ab1KWD0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 22:26:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51308 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759606Ab1KWDZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 22:25:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,556,1315206000"; 
+   d="scan'208";a="88363907"
+Subject: Re: [RFC]numa: improve I/O performance by optimizing numa
+ interleave allocation
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
+        "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>
+In-Reply-To: <1321839585.22361.328.camel@sli10-conroe>
+References: <1321600332.22361.309.camel@sli10-conroe>
+	 <20111118173013.GB25022@alboin.amr.corp.intel.com>
+	 <1321839585.22361.328.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Nov 2011 11:36:23 +0800
+Message-ID: <1322019383.22361.346.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2011 02:48 AM, Ohad Ben-Cohen wrote:
-> Modern SoCs typically employ a central symmetric multiprocessing (SMP)
-> application processor running Linux, with several other asymmetric
-> multiprocessing (AMP) heterogeneous processors running different instances
-> of operating system, whether Linux or any other flavor of real-time OS.
->
-> OMAP4, for example, has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP.
-> Typically, the dual cortex-A9 is running Linux in a SMP configuration, and
-> each of the other three cores (two M3 cores and a DSP) is running its own
-> instance of RTOS in an AMP configuration.
->
-> AMP remote processors typically employ dedicated DSP codecs and multimedia
-> hardware accelerators, and therefore are often used to offload cpu-intensive
-> multimedia tasks from the main application processor. They could also be
-> used to control latency-sensitive sensors, drive 'random' hardware blocks,
-> or just perform background tasks while the main CPU is idling.
->
-
-I understand that I might be saying this pretty late in the review, but 
-can we please stop calling these as AMP configurations? IMHO, in the 
-kernel, we should limit the terms AMP and SMP to be based on the 
-processors/CPUs on which this specific instance of the Linux kernel can 
-schedule processes on.
-
-With the definition of AMP that you are trying to use, even a Intel 
-386/486 machine with just one Intel core will be an AMP system. I'm sure 
-even those old PCs had other processors inside other devices (HDDs, 
-GPUs, etc) executing random firmware.
-
-So, what would you call Intel dual core machines? SMP-AMP? Your proposed 
-use of AMP muddles these terms and makes them useless. I think AMP 
-should be reserved for things like the ARM Big-little architecture, etc, 
-where the CPUs in which the kernel schedules processes are not identical.
-
-Sorry for the rant, this naming just rubs me the wrong way. I definitely 
-appreciate the idea behind these patches.
+On Mon, 2011-11-21 at 09:39 +0800, Shaohua Li wrote:
+> On Sat, 2011-11-19 at 01:30 +0800, Andi Kleen wrote:
+> > On Fri, Nov 18, 2011 at 03:12:12PM +0800, Shaohua Li wrote:
+> > > If mem plicy is interleaves, we will allocated pages from nodes in a round
+> > > robin way. This surely can do interleave fairly, but not optimal.
+> > > 
+> > > Say the pages will be used for I/O later. Interleave allocation for two pages
+> > > are allocated from two nodes, so the pages are not physically continuous. Later
+> > > each page needs one segment for DMA scatter-gathering. But maxium hardware
+> > > segment number is limited. The non-continuous pages will use up maxium
+> > > hardware segment number soon and we can't merge I/O to bigger DMA. Allocating
+> > > pages from one node hasn't such issue. The memory allocator pcp list makes
+> > > we can get physically continuous pages in several alloc quite likely.
+> > 
+> > FWIW it depends a lot on the IO hardware if the SG limitation
+> > really makes a measurable difference for IO performance. I saw some wins from 
+> > clustering using the IOMMU before, but that was a long time ago. I wouldn't 
+> > consider it a truth without strong numbers, and then also only
+> > for that particular device measured.
+> > 
+> > My understanding is that modern IO devices like NHM Express will
+> > be faster at large SG lists.
+> This is a LSI SAS1068E HBA card attaching some hard disks. The
+> clustering has real benefit here. I/O throughput increases 3% or so.
+> Not sure about NHM Express, wondering why large SG list could be faster.
+> doesn't large SG means large DMA descriptor?
+> 
+> > > So can we make both interleave fairness and continuous allocation happy?
+> > > Simplily we can adjust the round robin algorithm. We switch to another node
+> > > after several (N) allocation happens. If N isn't too big, we can still get
+> > > fair allocation. And we get N continuous pages. I use N=8 in below patch.
+> > > I thought 8 isn't too big for modern NUMA machine. Applications which use
+> > > interleave are unlikely run short time, so I thought fairness still works.
+> > 
+> > It depends a lot on the CPU access pattern.
+> > 
+> > Some workloads seem to do reasonable well with 2MB huge page interleaving.
+> > But others actually prefer the cache line interleaving supplied by 
+> > the BIOS.
+> > 
+> > So you can have a trade off between IO and CPU performance.
+> > When in doubt I usually opt for CPU performance by default.
+> Can you elaborate this more? the cache line interleaving can only be
+> supplied by BIOS. OS can provide N*PAGE_SIZE interleave. I'm wondering
+> what's the difference for example a 4k or 8k interleave for CPU
+> performance. Actually if adjacent pages interleaved in two nodes could
+> be in the same coloring, while two adjacent pages allocated from one
+> node not. So clustering could be more cache efficient from coloring
+> point of view.
+> 
+> > I definitely wouldn't make it default, but if there are workloads
+> > that benefits a lot it could be an additional parameter to the
+> > interleave policy.
+> Christoph suggested the same way. the problem is we need change the API,
+> right? And how are users supposed to use it? It would be difficult to
+> determine the correct parameter.
+> 
+> If 8 pages clustering is too big, maybe we can use small. I guess a 2
+> pages clustering is a big win too.
+> 
+> And I didn't change the allocation with a VMA case, which is supposed to
+> be used for anonymous pages.
+I tried a 2 pages clustering, it has the same effect like 8 page
+clustering in my test environment.
+would making the clustering a config option or sysctl be better?
 
 Thanks,
-Saravana
+Shaohua
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
