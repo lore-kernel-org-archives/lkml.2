@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab1KWAgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42527 "EHLO mx2.suse.de"
+	id S932708Ab1KWAgs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42576 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab1KWAg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:29 -0500
+	id S1757228Ab1KWAgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:46 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
-Message-Id: <20111123002554.316328807@clark.kroah.org>
+Message-Id: <20111123002554.782227221@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:15 -0800
+Date: Tue, 22 Nov 2011 16:25:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [15/53] ip6_tunnel: copy parms.name after register_netdevice
+        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [20/53] pch_uart: Fix DMA resource leak issue
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,76 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 731abb9cb27aef6013ce60808a04e04a545f3f4e upstream.
+commit 90f04c2926cfb5bf74533b0a7766bc896f6a0c0e upstream.
 
-Commit 1c5cae815d removed an explicit call to dev_alloc_name in ip6_tnl_create
-because register_netdevice will now create a valid name.  This works for the
-net_device itself.
+Changing UART mode PIO->DMA->PIO->DMA like below, pch_uart driver can't get
+DMA channel resource.
 
-However the tunnel keeps a copy of the name in the parms structure for the
-ip6_tnl associated with the tunnel.  parms.name is set by copying the net_device
-name in ip6_tnl_dev_init_gen.  That function is called from ip6_tnl_dev_init in
-ip6_tnl_create, but it is done before register_netdevice is called so the name
-is set to a bogus value in the parms.name structure.
+setserial /dev/ttyPCH0 ^low_latency
+setserial /dev/ttyPCH0 low_latency
 
-This shows up if you do a simple tunnel add, followed by a tunnel show:
+CAUSE:
+Changing mode using setserial command, ".startup" function which gets DMA
+channel is called before ".verify_port" function which sets
+dma-flag(use_dma/use_dma_flag) as 1.
 
-[root@localhost ~]# ip -6 tunnel add remote fec0::100 local fec0::200
-[root@localhost ~]# ip -6 tunnel show
-ip6tnl0: ipv6/ipv6 remote :: local :: encaplimit 0 hoplimit 0 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
-ip6tnl%d: ipv6/ipv6 remote fec0::100 local fec0::200 encaplimit 4 hoplimit 64 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
-[root@localhost ~]#
+PIO->DMA
+  .startup: Since dma-flag is 0, DMA channel is not requested.
+  .verify_port: dma-flag is set as 1.
+  .shutdown: N/A
 
-Fix this by moving the strcpy out of ip6_tnl_dev_init_gen, and calling it after
-register_netdevice has successfully returned.
+DMA->PIO
+  .startup: Since dma-flag is 1, DMA channel is requested.
+  .verify_port: dma-flag is set as 0.
+  .shutdown: Since dma-flag is 0, DMA channel is not released.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This means DMA channel resource leak occurs.
+Next time, this driver can't get DMA channel resource forever.
+
+MODIFICATION:
+  Currently, when release DMA channel resource, this driver checks dma-flag.
+  However, this specification occurs the above issue.
+  This driver must check whether dma_request_channel is executed or not.
+  The values are saved in private data variable "chan_tx/chan_tx".
+  These variables mean if the value is NULL, DMA channel is not requested,
+  if not NULL, DMA channel is requested.
+
+This patch fixes the issue.
+
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/ip6_tunnel.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/tty/serial/pch_uart.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -289,6 +289,8 @@ static struct ip6_tnl *ip6_tnl_create(st
- 	if ((err = register_netdevice(dev)) < 0)
- 		goto failed_free;
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -626,6 +626,7 @@ static void pch_request_dma(struct uart_
+ 		dev_err(priv->port.dev, "%s:dma_request_channel FAILS(Rx)\n",
+ 			__func__);
+ 		dma_release_channel(priv->chan_tx);
++		priv->chan_tx = NULL;
+ 		return;
+ 	}
  
-+	strcpy(t->parms.name, dev->name);
-+
- 	dev_hold(dev);
- 	ip6_tnl_link(ip6n, t);
- 	return t;
-@@ -1397,7 +1399,6 @@ ip6_tnl_dev_init_gen(struct net_device *
- 	struct ip6_tnl *t = netdev_priv(dev);
+@@ -1213,8 +1214,7 @@ static void pch_uart_shutdown(struct uar
+ 		dev_err(priv->port.dev,
+ 			"pch_uart_hal_set_fifo Failed(ret=%d)\n", ret);
  
- 	t->dev = dev;
--	strcpy(t->parms.name, dev->name);
- 	dev->tstats = alloc_percpu(struct pcpu_tstats);
- 	if (!dev->tstats)
- 		return -ENOMEM;
-@@ -1477,6 +1478,7 @@ static void __net_exit ip6_tnl_destroy_t
- static int __net_init ip6_tnl_init_net(struct net *net)
- {
- 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
-+	struct ip6_tnl *t = NULL;
- 	int err;
+-	if (priv->use_dma_flag)
+-		pch_free_dma(port);
++	pch_free_dma(port);
  
- 	ip6n->tnls[0] = ip6n->tnls_wc;
-@@ -1497,6 +1499,10 @@ static int __net_init ip6_tnl_init_net(s
- 	err = register_netdev(ip6n->fb_tnl_dev);
- 	if (err < 0)
- 		goto err_register;
-+
-+	t = netdev_priv(ip6n->fb_tnl_dev);
-+
-+	strcpy(t->parms.name, ip6n->fb_tnl_dev->name);
- 	return 0;
- 
- err_register:
+ 	free_irq(priv->port.irq, priv);
+ }
 
 
