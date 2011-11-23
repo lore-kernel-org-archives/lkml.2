@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab1KWGrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:47:42 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41615 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab1KWGrl convert rfc822-to-8bit (ORCPT
+	id S1756716Ab1KWGwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:52:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37445 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755611Ab1KWGwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:47:41 -0500
+	Wed, 23 Nov 2011 01:52:18 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18DJWZDfzYD5SPHFIsmY9noq5ukMz39GcSs4jsHFI
+	xM79iW97UelV/i
+Message-ID: <4ECC981E.9030703@gmx.de>
+Date: Wed, 23 Nov 2011 06:52:14 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <20111122210018.GF9581@n2100.arm.linux.org.uk>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-	<1321960128-15191-3-git-send-email-gilad@benyossef.com>
-	<20111122210018.GF9581@n2100.arm.linux.org.uk>
-Date: Wed, 23 Nov 2011 08:47:40 +0200
-Message-ID: <CAOtvUMcus07UY1keOor2=k=iDocKA0GoqYeOQ5r5p6vQ7efwCA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] arm: Move arm over to generic on_each_cpu_mask
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>
+To: Zac Storer <zac.3.14159@gmail.com>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Drivers: video: controlfb: fixed a brace coding style
+ issue
+References: <1321590896-8249-1-git-send-email-zac.3.14159@gmail.com>
+In-Reply-To: <1321590896-8249-1-git-send-email-zac.3.14159@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/18/2011 04:34 AM, Zac Storer wrote:
+> Fixed a brace coding style issue.
+> 
+> Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
 
-On Tue, Nov 22, 2011 at 11:00 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Nov 22, 2011 at 01:08:45PM +0200, Gilad Ben-Yossef wrote:
->> -static void on_each_cpu_mask(void (*func)(void *), void *info, int wait,
->> -     const struct cpumask *mask)
->> -{
->> -     preempt_disable();
->> -
->> -     smp_call_function_many(mask, func, info, wait);
->> -     if (cpumask_test_cpu(smp_processor_id(), mask))
->> -             func(info);
->> -
->> -     preempt_enable();
->> -}
->
-> What hasn't been said in the descriptions (I couldn't find it) is that
-> there's a semantic change between the new generic version and this version -
-> that is, we run the function with IRQs disabled on the local CPU, whereas
-> the version above runs it with IRQs potentially enabled.
->
-> Luckily, for TLB flushing this is probably not a problem, but it's
-> something that should've been pointed out in the patch description.
+Applied.
 
-Thank you for the review!
-
-You are very right that I should have mentioned it in the description.
-My apologies for missing that bit.
-
-My reasoning for why the change is OK is that the function passed is
-ready to run with interrupt disabled because this is how it will be
-called on all the other CPUs through the IPI handler so it is safe.
-This is also how the generic  on_each_cpu() handles it.
-
-Have I missed something? if not will you like me to update the patch
-description and re-send?
 
 Thanks,
-Gilad
 
+Florian Tobias Schandinat
 
+> ---
+>  drivers/video/controlfb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/controlfb.c b/drivers/video/controlfb.c
+> index 7b2c40a..0c189b3 100644
+> --- a/drivers/video/controlfb.c
+> +++ b/drivers/video/controlfb.c
+> @@ -420,7 +420,7 @@ static int __init init_control(struct fb_info_control *p)
+>  
+>  	/* Try to pick a video mode out of NVRAM if we have one. */
+>  #ifdef CONFIG_NVRAM
+> -	if (default_cmode == CMODE_NVRAM){
+> +	if (default_cmode == CMODE_NVRAM) {
+>  		cmode = nvram_read_byte(NV_CMODE);
+>  		if(cmode < CMODE_8 || cmode > CMODE_32)
+>  			cmode = CMODE_8;
 
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
