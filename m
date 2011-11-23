@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab1KWAmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:42:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43069 "EHLO mx2.suse.de"
+	id S1759543Ab1KWApx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:45:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43077 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759432Ab1KWAm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:42:29 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
-Message-Id: <20111123002407.515933790@clark.kroah.org>
+	id S1759440Ab1KWAmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:42:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:09 2011
+Message-Id: <20111123002409.275882789@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:38 -0800
+Date: Tue, 22 Nov 2011 16:23:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [31/53] USB: XHCI: resume root hubs when the controller resumes
+        alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Alex Elder <aelder@sgi.com>, Ben Myers <bpm@sgi.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: [50/53] xfs: use doalloc flag in xfs_qm_dqattach_one()
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
 
-commit f69e3120df82391a0ee8118e0a156239a06b2afb upstream.
+commit db3e74b582915d66e10b0c73a62763418f54c340 upstream
 
-This patch (as1494) fixes a problem in xhci-hcd's resume routine.
-When the controller is runtime-resumed, this can only mean that one of
-the two root hubs has made a wakeup request and therefore needs to be
-resumed as well.  Rather than try to determine which root hub requires
-attention (which might be difficult in the case where a new
-non-SuperSpeed device has been plugged in), the patch simply resumes
-both root hubs.
+The doalloc arg in xfs_qm_dqattach_one() is a flag that indicates
+whether a new area to handle quota information will be allocated
+if needed. Originally, it was passed to xfs_qm_dqget(), but has
+been removed by the following commit (probably by mistake):
 
-Without this change, there is a race: The controller might be put back
-to sleep before it can activate its IRQ line, and the wakeup condition
-might never get handled.
+	commit 8e9b6e7fa4544ea8a0e030c8987b918509c8ff47
+	Author: Christoph Hellwig <hch@lst.de>
+	Date:   Sun Feb 8 21:51:42 2009 +0100
 
-The patch also simplifies the logic in xhci_resume a little, combining
-some repeated flag settings into a single pair of statements.
+	xfs: remove the unused XFS_QMOPT_DQLOCK flag
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Linus Torvalds <torvalds@linux-foundation.org>
+As the result, xfs_qm_dqget() called from xfs_qm_dqattach_one()
+never allocates the new area even if it is needed.
+
+This patch gives the doalloc arg to xfs_qm_dqget() in
+xfs_qm_dqattach_one() to fix this problem.
+
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Alex Elder <aelder@sgi.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/usb/host/xhci.c |   29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ fs/xfs/quota/xfs_qm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -749,7 +749,7 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 	u32			command, temp = 0;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
--	int			retval;
-+	int			retval = 0;
- 
- 	/* Wait a bit if either of the roothubs need to settle from the
- 	 * transition into bus suspend.
-@@ -759,6 +759,9 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 				xhci->bus_state[1].next_statechange))
- 		msleep(100);
- 
-+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags);
-+
- 	spin_lock_irq(&xhci->lock);
- 	if (xhci->quirks & XHCI_RESET_ON_RESUME)
- 		hibernated = true;
-@@ -828,20 +831,13 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 			return retval;
- 		xhci_dbg(xhci, "Start the primary HCD\n");
- 		retval = xhci_run(hcd->primary_hcd);
--		if (retval)
--			goto failed_restart;
--
--		xhci_dbg(xhci, "Start the secondary HCD\n");
--		retval = xhci_run(secondary_hcd);
- 		if (!retval) {
--			set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--			set_bit(HCD_FLAG_HW_ACCESSIBLE,
--					&xhci->shared_hcd->flags);
-+			xhci_dbg(xhci, "Start the secondary HCD\n");
-+			retval = xhci_run(secondary_hcd);
- 		}
--failed_restart:
- 		hcd->state = HC_STATE_SUSPENDED;
- 		xhci->shared_hcd->state = HC_STATE_SUSPENDED;
--		return retval;
-+		goto done;
- 	}
- 
- 	/* step 4: set Run/Stop bit */
-@@ -860,11 +856,14 @@ failed_restart:
- 	 * Running endpoints by ringing their doorbells
+--- a/fs/xfs/quota/xfs_qm.c
++++ b/fs/xfs/quota/xfs_qm.c
+@@ -714,7 +714,8 @@ xfs_qm_dqattach_one(
+ 	 * disk and we didn't ask it to allocate;
+ 	 * ESRCH if quotas got turned off suddenly.
  	 */
- 
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags);
--
- 	spin_unlock_irq(&xhci->lock);
--	return 0;
-+
-+ done:
-+	if (retval == 0) {
-+		usb_hcd_resume_root_hub(hcd);
-+		usb_hcd_resume_root_hub(xhci->shared_hcd);
-+	}
-+	return retval;
- }
- #endif	/* CONFIG_PM */
+-	error = xfs_qm_dqget(ip->i_mount, ip, id, type, XFS_QMOPT_DOWARN, &dqp);
++	error = xfs_qm_dqget(ip->i_mount, ip, id, type,
++			     doalloc | XFS_QMOPT_DOWARN, &dqp);
+ 	if (error)
+ 		return error;
  
 
 
