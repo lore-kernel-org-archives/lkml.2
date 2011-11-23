@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab1KWRM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:12:57 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51110 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754361Ab1KWRM4 (ORCPT
+	id S1754940Ab1KWROF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:14:05 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13156 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab1KWROD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:12:56 -0500
-Date: Wed, 23 Nov 2011 17:12:53 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Afzal Mohammed <afzal@ti.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Regulator fix for 3.2
-Message-ID: <20111123171252.GH30049@opensource.wolfsonmicro.com>
+	Wed, 23 Nov 2011 12:14:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 23 Nov 2011 09:13:58 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Nov 2011 09:13:56 -0800
+Subject: RE: bug of gpio transition in pinmux driver
+Thread-Topic: bug of gpio transition in pinmux driver
+Thread-Index: Acyp4axiJuu++zGnRrW4O4PKta48IAAIWI9Q
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C6DC@HQMAIL01.nvidia.com>
+References: <CAN1soZyX-jJAw4UcQUkgaYC9YosB1znbcFwiijjkyvidPXgp4w@mail.gmail.com>
+In-Reply-To: <CAN1soZyX-jJAw4UcQUkgaYC9YosB1znbcFwiijjkyvidPXgp4w@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One driver-specific bugfix here for the TPS65910 regulators which fixes
-voltage setting for the VDD1 and VDD2 regulators on the device.  The
-commit itself was newly minted today but it's a cherry pick of a change
-which has been in -next for some time now, the change looks independant
-from code review and has been tested separately by Afzal.  
+Haojian Zhuang wrote at Wednesday, November 23, 2011 6:13 AM:
+> Hi Linus & Stephen,
+> 
+> There's a bug in pinmux driver. We can request gpio via
+> pinmux_request_gpio(@gpio). @gpio is the gpio number.
+> 
+> In pinmux_request_gpio():
+>     pin = @gpio - range->base;
+>     pin_request(pin);
+> 
+> This pin is the index of pinctrl_pin_desc[]. What's the definition of
+> pinctrl_pin_desc's index? It's the index of PAD, not GPIO. Since the
+> goal of pinmux_request_gpio() is to avoid define too much gpio groups.
+> We need to add the transition between gpio and pad. It's clear that
+> the transition of "pin = @gpio - range->base" can't fit every silicon.
 
-I'm sending the request as Liam is still not fully back on kernel.org as
-he's in the middle of some house renovations.
+> Especially, one gpio can be routed to two pads in PXA silicon.
 
-The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37:
+That particular case isn't really covered yet; we've been discussing how
+to solve that case; see:
 
-  Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
+https://lkml.org/lkml/2011/11/21/370
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git for-linus
+-- 
+nvpublic
 
-Afzal Mohammed (1):
-      regulator: TPS65910: Fix VDD1/2 voltage selector count
-
- drivers/regulator/tps65910-regulator.c |   14 ++++++++------
- include/linux/mfd/tps65910.h           |    3 ++-
- 2 files changed, 10 insertions(+), 7 deletions(-)
