@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1KWT0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 14:26:48 -0500
-Received: from home.keithp.com ([63.227.221.253]:49370 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753000Ab1KWT0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 14:26:47 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang\, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "dri-devel\@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3 v2] drm/i915: hot plug/unplug notification to HDMI audio driver
-In-Reply-To: <20111123082958.GA4209@localhost>
-References: <20111121063749.GA23450@localhost> <86hb1xife8.fsf@sumi.keithp.com> <20111122074055.GA21560@localhost> <86sjlgf20l.fsf@sumi.keithp.com> <20111123082958.GA4209@localhost>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 23 Nov 2011 11:26:49 -0800
-Message-ID: <86fwheej2e.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1756146Ab1KWT15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 14:27:57 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:55257 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754012Ab1KWT14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 14:27:56 -0500
+Subject: Re: [PATCH v5 10/10] x86, efi: EFI boot stub support
+From: Matt Fleming <matt@console-pimps.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <4ECC4207.3010607@gmail.com>
+References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>
+	 <1318848017-12301-11-git-send-email-matt@console-pimps.org>
+	 <4E9C8AAC.7080803@gmail.com>
+	 <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <4ECC4207.3010607@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Nov 2011 19:27:48 +0000
+Message-ID: <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2011-11-23 at 01:44 +0100, Maarten Lankhorst wrote:
+> When I tested this with v3.2-rc2 it didn't boot, it hung before it
+> initialized the kernel.
+> Without initrd it works fine, though.
 
-On Wed, 23 Nov 2011 16:29:58 +0800, Wu Fengguang <fengguang.wu@intel.com> w=
-rote:
+Bah, so this change actually makes booting worse? You said before that
+you almost made it to userspace but this seems to hang much earlier now.
+Is that correct?
 
-> What I need is a hot plug hook that knows whether the monitor is
-> plugged or removed, which is only possible if the hook is called
-> after ->detect().
+... back to the drawing board.
 
-That would be mode_set to tell you that the monitor is in use, and the
-disable function to tell you when the monitor is no longer in use.
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
-You do not want to do anything to the hardware in the hot_plug paths;
-those are strictly informative; telling user space which connectors are
-present.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTs1I+TYtFsjWk68qAQg9Ig//QaQYbkDtnBJxDDGunRl/mX8qrTXFc6KW
-racyqvW89/+Il5xDN379NA+73A04eHfAe9/JZNEO5WHJ5pyc1Oqmyt7nkBn7N2ps
-71fpCw7uHvQkZ427gxr3RqZIJz2YsVRoHSO2vNLRsFjqlymooVZJ9Gbz5Pe0/n39
-wt2hQmyFpL5IDNpk/PHjRFCPVHJL4uM+iSbZuTGBYAmcYb7w173iWej3Xt0TIKM+
-jEIufd25uxt0Z89aMNoAFQEuXUGbVXEfSbquFCxX/1fHq1/kDgw65ic3yceFegGB
-B5juEjSJupciLlIdo4spJX3gVGCI/ER1mlWUWAq+Zfw8XaJgMikBdehbykFFQpve
-U79xIdBqaK7ZvzzGhkQG5FA/XMMB4XMumCGDmlycSBE0NE5J9h6lRwmVKnvZXKSr
-D2ujPK8OhicnDVvD5jAfoxScX7nijeX1YR+QDRNTgHgW7HKBpXv08ZuW8Qc4jOEg
-vY9XV1oaqc7+GGRz42N5enkOfrpSWsBL/mT+0b0PchSnYVfyz9eI6qoSMurnK+IG
-CVCS7nnFC73CVz8dSUt2c+o8rd7Kqae+OBGhumekcpcXrOLox+1HLGt3ZmreDyxp
-9vHhpIgmq98b5GNu0+OkWN6Zx0xa4feATN7gTzzVcvDrRW+OSgeqdxp0cFlXh0uc
-SI1M3ToHmUw=
-=esq4
------END PGP SIGNATURE-----
---=-=-=--
