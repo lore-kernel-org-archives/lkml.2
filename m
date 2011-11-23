@@ -1,67 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab1KWKic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:38:32 -0500
-Received: from verein.lst.de ([213.95.11.211]:60613 "EHLO newverein.lst.de"
+	id S1753396Ab1KWKjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:39:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63511 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab1KWKia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:38:30 -0500
-Date: Wed, 23 Nov 2011 11:38:29 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, Matthew Wilcox <matthew@wil.cx>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 2/2] fs: wire up .truncate_range and .fallocate
-Message-ID: <20111123103829.GA23168@lst.de>
-References: <1322038412-29013-1-git-send-email-amwang@redhat.com> <1322038412-29013-2-git-send-email-amwang@redhat.com>
+	id S1750884Ab1KWKjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:39:15 -0500
+Date: Wed, 23 Nov 2011 16:08:52 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Miche Baker-Harvey <miche@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Anton Blanchard <anton@samba.org>, Mike Waychison <mikew@google.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Eric Northrup <digitaleric@google.com>
+Subject: Re: [PATCH v3 2/3] hvc_init(): Enforce one-time initialization.
+Message-ID: <20111123103852.GG16665@amit-x200.redhat.com>
+References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
+ <20111108214504.28884.61814.stgit@miche.sea.corp.google.com>
+ <874nybqo0o.fsf@rustcorp.com.au>
+ <CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1322038412-29013-2-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 04:53:31PM +0800, Cong Wang wrote:
-> +int vmtruncate_file_range(struct file *file, struct inode *inode,
-> +		     loff_t lstart, loff_t lend)
+On (Thu) 17 Nov 2011 [10:57:37], Miche Baker-Harvey wrote:
+> Rusty, Michael, Stephen, et al,
+> 
+> Thanks for your comments on these patches.
+> 
+> For what I'm trying to do, all three patches are necessary, but maybe
+> I'm going about it the wrong way. Your input would be appreciated.
+> I'm in no way claiming that these patches are "right", just that it's
+> working for me, and that what's in the current pool is not.
+> 
+> What I'm trying to do is:
+> On X86,
+> under KVM,
+> start a virtio console device,
+> with multiple ports on the device,
+> at least one of which is also a console (as well as ttyS0).
+> 
+> (Eventually, we want to be able to add virtio console ports on the
+> fly, and to have multiple virtio console ports be consoles.)
 
-We can always get the inode from file->f_path.dentry->d_inode, thus
-passing both of them doesn't make much sense.
+Are you using kvm-tool to do this?  QEMU can already hot-plug ports
+and virtio-console (virtio-serial) devices.
 
-> +	if (!file->f_op->fallocate)
->  		return -ENOSYS;
->  
->  	mutex_lock(&inode->i_mutex);
->  	inode_dio_wait(inode);
->  	unmap_mapping_range(mapping, holebegin, holelen, 1);
-> -	inode->i_op->truncate_range(inode, lstart, lend);
-> +	mutex_unlock(&inode->i_mutex);
-> +
-> +	err = do_fallocate(file, FALLOC_FL_KEEP_SIZE|FALLOC_FL_PUNCH_HOLE,
-> +		     holebegin, holelen);
-> +	if (err)
-> +		return err;
-> +
-> +	mutex_lock(&inode->i_mutex);
->  	/* unmap again to remove racily COWed private pages */
->  	unmap_mapping_range(mapping, holebegin, holelen, 1);
->  	mutex_unlock(&inode->i_mutex);
+> When all three of the patches are in place, this works great. (By
+> great, I mean that getty's start up on all of ttyS0, hvc0 and hvc1,
+> and console output goes to ttyS0 and to hvc0.
+> "who" shows three users:  ttyS0, hvc0, and hvc1.
+> "cat /proc/consoles" shows both ttyS0 and hvc0.
+> I can use all three getty's, and console output really does appear on
+> both the consoles.
+> 
+> Based on Rusty's comments, I tried removing each of the patches
+> individually. Here's what happens today. I've seen other failure modes
+> depending on what precisely I'm passing the guest.
+> There's three patches:
+> 1/3 "fix locking of vtermno"
+> 2/3 "enforce one-time initialization with hvc_init
+> "3/3 "use separate struct console * for each console"
+> 
+> If I remove the "fix locking of vtermno", I only get one virtio
+> console terminal.  "who" shows the ttyS0 and the hvc0, and I can log
+> into the gettys on both. I don't get the second virtio console getty.
+> Interestingly, hvc0 shows up in /proc/consoles twice, and in fact the
+> console output is dumped twice to hvc0 (as you'd expect from looking
+> at printk.c, each line appears twice, followed by the next line.)
 
-I suspect this should be turned inside out, just we do for normal
-truncate.  That is instead of keeping vmtruncate(_file)_range we
-should have a truncate_pagecache_range do to the actual zapping,
-closely mirroring what we do for truncate.  In the best case we'd
-even implement the regular truncate ones on top of the range version.
+I don't really understand why.  "fix locking of vtermno" adds locks in
+init_port_console(), which is called from add_port(), which should be
+serialised due to port additions being on work items on the same
+workqueue.  I don't see a race here.
 
-It also seems like all fallocate implementaions for far got away
-without the unmap_mapping_range, so either people didn't test them
-hard enough, or tmpfs doesn't need it either.  I fear the former
-is true.
+> If I remove the "enforce one-time initialization with hvc_init" patch,
+> which makes sure only a single thread is doing the hvc_init, and gates
+> anyone from continuing until it has completed, I get different
+> failures, including hangs, and dereferences of NULL pointers.
+> 
+> If I remove the "use separate struct console * for each console"patch,
+> what I'm seeing now is that while all of ttyS0, hvc0, and hvc1 are
+> present with gettys running on them, of the three, only ttyS0 is a
+> console.
 
+I don't see any difference in my testing with and without these
+patches.
+
+This is how I tested with qemu:
+
+./x86_64-softmmu/qemu-system-x86_64 -m 512 -smp 2 -chardev
+socket,path=/tmp/foo,server,nowait,id=foo -chardev
+socket,path=/tmp/bar,server,nowait,id=bar -device virtio-serial
+-device virtconsole,chardev=foo,nr=4 -device
+virtconsole,chardev=bar,nr=3 -net none  -kernel
+/home/amit/src/linux/arch/x86/boot/bzImage -append 'root=/dev/sda1
+console=tty0 console=ttyS0' -initrd /tmp/initramfs.img
+/guests/f14-nolvm.qcow2 -enable-kvm -snapshot
+
+With this setup, with and without patches, I can spawn two consoles
+via:
+
+/sbin/agetty /dev/hvc0 9600 vt100
+/sbin/agetty /dev/hvc1 9600 vt100
+
+(Strange thing is, the second one gives a 'password incorrect' error
+on login attempts, while the first one logs in fine.  I do remember
+testing multiple consoles just fine a year and a half back, so no idea
+why this isn't behaving as expected -- but it mostly looks like a
+userspace issue rather than kernel one.)
+
+As mentioned earlier, I've not looked at the hvc code, but given my
+testing results, I'd like to first understand what you're seeing and
+what your environment is.
+
+		Amit
