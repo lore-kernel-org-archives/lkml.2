@@ -1,135 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab1KWRvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:51:20 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37193 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab1KWRvS (ORCPT
+	id S1755560Ab1KWRxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:53:47 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59660 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab1KWRxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:51:18 -0500
-Date: Wed, 23 Nov 2011 09:51:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL pm/for-next] pm: freezer update
-Message-ID: <20111123175112.GE29639@google.com>
+	Wed, 23 Nov 2011 12:53:46 -0500
+Date: Wed, 23 Nov 2011 17:53:21 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Jason Baron <jbaron@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: add jump label support
+Message-ID: <20111123175321.GI9581@n2100.arm.linux.org.uk>
+References: <1321888429-3519-1-git-send-email-rabin@rab.in> <1321888429-3519-4-git-send-email-rabin@rab.in> <20111122194213.GC9581@n2100.arm.linux.org.uk> <4ECC2A07.8050701@codeaurora.org> <20111122233949.GA24453@redhat.com> <20111122235041.GB24453@redhat.com> <20111123145509.GA4973@debian>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111123145509.GA4973@debian>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
+On Wed, Nov 23, 2011 at 08:25:09PM +0530, Rabin Vincent wrote:
+> Here's a patch.  Atleast on MIPS %c means something else so I had to
+> ifdef it for ARM:
+> 
+> 8<----------------------------
+> >From ea211ce77e0ea9c5b8cd32b99bfb24e0140f0068 Mon Sep 17 00:00:00 2001
+> From: Rabin Vincent <rabin@rab.in>
+> Date: Wed, 23 Nov 2011 20:05:09 +0530
+> Subject: [PATCH] jump label: detect %c support for ARM
+> 
+> Some versions of ARM GCC don't support the %c specifier fully, but do
+> support asm goto.  Since we need the %c to support jump labels on ARM,
+> detect that too in the asm goto detection script to avoid build errors
+> with these versions.
+> 
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
+> 
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> ---
+>  scripts/gcc-goto.sh |   18 +++++++++++++++++-
+>  1 files changed, 17 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
+> index 98cffcb..9b744de 100644
+> --- a/scripts/gcc-goto.sh
+> +++ b/scripts/gcc-goto.sh
+> @@ -2,4 +2,20 @@
+>  # Test for gcc 'asm goto' support
+>  # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
+>  
+> -echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+> +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+> +int main(void)
+> +{
+> +#ifdef __arm__
+> +	/*
+> +	 * Not related to asm goto, but used by jump label
+> +	 * and broken on some ARM GCC versions (see GCC Bug 48637).
+> +	 */
+> +	static struct { int dummy; int state; } tp;
+> +	asm ("@ %c0" :: "i" (&tp.state));
+> +#endif
+> +
+> +entry:
+> +	asm goto ("" :::: entry);
+> +	return 0;
+> +}
+> +END
 
-This is pull request for the following pending patches[ets].  Let's
-see if it sticks this time. :)
-
- [1] freezer: fix various bugs and simplify implementation, take#2
- [2] usb_storage: don't use set_freezable_with_signal()
- [3] dmatest: don't use set_freezable_with_signal()
- [4] freezer: kill unused set_freezable_with_signal()
- [5] freezer: fix wait_event_freezable/__thaw_task races
-
-The patches are available in the git repository at:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer
-
-Oleg Nesterov (1):
-      freezer: fix wait_event_freezable/__thaw_task races
-
-Tejun Heo (23):
-      freezer: fix current->state restoration race in refrigerator()
-      freezer: don't unnecessarily set PF_NOFREEZE explicitly
-      freezer: unexport refrigerator() and update try_to_freeze() slightly
-      freezer: implement and use kthread_freezable_should_stop()
-      freezer: rename thaw_process() to __thaw_task() and simplify the implementation
-      freezer: remove racy clear_freeze_flag() and set PF_NOFREEZE on dead tasks
-      freezer: don't distinguish nosig tasks on thaw
-      freezer: use dedicated lock instead of task_lock() + memory barrier
-      freezer: make freezing indicate freeze condition in effect
-      freezer: test freezable conditions while holding freezer_lock
-      freezer: kill PF_FREEZING
-      freezer: clean up freeze_processes() failure path
-      cgroup_freezer: prepare for removal of TIF_FREEZE
-      freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE
-      freezer: remove now unused TIF_FREEZE
-      freezer: remove should_send_signal() and update frozen()
-      freezer: fix set_freezable[_with_signal]() race
-      freezer: restructure __refrigerator()
-      freezer: use lock_task_sighand() in fake_signal_wake_up()
-      freezer: remove unused @sig_only from freeze_task()
-      usb_storage: don't use set_freezable_with_signal()
-      dmatest: don't use set_freezable_with_signal()
-      freezer: kill unused set_freezable_with_signal()
-
- Documentation/power/freezing-of-tasks.txt |   14 +-
- arch/alpha/include/asm/thread_info.h      |    2 -
- arch/arm/include/asm/thread_info.h        |    2 -
- arch/avr32/include/asm/thread_info.h      |    2 -
- arch/blackfin/include/asm/thread_info.h   |    2 -
- arch/cris/include/asm/thread_info.h       |    2 -
- arch/frv/include/asm/thread_info.h        |    2 -
- arch/h8300/include/asm/thread_info.h      |    2 -
- arch/ia64/include/asm/thread_info.h       |    2 -
- arch/m32r/include/asm/thread_info.h       |    2 -
- arch/m68k/include/asm/thread_info.h       |    1 -
- arch/microblaze/include/asm/thread_info.h |    2 -
- arch/mips/include/asm/thread_info.h       |    2 -
- arch/mn10300/include/asm/thread_info.h    |    2 -
- arch/parisc/include/asm/thread_info.h     |    2 -
- arch/powerpc/include/asm/thread_info.h    |    2 -
- arch/s390/include/asm/thread_info.h       |    2 -
- arch/sh/include/asm/thread_info.h         |    2 -
- arch/sparc/include/asm/thread_info_32.h   |    2 -
- arch/sparc/include/asm/thread_info_64.h   |    2 -
- arch/um/include/asm/thread_info.h         |    2 -
- arch/unicore32/include/asm/thread_info.h  |    2 -
- arch/x86/include/asm/thread_info.h        |    2 -
- arch/xtensa/include/asm/thread_info.h     |    2 -
- drivers/bluetooth/btmrvl_main.c           |    2 -
- drivers/dma/dmatest.c                     |   46 ++++---
- drivers/mfd/twl6030-irq.c                 |    2 -
- drivers/net/irda/stir4200.c               |    2 +-
- drivers/platform/x86/thinkpad_acpi.c      |   15 +--
- drivers/staging/rts_pstor/rtsx.c          |    2 -
- drivers/usb/storage/usb.c                 |   13 +-
- fs/btrfs/async-thread.c                   |    2 +-
- fs/btrfs/disk-io.c                        |    8 +-
- fs/ext4/super.c                           |    3 +-
- fs/fs-writeback.c                         |    4 +-
- fs/gfs2/log.c                             |    4 +-
- fs/gfs2/quota.c                           |    4 +-
- fs/jbd/journal.c                          |    2 +-
- fs/jbd2/journal.c                         |    2 +-
- fs/jfs/jfs_logmgr.c                       |    2 +-
- fs/jfs/jfs_txnmgr.c                       |    4 +-
- fs/nilfs2/segment.c                       |    2 +-
- fs/xfs/xfs_buf.c                          |    2 +-
- include/linux/freezer.h                   |  108 ++++++----------
- include/linux/kthread.h                   |    1 +
- include/linux/sched.h                     |    4 +-
- kernel/cgroup_freezer.c                   |   63 ++++-----
- kernel/exit.c                             |    3 +-
- kernel/fork.c                             |    1 -
- kernel/freezer.c                          |  203 +++++++++++++++--------------
- kernel/kthread.c                          |   27 ++++-
- kernel/power/hibernate.c                  |   15 +--
- kernel/power/process.c                    |   77 +++++-------
- kernel/power/suspend.c                    |    8 +-
- kernel/power/user.c                       |    4 +-
- mm/backing-dev.c                          |    8 +-
- mm/oom_kill.c                             |    2 +-
- 57 files changed, 303 insertions(+), 401 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1209247
-[2] http://thread.gmane.org/gmane.linux.kernel/1209416
-[3] https://lkml.org/lkml/2011/11/21/352
-[4] http://thread.gmane.org/gmane.linux.kernel/1209416/focus=1209417
-[5] http://thread.gmane.org/gmane.linux.kernel/1209444
+Is the presence of asm goto and %c something we want to test together or
+separately?  I suspect it's something we want to do separately.
