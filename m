@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab1KWRjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:39:51 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45692 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab1KWRju (ORCPT
+	id S1755498Ab1KWRj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:39:56 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61526 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab1KWRjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:39:50 -0500
-Date: Wed, 23 Nov 2011 23:09:31 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Dave Anderson <anderson@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch 1/2][slimdump] Append CRASH_REASON to VMCOREINFO
- elf-note
-Message-ID: <20111123173930.GC2515@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20111121101157.GA10194@in.ibm.com>
- <36c0c64c-9ccb-44a0-a81c-1071604cbdec@zmail15.collab.prod.int.phx2.redhat.com>
+	Wed, 23 Nov 2011 12:39:53 -0500
+Date: Wed, 23 Nov 2011 09:39:47 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] dmatest: don't use set_freezable_with_signal()
+Message-ID: <20111123173947.GD29639@google.com>
+References: <20111121184316.GH15314@google.com>
+ <CABE8wwu-ZH47tFkaEmYfWtXzgeR9KmEWXbtXD5FEQc3R9tV7aQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <36c0c64c-9ccb-44a0-a81c-1071604cbdec@zmail15.collab.prod.int.phx2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11112308-3568-0000-0000-000000C5D604
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABE8wwu-ZH47tFkaEmYfWtXzgeR9KmEWXbtXD5FEQc3R9tV7aQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:19:31AM -0500, Dave Anderson wrote:
-> 
-> 
-> ----- Original Message -----
-> > Allow various crash paths to append the reason of crash into the
-> > VMCOREINFO elf-note through the field CRASH_REASON. We also make the
-> > fatal machine check exceptions append "PANIC_MCE" as the crash
-> > reason.  This string will be recognised by upstream tools like makedumpfile and
-> > crash to generate slimdump.
-> 
-> I don't understand -- how could "various paths" append a reason?
-> The patch below seems to return "PANIC_MCE" for every x86 crash.
-> What am I missing?
-> 
-> Dave
-> 
+Hello,
 
-Yes, presently it can only be "PANIC_MCE" for MCE crashes in x86 (not
-for every crash though).
+On Tue, Nov 22, 2011 at 11:48:07PM -0800, Williams, Dan J wrote:
+> > Guennadi, Dan, how does this look?  If it's okay, do you guys mind
+> > routing this through pm tree?  I have some patches stacked on top
+> > removal of freezable_with_signal and it would be much easier to route
+> > these together.
+> >
+> > Thank you.
+> 
+> Acked-by: Dan Williams <dan.j.williams@intel.com>
+> 
+> (for the revised commit a75ca055 on
+> git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer)
 
-With increased usage, we should move this code to a generic location and
-let each of these crash paths return a string to be appended. In fact it
-doesn't have to be a string for CRASH_REASON but just an encoding of the
-various crash types into numbers. User-space tools could then do a lookup
-for getting the right crash string.
+Awesome, will add Acked-by and push it to Rafael.
 
-Thanks,
-K.Prasad
+Thank you.
 
+-- 
+tejun
