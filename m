@@ -1,67 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566Ab1KWBqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:46:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44900 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab1KWBqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 20:46:09 -0500
-Date: Tue, 22 Nov 2011 17:46:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] trace_events_filter: use rcu_assign_pointer() when
- setting ftrace_event_call->filter
-Message-ID: <20111123014603.GA19630@google.com>
+	id S1759589Ab1KWBrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:47:23 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:4726 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754288Ab1KWBrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 20:47:21 -0500
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Message-ID: <4ECC5097.2050908@broadcom.com>
+Date: Tue, 22 Nov 2011 17:47:03 -0800
+From: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.24)
+ Gecko/20111103 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Joe Perches" <joe@perches.com>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bnx2fc: Reduce object size by consolidating formats
+References: <fe83ffc5f085b65765262b3c5c74740eb82c9442.1321738492.git.joe@perches.com>
+In-Reply-To: <fe83ffc5f085b65765262b3c5c74740eb82c9442.1321738492.git.joe@perches.com>
+X-WSS-ID: 62D28DCC3IW7226031-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ftrace_event_call->filter is sched RCU protected but didn't use
-rcu_assign_pointer().  Fix it.
+On 11/19/2011 1:35 PM, Joe Perches wrote:
+> Deduplication of formats and consolidating tests
+> makes the object much smaller.
+>
+> Add bnx2fc_debug.c, add functions for a few logging
+> functions (BNX2FC_IO_DBG, BNX2FC_TGT_DBG, BNX2FC_HBA_DBG).
+> Use printf extension %pV.
+> Add and use pr_fmt and pr_<level>.
+> Move the debug #include below structure definitions.
+>
+> $ size drivers/scsi/bnx2fc/built-in.o*
+>     text	   data	    bss	    dec	    hex	filename
+>   101563	   1165	  24976	 127704	  1f2d8	drivers/scsi/bnx2fc/built-in.o.new
+>   138473	   1109	  33400	 172982	  2a3b6	drivers/scsi/bnx2fc/built-in.o.old
+>
+> Signed-off-by: Joe Perches<joe@perches.com>
+Thanks Joe.
 
-TODO: Add proper __rcu annotation to call->filter and all its users.
+Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/trace/trace_events_filter.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> ---
+>   drivers/scsi/bnx2fc/Makefile       |    3 +-
+>   drivers/scsi/bnx2fc/bnx2fc.h       |    6 ++-
+>   drivers/scsi/bnx2fc/bnx2fc_debug.c |   70 ++++++++++++++++++++++++++++++++++
+>   drivers/scsi/bnx2fc/bnx2fc_debug.h |   73 +++++++++---------------------------
+>   4 files changed, 95 insertions(+), 57 deletions(-)
+>   create mode 100644 drivers/scsi/bnx2fc/bnx2fc_debug.c
+>
+> diff --git a/drivers/scsi/bnx2fc/Makefile b/drivers/scsi/bnx2fc/Makefile
+> index a92695a..141149e 100644
+> --- a/drivers/scsi/bnx2fc/Makefile
+> +++ b/drivers/scsi/bnx2fc/Makefile
+> @@ -1,3 +1,4 @@
+>   obj-$(CONFIG_SCSI_BNX2X_FCOE) += bnx2fc.o
+>
+> -bnx2fc-y := bnx2fc_els.o bnx2fc_fcoe.o bnx2fc_hwi.o bnx2fc_io.o bnx2fc_tgt.o
+> +bnx2fc-y := bnx2fc_els.o bnx2fc_fcoe.o bnx2fc_hwi.o bnx2fc_io.o bnx2fc_tgt.o \
+> +	    bnx2fc_debug.o
+> diff --git a/drivers/scsi/bnx2fc/bnx2fc.h b/drivers/scsi/bnx2fc/bnx2fc.h
+> index 049ea90..8fbf44f 100644
+> --- a/drivers/scsi/bnx2fc/bnx2fc.h
+> +++ b/drivers/scsi/bnx2fc/bnx2fc.h
+> @@ -11,6 +11,8 @@
+>    * Written by: Bhanu Prakash Gollapudi (bprakash@broadcom.com)
+>    */
+>
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>   #include<linux/module.h>
+>   #include<linux/moduleparam.h>
+>   #include<linux/kernel.h>
+> @@ -57,7 +59,6 @@
+>   #include<scsi/fc/fc_fcp.h>
+>
+>   #include "57xx_hsi_bnx2fc.h"
+> -#include "bnx2fc_debug.h"
+>   #include "../../net/ethernet/broadcom/cnic_if.h"
+>   #include "bnx2fc_constants.h"
+>
+> @@ -547,4 +548,7 @@ void bnx2fc_process_seq_cleanup_compl(struct bnx2fc_cmd *seq_clnup_req,
+>   int bnx2fc_initiate_seq_cleanup(struct bnx2fc_cmd *orig_io_req, u32 offset,
+>   				enum fc_rctl r_ctl);
+>
+> +
+> +#include "bnx2fc_debug.h"
+> +
+>   #endif
+> diff --git a/drivers/scsi/bnx2fc/bnx2fc_debug.c b/drivers/scsi/bnx2fc/bnx2fc_debug.c
+> new file mode 100644
+> index 0000000..0cbee1b
+> --- /dev/null
+> +++ b/drivers/scsi/bnx2fc/bnx2fc_debug.c
+> @@ -0,0 +1,70 @@
+> +#include "bnx2fc.h"
+> +
+> +void BNX2FC_IO_DBG(const struct bnx2fc_cmd *io_req, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +
+> +	if (likely(!(bnx2fc_debug_level&  LOG_IO)))
+> +		return;
+> +
+> +	va_start(args, fmt);
+> +
+> +	vaf.fmt = fmt;
+> +	vaf.va =&args;
+> +
+> +	if (io_req&&  io_req->port&&  io_req->port->lport&&
+> +	    io_req->port->lport->host)
+> +		shost_printk(KERN_INFO, io_req->port->lport->host,
+> +			     PFX "xid:0x%x %pV",
+> +			     io_req->xid,&vaf);
+> +	else
+> +		pr_info("NULL %pV",&vaf);
+> +
+> +	va_end(args);
+> +}
+> +
+> +void BNX2FC_TGT_DBG(const struct bnx2fc_rport *tgt, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +
+> +	if (likely(!(bnx2fc_debug_level&  LOG_TGT)))
+> +		return;
+> +
+> +	va_start(args, fmt);
+> +
+> +	vaf.fmt = fmt;
+> +	vaf.va =&args;
+> +
+> +	if (tgt&&  tgt->port&&  tgt->port->lport&&  tgt->port->lport->host&&
+> +	    tgt->rport)
+> +		shost_printk(KERN_INFO, tgt->port->lport->host,
+> +			     PFX "port:%x %pV",
+> +			     tgt->rport->port_id,&vaf);
+> +	else
+> +		pr_info("NULL %pV",&vaf);
+> +
+> +	va_end(args);
+> +}
+> +
+> +void BNX2FC_HBA_DBG(const struct fc_lport *lport, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +
+> +	if (likely(!(bnx2fc_debug_level&  LOG_HBA)))
+> +		return;
+> +
+> +	va_start(args, fmt);
+> +
+> +	vaf.fmt = fmt;
+> +	vaf.va =&args;
+> +
+> +	if (lport&&  lport->host)
+> +		shost_printk(KERN_INFO, lport->host, PFX "%pV",&vaf);
+> +	else
+> +		pr_info("NULL %pV",&vaf);
+> +
+> +	va_end(args);
+> +}
+> diff --git a/drivers/scsi/bnx2fc/bnx2fc_debug.h b/drivers/scsi/bnx2fc/bnx2fc_debug.h
+> index 3416d9a..4808ff9 100644
+> --- a/drivers/scsi/bnx2fc/bnx2fc_debug.h
+> +++ b/drivers/scsi/bnx2fc/bnx2fc_debug.h
+> @@ -11,60 +11,23 @@
+>
+>   extern unsigned int bnx2fc_debug_level;
+>
+> -#define BNX2FC_CHK_LOGGING(LEVEL, CMD)					\
+> -	do {								\
+> -		if (unlikely(bnx2fc_debug_level&  LEVEL))		\
+> -			do {						\
+> -				CMD;					\
+> -			} while (0);					\
+> -	} while (0)
+> -
+> -#define BNX2FC_ELS_DBG(fmt, arg...)					\
+> -	BNX2FC_CHK_LOGGING(LOG_ELS,					\
+> -			   printk(KERN_INFO PFX fmt, ##arg))
+> -
+> -#define BNX2FC_MISC_DBG(fmt, arg...)					\
+> -	BNX2FC_CHK_LOGGING(LOG_MISC,					\
+> -			   printk(KERN_INFO PFX fmt, ##arg))
+> -
+> -#define BNX2FC_IO_DBG(io_req, fmt, arg...)				\
+> -	do {								\
+> -		if (!io_req || !io_req->port || !io_req->port->lport ||	\
+> -		    !io_req->port->lport->host)				\
+> -			BNX2FC_CHK_LOGGING(LOG_IO,			\
+> -			   printk(KERN_INFO PFX "NULL " fmt, ##arg));	\
+> -		else							\
+> -			BNX2FC_CHK_LOGGING(LOG_IO,			\
+> -			   shost_printk(KERN_INFO,			\
+> -				   (io_req)->port->lport->host,		\
+> -				   PFX "xid:0x%x " fmt,			\
+> -				   (io_req)->xid, ##arg));		\
+> -	} while (0)
+> -
+> -#define BNX2FC_TGT_DBG(tgt, fmt, arg...)				\
+> -	do {								\
+> -		if (!tgt || !tgt->port || !tgt->port->lport ||		\
+> -		    !tgt->port->lport->host || !tgt->rport)		\
+> -			BNX2FC_CHK_LOGGING(LOG_TGT,			\
+> -			   printk(KERN_INFO PFX "NULL " fmt, ##arg));	\
+> -		else							\
+> -			BNX2FC_CHK_LOGGING(LOG_TGT,			\
+> -			   shost_printk(KERN_INFO,			\
+> -				   (tgt)->port->lport->host,		\
+> -				   PFX "port:%x " fmt,			\
+> -				   (tgt)->rport->port_id, ##arg));	\
+> -	} while (0)
+> -
+> -
+> -#define BNX2FC_HBA_DBG(lport, fmt, arg...)				\
+> -	do {								\
+> -		if (!lport || !lport->host)				\
+> -			BNX2FC_CHK_LOGGING(LOG_HBA,			\
+> -			   printk(KERN_INFO PFX "NULL " fmt, ##arg));	\
+> -		else							\
+> -			BNX2FC_CHK_LOGGING(LOG_HBA,			\
+> -			   shost_printk(KERN_INFO, lport->host,	\
+> -				   PFX fmt, ##arg));			\
+> -	} while (0)
+> +#define BNX2FC_ELS_DBG(fmt, ...)				\
+> +do {								\
+> +	if (unlikely(bnx2fc_debug_level&  LOG_ELS))		\
+> +		pr_info(fmt, ##__VA_ARGS__);			\
+> +} while (0)
+> +
+> +#define BNX2FC_MISC_DBG(fmt, ...)				\
+> +do {								\
+> +	if (unlikely(bnx2fc_debug_level&  LOG_MISC))		\
+> +		pr_info(fmt, ##__VA_ARGS__);			\
+> +} while (0)
+> +
+> +__printf(2, 3)
+> +void BNX2FC_IO_DBG(const struct bnx2fc_cmd *io_req, const char *fmt, ...);
+> +__printf(2, 3)
+> +void BNX2FC_TGT_DBG(const struct bnx2fc_rport *tgt, const char *fmt, ...);
+> +__printf(2, 3)
+> +void BNX2FC_HBA_DBG(const struct fc_lport *lport, const char *fmt, ...);
+>
+>   #endif
 
-Index: work/kernel/trace/trace_events_filter.c
-===================================================================
---- work.orig/kernel/trace/trace_events_filter.c
-+++ work/kernel/trace/trace_events_filter.c
-@@ -1686,7 +1686,7 @@ static int replace_system_preds(struct e
- 		 * replace the filter for the call.
- 		 */
- 		filter = call->filter;
--		call->filter = filter_item->filter;
-+		rcu_assign_pointer(call->filter, filter_item->filter);
- 		filter_item->filter = filter;
- 
- 		fail = false;
-@@ -1741,7 +1741,7 @@ int apply_event_filter(struct ftrace_eve
- 		filter = call->filter;
- 		if (!filter)
- 			goto out_unlock;
--		call->filter = NULL;
-+		rcu_assign_pointer(call->filter, NULL);
- 		/* Make sure the filter is not being used */
- 		synchronize_sched();
- 		__free_filter(filter);
-@@ -1782,7 +1782,7 @@ out:
- 	 * string
- 	 */
- 	tmp = call->filter;
--	call->filter = filter;
-+	rcu_assign_pointer(call->filter, filter);
- 	if (tmp) {
- 		/* Make sure the call is done with the filter */
- 		synchronize_sched();
+
