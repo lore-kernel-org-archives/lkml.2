@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab1KWPWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:22:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53934 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756248Ab1KWPWn (ORCPT
+	id S1756555Ab1KWPXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:23:21 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44378 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248Ab1KWPXU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:22:43 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] watchdog: Convert Wolfson drivers to module_platform_driver
-Date: Wed, 23 Nov 2011 15:22:36 +0000
-Message-Id: <1322061756-29942-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 23 Nov 2011 10:23:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111123150810.GO19415@suse.de>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+	<1321900608-27687-8-git-send-email-mgorman@suse.de>
+	<1321945011.22361.335.camel@sli10-conroe>
+	<CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
+	<20111123110041.GM19415@suse.de>
+	<CAPQyPG588_q1diT8KyPirUD9MLME6SanO-cSw1twzhFiTBWgCw@mail.gmail.com>
+	<20111123134512.GN19415@suse.de>
+	<CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
+	<20111123150810.GO19415@suse.de>
+Date: Wed, 23 Nov 2011 23:23:19 +0800
+Message-ID: <CAPQyPG58cjEQ8jPFhxGB6URcFoNt=NBC1L+T8aEWVUtPfBNh-Q@mail.gmail.com>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+From: Nai Xia <nai.xia@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factors out some boilerplate code.
+On Wed, Nov 23, 2011 at 11:08 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Wed, Nov 23, 2011 at 10:35:37PM +0800, Nai Xia wrote:
+>> On Wed, Nov 23, 2011 at 9:45 PM, Mel Gorman <mgorman@suse.de> wrote:
+>> > On Wed, Nov 23, 2011 at 09:05:08PM +0800, Nai Xia wrote:
+>> >> > <SNIP>
+>> >> >
+>> >> > Where are you adding this check?
+>> >> >
+>> >> > If you mean in __unmap_and_move(), the check is unnecessary unless
+>> >> > another subsystem starts using sync-light compaction. With this series,
+>> >> > only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
+>> >>
+>> >> But I am still a little bit confused that if MIGRATE_SYNC_LIGHT is only
+>> >> used by direct compaction and  another mode can be used by it:
+>> >> MIGRATE_ASYNC also does not write dirty pages, then why not also
+>> >> do an (current->flags & PF_MEMALLOC) test before writing out pages,
+>> >
+>> > Why would it be necessary?
+>> > Why would it be better than what is there now?
+>>
+>> I mean, if
+>>    MIGRATE_SYNC_LIGHT --> (current->flags & PF_MEMALLOC) and
+>>    MIGRATE_SYNC_LIGHT --> no dirty writeback, and (current->flags & PF_MEMALLOC)
+>>                       --> (MIGRATE_SYNC_LIGHT || MIGRATE_ASYNC)
+>>    MIGRATE_ASYNC      --> no dirty writeback, then
+>> why not simply  (current->flags & PF_MEMALLOC) ---> no dirty writeback
+>> and keep the sync meaning as it was?
+>>
+>
+> Ok, I see what you mean. Instead of making MIGRATE_SYNC_LIGHT part of
+> the API, we could instead special case within migrate.c how to behave if
+> MIGRATE_SYNC && PF_MEMALLOC.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/watchdog/wm831x_wdt.c |   12 +-----------
- drivers/watchdog/wm8350_wdt.c |   12 +-----------
- 2 files changed, 2 insertions(+), 22 deletions(-)
+Yeah~
 
-diff --git a/drivers/watchdog/wm831x_wdt.c b/drivers/watchdog/wm831x_wdt.c
-index e789a47..beb3ad2 100644
---- a/drivers/watchdog/wm831x_wdt.c
-+++ b/drivers/watchdog/wm831x_wdt.c
-@@ -320,17 +320,7 @@ static struct platform_driver wm831x_wdt_driver = {
- 	},
- };
- 
--static int __init wm831x_wdt_init(void)
--{
--	return platform_driver_register(&wm831x_wdt_driver);
--}
--module_init(wm831x_wdt_init);
--
--static void __exit wm831x_wdt_exit(void)
--{
--	platform_driver_unregister(&wm831x_wdt_driver);
--}
--module_exit(wm831x_wdt_exit);
-+module_platform_driver(wm831x_wdt_driver);
- 
- MODULE_AUTHOR("Mark Brown");
- MODULE_DESCRIPTION("WM831x Watchdog");
-diff --git a/drivers/watchdog/wm8350_wdt.c b/drivers/watchdog/wm8350_wdt.c
-index b68d928..909c786 100644
---- a/drivers/watchdog/wm8350_wdt.c
-+++ b/drivers/watchdog/wm8350_wdt.c
-@@ -311,17 +311,7 @@ static struct platform_driver wm8350_wdt_driver = {
- 	},
- };
- 
--static int __init wm8350_wdt_init(void)
--{
--	return platform_driver_register(&wm8350_wdt_driver);
--}
--module_init(wm8350_wdt_init);
--
--static void __exit wm8350_wdt_exit(void)
--{
--	platform_driver_unregister(&wm8350_wdt_driver);
--}
--module_exit(wm8350_wdt_exit);
-+module_platform_driver(wm8350_wdt_driver);
- 
- MODULE_AUTHOR("Mark Brown");
- MODULE_DESCRIPTION("WM8350 Watchdog");
--- 
-1.7.7.3
+>
+> This would be functionally equivalent and satisfy THP users
+> but I do not see it as being easier to understand or easier
+> to maintain than updating the API. If someone in the future
+> wanted to use migration without significant stalls without
+> being PF_MEMALLOC, they would need to update the API like this.
+> There are no users like this today but automatic NUMA migration
+> might want to leverage something like MIGRATE_SYNC_LIGHT
+> (http://comments.gmane.org/gmane.linux.kernel.mm/70239)
 
+I see.
+So could I say that might be the time and users for my suggestion of
+page uptodate check to fit into?
+
+
+
+Thanks,
+
+Nai
+>
+> --
+> Mel Gorman
+> SUSE Labs
+>
