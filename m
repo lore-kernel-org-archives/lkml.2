@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab1KWOrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 09:47:00 -0500
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:33083 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab1KWOq5 (ORCPT
+	id S1756124Ab1KWOs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 09:48:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54772 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab1KWOs0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 09:46:57 -0500
-Date: Wed, 23 Nov 2011 15:46:53 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: wim@iguana.be, broonie@opensource.wolfsonmicro.com
-Cc: w.sang@pengutronix.de, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, HaraldWelte@viatech.com
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <4ecd075d.2YyTTCA13zxwZmwT%marc.vertes@sigfox.com>
-References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
- <20111122112212.GD2734@pengutronix.de>
- <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
- <20111122173227.GK6624@sirena.org.uk>
- <20111122184051.GA30941@pengutronix.de>
- <4eccc3f0.iApQ//mCzaN3UsrB%marc.vertes@sigfox.com>
- <20111123104926.GB4063@pengutronix.de>
- <20111123121329.GM23376@infomag.iguana.be>
- <20111123122018.GA12227@opensource.wolfsonmicro.com>
- <20111123124037.GN23376@infomag.iguana.be>
-In-Reply-To: <20111123124037.GN23376@infomag.iguana.be>
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 530580333029738287
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucculddquddttddm
+	Wed, 23 Nov 2011 09:48:26 -0500
+Message-ID: <1322059696.14799.68.camel@twins>
+Subject: Re: [patch 3/7] sched: set skip_clock_update in yield_task_fair()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Date: Wed, 23 Nov 2011 15:48:16 +0100
+In-Reply-To: <1321971686.6855.18.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629441.7080.15.camel@marge.simson.net>
+	 <1321630552.2197.15.camel@twins>
+	 <1321971445.6855.14.camel@marge.simson.net>
+	 <1321971686.6855.18.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wim Van Sebroeck <wim@iguana.be> wrote:
+On Tue, 2011-11-22 at 15:21 +0100, Mike Galbraith wrote:
+> This is another case where we are on our way to schedule(),
+> so can save a useless clock update and resulting microscopic
+> vruntime update.
+> 
 
-> Hi Marc,
->
-> Coming back to now: if the driver incorporates the timer (like all other
-> devices that can be started but not stopped once started do), then the start
-> and stop functions are not empty.
-> The timer (with the example that I prepared as part of the generic code) is
-> not so difficult and will be a good solution for the time being. (Unless
-> Dmitry Artamonow's comment about the fact that the watchdog could perhaps
-> be started and stopped is correct... This should be investigated first imho).
->
-The watchdog can not be started and stopped from the driver. This is
-what I investigated first and found impossible (and explains why this
-driver is still missing).
+Everytime I see one of these skip_clock_update thingies I get the idea
+we should do something smarter, because its most fragile and getting it
+wrong results in a subtle trainwreck..
 
-I do not fully understand yet what has to be done with the timer.
+Would something like the below help in validating this stuff?
 
-Regards,
---
-Marc
+
+---
+Index: linux-2.6/kernel/sched/core.c
+===================================================================
+--- linux-2.6.orig/kernel/sched/core.c
++++ linux-2.6/kernel/sched/core.c
+@@ -113,12 +113,27 @@ void update_rq_clock(struct rq *rq)
+ {
+ 	s64 delta;
+ 
+-	if (rq->skip_clock_update > 0)
++	if (rq->skip_clock_update > 0) {
++		/*
++		 * We skipped an update even though we had a full context
++		 * switch in between, badness.
++		 */
++		if (rq->clock_update_stamp != rq->sched_switch)
++			trace_printk("lost an update!!\n");
+ 		return;
++	}
++
++	/*
++	 * We're updating the clock even though we didn't switch yet.
++	 */
++	if (rq->clock_update_stamp == rq->sched_switch)
++		trace_printk("too many updates!!\n");
+ 
+ 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+ 	rq->clock += delta;
+ 	update_rq_clock_task(rq, delta);
++
++	rq->clock_update_stamp = rq->sched_switch
+ }
+ 
+ /*
+@@ -1922,6 +1937,9 @@ static void finish_task_switch(struct rq
+ #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 	local_irq_enable();
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
++#ifdef CONFIG_SCHED_DEBUG
++	schedstat_inc(rq, sched_switch);
++#endif
+ 	finish_lock_switch(rq, prev);
+ 
+ 	fire_sched_in_preempt_notifiers(current);
+Index: linux-2.6/kernel/sched/sched.h
+===================================================================
+--- linux-2.6.orig/kernel/sched/sched.h
++++ linux-2.6/kernel/sched/sched.h
+@@ -374,6 +374,8 @@ struct rq {
+ 	unsigned char nohz_balance_kick;
+ #endif
+ 	int skip_clock_update;
++	unsigned int clock_update_stamp;
++
+ 
+ 	/* capture load from *all* tasks on this cpu: */
+ 	struct load_weight load;
+
