@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759839Ab1KWHsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:48:12 -0500
-Received: from mga07.intel.com ([143.182.124.22]:32436 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755592Ab1KWHsK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:48:10 -0500
+	id S1759857Ab1KWHuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:50:16 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64201 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757412Ab1KWHuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 02:50:14 -0500
+Message-ID: <4ECCA578.6020700@cn.fujitsu.com>
+Date: Wed, 23 Nov 2011 15:49:12 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20111121184316.GH15314@google.com>
-References: <20111121184316.GH15314@google.com>
-Date: Tue, 22 Nov 2011 23:48:07 -0800
-Message-ID: <CABE8wwu-ZH47tFkaEmYfWtXzgeR9KmEWXbtXD5FEQc3R9tV7aQ@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: don't use set_freezable_with_signal()
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, rjw@sisk.pl,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
+ for mempolicy or disjoint nodemask
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com> <4ECC5FC8.9070500@cn.fujitsu.com> <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com> <4ECC7B1E.6020108@cn.fujitsu.com> <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-23 15:49:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-23 15:49:55,
+	Serialize complete at 2011-11-23 15:49:55
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:43 AM, Tejun Heo <tj@kernel.org> wrote:
-> Commit 981ed70d8e (dmatest: make dmatest threads freezable) made
-> dmatest kthread use set_freezable_with_signal(); however, the
-> interface is scheduled to be removed in the next merge window.
->
-> The problem is that unlike userland tasks there's no default place
-> which handles signal pending state and it isn't clear who owns and/or
-> is responsible for clearing TIF_SIGPENDING.  For example, in the
-> current code, try_to_freeze() clears TIF_SIGPENDING but it isn't sure
-> whether it actually owns the TIF_SIGPENDING nor is it race-free -
-> ie. the task may continue to run with TIF_SIGPENDING set after the
-> freezable section.
->
-> Unfortunately, we don't have wait_for_completion_freezable_timeout().
-> This patch open codes it and uses wait_event_freezable_timeout()
-> instead and removes timeout reloading - wait_event_freezable_timeout()
-> won't return across freezing events (currently racy but fix scheduled)
-> and timer doesn't decrement while the task is in freezer.  Although
-> this does lose timer-reset-over-freezing, given that timeout is
-> supposed to be long enough and failure to finish inside is considered
-> irrecoverable, I don't think this is worth the complexity.
->
-> While at it, move completion to outer scope and explain that we're
-> ignoring dangling pointer problem after timeout.  This should give
-> slightly better chance at avoiding oops after timeout.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Guennadi, Dan, how does this look?  If it's okay, do you guys mind
-> routing this through pm tree?  I have some patches stacked on top
-> removal of freezable_with_signal and it would be much easier to route
-> these together.
->
-> Thank you.
+On Tue, 22 Nov 2011 22:25:46 -0800 (pst), David Rientjes wrote:
+> On Wed, 23 Nov 2011, Miao Xie wrote:
+> 
+>> This is a good idea. But I worry that oom will happen easily, because we do
+>> direct reclamation and compact by mems_allowed.
+>>
+> 
+> Memory compaction actually iterates through each zone regardless of 
+> whether it's allowed or not in the current context.  Recall that the 
+> nodemask passed into __alloc_pages_nodemask() is non-NULL only when there 
+> is a mempolicy that restricts the allocations by MPOL_BIND.  That nodemask 
+> is not protected by get_mems_allowed(), so there's no change in 
+> compaction's behavior with my patch.
 
-Acked-by: Dan Williams <dan.j.williams@intel.com>
+That nodemask is also protected by get_mems_allowed().
 
-(for the revised commit a75ca055 on
-git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer)
+> Direct reclaim does, however, require mems_allowed staying constant 
+> without the risk of early oom as you mentioned.  It has its own 
+> get_mems_allowed(), though, so it doesn't have the opportunity to change 
+> until returning to the page allocator.  It's possible that mems_allowed 
+> will be different on the next call to get_pages_from_freelist() but we 
+> don't know anything about that context: it's entirely possible that the 
+> set of new mems has an abundance of free memory or are completely depleted 
+> as well.  So there's no strict need for consistency between the set of 
+> allowed nodes during reclaim and the subsequent allocation attempt.  All 
+> we care about is that reclaim has a consistent set of allowed nodes to 
+> determine whether it's making progress or not.
+> 
+
+Agree.
