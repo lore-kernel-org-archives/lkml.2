@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759321Ab1KWAzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:55:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42506 "EHLO mx2.suse.de"
+	id S932595Ab1KWAgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42477 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932611Ab1KWAgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:15 -0500
+	id S932545Ab1KWAgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
-Message-Id: <20111123002556.570261287@clark.kroah.org>
+Message-Id: <20111123002556.198150797@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:39 -0800
+Date: Tue, 22 Nov 2011 16:25:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
-Subject: [39/53] USB: workaround for bug in old version of GCC
+        alan@lxorguk.ukuu.org.uk, Ferenc Wagner <wferi@niif.hu>
+Subject: [35/53] USB: option: add PID of Huawei E173s 3G modem
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,51 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ferenc Wagner <wferi@niif.hu>
 
-commit 97ff22ee3b4cb3a334f7385e269773141aed702f upstream.
+commit 4aa3648c719265bac9c2742c9ebb043e6dbdd790 upstream.
 
-This patch (as1491) works around a bug in GCC-3.4.6, which is still
-supposed to be supported.  The number of microseconds in the udelay()
-call in quirk_usb_disable_ehci() is fixed at 100, but the compiler
-doesn't understand this and generates a link-time error.  So we
-replace the otherwise unused variable "delta" with a simple constant
-100.  This same pattern is already used in other delay loops in that
-source file.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Konrad Rzepecki <krzepecki@dentonet.pl>
-Tested-by: Konrad Rzepecki <krzepecki@dentonet.pl>
+Signed-off-by: Ferenc Wagner <wferi@niif.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/pci-quirks.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -626,7 +626,7 @@ static void __devinit quirk_usb_disable_
- 	void __iomem *base, *op_reg_base;
- 	u32	hcc_params, cap, val;
- 	u8	offset, cap_length;
--	int	wait_time, delta, count = 256/4;
-+	int	wait_time, count = 256/4;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -156,6 +156,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K4511			0x14CC
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
+ #define HUAWEI_PRODUCT_E353			0x1506
++#define HUAWEI_PRODUCT_E173S			0x1C05
  
- 	if (!mmio_resource_enabled(pdev, 0))
- 		return;
-@@ -672,11 +672,10 @@ static void __devinit quirk_usb_disable_
- 		writel(val, op_reg_base + EHCI_USBCMD);
- 
- 		wait_time = 2000;
--		delta = 100;
- 		do {
- 			writel(0x3f, op_reg_base + EHCI_USBSTS);
--			udelay(delta);
--			wait_time -= delta;
-+			udelay(100);
-+			wait_time -= 100;
- 			val = readl(op_reg_base + EHCI_USBSTS);
- 			if ((val == ~(u32)0) || (val & EHCI_USBSTS_HALTED)) {
- 				break;
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -637,6 +638,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
 
 
