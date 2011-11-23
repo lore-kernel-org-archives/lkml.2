@@ -1,599 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab1KWPon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:44:43 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44810 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756749Ab1KWPnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:43:01 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 2/8] mm: unify remaining mem_cont, mem, etc. variable names to memcg
-Date: Wed, 23 Nov 2011 16:42:25 +0100
-Message-Id: <1322062951-1756-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+	id S1756939Ab1KWPou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:44:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63963 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756749Ab1KWPoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 10:44:46 -0500
+Date: Wed, 23 Nov 2011 16:46:02 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Woodhouse <dwmw2@infradead.org>, rajesh.sankaran@intel.com,
+        Keith Packard <keithp@keithp.com>, Matthew Garrett <mjg@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: By default, enable RC6 on IVB and SNB when
+ reasonable
+Message-ID: <20111123154602.GH3864@phenom.ffwll.local>
+Mail-Followup-To: David Woodhouse <dwmw2@infradead.org>,
+	rajesh.sankaran@intel.com, Keith Packard <keithp@keithp.com>,
+	Matthew Garrett <mjg@redhat.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <1321684889-18691-1-git-send-email-keithp@keithp.com>
+ <20111122201531.GD5547@srcf.ucam.org>
+ <861uszfrah.fsf@sumi.keithp.com>
+ <20111123102643.GB3864@phenom.ffwll.local>
+ <1322056914.15493.158.camel@shinybook.infradead.org>
+ <20111123143931.GE3864@phenom.ffwll.local>
+ <1322060623.15493.168.camel@shinybook.infradead.org>
+ <20111123153154.GF3864@phenom.ffwll.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111123153154.GF3864@phenom.ffwll.local>
+X-Operating-System: Linux phenom 3.1.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <jweiner@redhat.com>
+On Wed, Nov 23, 2011 at 04:31:54PM +0100, Daniel Vetter wrote:
+> - Wait 2 minutes for the stuck-in-atomic detection logic to kick in and
+>   grab the backtrace over netconsole. Notice that the kernel is stuck
+>   trying to flush the dmar tlb cache (that's how I managed to track it
+>   down to a dmar interaction). Backtrace almost identical to the dmar
+>   issue on ilk. I've lost the backtrace, if you want I can regrab it.
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
- include/linux/memcontrol.h |   16 ++++++------
- include/linux/oom.h        |    2 +-
- include/linux/rmap.h       |    4 +-
- mm/memcontrol.c            |   52 ++++++++++++++++++++++---------------------
- mm/oom_kill.c              |   38 ++++++++++++++++----------------
- mm/rmap.c                  |   20 ++++++++--------
- mm/swapfile.c              |    9 ++++---
- mm/vmscan.c                |   12 +++++-----
- 8 files changed, 78 insertions(+), 75 deletions(-)
+Ok, I've recaptured the last words from my dying machine:
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 2bf7698..a072ebe 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -54,10 +54,10 @@ extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask);
- /* for swap handling */
- extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
--		struct page *page, gfp_t mask, struct mem_cgroup **ptr);
-+		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
- extern void mem_cgroup_commit_charge_swapin(struct page *page,
--					struct mem_cgroup *ptr);
--extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *ptr);
-+					struct mem_cgroup *memcg);
-+extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg);
- 
- extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 					gfp_t gfp_mask);
-@@ -98,7 +98,7 @@ extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
- 
- extern int
- mem_cgroup_prepare_migration(struct page *page,
--	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask);
-+	struct page *newpage, struct mem_cgroup **memcgp, gfp_t gfp_mask);
- extern void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 	struct page *oldpage, struct page *newpage, bool migration_ok);
- 
-@@ -181,17 +181,17 @@ static inline int mem_cgroup_cache_charge(struct page *page,
- }
- 
- static inline int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
--		struct page *page, gfp_t gfp_mask, struct mem_cgroup **ptr)
-+		struct page *page, gfp_t gfp_mask, struct mem_cgroup **memcgp)
- {
- 	return 0;
- }
- 
- static inline void mem_cgroup_commit_charge_swapin(struct page *page,
--					  struct mem_cgroup *ptr)
-+					  struct mem_cgroup *memcg)
- {
- }
- 
--static inline void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *ptr)
-+static inline void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
- {
- }
- 
-@@ -270,7 +270,7 @@ static inline struct cgroup_subsys_state
- 
- static inline int
- mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
--	struct mem_cgroup **ptr, gfp_t gfp_mask)
-+	struct mem_cgroup **memcgp, gfp_t gfp_mask)
- {
- 	return 0;
- }
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 6f9d04a..552fba9 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -43,7 +43,7 @@ enum oom_constraint {
- extern void compare_swap_oom_score_adj(int old_val, int new_val);
- extern int test_set_oom_score_adj(int new_val);
- 
--extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
-+extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 			const nodemask_t *nodemask, unsigned long totalpages);
- extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
- extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 2148b12..5ee84fb 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -157,7 +157,7 @@ static inline void page_dup_rmap(struct page *page)
-  * Called from mm/vmscan.c to handle paging out
-  */
- int page_referenced(struct page *, int is_locked,
--			struct mem_cgroup *cnt, unsigned long *vm_flags);
-+			struct mem_cgroup *memcg, unsigned long *vm_flags);
- int page_referenced_one(struct page *, struct vm_area_struct *,
- 	unsigned long address, unsigned int *mapcount, unsigned long *vm_flags);
- 
-@@ -235,7 +235,7 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
- #define anon_vma_link(vma)	do {} while (0)
- 
- static inline int page_referenced(struct page *page, int is_locked,
--				  struct mem_cgroup *cnt,
-+				  struct mem_cgroup *memcg,
- 				  unsigned long *vm_flags)
- {
- 	*vm_flags = 0;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f524660..473b99f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2778,12 +2778,12 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-  */
- int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 				 struct page *page,
--				 gfp_t mask, struct mem_cgroup **ptr)
-+				 gfp_t mask, struct mem_cgroup **memcgp)
- {
- 	struct mem_cgroup *memcg;
- 	int ret;
- 
--	*ptr = NULL;
-+	*memcgp = NULL;
- 
- 	if (mem_cgroup_disabled())
- 		return 0;
-@@ -2801,27 +2801,27 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	memcg = try_get_mem_cgroup_from_page(page);
- 	if (!memcg)
- 		goto charge_cur_mm;
--	*ptr = memcg;
--	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, true);
-+	*memcgp = memcg;
-+	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
- 	css_put(&memcg->css);
- 	return ret;
- charge_cur_mm:
- 	if (unlikely(!mm))
- 		mm = &init_mm;
--	return __mem_cgroup_try_charge(mm, mask, 1, ptr, true);
-+	return __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
- }
- 
- static void
--__mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
-+__mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
- 					enum charge_type ctype)
- {
- 	if (mem_cgroup_disabled())
- 		return;
--	if (!ptr)
-+	if (!memcg)
- 		return;
--	cgroup_exclude_rmdir(&ptr->css);
-+	cgroup_exclude_rmdir(&memcg->css);
- 
--	__mem_cgroup_commit_charge_lrucare(page, ptr, ctype);
-+	__mem_cgroup_commit_charge_lrucare(page, memcg, ctype);
- 	/*
- 	 * Now swap is on-memory. This means this page may be
- 	 * counted both as mem and swap....double count.
-@@ -2831,21 +2831,22 @@ __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 	 */
- 	if (do_swap_account && PageSwapCache(page)) {
- 		swp_entry_t ent = {.val = page_private(page)};
-+		struct mem_cgroup *swap_memcg;
- 		unsigned short id;
--		struct mem_cgroup *memcg;
- 
- 		id = swap_cgroup_record(ent, 0);
- 		rcu_read_lock();
--		memcg = mem_cgroup_lookup(id);
--		if (memcg) {
-+		swap_memcg = mem_cgroup_lookup(id);
-+		if (swap_memcg) {
- 			/*
- 			 * This recorded memcg can be obsolete one. So, avoid
- 			 * calling css_tryget
- 			 */
--			if (!mem_cgroup_is_root(memcg))
--				res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
--			mem_cgroup_swap_statistics(memcg, false);
--			mem_cgroup_put(memcg);
-+			if (!mem_cgroup_is_root(swap_memcg))
-+				res_counter_uncharge(&swap_memcg->memsw,
-+						     PAGE_SIZE);
-+			mem_cgroup_swap_statistics(swap_memcg, false);
-+			mem_cgroup_put(swap_memcg);
- 		}
- 		rcu_read_unlock();
- 	}
-@@ -2854,13 +2855,14 @@ __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 	 * So, rmdir()->pre_destroy() can be called while we do this charge.
- 	 * In that case, we need to call pre_destroy() again. check it here.
- 	 */
--	cgroup_release_and_wakeup_rmdir(&ptr->css);
-+	cgroup_release_and_wakeup_rmdir(&memcg->css);
- }
- 
--void mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr)
-+void mem_cgroup_commit_charge_swapin(struct page *page,
-+				     struct mem_cgroup *memcg)
- {
--	__mem_cgroup_commit_charge_swapin(page, ptr,
--					MEM_CGROUP_CHARGE_TYPE_MAPPED);
-+	__mem_cgroup_commit_charge_swapin(page, memcg,
-+					  MEM_CGROUP_CHARGE_TYPE_MAPPED);
- }
- 
- void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-@@ -3189,14 +3191,14 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
-  * page belongs to.
-  */
- int mem_cgroup_prepare_migration(struct page *page,
--	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
-+	struct page *newpage, struct mem_cgroup **memcgp, gfp_t gfp_mask)
- {
- 	struct mem_cgroup *memcg = NULL;
- 	struct page_cgroup *pc;
- 	enum charge_type ctype;
- 	int ret = 0;
- 
--	*ptr = NULL;
-+	*memcgp = NULL;
- 
- 	VM_BUG_ON(PageTransHuge(page));
- 	if (mem_cgroup_disabled())
-@@ -3247,10 +3249,10 @@ int mem_cgroup_prepare_migration(struct page *page,
- 	if (!memcg)
- 		return 0;
- 
--	*ptr = memcg;
--	ret = __mem_cgroup_try_charge(NULL, gfp_mask, 1, ptr, false);
-+	*memcgp = memcg;
-+	ret = __mem_cgroup_try_charge(NULL, gfp_mask, 1, memcgp, false);
- 	css_put(&memcg->css);/* drop extra refcnt */
--	if (ret || *ptr == NULL) {
-+	if (ret || *memcgp == NULL) {
- 		if (PageAnon(page)) {
- 			lock_page_cgroup(pc);
- 			ClearPageCgroupMigration(pc);
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index fd9e303..307351e 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -146,7 +146,7 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
- 
- /* return true if the task is not adequate as candidate victim task. */
- static bool oom_unkillable_task(struct task_struct *p,
--		const struct mem_cgroup *mem, const nodemask_t *nodemask)
-+		const struct mem_cgroup *memcg, const nodemask_t *nodemask)
- {
- 	if (is_global_init(p))
- 		return true;
-@@ -154,7 +154,7 @@ static bool oom_unkillable_task(struct task_struct *p,
- 		return true;
- 
- 	/* When mem_cgroup_out_of_memory() and p is not member of the group */
--	if (mem && !task_in_mem_cgroup(p, mem))
-+	if (memcg && !task_in_mem_cgroup(p, memcg))
- 		return true;
- 
- 	/* p may not have freeable memory in nodemask */
-@@ -173,12 +173,12 @@ static bool oom_unkillable_task(struct task_struct *p,
-  * predictable as possible.  The goal is to return the highest value for the
-  * task consuming the most memory to avoid subsequent oom failures.
-  */
--unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
-+unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 		      const nodemask_t *nodemask, unsigned long totalpages)
- {
- 	int points;
- 
--	if (oom_unkillable_task(p, mem, nodemask))
-+	if (oom_unkillable_task(p, memcg, nodemask))
- 		return 0;
- 
- 	p = find_lock_task_mm(p);
-@@ -297,7 +297,7 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
-  * (not docbooked, we don't want this one cluttering up the manual)
-  */
- static struct task_struct *select_bad_process(unsigned int *ppoints,
--		unsigned long totalpages, struct mem_cgroup *mem,
-+		unsigned long totalpages, struct mem_cgroup *memcg,
- 		const nodemask_t *nodemask)
- {
- 	struct task_struct *g, *p;
-@@ -309,7 +309,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 
- 		if (p->exit_state)
- 			continue;
--		if (oom_unkillable_task(p, mem, nodemask))
-+		if (oom_unkillable_task(p, memcg, nodemask))
- 			continue;
- 
- 		/*
-@@ -353,7 +353,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 			}
- 		}
- 
--		points = oom_badness(p, mem, nodemask, totalpages);
-+		points = oom_badness(p, memcg, nodemask, totalpages);
- 		if (points > *ppoints) {
- 			chosen = p;
- 			*ppoints = points;
-@@ -376,14 +376,14 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
-  *
-  * Call with tasklist_lock read-locked.
-  */
--static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
-+static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
- {
- 	struct task_struct *p;
- 	struct task_struct *task;
- 
- 	pr_info("[ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name\n");
- 	for_each_process(p) {
--		if (oom_unkillable_task(p, mem, nodemask))
-+		if (oom_unkillable_task(p, memcg, nodemask))
- 			continue;
- 
- 		task = find_lock_task_mm(p);
-@@ -406,7 +406,7 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
- }
- 
- static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
--			struct mem_cgroup *mem, const nodemask_t *nodemask)
-+			struct mem_cgroup *memcg, const nodemask_t *nodemask)
- {
- 	task_lock(current);
- 	pr_warning("%s invoked oom-killer: gfp_mask=0x%x, order=%d, "
-@@ -416,10 +416,10 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- 	cpuset_print_task_mems_allowed(current);
- 	task_unlock(current);
- 	dump_stack();
--	mem_cgroup_print_oom_info(mem, p);
-+	mem_cgroup_print_oom_info(memcg, p);
- 	show_mem(SHOW_MEM_FILTER_NODES);
- 	if (sysctl_oom_dump_tasks)
--		dump_tasks(mem, nodemask);
-+		dump_tasks(memcg, nodemask);
- }
- 
- #define K(x) ((x) << (PAGE_SHIFT-10))
-@@ -473,7 +473,7 @@ static int oom_kill_task(struct task_struct *p)
- 
- static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			    unsigned int points, unsigned long totalpages,
--			    struct mem_cgroup *mem, nodemask_t *nodemask,
-+			    struct mem_cgroup *memcg, nodemask_t *nodemask,
- 			    const char *message)
- {
- 	struct task_struct *victim = p;
-@@ -482,7 +482,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	unsigned int victim_points = 0;
- 
- 	if (printk_ratelimit())
--		dump_header(p, gfp_mask, order, mem, nodemask);
-+		dump_header(p, gfp_mask, order, memcg, nodemask);
- 
- 	/*
- 	 * If the task is already exiting, don't alarm the sysadmin or kill
-@@ -513,7 +513,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			/*
- 			 * oom_badness() returns 0 if the thread is unkillable
- 			 */
--			child_points = oom_badness(child, mem, nodemask,
-+			child_points = oom_badness(child, memcg, nodemask,
- 								totalpages);
- 			if (child_points > victim_points) {
- 				victim = child;
-@@ -550,7 +550,7 @@ static void check_panic_on_oom(enum oom_constraint constraint, gfp_t gfp_mask,
- }
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
--void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
-+void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask)
- {
- 	unsigned long limit;
- 	unsigned int points = 0;
-@@ -567,14 +567,14 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
- 	}
- 
- 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
--	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
-+	limit = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT;
- 	read_lock(&tasklist_lock);
- retry:
--	p = select_bad_process(&points, limit, mem, NULL);
-+	p = select_bad_process(&points, limit, memcg, NULL);
- 	if (!p || PTR_ERR(p) == -1UL)
- 		goto out;
- 
--	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem, NULL,
-+	if (oom_kill_process(p, gfp_mask, 0, points, limit, memcg, NULL,
- 				"Memory cgroup out of memory"))
- 		goto retry;
- out:
-diff --git a/mm/rmap.c b/mm/rmap.c
-index a4fd368..c13791b 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -728,7 +728,7 @@ out:
- }
- 
- static int page_referenced_anon(struct page *page,
--				struct mem_cgroup *mem_cont,
-+				struct mem_cgroup *memcg,
- 				unsigned long *vm_flags)
- {
- 	unsigned int mapcount;
-@@ -751,7 +751,7 @@ static int page_referenced_anon(struct page *page,
- 		 * counting on behalf of references from different
- 		 * cgroups
- 		 */
--		if (mem_cont && !mm_match_cgroup(vma->vm_mm, mem_cont))
-+		if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
- 			continue;
- 		referenced += page_referenced_one(page, vma, address,
- 						  &mapcount, vm_flags);
-@@ -766,7 +766,7 @@ static int page_referenced_anon(struct page *page,
- /**
-  * page_referenced_file - referenced check for object-based rmap
-  * @page: the page we're checking references on.
-- * @mem_cont: target memory controller
-+ * @memcg: target memory control group
-  * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
-  *
-  * For an object-based mapped page, find all the places it is mapped and
-@@ -777,7 +777,7 @@ static int page_referenced_anon(struct page *page,
-  * This function is only called from page_referenced for object-based pages.
-  */
- static int page_referenced_file(struct page *page,
--				struct mem_cgroup *mem_cont,
-+				struct mem_cgroup *memcg,
- 				unsigned long *vm_flags)
- {
- 	unsigned int mapcount;
-@@ -819,7 +819,7 @@ static int page_referenced_file(struct page *page,
- 		 * counting on behalf of references from different
- 		 * cgroups
- 		 */
--		if (mem_cont && !mm_match_cgroup(vma->vm_mm, mem_cont))
-+		if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
- 			continue;
- 		referenced += page_referenced_one(page, vma, address,
- 						  &mapcount, vm_flags);
-@@ -835,7 +835,7 @@ static int page_referenced_file(struct page *page,
-  * page_referenced - test if the page was referenced
-  * @page: the page to test
-  * @is_locked: caller holds lock on the page
-- * @mem_cont: target memory controller
-+ * @memcg: target memory cgroup
-  * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
-  *
-  * Quick test_and_clear_referenced for all mappings to a page,
-@@ -843,7 +843,7 @@ static int page_referenced_file(struct page *page,
-  */
- int page_referenced(struct page *page,
- 		    int is_locked,
--		    struct mem_cgroup *mem_cont,
-+		    struct mem_cgroup *memcg,
- 		    unsigned long *vm_flags)
- {
- 	int referenced = 0;
-@@ -859,13 +859,13 @@ int page_referenced(struct page *page,
- 			}
- 		}
- 		if (unlikely(PageKsm(page)))
--			referenced += page_referenced_ksm(page, mem_cont,
-+			referenced += page_referenced_ksm(page, memcg,
- 								vm_flags);
- 		else if (PageAnon(page))
--			referenced += page_referenced_anon(page, mem_cont,
-+			referenced += page_referenced_anon(page, memcg,
- 								vm_flags);
- 		else if (page->mapping)
--			referenced += page_referenced_file(page, mem_cont,
-+			referenced += page_referenced_file(page, memcg,
- 								vm_flags);
- 		if (we_locked)
- 			unlock_page(page);
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b1cd120..c2e1312 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -847,12 +847,13 @@ unsigned int count_swap_pages(int type, int free)
- static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, swp_entry_t entry, struct page *page)
- {
--	struct mem_cgroup *ptr;
-+	struct mem_cgroup *memcg;
- 	spinlock_t *ptl;
- 	pte_t *pte;
- 	int ret = 1;
- 
--	if (mem_cgroup_try_charge_swapin(vma->vm_mm, page, GFP_KERNEL, &ptr)) {
-+	if (mem_cgroup_try_charge_swapin(vma->vm_mm, page,
-+					 GFP_KERNEL, &memcg)) {
- 		ret = -ENOMEM;
- 		goto out_nolock;
- 	}
-@@ -860,7 +861,7 @@ static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	if (unlikely(!pte_same(*pte, swp_entry_to_pte(entry)))) {
- 		if (ret > 0)
--			mem_cgroup_cancel_charge_swapin(ptr);
-+			mem_cgroup_cancel_charge_swapin(memcg);
- 		ret = 0;
- 		goto out;
- 	}
-@@ -871,7 +872,7 @@ static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
- 	set_pte_at(vma->vm_mm, addr, pte,
- 		   pte_mkold(mk_pte(page, vma->vm_page_prot)));
- 	page_add_anon_rmap(page, vma, addr);
--	mem_cgroup_commit_charge_swapin(page, ptr);
-+	mem_cgroup_commit_charge_swapin(page, memcg);
- 	swap_free(entry);
- 	/*
- 	 * Move the page to the active list so it is not
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 21ce3cb..855c450 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2387,7 +2387,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
- 
--unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
-+unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
- 						unsigned long *nr_scanned)
-@@ -2399,10 +2399,10 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
- 		.order = 0,
--		.target_mem_cgroup = mem,
-+		.target_mem_cgroup = memcg,
- 	};
- 	struct mem_cgroup_zone mz = {
--		.mem_cgroup = mem,
-+		.mem_cgroup = memcg,
- 		.zone = zone,
- 	};
- 
-@@ -2428,7 +2428,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 	return sc.nr_reclaimed;
- }
- 
--unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-+unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
- 					   gfp_t gfp_mask,
- 					   bool noswap)
- {
-@@ -2441,7 +2441,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 		.may_swap = !noswap,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
- 		.order = 0,
--		.target_mem_cgroup = mem_cont,
-+		.target_mem_cgroup = memcg,
- 		.nodemask = NULL, /* we don't care the placement */
- 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
-@@ -2455,7 +2455,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 	 * take care of from where we get pages. So the node where we start the
- 	 * scan does not need to be the current node.
- 	 */
--	nid = mem_cgroup_select_victim_node(mem_cont);
-+	nid = mem_cgroup_select_victim_node(memcg);
- 
- 	zonelist = NODE_DATA(nid)->node_zonelists;
- 
+Listening for netconsole messages
+[  136.897673] ------------[ cut here ]------------
+[  136.897694] WARNING: at kernel/watchdog.c:241 watchdog_overflow_callback+0x9b/0xa6()
+[  136.897701] Hardware name: HP EliteBook 8460p
+[  136.897707] Watchdog detected hard LOCKUP on cpu 0
+[  136.897713] Modules linked in: sunrpc 8021q garp stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf snd_hda_codec_hdmi snd_hda_codec_idt arc4 iwlwifi mac80211 hp_wmi sparse_keymap ppdev uvcvideo videodev v4l2_compat_ioctl32 btusb microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq bluetooth snd_seq_device iTCO_wdt snd_pcm snd_timer snd cfg80211 serio_raw iTCO_vendor_support joydev xhci_hcd rfkill e1000e soundcore snd_page_alloc parport_pc parport tpm_infineon wmi intel_ips ipv6 firewire_ohci firewire_core crc_itu_t sdhci_pci sdhci mmc_core i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
+[  136.897967] Pid: 0, comm: swapper Not tainted 3.2.0-rc2+ #162
+[  136.897972] Call Trace:
+[  136.897978]  <NMI>  [<ffffffff8105679a>] warn_slowpath_common+0x83/0x9b
+[  136.897998]  [<ffffffff81056855>] warn_slowpath_fmt+0x46/0x48
+[  136.898007]  [<ffffffff810152b1>] ? native_sched_clock+0x34/0x36
+[  136.898016]  [<ffffffff810ad68b>] watchdog_overflow_callback+0x9b/0xa6
+[  136.898026]  [<ffffffff810d78c3>] __perf_event_overflow+0x100/0x17f
+[  136.898035]  [<ffffffff810d5f53>] ? perf_event_update_userpage+0xf/0xa2
+[  136.898045]  [<ffffffff8101be7b>] ? x86_perf_event_set_period+0x107/0x113
+[  136.898053]  [<ffffffff810d7efc>] perf_event_overflow+0x14/0x16
+[  136.898062]  [<ffffffff8101f4bc>] intel_pmu_handle_irq+0x211/0x271
+[  136.898073]  [<ffffffff81476b65>] perf_event_nmi_handler+0x19/0x1b
+[  136.898082]  [<ffffffff814764f7>] nmi_handle+0x42/0x67
+[  136.898091]  [<ffffffff814765a8>] do_nmi+0x8c/0x26b
+[  136.898099]  [<ffffffff81475db0>] nmi+0x20/0x30
+[  136.898109]  [<ffffffff81083ccc>] ? do_raw_spin_lock+0x1/0x25
+[  136.898115]  <<EOE>>  <IRQ>  [<ffffffff8147547e>] ? _raw_spin_lock+0xe/0x10
+[  136.898135]  [<ffffffff813b712b>] qi_submit_sync+0x30d/0x312
+[  136.898143]  [<ffffffff813b7222>] qi_flush_iotlb+0x7a/0x7c
+[  136.898152]  [<ffffffff813b918f>] flush_unmaps+0x72/0x131
+[  136.898161]  [<ffffffff813b926d>] flush_unmaps_timeout+0x1f/0x32
+[  136.898169]  [<ffffffff81062d9d>] run_timer_softirq+0x19b/0x280
+[  136.898177]  [<ffffffff81014e05>] ? paravirt_read_tsc+0x9/0xd
+[  136.898186]  [<ffffffff813b924e>] ? flush_unmaps+0x131/0x131
+[  136.898195]  [<ffffffff8105c477>] __do_softirq+0xc9/0x1b5
+[  136.898203]  [<ffffffff81014e05>] ? paravirt_read_tsc+0x9/0xd
+[  136.898212]  [<ffffffff8147de6c>] call_softirq+0x1c/0x30
+[  136.898222]  [<ffffffff81010add>] do_softirq+0x46/0x81
+[  136.898230]  [<ffffffff8105c73f>] irq_exit+0x57/0xb1
+[  136.898238]  [<ffffffff8147e7e1>] smp_apic_timer_interrupt+0x7c/0x8a
+[  136.898251]  [<ffffffff8147c6de>] apic_timer_interrupt+0x6e/0x80
+[  136.898256]  <EOI>  [<ffffffff81014e05>] ? paravirt_read_tsc+0x9/0xd
+[  136.898271]  [<ffffffff812766b3>] ? intel_idle+0xef/0x120
+[  136.898279]  [<ffffffff81276695>] ? intel_idle+0xd1/0x120
+[  136.898289]  [<ffffffff8139f10b>] cpuidle_idle_call+0xe2/0x181
+[  136.898297]  [<ffffffff8100e2ed>] cpu_idle+0xa9/0xf0
+[  136.898306]  [<ffffffff81456a1e>] rest_init+0x72/0x74
+[  136.898316]  [<ffffffff81aceb71>] start_kernel+0x3b0/0x3bd
+[  136.898324]  [<ffffffff81ace2c4>] x86_64_start_reservations+0xaf/0xb3
+[  136.898332]  [<ffffffff81ace140>] ? early_idt_handlers+0x140/0x140
+[  136.898340]  [<ffffffff81ace3ca>] x86_64_start_kernel+0x102/0x111
+[  136.898348] ---[ end trace 2d22d2d9c3bfe5c8 ]---
+[  161.821354] ------------[ cut here ]------------
+[  161.821365] WARNING: at kernel/watchdog.c:241 watchdog_overflow_callback+0x9b/0xa6()
+[  161.821370] Hardware name: HP EliteBook 8460p
+[  161.821376] Watchdog detected hard LOCKUP on cpu 1
+[  161.821381] Modules linked in: sunrpc 8021q garp stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf snd_hda_codec_hdmi snd_hda_codec_idt arc4 iwlwifi mac80211 hp_wmi sparse_keymap ppdev uvcvideo videodev v4l2_compat_ioctl32 btusb microcode snd_hda_intel snd_hda_codec snd_hwdep snd_seq bluetooth snd_seq_device iTCO_wdt snd_pcm snd_timer snd cfg80211 serio_raw iTCO_vendor_support joydev xhci_hcd rfkill e1000e soundcore snd_page_alloc parport_pc parport tpm_infineon wmi intel_ips ipv6 firewire_ohci firewire_core crc_itu_t sdhci_pci sdhci mmc_core i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
+[  161.821609] Pid: 1134, comm: X Tainted: G        W    3.2.0-rc2+ #162
+[  161.821615] Call Trace:
+[  161.821619]  <NMI>  [<ffffffff8105679a>] warn_slowpath_common+0x83/0x9b
+[  161.821633]  [<ffffffff81056855>] warn_slowpath_fmt+0x46/0x48
+[  161.821640]  [<ffffffff810152b1>] ? native_sched_clock+0x34/0x36
+[  161.821648]  [<ffffffff810ad68b>] watchdog_overflow_callback+0x9b/0xa6
+[  161.821655]  [<ffffffff810d78c3>] __perf_event_overflow+0x100/0x17f
+[  161.821663]  [<ffffffff810d5f53>] ? perf_event_update_userpage+0xf/0xa2
+[  161.821669]  [<ffffffff8101be7b>] ? x86_perf_event_set_period+0x107/0x113
+[  161.821677]  [<ffffffff810d7efc>] perf_event_overflow+0x14/0x16
+[  161.821684]  [<ffffffff8101f4bc>] intel_pmu_handle_irq+0x211/0x271
+[  161.821692]  [<ffffffff81476b65>] perf_event_nmi_handler+0x19/0x1b
+[  161.821700]  [<ffffffff814764f7>] nmi_handle+0x42/0x67
+[  161.821708]  [<ffffffff814765a8>] do_nmi+0x8c/0x26b
+[  161.821715]  [<ffffffff81475db0>] nmi+0x20/0x30
+[  161.821723]  [<ffffffff814754aa>] ? _raw_spin_lock_irqsave+0x2a/0x2f
+[  161.821728]  <<EOE>>  [<ffffffff813b988f>] add_unmap+0x21/0xb8
+[  161.821744]  [<ffffffff813bad66>] intel_unmap_sg+0x101/0x110
+[  161.821753]  [<ffffffff811341bc>] ? __pollwait+0xcc/0xcc
+[  161.821761]  [<ffffffff812df78f>] intel_gtt_unmap_memory+0x50/0x70
+[  161.821784]  [<ffffffffa007dad1>] i915_gem_gtt_unbind_object+0x9c/0xc7 [i915]
+[  161.821805]  [<ffffffffa0079377>] i915_gem_object_unbind+0x111/0x1cb [i915]
+[  161.821822]  [<ffffffffa0079453>] i915_gem_free_object_tail+0x22/0xd3 [i915]
+[  161.821839]  [<ffffffffa007b58c>] i915_gem_free_object+0x46/0x4b [i915]
+[  161.821856]  [<ffffffffa001ffa1>] ? drm_gem_handle_create+0xcb/0xcb [drm]
+[  161.821870]  [<ffffffffa001ffcc>] drm_gem_object_free+0x2b/0x2d [drm]
+[  161.821877]  [<ffffffff8123057b>] kref_put+0x43/0x4d
+[  161.821890]  [<ffffffffa001fca5>] drm_gem_object_unreference_unlocked+0x33/0x40 [drm]
+[  161.821904]  [<ffffffffa001fdf8>] drm_gem_object_handle_unreference_unlocked.part.1+0x27/0x2c [drm]
+[  161.821918]  [<ffffffffa001fec8>] drm_gem_handle_delete+0x84/0x92 [drm]
+[  161.821933]  [<ffffffffa0020305>] drm_gem_close_ioctl+0x28/0x2a [drm]
+[  161.821946]  [<ffffffffa001e7ae>] drm_ioctl+0x2c8/0x3a5 [drm]
+[  161.821958]  [<ffffffffa00202dd>] ? drm_gem_destroy+0x43/0x43 [drm]
+[  161.821966]  [<ffffffff810749a6>] ? __hrtimer_start_range_ns+0x2cd/0x2ed
+[  161.821974]  [<ffffffff811337f4>] do_vfs_ioctl+0x45d/0x49e
+[  161.821982]  [<ffffffff81124f86>] ? fsnotify_access+0x5f/0x67
+[  161.821988]  [<ffffffff8113388b>] sys_ioctl+0x56/0x7b
+[  161.821995]  [<ffffffff8147bc02>] system_call_fastpath+0x16/0x1b
+[  161.822002] ---[ end trace 2d22d2d9c3bfe5c9 ]---
 -- 
-1.7.6.4
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
