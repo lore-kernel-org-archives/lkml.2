@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab1KWPIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:08:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34279 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756177Ab1KWPIR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:08:17 -0500
-Message-ID: <1322060889.14799.73.camel@twins>
-Subject: Re: HW perf initialisation as early_initcall
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Wed, 23 Nov 2011 16:08:09 +0100
-In-Reply-To: <20111123145658.GM25848@mudshark.cambridge.arm.com>
-References: <20111123145658.GM25848@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1756344Ab1KWPIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:08:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41600 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756177Ab1KWPIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 10:08:15 -0500
+Date: Wed, 23 Nov 2011 15:08:10 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+Message-ID: <20111123150810.GO19415@suse.de>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+ <1321900608-27687-8-git-send-email-mgorman@suse.de>
+ <1321945011.22361.335.camel@sli10-conroe>
+ <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
+ <20111123110041.GM19415@suse.de>
+ <CAPQyPG588_q1diT8KyPirUD9MLME6SanO-cSw1twzhFiTBWgCw@mail.gmail.com>
+ <20111123134512.GN19415@suse.de>
+ <CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 14:56 +0000, Will Deacon wrote:
-> Hi Peter,
+On Wed, Nov 23, 2011 at 10:35:37PM +0800, Nai Xia wrote:
+> On Wed, Nov 23, 2011 at 9:45 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Wed, Nov 23, 2011 at 09:05:08PM +0800, Nai Xia wrote:
+> >> > <SNIP>
+> >> >
+> >> > Where are you adding this check?
+> >> >
+> >> > If you mean in __unmap_and_move(), the check is unnecessary unless
+> >> > another subsystem starts using sync-light compaction. With this series,
+> >> > only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
+> >>
+> >> But I am still a little bit confused that if MIGRATE_SYNC_LIGHT is only
+> >> used by direct compaction and  another mode can be used by it:
+> >> MIGRATE_ASYNC also does not write dirty pages, then why not also
+> >> do an (current->flags & PF_MEMALLOC) test before writing out pages,
+> >
+> > Why would it be necessary?
+> > Why would it be better than what is there now?
 > 
-> In commit 004417a6 ("perf, arch: Cleanup perf-pmu init vs lockup-detector"),
-> you moved the arch hw perf initialisation into an early initcall to satisfy a
-> race with the NMI lock detector (I'm not clear on what the relationship is).
-
-NMI watchdog uses perf, getting the NMI watchdog up early is good,
-getting it up before perf is initialized, not so very good :-)
-
-> Anyway, with ARM big/little platforms on the horizon we have the fun of
-> heterogeneous PMUs in the sense that:
+> I mean, if
+>    MIGRATE_SYNC_LIGHT --> (current->flags & PF_MEMALLOC) and
+>    MIGRATE_SYNC_LIGHT --> no dirty writeback, and (current->flags & PF_MEMALLOC)
+>                       --> (MIGRATE_SYNC_LIGHT || MIGRATE_ASYNC)
+>    MIGRATE_ASYNC      --> no dirty writeback, then
+> why not simply  (current->flags & PF_MEMALLOC) ---> no dirty writeback
+> and keep the sync meaning as it was?
 > 
-> 	- They may have different numbers of event counters
-> 	- They may support different event types (possibly a distinct set)
-> 	- The event encodings for the generalised events may be different
-> 
-> The latter two points I think can be solved in the back-end by making events
-> affine to a particular PMU type (that is, they are only scheduled when the
-> profiled task is running on a given PMU type), although I'm not sure how this
-> will be exposed to userspace yet. It might be nice to register a separate
-> PMU with perf altogether, but I don't think the userspace tools are there
-> yet in terms of specifying the destination PMU for an event.
 
-Ow gawd, that's horrid, will you please kick your cpu folks for me.
+Ok, I see what you mean. Instead of making MIGRATE_SYNC_LIGHT part of
+the API, we could instead special case within migrate.c how to behave if
+MIGRATE_SYNC && PF_MEMALLOC.
 
-> The first point is part of a bigger problem, namely that we can only find
-> out the PMU topology of the system by probing the device tree. For older
-> platforms, we will still probe the PMU of the boot CPU by inspecting the ID
-> registers.
+This would be functionally equivalent and satisfy THP users
+but I do not see it as being easier to understand or easier
+to maintain than updating the API. If someone in the future
+wanted to use migration without significant stalls without
+being PF_MEMALLOC, they would need to update the API like this.
+There are no users like this today but automatic NUMA migration
+might want to leverage something like MIGRATE_SYNC_LIGHT
+(http://comments.gmane.org/gmane.linux.kernel.mm/70239)
 
-And here I throught DT was up _waaay_ early because its used to bring up
-the platform itself, do I need to re-educate myself?
-
-> My question is: does the hw perf initialisation really need to be an
-> early_initcall and, if so, how much of the perf backend needs to be up and
-> running? It may be that the early initcall assumes all PMUs are the same and
-> then later on I go and rewrite things like the number of counters.
-
-I think you can get away with doing it later, since you don't use the
-NMI watchdog (although if you ever get NMI like functionality you really
-should).
-
-> Of course, any ideas regarding the above are more than welcome!
-
-Yeah, I'll try and let it soak in my brain, who knows what it'll come up
-with ;-)
+-- 
+Mel Gorman
+SUSE Labs
