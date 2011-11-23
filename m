@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab1KWHBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:01:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8690 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab1KWHBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:01:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="79083107"
-From: Lin Ming <ming.m.lin@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH v3 0/6] ata port runtime power management support
-Date: Wed, 23 Nov 2011 15:01:20 +0800
-Message-Id: <1322031686-28233-1-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1758928Ab1KWHNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:13:53 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:35043 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab1KWHNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 02:13:52 -0500
+Date: Wed, 23 Nov 2011 08:13:49 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Christian Kujau <lists@nerdbynature.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111123071349.GA1671@x4.trippels.de>
+References: <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121173556.GA1673@x4.trippels.de>
+ <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121185215.GA1673@x4.trippels.de>
+ <20111121195113.GA1678@x4.trippels.de>
+ <1321907275.13860.12.camel@pasglop>
+ <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
+ <alpine.DEB.2.00.1111212105330.19606@router.home>
+ <1321948113.27077.24.camel@edumazet-laptop>
+ <1321950432.27077.27.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1321950432.27077.27.camel@edumazet-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 2011.11.22 at 09:27 +0100, Eric Dumazet wrote:
+> Le mardi 22 novembre 2011 à 08:48 +0100, Eric Dumazet a écrit :
+> 
+> > For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
+> > machines.
+> > 
+> 
+> 
+> By the way, I wonder why we still emit this_cpu_cmpxchg16b_emu() code
+> and calls when compiling a kernel for a cpu implementing cmpxchg16b
+> 
+> (CONFIG_MCORE2=y)
 
-This is the v3 patches to add ata port runtime pm support.
-Applied on top of v3.2-rc2.
+Yeah, it's strange (CONFIG_MK8):
 
-v1:
-https://lkml.org/lkml/2011/11/2/23
+ffffffff811058b0 <__kmalloc>:
+...
+ffffffff8110594f:       48 8d 4a 04             lea    0x4(%rdx),%rcx
+ffffffff81105953:       49 8b 1c 04             mov    (%r12,%rax,1),%rbx
+ffffffff81105957:       4c 89 e0                mov    %r12,%rax
+ffffffff8110595a:       e8 11 70 10 00          callq  ffffffff8120c970 <this_cpu_cmpxchg16b_emu>
+ffffffff8110595f:       66 66 90                data32 xchg %ax,%ax
+ffffffff81105962:       84 c0                   test   %al,%al
+ffffffff81105964:       74 c6                   je     ffffffff8110592c <__kmalloc+0x7c>
+...
 
-v2:
-https://lkml.org/lkml/2011/11/10/71
-Acked-by: Tejun Heo <tj@kernel.org>
-Kay Sievers reviewed sysfs change
+There is a comment in arch/x86/include/asm/percpu.h:
 
-Changes in v3:
-- runtime resume scsi device before system suspend (Alan Stern)
-- check runtime status in sd_shutdown
-
-Thanks for any comment,
-Lin Ming
+ * Pretty complex macro to generate cmpxchg16 instruction.  The instruction
+ * is not supported on early AMD64 processors so we must be able to emulate
+ * it in software.  The address used in the cmpxchg16 instruction must be
+ * aligned to a 16 byte boundary.
+-- 
+Markus
