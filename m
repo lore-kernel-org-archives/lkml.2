@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab1KWAlN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:41:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42874 "EHLO mx2.suse.de"
+	id S1759331Ab1KWAlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:41:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42892 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759237Ab1KWAlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:09 -0500
+	id S1759237Ab1KWAlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:19 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
-Message-Id: <20111123002406.955029592@clark.kroah.org>
+Message-Id: <20111123002407.235076567@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:32 -0800
+Date: Tue, 22 Nov 2011 16:23:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [25/53] nfs: when attempting to open a directory, fall back on normal lookup (try #5)
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [28/53] xhci: Set slot and ep0 flags for address command.
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,162 +24,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 1788ea6e3b2a58cf4fb00206e362d9caff8d86a7 upstream.
+commit d31c285b3a71cf9056e6a060de41f37780b0af86 upstream.
 
-commit d953126 changed how nfs_atomic_lookup handles an -EISDIR return
-from an OPEN call. Prior to that patch, that caused the client to fall
-back to doing a normal lookup. When that patch went in, the code began
-returning that error to userspace. The d_revalidate codepath however
-never had the corresponding change, so it was still possible to end up
-with a NULL ctx->state pointer after that.
+Matt's AsMedia xHCI host controller was responding with a Context Error
+to an address device command after a configured device reset.  Some
+sequence of events leads both the slot and endpoint zero add flags
+cleared to zero, which the AsMedia host doesn't like:
 
-That patch caused a regression. When we attempt to open a directory that
-does not have a cached dentry, that open now errors out with EISDIR. If
-you attempt the same open with a cached dentry, it will succeed.
+[  223.701839] xhci_hcd 0000:03:00.0: Slot ID 1 Input Context:
+[  223.701841] xhci_hcd 0000:03:00.0: @ffff880137b25000 (virt) @ffffc000 (dma) 0x000000 - drop flags
+[  223.701843] xhci_hcd 0000:03:00.0: @ffff880137b25004 (virt) @ffffc004 (dma) 0x000000 - add flags
+[  223.701846] xhci_hcd 0000:03:00.0: @ffff880137b25008 (virt) @ffffc008 (dma) 0x000000 - rsvd2[0]
+[  223.701848] xhci_hcd 0000:03:00.0: @ffff880137b2500c (virt) @ffffc00c (dma) 0x000000 - rsvd2[1]
+[  223.701850] xhci_hcd 0000:03:00.0: @ffff880137b25010 (virt) @ffffc010 (dma) 0x000000 - rsvd2[2]
+[  223.701852] xhci_hcd 0000:03:00.0: @ffff880137b25014 (virt) @ffffc014 (dma) 0x000000 - rsvd2[3]
+[  223.701854] xhci_hcd 0000:03:00.0: @ffff880137b25018 (virt) @ffffc018 (dma) 0x000000 - rsvd2[4]
+[  223.701857] xhci_hcd 0000:03:00.0: @ffff880137b2501c (virt) @ffffc01c (dma) 0x000000 - rsvd2[5]
+[  223.701858] xhci_hcd 0000:03:00.0: Slot Context:
+[  223.701860] xhci_hcd 0000:03:00.0: @ffff880137b25020 (virt) @ffffc020 (dma) 0x8400000 - dev_info
+[  223.701862] xhci_hcd 0000:03:00.0: @ffff880137b25024 (virt) @ffffc024 (dma) 0x010000 - dev_info2
+[  223.701864] xhci_hcd 0000:03:00.0: @ffff880137b25028 (virt) @ffffc028 (dma) 0x000000 - tt_info
+[  223.701866] xhci_hcd 0000:03:00.0: @ffff880137b2502c (virt) @ffffc02c (dma) 0x000000 - dev_state
+[  223.701869] xhci_hcd 0000:03:00.0: @ffff880137b25030 (virt) @ffffc030 (dma) 0x000000 - rsvd[0]
+[  223.701871] xhci_hcd 0000:03:00.0: @ffff880137b25034 (virt) @ffffc034 (dma) 0x000000 - rsvd[1]
+[  223.701873] xhci_hcd 0000:03:00.0: @ffff880137b25038 (virt) @ffffc038 (dma) 0x000000 - rsvd[2]
+[  223.701875] xhci_hcd 0000:03:00.0: @ffff880137b2503c (virt) @ffffc03c (dma) 0x000000 - rsvd[3]
+[  223.701877] xhci_hcd 0000:03:00.0: Endpoint 00 Context:
+[  223.701879] xhci_hcd 0000:03:00.0: @ffff880137b25040 (virt) @ffffc040 (dma) 0x000000 - ep_info
+[  223.701881] xhci_hcd 0000:03:00.0: @ffff880137b25044 (virt) @ffffc044 (dma) 0x2000026 - ep_info2
+[  223.701883] xhci_hcd 0000:03:00.0: @ffff880137b25048 (virt) @ffffc048 (dma) 0xffffe8e0 - deq
+[  223.701885] xhci_hcd 0000:03:00.0: @ffff880137b25050 (virt) @ffffc050 (dma) 0x000000 - tx_info
+[  223.701887] xhci_hcd 0000:03:00.0: @ffff880137b25054 (virt) @ffffc054 (dma) 0x000000 - rsvd[0]
+[  223.701889] xhci_hcd 0000:03:00.0: @ffff880137b25058 (virt) @ffffc058 (dma) 0x000000 - rsvd[1]
+[  223.701892] xhci_hcd 0000:03:00.0: @ffff880137b2505c (virt) @ffffc05c (dma) 0x000000 - rsvd[2]
+...
+[  223.701927] xhci_hcd 0000:03:00.0: // Ding dong!
+[  223.701992] xhci_hcd 0000:03:00.0: Setup ERROR: address device command for slot 1.
 
-Fix this by reverting the change in nfs_atomic_lookup and allowing
-attempts to open directories to fall back to a normal lookup
+The xHCI spec says that both flags must be set to one for the Address
+Device command.  When the device is first enumerated,
+xhci_setup_addressable_virt_dev() does set those flags.  However, when
+the device is addressed after it has been reset in the configured state,
+xhci_setup_addressable_virt_dev() is not called, and
+xhci_copy_ep0_dequeue_into_input_ctx() is called instead.  That function
+relies on the flags being set up by previous commands, which apparently
+isn't a good assumption.
 
-Also, add a NFSv4-specific f_ops->open routine that just returns
--ENOTDIR. This should never be called if things are working properly,
-but if it ever is, then the dprintk may help in debugging.
+Move the setting of the flags into the common parent function.
 
-To facilitate this, a new file_operations field is also added to the
-nfs_rpc_ops struct.
+This should be queued for stable kernels as old as 2.6.35, since that
+was the first introduction of xhci_copy_ep0_dequeue_into_input_ctx.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Matt <mdm@iinet.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/dir.c            |    2 +-
- fs/nfs/file.c           |   32 ++++++++++++++++++++++++++++++++
- fs/nfs/inode.c          |    2 +-
- fs/nfs/nfs3proc.c       |    1 +
- fs/nfs/nfs4proc.c       |    1 +
- fs/nfs/proc.c           |    1 +
- include/linux/nfs_fs.h  |    3 +++
- include/linux/nfs_xdr.h |    1 +
- 8 files changed, 41 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-mem.c |    5 -----
+ drivers/usb/host/xhci.c     |    5 ++++-
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1458,12 +1458,12 @@ static struct dentry *nfs_atomic_lookup(
- 				res = NULL;
- 				goto out;
- 			/* This turned out not to be a regular file */
-+			case -EISDIR:
- 			case -ENOTDIR:
- 				goto no_open;
- 			case -ELOOP:
- 				if (!(nd->intent.open.flags & O_NOFOLLOW))
- 					goto no_open;
--			/* case -EISDIR: */
- 			/* case -EINVAL: */
- 			default:
- 				res = ERR_CAST(inode);
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -887,3 +887,35 @@ static int nfs_setlease(struct file *fil
- 			file->f_path.dentry->d_name.name, arg);
- 	return -EINVAL;
- }
-+
-+#ifdef CONFIG_NFS_V4
-+static int
-+nfs4_file_open(struct inode *inode, struct file *filp)
-+{
-+	/*
-+	 * NFSv4 opens are handled in d_lookup and d_revalidate. If we get to
-+	 * this point, then something is very wrong
-+	 */
-+	dprintk("NFS: %s called! inode=%p filp=%p\n", __func__, inode, filp);
-+	return -ENOTDIR;
-+}
-+
-+const struct file_operations nfs4_file_operations = {
-+	.llseek		= nfs_file_llseek,
-+	.read		= do_sync_read,
-+	.write		= do_sync_write,
-+	.aio_read	= nfs_file_read,
-+	.aio_write	= nfs_file_write,
-+	.mmap		= nfs_file_mmap,
-+	.open		= nfs4_file_open,
-+	.flush		= nfs_file_flush,
-+	.release	= nfs_file_release,
-+	.fsync		= nfs_file_fsync,
-+	.lock		= nfs_lock,
-+	.flock		= nfs_flock,
-+	.splice_read	= nfs_file_splice_read,
-+	.splice_write	= nfs_file_splice_write,
-+	.check_flags	= nfs_check_flags,
-+	.setlease	= nfs_setlease,
-+};
-+#endif /* CONFIG_NFS_V4 */
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -291,7 +291,7 @@ nfs_fhget(struct super_block *sb, struct
- 		 */
- 		inode->i_op = NFS_SB(sb)->nfs_client->rpc_ops->file_inode_ops;
- 		if (S_ISREG(inode->i_mode)) {
--			inode->i_fop = &nfs_file_operations;
-+			inode->i_fop = NFS_SB(sb)->nfs_client->rpc_ops->file_ops;
- 			inode->i_data.a_ops = &nfs_file_aops;
- 			inode->i_data.backing_dev_info = &NFS_SB(sb)->backing_dev_info;
- 		} else if (S_ISDIR(inode->i_mode)) {
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -853,6 +853,7 @@ const struct nfs_rpc_ops nfs_v3_clientop
- 	.dentry_ops	= &nfs_dentry_operations,
- 	.dir_inode_ops	= &nfs3_dir_inode_operations,
- 	.file_inode_ops	= &nfs3_file_inode_operations,
-+	.file_ops	= &nfs_file_operations,
- 	.getroot	= nfs3_proc_get_root,
- 	.getattr	= nfs3_proc_getattr,
- 	.setattr	= nfs3_proc_setattr,
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6008,6 +6008,7 @@ const struct nfs_rpc_ops nfs_v4_clientop
- 	.dentry_ops	= &nfs4_dentry_operations,
- 	.dir_inode_ops	= &nfs4_dir_inode_operations,
- 	.file_inode_ops	= &nfs4_file_inode_operations,
-+	.file_ops	= &nfs4_file_operations,
- 	.getroot	= nfs4_proc_get_root,
- 	.getattr	= nfs4_proc_getattr,
- 	.setattr	= nfs4_proc_setattr,
---- a/fs/nfs/proc.c
-+++ b/fs/nfs/proc.c
-@@ -710,6 +710,7 @@ const struct nfs_rpc_ops nfs_v2_clientop
- 	.dentry_ops	= &nfs_dentry_operations,
- 	.dir_inode_ops	= &nfs_dir_inode_operations,
- 	.file_inode_ops	= &nfs_file_inode_operations,
-+	.file_ops	= &nfs_file_operations,
- 	.getroot	= nfs_proc_get_root,
- 	.getattr	= nfs_proc_getattr,
- 	.setattr	= nfs_proc_setattr,
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -410,6 +410,9 @@ extern const struct inode_operations nfs
- extern const struct inode_operations nfs3_file_inode_operations;
- #endif /* CONFIG_NFS_V3 */
- extern const struct file_operations nfs_file_operations;
-+#ifdef CONFIG_NFS_V4
-+extern const struct file_operations nfs4_file_operations;
-+#endif /* CONFIG_NFS_V4 */
- extern const struct address_space_operations nfs_file_aops;
- extern const struct address_space_operations nfs_dir_aops;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -875,7 +875,6 @@ int xhci_setup_addressable_virt_dev(stru
+ 	struct xhci_virt_device *dev;
+ 	struct xhci_ep_ctx	*ep0_ctx;
+ 	struct xhci_slot_ctx    *slot_ctx;
+-	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u32			port_num;
+ 	struct usb_device *top_dev;
  
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -1149,6 +1149,7 @@ struct nfs_rpc_ops {
- 	const struct dentry_operations *dentry_ops;
- 	const struct inode_operations *dir_inode_ops;
- 	const struct inode_operations *file_inode_ops;
-+	const struct file_operations *file_ops;
+@@ -887,12 +886,8 @@ int xhci_setup_addressable_virt_dev(stru
+ 		return -EINVAL;
+ 	}
+ 	ep0_ctx = xhci_get_ep_ctx(xhci, dev->in_ctx, 0);
+-	ctrl_ctx = xhci_get_input_control_ctx(xhci, dev->in_ctx);
+ 	slot_ctx = xhci_get_slot_ctx(xhci, dev->in_ctx);
  
- 	int	(*getroot) (struct nfs_server *, struct nfs_fh *,
- 			    struct nfs_fsinfo *);
+-	/* 2) New slot context and endpoint 0 context are valid*/
+-	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
+-
+ 	/* 3) Only the control endpoint is valid - one endpoint context */
+ 	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(1) | (u32) udev->route);
+ 	switch (udev->speed) {
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2875,6 +2875,10 @@ int xhci_address_device(struct usb_hcd *
+ 	/* Otherwise, update the control endpoint ring enqueue pointer. */
+ 	else
+ 		xhci_copy_ep0_dequeue_into_input_ctx(xhci, udev);
++	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
++	ctrl_ctx->add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);
++	ctrl_ctx->drop_flags = 0;
++
+ 	xhci_dbg(xhci, "Slot ID %d Input Context:\n", udev->slot_id);
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+@@ -2956,7 +2960,6 @@ int xhci_address_device(struct usb_hcd *
+ 	virt_dev->address = (le32_to_cpu(slot_ctx->dev_state) & DEV_ADDR_MASK)
+ 		+ 1;
+ 	/* Zero the input context control for later use */
+-	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
+ 	ctrl_ctx->add_flags = 0;
+ 	ctrl_ctx->drop_flags = 0;
+ 
 
 
