@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1KWK1y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:27:54 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59207 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab1KWK1w (ORCPT
+	id S1753871Ab1KWK3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:29:10 -0500
+Received: from portal.weinmann.de ([62.8.140.122]:45587 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab1KWK3J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:27:52 -0500
+	Wed, 23 Nov 2011 05:29:09 -0500
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Carsten Behling'" <carsten.behling@garz-fricke.com>
+CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Nov 2011 11:28:47 +0100
+Subject: RE: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Thread-Topic: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Thread-Index: AcypMG7f1j3pt+VZTlOvrrSAA2wmYwAAZ+ewACQAp5AAAcQnEA==
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B40D349@wm021.weinmann.com>
+References: <D99582E5322435468A77E74BB0039E7B1D1655BF4D@SRV02.hamburg.garz-fricke.de>
+ <EF2E73589CA71846A15D0B2CDF79505D087B40D16B@wm021.weinmann.com>
+ <D99582E5322435468A77E74BB0039E7B1D1655BFBB@SRV02.hamburg.garz-fricke.de>
+In-Reply-To: <D99582E5322435468A77E74BB0039E7B1D1655BFBB@SRV02.hamburg.garz-fricke.de>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [93.173.4.235]
-In-Reply-To: <4ECC67B9.4050306@codeaurora.org>
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com> <4ECC67B9.4050306@codeaurora.org>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 23 Nov 2011 12:27:31 +0200
-Message-ID: <CAK=WgbYyrbZLmDOx8yKWwjhn2MYN8669FDRvsYZSyLj1equcTw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Introducing a generic AMP framework
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Grant Likely <grant.likely@secretlab.ca>, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 5:25 AM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> Sorry for the rant, this naming just rubs me the wrong way. I definitely
-> appreciate the idea behind these patches.
+Hi,
 
-I don't share the same naming concerns you have (if any, then
-confusion with the bluetooth AMP patches and prefixes is more of a
-concern to me), but I don't care deeply about names.
+Carsten Behling wrote on 2011-11-23:
 
-Feel free to offer a different name, though really 'amp' here only
-describes the general model and motivation and is rarely used
-throughout the code; we mostly either use 'remoteproc' or 'rpmsg',
-which respectively refer to the two frameworks that are being added
-(the former responsible for controlling the state of the remote
-processors, and the latter for communicating with them).
+>> this case is already catched in at91_do_twi_transfer():
+> 
+> Sorry, I did not found this code in your patch.
+> (http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg06556.html):
+> 
+>> +       if (is_read) {
+>> +               if (!dev->buf_len)
+
+yes, this won't work for buf_len == 1. It is corrected in
+https://lkml.org/lkml/2011/11/18/223 which I held back for some time
+as it should have been just a feature extension. I was not aware it
+also fixed the buf_len = 1 bug. Sorry for that...
+
+(Explanation: in the first implementation I immediately decremented
+buf_len, so buf_len == 1 could not occur. Later I removed that but
+did not fully fold it into the base patch.)
 
 Thanks,
-Ohad.
+Niko
+
