@@ -1,48 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab1KWOX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 09:23:29 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37153 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755557Ab1KWOX2 (ORCPT
+	id S1756091Ab1KWOae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 09:30:34 -0500
+Received: from sperry-03.control.lth.se ([130.235.83.190]:50884 "EHLO
+	sperry-03.control.lth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755314Ab1KWOac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 09:23:28 -0500
-Subject: Re: [PATCH] iio: Fix build error in industrialio-core.c
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-In-Reply-To: <20111123141727.GA3195@mwanda>
-References: <1322043239-26082-1-git-send-email-levinsasha928@gmail.com>
-	 <20111123141727.GA3195@mwanda>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 23 Nov 2011 16:21:14 +0200
-Message-ID: <1322058074.3581.25.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Nov 2011 09:30:32 -0500
+X-Greylist: delayed 1489 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Nov 2011 09:30:32 EST
+Message-ID: <4ECCFDA8.7090704@control.lth.se>
+Date: Wed, 23 Nov 2011 15:05:28 +0100
+From: Anders Blomdell <anders.blomdell@control.lth.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: It would be preferable to do a mount --bind --make-private in one
+ atomic action
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 17:17 +0300, Dan Carpenter wrote:
-> On Wed, Nov 23, 2011 at 12:13:59PM +0200, Sasha Levin wrote:
-> > The error was introduced in commit b4641336 ("iio: fix a leak due to
-> > improper use of anon_inode_getfd()").
-> > 
-> 
-> Which tree is that patch from?  It's not in linux-next.
-> 
-> regards,
-> dan carpenter
+The rationale is the race problems I recently found with pam_namspace 
+(see https://bugzilla.redhat.com/show_bug.cgi?id=755216). The following 
+small script and it's output shows what pam_namespace essentially does 
+does, and the problems that might occur; assume that /work is 
+automounted, then the following really confuses things:
 
-It's in Linus's tree:
-https://github.com/torvalds/linux/commit/b46413367961c2e8bd827e067a231be982aaeee2
+(
+echo '# Empty work'
+findmnt | cut -c1-30 | grep work
+echo '# First primary mount on work'
+ls -ld /work/Fedora-16/.
+findmnt | cut -c1-30 | grep work
+unshare --mount -- /bin/sh -c "(
+     mount --bind /work /work ;
+     mount --make-private /work ;
+     mount --bind /tmp /work ;
+     echo '# Detached mount of work' ;
+     findmnt | cut -c1-30 | grep work ;
+     sleep 5 ;
+     echo '# Before detached unmount of private work' ;
+     findmnt | cut -c1-30 | grep work;
+     umount /work ;
+     echo '# Before detached unmount of bound work' ;
+     findmnt | cut -c1-30 | grep work;
+     echo '# Weird detached automount behaviour' ;
+     ls -ld /work/Fedora-15/. ;
+     umount /work ;
+     echo '# Detached unmount') &"
+sleep 1
+echo '# Second primary mount on work'
+ls -ld /work/Fedora-15/.
+findmnt | cut -c1-30 | grep work
+echo '# First primary mount on work no longer accessible'
+ls -ld /work/Fedora-16/.
+sleep 10
+echo '# And the final remaining cruft'
+findmnt | cut -c1-30 | grep work
+)
 
-Which explains why sfr didn't complain about it earlier.
+Which gives the following output (no wonder I had problems understanding 
+what went wrong with my machines :-():
+
+# Empty work
+├─/work
+# First primary mount on work
+drwxr-xr-x 4 root root 4096 Nov 23 09:37 /work/Fedora-16/.
+├─/work
+│ └─/work/Fedora-16
+# Detached mount of work
+├─/work
+│ ├─/work/Fedora-16
+│ └─/work
+│   └─/work
+# Second primary mount on work
+drwxr-xr-x 4 root root 4096 Nov 23 09:36 /work/Fedora-15/.
+├─/work
+│ ├─/work/Fedora-16
+│ ├─/work
+│ │ └─/work/Fedora-15
+│ └─/work/Fedora-15
+# First primary mount on work no longer accessible
+ls: cannot access /work/Fedora-16/.: Too many levels of symbolic links
+# Before detached unmount of private work
+├─/work
+│ ├─/work/Fedora-16
+│ ├─/work
+│ │ └─/work
+│ └─/work/Fedora-15
+# Before detached unmount of bound work
+├─/work
+│ ├─/work/Fedora-16
+│ ├─/work
+│ └─/work/Fedora-15
+# Weird detached automount behaviour
+ls: cannot access /work/Fedora-15/.: Too many levels of symbolic links
+# Detached unmount
+# And the final remaining cruft
+├─/work
+│ ├─/work/Fedora-16
+│ ├─/work
+│ │ └─/work/Fedora-15
+│ └─/work/Fedora-15
 
 -- 
-
-Sasha.
+Anders Blomdell                  Email: anders.blomdell@control.lth.se
+Department of Automatic Control
+Lund University                  Phone:    +46 46 222 4625
+P.O. Box 118                     Fax:      +46 46 138118
+SE-221 00 Lund, Sweden
 
