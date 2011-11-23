@@ -1,51 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab1KWBgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:36:33 -0500
-Received: from usmamail.tilera.com ([206.83.70.75]:8315 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab1KWBgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 20:36:32 -0500
-Message-ID: <4ECC4E1B.9050405@tilera.com>
-Date: Tue, 22 Nov 2011 20:36:27 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1759521Ab1KWBh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:37:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006Ab1KWBhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 20:37:55 -0500
+Message-ID: <4ECC4EE7.4020108@redhat.com>
+Date: Wed, 23 Nov 2011 09:39:51 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v4 0/5] Reduce cross CPU IPI interference
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: David Rientjes <rientjes@google.com>
+CC: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [patch v2 for-3.2] block: initialize request_queue's numa node
+ during allocation
+References: <4ECB5C80.8080609@redhat.com> <alpine.DEB.2.00.1111220140470.4306@chino.kir.corp.google.com> <20111122152739.GA5663@redhat.com> <20111122211954.GA17120@redhat.com> <alpine.DEB.2.00.1111221342320.2621@chino.kir.corp.google.com> <20111122220218.GA17543@redhat.com> <alpine.DEB.2.00.1111221703590.18644@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1111221703590.18644@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2011 6:08 AM, Gilad Ben-Yossef wrote:
-> We have lots of infrastructure in place to partition a multi-core system such that we have a group of CPUs that are dedicated to specific task: cgroups, scheduler and interrupt affinity and cpuisol boot parameter. Still, kernel code will some time interrupt all CPUs in the system via IPIs for various needs. These IPIs are useful and cannot be avoided altogether, but in certain cases it is possible to interrupt only specific CPUs that have useful work to
-> do and not the entire system.
->
-> This patch set, inspired by discussions with Peter Zijlstra and Frederic Weisbecker when testing the nohz task patch set, is a first stab at trying to explore doing this by locating the places where such global IPI calls are being made and turning a global IPI into an IPI for a specific group of CPUs.  The purpose of the patch set is to get feedback if this is the right way to go for dealing with this issue and indeed, if the issue is even worth dealing with at all. Based on the feedback from this patch set I plan to offer further patches that address similar issue in other code paths.
->
-> The patch creates an on_each_cpu_mask infrastructure API (derived from existing arch specific versions in Tile and Arm) and uses it to turn two global
-> IPI invocation to per CPU group invocations.
+On 11/23/2011 09:14 AM, David Rientjes wrote:
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> From: Mike Snitzer <snitzer@redhat.com>
+> 
+> struct request_queue is allocated with __GFP_ZERO so its "node" field is 
+> zero before initialization.  This causes an oops if node 0 is offline in 
+> the page allocator because its zonelists are not initialized.  From Dave 
+> Young's dmesg:
+> 
+> 	SRAT: Node 1 PXM 2 0-d0000000
+> 	SRAT: Node 1 PXM 2 100000000-330000000
+> 	SRAT: Node 0 PXM 1 330000000-630000000
+> 	Initmem setup node 1 0000000000000000-000000000affb000
+> 	...
+> 	Built 1 zonelists in Node order, mobility grouping on.
+> 	...
+> 	BUG: unable to handle kernel paging request at 0000000000001c08
+> 	IP: [<ffffffff8111c355>] __alloc_pages_nodemask+0xb5/0x870
+> 
+> and __alloc_pages_nodemask+0xb5 translates to a NULL pointer on 
+> zonelist->_zonerefs.
+> 
+> The fix is to initialize q->node at the time of allocation so the correct 
+> node is passed to the slab allocator later.
+> 
+> Since blk_init_allocated_queue_node() is no longer needed, merge it with 
+> blk_init_allocated_queue().
+> 
+> [rientjes@google.com: changelog, initializing q->node]
+> Cc: stable@vger.kernel.org [2.6.37+]
+> Reported-by: Dave Young <dyoung@redhat.com>
+> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-I think this kind of work is very important as more and more processing
-moves to isolated cpus that need protection from miscellaneous kernel
-interrupts.  Keep at it! :-)
+
+Tested-by: Dave Young <dyoung@redhat.com>
+
+> ---
+>  block/blk-core.c       |   14 +++-----------
+>  include/linux/blkdev.h |    3 ---
+>  2 files changed, 3 insertions(+), 14 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -467,6 +467,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+>  	q->backing_dev_info.state = 0;
+>  	q->backing_dev_info.capabilities = BDI_CAP_MAP_COPY;
+>  	q->backing_dev_info.name = "block";
+> +	q->node = node_id;
+>  
+>  	err = bdi_init(&q->backing_dev_info);
+>  	if (err) {
+> @@ -551,7 +552,7 @@ blk_init_queue_node(request_fn_proc *rfn, spinlock_t *lock, int node_id)
+>  	if (!uninit_q)
+>  		return NULL;
+>  
+> -	q = blk_init_allocated_queue_node(uninit_q, rfn, lock, node_id);
+> +	q = blk_init_allocated_queue(uninit_q, rfn, lock);
+>  	if (!q)
+>  		blk_cleanup_queue(uninit_q);
+>  
+> @@ -563,18 +564,9 @@ struct request_queue *
+>  blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+>  			 spinlock_t *lock)
+>  {
+> -	return blk_init_allocated_queue_node(q, rfn, lock, -1);
+> -}
+> -EXPORT_SYMBOL(blk_init_allocated_queue);
+> -
+> -struct request_queue *
+> -blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+> -			      spinlock_t *lock, int node_id)
+> -{
+>  	if (!q)
+>  		return NULL;
+>  
+> -	q->node = node_id;
+>  	if (blk_init_free_list(q))
+>  		return NULL;
+>  
+> @@ -604,7 +596,7 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+>  
+>  	return NULL;
+>  }
+> -EXPORT_SYMBOL(blk_init_allocated_queue_node);
+> +EXPORT_SYMBOL(blk_init_allocated_queue);
+>  
+>  int blk_get_queue(struct request_queue *q)
+>  {
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -805,9 +805,6 @@ extern void blk_unprep_request(struct request *);
+>   */
+>  extern struct request_queue *blk_init_queue_node(request_fn_proc *rfn,
+>  					spinlock_t *lock, int node_id);
+> -extern struct request_queue *blk_init_allocated_queue_node(struct request_queue *,
+> -							   request_fn_proc *,
+> -							   spinlock_t *, int node_id);
+>  extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+>  extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
+>  						      request_fn_proc *, spinlock_t *);
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+
+
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Thanks
+Dave
