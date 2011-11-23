@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab1KWAfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:35:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42364 "EHLO mx2.suse.de"
+	id S932460Ab1KWAfG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:35:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42319 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932251Ab1KWAfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:13 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:55 2011
-Message-Id: <20111123002554.975232070@clark.kroah.org>
+	id S932251Ab1KWAez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:34:55 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:53 2011
+Message-Id: <20111123002553.435914673@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:22 -0800
+Date: Tue, 22 Nov 2011 16:25:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [22/53] tty: hvc_dcc: Fix duplicate character inputs
+        alan@lxorguk.ukuu.org.uk, Tony Jago <tony@hammertelecom.com.au>,
+        Steven Toth <stoth@kernellabs.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [06/53] [media] saa7164: Add support for another HVR2200 hardware revision
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +27,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Tony Jago <tony@hammertelecom.com.au>
 
-commit c2a3e84f950e7ddba1f3914b005861d46ae60359 upstream.
+commit 62dd28d0c659db29bdb89cfe9f0aefe42f0adfe9 upstream.
 
-Reading from the DCC grabs a character from the buffer and
-clears the status bit. Since this is a context-changing
-operation, instructions following the character read that rely on
-the status bit being accurate need to be synchronized with an
-ISB.
+Hauppauge have released a new model rev, sub id 8940, this adds
+support.
 
-In this case, the status bit check needs to execute after the
-character read otherwise we run the risk of reading the character
-and checking the status bit before the read can clear the status
-bit in the first place. When this happens, the user will see the
-same character they typed twice, instead of once.
-
-Add an ISB after the read and the write, so that the status check
-is synchronized with the read/write operations.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+[stoth@kernellabs.com: I modified Tony's patch slightly in relation to the
+ card numbering in saa7164.h, appending rather than inserting the new card
+ - normal practise]
+Signed-off-by: Tony Jago <tony@hammertelecom.com.au>
+Signed-off-by: Steven Toth <stoth@kernellabs.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/hvc/hvc_dcc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/video/saa7164/saa7164-cards.c |   66 ++++++++++++++++++++++++++++
+ drivers/media/video/saa7164/saa7164-dvb.c   |    1 
+ drivers/media/video/saa7164/saa7164.h       |    1 
+ 3 files changed, 68 insertions(+)
 
---- a/drivers/tty/hvc/hvc_dcc.c
-+++ b/drivers/tty/hvc/hvc_dcc.c
-@@ -46,6 +46,7 @@ static inline char __dcc_getchar(void)
+--- a/drivers/media/video/saa7164/saa7164-cards.c
++++ b/drivers/media/video/saa7164/saa7164-cards.c
+@@ -203,6 +203,66 @@ struct saa7164_board saa7164_boards[] =
+ 			.i2c_reg_len	= REGLEN_8bit,
+ 		} },
+ 	},
++	[SAA7164_BOARD_HAUPPAUGE_HVR2200_4] = {
++		.name		= "Hauppauge WinTV-HVR2200",
++		.porta		= SAA7164_MPEG_DVB,
++		.portb		= SAA7164_MPEG_DVB,
++		.portc		= SAA7164_MPEG_ENCODER,
++		.portd		= SAA7164_MPEG_ENCODER,
++		.porte		= SAA7164_MPEG_VBI,
++		.portf		= SAA7164_MPEG_VBI,
++		.chiprev	= SAA7164_CHIP_REV3,
++		.unit		= {{
++			.id		= 0x1d,
++			.type		= SAA7164_UNIT_EEPROM,
++			.name		= "4K EEPROM",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_0,
++			.i2c_bus_addr	= 0xa0 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x04,
++			.type		= SAA7164_UNIT_TUNER,
++			.name		= "TDA18271-1",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_1,
++			.i2c_bus_addr	= 0xc0 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x05,
++			.type		= SAA7164_UNIT_ANALOG_DEMODULATOR,
++			.name		= "TDA8290-1",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_1,
++			.i2c_bus_addr	= 0x84 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1b,
++			.type		= SAA7164_UNIT_TUNER,
++			.name		= "TDA18271-2",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_2,
++			.i2c_bus_addr	= 0xc0 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1c,
++			.type		= SAA7164_UNIT_ANALOG_DEMODULATOR,
++			.name		= "TDA8290-2",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_2,
++			.i2c_bus_addr	= 0x84 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1e,
++			.type		= SAA7164_UNIT_DIGITAL_DEMODULATOR,
++			.name		= "TDA10048-1",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_1,
++			.i2c_bus_addr	= 0x10 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1f,
++			.type		= SAA7164_UNIT_DIGITAL_DEMODULATOR,
++			.name		= "TDA10048-2",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_2,
++			.i2c_bus_addr	= 0x12 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		} },
++	},
+ 	[SAA7164_BOARD_HAUPPAUGE_HVR2250] = {
+ 		.name		= "Hauppauge WinTV-HVR2250",
+ 		.porta		= SAA7164_MPEG_DVB,
+@@ -426,6 +486,10 @@ struct saa7164_subid saa7164_subids[] =
+ 		.subvendor = 0x0070,
+ 		.subdevice = 0x8851,
+ 		.card      = SAA7164_BOARD_HAUPPAUGE_HVR2250_2,
++	}, {
++		.subvendor = 0x0070,
++		.subdevice = 0x8940,
++		.card      = SAA7164_BOARD_HAUPPAUGE_HVR2200_4,
+ 	},
+ };
+ const unsigned int saa7164_idcount = ARRAY_SIZE(saa7164_subids);
+@@ -469,6 +533,7 @@ void saa7164_gpio_setup(struct saa7164_d
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_3:
++	case SAA7164_BOARD_HAUPPAUGE_HVR2200_4:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_3:
+@@ -549,6 +614,7 @@ void saa7164_card_setup(struct saa7164_d
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_3:
++	case SAA7164_BOARD_HAUPPAUGE_HVR2200_4:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_3:
+--- a/drivers/media/video/saa7164/saa7164-dvb.c
++++ b/drivers/media/video/saa7164/saa7164-dvb.c
+@@ -475,6 +475,7 @@ int saa7164_dvb_register(struct saa7164_
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_3:
++	case SAA7164_BOARD_HAUPPAUGE_HVR2200_4:
+ 		i2c_bus = &dev->i2c_bus[port->nr + 1];
+ 		switch (port->nr) {
+ 		case 0:
+--- a/drivers/media/video/saa7164/saa7164.h
++++ b/drivers/media/video/saa7164/saa7164.h
+@@ -82,6 +82,7 @@
+ #define SAA7164_BOARD_HAUPPAUGE_HVR2200_3	6
+ #define SAA7164_BOARD_HAUPPAUGE_HVR2250_2	7
+ #define SAA7164_BOARD_HAUPPAUGE_HVR2250_3	8
++#define SAA7164_BOARD_HAUPPAUGE_HVR2200_4	9
  
- 	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
- 		: "=r" (__c));
-+	isb();
- 
- 	return __c;
- }
-@@ -55,6 +56,7 @@ static inline void __dcc_putchar(char c)
- 	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
- 		: /* no output register */
- 		: "r" (c));
-+	isb();
- }
- 
- static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
+ #define SAA7164_MAX_UNITS		8
+ #define SAA7164_TS_NUMBER_OF_LINES	312
 
 
