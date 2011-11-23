@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1KWOfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 09:35:16 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51895 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab1KWOfN (ORCPT
+	id S1756019Ab1KWOfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 09:35:39 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59176 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab1KWOfh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 09:35:13 -0500
-Date: Wed, 23 Nov 2011 15:34:53 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH 03/10] threadgroup: extend threadgroup_lock() to cover
- exit and exec
-Message-ID: <20111123143444.GA14549@somewhere.redhat.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
- <20111113164426.GB9446@somewhere>
- <20111114135404.GD9446@somewhere>
- <20111121220326.GM25776@google.com>
+	Wed, 23 Nov 2011 09:35:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121220326.GM25776@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111123134512.GN19415@suse.de>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+	<1321900608-27687-8-git-send-email-mgorman@suse.de>
+	<1321945011.22361.335.camel@sli10-conroe>
+	<CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
+	<20111123110041.GM19415@suse.de>
+	<CAPQyPG588_q1diT8KyPirUD9MLME6SanO-cSw1twzhFiTBWgCw@mail.gmail.com>
+	<20111123134512.GN19415@suse.de>
+Date: Wed, 23 Nov 2011 22:35:37 +0800
+Message-ID: <CAPQyPG6b-MiysHnEadWRX729_q7G=_mYozSR+OatS-TLs_Sw_Q@mail.gmail.com>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+From: Nai Xia <nai.xia@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 02:03:26PM -0800, Tejun Heo wrote:
-> On Mon, Nov 14, 2011 at 02:54:08PM +0100, Frederic Weisbecker wrote:
-> > > Also note this is currently protected by the tasklist readlock. Cred guard mutex is
-> > > certainly better, I just don't remember if you remove the tasklist lock in a
-> > > further patch.
-> > 
-> > Ah recalling what Ben Blum said, we also need the leader to stay stable because it
-> > is excpected to be passed in ->can_attach(), ->attach(), ->cancel_attach(), ...
-> > Although that's going to change after your patches that pass a flex array.
-> 
-> Not really without locking out exec.  The thing is whoever is exec'ing
-> will be the leader and we can't guarantee that the first in the flex
-> array is always the leader.  One method may see it as the leader, the
-> next one might not.
+On Wed, Nov 23, 2011 at 9:45 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Wed, Nov 23, 2011 at 09:05:08PM +0800, Nai Xia wrote:
+>> > <SNIP>
+>> >
+>> > Where are you adding this check?
+>> >
+>> > If you mean in __unmap_and_move(), the check is unnecessary unless
+>> > another subsystem starts using sync-light compaction. With this series,
+>> > only direct compaction cares about MIGRATE_SYNC_LIGHT. If the page is
+>>
+>> But I am still a little bit confused that if MIGRATE_SYNC_LIGHT is only
+>> used by direct compaction and  another mode can be used by it:
+>> MIGRATE_ASYNC also does not write dirty pages, then why not also
+>> do an (current->flags & PF_MEMALLOC) test before writing out pages,
+>
+> Why would it be necessary?
+> Why would it be better than what is there now?
 
-Exactly!
+I mean, if MIGRATE_SYNC_LIGHT -->  (current->flags & PF_MEMALLOC),
+and MIGRATE_SYNC_LIGHT --> no dirty writeback, and
+ (current->flags & PF_MEMALLOC)
+---> (MIGRATE_SYNC_LIGHT || MIGRATE_ASYNC)
+and   MIGRATE_ASYNC --> no dirty writeback, then
+why not simply  (current->flags & PF_MEMALLOC) ---> no dirty writeback
+and keep the sync meaning as it was?
+
+Hoping I get myself clear this time......
+
+>
+>> like we already did for the page lock condition, but adding a new mode
+>> instead?
+>>
+>
+> I'm afraid I am missing the significance of your question or how it
+> might apply to the problem at hand.
+
+Sorry, It always takes some effort for me to get myself understood
+when expressing a complicated thing. That's always my fault ;)
+
+Thanks,
+Nai
+
+>
+> --
+> Mel Gorman
+> SUSE Labs
+>
