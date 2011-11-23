@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab1KWVod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 16:44:33 -0500
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:38503 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751029Ab1KWVoc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 16:44:32 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAGBozU5tg6zW/2dsb2JhbABEqnKBBoFyAQEEATocIwULCANGFCUDIYgYArRTEopQBJRHkgw
-Date: Wed, 23 Nov 2011 22:41:15 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Harald Welte <HaraldWelte@viatech.com>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, Marc Vertes <marc.vertes@sigfox.com>,
-        w.sang@pengutronix.de, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <20111123214115.GO23376@infomag.iguana.be>
-References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com> <20111122112212.GD2734@pengutronix.de> <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com> <20111122173029.GA14349@pengutronix.de> <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com> <4ecbf011.dZASXe6D5kH4Uxve%marc.vertes@sigfox.com> <20111123121051.GA18320@rainbow> <20111123182209.GF5315@prithivi.gnumonks.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111123182209.GF5315@prithivi.gnumonks.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756208Ab1KWVp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 16:45:27 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:34522 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755929Ab1KWVp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 16:45:26 -0500
+Date: Wed, 23 Nov 2011 13:45:23 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Iain Paton <selsinork@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] iproute2 v3.0.1
+Message-ID: <20111123134523.47aae16b@nehalam.linuxnetplumber.net>
+In-Reply-To: <4ECD60D7.2010903@gmail.com>
+References: <20111123122951.6ad25f74@nehalam.linuxnetplumber.net>
+	<4ECD60D7.2010903@gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/hTewtes125gLq4d0Uly6x4O"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Harald,
+--Sig_/hTewtes125gLq4d0Uly6x4O
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Unfortunately it simply doesn't work.  When I originally implemented a
-> via_wdt driver some years ago, I couldn't start the watchdog no matter
-> how hard I tried.  My inquiries into VIA at that point didn't provide
-> any response either.  In fact, I even feared that nobody might ever have
-> used that watchdog hardware before ;)
-> 
-> I can ask again, but I'm not sure if it will be any different at that
-> time..
+On Wed, 23 Nov 2011 21:08:39 +0000
+Iain Paton <selsinork@gmail.com> wrote:
 
-Could you please ask again? It could indeed be that they lock registers.
-(It could be something similar to some of the superIO chipsets that can
-enable/disable (lock/unlock) access to registers).
+> Stephen Hemminger wrote:
+> > Source: no longer at linux-foundation
+> >   http://kernel.org/pub/linux/kernel/utils/networking/iproute2/iproute2=
+-3.1.0.gz
+>=20
+> That's a 404.=20
+>=20
+> Maybe http://kernel.org/pub/linux/utils/networking/iproute2/iproute2-3.1.=
+0.tar.gz ?
 
-The BIOS can at least start the hardware, so the hardware does work :-)
+Yes. Thanks.
 
-Note: I saw your disclaimer and I thus have no high hopes :-).
+--Sig_/hTewtes125gLq4d0Uly6x4O
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Thanks in advance,
-Wim.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJOzWlzAAoJEICnf2CVzeR+c3EQAK1Ew25LvDlOi0caW5BUrvCA
+qu7xMOVyC3gmA7Mf4kp9zEfjsnR5O7vnDoaE8iuAT2v2ZWWruIHdnR0MJjj/8kjI
+H0bH6ZmUvLyvPwvplbj0Hg7cDuAjAruxW3Zlf88M6ObEv1gHIq2uFHX+laLl312g
+xoVsGBoSNtz932PDgTN1k/FsM4fd3s7X/DX9n+mfBuNq//3aRN9wSvvcnTkqhV5+
+ARHPvC/fZHlSSqvD6cwfNLV/QQVXYvsXXLrKXZv00CUFcjeUES0Y/6hy/Y7XGsTa
+g2mvIdJU5DPvDI4E63zsV7h9Naxj53PkFzCiCgAIG1qp1rGksKIUsmzV4NaOMs7L
+B027H7v7gLHGg24Cz6vVyoubk0Wg73l/QmyY7MdO9Bf3WGz4OmCcAhkKGR8t7/lh
+n/sDokx3fxGX9TGRn5WsVt+p7DaxIGBPb+rGU2H5+feAfgJjZEIIGFXBiII4LYd0
+0rLMKRh6Ik9YB5dfa0BPX8tGV2P2PRhwkmkisYkMmvUWHOO8VkLRH9jLn9JRXZZQ
+UPaS34+8BMTCduTyLg5rJoVDAxHYKWn84+iMxtqn5pN5p7qYSka0kuPGtq5OXe1E
+OrlChToVFsNJitywHR4aiAEpXHuwAsq/hx/eXd8XrPpvox5iq+OSkGaw1iVHi/7g
+R/JE4jNXkyVy0rVN+o0p
+=lx00
+-----END PGP SIGNATURE-----
+
+--Sig_/hTewtes125gLq4d0Uly6x4O--
