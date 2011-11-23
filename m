@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab1KWAgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42508 "EHLO mx2.suse.de"
+	id S932670Ab1KWAgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42527 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab1KWAgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
-Message-Id: <20111123002556.667710202@clark.kroah.org>
+	id S932581Ab1KWAg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:29 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
+Message-Id: <20111123002554.316328807@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:40 -0800
+Date: Tue, 22 Nov 2011 16:25:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bart Hartgers <bart.hartgers@gmail.com>
-Subject: [40/53] USB: ark3116 initialisation fix
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [15/53] ip6_tunnel: copy parms.name after register_netdevice
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,54 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Hartgers <bart.hartgers@gmail.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 583182ba5f02c8c9be82ea550f2051eaec15b975 upstream.
+commit 731abb9cb27aef6013ce60808a04e04a545f3f4e upstream.
 
-This patch for the usb serial ark3116 driver fixes an initialisation
-ordering bug that gets triggered on hotplug when using at least recent
-debian/ubuntu userspace. Without it, ark3116 serial cables don't work.
+Commit 1c5cae815d removed an explicit call to dev_alloc_name in ip6_tnl_create
+because register_netdevice will now create a valid name.  This works for the
+net_device itself.
 
-Signed-off-by: Bart Hartgers <bart.hartgers@gmail.com>
-Tested-by: law_ence.dev@ntlworld.com
+However the tunnel keeps a copy of the name in the parms structure for the
+ip6_tnl associated with the tunnel.  parms.name is set by copying the net_device
+name in ip6_tnl_dev_init_gen.  That function is called from ip6_tnl_dev_init in
+ip6_tnl_create, but it is done before register_netdevice is called so the name
+is set to a bogus value in the parms.name structure.
+
+This shows up if you do a simple tunnel add, followed by a tunnel show:
+
+[root@localhost ~]# ip -6 tunnel add remote fec0::100 local fec0::200
+[root@localhost ~]# ip -6 tunnel show
+ip6tnl0: ipv6/ipv6 remote :: local :: encaplimit 0 hoplimit 0 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
+ip6tnl%d: ipv6/ipv6 remote fec0::100 local fec0::200 encaplimit 4 hoplimit 64 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
+[root@localhost ~]#
+
+Fix this by moving the strcpy out of ip6_tnl_dev_init_gen, and calling it after
+register_netdevice has successfully returned.
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ark3116.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/ipv6/ip6_tunnel.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ark3116.c
-+++ b/drivers/usb/serial/ark3116.c
-@@ -42,7 +42,7 @@ static int debug;
-  * Version information
-  */
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -289,6 +289,8 @@ static struct ip6_tnl *ip6_tnl_create(st
+ 	if ((err = register_netdevice(dev)) < 0)
+ 		goto failed_free;
  
--#define DRIVER_VERSION "v0.6"
-+#define DRIVER_VERSION "v0.7"
- #define DRIVER_AUTHOR "Bart Hartgers <bart.hartgers+ark3116@gmail.com>"
- #define DRIVER_DESC "USB ARK3116 serial/IrDA driver"
- #define DRIVER_DEV_DESC "ARK3116 RS232/IrDA"
-@@ -380,10 +380,6 @@ static int ark3116_open(struct tty_struc
- 		goto err_out;
- 	}
- 
--	/* setup termios */
--	if (tty)
--		ark3116_set_termios(tty, port, NULL);
--
- 	/* remove any data still left: also clears error state */
- 	ark3116_read_reg(serial, UART_RX, buf);
- 
-@@ -406,6 +402,10 @@ static int ark3116_open(struct tty_struc
- 	/* enable DMA */
- 	ark3116_write_reg(port->serial, UART_FCR, UART_FCR_DMA_SELECT);
- 
-+	/* setup termios */
-+	if (tty)
-+		ark3116_set_termios(tty, port, NULL);
++	strcpy(t->parms.name, dev->name);
 +
- err_out:
- 	kfree(buf);
- 	return result;
+ 	dev_hold(dev);
+ 	ip6_tnl_link(ip6n, t);
+ 	return t;
+@@ -1397,7 +1399,6 @@ ip6_tnl_dev_init_gen(struct net_device *
+ 	struct ip6_tnl *t = netdev_priv(dev);
+ 
+ 	t->dev = dev;
+-	strcpy(t->parms.name, dev->name);
+ 	dev->tstats = alloc_percpu(struct pcpu_tstats);
+ 	if (!dev->tstats)
+ 		return -ENOMEM;
+@@ -1477,6 +1478,7 @@ static void __net_exit ip6_tnl_destroy_t
+ static int __net_init ip6_tnl_init_net(struct net *net)
+ {
+ 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
++	struct ip6_tnl *t = NULL;
+ 	int err;
+ 
+ 	ip6n->tnls[0] = ip6n->tnls_wc;
+@@ -1497,6 +1499,10 @@ static int __net_init ip6_tnl_init_net(s
+ 	err = register_netdev(ip6n->fb_tnl_dev);
+ 	if (err < 0)
+ 		goto err_register;
++
++	t = netdev_priv(ip6n->fb_tnl_dev);
++
++	strcpy(t->parms.name, ip6n->fb_tnl_dev->name);
+ 	return 0;
+ 
+ err_register:
 
 
