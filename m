@@ -1,53 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759824Ab1KWDwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 22:52:19 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9624 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759801Ab1KWDwR convert rfc822-to-8bit (ORCPT
+	id S1759663Ab1KWEAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 23:00:19 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:36247 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640Ab1KWEAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 22:52:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 22 Nov 2011 19:52:16 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "bunk@kernel.org" <bunk@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Nov 2011 09:22:11 +0530
-Subject: RE: [PATCH] bcd: limit bin2bcd input value to lie between 0-99
-Thread-Topic: [PATCH] bcd: limit bin2bcd input value to lie between 0-99
-Thread-Index: AcypZpsvjeKnR7WNTOCwkaiYdeDcxwAK1WEg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DCAB86F5D@BGMAIL02.nvidia.com>
-References: <1321420292-26970-1-git-send-email-vbyravarasu@nvidia.com>
- <20111122143214.5cc8f17e.akpm@linux-foundation.org>
-In-Reply-To: <20111122143214.5cc8f17e.akpm@linux-foundation.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Nov 2011 23:00:17 -0500
+Date: Wed, 23 Nov 2011 15:00:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20111123150004.59be04eb36c480ec44edc9d5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > e.g. say val passed to bin2bcd is 123.
-> > In that case the expected value to be returned by
-> > this function is 0x23.
-> > However, without the fix being added, it would
-> > return 0xC3.
-> >
-> 
-> I'm not sure that I agree.  Passing 123 to bin2bcd() is a bug, isn't
-> it?  We want to know about bugs so we can fix them, and quietly repairing
-> thngs in callees prevents that.
+--Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As bin2bcd is having "unsigned val" as parameter, I do not understand why passing 123 is a bug.
-123 that I mentioned here in my example is a decimal value, which is very well within unsigned char limits.
-Even any value beyond 99 would create this problem, as the values are not really getting stored as BCD, where each nibble value is to be limited to stay within 0 to 9.
-Probably it would be better to change the param of "bin2bcd" from "unsigned val" to "unsigned char" itself.  
+Hi all,
+
+After merging the final tree, today's linux-next build (powerpc allnoconfig)
+failed like this:
+
+In file included from include/linux/netdevice.h:53:0,
+                 from include/linux/icmpv6.h:173,
+                 from include/linux/ipv6.h:220,
+                 from include/net/ipv6.h:16,
+                 from include/linux/sunrpc/clnt.h:26,
+                 from include/linux/nfs_fs.h:50,
+                 from init/do_mounts.c:20:
+include/net/netprio_cgroup.h:23:29: error: field 'css' has incomplete type
+
+And several more similar.
+
+Caused by commit 5bc1421e34ec ("net: add network priority cgroup
+infrastructure (v4)").
+
+I have added the following (minimal, but probably not optimal) patch for
+today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 23 Nov 2011 14:49:49 +1100
+Subject: [PATCH] net: fix build error in network priority cgroup
+ infrastructure
+
+Fixes this error:
+
+In file included from include/linux/netdevice.h:53:0,
+                 from include/linux/icmpv6.h:173,
+                 from include/linux/ipv6.h:220,
+                 from include/net/ipv6.h:16,
+                 from include/linux/sunrpc/clnt.h:26,
+                 from include/linux/nfs_fs.h:50,
+                 from init/do_mounts.c:20:
+include/net/netprio_cgroup.h:23:29: error: field 'css' has incomplete type
+
+When CONFIG_CGROUPS is not set.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/net/netprio_cgroup.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
+index c432e99..da71b91 100644
+--- a/include/net/netprio_cgroup.h
++++ b/include/net/netprio_cgroup.h
+@@ -20,7 +20,9 @@
+=20
+ struct cgroup_netprio_state
+ {
++#ifdef CONFIG_CGROUPS
+ 	struct cgroup_subsys_state css;
++#endif
+ 	u32 prioidx;
+ };
+=20
+--=20
+1.7.7.3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOzG/EAAoJEECxmPOUX5FE8CoP/iSK5UWvw1Ed2P6C7JCkRkT2
+Nk1h+6C8ocC8r7cP0vplLtIYW92J1VyKnEw9FfsTgvxZ7LHfL5dTRDyckLbYJkK0
+US9a5t7QLFhlE1RzzJCGZm6731tpSbyapQZrNls0G0MjAG56ChSNcwvh7h5x9IC9
+I8HqMGWcA1kgNZoawetJFgUcZnY3sNZ78LpteZ8afW/imQXGLU7OiZUnGx19u7CX
+paD/RBKJqqKB5ms4qvFk3QSh46HswrVSpvWwn911GPkYkLzrwwi+CntJ/sdUbAyD
+I+Wm4Md20Wo/riPMCYVtGrjr9Ms5Sxa2c2xAU0Foa8p6Ab/IERtHsI6PMO/+dl4Y
+hVFPa46u5XEK9uDHFmZK1Wh89pCKdSjDvtGDDStjUg7htPKfJZNYiiYqF9AxW3dE
+MOavcFzwOQWNUL2gpaANVy8ao2xsmU0VIuR7sEOjgsd3uRxarrGVz7eAFh1hpgUv
+Hzj95FwZ4nL/WJnAneGaJOrG+ljIDcF7S1PmDp1M7KJnzajMEdzXJ1GKdqNCfYg7
+frFIKgFfm2bLHG20UYpJezsJdX7xmznUnPNMCK6fPhkpsbC9moxEnSlCEhrNCE6P
+DCcO0f8Ww9rKZCeJxnnJXfJnivfv9HEkKmNL65ftP48nVCGmqiGVurK5/XAZuovM
+BXgnso3EhwEN3VEERWW2
+=937q
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Nov_2011_15_00_04_+1100_HwQkzJ/w/jvY0cw6--
