@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759787Ab1KWCLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 21:11:04 -0500
-Received: from gate.crashing.org ([63.228.1.57]:59449 "EHLO gate.crashing.org"
+	id S1759586Ab1KWCP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 21:15:26 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14096 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069Ab1KWCLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 21:11:02 -0500
-Message-ID: <1322012633.14573.22.camel@pasglop>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Date: Wed, 23 Nov 2011 12:43:53 +1100
-In-Reply-To: <alpine.DEB.2.01.1111221711410.8000@trent.utfs.org>
-References: <20111121131531.GA1679@x4.trippels.de>
-	 <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121153621.GA1678@x4.trippels.de>
-	 <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121161036.GA1679@x4.trippels.de>
-	 <1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121173556.GA1673@x4.trippels.de>
-	 <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111121185215.GA1673@x4.trippels.de>
-	 <20111121195113.GA1678@x4.trippels.de> <1321907275.13860.12.camel@pasglop>
-	 <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-	 <alpine.DEB.2.00.1111212105330.19606@router.home>
-	 <1321948113.27077.24.camel@edumazet-laptop>
-	 <1321999085.14573.2.camel@pasglop>
-	 <alpine.DEB.2.01.1111221511070.8000@trent.utfs.org>
-	 <1322007501.14573.15.camel@pasglop>
-	 <alpine.DEB.2.01.1111221711410.8000@trent.utfs.org>
+	id S1752592Ab1KWCPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 21:15:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,556,1315206000"; 
+   d="scan'208";a="88349543"
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+From: Shaohua Li <shaohua.li@intel.com>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+	 <1321900608-27687-8-git-send-email-mgorman@suse.de>
+	 <1321945011.22361.335.camel@sli10-conroe>
+	 <CAPQyPG4DQCxDah5VYMU6PNgeuD_3WJ-zm8XpL7V7BK8hAF8OJg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+Date: Wed, 23 Nov 2011 10:25:49 +0800
+Message-ID: <1322015149.22361.338.camel@sli10-conroe>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > I just want to see whether your network + heavy IO load problem goes
-> > away with that one patch.
+On Wed, 2011-11-23 at 10:01 +0800, Nai Xia wrote:
+> On Tue, Nov 22, 2011 at 2:56 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> > On Tue, 2011-11-22 at 02:36 +0800, Mel Gorman wrote:
+> >> This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
+> >> mode that avoids writing back pages to backing storage. Async
+> >> compaction maps to MIGRATE_ASYNC while sync compaction maps to
+> >> MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
+> >> hotplug, MIGRATE_SYNC is used.
+> >>
+> >> This avoids sync compaction stalling for an excessive length of time,
+> >> particularly when copying files to a USB stick where there might be
+> >> a large number of dirty pages backed by a filesystem that does not
+> >> support ->writepages.
+> > Hi,
+> > from my understanding, with this, even writes
+> > to /proc/sys/vm/compact_memory doesn't wait for pageout, is this
+> > intended?
+> > on the other hand, MIGRATE_SYNC_LIGHT now waits for pagelock and buffer
+> > lock, so could wait on page read. page read and page out have the same
+> > latency, why takes them different?
 > 
-> Sorry, I should have been clearer in that mail: the high "load" value 
-> isn't a problem - the intermittent panics are. What I meant to say was: 
-> the panics usually occur when lots of disk & cpu IO is in progress (rsync 
-> to an external but local disk over firewire). While doing this the load is 
-> usally at 3-5, but that's "normal" and expected for a machine of that age. 
+> So for the problem you raised, I think my suggestion to Mel is to adopt the
+> following logic:
+> 
+>            if (!trylock_page(page) && !PageUptodate(page))
+>                       we are quite likely to block on read, so we
+>                       depend on yet another MIGRATE_SYNC_MODE to decide
+>                       if we really want to lock_page() and wait for this IO.
+> 
+> How do you think ?
+assume the PageUptodate() is at the check for 'goto out'. yes, looks
+reasonable to me. And we need similar check for buffer_head.
 
-No, I understand your problem. What I meant above is to see whether you
-reproduce the crash caused by network + heavy IO :-)
-
-> But then the machine crashes with recent kernels. After setting the 
-> cpu_partial files to 0 I tried to reproduce the same I/O pattern, *plus* a 
-> bit more, to really stress the machine, so load went up to 6-7 and the 
-> machine did not crash. So the load of 6-7 was expected and I'm glad that 
-> the machine did not crash with that workaround. I don't know of the 
-> implications of setting cpu_partial to 0 though.
-
-Right. Now we want to check if that patch from Christoph fixes cpu
-partial.
-
-> As soon as the build with Christoph's one-liner is done I'll test w/o 
-> setting cpu_partial to 0 and see what it gives.
-
-Thanks !
-
-Cheers,
-Ben.
+Thanks,
+Shaohua
 
 
