@@ -1,283 +1,1026 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab1KWKU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:20:28 -0500
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:56221 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab1KWKUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:20:25 -0500
-Date: Wed, 23 Nov 2011 12:20:18 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Linux Kernel list <linux-kernel@vger.kernel.org>, linux-scsi@ut.ee
-Subject: 3.2-rc2+git: kernel BUG at block/blk-core.c:1000!
- (__scsi_queue_insert)
-Message-ID: <alpine.SOC.1.00.1111211431130.23697@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1753469Ab1KWKWD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:22:03 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53928 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab1KWKWA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:22:00 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1321864492-1278-2-git-send-email-keguang.zhang@gmail.com>
+References: <1321864492-1278-1-git-send-email-keguang.zhang@gmail.com>
+	<1321864492-1278-2-git-send-email-keguang.zhang@gmail.com>
+Date: Wed, 23 Nov 2011 18:21:59 +0800
+Message-ID: <CAJhJPsWXJft13MUgj8kB4DjQdO14S25ijiZuW7geBOHhMxpx4w@mail.gmail.com>
+Subject: Re: [PATCH V4 2/4] MIPS: Add board support for Loongson1B
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: zhzhl555@gmail.com, peppe.cavallaro@st.com, wuzhangjin@gmail.com,
+        r0bertz@gentoo.org, Kelvin Cheung <keguang.zhang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Changelog:
 
-While trying 3.2.0-rc2-00143-ga767835 on Sun Ultra 10 (sparc64) with 
-Adaptec SCSI controller, I can consistently get the below BUG shortly 
-after bootup. Another machine, Sun Ultra 5 with IDE disk, works fine 
-(config might also differ in other details than ide/scsi).
+V4:
+    1. Split the RTC patch, and merge the arch/mips bits into patch 2/4.
+    2. Use 'KSEG1ADDR' instead of 'ioremap()' in registers definitions.
 
-PROMLIB: Sun IEEE Boot Prom 'OBP 3.31.0 2001/07/25 20:36'
-PROMLIB: Root node compatible: 
-Initializing cgroup subsys cpu
-Linux version 3.2.0-rc2-00143-ga767835 (mroos@u10) (gcc version 4.6.2 (Debian 4.6.2-4) ) #8 Mon Nov 21 00:18:29 EET 2011
-debug: ignoring loglevel setting.
-bootconsole [earlyprom0] enabled
-ARCH: SUN4U
-Ethernet address: 08:00:20:9e:82:fd
-Kernel: Using 2 locked TLB entries for main kernel image.
-Remapping the kernel... done.
-OF stdout device is: /pci@1f,0/pci@1,1/ebus@1/se@14,400000:a
-PROM: Built device tree with 49735 bytes of memory.
-Top of RAM: 0x1ff28000, Total RAM: 0x1ff16000
-Memory hole size: 0MB
-[0000010000000000-fffff80000c00000] page_structs=131072 node=0 entry=0/8192
-[0000010000000000-fffff80001000000] page_structs=131072 node=0 entry=1/8192
-Zone PFN ranges:
-  Normal   0x00000000 -> 0x0000ff94
-Movable zone start PFN for each node
-early_node_map[2] active PFN ranges
-    0: 0x00000000 -> 0x0000ff7f
-    0: 0x0000ff88 -> 0x0000ff94
-On node 0 totalpages: 65419
-  Normal zone: 512 pages used for memmap
-  Normal zone: 0 pages reserved
-  Normal zone: 64907 pages, LIFO batch:15
-Booting Linux...
-CPU CAPS: [flush,stbar,swap,muldiv,v9,mul32,div32,v8plus]
-CPU CAPS: [vis]
-pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-pcpu-alloc: [0] 0 
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 64907
-Kernel command line: root=/dev/sda4 ro debug ignore_loglevel
-PID hash table entries: 2048 (order: 1, 16384 bytes)
-Dentry cache hash table entries: 65536 (order: 6, 524288 bytes)
-Inode-cache hash table entries: 32768 (order: 5, 262144 bytes)
-Memory: 508840k available (3472k kernel code, 1248k data, 168k init) [fffff80000000000,000000001ff28000]
-SLUB: Genslabs=16, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-NR_IRQS:255
-clocksource: mult[3555555] shift[24]
-clockevent: mult[4ccccccd] shift[32]
-Console: colour dummy device 80x25
-console [tty0] enabled, bootconsole disabled
-PROMLIB: Sun IEEE Boot Prom 'OBP 3.31.0 2001/07/25 20:36'
-PROMLIB: Root node compatible: 
-Initializing cgroup subsys cpu
-Linux version 3.2.0-rc2-00143-ga767835 (mroos@u10) (gcc version 4.6.2 (Debian 4.6.2-4) ) #8 Mon Nov 21 00:18:29 EET 2011
-debug: ignoring loglevel setting.
-bootconsole [earlyprom0] enabled
-ARCH: SUN4U
-Ethernet address: 08:00:20:9e:82:fd
-Kernel: Using 2 locked TLB entries for main kernel image.
-Remapping the kernel... done.
-OF stdout device is: /pci@1f,0/pci@1,1/ebus@1/se@14,400000:a
-PROM: Built device tree with 49735 bytes of memory.
-Top of RAM: 0x1ff28000, Total RAM: 0x1ff16000
-Memory hole size: 0MB
-[0000010000000000-fffff80000c00000] page_structs=131072 node=0 entry=0/8192
-[0000010000000000-fffff80001000000] page_structs=131072 node=0 entry=1/8192
-Zone PFN ranges:
-  Normal   0x00000000 -> 0x0000ff94
-Movable zone start PFN for each node
-early_node_map[2] active PFN ranges
-    0: 0x00000000 -> 0x0000ff7f
-    0: 0x0000ff88 -> 0x0000ff94
-On node 0 totalpages: 65419
-  Normal zone: 512 pages used for memmap
-  Normal zone: 0 pages reserved
-  Normal zone: 64907 pages, LIFO batch:15
-Booting Linux...
-CPU CAPS: [flush,stbar,swap,muldiv,v9,mul32,div32,v8plus]
-CPU CAPS: [vis]
-pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-pcpu-alloc: [0] 0 
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 64907
-Kernel command line: root=/dev/sda4 ro debug ignore_loglevel
-PID hash table entries: 2048 (order: 1, 16384 bytes)
-Dentry cache hash table entries: 65536 (order: 6, 524288 bytes)
-Inode-cache hash table entries: 32768 (order: 5, 262144 bytes)
-Memory: 508840k available (3472k kernel code, 1248k data, 168k init) [fffff80000000000,000000001ff28000]
-SLUB: Genslabs=16, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-NR_IRQS:255
-clocksource: mult[3555555] shift[24]
-clockevent: mult[4ccccccd] shift[32]
-Console: colour dummy device 80x25
-console [tty0] enabled, bootconsole disabled
-Calibrating delay using timer specific routine.. 601.00 BogoMIPS (lpj=3005039)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 512
-NET: Registered protocol family 16
-/pci@1f,0: PCI IO[1fe02000000] MEM[1ff00000000]
-/pci@1f,0: SABRE PCI Bus Module ver[0:0]
-PCI: Scanning PBM /pci@1f,0
-pci 0000:02:02.0: supports D1 D2
-pci 0000:02:02.0: PME# supported from D0 D1 D2 D3hot
-pci 0000:02:02.0: PME# disabled
-bio: create slab <bio-0> at 0
-vgaarb: device added: PCI:0000:01:02.0,decodes=io+mem,owns=none,locks=none
-vgaarb: loaded
-vgaarb: bridge control possible 0000:01:02.0
-SCSI subsystem initialized
-/pci@1f,0/pci@1,1/ebus@1/eeprom@14,0: Mostek regs at 0x1fff1000000
-AUXIO: Found device at /pci@1f,0/pci@1,1/ebus@1/auxio@14,726000
-Switching to clocksource tick
-NET: Registered protocol family 2
-IP route cache hash table entries: 4096 (order: 2, 32768 bytes)
-TCP established hash table entries: 16384 (order: 5, 262144 bytes)
-TCP bind hash table entries: 16384 (order: 4, 131072 bytes)
-TCP: Hash tables configured (established 16384 bind 16384)
-TCP reno registered
-UDP hash table entries: 256 (order: 0, 8192 bytes)
-UDP-Lite hash table entries: 256 (order: 0, 8192 bytes)
-NET: Registered protocol family 1
-PCI: CLS 64 bytes, default 64
-power: Control reg at 1fff1724000
-VFS: Disk quotas dquot_6.5.2
-Dquot-cache hash table entries: 1024 (order 0, 8192 bytes)
-msgmni has been set to 993
-Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
-io scheduler noop registered
-io scheduler deadline registered
-io scheduler cfq registered (default)
-start plist test
-end plist test
-PCI: Enabling device: (0000:01:02.0), cmd 82
-atyfb: 3D RAGE II+ (Mach64 GT) [0x4754 rev 0x9a]
-atyfb: 2M SGRAM (1:1), 14.31818 MHz XTAL, 200 MHz PLL, 67 Mhz MCLK, 67 MHz XCLK
-Console: switching to colour frame buffer device 80x30
-atyfb: fb0: ATY Mach64 frame buffer device on PCI
-/SUNW,ffb@1e,0: FFB at 000001fc00000000, type 51, DAC pnum[236e] rev[10] manuf_rev[1]
-/pci@1f,0/pci@1,1/ebus@1/su@14,3083f8: Keyboard port at 1fff13083f8, irq 6
-/pci@1f,0/pci@1,1/ebus@1/su@14,3062f8: Mouse port at 1fff13062f8, irq 7
-f0061c64: ttyS0 at MMIO 0x1fff1400000 (irq = 5) is a SAB82532 V3.2
-Console: ttyS0 (SAB82532)
-console [ttyS0] enabled
-f0061c64: ttyS1 at MMIO 0x1fff1400040 (irq = 5) is a SAB82532 V3.2
-Floppy drive(s): fd0 is 1.44M
-FDC 0 is a National Semiconductor PC87306
-scsi0 : Adaptec AIC7XXX EISA/VLB/PCI SCSI HBA DRIVER, Rev 7.0
-        <Adaptec 2940 Ultra SCSI adapter>
-        aic7880: Ultra Wide Channel A, SCSI Id=7, 16/253 SCBs
+2011/11/21, Kelvin Cheung <keguang.zhang@gmail.com>:
+> This patch adds basic platform devices for Loongson1B,
+> including serial port, ethernet, rtc and interrupt handler.
+>
+> Loongson1B UART is compatible with NS16550A.
+> Loongson1B GMAC is built around Synopsys IP Core.
+>
+> Use normal descriptor instead of enhanced descriptor.
+> Thanks to Giuseppe for updating the normal descriptor
+> in stmmac driver.
+>
+> Thanks to Zhao Zhang for implementing the RTC driver.
+>
+> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+> ---
+>  arch/mips/include/asm/mach-loongson1/irq.h       |   68 +++++++++
+>  arch/mips/include/asm/mach-loongson1/loongson1.h |   44 ++++++
+>  arch/mips/include/asm/mach-loongson1/platform.h  |   22 +++
+>  arch/mips/include/asm/mach-loongson1/prom.h      |   24 +++
+>  arch/mips/include/asm/mach-loongson1/regs-clk.h  |   33 +++++
+>  arch/mips/include/asm/mach-loongson1/regs-wdt.h  |   22 +++
+>  arch/mips/include/asm/mach-loongson1/war.h       |   25 ++++
+>  arch/mips/loongson1/common/clock.c               |  165
+> ++++++++++++++++++++++
+>  arch/mips/loongson1/common/irq.c                 |  146 +++++++++++++++++++
+>  arch/mips/loongson1/common/platform.c            |   98 +++++++++++++
+>  arch/mips/loongson1/common/prom.c                |   87 ++++++++++++
+>  arch/mips/loongson1/common/reset.c               |   45 ++++++
+>  arch/mips/loongson1/common/setup.c               |   29 ++++
+>  arch/mips/loongson1/ls1b/board.c                 |   32 ++++
+>  14 files changed, 840 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/irq.h
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/loongson1.h
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/platform.h
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/prom.h
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/regs-clk.h
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/regs-wdt.h
+>  create mode 100644 arch/mips/include/asm/mach-loongson1/war.h
+>  create mode 100644 arch/mips/loongson1/common/clock.c
+>  create mode 100644 arch/mips/loongson1/common/irq.c
+>  create mode 100644 arch/mips/loongson1/common/platform.c
+>  create mode 100644 arch/mips/loongson1/common/prom.c
+>  create mode 100644 arch/mips/loongson1/common/reset.c
+>  create mode 100644 arch/mips/loongson1/common/setup.c
+>  create mode 100644 arch/mips/loongson1/ls1b/board.c
+>
+> diff --git a/arch/mips/include/asm/mach-loongson1/irq.h
+> b/arch/mips/include/asm/mach-loongson1/irq.h
+> new file mode 100644
+> index 0000000..762bd2b
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/irq.h
+> @@ -0,0 +1,68 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * IRQ mappings for Loongson1.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +
+> +#ifndef __ASM_MACH_LOONGSON1_IRQ_H
+> +#define __ASM_MACH_LOONGSON1_IRQ_H
+> +
+> +/*
+> + * CPU core Interrupt Numbers
+> + */
+> +#define MIPS_CPU_IRQ_BASE		0
+> +#define MIPS_CPU_IRQ(x)			(MIPS_CPU_IRQ_BASE + (x))
+> +#define SOFTINT0_IRQ			MIPS_CPU_IRQ(0)
+> +#define SOFTINT1_IRQ			MIPS_CPU_IRQ(1)
+> +#define INT0_IRQ			MIPS_CPU_IRQ(2)
+> +#define INT1_IRQ			MIPS_CPU_IRQ(3)
+> +#define INT2_IRQ			MIPS_CPU_IRQ(4)
+> +#define INT3_IRQ			MIPS_CPU_IRQ(5)
+> +#define INT4_IRQ			MIPS_CPU_IRQ(6)
+> +#define TIMER_IRQ			MIPS_CPU_IRQ(7)		/* cpu timer */
+> +
+> +/*
+> + * INT0~3 Interrupt Numbers
+> + */
+> +#define LS1X_IRQ_BASE			8
+> +#define LS1X_IRQ(n, x)			(LS1X_IRQ_BASE + (n << 5) + (x))
+> +
+> +#define LS1X_UART0_IRQ			LS1X_IRQ(0, 2)
+> +#define LS1X_UART1_IRQ			LS1X_IRQ(0, 3)
+> +#define LS1X_UART2_IRQ			LS1X_IRQ(0, 4)
+> +#define LS1X_UART3_IRQ			LS1X_IRQ(0, 5)
+> +#define LS1X_CAN0_IRQ			LS1X_IRQ(0, 6)
+> +#define LS1X_CAN1_IRQ			LS1X_IRQ(0, 7)
+> +#define LS1X_SPI0_IRQ			LS1X_IRQ(0, 8)
+> +#define LS1X_SPI1_IRQ			LS1X_IRQ(0, 9)
+> +#define LS1X_AC97_IRQ			LS1X_IRQ(0, 10)
+> +#define LS1X_DMA0_IRQ			LS1X_IRQ(0, 13)
+> +#define LS1X_DMA1_IRQ			LS1X_IRQ(0, 14)
+> +#define LS1X_DMA2_IRQ			LS1X_IRQ(0, 15)
+> +#define LS1X_PWM0_IRQ			LS1X_IRQ(0, 17)
+> +#define LS1X_PWM1_IRQ			LS1X_IRQ(0, 18)
+> +#define LS1X_PWM2_IRQ			LS1X_IRQ(0, 19)
+> +#define LS1X_PWM3_IRQ			LS1X_IRQ(0, 20)
+> +#define LS1X_RTC_INT0_IRQ		LS1X_IRQ(0, 21)
+> +#define LS1X_RTC_INT1_IRQ		LS1X_IRQ(0, 22)
+> +#define LS1X_RTC_INT2_IRQ		LS1X_IRQ(0, 23)
+> +#define LS1X_TOY_INT0_IRQ		LS1X_IRQ(0, 24)
+> +#define LS1X_TOY_INT1_IRQ		LS1X_IRQ(0, 25)
+> +#define LS1X_TOY_INT2_IRQ		LS1X_IRQ(0, 26)
+> +#define LS1X_RTC_TICK_IRQ		LS1X_IRQ(0, 27)
+> +#define LS1X_TOY_TICK_IRQ		LS1X_IRQ(0, 28)
+> +
+> +#define LS1X_EHCI_IRQ			LS1X_IRQ(1, 0)
+> +#define LS1X_OHCI_IRQ			LS1X_IRQ(1, 1)
+> +#define LS1X_GMAC0_IRQ			LS1X_IRQ(1, 2)
+> +#define LS1X_GMAC1_IRQ			LS1X_IRQ(1, 3)
+> +
+> +#define NR_IRQS				LS1X_GMAC1_IRQ
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_IRQ_H */
+> diff --git a/arch/mips/include/asm/mach-loongson1/loongson1.h
+> b/arch/mips/include/asm/mach-loongson1/loongson1.h
+> new file mode 100644
+> index 0000000..0440627
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/loongson1.h
+> @@ -0,0 +1,44 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * Register mappings for Loongson1.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +
+> +#ifndef __ASM_MACH_LOONGSON1_LOONGSON1_H
+> +#define __ASM_MACH_LOONGSON1_LOONGSON1_H
+> +
+> +#define DEFAULT_MEMSIZE			256	/* If no memsize provided */
+> +
+> +/* Loongson1 Register Bases */
+> +#define LS1X_INTC_BASE			0x1fd01040
+> +#define LS1X_EHCI_BASE			0x1fe00000
+> +#define LS1X_OHCI_BASE			0x1fe08000
+> +#define LS1X_GMAC0_BASE			0x1fe10000
+> +#define LS1X_GMAC1_BASE			0x1fe20000
+> +
+> +#define LS1X_UART0_BASE			0x1fe40000
+> +#define LS1X_UART1_BASE			0x1fe44000
+> +#define LS1X_UART2_BASE			0x1fe48000
+> +#define LS1X_UART3_BASE			0x1fe4c000
+> +#define LS1X_CAN0_BASE			0x1fe50000
+> +#define LS1X_CAN1_BASE			0x1fe54000
+> +#define LS1X_I2C0_BASE			0x1fe58000
+> +#define LS1X_I2C1_BASE			0x1fe68000
+> +#define LS1X_I2C2_BASE			0x1fe70000
+> +#define LS1X_PWM_BASE			0x1fe5c000
+> +#define LS1X_WDT_BASE			0x1fe5c060
+> +#define LS1X_RTC_BASE			0x1fe64000
+> +#define LS1X_AC97_BASE			0x1fe74000
+> +#define LS1X_NAND_BASE			0x1fe78000
+> +#define LS1X_CLK_BASE			0x1fe78030
+> +
+> +#include <regs-clk.h>
+> +#include <regs-wdt.h>
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_LOONGSON1_H */
+> diff --git a/arch/mips/include/asm/mach-loongson1/platform.h
+> b/arch/mips/include/asm/mach-loongson1/platform.h
+> new file mode 100644
+> index 0000000..327df09
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/platform.h
+> @@ -0,0 +1,22 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +
+> +#ifndef __ASM_MACH_LOONGSON1_PLATFORM_H
+> +#define __ASM_MACH_LOONGSON1_PLATFORM_H
+> +
+> +#include <linux/platform_device.h>
+> +
+> +extern struct platform_device ls1x_uart_device;
+> +extern struct platform_device ls1x_eth0_device;
+> +extern struct platform_device ls1x_rtc_device;
+> +
+> +void ls1x_serial_setup(void);
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_PLATFORM_H */
+> diff --git a/arch/mips/include/asm/mach-loongson1/prom.h
+> b/arch/mips/include/asm/mach-loongson1/prom.h
+> new file mode 100644
+> index 0000000..b871dc4
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/prom.h
+> @@ -0,0 +1,24 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#ifndef __ASM_MACH_LOONGSON1_PROM_H
+> +#define __ASM_MACH_LOONGSON1_PROM_H
+> +
+> +#include <linux/io.h>
+> +#include <linux/init.h>
+> +#include <linux/irq.h>
+> +
+> +/* environment arguments from bootloader */
+> +extern unsigned long memsize, highmemsize;
+> +
+> +/* loongson-specific command line, env and memory initialization */
+> +extern char *prom_getenv(char *name);
+> +extern void __init prom_init_cmdline(void);
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_PROM_H */
+> diff --git a/arch/mips/include/asm/mach-loongson1/regs-clk.h
+> b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+> new file mode 100644
+> index 0000000..5b9635a
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+> @@ -0,0 +1,33 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * Loongson1 Clock Register Definitions.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#ifndef __ASM_MACH_LOONGSON1_REGS_CLK_H
+> +#define __ASM_MACH_LOONGSON1_REGS_CLK_H
+> +
+> +#define LS1X_CLK_REG(x) \
+> +		((void __iomem *)KSEG1ADDR(LS1X_CLK_BASE + (x)))
+> +
+> +#define LS1X_CLK_PLL_FREQ		LS1X_CLK_REG(0x0)
+> +#define LS1X_CLK_PLL_DIV		LS1X_CLK_REG(0x4)
+> +
+> +/* Clock PLL Divisor Register Bits */
+> +#define DIV_DC_EN			(0x1 << 31)
+> +#define DIV_DC				(0x1f << 26)
+> +#define DIV_CPU_EN			(0x1 << 25)
+> +#define DIV_CPU				(0x1f << 20)
+> +#define DIV_DDR_EN			(0x1 << 19)
+> +#define DIV_DDR				(0x1f << 14)
+> +
+> +#define DIV_DC_SHIFT			26
+> +#define DIV_CPU_SHIFT			20
+> +#define DIV_DDR_SHIFT			14
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_REGS_CLK_H */
+> diff --git a/arch/mips/include/asm/mach-loongson1/regs-wdt.h
+> b/arch/mips/include/asm/mach-loongson1/regs-wdt.h
+> new file mode 100644
+> index 0000000..d339fe7
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/regs-wdt.h
+> @@ -0,0 +1,22 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * Loongson1 Watchdog register definitions.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#ifndef __ASM_MACH_LOONGSON1_REGS_WDT_H
+> +#define __ASM_MACH_LOONGSON1_REGS_WDT_H
+> +
+> +#define LS1X_WDT_REG(x) \
+> +		((void __iomem *)KSEG1ADDR(LS1X_WDT_BASE + (x)))
+> +
+> +#define LS1X_WDT_EN			LS1X_WDT_REG(0x0)
+> +#define LS1X_WDT_SET			LS1X_WDT_REG(0x4)
+> +#define LS1X_WDT_TIMER			LS1X_WDT_REG(0x8)
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_REGS_WDT_H */
+> diff --git a/arch/mips/include/asm/mach-loongson1/war.h
+> b/arch/mips/include/asm/mach-loongson1/war.h
+> new file mode 100644
+> index 0000000..e3680a8
+> --- /dev/null
+> +++ b/arch/mips/include/asm/mach-loongson1/war.h
+> @@ -0,0 +1,25 @@
+> +/*
+> + * This file is subject to the terms and conditions of the GNU General
+> Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + *
+> + * Copyright (C) 2002, 2004, 2007 by Ralf Baechle <ralf@linux-mips.org>
+> + */
+> +#ifndef __ASM_MACH_LOONGSON1_WAR_H
+> +#define __ASM_MACH_LOONGSON1_WAR_H
+> +
+> +#define R4600_V1_INDEX_ICACHEOP_WAR	0
+> +#define R4600_V1_HIT_CACHEOP_WAR	0
+> +#define R4600_V2_HIT_CACHEOP_WAR	0
+> +#define R5432_CP0_INTERRUPT_WAR		0
+> +#define BCM1250_M3_WAR			0
+> +#define SIBYTE_1956_WAR			0
+> +#define MIPS4K_ICACHE_REFILL_WAR	0
+> +#define MIPS_CACHE_SYNC_WAR		0
+> +#define TX49XX_ICACHE_INDEX_INV_WAR	0
+> +#define RM9000_CDEX_SMP_WAR		0
+> +#define ICACHE_REFILLS_WORKAROUND_WAR	0
+> +#define R10000_LLSC_WAR			0
+> +#define MIPS34K_MISSED_ITLB_WAR		0
+> +
+> +#endif /* __ASM_MACH_LOONGSON1_WAR_H */
+> diff --git a/arch/mips/loongson1/common/clock.c
+> b/arch/mips/loongson1/common/clock.c
+> new file mode 100644
+> index 0000000..2d98fb0
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/clock.c
+> @@ -0,0 +1,165 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/list.h>
+> +#include <linux/mutex.h>
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <asm/clock.h>
+> +#include <asm/time.h>
+> +
+> +#include <loongson1.h>
+> +
+> +static LIST_HEAD(clocks);
+> +static DEFINE_MUTEX(clocks_mutex);
+> +
+> +struct clk *clk_get(struct device *dev, const char *name)
+> +{
+> +	struct clk *c;
+> +	struct clk *ret = NULL;
+> +
+> +	mutex_lock(&clocks_mutex);
+> +	list_for_each_entry(c, &clocks, node) {
+> +		if (!strcmp(c->name, name)) {
+> +			ret = c;
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&clocks_mutex);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(clk_get);
+> +
+> +unsigned long clk_get_rate(struct clk *clk)
+> +{
+> +	return clk->rate;
+> +}
+> +EXPORT_SYMBOL(clk_get_rate);
+> +
+> +static void pll_clk_init(struct clk *clk)
+> +{
+> +	u32 pll;
+> +
+> +	pll = __raw_readl(LS1X_CLK_PLL_FREQ);
+> +	clk->rate = (12 + (pll & 0x3f)) * 33 / 2
+> +			+ ((pll >> 8) & 0x3ff) * 33 / 1024 / 2;
+> +	clk->rate *= 1000000;
+> +}
+> +
+> +static void cpu_clk_init(struct clk *clk)
+> +{
+> +	u32 pll, ctrl;
+> +
+> +	pll = clk_get_rate(clk->parent);
+> +	ctrl = __raw_readl(LS1X_CLK_PLL_DIV) & DIV_CPU;
+> +	clk->rate = pll / (ctrl >> DIV_CPU_SHIFT);
+> +}
+> +
+> +static void ddr_clk_init(struct clk *clk)
+> +{
+> +	u32 pll, ctrl;
+> +
+> +	pll = clk_get_rate(clk->parent);
+> +	ctrl = __raw_readl(LS1X_CLK_PLL_DIV) & DIV_DDR;
+> +	clk->rate = pll / (ctrl >> DIV_DDR_SHIFT);
+> +}
+> +
+> +static void dc_clk_init(struct clk *clk)
+> +{
+> +	u32 pll, ctrl;
+> +
+> +	pll = clk_get_rate(clk->parent);
+> +	ctrl = __raw_readl(LS1X_CLK_PLL_DIV) & DIV_DC;
+> +	clk->rate = pll / (ctrl >> DIV_DC_SHIFT);
+> +}
+> +
+> +static struct clk_ops pll_clk_ops = {
+> +	.init	= pll_clk_init,
+> +};
+> +
+> +static struct clk_ops cpu_clk_ops = {
+> +	.init	= cpu_clk_init,
+> +};
+> +
+> +static struct clk_ops ddr_clk_ops = {
+> +	.init	= ddr_clk_init,
+> +};
+> +
+> +static struct clk_ops dc_clk_ops = {
+> +	.init	= dc_clk_init,
+> +};
+> +
+> +static struct clk pll_clk = {
+> +	.name	= "pll",
+> +	.ops	= &pll_clk_ops,
+> +};
+> +
+> +static struct clk cpu_clk = {
+> +	.name	= "cpu",
+> +	.parent = &pll_clk,
+> +	.ops	= &cpu_clk_ops,
+> +};
+> +
+> +static struct clk ddr_clk = {
+> +	.name	= "ddr",
+> +	.parent = &pll_clk,
+> +	.ops	= &ddr_clk_ops,
+> +};
+> +
+> +static struct clk dc_clk = {
+> +	.name	= "dc",
+> +	.parent = &pll_clk,
+> +	.ops	= &dc_clk_ops,
+> +};
+> +
+> +int clk_register(struct clk *clk)
+> +{
+> +	mutex_lock(&clocks_mutex);
+> +	list_add(&clk->node, &clocks);
+> +	if (clk->ops->init)
+> +		clk->ops->init(clk);
+> +	mutex_unlock(&clocks_mutex);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(clk_register);
+> +
+> +static struct clk *ls1x_clks[] = {
+> +	&pll_clk,
+> +	&cpu_clk,
+> +	&ddr_clk,
+> +	&dc_clk,
+> +};
+> +
+> +int __init ls1x_clock_init(void)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(ls1x_clks); i++)
+> +		clk_register(ls1x_clks[i]);
+> +
+> +	return 0;
+> +}
+> +
+> +void __init plat_time_init(void)
+> +{
+> +	struct clk *clk;
+> +
+> +	/* Initialize LS1X clocks */
+> +	ls1x_clock_init();
+> +
+> +	/* setup mips r4k timer */
+> +	clk = clk_get(NULL, "cpu");
+> +	if (IS_ERR(clk))
+> +		panic("unable to get dc clock, err=%ld", PTR_ERR(clk));
+> +
+> +	mips_hpt_frequency = clk_get_rate(clk) / 2;
+> +}
+> diff --git a/arch/mips/loongson1/common/irq.c
+> b/arch/mips/loongson1/common/irq.c
+> new file mode 100644
+> index 0000000..5465baf
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/irq.c
+> @@ -0,0 +1,146 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <asm/irq_cpu.h>
+> +
+> +#include <loongson1.h>
+> +#include <irq.h>
+> +
+> +#define LS1X_INTC_REG(n, x) \
+> +		((void __iomem *)KSEG1ADDR(LS1X_INTC_BASE + (n * 0x18) + (x)))
+> +
+> +#define LS1X_INTC_INTISR(n)		LS1X_INTC_REG(n, 0x0)
+> +#define LS1X_INTC_INTIEN(n)		LS1X_INTC_REG(n, 0x4)
+> +#define LS1X_INTC_INTSET(n)		LS1X_INTC_REG(n, 0x8)
+> +#define LS1X_INTC_INTCLR(n)		LS1X_INTC_REG(n, 0xc)
+> +#define LS1X_INTC_INTPOL(n)		LS1X_INTC_REG(n, 0x10)
+> +#define LS1X_INTC_INTEDGE(n)		LS1X_INTC_REG(n, 0x14)
+> +
+> +static void ls1x_irq_ack(struct irq_data *d)
+> +{
+> +	unsigned int bit = (d->irq - LS1X_IRQ_BASE) & 0x1f;
+> +	unsigned int n = (d->irq - LS1X_IRQ_BASE) >> 5;
+> +
+> +	__raw_writel(__raw_readl(LS1X_INTC_INTCLR(n))
+> +			| (1 << bit), LS1X_INTC_INTCLR(n));
+> +}
+> +
+> +static void ls1x_irq_mask(struct irq_data *d)
+> +{
+> +	unsigned int bit = (d->irq - LS1X_IRQ_BASE) & 0x1f;
+> +	unsigned int n = (d->irq - LS1X_IRQ_BASE) >> 5;
+> +
+> +	__raw_writel(__raw_readl(LS1X_INTC_INTIEN(n))
+> +			& ~(1 << bit), LS1X_INTC_INTIEN(n));
+> +}
+> +
+> +static void ls1x_irq_mask_ack(struct irq_data *d)
+> +{
+> +	unsigned int bit = (d->irq - LS1X_IRQ_BASE) & 0x1f;
+> +	unsigned int n = (d->irq - LS1X_IRQ_BASE) >> 5;
+> +
+> +	__raw_writel(__raw_readl(LS1X_INTC_INTIEN(n))
+> +			& ~(1 << bit), LS1X_INTC_INTIEN(n));
+> +	__raw_writel(__raw_readl(LS1X_INTC_INTCLR(n))
+> +			| (1 << bit), LS1X_INTC_INTCLR(n));
+> +}
+> +
+> +static void ls1x_irq_unmask(struct irq_data *d)
+> +{
+> +	unsigned int bit = (d->irq - LS1X_IRQ_BASE) & 0x1f;
+> +	unsigned int n = (d->irq - LS1X_IRQ_BASE) >> 5;
+> +
+> +	__raw_writel(__raw_readl(LS1X_INTC_INTIEN(n))
+> +			| (1 << bit), LS1X_INTC_INTIEN(n));
+> +}
+> +
+> +static struct irq_chip ls1x_irq_chip = {
+> +	.name		= "LS1X-INTC",
+> +	.irq_ack	= ls1x_irq_ack,
+> +	.irq_mask	= ls1x_irq_mask,
+> +	.irq_mask_ack	= ls1x_irq_mask_ack,
+> +	.irq_unmask	= ls1x_irq_unmask,
+> +};
+> +
+> +static void ls1x_irq_dispatch(int n)
+> +{
+> +	u32 int_status, irq;
+> +
+> +	/* Get pending sources, masked by current enables */
+> +	int_status = __raw_readl(LS1X_INTC_INTISR(n)) &
+> +			__raw_readl(LS1X_INTC_INTIEN(n));
+> +
+> +	if (int_status) {
+> +		irq = LS1X_IRQ(n, __ffs(int_status));
+> +		do_IRQ(irq);
+> +	}
+> +}
+> +
+> +asmlinkage void plat_irq_dispatch(void)
+> +{
+> +	unsigned int pending;
+> +
+> +	pending = read_c0_cause() & read_c0_status() & ST0_IM;
+> +
+> +	if (pending & CAUSEF_IP7)
+> +		do_IRQ(TIMER_IRQ);
+> +	else if (pending & CAUSEF_IP2)
+> +		ls1x_irq_dispatch(0); /* INT0 */
+> +	else if (pending & CAUSEF_IP3)
+> +		ls1x_irq_dispatch(1); /* INT1 */
+> +	else if (pending & CAUSEF_IP4)
+> +		ls1x_irq_dispatch(2); /* INT2 */
+> +	else if (pending & CAUSEF_IP5)
+> +		ls1x_irq_dispatch(3); /* INT3 */
+> +	else if (pending & CAUSEF_IP6)
+> +		ls1x_irq_dispatch(4); /* INT4 */
+> +	else
+> +		spurious_interrupt();
+> +
+> +}
+> +
+> +struct irqaction cascade_irqaction = {
+> +	.handler = no_action,
+> +	.name = "cascade",
+> +	.flags = IRQF_NO_THREAD,
+> +};
+> +
+> +static void __init ls1x_irq_init(int base)
+> +{
+> +	int n;
+> +
+> +	/* Disable interrupts and clear pending,
+> +	 * setup all IRQs as high level triggered
+> +	 */
+> +	for (n = 0; n < 4; n++) {
+> +		__raw_writel(0x0, LS1X_INTC_INTIEN(n));
+> +		__raw_writel(0xffffffff, LS1X_INTC_INTCLR(n));
+> +		__raw_writel(0xffffffff, LS1X_INTC_INTPOL(n));
+> +		__raw_writel(0x0, LS1X_INTC_INTEDGE(n));
+> +	}
+> +
+> +
+> +	for (n = base; n < NR_IRQS; n++) {
+> +		irq_set_chip_and_handler(n, &ls1x_irq_chip,
+> +					 handle_level_irq);
+> +	}
+> +
+> +	setup_irq(INT0_IRQ, &cascade_irqaction);
+> +	setup_irq(INT1_IRQ, &cascade_irqaction);
+> +	setup_irq(INT2_IRQ, &cascade_irqaction);
+> +	setup_irq(INT3_IRQ, &cascade_irqaction);
+> +}
+> +
+> +void __init arch_init_irq(void)
+> +{
+> +	mips_cpu_irq_init();
+> +	ls1x_irq_init(LS1X_IRQ_BASE);
+> +}
+> diff --git a/arch/mips/loongson1/common/platform.c
+> b/arch/mips/loongson1/common/platform.c
+> new file mode 100644
+> index 0000000..08c8a39
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/platform.c
+> @@ -0,0 +1,98 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/phy.h>
+> +#include <linux/serial_8250.h>
+> +#include <linux/stmmac.h>
+> +#include <asm-generic/sizes.h>
+> +
+> +#include <loongson1.h>
+> +
+> +#define LS1X_UART(_id)						\
+> +	{							\
+> +		.mapbase	= LS1X_UART ## _id ## _BASE,	\
+> +		.irq		= LS1X_UART ## _id ## _IRQ,	\
+> +		.iotype		= UPIO_MEM,			\
+> +		.flags		= UPF_IOREMAP | UPF_FIXED_TYPE,	\
+> +		.type		= PORT_16550A,			\
+> +	}
+> +
+> +static struct plat_serial8250_port ls1x_serial8250_port[] = {
+> +	LS1X_UART(0),
+> +	LS1X_UART(1),
+> +	LS1X_UART(2),
+> +	LS1X_UART(3),
+> +	{},
+> +};
+> +
+> +struct platform_device ls1x_uart_device = {
+> +	.name		= "serial8250",
+> +	.id		= PLAT8250_DEV_PLATFORM,
+> +	.dev		= {
+> +		.platform_data = ls1x_serial8250_port,
+> +	},
+> +};
+> +
+> +void __init ls1x_serial_setup(void)
+> +{
+> +	struct clk *clk;
+> +	struct plat_serial8250_port *p;
+> +
+> +	clk = clk_get(NULL, "dc");
+> +	if (IS_ERR(clk))
+> +		panic("unable to get dc clock, err=%ld", PTR_ERR(clk));
+> +
+> +	for (p = ls1x_serial8250_port; p->flags != 0; ++p)
+> +		p->uartclk = clk_get_rate(clk);
+> +}
+> +
+> +/* Synopsys Ethernet GMAC */
+> +static struct resource ls1x_eth0_resources[] = {
+> +	[0] = {
+> +		.start	= LS1X_GMAC0_BASE,
+> +		.end	= LS1X_GMAC0_BASE + SZ_64K - 1,
+> +		.flags	= IORESOURCE_MEM,
+> +	},
+> +	[1] = {
+> +		.name	= "macirq",
+> +		.start	= LS1X_GMAC0_IRQ,
+> +		.flags	= IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct stmmac_mdio_bus_data ls1x_mdio_bus_data = {
+> +	.bus_id		= 0,
+> +	.phy_mask	= 0,
+> +};
+> +
+> +static struct plat_stmmacenet_data ls1x_eth_data = {
+> +	.bus_id		= 0,
+> +	.phy_addr	= -1,
+> +	.mdio_bus_data	= &ls1x_mdio_bus_data,
+> +	.pbl		= 32,
+> +	.has_gmac	= 1,
+> +	.tx_coe		= 1,
+> +};
+> +
+> +struct platform_device ls1x_eth0_device = {
+> +	.name		= "stmmaceth",
+> +	.id		= 0,
+> +	.num_resources	= ARRAY_SIZE(ls1x_eth0_resources),
+> +	.resource	= ls1x_eth0_resources,
+> +	.dev		= {
+> +		.platform_data = &ls1x_eth_data,
+> +	},
+> +};
+> +
+> +struct platform_device ls1x_rtc_device = {
+> +	.name		= "ls1x-rtc",
+> +	.id		= -1,
+> +};
+> diff --git a/arch/mips/loongson1/common/prom.c
+> b/arch/mips/loongson1/common/prom.c
+> new file mode 100644
+> index 0000000..57f88ea
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/prom.c
+> @@ -0,0 +1,87 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * Modified from arch/mips/pnx833x/common/prom.c.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/serial_reg.h>
+> +#include <asm/bootinfo.h>
+> +
+> +#include <loongson1.h>
+> +#include <prom.h>
+> +
+> +int prom_argc;
+> +char **prom_argv, **prom_envp;
+> +unsigned long memsize, highmemsize;
+> +
+> +char *prom_getenv(char *envname)
+> +{
+> +	char **env = prom_envp;
+> +	int i;
+> +
+> +	i = strlen(envname);
+> +
+> +	while (*env) {
+> +		if (strncmp(envname, *env, i) == 0 && *(*env+i) == '=')
+> +			return *env + i + 1;
+> +		env++;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static inline unsigned long env_or_default(char *env, unsigned long dfl)
+> +{
+> +	char *str = prom_getenv(env);
+> +	return str ? simple_strtol(str, 0, 0) : dfl;
+> +}
+> +
+> +void __init prom_init_cmdline(void)
+> +{
+> +	char *c = &(arcs_cmdline[0]);
+> +	int i;
+> +
+> +	for (i = 1; i < prom_argc; i++) {
+> +		strcpy(c, prom_argv[i]);
+> +		c += strlen(prom_argv[i]);
+> +		if (i < prom_argc-1)
+> +			*c++ = ' ';
+> +	}
+> +	*c = 0;
+> +}
+> +
+> +void __init prom_init(void)
+> +{
+> +	prom_argc = fw_arg0;
+> +	prom_argv = (char **)fw_arg1;
+> +	prom_envp = (char **)fw_arg2;
+> +
+> +	prom_init_cmdline();
+> +
+> +	memsize = env_or_default("memsize", DEFAULT_MEMSIZE);
+> +	highmemsize = env_or_default("highmemsize", 0x0);
+> +}
+> +
+> +void __init prom_free_prom_memory(void)
+> +{
+> +}
+> +
+> +#define PORT(offset)	(u8 *)KSEG1ADDR(LS1X_UART0_BASE + offset)
+> +
+> +void __init prom_putchar(char c)
+> +{
+> +	int timeout;
+> +
+> +	timeout = 1024;
+> +
+> +	while (((readb(PORT(UART_LSR)) & UART_LSR_THRE) == 0)
+> +			&& (timeout-- > 0))
+> +		;
+> +
+> +	writeb(c, PORT(UART_TX));
+> +}
+> diff --git a/arch/mips/loongson1/common/reset.c
+> b/arch/mips/loongson1/common/reset.c
+> new file mode 100644
+> index 0000000..fb979a7
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/reset.c
+> @@ -0,0 +1,45 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/pm.h>
+> +#include <asm/reboot.h>
+> +
+> +#include <loongson1.h>
+> +
+> +static void ls1x_restart(char *command)
+> +{
+> +	__raw_writel(0x1, LS1X_WDT_EN);
+> +	__raw_writel(0x5000000, LS1X_WDT_TIMER);
+> +	__raw_writel(0x1, LS1X_WDT_SET);
+> +}
+> +
+> +static void ls1x_halt(void)
+> +{
+> +	while (1) {
+> +		if (cpu_wait)
+> +			cpu_wait();
+> +	}
+> +}
+> +
+> +static void ls1x_power_off(void)
+> +{
+> +	ls1x_halt();
+> +}
+> +
+> +static int __init ls1x_reboot_setup(void)
+> +{
+> +	_machine_restart = ls1x_restart;
+> +	_machine_halt = ls1x_halt;
+> +	pm_power_off = ls1x_power_off;
+> +
+> +	return 0;
+> +}
+> +
+> +arch_initcall(ls1x_reboot_setup);
+> diff --git a/arch/mips/loongson1/common/setup.c
+> b/arch/mips/loongson1/common/setup.c
+> new file mode 100644
+> index 0000000..62128cc
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/setup.c
+> @@ -0,0 +1,29 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <asm/bootinfo.h>
+> +
+> +#include <prom.h>
+> +
+> +void __init plat_mem_setup(void)
+> +{
+> +	add_memory_region(0x0, (memsize << 20), BOOT_MEM_RAM);
+> +}
+> +
+> +const char *get_system_type(void)
+> +{
+> +	unsigned int processor_id = (&current_cpu_data)->processor_id;
+> +
+> +	switch (processor_id & PRID_REV_MASK) {
+> +	case PRID_REV_LOONGSON1B:
+> +		return "LOONGSON LS1B";
+> +	default:
+> +		return "LOONGSON (unknown)";
+> +	}
+> +}
+> diff --git a/arch/mips/loongson1/ls1b/board.c
+> b/arch/mips/loongson1/ls1b/board.c
+> new file mode 100644
+> index 0000000..7aaebff
+> --- /dev/null
+> +++ b/arch/mips/loongson1/ls1b/board.c
+> @@ -0,0 +1,32 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <platform.h>
+> +
+> +#include <linux/serial_8250.h>
+> +#include <loongson1.h>
+> +
+> +static struct platform_device *ls1b_platform_devices[] __initdata = {
+> +	&ls1x_uart_device,
+> +	&ls1x_eth0_device,
+> +	&ls1x_rtc_device,
+> +};
+> +
+> +static int __init ls1b_platform_init(void)
+> +{
+> +	int err;
+> +
+> +	ls1x_serial_setup();
+> +
+> +	err = platform_add_devices(ls1b_platform_devices,
+> +				   ARRAY_SIZE(ls1b_platform_devices));
+> +	return err;
+> +}
+> +
+> +arch_initcall(ls1b_platform_init);
+> --
+> 1.7.1
+>
+>
 
-scsi 0:0:0:0: Direct-Access     QUANTUM  ATLAS IV 18 WLS  0909 PQ: 0 ANSI: 3
-scsi0:A:0:0: Tagged Queuing enabled.  Depth 253
-scsi target0:0:0: Beginning Domain Validation
-scsi target0:0:0: wide asynchronous
-scsi target0:0:0: FAST-10 WIDE SCSI 20.0 MB/s ST (100 ns, offset 8)
-scsi target0:0:0: Domain Validation skipping write tests
-scsi target0:0:0: Ending Domain Validation
-sd 0:0:0:0: [sda] 35885168 512-byte logical blocks: (18.3 GB/17.1 GiB)
-PCI: Enabling device: (0000:01:01.1), cmd 2
-sunhme.c:v3.10 August 26, 2008 David S. Miller (davem@davemloft.net)
-eth0: HAPPY MEAL (PCI/CheerIO) 10/100BaseT Ethernet 08:00:20:9e:82:fd
-sd 0:0:0:0: [sda] Write Protect is off
-sd 0:0:0:0: [sda] Mode Sense: e3 00 10 08
-mousedev: PS/2 mouse device common for all mice
-sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, supports DPO and FUA
-rtc-m48t59 rtc-m48t59.0: rtc core: registered m48t59 as rtc0
-TCP cubic registered
-NET: Registered protocol family 17
-Registering the dns_resolver key type
-registered taskstats version 1
-rtc-m48t59 rtc-m48t59.0: setting system clock to 2011-11-21 11:41:58 UTC (1321875718)
- sda: sda1 sda2 sda3 sda4
-sd 0:0:0:0: [sda] Attached SCSI disk
-input: Sun Mouse as /devices/root/f005f9c0/f00601b4/f0061504/f0064df4/serio1/input/input0
-EXT3-fs (sda4): error: couldn't mount because of unsupported optional features (240)
-EXT2-fs (sda4): error: couldn't mount because of unsupported optional features (244)
-EXT4-fs (sda4): INFO: recovery required on readonly filesystem
-EXT4-fs (sda4): write access will be enabled during recovery
-EXT4-fs (sda4): recovery complete
-EXT4-fs (sda4): mounted filesystem with ordered data mode. Opts: (null)
-VFS: Mounted root (ext4 filesystem) readonly on device 8:4.
-8139too: 8139too Fast Ethernet driver 0.9.28
-PCI: Enabling device: (0000:02:02.0), cmd 3
-8139too 0000:02:02.0: eth1: RealTek RTL8139 at 0x1ff00020000, 00:10:b5:a3:e4:a6, IRQ 16
-/pci@1f,0/pci@1,1/ebus@1/flashprom@10,0: OBP Flash, RD 1fff0000000[100000] WR 1fff0000000[100000]
-libata version 3.00 loaded.
-scsi1 : pata_cmd64x
-scsi2 : pata_cmd64x
-ata1: PATA max MWDMA2 cmd 0x1fe02c00000 ctl 0x1fe02c00008 bmdma 0x1fe02c00020 irq 14
-ata2: PATA max MWDMA2 cmd 0x1fe02c00010 ctl 0x1fe02c00018 bmdma 0x1fe02c00028 irq 14
-pata_cmd64x: active 10 recovery 10 setup 3.
-pata_cmd64x: active 10 recovery 10 setup 3.
-pata_cmd64x: active 10 recovery 10 setup 3.
-pata_cmd64x: active 10 recovery 10 setup 3.
-Adding 1052248k swap on /dev/sda2.  Priority:-1 extents:1 across:1052248k 
-EXT4-fs (sda4): re-mounted. Opts: (null)
-eth0: Link is up using internal transceiver at 100Mb/s, Full Duplex.
-eth0: no IPv6 routers present
-kernel BUG at block/blk-core.c:1000!
-              \|/ ____ \|/
-              "@'/ .. \`@"
-              /_| \__/ |_\
-                 \__U_/
-swapper(0): Kernel bad sw trap 5 [#1]
-TSTATE: 0000008080e01602 TPC: 00000000005c3380 TNPC: 00000000005c3384 Y: 00000000    Not tainted
-TPC: <blk_requeue_request+0x60/0x80>
-g0: 0000000000000003 g1: 0000000000872000 g2: 0000000000000001 g3: ffffffffffffffd8
-g4: 0000000000869b50 g5: f7ddef20f7767b60 g6: 0000000000860000 g7: 0000000000001000
-o0: 0000000000000028 o1: 0000000000816440 o2: 00000000000003e8 o3: 00000000ffffa86e
-o4: fffff8001f00cb60 o5: 0000000000816440 sp: fffff8001fefb471 ret_pc: 00000000005c3378
-RPC: <blk_requeue_request+0x58/0x80>
-l0: 00000000fffc00f0 l1: 0000000000883790 l2: 0000000000000001 l3: fffff8001f0060c0
-l4: fffff8001f0020c0 l5: 0000000000000000 l6: 00000000008a2e18 l7: fffffffffffffff8
-i0: fffff8001f2d3100 i1: fffff8001f329a20 i2: 000000000091d56c i3: 000000000091d400
-i4: 0000000000000001 i5: 0000000000000000 i6: fffff8001fefb521 i7: 000000000065dc10
-I7: <__scsi_queue_insert+0xb0/0x100>
-Call Trace:
- [000000000065dc10] __scsi_queue_insert+0xb0/0x100
- [00000000005c812c] blk_done_softirq+0x6c/0xa0
- [000000000045a530] __do_softirq+0x90/0x120
- [000000000042b054] do_softirq+0x74/0xa0
- [000000000045a82c] irq_exit+0x8c/0xa0
- [000000000042af9c] handler_irq+0x9c/0xe0
- [00000000004208b4] tl0_irq5+0x14/0x20
- [0000000000439484] touch_nmi_watchdog+0x4/0x40
- [00000000008a8788] start_kernel+0x318/0x328
- [000000000074af88] tlb_fixup_done+0x80/0x88
- [0000000000000000]           (null)
-Disabling lock debugging due to kernel taint
-Caller[000000000065dc10]: __scsi_queue_insert+0xb0/0x100
-Caller[00000000005c812c]: blk_done_softirq+0x6c/0xa0
-Caller[000000000045a530]: __do_softirq+0x90/0x120
-Caller[000000000042b054]: do_softirq+0x74/0xa0
-Caller[000000000045a82c]: irq_exit+0x8c/0xa0
-Caller[000000000042af9c]: handler_irq+0x9c/0xe0
-Caller[00000000004208b4]: tl0_irq5+0x14/0x20
-Caller[000000000042b828]: cpu_idle+0x28/0x60
-Caller[00000000008a8788]: start_kernel+0x318/0x328
-Caller[000000000074af88]: tlb_fixup_done+0x80/0x88
-Caller[0000000000000000]:           (null)
-Instruction DUMP: 921023e8  7ff99282  90122040 <91d02005> 30680007  01000000  01000000  01000000  01000000 
-Kernel panic - not syncing: Aiee, killing interrupt handler!
-Call Trace:
- [00000000004586ec] do_exit+0x2cc/0x300
- [00000000004274c0] die_if_kernel+0x180/0x260
- [00000000004282d4] bad_trap+0xd4/0xe0
- [00000000004220b0] tl0_resv104+0x30/0xa0
- [00000000005c3380] blk_requeue_request+0x60/0x80
- [000000000065dc10] __scsi_queue_insert+0xb0/0x100
- [00000000005c812c] blk_done_softirq+0x6c/0xa0
- [000000000045a530] __do_softirq+0x90/0x120
- [000000000042b054] do_softirq+0x74/0xa0
- [000000000045a82c] irq_exit+0x8c/0xa0
- [000000000042af9c] handler_irq+0x9c/0xe0
- [00000000004208b4] tl0_irq5+0x14/0x20
- [0000000000439484] touch_nmi_watchdog+0x4/0x40
- [00000000008a8788] start_kernel+0x318/0x328
- [000000000074af88] tlb_fixup_done+0x80/0x88
- [0000000000000000]           (null)
-Press Stop-A (L1-A) to return to the boot prom
 
 -- 
-Meelis Roos (mroos@linux.ee)
+Best Regards!
+Kelvin
