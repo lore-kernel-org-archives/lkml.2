@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab1KWRAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:00:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54015 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab1KWRAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:00:17 -0500
-Date: Wed, 23 Nov 2011 11:00:04 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [RFC] Make Yama pid_ns aware
-Message-ID: <20111123170004.GA23786@serge-laptop>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
- <20111121191811.GA24039@albatros>
- <20111122181310.GA4235@sergelap>
- <20111122192028.GA10458@albatros>
- <20111122201007.GA21722@sergelap>
- <20111123074510.GA2356@albatros>
- <20111123144928.GA3893@hallyn.com>
- <20111123165549.GB3463@albatros>
+	id S1755088Ab1KWRAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:00:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:47603 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755004Ab1KWRA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 12:00:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="79250898"
+Date: Wed, 23 Nov 2011 09:00:06 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Aman Deep <amandeep3986@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] xHCI: Adding #define values used for hub descriptor
+Message-ID: <20111123170006.GB5792@xanatos>
+References: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
+ <20111122195714.GA2815@xanatos>
+ <CAJ54Ua4HgcDkWrcgVHNtNBmwgHh+Swn_Q2kKGLKS5+d94g07kQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111123165549.GB3463@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJ54Ua4HgcDkWrcgVHNtNBmwgHh+Swn_Q2kKGLKS5+d94g07kQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Vasiliy Kulikov (segoon@openwall.com):
-> On Wed, Nov 23, 2011 at 14:49 +0000, Serge E. Hallyn wrote:
-> > Quoting Vasiliy Kulikov (segoon@openwall.com):
-> > > Actually, what concerns me is not ptrace, but symlink/hardling
-> > > protection.  There is no interaction between namespaces in case of
-> > > containers via symlinks in the basic case.  In case of ptrace I don't
-> > > think the child ns may weaken the parent ns - child ns may not access
-> > > processes of the parent namespace and everything it may ptrace is
-> > > already inside of this ns.
-> > 
-> > Oh, yes.  If you're saying the symlink protection shouldn't be
-> > per-pidns, I agree it seems an odd fit.
-> > 
-> > How about a version of this patch leaving symlink protection
-> > out of pidns (maybe in user ns), and just putting ptrace
-> > protection per-pidns?
+On Wed, Nov 23, 2011 at 10:20:10AM +0530, Aman Deep wrote:
+> Hi Sarah,
 > 
-> I don't think moving symlink/hardling from pid ns to user ns is a good
-> idea as user ns is not matured yet.  Also we (Openwall) want to use Yama
-> almost as-is in our RHEL6 and RHEL5-based kernels with OpenVZ support
-> which don't have user namespaces yet at all (yes, it is not a cause for
-> mainline decisions :-) ).
 > 
-> While user ns is not yet ready, I don't clearly see what is the division
-> of security policies among namespaces including user namespace.  I had
-> a view that all stuff related to processes (i.e. distinct processes in
-> several ways) belongs to pid ns, all net stuff to net ns, etc.  If we
-> differentiate user ns and pid ns, only strictly things handling pids
-> (like kill(2), procfs, ptrace(2), etc.) belong to pid ns and all other
-> process-related stuff (like credentials handling, these symlink/hardling
-> things, etc.) belong to user namespaces.
+> > >
+> > > Also use some #defines in places where magic numbers are being used.
+> >
+> > Looks fine to me for the xHCI changes.  I copied most of the hub
+> > descriptor code from EHCI, so it will need the same treatment.
 > 
-> Can we probably leave them in pid ns for now and when user ns is matured
-> just move it from pid ns to user ns?  Is it possible without breaking
-> Yama's ABI (I think so)?
+> Okay, thanks. I will try to make some of these changes into other host
+> controller drivers also as
+> soon as I can.
+> 
+> >
+> > Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> 
+> Thanks for the ACK, Sarah.
+> 
+> >
+> > The #defines look a bit odd to me, like you're using spaces instead of
+> > tabs to separate the name and value, or your mail program is converting
+> > tabs to spaces.  Do the numbers line up for you?
+> 
+> Actually, both the HUB_CHAR_TTTT and HUB_CHAR_PORTIND were already using
+> spaces instead of tabs. I just copied them to the lines below, thats
+> why they still have
+> spaces between define and value.
+> 
+> But thanks for info. I will take more care about this in future.
+> 
+> Do you want me to make any changes in this patch ?
 
-That's fine with me.
+Fixing them up to have tabs instead of spaces would be nice, but is not
+required. :)
 
-thanks,
--serge
+Sarah Sharp
