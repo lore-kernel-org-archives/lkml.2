@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab1KWAmu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:42:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932758Ab1KWAmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932777Ab1KWAmq (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Nov 2011 19:42:46 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
-Message-Id: <20111123002407.610858472@clark.kroah.org>
+Received: from cantor2.suse.de ([195.135.220.15]:43095 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932758Ab1KWAmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:42:42 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:09 2011
+Message-Id: <20111123002409.555984417@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:39 -0800
+Date: Tue, 22 Nov 2011 16:24:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Alvin.Zheng" <zheng.zhijian@zte.com.cn>,
-        wsalvin <wsalvin@yahoo.com.cn>
-Subject: [32/53] USB: option: release new PID for ZTE 3G modem
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        Robert Hooker <robert.hooker@canonical.com>
+Subject: [53/53] drm/i915: always set FDI composite sync bit
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,64 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zheng.zhijian@zte.com.cn" <zheng.zhijian@zte.com.cn>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 46b5a277ed90317a4d17e936c16037e76011b219 upstream.
+commit c4f9c4c2b3f1831e932e04db992cf6fe92c2a95a upstream.
 
-This patch adds new PIDs for ZTE 3G modem, after we confirm it and tested.
-Thanks for Dan's work at kernel option devier.
+It's needed for 3 pipe support as well as just regular functionality
+(e.g. DisplayPort).
 
-Signed-off-by: Alvin.Zheng <zheng.zhijian@zte.com.cn>
-Signed-off-by: wsalvin <wsalvin@yahoo.com.cn>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Adam Jackson <ajax@redhat.com>
+Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Robert Hooker <robert.hooker@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -316,6 +316,9 @@ static void option_instat_callback(struc
- #define ZTE_PRODUCT_AC8710			0xfff1
- #define ZTE_PRODUCT_AC2726			0xfff5
- #define ZTE_PRODUCT_AC8710T			0xffff
-+#define ZTE_PRODUCT_MC2718			0xffe8
-+#define ZTE_PRODUCT_AD3812			0xffeb
-+#define ZTE_PRODUCT_MC2716			0xffed
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3141,6 +3141,7 @@
+ #define  FDI_LINK_TRAIN_NONE_IVB            (3<<8)
  
- #define BENQ_VENDOR_ID				0x04a5
- #define BENQ_PRODUCT_H10			0x4068
-@@ -500,6 +503,18 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(4),
- };
+ /* both Tx and Rx */
++#define  FDI_COMPOSITE_SYNC		(1<<11)
+ #define  FDI_LINK_TRAIN_AUTO		(1<<10)
+ #define  FDI_SCRAMBLING_ENABLE          (0<<7)
+ #define  FDI_SCRAMBLING_DISABLE         (1<<7)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2340,6 +2340,7 @@ static void ivb_manual_fdi_link_train(st
+ 	temp |= FDI_LINK_TRAIN_PATTERN_1_IVB;
+ 	temp &= ~FDI_LINK_TRAIN_VOL_EMP_MASK;
+ 	temp |= FDI_LINK_TRAIN_400MV_0DB_SNB_B;
++	temp |= FDI_COMPOSITE_SYNC;
+ 	I915_WRITE(reg, temp | FDI_TX_ENABLE);
  
-+static const struct option_blacklist_info zte_ad3812_z_blacklist = {
-+	.sendsetup = BIT(0) | BIT(1) | BIT(2),
-+};
-+
-+static const struct option_blacklist_info zte_mc2718_z_blacklist = {
-+	.sendsetup = BIT(1) | BIT(2) | BIT(3) | BIT(4),
-+};
-+
-+static const struct option_blacklist_info zte_mc2716_z_blacklist = {
-+	.sendsetup = BIT(1) | BIT(2) | BIT(3),
-+};
-+
- static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
-@@ -1043,6 +1058,12 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710T, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_mc2718_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AD3812, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_ad3812_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_mc2716_z_blacklist },
- 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
- 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
- 	{ USB_DEVICE(ALINK_VENDOR_ID, DLINK_PRODUCT_DWM_652_U5) }, /* Yes, ALINK_VENDOR_ID */
+ 	reg = FDI_RX_CTL(pipe);
+@@ -2347,6 +2348,7 @@ static void ivb_manual_fdi_link_train(st
+ 	temp &= ~FDI_LINK_TRAIN_AUTO;
+ 	temp &= ~FDI_LINK_TRAIN_PATTERN_MASK_CPT;
+ 	temp |= FDI_LINK_TRAIN_PATTERN_1_CPT;
++	temp |= FDI_COMPOSITE_SYNC;
+ 	I915_WRITE(reg, temp | FDI_RX_ENABLE);
+ 
+ 	POSTING_READ(reg);
 
 
