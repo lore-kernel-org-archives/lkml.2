@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab1KWAyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:54:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42519 "EHLO mx2.suse.de"
+	id S1759321Ab1KWAzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:55:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42506 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932642Ab1KWAg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:26 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
-Message-Id: <20111123002554.218686982@clark.kroah.org>
+	id S932611Ab1KWAgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
+Message-Id: <20111123002556.570261287@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:14 -0800
+Date: Tue, 22 Nov 2011 16:25:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Scott James Remnant <keybuk@google.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [14/53] cfg80211: fix bug on regulatory core exit on access to last_request
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
+Subject: [39/53] USB: workaround for bug in old version of GCC
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,101 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 58ebacc66bd11be2327edcefc79de94bd6f5bb4a upstream.
+commit 97ff22ee3b4cb3a334f7385e269773141aed702f upstream.
 
-Commit 4d9d88d1 by Scott James Remnant <keybuk@google.com> added
-the .uevent() callback for the regulatory device used during
-the platform device registration. The change was done to account
-for queuing up udev change requests through udevadm triggers.
-The change also meant that upon regulatory core exit we will now
-send a uevent() but the uevent() callback, reg_device_uevent(),
-also accessed last_request. Right before commiting device suicide
-we free'd last_request but never set it to NULL so
-platform_device_unregister() would lead to bogus kernel paging
-request. Fix this and also simply supress uevents right before
-we commit suicide as they are pointless.
+This patch (as1491) works around a bug in GCC-3.4.6, which is still
+supposed to be supported.  The number of microseconds in the udelay()
+call in quirk_usb_disable_ehci() is fixed at 100, but the compiler
+doesn't understand this and generates a link-time error.  So we
+replace the otherwise unused variable "delta" with a simple constant
+100.  This same pattern is already used in other delay loops in that
+source file.
 
-This fix is required for kernels >= v2.6.39
-
-$ git describe --contains 4d9d88d1
-v2.6.39-rc1~468^2~25^2^2~21
-
-The impact of not having this present is that a bogus paging
-access may occur (only read) upon cfg80211 unload time. You
-may also get this BUG complaint below. Although Johannes
-could not reproduce the issue this fix is theoretically correct.
-
-mac80211_hwsim: unregister radios
-mac80211_hwsim: closing netlink
-BUG: unable to handle kernel paging request at ffff88001a06b5ab
-IP: [<ffffffffa030df9a>] reg_device_uevent+0x1a/0x50 [cfg80211]
-PGD 1836063 PUD 183a063 PMD 1ffcb067 PTE 1a06b160
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-CPU 0
-Modules linked in: cfg80211(-) [last unloaded: mac80211]
-
-Pid: 2279, comm: rmmod Tainted: G        W   3.1.0-wl+ #663 Bochs Bochs
-RIP: 0010:[<ffffffffa030df9a>]  [<ffffffffa030df9a>] reg_device_uevent+0x1a/0x50 [cfg80211]
-RSP: 0000:ffff88001c5f9d58  EFLAGS: 00010286
-RAX: 0000000000000000 RBX: ffff88001d2eda88 RCX: ffff88001c7468fc
-RDX: ffff88001a06b5a0 RSI: ffff88001c7467b0 RDI: ffff88001c7467b0
-RBP: ffff88001c5f9d58 R08: 000000000000ffff R09: 000000000000ffff
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff88001c7467b0
-R13: ffff88001d2eda78 R14: ffffffff8164a840 R15: 0000000000000001
-FS:  00007f8a91d8a6e0(0000) GS:ffff88001fc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: ffff88001a06b5ab CR3: 000000001c62e000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process rmmod (pid: 2279, threadinfo ffff88001c5f8000, task ffff88000023c780)
-Stack:
- ffff88001c5f9d98 ffffffff812ff7e5 ffffffff8176ab3d ffff88001c7468c2
- 000000000000ffff ffff88001d2eda88 ffff88001c7467b0 ffff880000114820
- ffff88001c5f9e38 ffffffff81241dc7 ffff88001c5f9db8 ffffffff81040189
-Call Trace:
- [<ffffffff812ff7e5>] dev_uevent+0xc5/0x170
- [<ffffffff81241dc7>] kobject_uevent_env+0x1f7/0x490
- [<ffffffff81040189>] ? sub_preempt_count+0x29/0x60
- [<ffffffff814cab1a>] ? _raw_spin_unlock_irqrestore+0x4a/0x90
- [<ffffffff81305307>] ? devres_release_all+0x27/0x60
- [<ffffffff8124206b>] kobject_uevent+0xb/0x10
- [<ffffffff812fee27>] device_del+0x157/0x1b0
- [<ffffffff8130377d>] platform_device_del+0x1d/0x90
- [<ffffffff81303b76>] platform_device_unregister+0x16/0x30
- [<ffffffffa030fffd>] regulatory_exit+0x5d/0x180 [cfg80211]
- [<ffffffffa032bec3>] cfg80211_exit+0x2b/0x45 [cfg80211]
- [<ffffffff8109a84c>] sys_delete_module+0x16c/0x220
- [<ffffffff8108a23e>] ? trace_hardirqs_on_caller+0x7e/0x120
- [<ffffffff814cba02>] system_call_fastpath+0x16/0x1b
-Code: <all your base are belong to me>
-RIP  [<ffffffffa030df9a>] reg_device_uevent+0x1a/0x50 [cfg80211]
- RSP <ffff88001c5f9d58>
-CR2: ffff88001a06b5ab
----[ end trace 147c5099a411e8c0 ]---
-
-Reported-by: Johannes Berg <johannes@sipsolutions.net>
-Cc: Scott James Remnant <keybuk@google.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Konrad Rzepecki <krzepecki@dentonet.pl>
+Tested-by: Konrad Rzepecki <krzepecki@dentonet.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/reg.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/pci-quirks.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -2254,6 +2254,9 @@ void /* __init_or_exit */ regulatory_exi
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -626,7 +626,7 @@ static void __devinit quirk_usb_disable_
+ 	void __iomem *base, *op_reg_base;
+ 	u32	hcc_params, cap, val;
+ 	u8	offset, cap_length;
+-	int	wait_time, delta, count = 256/4;
++	int	wait_time, count = 256/4;
  
- 	kfree(last_request);
+ 	if (!mmio_resource_enabled(pdev, 0))
+ 		return;
+@@ -672,11 +672,10 @@ static void __devinit quirk_usb_disable_
+ 		writel(val, op_reg_base + EHCI_USBCMD);
  
-+	last_request = NULL;
-+	dev_set_uevent_suppress(&reg_pdev->dev, true);
-+
- 	platform_device_unregister(reg_pdev);
- 
- 	spin_lock_bh(&reg_pending_beacons_lock);
+ 		wait_time = 2000;
+-		delta = 100;
+ 		do {
+ 			writel(0x3f, op_reg_base + EHCI_USBSTS);
+-			udelay(delta);
+-			wait_time -= delta;
++			udelay(100);
++			wait_time -= 100;
+ 			val = readl(op_reg_base + EHCI_USBSTS);
+ 			if ((val == ~(u32)0) || (val & EHCI_USBSTS_HALTED)) {
+ 				break;
 
 
