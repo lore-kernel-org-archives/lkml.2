@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab1KWMso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:48:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43565 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab1KWMsn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:48:43 -0500
-Message-ID: <1322052511.14799.61.camel@twins>
-Subject: RE: [PATCH v2 5/5] perf: Enable applicable siblings when group
- leader is enable-on-exec
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Zhu, DengCheng" <dczhu@mips.com>
-Cc: "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Nov 2011 13:48:31 +0100
-In-Reply-To: <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA9FF@exchdb03.mips.com>
-References: <1321932601-21128-1-git-send-email-dczhu@mips.com>
-	 ,<1321959115.5148.22.camel@twins>
-	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>
-	 ,<1321969559.14799.7.camel@twins>
-	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA871@exchdb03.mips.com>
-	 <1321971798.14799.12.camel@twins> <4ECC6AAC.4010504@mips.com>
-	,<1322048382.14799.41.camel@twins>
-	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA9FF@exchdb03.mips.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1755208Ab1KWMtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:49:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54745 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752960Ab1KWMtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 07:49:43 -0500
+Date: Wed, 23 Nov 2011 13:49:41 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] multitouch updates (mainly eGalax) 
+In-Reply-To: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
+Message-ID: <alpine.LNX.2.00.1111231348020.28728@pobox.suse.cz>
+References: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 12:40 +0000, Zhu, DengCheng wrote:
-> 
-> Ah, yes you are right. Thanks. Your following patch looks good except
-> that event_entry should be used for ctx event_list, rather than
-> group_entry. 
+On Wed, 23 Nov 2011, Benjamin Tissoires wrote:
 
-D'0h yes, I figure the next compile cycle would've caught that. Fixed it
-though, thanks!
+> Here are some multitouch updates.
+> Jiri, the first one is already in your upstream-fixes branch, but not in
+> your for-next branch...
+
+Hi Benjamin,
+
+yes, that is intentional. 'upstream-fixes' branch is what is scheduled to 
+be sent to Linus still during this development cycle (and therefore is not 
+for linux-next).
+
+Other branches get merged into linux-next, as they are scheduled for next 
+merge window.
+
+> Patch 0002 will help end-users to test their device without recompiling the
+> hid-multitouch between each test.
+> 
+> Patches 0003-0008 are focused on eGalax: 
+> * I made some cleanup in the #defines for the PIDS.
+> * I removed the MT_QUIRK_EGALAX_XYZ_FIXUP as I understood why it was needed
+> * I also removed the .maxcontact field in EGALAX as it is not necessary
+>   (it was tested on 3 devices: Acer Iconia W500 by Marek, 0xa001 by Cedric,
+>    and Windpad 110W by me)
+> * I added a few new devices (I included the one reported by Marek and I kept
+>   his "From")
+> * I included the new protocol for a001 devices (reported by Cedric)
+
+I will be queueing all those for 3.3, okay?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
