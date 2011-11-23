@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab1KWAth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:49:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33529 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759151Ab1KWAte convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:49:34 -0500
-From: Xi Wang <xi.wang@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] comedi: integer overflow in do_insnlist_ioctl()
-Date: Tue, 22 Nov 2011 19:49:29 -0500
-Message-Id: <5C0D372F-F03E-4EB8-8440-83A8D1C95363@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mark Pearson <markpearson_de@yahoo.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
-        Franky Lin <frankyl@broadcom.com>, devel@driverdev.osuosl.org,
-        security@kernel.org
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	id S1759419Ab1KWAt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:49:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42900 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759323Ab1KWAlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
+Message-Id: <20111123002407.327064626@clark.kroah.org>
+User-Agent: quilt/0.48-20.1.2
+Date: Tue, 22 Nov 2011 16:23:36 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Don Zickus <dzickus@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [29/53] usb, xhci: Clear warm reset change event during init
+In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a potential integer overflow in do_insnlist_ioctl() if userspace passes in a large insnlist.n_insns.  The call to kmalloc() would allocate a small buffer, which would result in a memory corruption.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Reported-by: Haogang Chen <haogangchen@gmail.com>
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
+------------------
+
+From: Don Zickus <dzickus@redhat.com>
+
+commit 79c3dd8150fd5236d95766a9e662e3e932b462c9 upstream.
+
+I noticed on my Panther Point system that I wasn't getting hotplug events
+for my usb3.0 disk on a usb3 port.  I tracked it down to the fact that the
+system had the warm reset change bit still set.  This seemed to block future
+events from being received, including a hotplug event.
+
+Clearing this bit during initialization allowed the hotplug event to be
+received and the disk to be recognized correctly.
+
+This patch should be backported to kernels as old as 2.6.39.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/staging/comedi/comedi_fops.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/usb/core/hub.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 21d8c1c..66bb49d 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -650,6 +650,7 @@ static int parse_insn(struct comedi_device *dev, struct comedi_insn *insn,
-  *		data (for reads)
-  */
- /* arbitrary limits */
-+#define MAX_INSNS   256
- #define MAX_SAMPLES 256
- static int do_insnlist_ioctl(struct comedi_device *dev,
- 			     struct comedi_insnlist __user *arg, void *file)
-@@ -663,6 +664,12 @@ static int do_insnlist_ioctl(struct comedi_device *dev,
- 	if (copy_from_user(&insnlist, arg, sizeof(struct comedi_insnlist)))
- 		return -EFAULT;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -813,6 +813,12 @@ static void hub_activate(struct usb_hub
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
+ 		}
  
-+	if (insnlist.n_insns > MAX_INSNS) {
-+		DPRINTK("invalid number of instructions\n");
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
- 	data = kmalloc(sizeof(unsigned int) * MAX_SAMPLES, GFP_KERNEL);
- 	if (!data) {
- 		DPRINTK("kmalloc failed\n");
--- 
-1.7.5.4
++		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
++				hub_is_superspeed(hub->hdev)) {
++			need_debounce_delay = true;
++			clear_port_feature(hub->hdev, port1,
++					USB_PORT_FEAT_C_BH_PORT_RESET);
++		}
+ 		/* We can forget about a "removed" device when there's a
+ 		 * physical disconnect or the connect status changes.
+ 		 */
+
 
