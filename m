@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab1KWAdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:33:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42059 "EHLO mx2.suse.de"
+	id S1758984Ab1KWAdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:33:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42051 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757209Ab1KWAdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:33:13 -0500
+	id S1757209Ab1KWAdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:33:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:22:08 2011
-Message-Id: <20111123002208.207467692@clark.kroah.org>
+Message-Id: <20111123002208.115058840@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:21:03 -0800
+Date: Tue, 22 Nov 2011 16:21:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [13/25] drm/i915: Sanity check pread/pwrite
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [12/25] Revert "ALSA: hda: Fix quirk for Dell Inspiron 910"
 In-Reply-To: <20111123002222.GA2376@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2249
-Lines: 86
+Content-Length: 1031
+Lines: 27
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit ce9d419dbecc292cc3e06e8b1d6d123d3fa813a4 upstream.
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-Move the access control up from the fast paths, which are no longer
-universally taken first, up into the caller. This then duplicates some
-sanity checking along the slow paths, but is much simpler.
-Tracked as CVE-2010-2962.
+This reverts commit fdb1e4e9d85b973679d56f23ccf9017ff85fd11f.
 
-Reported-by: Kees Cook <kees@ubuntu.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+It was wrong included in 2.6.32 stable (was intended for 2.6.38+ in the
+original commit changelog in Linus tree), and causes a regression on
+2.6.32 (https://launchpad.net/bugs/875300).
+
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -488,8 +488,15 @@ i915_gem_pread_ioctl(struct drm_device *
- 	 */
- 	if (args->offset > obj->size || args->size > obj->size ||
- 	    args->offset + args->size > obj->size) {
--		drm_gem_object_unreference(obj);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	if (!access_ok(VERIFY_WRITE,
-+		       (char __user *)(uintptr_t)args->data_ptr,
-+		       args->size)) {
-+		ret = -EFAULT;
-+		goto err;
- 	}
- 
- 	if (i915_gem_object_needs_bit17_swizzle(obj)) {
-@@ -501,8 +508,8 @@ i915_gem_pread_ioctl(struct drm_device *
- 							file_priv);
- 	}
- 
-+err:
- 	drm_gem_object_unreference(obj);
--
- 	return ret;
- }
- 
-@@ -592,8 +599,6 @@ i915_gem_gtt_pwrite_fast(struct drm_devi
- 
- 	user_data = (char __user *) (uintptr_t) args->data_ptr;
- 	remain = args->size;
--	if (!access_ok(VERIFY_READ, user_data, remain))
--		return -EFAULT;
- 
- 
- 	mutex_lock(&dev->struct_mutex);
-@@ -961,8 +966,15 @@ i915_gem_pwrite_ioctl(struct drm_device
- 	 */
- 	if (args->offset > obj->size || args->size > obj->size ||
- 	    args->offset + args->size > obj->size) {
--		drm_gem_object_unreference(obj);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	if (!access_ok(VERIFY_READ,
-+		       (char __user *)(uintptr_t)args->data_ptr,
-+		       args->size)) {
-+		ret = -EFAULT;
-+		goto err;
- 	}
- 
- 	/* We can only do the GTT pwrite on untiled buffers, as otherwise
-@@ -995,8 +1007,8 @@ i915_gem_pwrite_ioctl(struct drm_device
- 		DRM_INFO("pwrite failed %d\n", ret);
- #endif
- 
-+err:
- 	drm_gem_object_unreference(obj);
--
- 	return ret;
- }
- 
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -12664,7 +12664,6 @@ static struct snd_pci_quirk alc268_cfg_t
+ 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer Aspire One",
+ 						ALC268_ACER_ASPIRE_ONE),
+ 	SND_PCI_QUIRK(0x1028, 0x0253, "Dell OEM", ALC268_DELL),
+-	SND_PCI_QUIRK(0x1028, 0x02b0, "Dell Inspiron 910", ALC268_AUTO),
+ 	SND_PCI_QUIRK_MASK(0x1028, 0xfff0, 0x02b0,
+ 			"Dell Inspiron Mini9/Vostro A90", ALC268_DELL),
+ 	/* almost compatible with toshiba but with optional digital outs;
 
 
