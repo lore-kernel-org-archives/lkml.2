@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab1KWAfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:35:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42393 "EHLO mx2.suse.de"
+	id S932537Ab1KWAfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:35:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42447 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932251Ab1KWAf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:27 -0500
+	id S932251Ab1KWAfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:35:44 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:55 2011
-Message-Id: <20111123002555.357572472@clark.kroah.org>
+Message-Id: <20111123002555.827423920@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:26 -0800
+Date: Tue, 22 Nov 2011 16:25:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [26/53] nfs: when attempting to open a directory, fall back on normal lookup (try #5)
+        alan@lxorguk.ukuu.org.uk, Don Zickus <dzickus@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [31/53] usb, xhci: Clear warm reset change event during init
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,162 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Don Zickus <dzickus@redhat.com>
 
-commit 1788ea6e3b2a58cf4fb00206e362d9caff8d86a7 upstream.
+commit 79c3dd8150fd5236d95766a9e662e3e932b462c9 upstream.
 
-commit d953126 changed how nfs_atomic_lookup handles an -EISDIR return
-from an OPEN call. Prior to that patch, that caused the client to fall
-back to doing a normal lookup. When that patch went in, the code began
-returning that error to userspace. The d_revalidate codepath however
-never had the corresponding change, so it was still possible to end up
-with a NULL ctx->state pointer after that.
+I noticed on my Panther Point system that I wasn't getting hotplug events
+for my usb3.0 disk on a usb3 port.  I tracked it down to the fact that the
+system had the warm reset change bit still set.  This seemed to block future
+events from being received, including a hotplug event.
 
-That patch caused a regression. When we attempt to open a directory that
-does not have a cached dentry, that open now errors out with EISDIR. If
-you attempt the same open with a cached dentry, it will succeed.
+Clearing this bit during initialization allowed the hotplug event to be
+received and the disk to be recognized correctly.
 
-Fix this by reverting the change in nfs_atomic_lookup and allowing
-attempts to open directories to fall back to a normal lookup
+This patch should be backported to kernels as old as 2.6.39.
 
-Also, add a NFSv4-specific f_ops->open routine that just returns
--ENOTDIR. This should never be called if things are working properly,
-but if it ever is, then the dprintk may help in debugging.
-
-To facilitate this, a new file_operations field is also added to the
-nfs_rpc_ops struct.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/dir.c            |    2 +-
- fs/nfs/file.c           |   32 ++++++++++++++++++++++++++++++++
- fs/nfs/inode.c          |    2 +-
- fs/nfs/nfs3proc.c       |    1 +
- fs/nfs/nfs4proc.c       |    1 +
- fs/nfs/proc.c           |    1 +
- include/linux/nfs_fs.h  |    3 +++
- include/linux/nfs_xdr.h |    1 +
- 8 files changed, 41 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1468,12 +1468,12 @@ static struct dentry *nfs_atomic_lookup(
- 				res = NULL;
- 				goto out;
- 			/* This turned out not to be a regular file */
-+			case -EISDIR:
- 			case -ENOTDIR:
- 				goto no_open;
- 			case -ELOOP:
- 				if (!(nd->intent.open.flags & O_NOFOLLOW))
- 					goto no_open;
--			/* case -EISDIR: */
- 			/* case -EINVAL: */
- 			default:
- 				res = ERR_CAST(inode);
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -895,3 +895,35 @@ static int nfs_setlease(struct file *fil
- 			file->f_path.dentry->d_name.name, arg);
- 	return -EINVAL;
- }
-+
-+#ifdef CONFIG_NFS_V4
-+static int
-+nfs4_file_open(struct inode *inode, struct file *filp)
-+{
-+	/*
-+	 * NFSv4 opens are handled in d_lookup and d_revalidate. If we get to
-+	 * this point, then something is very wrong
-+	 */
-+	dprintk("NFS: %s called! inode=%p filp=%p\n", __func__, inode, filp);
-+	return -ENOTDIR;
-+}
-+
-+const struct file_operations nfs4_file_operations = {
-+	.llseek		= nfs_file_llseek,
-+	.read		= do_sync_read,
-+	.write		= do_sync_write,
-+	.aio_read	= nfs_file_read,
-+	.aio_write	= nfs_file_write,
-+	.mmap		= nfs_file_mmap,
-+	.open		= nfs4_file_open,
-+	.flush		= nfs_file_flush,
-+	.release	= nfs_file_release,
-+	.fsync		= nfs_file_fsync,
-+	.lock		= nfs_lock,
-+	.flock		= nfs_flock,
-+	.splice_read	= nfs_file_splice_read,
-+	.splice_write	= nfs_file_splice_write,
-+	.check_flags	= nfs_check_flags,
-+	.setlease	= nfs_setlease,
-+};
-+#endif /* CONFIG_NFS_V4 */
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -291,7 +291,7 @@ nfs_fhget(struct super_block *sb, struct
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -813,6 +813,12 @@ static void hub_activate(struct usb_hub
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
+ 		}
+ 
++		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
++				hub_is_superspeed(hub->hdev)) {
++			need_debounce_delay = true;
++			clear_port_feature(hub->hdev, port1,
++					USB_PORT_FEAT_C_BH_PORT_RESET);
++		}
+ 		/* We can forget about a "removed" device when there's a
+ 		 * physical disconnect or the connect status changes.
  		 */
- 		inode->i_op = NFS_SB(sb)->nfs_client->rpc_ops->file_inode_ops;
- 		if (S_ISREG(inode->i_mode)) {
--			inode->i_fop = &nfs_file_operations;
-+			inode->i_fop = NFS_SB(sb)->nfs_client->rpc_ops->file_ops;
- 			inode->i_data.a_ops = &nfs_file_aops;
- 			inode->i_data.backing_dev_info = &NFS_SB(sb)->backing_dev_info;
- 		} else if (S_ISDIR(inode->i_mode)) {
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -853,6 +853,7 @@ const struct nfs_rpc_ops nfs_v3_clientop
- 	.dentry_ops	= &nfs_dentry_operations,
- 	.dir_inode_ops	= &nfs3_dir_inode_operations,
- 	.file_inode_ops	= &nfs3_file_inode_operations,
-+	.file_ops	= &nfs_file_operations,
- 	.getroot	= nfs3_proc_get_root,
- 	.getattr	= nfs3_proc_getattr,
- 	.setattr	= nfs3_proc_setattr,
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6267,6 +6267,7 @@ const struct nfs_rpc_ops nfs_v4_clientop
- 	.dentry_ops	= &nfs4_dentry_operations,
- 	.dir_inode_ops	= &nfs4_dir_inode_operations,
- 	.file_inode_ops	= &nfs4_file_inode_operations,
-+	.file_ops	= &nfs4_file_operations,
- 	.getroot	= nfs4_proc_get_root,
- 	.getattr	= nfs4_proc_getattr,
- 	.setattr	= nfs4_proc_setattr,
---- a/fs/nfs/proc.c
-+++ b/fs/nfs/proc.c
-@@ -710,6 +710,7 @@ const struct nfs_rpc_ops nfs_v2_clientop
- 	.dentry_ops	= &nfs_dentry_operations,
- 	.dir_inode_ops	= &nfs_dir_inode_operations,
- 	.file_inode_ops	= &nfs_file_inode_operations,
-+	.file_ops	= &nfs_file_operations,
- 	.getroot	= nfs_proc_get_root,
- 	.getattr	= nfs_proc_getattr,
- 	.setattr	= nfs_proc_setattr,
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -410,6 +410,9 @@ extern const struct inode_operations nfs
- extern const struct inode_operations nfs3_file_inode_operations;
- #endif /* CONFIG_NFS_V3 */
- extern const struct file_operations nfs_file_operations;
-+#ifdef CONFIG_NFS_V4
-+extern const struct file_operations nfs4_file_operations;
-+#endif /* CONFIG_NFS_V4 */
- extern const struct address_space_operations nfs_file_aops;
- extern const struct address_space_operations nfs_dir_aops;
- 
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -1194,6 +1194,7 @@ struct nfs_rpc_ops {
- 	const struct dentry_operations *dentry_ops;
- 	const struct inode_operations *dir_inode_ops;
- 	const struct inode_operations *file_inode_ops;
-+	const struct file_operations *file_ops;
- 
- 	int	(*getroot) (struct nfs_server *, struct nfs_fh *,
- 			    struct nfs_fsinfo *);
 
 
