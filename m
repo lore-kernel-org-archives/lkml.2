@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab1KWQy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:54:58 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41820 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab1KWQy5 (ORCPT
+	id S1754746Ab1KWQzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:55:44 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10477 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324Ab1KWQzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:54:57 -0500
+	Wed, 23 Nov 2011 11:55:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 23 Nov 2011 08:55:40 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 23 Nov 2011 08:55:39 -0800
+Subject: RE: [PATCH] ARM: tegra: remove declaration of
+ tegra_assert_system_reset in board.h
+Thread-Topic: [PATCH] ARM: tegra: remove declaration of
+ tegra_assert_system_reset in board.h
+Thread-Index: Acypz7xKNHs6HJY9Q46rQgjM+iyeswAMNZmw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C6C7@HQMAIL01.nvidia.com>
+References: <1322046284.27165.1.camel@phoenix>
+In-Reply-To: <1322046284.27165.1.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4TPKrig6SUT6OWXFoi=K_Q+3KNd6eZD693zfoJSWGNmGg@mail.gmail.com>
-References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
-	<1321999366-23784-9-git-send-email-corentincj@iksaif.net>
-	<CANq1E4TPKrig6SUT6OWXFoi=K_Q+3KNd6eZD693zfoJSWGNmGg@mail.gmail.com>
-Date: Wed, 23 Nov 2011 17:54:55 +0100
-Message-ID: <CAHR064jzbGKyHbBvO7H9tyEbamQT9-E4bpQAhJvfNiHX9JT0zg@mail.gmail.com>
-Subject: Re: [PATCH 08/15] samsung-laptop: add battery life extender support
-From: Corentin Chary <corentin.chary@gmail.com>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: platform-driver-x86@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matthew Garrett <mjg@redhat.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pANGtpKj009298
 
-> My BIOS provides this option, too. However, this driver does not
-> detect it on my machine. During initialization I get:
-> samsung_laptop: SABI command 0x0078 failed with completion flag 0xaa
->
-> Maybe you can help debugging this. If there is something I can test
-> via debugfs, just tell me.
+Axel Lin wrote at Wednesday, November 23, 2011 4:05 AM:
+> commit b2f745 "ARM: restart: tegra: use new restart hook"
+> changed tegra_assert_system_reset to be static but forgot to
+> remove the declaration in arch/arm/mach-tegra/board.h.
 
-Could you try to load the module with debug=1, type these commands
+Please see:
 
-$ cd /sys/kernel/debug/
-$ echo 0x65 > command
-$ for i in d0 d1 d2 d3; echo 0 > $i; done
-$ echo 0x80 > d0
-$ cat call
+http://www.spinics.net/lists/arm-kernel/msg148932.html
 
-and then show me the output of dmesg ?
+Thanks.
 
-Thanks,
 -- 
-Corentin Chary
-http://xf.iksaif.net
+nvpublic
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
