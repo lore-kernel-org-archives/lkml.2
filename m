@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759119Ab1KWAhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:37:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42659 "EHLO mx2.suse.de"
+	id S932788Ab1KWAhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:37:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42686 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759089Ab1KWAhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:37:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
-Message-Id: <20111123002557.517833330@clark.kroah.org>
+	id S1759089Ab1KWAhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:37:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
+Message-Id: <20111123002556.849858745@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:49 -0800
+Date: Tue, 22 Nov 2011 16:25:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Antonio Quartulli <ordex@autistici.org>,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: [49/53] batman-adv: correctly set the data field in the TT_REPONSE packet
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [42/53] usb-storage: Accept 8020i-protocol commands longer than 12 bytes
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <ordex@autistici.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 9d8523931f7f5eb8900077f0da0fbe6b8ad0010b upstream.
+commit 2f640bf4c94324aeaa1b6385c10aab8c5ad1e1cf upstream.
 
-In the TT_RESPONSE packet, the number of carried entries is not correctly set.
-This leads to a wrong interpretation of the packet payload on the receiver side
-causing random entries to be added to the global translation table. Therefore
-the latter gets always corrupted, triggering a table recovery all the time.
+The 8020i protocol (also 8070i and QIC-157) uses 12-byte commands;
+shorter commands must be padded.  Simon Detheridge reports that his
+3-TB USB disk drive claims to use the 8020i protocol (which is
+normally meant for ATAPI devices like CD drives), and because of its
+large size, the disk drive requires the use of 16-byte commands.
+However the usb_stor_pad12_command() routine in usb-storage always
+sets the command length to 12, making the drive impossible to use.
 
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Since the SFF-8020i specification allows for 16-byte commands in
+future extensions, we may as well accept them.  This patch (as1490)
+changes usb_stor_pad12_command() to leave commands larger than 12
+bytes alone rather than truncating them.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Simon Detheridge <simon@widgit.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/batman-adv/translation-table.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/storage/protocol.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/net/batman-adv/translation-table.c
-+++ b/net/batman-adv/translation-table.c
-@@ -999,7 +999,6 @@ static struct sk_buff *tt_response_fill_
- 	tt_response = (struct tt_query_packet *)skb_put(skb,
- 						     tt_query_size + tt_len);
- 	tt_response->ttvn = ttvn;
--	tt_response->tt_data = htons(tt_tot);
+--- a/drivers/usb/storage/protocol.c
++++ b/drivers/usb/storage/protocol.c
+@@ -58,7 +58,9 @@
  
- 	tt_change = (struct tt_change *)(skb->data + tt_query_size);
- 	tt_count = 0;
-@@ -1025,6 +1024,10 @@ static struct sk_buff *tt_response_fill_
- 	}
- 	rcu_read_unlock();
+ void usb_stor_pad12_command(struct scsi_cmnd *srb, struct us_data *us)
+ {
+-	/* Pad the SCSI command with zeros out to 12 bytes
++	/*
++	 * Pad the SCSI command with zeros out to 12 bytes.  If the
++	 * command already is 12 bytes or longer, leave it alone.
+ 	 *
+ 	 * NOTE: This only works because a scsi_cmnd struct field contains
+ 	 * a unsigned char cmnd[16], so we know we have storage available
+@@ -66,9 +68,6 @@ void usb_stor_pad12_command(struct scsi_
+ 	for (; srb->cmd_len<12; srb->cmd_len++)
+ 		srb->cmnd[srb->cmd_len] = 0;
  
-+	/* store in the message the number of entries we have successfully
-+	 * copied */
-+	tt_response->tt_data = htons(tt_count);
-+
- out:
- 	return skb;
+-	/* set command length to 12 bytes */
+-	srb->cmd_len = 12;
+-
+ 	/* send the command to the transport layer */
+ 	usb_stor_invoke_transport(srb, us);
  }
 
 
