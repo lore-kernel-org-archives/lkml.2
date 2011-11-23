@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759864Ab1KWIDX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:03:23 -0500
-Received: from mail-dy0-f46.google.com ([209.85.220.46]:52282 "EHLO
-	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab1KWIDV (ORCPT
+	id S1759896Ab1KWIE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:04:58 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45809 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab1KWIE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:03:21 -0500
-Message-ID: <1322035395.1298.50.camel@edumazet-laptop>
-Subject: Re: [3.1-rc8 REGRESSION] sky2 hangs machine on turning off or
- suspending
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Nov 2011 09:03:15 +0100
-In-Reply-To: <CACna6rwDjqwypAr_03NEA=x8J_2DpL2LjgSMiQmLHHGv3AA7GA@mail.gmail.com>
-References: <CACna6ryTdLcWVYgHu=_mRFga1sFivpE_DyZOY-HMmKggkWAJAw@mail.gmail.com>
-	 <CACna6rwDjqwypAr_03NEA=x8J_2DpL2LjgSMiQmLHHGv3AA7GA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
+	Wed, 23 Nov 2011 03:04:57 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 23 Nov 2011 17:03:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton (commit_signer:71/87=82%) 
+	<akpm@linux-foundation.org>,
+        Mel Gorman (commit_signer:39/87=45%) <mgorman@suse.de>,
+        Minchan Kim (commit_signer:32/87=37%) <minchan.kim@gmail.com>,
+        Johannes Weiner (commit_signer:21/87=24%) <jweiner@redhat.com>,
+        linux-mm@kvack.org (open list:MEMORY MANAGEMENT),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH] vmscan: add task name to warn_scan_unevictable()
+ messages
+Message-Id: <20111123170319.cc668d61.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322027721-23677-1-git-send-email-kosaki.motohiro@jp.fujitsu.com>
+References: <1322027721-23677-1-git-send-email-kosaki.motohiro@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 23 novembre 2011 à 08:43 +0100, Rafał Miłecki a écrit :
+On Wed, 23 Nov 2011 00:55:20 -0500
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-> The bug was resolved by:
-> sky2: fix hang in napi_disable
+> If we need to know a usecase, caller program name is critical important.
+> Show it.
 > 
-> Stephen, two comments to you:
-> 
-> 1) I really hoped to get some info about resolving this issue. You
-> could just ping me that something worth testing was posted.
-> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+seems nice.
 
-I agree 100%, I am verry sorry this happened.
-
-Stephen, we must show toal respect to bug reporters, they do their part
-of the job.
-
-We need more bug reports :)
-
-A "Reported-by:" tag is mandatory, not counting a CC on mails
-
-As Rafal spent incredible time to bisect the bug, another tag is welcome
-as well :
-
-"Bisected-by:" ...
-
-This takes maybe 20 seconds, while the bug fix took far more...
-
-> 2) Update your e-mail address in MAINTAINERS please.
-> 
-
-What do you mean, it seems OK to me (Stephen Hemminger
-<shemminger@vyatta.com>) ?
-
-
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
