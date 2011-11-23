@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab1KWRZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:25:55 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6489 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325Ab1KWRZx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:25:53 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 23 Nov 2011 09:25:39 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Marc Dietrich <marvin24@gmx.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Wed, 23 Nov 2011 09:25:36 -0800
-Subject: RE: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-Thread-Topic: [PATCH] arm/tegra: convert tegra20 to GIC devicetree binding
-Thread-Index: AcypnMnneKlilYzZSg2CJ0lRNHgjNAAZ+CmA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174F08C6F0@HQMAIL01.nvidia.com>
-References: <1321542430-17971-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74C1E@HQMAIL01.nvidia.com>
- <20111118120352.GZ19069@tbergstrom-lnx.Nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1740D74E63@HQMAIL01.nvidia.com>
- <20111121122212.GL19069@tbergstrom-lnx.Nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF174F08C0E5@HQMAIL01.nvidia.com>
- <20111123050012.GS19069@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20111123050012.GS19069@tbergstrom-lnx.Nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755223Ab1KWR1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:27:10 -0500
+Received: from comu.ring0.de ([46.4.151.82]:51562 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751129Ab1KWR1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 12:27:08 -0500
+X-Spam-Report: * -2.6 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.1 RDNS_NONE Delivered to trusted network by a host with no rDNS
+	*  0.1 AWL AWL: From: address is in the auto white-list
+Date: Wed, 23 Nov 2011 18:26:50 +0100
+From: Sebastian Reichel <sre@debian.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        ext Linus Walleij <linus.walleij@linaro.org>,
+        "peter_henn@gmx.de" <peter_henn@gmx.de>,
+        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
+        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
+        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>
+Subject: Re: HSI framework for linux-next
+Message-ID: <20111123172650.GA1637@earth.universe>
+References: <1319794066.28874.22.camel@groo>
+ <20111109085140.908f89d0e2b8160cc959d67c@canb.auug.org.au>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+In-Reply-To: <20111109085140.908f89d0e2b8160cc959d67c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Tuesday, November 22, 2011 10:00 PM:
-...
-> I think we need to model the GPIO IRQs as a seperate interrupt controller.
-> That way the WM8903 node can refer to the GPIO IRQ as an IRQ without
-> hardcoding the global interrupt number, similar to the way we specify the
-> SPI number in the device nodes and not the global interrupt number.
 
-Yes, you're right.
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'd originally thought that the GPIO IRQs fed directly into the GIC, but
-now that I read the docs, I see that the GPIO controller really is an
-interrupt aggregator/controller.
+On Wed, Nov 09, 2011 at 08:51:40AM +1100, Stephen Rothwell wrote:
+> Hi Carlos,
+>=20
+> On Fri, 28 Oct 2011 12:27:46 +0300 Carlos Chinea <carlos.chinea@nokia.com=
+> wrote:
+> > ...
+>=20
+> Right, so -rc1 has been released so I can consider this.  Just a couple o=
+f things:
+>=20
+> 	Linus (and the rest of us) is being a bit nmore paranoid about
+> where to fetch trees from.  Public git hosters (like gitorious) can be
+> problematic since it is hard for us to verify the owners of trees
+> reliably.  You either need to apply for a kernel.org account, or you will
+> need to add a signed tag to your tree before asking Linus to pull from
+> it.  And that atg will have to be singned with a GPG key that can be
+> verified by Linus ...
+>=20
+> 	I am not sure how to translate that gitorious URI above into a
+> simple, publically fetchable URI (git://gitorious.org...).
 
--- 
-nvpublic
+It has been two weeks. Did I miss any status updates?
 
+Here's the git fetchable URI: git://gitorious.org/kernel-hsi/kernel-hsi.git
+The existing tag is not signed though.
+
+-- Sebastian
+
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOzSzaAAoJENju1/PIO/qaY0MQAKiu224IuEZOOthosK4C9yiH
+roveCT1XnFSQc9csLVuH3T3Z+mzqAQUO24EmureQGSkeiHlG5YEyWFhsIPzdaDme
+vKGRuOttsyaQI39FnuCnbFjh+2PNmFXSXnhnZ8KfW9hFFVf/ByLYcidsHvsioIEc
+X6fZ7j85U2O7Od+jDK8t/uYuvk3BW0z8JEYAIP/KiV51TjYQ695WQ4LUTM6BHf7j
+OMhuUTNtpUyHYZC1qAvJzxQB9M1RDUqrxzjqT+XQeEXPOu8UdFYcCq5kZNdJx2P+
+1irrurBqovMBonYP9viTyat1yqQkIU6tUTmp2OLQG2NjKzWrDt3ms931GndI2bEM
+WEkwhLRMT3ZtLaPsVbtjS1Rh1TPnsdr9l16yQse2M7HJxgBAsLNf0/5Uy0cpO/Bi
+hlIcIb/kTSdHmHcBUVJrAh6c2hwH/tgDlZwhQc+aURoPV0o2VDKUr88zSSETsvUa
+FwMtMZK8evCEhN6Ga5vBYA7K/X7APvzkvX97wDrunqSAlYGsZmIDb1BNDiSa5zxo
+eKR8g9Ajpsk4EPfmUSS6I5OAnZP+bapahIO9Y5StoOaC5AmX1r6mo07IxaEykIns
+H28K8/90UiVvIXDL5zcBpN3GCSZiQUTMxFuKQXauGbZ2sdPpZjEMYeQdt29+bnwQ
+yPMllaeV9XQpvl90wRa7
+=VpEa
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
