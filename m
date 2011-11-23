@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab1KWMUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:20:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46327 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab1KWMUx convert rfc822-to-8bit (ORCPT
+	id S1753069Ab1KWMXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:23:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42158 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab1KWMXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:20:53 -0500
+	Wed, 23 Nov 2011 07:23:12 -0500
+Date: Wed, 23 Nov 2011 12:23:08 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] irq: fix possible null-pointer deref irq_domain_to_irq
+Message-ID: <20111123122308.GA7382@totoro>
+References: <1320922383-15312-1-git-send-email-jamie@jamieiles.com>
+ <20111110111446.GB16018@totoro>
+ <4EBBD39C.9000400@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111123113939.GC9775@quack.suse.cz>
-References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
-	<20111122101451.GJ19415@suse.de>
-	<20111122115427.GA8058@quack.suse.cz>
-	<201111222159.24987.nai.xia@gmail.com>
-	<20111122191302.GF8058@quack.suse.cz>
-	<CAPQyPG6EComwoD7+SS7qDqU-G5OYrHbAWJG0gfmJPh9_2N=RZA@mail.gmail.com>
-	<20111123113939.GC9775@quack.suse.cz>
-Date: Wed, 23 Nov 2011 20:20:52 +0800
-Message-ID: <CAPQyPG4joc9_4kOc4FF=E0KtK10b2PcOFX7555UWkwnErcKyjQ@mail.gmail.com>
-Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
- use by compaction
-From: Nai Xia <nai.xia@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Shaohua Li <shaohua.li@intel.com>,
-        Linux-MM <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBBD39C.9000400@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 7:39 PM, Jan Kara <jack@suse.cz> wrote:
-> On Wed 23-11-11 06:44:23, Nai Xia wrote:
->> >> So that amounts to the following calculation that is important to the
->> >> statistical stall time for the compaction:
->> >>
->> >>      page_nr *  average_stall_window_time
->> >>
->> >> where average_stall_window_time is the window for a page between
->> >> NotUptoDate ---> UptoDate or Dirty --> Clean. And page_nr is the
->> >> number of pages in stall window for read or write.
->> >>
->> >> So for general cases,
->> >> Fact 1) may ensure that the page_nr is smaller for read, while
->> >> fact 2) may ensure the same for average_locking_window_time.
->> >  Well, page_nr really depends on the load. If the workload is only reads,
->> > clearly number of read pages is going to be higher than number of written
->> > pages. Once workload does heavy writing, I agree number of pages under
->> > writeback is likely going to be higher.
->>
->> Think about process A linearly scans 100MB mapped file pages
->> area for read, and another process B linearly writes to a same sized area.
->> If there is no readahead, the read page in stall window in memory is only
->> *one* page each time.
->  Yes, I understand this. But in a situation where there is *no* process
-> writing and *hundred* processes reading, you clearly have more pages locked
-> for reading than for writing. All I wanted to say is that your broad
-> statement that the number of pages read from disk is lower than the number
-> of pages written is not true in general. It depends on the workload.
+Hi Rob,
 
-OK, I agree with you here. I think I did not make my statement
-of "general cases" very clear... I actually meant where reading is comparable to
-writing. Yes, considering the variety of workloads, it's surely workload
-dependent. Sorry for my vague statement :)
+On Thu, Nov 10, 2011 at 07:37:32AM -0600, Rob Herring wrote:
+> On 11/10/2011 05:14 AM, Jamie Iles wrote:
+> > On Thu, Nov 10, 2011 at 10:53:03AM +0000, Jamie Iles wrote:
+> >> It is optional for an irqdomain to have a to_irq() method, and for
+> >> simple domains they often don't require any operations at all - just
+> >> hwirq to Linux irq translation.  Check we have valid ops before
+> >> dereferencing them.
+> >>
+> >> Patch originally by Rob Herring.
+> >>
+> >> Suggested-by: Rob Herring <robherring2@gmail.com>
+> > 
+> > Naturally git send-email doesn't know how to convert this into a CC, so 
+> > Rob is now CC'd!
+> > 
+> > Jamie
+> > 
+> >> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> Cc: Grant Likely <grant.likely@secretlab.ca>
+> >> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> >> ---
+> >>
+> >> Rob, I can't see that you've already posted this but I didn't want to
+> >> hold Marc's GIC patches up.
+> 
+> Thanks. I didn't get around to it yesterday.
+> 
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
 
->
->> However, 100MB dirty pages can be hold in memory
->> waiting to be write which may stall the compaction for fallback_migrate_page().
->> Even for buffer_migrate_page() these pages are much more likely to get locked
->> by other behaviors like you said for IO submission,etc.
->>
->> I was not sure about readahead, of course,  I only theoretically
->> expected its still not
->> comparable to the totally async write behavior.
->>
->> >
->> >> I am not sure this will be the same case for all workloads,
->> >> don't know if Mel has tested large readahead workloads which
->> >> has more async read IOs and less writebacks.
->> >>
->> >> But theoretically I expect things are not that bad even for large
->> >> readahead, because readahead is triggered by the readahead TAG in
->> >> linear order, which means for a process to generating readahead IO,
->> >> its speed is still somewhat govened by the read IO speed. While
->> >> for a process writing to a file mapped memory area, it may well
->> >> exceed the speed of its backing-store writing speed.
->> >>
->> >>
->> >> Aside from that, I think the relation between page locking and
->> >> page read is not 1-to-1, in other words, there maybe quite some
->> >> transient page locking is caused by mmap and then page fault into
->> >> already good-state pages requiring no IO at all. For these
->> >> transient page lockings I think it's reasonable to have light
->> >> waiting.
->> >  Definitely there are other lockings than for read. E.g. to write a page,
->> > we lock it first, submit IO (which can actually block waiting for request
->> > to get freed), set PageWriteback, and unlock the page. And there are more
->> > transient ones like you mention above...
->>
->> Yes, you are right.
->> But I think we were talking about distinguishing page locking from page read
->> IO?
->>
->> Well, I might also want to suggest that do an early dirty test before
->> taking the lock...but, I expect page NotUpToDate is much more likely an
->> indication that we are going to block for IO on the following page lock.
->> Dirty test is not that strong. Do you agree ?
->  Yes, I agree with this.
->
->                                                                Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
->
+I've just noticed in kernel/irq/irqdomain.c, that the kerneldoc for 
+irq_domain_add() says that a valid ops structure is required, so perhaps 
+this fix isn't right and we should just have an empty ops structure for 
+simple controllers...
+
+Jamie
