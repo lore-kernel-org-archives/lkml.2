@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1KWQMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:12:12 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61419 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab1KWQMJ (ORCPT
+	id S1751807Ab1KWQOl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:14:41 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:51200 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1KWQOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:12:09 -0500
-Date: Wed, 23 Nov 2011 08:12:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] trace_events_filter: use rcu_assign_pointer() when
- setting ftrace_event_call->filter
-Message-ID: <20111123161203.GC25780@google.com>
-References: <20111123014603.GA19630@google.com>
- <1322061407.20742.51.camel@frodo>
- <20111123160653.GB25780@google.com>
+	Wed, 23 Nov 2011 11:14:39 -0500
+Date: Wed, 23 Nov 2011 21:44:17 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: [RFC Patch 1/2][slimdump] Append CRASH_REASON to VMCOREINFO
+ elf-note
+Message-ID: <20111123161417.GA2515@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20111121095405.GA2289@in.ibm.com>
+ <20111121101157.GA10194@in.ibm.com>
+ <20111121151157.GE313@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111123160653.GB25780@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111121151157.GE313@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11112316-3864-0000-0000-00000036D5FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 08:06:53AM -0800, Tejun Heo wrote:
-> otherwise, it may fetch the old values from before the new area is
-> initialized on archs where data dependency barrier isn't noop.
+On Mon, Nov 21, 2011 at 10:11:57AM -0500, Vivek Goyal wrote:
+> On Mon, Nov 21, 2011 at 03:41:57PM +0530, K.Prasad wrote:
+> > Allow various crash paths to append the reason of crash into the
+> > VMCOREINFO elf-note through the field CRASH_REASON. We also make the
+> > fatal machine check exceptions append "PANIC_MCE" as the crash reason.
+> > This string will be recognised by upstream tools like makedumpfile and
+> > crash to generate slimdump.
+> > 
+> > With increased usage of the CRASH_REASON field, the crash strings can be
+> > encoded for better usage.
+> > 
 
-I think this can be a problem on archs where dd barrier is noop but
-wmb is not.  dd barrier is implied on every read access but nothing
-guarantees the updating CPU sends out write for the pointer assignment
-before initialization of the new area.
+[snipped]
 
-Thanks.
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index dc7bc08..a731693 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -1080,6 +1080,11 @@ asmlinkage long compat_sys_kexec_load(unsigned long entry,
+> >  }
+> >  #endif
+> >  
+> > +__weak char *arch_add_crash_reason(void)
+> > +{
+> > +	return (char *)NULL;
+> > +}
+> > +
+> >  void crash_kexec(struct pt_regs *regs)
+> >  {
+> >  	/* Take the kexec_mutex here to prevent sys_kexec_load
+> > @@ -1411,6 +1416,7 @@ static void update_vmcoreinfo_note(void)
+> >  void crash_save_vmcoreinfo(void)
+> >  {
+> >  	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
+> > +	vmcoreinfo_append_str("\nCRASH_REASON=%s\n", arch_add_crash_reason());
+> 
+> I think don't even create a CRASH_REASON= entry if arch returns a NULL
+> string.
+>
 
--- 
-tejun
+Yes, we could do that. I'll change the code accordingly in the next
+revision of the patchset.
+
+Thanks,
+K.Prasad
+ 
+
