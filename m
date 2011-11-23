@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab1KWRCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:02:42 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:47031 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754762Ab1KWRCk (ORCPT
+	id S1754935Ab1KWRDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:03:47 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:18267 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab1KWRDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:02:40 -0500
-Date: Wed, 23 Nov 2011 12:02:39 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH v3 3/6] [SCSI] runtime resume device before system suspend
-In-Reply-To: <1322031686-28233-4-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1111231149300.2111-100000@iolanthe.rowland.org>
+	Wed, 23 Nov 2011 12:03:46 -0500
+Message-ID: <4ECD276F.3050801@tilera.com>
+Date: Wed, 23 Nov 2011 12:03:43 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 9/9] tile: Make tile use the new is_idle_task()
+ API
+References: <20111115202736.GA11030@linux.vnet.ibm.com> <1321388885-11211-9-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1321388885-11211-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011, Lin Ming wrote:
+(Narrowing cc's)
 
-> From: Alan Stern <stern@rowland.harvard.edu>
+On 11/15/2011 3:30 PM, Paul E. McKenney wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
 > 
-> scsi device runtime PM is using PMSG_SUSPEND. System PM may use other state
-> that may not be compatiable with PMSG_SUSPEND.
-
-Actually SCSI runtime PM uses PMSG_AUTO_AUTOSUSPEND, which is the same
-as PMSG_SUSPEND except that the PM_EVENT_AUTO bit is also set in the
-pm_message.event field.  Currently they _are_ compatible.
-
-> So we need to runtime resume the device before system suspend.
+> Change from direct comparison of ->pid with zero to is_idle_task().
 > 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > ---
-> 
-> Alan,
-> 
-> Could you add your Signed-off-by?
-> Free free to change the commit logs.
+>  arch/tile/mm/fault.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-I don't know; this is a little questionable.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-The point of this patch is to handle drivers that do different things
-for runtime suspend and system sleep.  The only SCSI driver that
-currently supports runtime suspend is sd, and it treats runtime suspend
-the same as system sleep.  (Earlier I said it doesn't spin down disks
-for runtime suspend -- that was wrong, it does.  It skips the spin-down
-step only for PM_EVENT_FREEZE, which is part of the hibernation
-procedure.)
+Please cc me on changes to tile architecture files - thanks!
+I picked this up while belatedly catching up on LKML.
 
-Until other SCSI drivers support runtime suspend, this patch shouldn't 
-be needed.  And spinning up runtime-suspended disks could add a lengthy 
-delay to the system sleep transition, so it's better not to do this if 
-at all possible.
-
-Alan Stern
-
->  drivers/scsi/scsi_pm.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> index d329f8b..549ea72 100644
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
-> @@ -49,8 +49,10 @@ static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
->  {
->  	int err = 0;
->  
-> -	if (scsi_is_sdev_device(dev))
-> +	if (scsi_is_sdev_device(dev)) {
-> +		pm_runtime_resume(dev);
->  		err = scsi_dev_type_suspend(dev, msg);
-> +	}
->  	return err;
->  }
-
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
