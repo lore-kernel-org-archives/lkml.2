@@ -1,118 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1KWMHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:07:42 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:2475 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242Ab1KWMHl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:07:41 -0500
-X-Mailer: QUALCOMM Windows Eudora Version 7.1.0.9
-Date: Wed, 23 Nov 2011 13:07:40 +0100
-To: Mihai =?iso-8859-1?Q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
-From: "N. Coesel" <nico@nctdev.nl>
-Subject: Re: Fast memcpy patch
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20111123134529.1fb13e13@mdontu-dell.dsd.ro>
+	id S1754739Ab1KWMHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:07:50 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43210 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674Ab1KWMHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 07:07:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <CPSMTPM-CMT101y332G000633f8@CPSMTPM-CMT101.kpnxchange.com>
 References: <CPSMTPM-CMT101y332G000633f8@CPSMTPM-CMT101.kpnxchange.com>
- <20111123134529.1fb13e13@mdontu-dell.dsd.ro>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"; format=flowed
-Content-Transfer-Encoding: 8BIT
-Message-ID: <CPSMTPM-CMT109CYRka000629e3@CPSMTPM-CMT109.kpnxchange.com>
-X-OriginalArrivalTime: 23 Nov 2011 12:07:40.0042 (UTC) FILETIME=[7F48F6A0:01CCA9D8]
-X-RcptDomain: vger.kernel.org
+Date: Wed, 23 Nov 2011 20:07:39 +0800
+Message-ID: <CAM_iQpVRzFtNOG8Y0nD3=Kw=N0-XcKVGdMd7sOWsgkdmt3jy9w@mail.gmail.com>
+Subject: Re: Fast memcpy patch
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: "N. Coesel" <nico@nctdev.nl>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nihai,
+On Wed, Nov 23, 2011 at 7:25 PM, N. Coesel <nico@nctdev.nl> wrote:
+> Dear readers,
+> I noticed the Linux kernel still uses a byte-by-byte copy method for memcpy.
+> Since most memory allocations are aligned to the integer size of a cpu it is
+> often faster to copy by using the CPU's native word size. The patch below
+> does that. The code is already at work in many 16 and 32 bit embedded
+> products. It should also work for 64 bit platforms. So far I only tested 16
+> and 32 bit platforms.
 
-At 12:45 23-11-2011, Mihai Donțu wrote:
->On Wed, 23 Nov 2011 12:25:46 +0100 N. Coesel wrote:
-> > Dear readers,
-> > I noticed the Linux kernel still uses a byte-by-byte copy method for
-> > memcpy. Since most memory allocations are aligned to the integer size
-> > of a cpu it is often faster to copy by using the CPU's native word
-> > size. The patch below does that. The code is already at work in many
-> > 16 and 32 bit embedded products. It should also work for 64 bit
-> > platforms. So far I only tested 16 and 32 bit platforms.
-> >
->
->Could you run checkpatch.pl on this an fix all the warnings? Or, if you
->wish, I could do it for you.
+Which arch are you referring?
 
-If you can, yes please. I used diff -uprN to make 
-the patch. It cross-compiles without warnings using gcc4.4 for ARM.
-
-Nico COesel
-
-> > --- lib/string.c.orig   2010-08-20 20:55:55.000000000 +0200
-> > +++ lib/string.c        2011-11-23 12:29:02.000000000 +0100
-> > @@ -565,14 +565,47 @@ EXPORT_SYMBOL(memset);
-> >    * You should not use this function to access IO space, use
-> > memcpy_toio()
-> >    * or memcpy_fromio() instead.
-> >    */
-> > -void *memcpy(void *dest, const void *src, size_t count)
-> > +
-> > +void *memcpy(void *dst, const void *src, size_t length)
-> >   {
-> > -       char *tmp = dest;
-> > -       const char *s = src;
-> > +       void *p=dst;
-> >
-> > -       while (count--)
-> > -               *tmp++ = *s++;
-> > -       return dest;
-> > +       //check alignment
-> > +       if (( (int) dst & (sizeof(int) -1)) != ( (int) src &
-> > (sizeof(int) -1) ))
-> > +               {
-> > +               //unaligned. This will never align so copy
-> > byte-by-byte
-> > +               goto copyrest;
-> > +               }
-> > +
-> > +       //seek aligment (lower bits should become 0). Because
-> > +       //we already tested the lower bits are equal, we only need
-> > +       //to test source or destination for matching alignment.
-> > +       while ( (length !=0) && (((int) src & (sizeof(int)-1 ))!=0) )
-> > +               {
-> > +
-> > +                *((char*) dst++)=*((char*)src++);
-> > +               length--;
-> > +               }
-> > +
-> > +       //copy words
-> > +       while(length> (sizeof(int)-1) )
-> > +               {
-> > +               *((int*) dst)=*((int*)src);
-> > +               dst+=sizeof(int);
-> > +               src+=sizeof(int);
-> > +               length-=sizeof(int);
-> > +               }
-> > +
-> > +copyrest:
-> > +
-> > +       //now copy the rest byte-by-byte
-> > +       while(length !=0)
-> > +               {
-> > +               *((char*) dst++)=*((char*) src++);
-> > +               length--;
-> > +               }
-> > +
-> > +       return p;
-> >   }
-> >   EXPORT_SYMBOL(memcpy);
-> >   #endif
-> >
->
->--
->Mihai Donțu
-
-o---------------------------------------------------------------o
-|                       N C T  Developments                     |
-|Innovative embedded solutions                                  |
-o---------------------------------------------------------------o 
-
+At least on x86, it has optimized memcpy(), see arch/x86/lib/memcpy_32.c
+and arch/x86/include/asm/string_64.h.
