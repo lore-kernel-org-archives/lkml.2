@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab1KWA7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:59:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42334 "EHLO mx2.suse.de"
+	id S932516Ab1KWA7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:59:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42304 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932432Ab1KWAfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:00 -0500
+	id S1757046Ab1KWAep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:34:45 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:53 2011
-Message-Id: <20111123002553.623761759@clark.kroah.org>
+Message-Id: <20111123002553.245584197@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:08 -0800
+Date: Tue, 22 Nov 2011 16:25:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Catalin Marinas <catalin.marinas@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [08/53] ARM: 7150/1: Allow kernel unaligned accesses on ARMv6+
+        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
+        Mike Miller <mike.miller@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [04/53] [SCSI] hpsa: Disable ASPM
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.1-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
- processors
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit 8428e84d42179c2a00f5f6450866e70d802d1d05 upstream.
+commit e5a44df85e8d78e5c2d3d2e4f59b460905691e2f upstream.
 
-Recent gcc versions generate unaligned accesses by default on ARMv6 and
-later processors. This patch ensures that the SCTLR.A bit is always
-cleared on such processors to avoid kernel traping before
-alignment_init() is called.
+The Windows driver .inf disables ASPM on hpsa devices. Do the same because the
+selection of a non default ASPM policy can cause the device to hang.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: John Linn <John.Linn@xilinx.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/kernel/head.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/hpsa.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -356,7 +356,7 @@ __secondary_data:
-  *  r13 = *virtual* address to jump to upon completion
-  */
- __enable_mmu:
--#ifdef CONFIG_ALIGNMENT_TRAP
-+#if defined(CONFIG_ALIGNMENT_TRAP) && __LINUX_ARM_ARCH__ < 6
- 	orr	r0, r0, #CR_A
- #else
- 	bic	r0, r0, #CR_A
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/types.h>
+ #include <linux/pci.h>
++#include <linux/pci-aspm.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+@@ -3887,6 +3888,10 @@ static int __devinit hpsa_pci_init(struc
+ 		dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
+ 		return -ENODEV;
+ 	}
++
++	pci_disable_link_state(h->pdev, PCIE_LINK_STATE_L0S |
++			       PCIE_LINK_STATE_L1 | PCIE_LINK_STATE_CLKPM);
++
+ 	err = pci_enable_device(h->pdev);
+ 	if (err) {
+ 		dev_warn(&h->pdev->dev, "unable to enable PCI device\n");
 
 
