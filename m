@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab1KWQ1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:27:36 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:46990 "HELO
+	id S1754078Ab1KWQ2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:28:07 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46993 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753866Ab1KWQ1d (ORCPT
+	with SMTP id S1753645Ab1KWQ2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:27:33 -0500
-Date: Wed, 23 Nov 2011 11:27:32 -0500 (EST)
+	Wed, 23 Nov 2011 11:28:04 -0500
+Date: Wed, 23 Nov 2011 11:28:03 -0500 (EST)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
-To: Norbert Preining <preining@logic.at>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>
-Subject: Re: [regression 3.1.0 -> 3.20rc] USB Oops
-In-Reply-To: <20111122231656.GB15722@gamma.logic.tuwien.ac.at>
-Message-ID: <Pine.LNX.4.44L0.1111231126470.2111-100000@iolanthe.rowland.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH 5] PM: Update comments describing device power management
+ callbacks
+In-Reply-To: <201111230040.30885.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1111231127370.2111-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011, Norbert Preining wrote:
+On Wed, 23 Nov 2011, Rafael J. Wysocki wrote:
 
-> On Di, 22 Nov 2011, Alan Stern wrote:
-> > > [   67.852328] BUG: unable to handle kernel NULL pointer dereference at 00000000000002d9
-> > > [   67.853898] IP: [<ffffffffa0249e6b>] last_sector_hacks.part.2+0x72/0xe0 [usb_storage]
+> On Tuesday, November 22, 2011, Alan Stern wrote:
+> > On Tue, 22 Nov 2011, Rafael J. Wysocki wrote:
 > > 
-> > This is odd.  I've never seen a problem in that routine before.
+> > > > The same data structure (dev_pm_ops) is used for both drivers and
+> > > > subsystems.  Therefore the comments should be directed toward both
+> > > > driver writers and subsystem writers.
+> > > 
+> > > I don't quite agree.  Trying to do so would turn that comment into a lengthy
+> > > document and there's no room for anything like that in the header file.
 > > 
-> > What is "last_sector_hacks.part.2"?  In my kernel source tree there is
-> > a last_sector_hacks() function in drivers/usb/storage/transport.c, but
-> > what does the ".part.2" refer to?
+> > That's a good point.
+> > 
+> > > Perhaps I'll just modify the comment to say when the callbacks are executed
+> > > without specifying what the specific callbacks are supposed to do (because
+> > > that may vary from one subsystem to another and even between different
+> > > drivers belonging to the same subsystem).  If PM domains are taken into
+> > > account, it gets even more complicated.
+> > 
+> > Yes, a minimal description would be good, along with a pointer to the 
+> > Documentation/power files.
 > 
-> No idea, here I am compiling with default Debian sid gcc, that is
-> gcc (Debian 4.6.2-4) 4.6.2
-> 
-> Anything else I can do? Should I hack something into the code?
+> Well, the one below is not exactly minimal, but I think it doesn't go too
+> far at least.
 
-See the other questions in my previous email message (you cut them out
-of this reply).
+Yes, I like this version better.
 
 Alan Stern
 
