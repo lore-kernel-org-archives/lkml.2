@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726Ab1KWAgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42586 "EHLO mx2.suse.de"
+	id S1755668Ab1KWAhK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:37:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42622 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932710Ab1KWAgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
-Message-Id: <20111123002554.883816835@clark.kroah.org>
+	id S932547Ab1KWAhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:37:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
+Message-Id: <20111123002557.038449959@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:21 -0800
+Date: Tue, 22 Nov 2011 16:25:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [21/53] pch_uart: Support new device LAPIS Semiconductor ML7831 IOH
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
+Subject: [44/53] USB: add quirk for Logitech C600 web cam
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,81 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 8249f743f732ccbc3056428945ab1d9bd36d46bf upstream.
+commit 60c71ca972a2dd3fd9d0165b405361c8ad48349b upstream.
 
-ML7831 is companion chip for Intel Atom E6xx series.
+We've had another report of the "chipmunk" sound on a Logitech C600 webcam.
+This patch resolves the issue.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/serial/Kconfig    |   14 +++++++-------
- drivers/tty/serial/pch_uart.c |    8 ++++++++
- 2 files changed, 15 insertions(+), 7 deletions(-)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1570,7 +1570,7 @@ config SERIAL_IFX6X60
- 	  Support for the IFX6x60 modem devices on Intel MID platforms.
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -50,6 +50,9 @@ static const struct usb_device_id usb_qu
+ 	/* Logitech Webcam B/C500 */
+ 	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
  
- config SERIAL_PCH_UART
--	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223) UART"
-+	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) UART"
- 	depends on PCI
- 	select SERIAL_CORE
- 	help
-@@ -1578,12 +1578,12 @@ config SERIAL_PCH_UART
- 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
- 	  Enabling PCH_DMA, this PCH UART works as DMA mode.
- 
--	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
--	  Output Hub), ML7213 and ML7223.
--	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
--	  for MP(Media Phone) use.
--	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
--	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
-+	  This driver also can be used for LAPIS Semiconductor IOH(Input/
-+	  Output Hub), ML7213, ML7223 and ML7831.
-+	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use, ML7223 IOH is
-+	  for MP(Media Phone) use and ML7831 IOH is for general purpose use.
-+	  ML7213/ML7223/ML7831 is companion chip for Intel Atom E6xx series.
-+	  ML7213/ML7223/ML7831 is completely compatible for Intel EG20T PCH.
- 
- config SERIAL_MSM_SMD
- 	bool "Enable tty device interface for some SMD ports"
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -256,6 +256,8 @@ enum pch_uart_num_t {
- 	pch_ml7213_uart2,
- 	pch_ml7223_uart0,
- 	pch_ml7223_uart1,
-+	pch_ml7831_uart0,
-+	pch_ml7831_uart1,
- };
- 
- static struct pch_uart_driver_data drv_dat[] = {
-@@ -268,6 +270,8 @@ static struct pch_uart_driver_data drv_d
- 	[pch_ml7213_uart2] = {PCH_UART_2LINE, 2},
- 	[pch_ml7223_uart0] = {PCH_UART_8LINE, 0},
- 	[pch_ml7223_uart1] = {PCH_UART_2LINE, 1},
-+	[pch_ml7831_uart0] = {PCH_UART_8LINE, 0},
-+	[pch_ml7831_uart1] = {PCH_UART_2LINE, 1},
- };
- 
- static unsigned int default_baud = 9600;
-@@ -1551,6 +1555,10 @@ static DEFINE_PCI_DEVICE_TABLE(pch_uart_
- 	 .driver_data = pch_ml7223_uart0},
- 	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x800D),
- 	 .driver_data = pch_ml7223_uart1},
-+	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8811),
-+	 .driver_data = pch_ml7831_uart0},
-+	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8812),
-+	 .driver_data = pch_ml7831_uart1},
- 	{0,},
- };
++	/* Logitech Webcam C600 */
++	{ USB_DEVICE(0x046d, 0x0808), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Logitech Webcam Pro 9000 */
+ 	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
  
 
 
