@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab1KWAfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:35:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42453 "EHLO mx2.suse.de"
+	id S932608Ab1KWAgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42485 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932532Ab1KWAfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:47 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
-Message-Id: <20111123002554.127329100@clark.kroah.org>
+	id S932581Ab1KWAgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:05 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
+Message-Id: <20111123002556.293630016@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:13 -0800
+Date: Tue, 22 Nov 2011 16:25:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [13/53] nl80211: fix HT capability attribute validation
+        alan@lxorguk.ukuu.org.uk, Wang YanQing <Udknight@gmail.com>
+Subject: [36/53] USB: serial: pl2303: rm duplicate id
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +24,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: wangyanqing <udknight@gmail.com>
 
-commit 6c7394197af90f6a332180e33f5d025d3037d883 upstream.
+commit 0c16595539b612fe948559433dda08ff96a8bdc7 upstream.
 
-Since the NL80211_ATTR_HT_CAPABILITY attribute is
-used as a struct, it needs a minimum, not maximum
-length. Enforce that properly. Not doing so could
-potentially lead to reading after the buffer.
+I get report from customer that his usb-serial
+converter doesn't work well,it sometimes work,
+but sometimes it doesn't.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The usb-serial converter's id:
+vendor_id product_id
+0x4348    0x5523
+
+Then I search the usb-serial codes, and there are
+two drivers announce support this device, pl2303
+and ch341, commit 026dfaf1 cause it. Through many
+times to test, ch341 works well with this device,
+and pl2303 doesn't work quite often(it just work quite little).
+
+ch341 works well with this device, so we doesn't
+need pl2303 to support.I try to revert 026dfaf1 first,
+but it failed. So I prepare this patch by hand to revert it.
+
+Signed-off-by: Wang YanQing <Udknight@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/nl80211.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/pl2303.c |    1 -
+ drivers/usb/serial/pl2303.h |    4 ----
+ 2 files changed, 5 deletions(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -126,8 +126,7 @@ static const struct nla_policy nl80211_p
- 	[NL80211_ATTR_MESH_CONFIG] = { .type = NLA_NESTED },
- 	[NL80211_ATTR_SUPPORT_MESH_AUTH] = { .type = NLA_FLAG },
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -91,7 +91,6 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+ 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+ 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
+-	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
+ 	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -145,10 +145,6 @@
+ #define ADLINK_VENDOR_ID		0x0b63
+ #define ADLINK_ND6530_PRODUCT_ID	0x6530
  
--	[NL80211_ATTR_HT_CAPABILITY] = { .type = NLA_BINARY,
--					 .len = NL80211_HT_CAPABILITY_LEN },
-+	[NL80211_ATTR_HT_CAPABILITY] = { .len = NL80211_HT_CAPABILITY_LEN },
- 
- 	[NL80211_ATTR_MGMT_SUBTYPE] = { .type = NLA_U8 },
- 	[NL80211_ATTR_IE] = { .type = NLA_BINARY,
+-/* WinChipHead USB->RS 232 adapter */
+-#define WINCHIPHEAD_VENDOR_ID		0x4348
+-#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
+-
+ /* SMART USB Serial Adapter */
+ #define SMART_VENDOR_ID	0x0b8c
+ #define SMART_PRODUCT_ID	0x2303
 
 
