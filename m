@@ -1,114 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab1KWMfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 07:35:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53849 "EHLO mx2.suse.de"
+	id S1754963Ab1KWMlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 07:41:45 -0500
+Received: from dns1.mips.com ([12.201.5.69]:47578 "EHLO dns1.mips.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab1KWMfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 07:35:23 -0500
-Subject: Re: [patch 6/7] sched: use rq->avg_event to resurrect nohz
- ratelimiting
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        Norbert Preining <preining@logic.at>
-In-Reply-To: <1321971893.6855.24.camel@marge.simson.net>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1321629441.7080.15.camel@marge.simson.net>
-	 <1321630552.2197.15.camel@twins>
-	 <1321971445.6855.14.camel@marge.simson.net>
-	 <1321971893.6855.24.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Nov 2011 13:35:19 +0100
-Message-ID: <1322051719.7041.15.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753693Ab1KWMln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 07:41:43 -0500
+From: "Zhu, DengCheng" <dczhu@mips.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 5/5] perf: Enable applicable siblings when group
+ leader is enable-on-exec
+Thread-Topic: [PATCH v2 5/5] perf: Enable applicable siblings when group
+ leader is enable-on-exec
+Thread-Index: AQHMqMcPcUwfPrOJr0SdF29sueMmtJW5Pg2A//+cb6yAAJQ0gP//fV12gACNEACAAWQ9AIAAAGIA//+IhZw=
+Date: Wed, 23 Nov 2011 12:40:47 +0000
+Message-ID: <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA9FF@exchdb03.mips.com>
+References: <1321932601-21128-1-git-send-email-dczhu@mips.com>
+		 ,<1321959115.5148.22.camel@twins>
+		 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>
+		,<1321969559.14799.7.camel@twins>
+		 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA871@exchdb03.mips.com>
+	 <1321971798.14799.12.camel@twins>
+ <4ECC6AAC.4010504@mips.com>,<1322048382.14799.41.camel@twins>
+In-Reply-To: <1322048382.14799.41.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.36.79]
+x-ems-proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
+x-ems-stamp: p6sDGCWvfZHIeHHZ1PSKvg==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pANCftQc007911
 
-Added CC of the person who reported that the last nohz ratelimit patch
-caused increased power consumption.
 
-Norbert: can you please test this patch to make sure it's not going to
-cause you the same trouble the last one did?  I see no ill effects with
-this patch, but then I didn't with the last either.
 
-	TIA,
+åœ¨ 2011å¹´11æœˆ23æ—¥æ˜ŸæœŸä¸‰ï¼ŒPeter Zijlstra <a.p.zijlstra@chello.nl> å†™é“ï¼š
+> On Wed, 2011-11-23 at 11:38 +0800, Deng-Cheng Zhu wrote:
+>
+>> + Â  Â  list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+>> + Â  Â  Â  Â  Â  Â  ret = event_enable_on_exec(event, ctx);
+>> + Â  Â  Â  Â  Â  Â  if (ret)
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  enabled = 1;
+>> + Â  Â  }
+>> +
+>> Â  Â  Â  list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
+>> Â  Â  Â  Â  Â  Â  Â  ret = event_enable_on_exec(event, ctx);
+>> Â  Â  Â  Â  Â  Â  Â  if (ret)
+>
+> This isn't correct either, in this case you should then remove the other
+> two iterations of pinned/flexible group lists.
+>
+> Also your use of list_for_each_entry_rcu() is incorrect, either you then
+> should also use rcu_read_lock(), or its not needed and not use the _rcu
+> list primitive at all.
+>
+> Now since event_list is modified under ctx->lock, and we hold that lock
+> no fancy stuff is needed and we can do without.
 
-	-Mike
+Ah, yes you are right. Thanks. Your following patch looks good except
+that event_entry should be used for ctx event_list, rather than group_entry.
+Tomorrow I'll test it and get back to you.
 
-On Tue, 2011-11-22 at 15:24 +0100, Mike Galbraith wrote:
-> Entering nohz at high frequency eats cycles, ratelimit it
-> just as we do idle_balance(), and for the same reason.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> 
+
+Deng-Cheng
+
 > ---
->  include/linux/sched.h    |    2 ++
->  kernel/sched/core.c      |    7 +++++++
->  kernel/time/tick-sched.c |    2 +-
->  3 files changed, 10 insertions(+), 1 deletion(-)
-> 
-> Index: linux-3.0-tip/include/linux/sched.h
+> Subject: perf: Fix enable_on_exec for sibling events
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Tue Nov 22 11:25:43 CET 2011
+>
+> Deng-Cheng Zhu reported that sibling events that were created disabled
+> with enable_on_exec would never get enabled. Iterate all events instead
+> of the group lists.
+>
+> Reported-by: Deng-Cheng Zhu <dczhu@mips.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link: http://lkml.kernel.org/n/tip-299rxrpmmle8hp3spyxfo202@git.kernel.org
+> ---
+> Â kernel/events/core.c | Â  Â 8 +-------
+> Â 1 file changed, 1 insertion(+), 7 deletions(-)
+>
+> Index: linux-2.6/kernel/events/core.c
 > ===================================================================
-> --- linux-3.0-tip.orig/include/linux/sched.h
-> +++ linux-3.0-tip/include/linux/sched.h
-> @@ -1988,8 +1988,10 @@ static inline void idle_task_exit(void)
->  
->  #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
->  extern void wake_up_idle_cpu(int cpu);
-> +extern int sched_needs_cpu(int cpu);
->  #else
->  static inline void wake_up_idle_cpu(int cpu) { }
-> +static inline void sched_needs_cpu(int cpu) { }
->  #endif
->  
->  extern unsigned int sysctl_sched_latency;
-> Index: linux-3.0-tip/kernel/sched/core.c
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/sched/core.c
-> +++ linux-3.0-tip/kernel/sched/core.c
-> @@ -587,6 +587,13 @@ static inline bool got_nohz_idle_kick(vo
->  	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
->  }
->  
-> +#ifdef CONFIG_SMP
-> +int sched_needs_cpu(int cpu)
-> +{
-> +	return cpu_rq(cpu)->avg_event < sysctl_sched_migration_cost;
-> +}
-> +#endif
-> +
->  #else /* CONFIG_NO_HZ */
->  
->  static inline bool got_nohz_idle_kick(void)
-> Index: linux-3.0-tip/kernel/time/tick-sched.c
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/time/tick-sched.c
-> +++ linux-3.0-tip/kernel/time/tick-sched.c
-> @@ -352,7 +352,7 @@ void tick_nohz_stop_sched_tick(int inidl
->  	} while (read_seqretry(&xtime_lock, seq));
->  
->  	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
-> -	    arch_needs_cpu(cpu)) {
-> +	    arch_needs_cpu(cpu) || sched_needs_cpu(cpu)) {
->  		next_jiffies = last_jiffies + 1;
->  		delta_jiffies = 1;
->  	} else {
-> 
-> 
-
-
+> --- linux-2.6.orig/kernel/events/core.c
+> +++ linux-2.6/kernel/events/core.c
+> @@ -2494,13 +2494,7 @@ static void perf_event_enable_on_exec(st
+> Â  Â  Â  Â raw_spin_lock(&ctx->lock);
+> Â  Â  Â  Â task_ctx_sched_out(ctx);
+>
+> - Â  Â  Â  list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
+> - Â  Â  Â  Â  Â  Â  Â  ret = event_enable_on_exec(event, ctx);
+> - Â  Â  Â  Â  Â  Â  Â  if (ret)
+> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  enabled = 1;
+> - Â  Â  Â  }
+> -
+> - Â  Â  Â  list_for_each_entry(event, &ctx->flexible_groups, group_entry) {
+> + Â  Â  Â  list_for_each_entry(event, &ctx->event_list, group_entry) {
+> Â  Â  Â  Â  Â  Â  Â  Â ret = event_enable_on_exec(event, ctx);
+> Â  Â  Â  Â  Â  Â  Â  Â if (ret)
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â enabled = 1;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at Â http://www.tux.org/lkml/
+>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
