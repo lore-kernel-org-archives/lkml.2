@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab1KWTZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 14:25:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53584 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab1KWTZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 14:25:01 -0500
-X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=zuYVgSS_cygA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=VnNF1IyMAAAA:8 a=Yi9_R0Vqj4Y7y9EvYkYA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH v7 3.2-rc2 19/30] tracing: modify is_delete, is_return
- from ints to bool.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-In-Reply-To: <20111118111029.10512.12844.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118111029.10512.12844.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Nov 2011 14:24:55 -0500
-Message-ID: <1322076295.20742.62.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756112Ab1KWT0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 14:26:04 -0500
+Received: from smtp19.mail.ru ([94.100.176.156]:34767 "EHLO smtp19.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753000Ab1KWT0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 14:26:01 -0500
+Date: Wed, 23 Nov 2011 23:25:51 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Marc Vertes <marc.vertes@sigfox.com>
+Cc: wim@iguana.be, w.sang@pengutronix.de, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, HaraldWelte@viatech.com,
+        broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
+Message-ID: <20111123192550.GA9918@rainbow>
+References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com>
+ <20111122112212.GD2734@pengutronix.de>
+ <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
+ <20111122173029.GA14349@pengutronix.de>
+ <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com>
+ <4ecbf011.dZASXe6D5kH4Uxve%marc.vertes@sigfox.com>
+ <20111123121051.GA18320@rainbow>
+ <4eccff3f.MbLR7E9v8jus19P8%marc.vertes@sigfox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4eccff3f.MbLR7E9v8jus19P8%marc.vertes@sigfox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:40 +0530, Srikar Dronamraju wrote:
-> is_delete and is_return can take atmost 2 values and
-> are better of being a boolean than a int.
-
-I'm fine with this.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
+On 15:12 Wed 23 Nov     , Marc Vertes wrote:
+> Dmitry Artamonow <mad_soft@inbox.ru> wrote:
 > 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
+> > "via_wdt" seems to be a too generic name. What if someone will want to
+> > write driver for some incompatible watchdog also made by VIA?
+> > Maybe it's worth to use something more specific - say, "via_vx8xx_wdt"?
+> >
+> According to Harald, it is the same watchdog on all via chipsets and
+> back to Athlon chipsets. But why not.
 
+In that case I think it's ok to leave via_wdt as is.
+
+> > Why is to rely on BIOS setup? Is there really no information on what
+> > registers to write to start watchdog? Or you was just lazy to find it?
+> > It took me less than a minute to google up a datasheet[1] on VX800/VX820
+> > and it seems to have all needed information to implement proper start()
+> > and stop() functions. I suppose info on watchdog registers should be
+> > applicable to VX855 as well - but it's better to check on your hardware
+> > anyway.
+> >
+> > [1] http://linux.via.com.tw/support/beginDownload.action?eleid=161&fid=241
+> >
+> I rely on BIOS setup because it is the only working method on the
+> hardware I could test on. This watchdog stuff exists on VIA cpus for
+> years (back to Athlon chipsets) and still no working open
+> source driver. Wonder why?
+> 
+> Of course I read the datasheet of the VX855 southbridge prior to
+> write this driver. And the VX800 one, the CX700 one. Unfortunately,
+> the instructions to start, stop, get and set counters simply
+> do not work. The doc is false and/or incomplete. Harald
+> already implemented a full version of this driver back in 2009
+> (http://git.gnumonks.org/cgi-bin/gitweb.cgi?p=linux-2.6-via.git;a=shortlog;     h=refs/heads/via-wdt),
+> but not working. Questions to VIA remain unanswered.
+> 
+> So I decided to keep in the source code only what really works, and not
+> the well documented but non functional stuff. If you can test or find
+> hardware where those instructions work as advertised, I will be happy
+> to expose them again in an updated driver.
+> 
+> The current result, in addition of actually working, is safe,
+> simple, and compatible with potential "correct" configurations.
+
+Ok. Thanks to you and Harald for explaining! That's sad HW doesn't
+behave according to datasheets. Maybe it's worth to add a note about this
+in the driver to warn future hackers? :)
+
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
 
