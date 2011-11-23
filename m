@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1KWUoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 15:44:07 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:37020 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751616Ab1KWUoF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 15:44:05 -0500
+	id S1754975Ab1KWUsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 15:48:18 -0500
+Received: from home.keithp.com ([63.227.221.253]:35500 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752819Ab1KWUsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 15:48:16 -0500
+From: Keith Packard <keithp@keithp.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] iommu: export no_iommu and dmar_disabled symbols
+In-Reply-To: <1322080560.15493.206.camel@shinybook.infradead.org>
+References: <1321684889-18691-1-git-send-email-keithp@keithp.com> <1322073734-26840-1-git-send-email-eugeni.dodonov@intel.com> <1322080560.15493.206.camel@shinybook.infradead.org>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 23 Nov 2011 12:48:19 -0800
+Message-ID: <86aa7mefak.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <4ECC6D24.9030509@codeaurora.org>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
- <1321926047-14211-6-git-send-email-mturquette@linaro.org> <20111122154900.GB18954@kroah.com>
- <CAPtuhThPQtWwihE8aGru55k87oV7QOr=O836TTJ+=30d6dtVhA@mail.gmail.com>
- <20111122191347.GB4844@kroah.com> <4ECC6D24.9030509@codeaurora.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Wed, 23 Nov 2011 12:43:43 -0800
-Message-ID: <CAJOA=zNQb5448Xh6weiow5pcO6C=DwNxOknXW18C5RYvH_s75g@mail.gmail.com>
-Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Greg KH <greg@kroah.com>, linaro-dev@lists.linaro.org,
-        eric.miao@linaro.org, grant.likely@secretlab.ca,
-        jeremy.kerr@canonical.com, linux@arm.linux.org.uk, sboyd@quicinc.com,
-        magnus.damm@gmail.com, dsaxena@linaro.org,
-        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
-        patches@linaro.org, tglx@linutronix.de, linux-omap@vger.kernel.org,
-        richard.zhao@linaro.org, shawn.guo@freescale.com, paul@pwsan.com,
-        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
-        skannan@quicinc.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 7:48 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> On 11/22/2011 11:13 AM, Greg KH wrote:
->>
->> On Tue, Nov 22, 2011 at 09:57:41AM -0800, Mike Turquette wrote:
->>>>
->>>> Ah, comments like this warm my heart.
->>>>
->>>> Come on, no abusing the kobject code please, if have problems with how
->>>> the kernel core works, and it doesn't do things you want it to, then why
->>>> not change it to work properly for you, or at the least, ASK ME!!!
->>>
->>> Ok, I'm asking you now.  There are two ways to solve this problem:
->>>
->>> 1) have kobject core create the lists linking the objects but defer
->>> allocations and any interactions with sysfs until later in the boot
->>> sequence, OR
->>>
->>> 2) my code can create a list of clks (the same way that clkdev does)
->>> and defer kobject/sysfs stuff until later, which walks the list made
->>> during early-boot
->>>
->>> #1 is most closely aligned with the code I have here, #2 presents
->>> challenges that I haven't really though through.  I know that OMAP
->>> uses the clk framework VERY early in it's boot sequence, but as long
->>> as the per-clk data is properly initialized then it should be OK.
->>>
->>> What do you think?
->>
->> #3 - use debugfs and don't try to create a sysfs interface for the clock
->> structures :)
->
-> I would prefer debugfs too, but for my own selfish reasons. In our current
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-I'll cook up debugfs code for the fwk and drop sysfs.  Maybe not part
-of V4 (per Arnd's suggestion to focus on upstreamable bits), or maybe
-I will if I have time.
+On Wed, 23 Nov 2011 20:36:00 +0000, David Woodhouse <dwmw2@infradead.org> w=
+rote:
 
-Regards,
-Mike
+> This is horrid. In the general case, drivers have no business knowing
+> this. We need to properly identify what is wrong with this hardware, and
+> put in a quirk for it =E2=80=94 perhaps refusing to enable the IOMMU at a=
+ll on
+> the broken chipsets.
+
+That'd be fine with me, right now we're disabling RC6 and semaphores --
+semaphores aren't all that important, although they do improve
+performance a bit. RC6 is important, saving a huge amount of power.
+
+I'd also be OK with requiring special options to enable DMAR and having
+that also disable RC6/semaphores, if you'd rather expose that. In either
+case, we need something that works and avoids hanging machines.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTs1cEzYtFsjWk68qAQixXhAA1PVbZutToPD6uqqdXsDzmRi+EDsg02ek
+d3o+yHG+VZ/Wxx66h6fNrFE8LPtj8pQZu0GB3yOGer+PTGOsFk9gPlMOvhjLEjYs
+o5Lk09mDEzQM4cm4VKBlcu5mAJZGi1mrFOoSfmmoXPo/QtKbiJdq/9x4+4jKa48t
+Xi+luNlUotseONp549o662NNm/PEQaWcCHoetHDlhSagYg0I0fKsO6rja6+tMwnr
+QWlT0KBCF+Q8JxemnJqaTg+ah4vy1gEG9A6blUg2VlOEkF5MnwYAOtsZ4uhvZlyO
+5nCOFJfYFY0eGgwbSRzRCc40RHdCdQGiuoPOb0V1i6gdt5DGe45M82+Dk+RVbWPk
+piTJW6ghM2mKF4f5vKnVsIOH+pbI8qZyt5bD8E9sAt0/caUyKOEuA0RX/tMSbKla
+DSkcp9HYtgA9mDoEEX80ZU3Q4SXv2qoQIJZX5hYAOjvR9pS7OyL5Ems8D3FfG7FR
+fec+HC6oyjOEFblQYrlhT/WWk7ALXGNezjsv2YIrNjH0umhZtQX6e5ObxwK7Psvv
+8yeyNAjG9vwNhWEIgl5BR5l5C7ohLvc07Ps/NNiHZRviBgXA5q3EGq5X8tSGmVXk
+PETFdV5cCAzq/Cx4vL7Diid9OG8bX12SiiRymM4b5eGCIaRhGxx2F+VeElZyxH9E
+0SX2Sw43TQA=
+=3bpj
+-----END PGP SIGNATURE-----
+--=-=-=--
