@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759196Ab1KWAix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:38:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42645 "EHLO mx2.suse.de"
+	id S1759132Ab1KWAj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:39:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42617 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759070Ab1KWAhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:37:16 -0500
+	id S932765Ab1KWAhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:37:03 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
-Message-Id: <20111123002557.325656786@clark.kroah.org>
+Message-Id: <20111123002556.942986048@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:47 -0800
+Date: Tue, 22 Nov 2011 16:25:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Robert Hooker <robert.hooker@canonical.com>
-Subject: [47/53] drm/i915: always set FDI composite sync bit
+        alan@lxorguk.ukuu.org.uk, Matthieu Castet <matthieu.castet@parrot.com>,
+        Thomas Poussevin <thomas.poussevin@parrot.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [43/53] USB: EHCI: fix HUB TT scheduling issue with iso transfer
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Thomas Poussevin <thomas.poussevin@parrot.com>
 
-commit c4f9c4c2b3f1831e932e04db992cf6fe92c2a95a upstream.
+commit 811c926c538f7e8d3c08b630dd5844efd7e000f6 upstream.
 
-It's needed for 3 pipe support as well as just regular functionality
-(e.g. DisplayPort).
+The current TT scheduling doesn't allow to play and then record on a
+full-speed device connected to a high speed hub.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Adam Jackson <ajax@redhat.com>
-Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Robert Hooker <robert.hooker@canonical.com>
+The IN iso stream can only start on the first uframe (0-2 for a 165 us)
+because of CSPLIT transactions.
+For the OUT iso stream there no such restriction. uframe 0-5 are possible.
+
+The idea of this patch is that the first uframe are precious (for IN TT iso
+stream) and we should allocate the last uframes first if possible.
+
+For that we reverse the order of uframe allocation (last uframe first).
+
+Here an example :
+
+hid interrupt stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame | 13  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+----------------------------------------------------------------------
+
+iso OUT stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame | 13  | 125 |  39 |  0  |  0  |  0  |  0  |  0  |
+----------------------------------------------------------------------
+
+There no place for iso IN stream  (uframe 0-2 are used) and we got "cannot
+submit datapipe for urb 0, error -28: not enough bandwidth" error.
+
+With the patch this become.
+
+iso OUT stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame |  13 |  0  |  0  |  0  | 125 |  39 |  0  |  0  |
+----------------------------------------------------------------------
+
+iso IN stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame |  13 |  0  | 125 | 40  | 125 |  39 |  0  |  0  |
+----------------------------------------------------------------------
+
+Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+Signed-off-by: Thomas Poussevin <thomas.poussevin@parrot.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/usb/host/ehci-sched.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3175,6 +3175,7 @@
- #define  FDI_LINK_TRAIN_NONE_IVB            (3<<8)
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1480,10 +1480,15 @@ iso_stream_schedule (
  
- /* both Tx and Rx */
-+#define  FDI_COMPOSITE_SYNC		(1<<11)
- #define  FDI_LINK_TRAIN_AUTO		(1<<10)
- #define  FDI_SCRAMBLING_ENABLE          (0<<7)
- #define  FDI_SCRAMBLING_DISABLE         (1<<7)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2600,6 +2600,7 @@ static void ivb_manual_fdi_link_train(st
- 	temp |= FDI_LINK_TRAIN_PATTERN_1_IVB;
- 	temp &= ~FDI_LINK_TRAIN_VOL_EMP_MASK;
- 	temp |= FDI_LINK_TRAIN_400MV_0DB_SNB_B;
-+	temp |= FDI_COMPOSITE_SYNC;
- 	I915_WRITE(reg, temp | FDI_TX_ENABLE);
+ 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
  
- 	reg = FDI_RX_CTL(pipe);
-@@ -2607,6 +2608,7 @@ static void ivb_manual_fdi_link_train(st
- 	temp &= ~FDI_LINK_TRAIN_AUTO;
- 	temp &= ~FDI_LINK_TRAIN_PATTERN_MASK_CPT;
- 	temp |= FDI_LINK_TRAIN_PATTERN_1_CPT;
-+	temp |= FDI_COMPOSITE_SYNC;
- 	I915_WRITE(reg, temp | FDI_RX_ENABLE);
+-		/* find a uframe slot with enough bandwidth */
+-		next = start + period;
+-		for (; start < next; start++) {
+-
++		/* find a uframe slot with enough bandwidth.
++		 * Early uframes are more precious because full-speed
++		 * iso IN transfers can't use late uframes,
++		 * and therefore they should be allocated last.
++		 */
++		next = start;
++		start += period;
++		do {
++			start--;
+ 			/* check schedule: enough space? */
+ 			if (stream->highspeed) {
+ 				if (itd_slot_ok(ehci, mod, start,
+@@ -1496,7 +1501,7 @@ iso_stream_schedule (
+ 						start, sched, period))
+ 					break;
+ 			}
+-		}
++		} while (start > next);
  
- 	POSTING_READ(reg);
+ 		/* no room in the schedule */
+ 		if (start == next) {
 
 
