@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751Ab1KWAmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:42:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43088 "EHLO mx2.suse.de"
+	id S932826Ab1KWAnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:43:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43115 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932732Ab1KWAmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:42:39 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:09 2011
-Message-Id: <20111123002409.452463315@clark.kroah.org>
+	id S932799Ab1KWAm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:42:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
+Message-Id: <20111123002407.884917534@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:59 -0800
+Date: Tue, 22 Nov 2011 16:23:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Robert Hooker <robert.hooker@canonical.com>
-Subject: [52/53] drm/i915: fix IVB cursor support
+        alan@lxorguk.ukuu.org.uk, Havard Skinnemoen <hskinnemoen@google.com>,
+        Oliver Neukum <oliver@neukum.name>
+Subject: [35/53] USB: cdc-acm: Fix disconnect() vs close() race
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,101 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Havard Skinnemoen <hskinnemoen@google.com>
 
-commit 65a21cd65316145f9302594be8e69074369e1050 upstream.
+commit 5dc2470c602da8851907ec18942cd876c3b4ecc1 upstream.
 
-The cursor regs have moved around, add the offsets and new macros for
-getting at them.
+There's a race between the USB disconnect handler and the TTY close
+handler which may cause the acm object to be freed while it's still
+being used. This may lead to things like
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-By: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Reviewed-By: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Robert Hooker <robert.hooker@canonical.com>
+http://article.gmane.org/gmane.linux.usb.general/54250
+
+and
+
+https://lkml.org/lkml/2011/5/29/64
+
+This is the simplest fix I could come up with. Holding on to open_mutex
+while closing the TTY device prevents acm_disconnect() from freeing the
+acm object between acm->port.count drops to 0 and the TTY side of the
+cleanups are finalized.
+
+Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Oliver Neukum <oliver@neukum.name>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    8 +++++++
- drivers/gpu/drm/i915/intel_display.c |   40 ++++++++++++++++++++++++++++++-----
- 2 files changed, 43 insertions(+), 5 deletions(-)
+ drivers/usb/class/cdc-acm.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -2544,10 +2544,18 @@
- #define _CURBBASE		0x700c4
- #define _CURBPOS			0x700c8
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -539,7 +539,6 @@ static void acm_port_down(struct acm *ac
+ {
+ 	int i;
  
-+#define _CURBCNTR_IVB		0x71080
-+#define _CURBBASE_IVB		0x71084
-+#define _CURBPOS_IVB		0x71088
-+
- #define CURCNTR(pipe) _PIPE(pipe, _CURACNTR, _CURBCNTR)
- #define CURBASE(pipe) _PIPE(pipe, _CURABASE, _CURBBASE)
- #define CURPOS(pipe) _PIPE(pipe, _CURAPOS, _CURBPOS)
- 
-+#define CURCNTR_IVB(pipe) _PIPE(pipe, _CURACNTR, _CURBCNTR_IVB)
-+#define CURBASE_IVB(pipe) _PIPE(pipe, _CURABASE, _CURBBASE_IVB)
-+#define CURPOS_IVB(pipe) _PIPE(pipe, _CURAPOS, _CURBPOS_IVB)
-+
- /* Display A control */
- #define _DSPACNTR                0x70180
- #define   DISPLAY_PLANE_ENABLE			(1<<31)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5334,6 +5334,31 @@ static void i9xx_update_cursor(struct dr
- 	I915_WRITE(CURBASE(pipe), base);
+-	mutex_lock(&open_mutex);
+ 	if (acm->dev) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
+@@ -551,14 +550,15 @@ static void acm_port_down(struct acm *ac
+ 		acm->control->needs_remote_wakeup = 0;
+ 		usb_autopm_put_interface(acm->control);
+ 	}
+-	mutex_unlock(&open_mutex);
  }
  
-+static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
-+{
-+	struct drm_device *dev = crtc->dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-+	int pipe = intel_crtc->pipe;
-+	bool visible = base != 0;
-+
-+	if (intel_crtc->cursor_visible != visible) {
-+		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
-+		if (base) {
-+			cntl &= ~CURSOR_MODE;
-+			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+		} else {
-+			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-+			cntl |= CURSOR_MODE_DISABLE;
-+		}
-+		I915_WRITE(CURCNTR_IVB(pipe), cntl);
-+
-+		intel_crtc->cursor_visible = visible;
-+	}
-+	/* and commit changes on next vblank */
-+	I915_WRITE(CURBASE_IVB(pipe), base);
-+}
-+
- /* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
- static void intel_crtc_update_cursor(struct drm_crtc *crtc,
- 				     bool on)
-@@ -5381,11 +5406,16 @@ static void intel_crtc_update_cursor(str
- 	if (!visible && !intel_crtc->cursor_visible)
+ static void acm_tty_hangup(struct tty_struct *tty)
+ {
+ 	struct acm *acm = tty->driver_data;
+ 	tty_port_hangup(&acm->port);
++	mutex_lock(&open_mutex);
+ 	acm_port_down(acm);
++	mutex_unlock(&open_mutex);
+ }
+ 
+ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+@@ -569,8 +569,9 @@ static void acm_tty_close(struct tty_str
+ 	   shutdown */
+ 	if (!acm)
  		return;
++
++	mutex_lock(&open_mutex);
+ 	if (tty_port_close_start(&acm->port, tty, filp) == 0) {
+-		mutex_lock(&open_mutex);
+ 		if (!acm->dev) {
+ 			tty_port_tty_set(&acm->port, NULL);
+ 			acm_tty_unregister(acm);
+@@ -582,6 +583,7 @@ static void acm_tty_close(struct tty_str
+ 	acm_port_down(acm);
+ 	tty_port_close_end(&acm->port, tty);
+ 	tty_port_tty_set(&acm->port, NULL);
++	mutex_unlock(&open_mutex);
+ }
  
--	I915_WRITE(CURPOS(pipe), pos);
--	if (IS_845G(dev) || IS_I865G(dev))
--		i845_update_cursor(crtc, base);
--	else
--		i9xx_update_cursor(crtc, base);
-+	if (IS_IVYBRIDGE(dev)) {
-+		I915_WRITE(CURPOS_IVB(pipe), pos);
-+		ivb_update_cursor(crtc, base);
-+	} else {
-+		I915_WRITE(CURPOS(pipe), pos);
-+		if (IS_845G(dev) || IS_I865G(dev))
-+			i845_update_cursor(crtc, base);
-+		else
-+			i9xx_update_cursor(crtc, base);
-+	}
- 
- 	if (visible)
- 		intel_mark_busy(dev, to_intel_framebuffer(crtc->fb)->obj);
+ static int acm_tty_write(struct tty_struct *tty,
 
 
