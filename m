@@ -1,42 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813Ab1KWA0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:26:05 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:55894 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab1KWA0D (ORCPT
+	id S1758886Ab1KWA0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:26:10 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49176 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752671Ab1KWA0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:26:03 -0500
-Date: Tue, 22 Nov 2011 19:23:56 -0500 (EST)
-Message-Id: <20111122.192356.1964321544725536133.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, maze@google.com, adobriyan@gmail.com
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111123111751.60b1e8ba032f6077fa03ca13@canb.auug.org.au>
-References: <20111123111751.60b1e8ba032f6077fa03ca13@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 16:23:59 -0800 (PST)
+	Tue, 22 Nov 2011 19:26:06 -0500
+X-Sasl-enc: bYXlDlF9ZTYaTfieEhvXAwEyxWPKecvGD9Z47AbuuchO 1322007965
+Date: Tue, 22 Nov 2011 16:22:22 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/25] 2.6.32.49-longterm review
+Message-ID: <20111123002222.GA2376@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 23 Nov 2011 11:17:51 +1100
+This is the start of the longterm review cycle for the 2.6.32.49 release.
+There are 25 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-> Hi all,
-> 
-> Today's linux-next merge of the net-next tree got a conflict in
-> net/ipv4/inet_diag.c between commit 717b6d836646 ("net-netlink: fix diag
-> to export IPv4 tos for dual-stack IPv6 sockets") from the net tree and
-> commit 4e3fd7a06dc2 ("net: remove ipv6_addr_copy()") from the net-next
-> tree.
-> 
-> Just context changes.  I fixed it up (see below) can can carry the fix as
-> necessary,
+Responses should be made by Friday, November 25, 2011, 20:00:00 UTC.
+Anything received after that time might be too late.
 
-Yep, I anticipated this one too, thanks Stephen.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.49-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+
+ Documentation/Makefile              |    2 +-
+ Documentation/kbuild/makefiles.txt  |   12 ++
+ Documentation/video4linux/Makefile  |    8 --
+ Documentation/video4linux/v4lgrab.c |  201 -----------------------------------
+ Makefile                            |    7 +-
+ arch/ia64/hp/sim/simserial.c        |   12 +--
+ drivers/base/sys.c                  |    6 +
+ drivers/char/amiserial.c            |   56 ++++++-----
+ drivers/char/cyclades.c             |   49 +++++----
+ drivers/char/ip2/ip2main.c          |   72 ++++++++-----
+ drivers/char/mxser.c                |   62 ++++++-----
+ drivers/char/nozomi.c               |   37 +++----
+ drivers/char/pcmcia/synclink_cs.c   |   60 +++++------
+ drivers/char/synclink.c             |   73 ++++++-------
+ drivers/char/synclink_gt.c          |   56 +++++-----
+ drivers/char/synclinkmp.c           |   61 +++++------
+ drivers/char/tty_io.c               |   21 ++++
+ drivers/gpu/drm/i915/i915_gem.c     |   44 ++++----
+ drivers/md/raid5.c                  |   32 ++++--
+ drivers/mtd/mtdchar.c               |    1 +
+ drivers/scsi/hosts.c                |    9 +-
+ drivers/scsi/scsi_lib.c             |    9 ++
+ drivers/scsi/st.c                   |    4 +-
+ drivers/serial/68360serial.c        |   51 +++++-----
+ drivers/serial/serial_core.c        |   35 +++----
+ drivers/usb/core/quirks.c           |   27 +++++
+ drivers/usb/serial/ftdi_sio.c       |   14 ++-
+ drivers/usb/serial/pl2303.c         |    1 -
+ drivers/usb/serial/pl2303.h         |    4 -
+ drivers/usb/serial/usb-serial.c     |   13 +++
+ drivers/usb/storage/protocol.c      |    7 +-
+ drivers/xen/events.c                |    2 +-
+ fs/hfs/trans.c                      |    2 +
+ include/linux/interrupt.h           |    6 +
+ include/linux/tty_driver.h          |    9 ++
+ include/linux/usb/serial.h          |    2 +
+ include/linux/vmalloc.h             |    1 +
+ kernel/irq/pm.c                     |   35 +++++--
+ kernel/power/suspend.c              |    2 +-
+ lib/nlattr.c                        |    1 +
+ mm/vmalloc.c                        |   67 +++++++++---
+ net/bluetooth/rfcomm/tty.c          |    4 -
+ net/ipv6/udp.c                      |    2 +-
+ net/sunrpc/auth_unix.c              |    3 +
+ scripts/Kbuild.include              |    5 +
+ sound/pci/hda/patch_realtek.c       |    1 -
+ sound/soc/codecs/wm8940.c           |    1 +
+ 47 files changed, 586 insertions(+), 603 deletions(-)
