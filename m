@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab1KWE2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 23:28:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35384 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab1KWE23 convert rfc822-to-8bit (ORCPT
+	id S1759818Ab1KWE3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 23:29:10 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:59754 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042Ab1KWE3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 23:28:29 -0500
-From: Xi Wang <xi.wang@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 1/2] ax25: integer overflows in ax25_setsockopt()
-Date: Tue, 22 Nov 2011 23:28:24 -0500
-Message-Id: <7187C142-99F1-4A96-9BE6-650B10C9B22D@gmail.com>
-Cc: Joerg Reuter <jreuter@yaina.de>, Ralf Baechle <ralf@linux-mips.org>,
-        David Miller <davem@davemloft.net>, linux-hams@vger.kernel.org,
-        netdev@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Tue, 22 Nov 2011 23:29:08 -0500
+Date: Wed, 23 Nov 2011 15:28:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (uprobes
+ tree related)
+Message-Id: <20111123152854.98c60a7c859f28c2efa30717@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Nov_2011_15_28_54_+1100_XiMA9wdGWUMq.Bav"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ax25_setsockopt() misses several upper-bound checks on the
-user-controlled value.
+--Signature=_Wed__23_Nov_2011_15_28_54_+1100_XiMA9wdGWUMq.Bav
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Srikar,
 
-Reported-by: Fan Long <longfancn@gmail.com>
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
+After merging the uprobes tree, today's linux-next build (sparc64
+defconfig) failed like this:
+
+In file included from include/linux/mm_types.h:15:0,
+                 from include/linux/kmemcheck.h:4,
+                 from include/linux/skbuff.h:18,
+                 from net/8021q/vlan_core.c:1:
+include/linux/uprobes.h: In function 'register_uprobe':
+include/linux/uprobes.h:148:10: error: 'ENOSYS' undeclared (first use in th=
+is function)
+
+And several more.
+
+Caused by commit fb16338b69cd ("register_unregister_uprobe" - "Uprobes:
+register/unregister probes").
+
+I have added this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 23 Nov 2011 15:11:20 +1100
+Subject: [PATCH] uprobes: using ENOSYS requires errno.h
+
+Fixes this build problem:
+
+In file included from include/linux/mm_types.h:15:0,
+                 from include/linux/kmemcheck.h:4,
+                 from include/linux/skbuff.h:18,
+                 from net/8021q/vlan_core.c:1:
+include/linux/uprobes.h: In function 'register_uprobe':
+include/linux/uprobes.h:148:10: error: 'ENOSYS' undeclared (first use in th=
+is function)
+
+when CONFIG_UPROBES is not defined.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- net/ax25/af_ax25.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ include/linux/uprobes.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
-index e7c69f4..be6a8cf 100644
---- a/net/ax25/af_ax25.c
-+++ b/net/ax25/af_ax25.c
-@@ -571,7 +571,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
- 		break;
- 
- 	case AX25_T1:
--		if (opt < 1) {
-+		if (opt < 1 || opt > 30) {
- 			res = -EINVAL;
- 			break;
- 		}
-@@ -580,7 +580,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
- 		break;
- 
- 	case AX25_T2:
--		if (opt < 1) {
-+		if (opt < 1 || opt > 20) {
- 			res = -EINVAL;
- 			break;
- 		}
-@@ -596,7 +596,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
- 		break;
- 
- 	case AX25_T3:
--		if (opt < 1) {
-+		if (opt < 0 || opt > 3600) {
- 			res = -EINVAL;
- 			break;
- 		}
-@@ -604,7 +604,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
- 		break;
- 
- 	case AX25_IDLE:
--		if (opt < 0) {
-+		if (opt < 0 || opt > 65535) {
- 			res = -EINVAL;
- 			break;
- 		}
--- 
-1.7.5.4
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 091dfb8..e2e0674 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -23,6 +23,7 @@
+  *	Jim Keniston
+  */
+=20
++#include <linux/errno.h>
+ #include <linux/rbtree.h>
+=20
+ struct vm_area_struct;
+--=20
+1.7.7.3
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__23_Nov_2011_15_28_54_+1100_XiMA9wdGWUMq.Bav
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOzHaGAAoJEECxmPOUX5FEqCkP/2kEI8fn/PmH623+YBtJe22I
+02qwVtOwr/KHembhXEAChPOYItFH2KfG5TrFooLnHKw/9sjzISoXSRxrMwucFhLS
+hPNuiTzkitycbWpOh29mWbp8NqLSHeqni4rhrjCiBvS2S6ymHkvIuW698u2Bxrkj
+Qz6vc979THQ0bzCae1QcatvM+hfNZZMETjpSWbtqd9cRpuPKsgcAFbZKR6OyEaVv
+gmAPKNQD3rGxCV7rEH8GRf27lAeJHmNaQpUZ9VfhG7273LbzzdGVkWTOtTmCFQ4f
+eKamxpC/jVXylWQqOx2wycxzKgfBB/o6BHTZiRx/xIWo/kloMoAN8CyUye1hypNJ
+yqxcG3wlEPVAam6UuqITw4fsjsUtg9fAEtJxnYShpdjbr1s+FQGEhLmnQkUYK6x6
+bIUaj5jM3/PQdaVDQakgLfTmLtpVd0LYmXbGqxjRfnH+ZXFMRVrhy6ke1s2ZtmlX
+H/FEWiJLKTPg2xJm5UsGj+aDOKbi16UGnNs1fTbMjvLnjRQ0ot0VdcZKlLogpuf3
+MOI+2AWA+mDS7P0uNepQ+Hn0JHUCuDc4hPiPkzkZxzHhM4ZBiPCbIaWW0VB1qT9v
+XhGAeHfS4tNqj1lD1zCJVOxsoon+vJUAK02JOOvQHhV36TcQ1lnG6bxYIazGJAd7
+GxF2iYRAsWR+OPsq+o3v
+=xTw8
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Nov_2011_15_28_54_+1100_XiMA9wdGWUMq.Bav--
