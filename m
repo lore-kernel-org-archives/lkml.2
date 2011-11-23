@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab1KWNIT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 08:08:19 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41053 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112Ab1KWNIS (ORCPT
+	id S1755427Ab1KWNOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 08:14:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53339 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755204Ab1KWNOD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 08:08:18 -0500
-Subject: Re: [PATCH v3 2/3] hvc_init(): Enforce one-time initialization.
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Miche Baker-Harvey <miche@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, Mike Waychison <mikew@google.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Eric Northrup <digitaleric@google.com>
-In-Reply-To: <20111123125657.GH16665@amit-x200.redhat.com>
-References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
-	 <20111108214504.28884.61814.stgit@miche.sea.corp.google.com>
-	 <874nybqo0o.fsf@rustcorp.com.au>
-	 <CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
-	 <20111123103852.GG16665@amit-x200.redhat.com>
-	 <20111123125657.GH16665@amit-x200.redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 23 Nov 2011 15:06:04 +0200
-Message-ID: <1322053564.3581.19.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Nov 2011 08:14:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1111231348020.28728@pobox.suse.cz>
+References: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
+	<alpine.LNX.2.00.1111231348020.28728@pobox.suse.cz>
+Date: Wed, 23 Nov 2011 14:14:01 +0100
+X-Google-Sender-Auth: xwmkoyK1JqklSWeLfvvI4N8tWt4
+Message-ID: <CAN+gG=F5-abvwAC9qE7KAkCe-49NsQgqiue++OdNx1Bq4WUOEQ@mail.gmail.com>
+Subject: Re: [PATCH 0/8] multitouch updates (mainly eGalax)
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 18:26 +0530, Amit Shah wrote:
-> On (Wed) 23 Nov 2011 [16:08:52], Amit Shah wrote:
-> > With this setup, with and without patches, I can spawn two consoles
-> > via:
-> > 
-> > /sbin/agetty /dev/hvc0 9600 vt100
-> > /sbin/agetty /dev/hvc1 9600 vt100
-> > 
-> > (Strange thing is, the second one gives a 'password incorrect' error
-> > on login attempts, while the first one logs in fine.  I do remember
-> > testing multiple consoles just fine a year and a half back, so no idea
-> > why this isn't behaving as expected -- but it mostly looks like a
-> > userspace issue rather than kernel one.)
-> 
-> Right -- when I test this on the Fedora 11 VM I used back then, the
-> two consoles work just fine without these patches.  When I use
-> something newer (F14), I get the weird password rejection, with and
-> without your patches.
+On Wed, Nov 23, 2011 at 13:49, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 23 Nov 2011, Benjamin Tissoires wrote:
+>
+>> Here are some multitouch updates.
+>> Jiri, the first one is already in your upstream-fixes branch, but not in
+>> your for-next branch...
+>
+> Hi Benjamin,
+>
+> yes, that is intentional. 'upstream-fixes' branch is what is scheduled to
+> be sent to Linus still during this development cycle (and therefore is not
+> for linux-next).
+>
+> Other branches get merged into linux-next, as they are scheduled for next
+> merge window.
+>
+>> Patch 0002 will help end-users to test their device without recompiling the
+>> hid-multitouch between each test.
+>>
+>> Patches 0003-0008 are focused on eGalax:
+>> * I made some cleanup in the #defines for the PIDS.
+>> * I removed the MT_QUIRK_EGALAX_XYZ_FIXUP as I understood why it was needed
+>> * I also removed the .maxcontact field in EGALAX as it is not necessary
+>>   (it was tested on 3 devices: Acer Iconia W500 by Marek, 0xa001 by Cedric,
+>>    and Windpad 110W by me)
+>> * I added a few new devices (I included the one reported by Marek and I kept
+>>   his "From")
+>> * I included the new protocol for a001 devices (reported by Cedric)
+>
+> I will be queueing all those for 3.3, okay?
 
-It's not a weird password rejection, it's probably not set as a secure
-terminal :)
+I'm ok with that.
 
-Try adding hvc1 to /etc/securetty on the guest.
+Thanks a lot,
+Benjamin
 
--- 
-
-Sasha.
-
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs
+>
