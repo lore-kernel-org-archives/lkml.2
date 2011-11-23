@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab1KWK3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:29:10 -0500
-Received: from portal.weinmann.de ([62.8.140.122]:45587 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab1KWK3J convert rfc822-to-8bit (ORCPT
+	id S1754017Ab1KWK3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:29:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35517 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752165Ab1KWK3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:29:09 -0500
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'Carsten Behling'" <carsten.behling@garz-fricke.com>
-CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Nov 2011 11:28:47 +0100
-Subject: RE: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Topic: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Index: AcypMG7f1j3pt+VZTlOvrrSAA2wmYwAAZ+ewACQAp5AAAcQnEA==
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B40D349@wm021.weinmann.com>
-References: <D99582E5322435468A77E74BB0039E7B1D1655BF4D@SRV02.hamburg.garz-fricke.de>
- <EF2E73589CA71846A15D0B2CDF79505D087B40D16B@wm021.weinmann.com>
- <D99582E5322435468A77E74BB0039E7B1D1655BFBB@SRV02.hamburg.garz-fricke.de>
-In-Reply-To: <D99582E5322435468A77E74BB0039E7B1D1655BFBB@SRV02.hamburg.garz-fricke.de>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Nov 2011 05:29:41 -0500
+Date: Wed, 23 Nov 2011 10:29:34 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: drop support for PlayPaq with WM8510
+Message-ID: <20111123102933.GI4332@opensource.wolfsonmicro.com>
+References: <1322041150.1753.25.camel@x61.thuisdomein>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322041150.1753.25.camel@x61.thuisdomein>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Nov 23, 2011 at 10:39:10AM +0100, Paul Bolle wrote:
+> SoC Audio support for PlayPaq with WM8510 got added in commit 9aaca9683b
+> ("[ALSA] Revised AT32 ASoC Patch"). That support depends on
+> BOARD_PLAYPAQ. That Kconfig symbol didn't exist when that support got
+> added in v2.6.27. It still doesn't. It has never been possible to even
+> build this driver. Drop it.
 
-Carsten Behling wrote on 2011-11-23:
-
->> this case is already catched in at91_do_twi_transfer():
-> 
-> Sorry, I did not found this code in your patch.
-> (http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg06556.html):
-> 
->> +       if (is_read) {
->> +               if (!dev->buf_len)
-
-yes, this won't work for buf_len == 1. It is corrected in
-https://lkml.org/lkml/2011/11/18/223 which I held back for some time
-as it should have been just a feature extension. I was not aware it
-also fixed the buf_len = 1 bug. Sorry for that...
-
-(Explanation: in the first implementation I immediately decremented
-buf_len, so buf_len == 1 could not occur. Later I removed that but
-did not fully fold it into the base patch.)
-
-Thanks,
-Niko
-
+Applied, thanks.  Please do always use subject lines which match the
+subsystem you're submitting against.
