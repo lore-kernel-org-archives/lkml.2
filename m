@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab1KWL40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:56:26 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44230 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab1KWL4Y (ORCPT
+	id S1754425Ab1KWL5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:57:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59693 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab1KWL5t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:56:24 -0500
-Message-ID: <4ECCDF65.2050208@davidkrider.com>
-Date: Wed, 23 Nov 2011 06:56:21 -0500
-From: David Krider <david@davidkrider.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111110 Thunderbird/8.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Please, am I in danger of losing data?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Nov 2011 06:57:49 -0500
+Message-ID: <1322049459.14799.45.camel@twins>
+Subject: Re: [patch 6/7] sched: use rq->avg_event to resurrect nohz
+ ratelimiting
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Date: Wed, 23 Nov 2011 12:57:39 +0100
+In-Reply-To: <1321971893.6855.24.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629441.7080.15.camel@marge.simson.net>
+	 <1321630552.2197.15.camel@twins>
+	 <1321971445.6855.14.camel@marge.simson.net>
+	 <1321971893.6855.24.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get an lot of these messages these days. They don't fill me with
-confidence. I've searched the internet far and wide. I've filed bug
-reports with the kernel and the Ubuntu bugzillas. I've posted to this
-list. I'm not finding any solutions. At this point, can anyone just
-please tell me: Am I in danger of losing data? If so, I guess I can
-shelve my SSD until this stuff gets sorted.
+On Tue, 2011-11-22 at 15:24 +0100, Mike Galbraith wrote:
+> Entering nohz at high frequency eats cycles, ratelimit it
+> just as we do idle_balance(), and for the same reason.
 
-[    7.630904] ata1: EH in SWNCQ mode,QC:qc_active 0xE sactive 0xE
-[    7.630987] ata1: SWNCQ:qc_active 0x6 defer_bits 0x8 last_issue_tag 0x2
-[    7.630988]   dhfis 0x6 dmafis 0x6 sdbfis 0x1
-[    7.631131] ata1: ATA_REG 0x41 ERR_REG 0x84
-[    7.631201] ata1: tag : dhfis dmafis sdbfis sacitve
-[    7.631273] ata1: tag 0x1: 1 1 0 1 
-[    7.631342] ata1: tag 0x2: 1 1 0 1 
-[    7.631417] ata1.00: exception Emask 0x1 SAct 0xe SErr 0x0 action 0x6
-frozen
-[    7.631492] ata1.00: Ata error. fis:0x21
-[    7.631563] ata1.00: failed command: READ FPDMA QUEUED
-[    7.631637] ata1.00: cmd 60/08:08:b0:48:33/00:00:10:00:00/40 tag 1
-ncq 4096 in
-[    7.631637]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
-0x10 (ATA bus error)
-[    7.631811] ata1.00: status: { DRDY ERR }
-[    7.631880] ata1.00: error: { ICRC ABRT }
-[    7.631950] ata1.00: failed command: READ FPDMA QUEUED
-[    7.632024] ata1.00: cmd 60/08:10:e0:64:f3/00:00:0f:00:00/40 tag 2
-ncq 4096 in
-[    7.632025]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
-0x10 (ATA bus error)
-[    7.632198] ata1.00: status: { DRDY ERR }
-[    7.632268] ata1.00: error: { ICRC ABRT }
-[    7.632338] ata1.00: failed command: READ FPDMA QUEUED
-[    7.632411] ata1.00: cmd 60/08:18:f0:a6:b6/00:00:10:00:00/40 tag 3
-ncq 4096 in
-[    7.632412]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
-0x10 (ATA bus error)
-[    7.632585] ata1.00: status: { DRDY ERR }
-[    7.632655] ata1.00: error: { ICRC ABRT }
-[    7.632727] ata1: hard resetting link
-[    7.632728] ata1: nv: skipping hardreset on occupied port
-[    8.130020] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[    8.161465] ata1.00: configured for UDMA/133
-[    8.161480] ata1: EH complete
+ideally we should have some per-arch information on how costly it
+actually is to enter/leave nohz.
+
+Also, can you confirm, or otherwise run this by whoemever reported that
+power-usage regression the last time we tried this?
 
