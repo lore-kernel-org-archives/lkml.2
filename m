@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab1KWSJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 13:09:05 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64556 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab1KWSJC (ORCPT
+	id S1755859Ab1KWSKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 13:10:54 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58314 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755761Ab1KWSKx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 13:09:02 -0500
-Message-ID: <4ECD374F.5060208@solonet.org.ua>
-Date: Wed, 23 Nov 2011 20:11:27 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH resend] arm: s3c24xx: Add new LCD (W35i) support for Mini2440
- board
-References: <4EC588A8.3030907@solonet.org.ua>
-In-Reply-To: <4EC588A8.3030907@solonet.org.ua>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Nov 2011 13:10:53 -0500
+Message-ID: <1322071812.14799.87.camel@twins>
+Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Date: Wed, 23 Nov 2011 19:10:12 +0100
+In-Reply-To: <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+	 <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new LCD (W35i) support for Mini2440 board
+On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
+> +                       ret = install_breakpoint(vma->vm_mm, uprobe);
+> +                       if (ret == -EEXIST) {
+> +                               atomic_inc(&vma->vm_mm->mm_uprobes_count);
+> +                               ret = 0;
+> +                       } 
 
-Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
----
-
-I need to refer this patch but can't find it on lkml.org
-Maybe I haven't send it...
-Sorry for bothering if I did so.
-
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index fc2dc0b..951eadd 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -167,6 +167,24 @@ static struct s3c2410fb_display mini2440_lcd_cfg[] __initdata = {
- 		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
- 				   S3C2410_LCDCON5_HWSWP),
- 	},
-+	/* mini2440 + 3.5" TFT (LCD-W35i, LQ035Q1DG06 type) + touchscreen*/
-+	[3] = {
-+		_LCD_DECLARE(
-+			/* clock */
-+			7,
-+			/* xres, margin_right, margin_left, hsync */
-+			320, 68, 66, 4,
-+			/* yres, margin_top, margin_bottom, vsync */
-+			240, 4, 4, 9,
-+			/* refresh rate */
-+			60),
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+				   S3C2410_LCDCON5_INVVDEN |
-+				   S3C2410_LCDCON5_INVVFRAME |
-+				   S3C2410_LCDCON5_INVVLINE |
-+				   S3C2410_LCDCON5_INVVCLK |
-+				   S3C2410_LCDCON5_HWSWP),
-+	},
- };
- 
- /* todo - put into gpio header */
+Aren't you double counting that probe position here? The one that raced
+you to inserting it will also have incremented that counter, no?
