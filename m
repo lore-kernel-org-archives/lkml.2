@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab1KWKgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:36:53 -0500
-Received: from mailout.artfiles.de ([80.252.97.80]:37436 "EHLO
-	mailout.artfiles.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab1KWKgv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:36:51 -0500
-X-Greylist: delayed 3903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Nov 2011 05:36:51 EST
-From: Carsten Behling <carsten.behling@garz-fricke.com>
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Nov 2011 10:31:44 +0100
-Subject: AW: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Topic: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Index: AcypMG7f1j3pt+VZTlOvrrSAA2wmYwAAZ+ewACQAp5A=
-Message-ID: <D99582E5322435468A77E74BB0039E7B1D1655BFBB@SRV02.hamburg.garz-fricke.de>
-References: <D99582E5322435468A77E74BB0039E7B1D1655BF4D@SRV02.hamburg.garz-fricke.de>
- <EF2E73589CA71846A15D0B2CDF79505D087B40D16B@wm021.weinmann.com>
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B40D16B@wm021.weinmann.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1754382Ab1KWKic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:38:32 -0500
+Received: from verein.lst.de ([213.95.11.211]:60613 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752624Ab1KWKia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:38:30 -0500
+Date: Wed, 23 Nov 2011 11:38:29 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, Matthew Wilcox <matthew@wil.cx>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] fs: wire up .truncate_range and .fallocate
+Message-ID: <20111123103829.GA23168@lst.de>
+References: <1322038412-29013-1-git-send-email-amwang@redhat.com> <1322038412-29013-2-git-send-email-amwang@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322038412-29013-2-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> this case is already catched in at91_do_twi_transfer():
+On Wed, Nov 23, 2011 at 04:53:31PM +0800, Cong Wang wrote:
+> +int vmtruncate_file_range(struct file *file, struct inode *inode,
+> +		     loff_t lstart, loff_t lend)
 
-Sorry, I did not found this code in your patch.
-(http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg06556.html):
+We can always get the inode from file->f_path.dentry->d_inode, thus
+passing both of them doesn't make much sense.
 
-> +       if (is_read) {
-> +               if (!dev->buf_len)
-> +                       at91_twi_write(dev, AT91_TWI_CR,
-> +                                      AT91_TWI_START | AT91_TWI_STOP);
-> +               else
-> +                       at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_START);
-> +               at91_twi_write(dev, AT91_TWI_IER,
-> +                              AT91_TWI_TXCOMP | AT91_TWI_RXRDY);
-> +       } else {
-> +               at91_twi_write_next_byte(dev);
-> +               at91_twi_write(dev, AT91_TWI_IER,
-> +                              AT91_TWI_TXCOMP | AT91_TWI_TXRDY);
-> +       }
-
-Is there a more recent version ?
-
-Mit freundlichen Grüßen / Best regards
-Carsten Behling
-
-Development Engineer
-Garz & Fricke GmbH
-Tempowerkring 2, 21079 Hamburg - Germany
-Amtsgericht Hamburg HRB 60514
-Geschäftsführer: Manfred Garz, Matthias Fricke
-Phone: +49 (0) 40 791 899 - 56
-Fax:    +49 40 / 791 899 - 39
-www.garz-fricke.com 
-
- 
-
-
------Ursprüngliche Nachricht-----
-Von: Voss, Nikolaus [mailto:N.Voss@weinmann.de] 
-Gesendet: Dienstag, 22. November 2011 17:26
-An: Carsten Behling
-Cc: 'linux-i2c@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-kernel@vger.kernel.org'
-Betreff: RE: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-
-Hi,
-
-Carsten Behling wrote on 2011-11-22:
-> +static void at91_twi_read_next_byte(struct at91_twi_dev *dev)
-> +{
-> +       *dev->buf = at91_twi_read(dev, AT91_TWI_RHR) & 0xff;
+> +	if (!file->f_op->fallocate)
+>  		return -ENOSYS;
+>  
+>  	mutex_lock(&inode->i_mutex);
+>  	inode_dio_wait(inode);
+>  	unmap_mapping_range(mapping, holebegin, holelen, 1);
+> -	inode->i_op->truncate_range(inode, lstart, lend);
+> +	mutex_unlock(&inode->i_mutex);
 > +
-> +       /* send stop if second but last byte has been read */
-> +       if (--dev->buf_len == 1)
-> +               at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
-> 
-> 
-> 
-> If dev->buf_len =1 at the beginning of a read transfer, a stop condition will
-> never be send.
+> +	err = do_fallocate(file, FALLOC_FL_KEEP_SIZE|FALLOC_FL_PUNCH_HOLE,
+> +		     holebegin, holelen);
+> +	if (err)
+> +		return err;
+> +
+> +	mutex_lock(&inode->i_mutex);
+>  	/* unmap again to remove racily COWed private pages */
+>  	unmap_mapping_range(mapping, holebegin, holelen, 1);
+>  	mutex_unlock(&inode->i_mutex);
 
-this case is already catched in at91_do_twi_transfer():
+I suspect this should be turned inside out, just we do for normal
+truncate.  That is instead of keeping vmtruncate(_file)_range we
+should have a truncate_pagecache_range do to the actual zapping,
+closely mirroring what we do for truncate.  In the best case we'd
+even implement the regular truncate ones on top of the range version.
 
-+       if (dev->msg->flags & I2C_M_RD) {
-+               unsigned start_flags = AT91_TWI_START;
-+
-+               /* if only one byte is to be read, immediately stop transfer */
-+               if (dev->buf_len <= 1 && !(dev->msg->flags & I2C_M_RECV_LEN))
-+                       start_flags |= AT91_TWI_STOP;
-+               at91_twi_write(dev, AT91_TWI_CR, start_flags);
-
-Thanks for reviewing,
-Niko
+It also seems like all fallocate implementaions for far got away
+without the unmap_mapping_range, so either people didn't test them
+hard enough, or tmpfs doesn't need it either.  I fear the former
+is true.
 
