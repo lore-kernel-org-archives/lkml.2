@@ -1,89 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1KWJzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 04:55:35 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50768 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753924Ab1KWJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 04:55:33 -0500
-Date: Wed, 23 Nov 2011 15:24:43 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (uprobes tree related)
-Message-ID: <20111123095443.GA22971@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111123152854.98c60a7c859f28c2efa30717@canb.auug.org.au>
+	id S1756796Ab1KWJ6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 04:58:23 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35318 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab1KWJ6V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 04:58:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111123152854.98c60a7c859f28c2efa30717@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112309-5112-0000-0000-0000025122BB
+X-Originating-IP: [93.173.4.235]
+In-Reply-To: <87obw31v31.fsf@rustcorp.com.au>
+References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
+ <874nywpfkd.fsf@rustcorp.com.au> <CAK=WgbaF=yvGXvJdENrMoi4wWxaQa3UpbtsRm3mcA3cFdDCitA@mail.gmail.com>
+ <87obw31v31.fsf@rustcorp.com.au>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 23 Nov 2011 11:58:00 +0200
+Message-ID: <CAK=WgbYVscyeJ5Og5iPx-tjEApa2KgAR1bnZiZUUcv0HxBEtOw@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Introducing a generic AMP framework
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Brian Swetland <swetland@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 23, 2011 at 3:33 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> That would imply that I'd done more than glance over them, and
+> unfortunately I haven't :(
 
-Hey Stephen, 
-
-> After merging the uprobes tree, today's linux-next build (sparc64
-> defconfig) failed like this:
-> 
-> In file included from include/linux/mm_types.h:15:0,
->                  from include/linux/kmemcheck.h:4,
->                  from include/linux/skbuff.h:18,
->                  from net/8021q/vlan_core.c:1:
-> include/linux/uprobes.h: In function 'register_uprobe':
-> include/linux/uprobes.h:148:10: error: 'ENOSYS' undeclared (first use in this function)
-> 
-
-Oh sorry for missing this.
-
-> And several more.
-> 
-> Caused by commit fb16338b69cd ("register_unregister_uprobe" - "Uprobes:
-> register/unregister probes").
-> 
-> I have added this patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 23 Nov 2011 15:11:20 +1100
-> Subject: [PATCH] uprobes: using ENOSYS requires errno.h
-> 
-> Fixes this build problem:
-> 
-> In file included from include/linux/mm_types.h:15:0,
->                  from include/linux/kmemcheck.h:4,
->                  from include/linux/skbuff.h:18,
->                  from net/8021q/vlan_core.c:1:
-> include/linux/uprobes.h: In function 'register_uprobe':
-> include/linux/uprobes.h:148:10: error: 'ENOSYS' undeclared (first use in this function)
-> 
-> when CONFIG_UPROBES is not defined.
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  include/linux/uprobes.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 091dfb8..e2e0674 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -23,6 +23,7 @@
->   *	Jim Keniston
->   */
->  
-> +#include <linux/errno.h>
->  #include <linux/rbtree.h>
->  
->  struct vm_area_struct;
-
-Yes, this is the right fix. So I will fold this into my patch.
-
--- 
-Thanks and Regards
-Srikar
-
+Np, thanks for glancing :)
