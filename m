@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759578Ab1KWHpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:45:13 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38615 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab1KWHpL convert rfc822-to-8bit (ORCPT
+	id S1759637Ab1KWHrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:47:46 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62255 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab1KWHro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:45:11 -0500
+	Wed, 23 Nov 2011 02:47:44 -0500
+Date: Wed, 23 Nov 2011 11:45:10 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [RFC] Make Yama pid_ns aware
+Message-ID: <20111123074510.GA2356@albatros>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+ <20111121191811.GA24039@albatros>
+ <20111122181310.GA4235@sergelap>
+ <20111122192028.GA10458@albatros>
+ <20111122201007.GA21722@sergelap>
 MIME-Version: 1.0
-In-Reply-To: <1321960128-15191-6-git-send-email-gilad@benyossef.com>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-	<1321960128-15191-6-git-send-email-gilad@benyossef.com>
-Date: Wed, 23 Nov 2011 09:45:10 +0200
-X-Google-Sender-Auth: aYfzD292Oz3C6mPKp5vZQx04rDY
-Message-ID: <CAOJsxLG1dCkUb=_08Sry+p8X6LzjFjA8wgoFmHL=xexJfQTUxg@mail.gmail.com>
-Subject: Re: [PATCH v4 5/5] mm: Only IPI CPUs to drain local pages if they exist
-From: Pekka Enberg <penberg@kernel.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122201007.GA21722@sergelap>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 1:08 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> Calculate a cpumask of CPUs with per-cpu pages in any zone and only send an IPI requesting CPUs to drain these pages to the buddy allocator if they actually have pages when asked to flush.
->
-> The code path of memory allocation failure for CPUMASK_OFFSTACK=y config was tested using fault injection framework.
->
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> CC: Chris Metcalf <cmetcalf@tilera.com>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: linux-mm@kvack.org
-> CC: Pekka Enberg <penberg@kernel.org>
-> CC: Matt Mackall <mpm@selenic.com>
-> CC: Sasha Levin <levinsasha928@gmail.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Andi Kleen <andi@firstfloor.org>
+On Tue, Nov 22, 2011 at 14:10 -0600, Serge Hallyn wrote:
+> Quoting Vasiliy Kulikov (segoon@openwall.com):
+> > Hi Serge,
+> > 
+> > On Tue, Nov 22, 2011 at 12:13 -0600, Serge Hallyn wrote:
+> > > Quoting Vasiliy Kulikov (segoon@openwall.com):
+> > > > As Yama's sysctls are about defining a security policy for the system,
+> > > > it is reasonable to define it per container in case of LXC containers
+> > > > (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+> > > > to pid namespace.  With per-pid_ns sysctls it is possible to create
+> > > > multiple containers with different ptrace, /tmp, etc. policies.
+> > > 
+> > > tying the ptrace policy to pidns makes some sense, but is it definately
+> > > what we want?
+> > > 
+> > > Is the idea that the container should never be able to bypass the
+> > > restrictions, or should root in the container eventually be able to
+> > > bypass it as he can on the host?
+> > 
+> > In-container root already has CAP_SYS_PTRACE, so he can avoid the check
+> > even if Yama's ptrace policy is enabled.
+> 
+> Well, not necessarily  :)  But in general.
 
-I'm adding Mel and Andrew to CC.
+This is the question is what in-container root is :-)  Until LXC root is
+restricted up to the case where he is unable to get out of the container
+in the mainline kernel, I assume we're talking about an abstract entity
+which has full control over the container.  It includes stuff like
+CAP_CHOWN, CAP_KILL, CAP_SYS_PTRACE, CAP_NET_ADMIN, etc. etc.  The
+debatable thing is what parts of CAP_SYS_ADMIN belong to in-container
+root, like ability to mount/umount.  But CAP_SYS_PTRACE is surely
+belongs to the in-container root.
 
-> ---
->  mm/page_alloc.c |   18 +++++++++++++++++-
->  1 files changed, 17 insertions(+), 1 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 9dd443d..a3efdf1 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1119,7 +1119,23 @@ void drain_local_pages(void *arg)
->  */
->  void drain_all_pages(void)
->  {
-> -       on_each_cpu(drain_local_pages, NULL, 1);
-> +       int cpu;
-> +       struct zone *zone;
-> +       cpumask_var_t cpus;
-> +       struct per_cpu_pageset *pcp;
-> +
-> +       if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
 
-__GFP_NOWARN
+> But still, is turning this on and off per-container, and leaving it off
+> on the host, something people will reasonably want to do?
 
-> +               for_each_online_cpu(cpu) {
-> +                       for_each_populated_zone(zone) {
-> +                               pcp = per_cpu_ptr(zone->pageset, cpu);
-> +                               if (pcp->pcp.count)
-> +                                       cpumask_set_cpu(cpu, cpus);
-> +               }
-> +       }
-> +               on_each_cpu_mask(cpus, drain_local_pages, NULL, 1);
-> +               free_cpumask_var(cpus);
-> +       } else
-> +               on_each_cpu(drain_local_pages, NULL, 1);
->  }
->
->  #ifdef CONFIG_HIBERNATION
+Probably we need strict rules like ptrace is relaxed iff in both source
+ns and dest ns ptrace is relaxed.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+
+> I'm just
+> wondering whether adding the extra data on the pidns is worth it.  It's
+> fine if it is, but I'm having a hard time imagining someone using it
+> like that.
+
+We have already very big net_namespace with all kind of per-ns stuff.
+Yama's variables don't significantly increase the size of container.
+
+
+Actually, what concerns me is not ptrace, but symlink/hardling
+protection.  There is no interaction between namespaces in case of
+containers via symlinks in the basic case.  In case of ptrace I don't
+think the child ns may weaken the parent ns - child ns may not access
+processes of the parent namespace and everything it may ptrace is
+already inside of this ns.
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
