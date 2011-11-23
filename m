@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab1KWRAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:00:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47603 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004Ab1KWRA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:00:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="79250898"
-Date: Wed, 23 Nov 2011 09:00:06 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Aman Deep <amandeep3986@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] xHCI: Adding #define values used for hub descriptor
-Message-ID: <20111123170006.GB5792@xanatos>
-References: <1321970616-1298-1-git-send-email-amandeep3986@gmail.com>
- <20111122195714.GA2815@xanatos>
- <CAJ54Ua4HgcDkWrcgVHNtNBmwgHh+Swn_Q2kKGLKS5+d94g07kQ@mail.gmail.com>
+	id S1754947Ab1KWRCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:02:42 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:47031 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754762Ab1KWRCk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 12:02:40 -0500
+Date: Wed, 23 Nov 2011 12:02:39 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH v3 3/6] [SCSI] runtime resume device before system suspend
+In-Reply-To: <1322031686-28233-4-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1111231149300.2111-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJ54Ua4HgcDkWrcgVHNtNBmwgHh+Swn_Q2kKGLKS5+d94g07kQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 10:20:10AM +0530, Aman Deep wrote:
-> Hi Sarah,
-> 
-> 
-> > >
-> > > Also use some #defines in places where magic numbers are being used.
-> >
-> > Looks fine to me for the xHCI changes.  I copied most of the hub
-> > descriptor code from EHCI, so it will need the same treatment.
-> 
-> Okay, thanks. I will try to make some of these changes into other host
-> controller drivers also as
-> soon as I can.
-> 
-> >
-> > Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> 
-> Thanks for the ACK, Sarah.
-> 
-> >
-> > The #defines look a bit odd to me, like you're using spaces instead of
-> > tabs to separate the name and value, or your mail program is converting
-> > tabs to spaces.  Do the numbers line up for you?
-> 
-> Actually, both the HUB_CHAR_TTTT and HUB_CHAR_PORTIND were already using
-> spaces instead of tabs. I just copied them to the lines below, thats
-> why they still have
-> spaces between define and value.
-> 
-> But thanks for info. I will take more care about this in future.
-> 
-> Do you want me to make any changes in this patch ?
+On Wed, 23 Nov 2011, Lin Ming wrote:
 
-Fixing them up to have tabs instead of spaces would be nice, but is not
-required. :)
+> From: Alan Stern <stern@rowland.harvard.edu>
+> 
+> scsi device runtime PM is using PMSG_SUSPEND. System PM may use other state
+> that may not be compatiable with PMSG_SUSPEND.
 
-Sarah Sharp
+Actually SCSI runtime PM uses PMSG_AUTO_AUTOSUSPEND, which is the same
+as PMSG_SUSPEND except that the PM_EVENT_AUTO bit is also set in the
+pm_message.event field.  Currently they _are_ compatible.
+
+> So we need to runtime resume the device before system suspend.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+> 
+> Alan,
+> 
+> Could you add your Signed-off-by?
+> Free free to change the commit logs.
+
+I don't know; this is a little questionable.
+
+The point of this patch is to handle drivers that do different things
+for runtime suspend and system sleep.  The only SCSI driver that
+currently supports runtime suspend is sd, and it treats runtime suspend
+the same as system sleep.  (Earlier I said it doesn't spin down disks
+for runtime suspend -- that was wrong, it does.  It skips the spin-down
+step only for PM_EVENT_FREEZE, which is part of the hibernation
+procedure.)
+
+Until other SCSI drivers support runtime suspend, this patch shouldn't 
+be needed.  And spinning up runtime-suspended disks could add a lengthy 
+delay to the system sleep transition, so it's better not to do this if 
+at all possible.
+
+Alan Stern
+
+>  drivers/scsi/scsi_pm.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index d329f8b..549ea72 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -49,8 +49,10 @@ static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
+>  {
+>  	int err = 0;
+>  
+> -	if (scsi_is_sdev_device(dev))
+> +	if (scsi_is_sdev_device(dev)) {
+> +		pm_runtime_resume(dev);
+>  		err = scsi_dev_type_suspend(dev, msg);
+> +	}
+>  	return err;
+>  }
+
