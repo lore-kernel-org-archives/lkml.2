@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab1KWAgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:36:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42485 "EHLO mx2.suse.de"
+	id S932624Ab1KWAgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:36:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42499 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab1KWAgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:36:05 -0500
+	id S932581Ab1KWAgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:12 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:56 2011
-Message-Id: <20111123002556.293630016@clark.kroah.org>
+Message-Id: <20111123002556.474111159@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:36 -0800
+Date: Tue, 22 Nov 2011 16:25:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wang YanQing <Udknight@gmail.com>
-Subject: [36/53] USB: serial: pl2303: rm duplicate id
+        alan@lxorguk.ukuu.org.uk, Havard Skinnemoen <hskinnemoen@google.com>,
+        Oliver Neukum <oliver@neukum.name>
+Subject: [38/53] USB: cdc-acm: Fix disconnect() vs close() race
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,58 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: wangyanqing <udknight@gmail.com>
+From: Havard Skinnemoen <hskinnemoen@google.com>
 
-commit 0c16595539b612fe948559433dda08ff96a8bdc7 upstream.
+commit 5dc2470c602da8851907ec18942cd876c3b4ecc1 upstream.
 
-I get report from customer that his usb-serial
-converter doesn't work well,it sometimes work,
-but sometimes it doesn't.
+There's a race between the USB disconnect handler and the TTY close
+handler which may cause the acm object to be freed while it's still
+being used. This may lead to things like
 
-The usb-serial converter's id:
-vendor_id product_id
-0x4348    0x5523
+http://article.gmane.org/gmane.linux.usb.general/54250
 
-Then I search the usb-serial codes, and there are
-two drivers announce support this device, pl2303
-and ch341, commit 026dfaf1 cause it. Through many
-times to test, ch341 works well with this device,
-and pl2303 doesn't work quite often(it just work quite little).
+and
 
-ch341 works well with this device, so we doesn't
-need pl2303 to support.I try to revert 026dfaf1 first,
-but it failed. So I prepare this patch by hand to revert it.
+https://lkml.org/lkml/2011/5/29/64
 
-Signed-off-by: Wang YanQing <Udknight@gmail.com>
+This is the simplest fix I could come up with. Holding on to open_mutex
+while closing the TTY device prevents acm_disconnect() from freeing the
+acm object between acm->port.count drops to 0 and the TTY side of the
+cleanups are finalized.
+
+Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Oliver Neukum <oliver@neukum.name>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/pl2303.c |    1 -
- drivers/usb/serial/pl2303.h |    4 ----
- 2 files changed, 5 deletions(-)
+ drivers/usb/class/cdc-acm.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -91,7 +91,6 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
- 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
- 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
--	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
- 	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -145,10 +145,6 @@
- #define ADLINK_VENDOR_ID		0x0b63
- #define ADLINK_ND6530_PRODUCT_ID	0x6530
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -539,7 +539,6 @@ static void acm_port_down(struct acm *ac
+ {
+ 	int i;
  
--/* WinChipHead USB->RS 232 adapter */
--#define WINCHIPHEAD_VENDOR_ID		0x4348
--#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
--
- /* SMART USB Serial Adapter */
- #define SMART_VENDOR_ID	0x0b8c
- #define SMART_PRODUCT_ID	0x2303
+-	mutex_lock(&open_mutex);
+ 	if (acm->dev) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
+@@ -551,14 +550,15 @@ static void acm_port_down(struct acm *ac
+ 		acm->control->needs_remote_wakeup = 0;
+ 		usb_autopm_put_interface(acm->control);
+ 	}
+-	mutex_unlock(&open_mutex);
+ }
+ 
+ static void acm_tty_hangup(struct tty_struct *tty)
+ {
+ 	struct acm *acm = tty->driver_data;
+ 	tty_port_hangup(&acm->port);
++	mutex_lock(&open_mutex);
+ 	acm_port_down(acm);
++	mutex_unlock(&open_mutex);
+ }
+ 
+ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+@@ -569,8 +569,9 @@ static void acm_tty_close(struct tty_str
+ 	   shutdown */
+ 	if (!acm)
+ 		return;
++
++	mutex_lock(&open_mutex);
+ 	if (tty_port_close_start(&acm->port, tty, filp) == 0) {
+-		mutex_lock(&open_mutex);
+ 		if (!acm->dev) {
+ 			tty_port_tty_set(&acm->port, NULL);
+ 			acm_tty_unregister(acm);
+@@ -582,6 +583,7 @@ static void acm_tty_close(struct tty_str
+ 	acm_port_down(acm);
+ 	tty_port_close_end(&acm->port, tty);
+ 	tty_port_tty_set(&acm->port, NULL);
++	mutex_unlock(&open_mutex);
+ }
+ 
+ static int acm_tty_write(struct tty_struct *tty,
 
 
