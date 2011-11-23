@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab1KWG72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:59:28 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33953 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758635Ab1KWG71 convert rfc822-to-8bit (ORCPT
+	id S1758678Ab1KWG7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:59:43 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:48048 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758635Ab1KWG7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:59:27 -0500
+	Wed, 23 Nov 2011 01:59:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <CABexPfEte8U5pVBJ=LvRKMY5=oW7F2vRjw_d9893Yy8W88hfDg@mail.gmail.com>
-References: <CABexPfF-31f1vcJpqdsDHKUHfes1230vwGMtm6ETZXVQQf4bcA@mail.gmail.com>
-	<alpine.DEB.2.00.1111221847320.30008@chino.kir.corp.google.com>
-	<CABexPfEte8U5pVBJ=LvRKMY5=oW7F2vRjw_d9893Yy8W88hfDg@mail.gmail.com>
-Date: Wed, 23 Nov 2011 14:59:26 +0800
-Message-ID: <CABexPfHxM=NpwrrbFrTJUVZHzORpVaqAwoh1yC7d=RTfwnQWwg@mail.gmail.com>
-Subject: Fwd: Slub Allocator: Why get_order(size * MAX_OBJS_PER_PAGE) - 1 in
- function slab_order()?
-From: zhihua che <zhihua.che@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.01.1111222145470.8000@trent.utfs.org>
+References: <20111121131531.GA1679@x4.trippels.de>
+	<1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121153621.GA1678@x4.trippels.de>
+	<1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121161036.GA1679@x4.trippels.de>
+	<1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121173556.GA1673@x4.trippels.de>
+	<1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111121185215.GA1673@x4.trippels.de>
+	<20111121195113.GA1678@x4.trippels.de>
+	<1321907275.13860.12.camel@pasglop>
+	<alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
+	<alpine.DEB.2.00.1111212105330.19606@router.home>
+	<1321948113.27077.24.camel@edumazet-laptop>
+	<1321999085.14573.2.camel@pasglop>
+	<alpine.DEB.2.01.1111221511070.8000@trent.utfs.org>
+	<1322007501.14573.15.camel@pasglop>
+	<alpine.DEB.2.01.1111222145470.8000@trent.utfs.org>
+Date: Wed, 23 Nov 2011 08:59:40 +0200
+X-Google-Sender-Auth: VR5i2PMQO4UJ0SEsm7GK3E0Ofmk
+Message-ID: <CAOJsxLGWTRuwQ04Mg26fNhZEmo7yVXG5vSZgF7Q5GESCk65odA@mail.gmail.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+From: Pekka Enberg <penberg@kernel.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Lameter <cl@linux.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: zhihua che <zhihua.che@gmail.com>
-Date: 2011/11/23
-Subject: Re: Slub Allocator: Why get_order(size * MAX_OBJS_PER_PAGE) -
-1 in function slab_order()?
-To: David Rientjes <rientjes@google.com>
-
-
-I know what you mean, that is, a slab can only store no more than
-MAX_OBJS_PER_PAGE, actually 0x7FFF, objects.
-
-But  get_order(size * MAX_OBJS_PER_PAGE) already returns the order
-which reserves no_more_than size * MAX_OBJS_PER_PAGE memory.  Right?
-
-So I think there is no need to subtract one.
-
-
-
-2011/11/23 David Rientjes <rientjes@google.com>:
-> On Wed, 23 Nov 2011, zhihua che wrote:
+2011/11/23 Christian Kujau <lists@nerdbynature.de>:
+> OK, with Christoph's patch applied, 3.2.0-rc2-00274-g6fe4c6d-dirty survives
+> on this machine, with the disk & cpu workload that caused the machine to
+> panic w/o the patch. Load was at 4-5 this time, which is expected for this
+> box. I'll run a few more tests later on, but it seems ok for now.
 >
->> Hi, everyone,
->>         I'm reading the kernel codes about slub allocator and I come
->> across a confusion. Precisely, I'm reading the initialization of the
->> slub allocator, kmem_cache_init(), and I find it needs call
->> calculate_sizes() to determine the order of a kmem_cache, given the
->> size of the object. In turn, it calls the get_order() to get a
->> possible order. The problem is, in the start of this function, why it
->> looks like this:
->>
->>         if (order_objects(min_order, size, reserved) > MAX_OBJS_PER_PAGE)
->>                 return get_order(size * MAX_OBJS_PER_PAGE) - 1;
->>
->>         I don't know why it subtracts one from the order returned by
->> get_order().
->>         because as far as I know, get_order() returns the order the
->> slab requires to reserve size * MAX_OBJS_PER_PAGE memory. If it
->> subtracts 1 from the order returned by get_order(), the slab can't
->> store MAX_OBJS_PER_PAGE objects at all, instead it can only store half
->> of the MAX_OBJS_PER_PAGE objects.
->>         Could you correct me if I think in a wrong way.
->
-> I agree it looks confusing, but it's correct.  SLUB can only store
-> MAX_OBJS_PER_PAGE because of limitations in struct page (see the comments
-> in include/linux/mm_types.h).  So if the order will yield a page that
-> could fit _more_ than MAX_OBJS_PER_PAGE, we need to reduce the order by a
-> factor of 1.
->
+> I couldn't resist and ran "slabinfo" anyway (after the workload!) - the
+> box survived, nothing was printed in syslog either. Output attached.
+
+Christoph, Eric, would you mind sending me the final patches that
+Christian tested? Maybe CC David too for extra pair of eyes.
+
+                                Pekka
