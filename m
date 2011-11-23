@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759345Ab1KWAl2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:41:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42908 "EHLO mx2.suse.de"
+	id S1759373Ab1KWAli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:41:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42923 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759237Ab1KWAlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:04 2011
-Message-Id: <20111123002404.878763747@clark.kroah.org>
+	id S1759237Ab1KWAlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:05 2011
+Message-Id: <20111123002405.077504684@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:10 -0800
+Date: Tue, 22 Nov 2011 16:23:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
-        Mike Miller <mike.miller@hp.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [03/53] [SCSI] hpsa: Disable ASPM
+        alan@lxorguk.ukuu.org.uk, Tony Jago <tony@hammertelecom.com.au>,
+        Steven Toth <stoth@kernellabs.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [05/53] [media] saa7164: Add support for another HVR2200 hardware revision
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +27,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Tony Jago <tony@hammertelecom.com.au>
 
-commit e5a44df85e8d78e5c2d3d2e4f59b460905691e2f upstream.
+commit 62dd28d0c659db29bdb89cfe9f0aefe42f0adfe9 upstream.
 
-The Windows driver .inf disables ASPM on hpsa devices. Do the same because the
-selection of a non default ASPM policy can cause the device to hang.
+Hauppauge have released a new model rev, sub id 8940, this adds
+support.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Acked-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[stoth@kernellabs.com: I modified Tony's patch slightly in relation to the
+ card numbering in saa7164.h, appending rather than inserting the new card
+ - normal practise]
+Signed-off-by: Tony Jago <tony@hammertelecom.com.au>
+Signed-off-by: Steven Toth <stoth@kernellabs.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/hpsa.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/media/video/saa7164/saa7164-cards.c |   66 ++++++++++++++++++++++++++++
+ drivers/media/video/saa7164/saa7164-dvb.c   |    1 
+ drivers/media/video/saa7164/saa7164.h       |    1 
+ 3 files changed, 68 insertions(+)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -23,6 +23,7 @@
- #include <linux/interrupt.h>
- #include <linux/types.h>
- #include <linux/pci.h>
-+#include <linux/pci-aspm.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/delay.h>
-@@ -3887,6 +3888,10 @@ static int __devinit hpsa_pci_init(struc
- 		dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
- 		return -ENODEV;
- 	}
-+
-+	pci_disable_link_state(h->pdev, PCIE_LINK_STATE_L0S |
-+			       PCIE_LINK_STATE_L1 | PCIE_LINK_STATE_CLKPM);
-+
- 	err = pci_enable_device(h->pdev);
- 	if (err) {
- 		dev_warn(&h->pdev->dev, "unable to enable PCI device\n");
+--- a/drivers/media/video/saa7164/saa7164-cards.c
++++ b/drivers/media/video/saa7164/saa7164-cards.c
+@@ -203,6 +203,66 @@ struct saa7164_board saa7164_boards[] =
+ 			.i2c_reg_len	= REGLEN_8bit,
+ 		} },
+ 	},
++	[SAA7164_BOARD_HAUPPAUGE_HVR2200_4] = {
++		.name		= "Hauppauge WinTV-HVR2200",
++		.porta		= SAA7164_MPEG_DVB,
++		.portb		= SAA7164_MPEG_DVB,
++		.portc		= SAA7164_MPEG_ENCODER,
++		.portd		= SAA7164_MPEG_ENCODER,
++		.porte		= SAA7164_MPEG_VBI,
++		.portf		= SAA7164_MPEG_VBI,
++		.chiprev	= SAA7164_CHIP_REV3,
++		.unit		= {{
++			.id		= 0x1d,
++			.type		= SAA7164_UNIT_EEPROM,
++			.name		= "4K EEPROM",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_0,
++			.i2c_bus_addr	= 0xa0 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x04,
++			.type		= SAA7164_UNIT_TUNER,
++			.name		= "TDA18271-1",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_1,
++			.i2c_bus_addr	= 0xc0 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x05,
++			.type		= SAA7164_UNIT_ANALOG_DEMODULATOR,
++			.name		= "TDA8290-1",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_1,
++			.i2c_bus_addr	= 0x84 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1b,
++			.type		= SAA7164_UNIT_TUNER,
++			.name		= "TDA18271-2",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_2,
++			.i2c_bus_addr	= 0xc0 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1c,
++			.type		= SAA7164_UNIT_ANALOG_DEMODULATOR,
++			.name		= "TDA8290-2",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_2,
++			.i2c_bus_addr	= 0x84 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1e,
++			.type		= SAA7164_UNIT_DIGITAL_DEMODULATOR,
++			.name		= "TDA10048-1",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_1,
++			.i2c_bus_addr	= 0x10 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		}, {
++			.id		= 0x1f,
++			.type		= SAA7164_UNIT_DIGITAL_DEMODULATOR,
++			.name		= "TDA10048-2",
++			.i2c_bus_nr	= SAA7164_I2C_BUS_2,
++			.i2c_bus_addr	= 0x12 >> 1,
++			.i2c_reg_len	= REGLEN_8bit,
++		} },
++	},
+ 	[SAA7164_BOARD_HAUPPAUGE_HVR2250] = {
+ 		.name		= "Hauppauge WinTV-HVR2250",
+ 		.porta		= SAA7164_MPEG_DVB,
+@@ -426,6 +486,10 @@ struct saa7164_subid saa7164_subids[] =
+ 		.subvendor = 0x0070,
+ 		.subdevice = 0x8851,
+ 		.card      = SAA7164_BOARD_HAUPPAUGE_HVR2250_2,
++	}, {
++		.subvendor = 0x0070,
++		.subdevice = 0x8940,
++		.card      = SAA7164_BOARD_HAUPPAUGE_HVR2200_4,
+ 	},
+ };
+ const unsigned int saa7164_idcount = ARRAY_SIZE(saa7164_subids);
+@@ -469,6 +533,7 @@ void saa7164_gpio_setup(struct saa7164_d
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_3:
++	case SAA7164_BOARD_HAUPPAUGE_HVR2200_4:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_3:
+@@ -549,6 +614,7 @@ void saa7164_card_setup(struct saa7164_d
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_3:
++	case SAA7164_BOARD_HAUPPAUGE_HVR2200_4:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2250_3:
+--- a/drivers/media/video/saa7164/saa7164-dvb.c
++++ b/drivers/media/video/saa7164/saa7164-dvb.c
+@@ -475,6 +475,7 @@ int saa7164_dvb_register(struct saa7164_
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_2:
+ 	case SAA7164_BOARD_HAUPPAUGE_HVR2200_3:
++	case SAA7164_BOARD_HAUPPAUGE_HVR2200_4:
+ 		i2c_bus = &dev->i2c_bus[port->nr + 1];
+ 		switch (port->nr) {
+ 		case 0:
+--- a/drivers/media/video/saa7164/saa7164.h
++++ b/drivers/media/video/saa7164/saa7164.h
+@@ -83,6 +83,7 @@
+ #define SAA7164_BOARD_HAUPPAUGE_HVR2200_3	6
+ #define SAA7164_BOARD_HAUPPAUGE_HVR2250_2	7
+ #define SAA7164_BOARD_HAUPPAUGE_HVR2250_3	8
++#define SAA7164_BOARD_HAUPPAUGE_HVR2200_4	9
+ 
+ #define SAA7164_MAX_UNITS		8
+ #define SAA7164_TS_NUMBER_OF_LINES	312
 
 
