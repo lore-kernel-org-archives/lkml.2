@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab1KWIzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:55:53 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43761 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab1KWIzv (ORCPT
+	id S1758873Ab1KWI66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:58:58 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60502 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab1KWI65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:55:51 -0500
-X-AuditID: b753bd60-a1286ba000000655-51-4eccb51561bd
-X-AuditID: b753bd60-a1286ba000000655-51-4eccb51561bd
-Message-ID: <4ECCB507.6040701@hitachi.com>
-Date: Wed, 23 Nov 2011 17:55:35 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 0/5] x86: check stack overflows more reliably
-References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp> <CAOJsxLGH6maRZPx0TX4r6Zy=AiXQMRssoySeOmjn02O-BkBDEA@mail.gmail.com> <4EB8DB84.6070300@hitachi.com> <20111117165938.GA2441@redhat.com>
-In-Reply-To: <20111117165938.GA2441@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Wed, 23 Nov 2011 03:58:57 -0500
+Date: Wed, 23 Nov 2011 03:57:44 -0500 (EST)
+Message-Id: <20111123.035744.1607233076642546274.davem@davemloft.net>
+To: sgruszka@redhat.com
+Cc: Larry.Finger@lwfinger.net, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, IvDoorn@gmail.com, gwingerde@gmail.com,
+        helmut.schaa@googlemail.com, hedayaty@gmail.com
+Subject: Re: pull request: wireless 2011-11-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111123080353.GA3752@redhat.com>
+References: <4ECC1479.8090209@lwfinger.net>
+	<20111122.164057.1411098663938026383.davem@davemloft.net>
+	<20111123080353.GA3752@redhat.com>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 23 Nov 2011 00:57:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+Date: Wed, 23 Nov 2011 09:03:54 +0100
 
-> Another thought might be to make stack_overflow_check() depend on a jump
-> label. Its not something that going to be switch on/off often, and then perhaps
-> we wouldn't even need DEBUG_STACKOVERFLOW...It seems like a good
-> use-case to me.
-
-It is interesting to use a jump label for stack overflow checking...
-However, I'd like to implement this detail-check simply using
-DEBUG_STACKOVERFLOW option because I guess stack_overflow_check() will
-be seldom switched on/off after the system operation starts, as you said.
-
-In addition, I will change the default overflow checking to the
-detail-check instead of the original one if the option is enabled in
-Kconfig. This is because it turned out that the additional checking
-overhead is negligible (about 17 cycles) from the evaluation below.
-
-
-[Evaluation]
-
-The performance of the detail-check was compared to original one
-which checks kernel stack only, on the following conditions.
-
-- Measure the worst performance using tsc.
-  In the detail-check, all stack type were checked for every IRQ
-  even if the stack pointer pointed to all available stacks.
-  That is, the patch was changed a little for this evaluation.
-- Calculate the average from the 30,000 IRQ evaluations.
-
-The results show the performance regression of the detail-check
-for a IRQ is 17 cycles compared to the original one.
-
-
-	| Original | Detail Check |
------------------------------------
-Average	|    49    |      66      |
-(cycles)
-
-I think this overhead can be ignored.
-
-Thanks
-
-(2011/11/18 1:59), Jason Baron wrote:
-> On Tue, Nov 08, 2011 at 04:34:28PM +0900, HAYASAKA Mitsuo wrote:
->> Hi Pekka,
->>
->> Thank you for your comments.
->>
->> (2011/11/07 16:00), Pekka Enberg wrote:
->>> On Mon, Nov 7, 2011 at 7:51 AM, Mitsuo Hayasaka
->>> <mitsuo.hayasaka.hu@hitachi.com> wrote:
->>>> (2) check stack overflow in detail
->>>>    Currently, only kernel stack is checked for the overflow,
->>>>    which is not sufficient for enterprise systems. To enhance
->>>>    reliability, expand stack overflow checking to IRQ and
->>>>    exception stacks optionally. This is disabled by default
->>>>    in Kconfig.
->>>
->>> This sounds useful. What's the reason for not enabling this by
->>> default? Performance regressions?
->>
->> I'm worried about performance regressions because this patch checks 
->> a stack overflow in detail.
->>
->> However, I guess there is no problem for enabling it by default 
->> since this option is for debug and appears only if a DEBUG_STACKOVERFLOW
->> option is enabled.
->>
->> So, I'd like to send the revised patch if it does not have any further problem.
->>
->>
+> The main problem here, that we have hardware (or firmware) that
+> generate interrupt with empty interrupt status register, so we can
+> not detect if interrupt is really generated by Ralink device.
 > 
-> Another thought might be to make stack_overflow_check() depend on a jump
-> label. Its not something that going to be switch on/off often, and then perhaps
-> we wouldn't even need DEBUG_STACKOVERFLOW...It seems like a good
-> use-case to me.
-> 
-> Thanks,
-> 
-> -Jason
-> 
+> Perhaps exist good fix for that problem, i.e. we can write to some
+> register to stop hardware generating spurious interrupts, or exist
+> other way than reading status register to find out if Ralink device
+> generated interrupt. But that require detailed hardware knowledge,
+> and I'm not sure if we ever can get such informations. Also this 
+> could be a hardware bug, device just generate spurious interrupts
+> and we can not do anything about it. I looked at driver from Ralink
+> site, and it do exactly that, it return IRQ_HANDLED if status register
+> is empty.
 
+Then it is also buggy :-)
+
+> Ok, I'm thinking about other fix now ...
+
+Thank you.
