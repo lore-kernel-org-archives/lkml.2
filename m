@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1KWPnH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 10:43:07 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44823 "EHLO zene.cmpxchg.org"
+	id S1756821Ab1KWPnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 10:43:06 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44806 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756752Ab1KWPnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 10:43:02 -0500
+	id S1752688Ab1KWPnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 10:43:00 -0500
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
         cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 6/8] mm: memcg: remove unneeded checks from uncharge_page()
-Date: Wed, 23 Nov 2011 16:42:29 +0100
-Message-Id: <1322062951-1756-7-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 3/8] mm: memcg: clean up fault accounting
+Date: Wed, 23 Nov 2011 16:42:26 +0100
+Message-Id: <1322062951-1756-4-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
 References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
@@ -24,28 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Weiner <jweiner@redhat.com>
 
-mem_cgroup_uncharge_page() is only called on either freshly allocated
-pages without page->mapping or on rmapped PageAnon() pages.  There is
-no need to check for a page->mapping that is not an anon_vma.
+The fault accounting functions have a single, memcg-internal user, so
+they don't need to be global.  In fact, their one-line bodies can be
+directly folded into the caller.  And since faults happen one at a
+time, use this_cpu_inc() directly instead of this_cpu_add(foo, 1).
 
 Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 ---
- mm/memcontrol.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ mm/memcontrol.c |   14 ++------------
+ 1 files changed, 2 insertions(+), 12 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0d10be4..b9a3b94 100644
+index 473b99f..d825af9 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2989,8 +2989,6 @@ void mem_cgroup_uncharge_page(struct page *page)
- 	/* early check. */
- 	if (page_mapped(page))
- 		return;
--	if (page->mapping && !PageAnon(page))
--		return;
- 	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_MAPPED);
+@@ -589,16 +589,6 @@ static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
+ 	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAPOUT], val);
  }
  
+-void mem_cgroup_pgfault(struct mem_cgroup *memcg, int val)
+-{
+-	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT], val);
+-}
+-
+-void mem_cgroup_pgmajfault(struct mem_cgroup *memcg, int val)
+-{
+-	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT], val);
+-}
+-
+ static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+ 					    enum mem_cgroup_events_index idx)
+ {
+@@ -913,10 +903,10 @@ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ 
+ 	switch (idx) {
+ 	case PGMAJFAULT:
+-		mem_cgroup_pgmajfault(memcg, 1);
++		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT]);
+ 		break;
+ 	case PGFAULT:
+-		mem_cgroup_pgfault(memcg, 1);
++		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT]);
+ 		break;
+ 	default:
+ 		BUG();
 -- 
 1.7.6.4
 
