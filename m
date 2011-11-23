@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab1KWRdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 12:33:40 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51386 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1KWRdi (ORCPT
+	id S1755408Ab1KWRgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:36:38 -0500
+Received: from sperry-03.control.lth.se ([130.235.83.190]:49556 "EHLO
+	sperry-03.control.lth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab1KWRgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 12:33:38 -0500
-Date: Wed, 23 Nov 2011 23:03:18 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [RFC Patch 0/2] Slimdump framework using CRASH_REASON - v2
-Message-ID: <20111123173318.GB2515@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20111121095405.GA2289@in.ibm.com>
- <20111121151727.GF313@redhat.com>
+	Wed, 23 Nov 2011 12:36:37 -0500
+Message-ID: <4ECD2F19.6070601@control.lth.se>
+Date: Wed, 23 Nov 2011 18:36:25 +0100
+From: Anders Blomdell <anders.blomdell@control.lth.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121151727.GF313@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11112317-2000-0000-0000-000003881446
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: It would be preferable to do a mount --bind --make-private in one
+ atomic action [ASCII art this time]
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 10:17:27AM -0500, Vivek Goyal wrote:
-> On Mon, Nov 21, 2011 at 03:24:05PM +0530, K.Prasad wrote:
-> > Hi All,
-> > 	In furtherance of the previous discussion regarding 'slimdump'
-> > (refer: http://article.gmane.org/gmane.linux.kernel/1204967), it was
-> > decided that,
-> > 
-> > - An entry in VMCOREINFO elf-note be added to denote the cause of crash,
-> >   instead of creating a new elf-note.
-> > 
-> > - Upstream tools such as 'makedumpfile' and 'crash' be modified to
-> >   recognise this string and inform the user accordingly.
-> > 
-> > Accordingly, this new version of the patchset makes the following
-> > changes 
-> > 
-> > Changelog - version 2
-> > -----------------------
-> > (First version posted here:
-> > http://article.gmane.org/gmane.linux.kernel/1198435)
-> > 
-> > - Append VMCOREINFO elf-note with a new variable CRASH_REASON whose
-> >   value will be populated using arch_add_crash_reason() function.
-> > 
-> > - Define arch_add_crash_reason() in the x86 MCE path to return "PANIC_MCE"
-> >   in the panic path of MCE.
-> > 
-> > - 'makedumpfile' tool is taught to recognise PANIC_MCE string as one
-> >   value of CRASH_REASON for which 'slimdump' must be captured.
-> 
-> So again, what is slimdump? I mean, what information is now being captured
-> in the case of slimdump? Are you capturing atleast the kernel message
-> buffers? I am assuming that any register info emitted on console will
-> make into kernel buffers and that should be useful to figure out what
-> MCE happened.
-> 
+Sorry about previous posts used character set!
 
-The kernel message buffers can be obtained by using the --dump-dmesg
-option of makedumpfile but again that's risky. We wouldn't know if it'll
-cause access to the faulty memory (which is how the previous method of having
-a new elf-notes in a pristine location is much safer).
+The rationale is the race problems I recently found with pam_namspace 
+(see https://bugzilla.redhat.com/show_bug.cgi?id=755216). The following 
+small script and it's output shows what pam_namespace essentially does 
+does, and the problems that might occur; assume that /work is 
+automounted, then the following really confuses things:
 
-The method in this patch is quite primitive in that informs the user
-nothing more than a one-line cause of crash. One should take help from other
-tools (such as service processor/firmware/ACPI logs, or previous corrected
-error logs) to infer the location of bad memory. It would have been helpful
-if we could provide a dump of related information such as contents of
-"struct mce" (like in the very first iteration of the patch,
-refer: http://article.gmane.org/gmane.linux.kernel/1146215), but that would
-need some memory (possibly in the form of a new elf-note).
+(
+echo '# Empty work'
+findmnt -a | cut -c1-30 | grep work
+echo '# First primary mount on work'
+ls -ld /work/Fedora-16/.
+findmnt -a | cut -c1-30 | grep work
+unshare --mount -- /bin/sh -c "(
+     mount --bind /work /work ;
+     mount --make-private /work ;
+     mount --bind /tmp /work ;
+     echo '# Detached mount of work' ;
+     findmnt -a | cut -c1-30 | grep work ;
+     sleep 5 ;
+     echo '# Before detached unmount of private work' ;
+     findmnt -a | cut -c1-30 | grep work;
+     umount /work ;
+     echo '# Before detached unmount of bound work' ;
+     findmnt -a | cut -c1-30 | grep work;
+     echo '# Weird detached automount behaviour' ;
+     ls -ld /work/Fedora-15/. ;
+     umount /work ;
+     echo '# Detached unmount') &"
+sleep 1
+echo '# Second primary mount on work'
+ls -ld /work/Fedora-15/.
+findmnt -a | cut -c1-30 | grep work
+echo '# First primary mount on work no longer accessible'
+ls -ld /work/Fedora-16/.
+sleep 10
+echo '# And the final remaining cruft'
+findmnt -a | cut -c1-30 | grep work
+)
 
-Thanks,
-K.Prasad
+Which gives the following output (no wonder I had problems understanding 
+what went wrong with my machines :-():
+
+# Empty work
+|-/work
+# First primary mount on work
+drwxr-xr-x 4 root root 4096 Nov 23 17:59 /work/Fedora-16/.
+|-/work
+| `-/work/Fedora-16
+# Detached mount of work
+|-/work
+| |-/work/Fedora-16
+| `-/work
+|   `-/work
+# Second primary mount on work
+drwxr-xr-x 4 root root 4096 Nov 23 17:59 /work/Fedora-15/.
+|-/work
+| |-/work/Fedora-16
+| |-/work
+| | `-/work/Fedora-15
+| `-/work/Fedora-15
+# First primary mount on work no longer accessible
+ls: cannot access /work/Fedora-16/.: Too many levels of symbolic links
+# Before detached unmount of private work
+|-/work
+| |-/work/Fedora-16
+| |-/work
+| | `-/work
+| `-/work/Fedora-15
+# Before detached unmount of bound work
+|-/work
+| |-/work/Fedora-16
+| |-/work
+| `-/work/Fedora-15
+# Weird detached automount behaviour
+ls: cannot access /work/Fedora-15/.: Too many levels of symbolic links
+# Detached unmount
+# And the final remaining cruft
+|-/work
+| |-/work/Fedora-16
+| |-/work
+| | `-/work/Fedora-15
+| `-/work/Fedora-15
+
+-- 
+Anders Blomdell                  Email: anders.blomdell@control.lth.se
+Department of Automatic Control
+Lund University                  Phone:    +46 46 222 4625
+P.O. Box 118                     Fax:      +46 46 138118
+SE-221 00 Lund, Sweden
 
