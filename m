@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab1KWTWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 14:22:34 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40979 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab1KWTWd convert rfc822-to-8bit (ORCPT
+	id S1756055Ab1KWTZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 14:25:03 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53584 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab1KWTZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 14:22:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111123192233.44f512b7@bob.linux.org.uk>
-References: <CAFQmdRbkYiOArK09smfMvf2DJ8h-bYvKyXRN_nmX-bPG8ENmjA@mail.gmail.com>
-	<1322074412-10873-1-git-send-email-hskinnemoen@google.com>
-	<20111123192233.44f512b7@bob.linux.org.uk>
-Date: Wed, 23 Nov 2011 11:22:32 -0800
-Message-ID: <CAFQmdRYh3vSz4s-ks5dbz7bXJx-EZNHEGzsr5bcpEYquXmB6Fg@mail.gmail.com>
-Subject: Re: [RFC] cdc-acm: Fix potential deadlock (lockdep warning)
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 23 Nov 2011 14:25:01 -0500
+X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=zuYVgSS_cygA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=VnNF1IyMAAAA:8 a=Yi9_R0Vqj4Y7y9EvYkYA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH v7 3.2-rc2 19/30] tracing: modify is_delete, is_return
+ from ints to bool.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+In-Reply-To: <20111118111029.10512.12844.sendpatchset@srdronam.in.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+	 <20111118111029.10512.12844.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Nov 2011 14:24:55 -0500
+Message-ID: <1322076295.20742.62.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 11:22 AM, Alan Cox <alan@linux.intel.com> wrote:
->        take lock
->        mark device disconnected
->        drop lock
->        for each tty on the device {
->                tty_port_tty_get
->                if (tty) {
->                        tty_vhangup(tty);
->                        tty_kref_put(tty);
->        }
->        then do the USB disconnect processing
->        and drop our USB side kref
+On Fri, 2011-11-18 at 16:40 +0530, Srikar Dronamraju wrote:
+> is_delete and is_return can take atmost 2 values and
+> are better of being a boolean than a int.
 
-Ok, by USB side kref do you mean the tty_port_get/put calls I
-introduced in this patch, or a kref associated with the USB device
-itself?
+I'm fine with this.
 
-> and on the open side they provide their own install() method which
-> nicely avoids all the nasty locking problems and lets them use the
-> standard tty_port_open/close/hangup etc rather than the partial ones.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Right, that makes sense.
+-- Steve
 
-> It might be worth turning the ACM driver to work the same way as it'll
-> save doing that work later to achieve the same use of
-> tty_port_open/close/..
->
-> The main thing is the use of install - which lets you plug the USB and
-> tty bits together during the lookup of the device.
+> 
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
 
-Ok, so the basic idea is:
-  * USB side: tty_port_get() in probe, tty_port_put() in disconnect
-  * TTY side: tty_port_get() in install, tty_port_put() in remove
 
-And I need to check if the device is properly marked as disconnected,
-switch to vhangup, and possibly reorder things a bit as well. Right?
-
-Havard
