@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759316Ab1KWAlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:41:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42882 "EHLO mx2.suse.de"
+	id S1759345Ab1KWAl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:41:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42908 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759237Ab1KWAlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:07 2011
-Message-Id: <20111123002407.135220686@clark.kroah.org>
+	id S1759237Ab1KWAlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:04 2011
+Message-Id: <20111123002404.878763747@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:34 -0800
+Date: Tue, 22 Nov 2011 16:23:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Claudio Scordino <claudio@evidence.eu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [27/53] drivers/base/node.c: fix compilation error with older versions of gcc
+        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
+        Mike Miller <mike.miller@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [03/53] [SCSI] hpsa: Disable ASPM
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Claudio Scordino <claudio@evidence.eu.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit 91a13c281d7d4648c0b32dede11a0144c4e7984c upstream.
+commit e5a44df85e8d78e5c2d3d2e4f59b460905691e2f upstream.
 
-Patch to fix the error message "directives may not be used inside a macro
-argument" which appears when the kernel is compiled for the cris architecture.
+The Windows driver .inf disables ASPM on hpsa devices. Do the same because the
+selection of a non default ASPM policy can cause the device to hang.
 
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/node.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/scsi/hpsa.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -127,12 +127,13 @@ static ssize_t node_read_meminfo(struct
- 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
- 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
- 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
--		       nid, K(node_page_state(nid, NR_ANON_PAGES)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+		       nid, K(node_page_state(nid, NR_ANON_PAGES)
- 			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
--			HPAGE_PMD_NR
-+			HPAGE_PMD_NR),
-+#else
-+		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
- #endif
--		       ),
- 		       nid, K(node_page_state(nid, NR_SHMEM)),
- 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
- 				THREAD_SIZE / 1024,
-@@ -143,13 +144,14 @@ static ssize_t node_read_meminfo(struct
- 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
- 				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
- 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
--		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
- 			, nid,
- 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
--			HPAGE_PMD_NR)
-+			HPAGE_PMD_NR));
-+#else
-+		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
- #endif
--		       );
- 	n += hugetlb_report_node_meminfo(nid, buf + n);
- 	return n;
- }
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/types.h>
+ #include <linux/pci.h>
++#include <linux/pci-aspm.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+@@ -3887,6 +3888,10 @@ static int __devinit hpsa_pci_init(struc
+ 		dev_warn(&h->pdev->dev, "controller appears to be disabled\n");
+ 		return -ENODEV;
+ 	}
++
++	pci_disable_link_state(h->pdev, PCIE_LINK_STATE_L0S |
++			       PCIE_LINK_STATE_L1 | PCIE_LINK_STATE_CLKPM);
++
+ 	err = pci_enable_device(h->pdev);
+ 	if (err) {
+ 		dev_warn(&h->pdev->dev, "unable to enable PCI device\n");
 
 
