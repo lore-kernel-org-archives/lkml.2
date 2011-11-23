@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1KWFzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 00:55:39 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37124 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab1KWFzi (ORCPT
+	id S1756564Ab1KWGMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:12:07 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35097 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab1KWGMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 00:55:38 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org> (commit_signer:71/87=82%),
-        Mel Gorman <mgorman@suse.de> (commit_signer:39/87=45%),
-        Minchan Kim <minchan.kim@gmail.com> (commit_signer:32/87=37%),
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> (commit_signer:26/87=30%),
-        Johannes Weiner <jweiner@redhat.com> (commit_signer:21/87=24%),
-        linux-mm@kvack.org (open list:MEMORY MANAGEMENT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] vmscan: add task name to warn_scan_unevictable() messages
-Date: Wed, 23 Nov 2011 00:55:20 -0500
-Message-Id: <1322027721-23677-1-git-send-email-kosaki.motohiro@jp.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 23 Nov 2011 01:12:05 -0500
+From: Xi Wang <xi.wang@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
+Date: Wed, 23 Nov 2011 01:12:01 -0500
+Message-Id: <B02AED60-3DF4-4E8B-AAEC-EF411AAA99F8@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        security@kernel.org
+To: David Airlie <airlied@linux.ie>
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we need to know a usecase, caller program name is critical important.
-Show it.
+There is a potential integer overflow in drm_mode_dirtyfb_ioctl()
+if userspace passes in a large num_clips.  The call to kmalloc would
+allocate a small buffer, and the call to fb->funcs->dirty may result
+in a memory corruption.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Haogang Chen <haogangchen@gmail.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
 ---
- mm/vmscan.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_crtc.c |    4 ++++
+ include/drm/drm_mode.h     |    2 ++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a1893c0..29d163e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3448,9 +3448,10 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
- static void warn_scan_unevictable_pages(void)
- {
- 	printk_once(KERN_WARNING
--		    "The scan_unevictable_pages sysctl/node-interface has been "
-+		    "%s: The scan_unevictable_pages sysctl/node-interface has been "
- 		    "disabled for lack of a legitimate use case.  If you have "
--		    "one, please send an email to linux-mm@kvack.org.\n");
-+		    "one, please send an email to linux-mm@kvack.org.\n",
-+		    current->comm);
- }
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 405c63b..8323fc3 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1873,6 +1873,10 @@ int drm_mode_dirtyfb_ioctl(struct drm_device *dev,
+ 	}
  
+ 	if (num_clips && clips_ptr) {
++		if (num_clips < 0 || num_clips > DRM_MODE_FB_DIRTY_MAX_CLIPS) {
++			ret = -EINVAL;
++			goto out_err1;
++		}
+ 		clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
+ 		if (!clips) {
+ 			ret = -ENOMEM;
+diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
+index d30bedf..ddd46db 100644
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -235,6 +235,8 @@ struct drm_mode_fb_cmd {
+ #define DRM_MODE_FB_DIRTY_ANNOTATE_FILL 0x02
+ #define DRM_MODE_FB_DIRTY_FLAGS         0x03
+ 
++#define DRM_MODE_FB_DIRTY_MAX_CLIPS     256
++
  /*
+  * Mark a region of a framebuffer as dirty.
+  *
 -- 
-1.7.1
+1.7.5.4
 
