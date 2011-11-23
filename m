@@ -1,277 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab1KWIf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 03:35:27 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53893 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756230Ab1KWIf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 03:35:26 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 23 Nov 2011 17:34:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>
-Subject: [RFC][PATCH 3/3] replace mem_cgroup_disabled
-Message-Id: <20111123173421.39c99643.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20111123172840.acd53c41.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758667Ab1KWIno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 03:43:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18119 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752907Ab1KWInn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 03:43:43 -0500
+Date: Wed, 23 Nov 2011 16:45:43 +0800
+From: Dave Young <dyoung@redhat.com>
+To: tj@kernel.org, xiyou.wangcong@gmail.com, kexec@lists.infradead.org,
+        tim@edgecast.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] percpu: add comment to per_cpu_ptr_to_phys
+Message-ID: <20111123084543.GA2923@darkstar.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll rebase this onto mmotm this is based on mainline git tree.
-==
->From 2da35fd8eab3a8c2ca80d7aa5dfd4276a23ebf57 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 23 Nov 2011 16:42:59 +0900
-Subject: [PATCH 3/3] replace mem_cgroup_disabled().
+add comments about current per_cpu_ptr_to_phys implementation
+to explain why the logic is more complicated than necessary.
 
-cgroup provires cgroup_xxxx_disabled() functions for checking
-subsys is diabled by boot option or not. Make use of it instead
-of using private function.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- include/linux/memcontrol.h |   12 ------------
- kernel/cgroup.c            |    4 ++--
- mm/memcontrol.c            |   32 ++++++++++++++++----------------
- mm/page_cgroup.c           |    4 ++--
- 4 files changed, 20 insertions(+), 32 deletions(-)
+ mm/percpu.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index b87068a..fa5712e 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -124,13 +124,6 @@ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
- extern int do_swap_account;
- #endif
+--- linux-2.6.orig/mm/percpu.c	2011-11-22 10:18:46.000000000 +0800
++++ linux-2.6/mm/percpu.c	2011-11-23 16:27:01.667562973 +0800
+@@ -988,6 +988,19 @@ phys_addr_t per_cpu_ptr_to_phys(void *ad
+ 	unsigned int cpu;
  
--static inline bool mem_cgroup_disabled(void)
--{
--	if (mem_cgroup_subsys.disabled)
--		return true;
--	return false;
--}
--
- void mem_cgroup_update_page_stat(struct page *page,
- 				 enum mem_cgroup_page_stat_item idx,
- 				 int val);
-@@ -291,11 +284,6 @@ static inline void mem_cgroup_record_reclaim_priority(struct mem_cgroup *memcg,
- {
- }
- 
--static inline bool mem_cgroup_disabled(void)
--{
--	return true;
--}
--
- static inline int
- mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
- {
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 28d4430..e5c33f5 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4778,7 +4778,7 @@ static void cgroup_release_agent(struct work_struct *work)
- }
- #ifdef CONFIG_JUMP_LABEL
- #define SUBSYS(_x)\
--	struct jump_label_key cgroup_ ## _x ## _disable_key;
-+	struct jump_label_key cgroup_ ## _x ## _disabled_key;
- #include <linux/cgroup_subsys.h>
- #undef SUBSYS
- 
-@@ -4786,7 +4786,7 @@ static void cgroup_subsys_disable(void)
- {
- #define SUBSYS(_x)\
- 	if ( _x ## _subsys.disabled)\
--		jump_label_inc(&cgroup_ ## _x ## _disable_key);
-+		jump_label_inc(&cgroup_ ## _x ## _disabled_key);
- #include <linux/cgroup_subsys.h>
- #undef SUBSYS
- }
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..594af98 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -916,7 +916,7 @@ void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru)
- 	struct page_cgroup *pc;
- 	struct mem_cgroup_per_zone *mz;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 	pc = lookup_page_cgroup(page);
- 	/* can happen while we handle swapcache. */
-@@ -952,7 +952,7 @@ void mem_cgroup_rotate_reclaimable_page(struct page *page)
- 	struct page_cgroup *pc;
- 	enum lru_list lru = page_lru(page);
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 
- 	pc = lookup_page_cgroup(page);
-@@ -972,7 +972,7 @@ void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
- 	struct mem_cgroup_per_zone *mz;
- 	struct page_cgroup *pc;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 
- 	pc = lookup_page_cgroup(page);
-@@ -992,7 +992,7 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
- 	struct page_cgroup *pc;
- 	struct mem_cgroup_per_zone *mz;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 	pc = lookup_page_cgroup(page);
- 	VM_BUG_ON(PageCgroupAcctLRU(pc));
-@@ -1081,7 +1081,7 @@ static void mem_cgroup_lru_add_after_commit(struct page *page)
- void mem_cgroup_move_lists(struct page *page,
- 			   enum lru_list from, enum lru_list to)
- {
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 	mem_cgroup_del_lru_list(page, from);
- 	mem_cgroup_add_lru_list(page, to);
-@@ -1180,7 +1180,7 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
- 	struct page_cgroup *pc;
- 	struct mem_cgroup_per_zone *mz;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return NULL;
- 
- 	pc = lookup_page_cgroup(page);
-@@ -2530,7 +2530,7 @@ void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
- 	struct page_cgroup *tail_pc = lookup_page_cgroup(tail);
- 	unsigned long flags;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
  	/*
- 	 * We have no races with charge/uncharge but will have races with
-@@ -2730,7 +2730,7 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
- int mem_cgroup_newpage_charge(struct page *page,
- 			      struct mm_struct *mm, gfp_t gfp_mask)
- {
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return 0;
- 	/*
- 	 * If already mapped, we don't have to account.
-@@ -2773,7 +2773,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 	struct mem_cgroup *memcg = NULL;
- 	int ret;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return 0;
- 	if (PageCompound(page))
- 		return 0;
-@@ -2823,7 +2823,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 
- 	*ptr = NULL;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return 0;
- 
- 	if (!do_swap_account)
-@@ -2853,7 +2853,7 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype)
- {
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 	if (!ptr)
- 		return;
-@@ -2903,7 +2903,7 @@ void mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr)
- 
- void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
- {
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 	if (!memcg)
- 		return;
-@@ -2974,7 +2974,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 	unsigned int nr_pages = 1;
- 	struct page_cgroup *pc;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return NULL;
- 
- 	if (PageSwapCache(page))
-@@ -3237,7 +3237,7 @@ int mem_cgroup_prepare_migration(struct page *page,
- 	*ptr = NULL;
- 
- 	VM_BUG_ON(PageTransHuge(page));
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return 0;
- 
- 	pc = lookup_page_cgroup(page);
-@@ -3379,7 +3379,7 @@ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
- 
- bool mem_cgroup_bad_page_check(struct page *page)
- {
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return false;
- 
- 	return lookup_page_cgroup_used(page) != NULL;
-@@ -4853,7 +4853,7 @@ static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
- static void __init enable_swap_cgroup(void)
- {
--	if (!mem_cgroup_disabled() && really_do_swap_account)
-+	if (!cgroup_mem_cgroup_disabled() && really_do_swap_account)
- 		do_swap_account = 1;
- }
- #else
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 2d123f9..a7bf01d 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -87,7 +87,7 @@ void __init page_cgroup_init_flatmem(void)
- 
- 	int nid, fail;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 
- 	for_each_online_node(nid)  {
-@@ -302,7 +302,7 @@ void __init page_cgroup_init(void)
- 	unsigned long pfn;
- 	int nid;
- 
--	if (mem_cgroup_disabled())
-+	if (cgroup_mem_cgroup_disabled())
- 		return;
- 
- 	for_each_node_state(nid, N_HIGH_MEMORY) {
--- 
-1.7.4.1
-
-
++	 * percpu allocator has special setup for the first chunk,
++	 * which currently supports either embedding in linear address space
++	 * or vmalloc mapping, and, from the second one, the backing
++	 * allocator (currently either vm or km) provides translation.
++	 *
++	 * The addr can be tranlated simply without checking if it falls
++	 * into the first chunk. But the current code reflects better
++	 * how percpu allocator actually works, and the verification can
++	 * discover both bugs in percpu allocator itself and
++	 * per_cpu_ptr_to_phys() callers. So we keep current code.
++	 */
++
++	/*
+ 	 * The following test on first_start/end isn't strictly
+ 	 * necessary but will speed up lookups of addresses which
+ 	 * aren't in the first chunk.
