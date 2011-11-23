@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1KWTcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 14:32:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58346 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab1KWTcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 14:32:04 -0500
-X-Authority-Analysis: v=2.0 cv=Pdt9d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=rC-_LfCRzf8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=3nbZYyFuAAAA:8 a=2QWnC7eoKgDJ-wjxPC8A:9 a=VfwdzeOoO1cSx4Vmy_AA:7 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH v7 3.2-rc2 20/30] tracing: Extract out common code for
- kprobes/uprobes traceevents.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-In-Reply-To: <20111118111039.10512.78989.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118111039.10512.78989.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Nov 2011 14:32:01 -0500
-Message-ID: <1322076721.20742.66.camel@frodo>
+	id S1756062Ab1KWTdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 14:33:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:14258 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754136Ab1KWTdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 14:33:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,560,1315206000"; 
+   d="scan'208";a="88611635"
+Date: Wed, 23 Nov 2011 19:44:23 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [RFC] cdc-acm: Fix potential deadlock (lockdep warning)
+Message-ID: <20111123194423.158002cf@bob.linux.org.uk>
+In-Reply-To: <CAFQmdRYh3vSz4s-ks5dbz7bXJx-EZNHEGzsr5bcpEYquXmB6Fg@mail.gmail.com>
+References: <CAFQmdRbkYiOArK09smfMvf2DJ8h-bYvKyXRN_nmX-bPG8ENmjA@mail.gmail.com>
+	<1322074412-10873-1-git-send-email-hskinnemoen@google.com>
+	<20111123192233.44f512b7@bob.linux.org.uk>
+	<CAFQmdRYh3vSz4s-ks5dbz7bXJx-EZNHEGzsr5bcpEYquXmB6Fg@mail.gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:40 +0530, Srikar Dronamraju wrote:
-> --- /dev/null
-> +++ b/kernel/trace/trace_probe.h
-> @@ -0,0 +1,160 @@
-> +/*
-> + * Common header file for probe-based Dynamic events.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-> 02111-1307  USA
-> + *
-> + * Copyright (C) IBM Corporation, 2010
-> + * Author:     Srikar Dronamraju
-> + *
-> + * Derived from kernel/trace/trace_kprobe.c written by
+> Ok, by USB side kref do you mean the tty_port_get/put calls I
+> introduced in this patch, or a kref associated with the USB device
+> itself?
 
-Shouldn't the above be:
+The USB serial driver krefs its USB related objects too
 
- include/linux/trace_kprobe.h ?
+> Ok, so the basic idea is:
+>   * USB side: tty_port_get() in probe, tty_port_put() in disconnect
+>   * TTY side: tty_port_get() in install, tty_port_put() in remove
+> 
+> And I need to check if the device is properly marked as disconnected,
+> switch to vhangup, and possibly reorder things a bit as well. Right?
 
-Although, I would think both of these files are a bit more that derived
-from. I would have been a bit stronger on the wording and say: This code
-was copied from trace_kprobe.[ch] written by Masami ...
+You shouldn't need to do the port_get in the probe or the put in the
+disconnect path. The install/remove one is sufficient for all the
+tty_port data because the only way a new open can occur is if the
+install succeeds. So providing install and remove are suitably locked
+(see the usb_serial.c code) the other cases shouldn't matter.
 
-Then say,
+Any data owned by the USB part needs to be handled by the USB driver.
+In the case of usb-serial it keeps its own krefs for that because the
+lifetime of the port/USB serial data is not the same as the lifetime of
+the tty itself.
 
-Updates to make this generic:
+The lifetime model is intended to be
 
- * Copyright (C) IBM Corporation, 2010
- * Author:     Srikar Dronamraju
+object discovered
+	Port created
 
--- Steve
+	one or more iterations of
+	{
+		tty_install (refcounts the port and USB data)
+		tty opened
+		tty created
 
-> + * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> + */
-> + 
+		[activity]
+
+		tty closed final time
+		tty destroyed (drops a reference on the port and USB
+		data)
+	}
+
+	Port destroyed
+
+and if the object is destroyed while the tty is opened tty_vhangup
+ensures that all the linkages are broken and the port itself can be
+destroyed after the last user.
+
+That is tty_struct has a lifetime of open - close (plus a bit for any
+active receive etc) while the tty_port is usually embedded in the USB
+related material and has a life time of object creation to the point
+that the object has gone away AND there are no ttys in existence using
+it, hung up or otherwise. The tty "cleanup" hook may be useful for
+that. It is called asynchronously as part of the the destructor for the
+tty object.
+
+In some ways its easier to read usb-serial.c than describe it
 
 
 
