@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387Ab1KWAlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:41:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42938 "EHLO mx2.suse.de"
+	id S1759443Ab1KWAl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:41:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42996 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759237Ab1KWAlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:41:39 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:05 2011
-Message-Id: <20111123002405.279436121@clark.kroah.org>
+	id S1759388Ab1KWAl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:41:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:08 2011
+Message-Id: <20111123002408.355354370@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:14 -0800
+Date: Tue, 22 Nov 2011 16:23:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Catalin Marinas <catalin.marinas@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [07/53] ARM: 7150/1: Allow kernel unaligned accesses on ARMv6+
+        alan@lxorguk.ukuu.org.uk, Matthieu Castet <matthieu.castet@parrot.com>,
+        Thomas Poussevin <thomas.poussevin@parrot.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [40/53] USB: EHCI: fix HUB TT scheduling issue with iso transfer
 In-Reply-To: <20111123002419.GA8531@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
- processors
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Thomas Poussevin <thomas.poussevin@parrot.com>
 
-commit 8428e84d42179c2a00f5f6450866e70d802d1d05 upstream.
+commit 811c926c538f7e8d3c08b630dd5844efd7e000f6 upstream.
 
-Recent gcc versions generate unaligned accesses by default on ARMv6 and
-later processors. This patch ensures that the SCTLR.A bit is always
-cleared on such processors to avoid kernel traping before
-alignment_init() is called.
+The current TT scheduling doesn't allow to play and then record on a
+full-speed device connected to a high speed hub.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: John Linn <John.Linn@xilinx.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The IN iso stream can only start on the first uframe (0-2 for a 165 us)
+because of CSPLIT transactions.
+For the OUT iso stream there no such restriction. uframe 0-5 are possible.
+
+The idea of this patch is that the first uframe are precious (for IN TT iso
+stream) and we should allocate the last uframes first if possible.
+
+For that we reverse the order of uframe allocation (last uframe first).
+
+Here an example :
+
+hid interrupt stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame | 13  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+----------------------------------------------------------------------
+
+iso OUT stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame | 13  | 125 |  39 |  0  |  0  |  0  |  0  |  0  |
+----------------------------------------------------------------------
+
+There no place for iso IN stream  (uframe 0-2 are used) and we got "cannot
+submit datapipe for urb 0, error -28: not enough bandwidth" error.
+
+With the patch this become.
+
+iso OUT stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame |  13 |  0  |  0  |  0  | 125 |  39 |  0  |  0  |
+----------------------------------------------------------------------
+
+iso IN stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame |  13 |  0  | 125 | 40  | 125 |  39 |  0  |  0  |
+----------------------------------------------------------------------
+
+Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+Signed-off-by: Thomas Poussevin <thomas.poussevin@parrot.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/kernel/head.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ehci-sched.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -348,7 +348,7 @@ __secondary_data:
-  *  r13 = *virtual* address to jump to upon completion
-  */
- __enable_mmu:
--#ifdef CONFIG_ALIGNMENT_TRAP
-+#if defined(CONFIG_ALIGNMENT_TRAP) && __LINUX_ARM_ARCH__ < 6
- 	orr	r0, r0, #CR_A
- #else
- 	bic	r0, r0, #CR_A
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1483,10 +1483,15 @@ iso_stream_schedule (
+ 
+ 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
+ 
+-		/* find a uframe slot with enough bandwidth */
+-		next = start + period;
+-		for (; start < next; start++) {
+-
++		/* find a uframe slot with enough bandwidth.
++		 * Early uframes are more precious because full-speed
++		 * iso IN transfers can't use late uframes,
++		 * and therefore they should be allocated last.
++		 */
++		next = start;
++		start += period;
++		do {
++			start--;
+ 			/* check schedule: enough space? */
+ 			if (stream->highspeed) {
+ 				if (itd_slot_ok(ehci, mod, start,
+@@ -1499,7 +1504,7 @@ iso_stream_schedule (
+ 						start, sched, period))
+ 					break;
+ 			}
+-		}
++		} while (start > next);
+ 
+ 		/* no room in the schedule */
+ 		if (start == next) {
 
 
