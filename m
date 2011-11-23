@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab1KWA0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:26:41 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:34058 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758241Ab1KWA0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:26:09 -0500
-X-Sasl-enc: PHdyhoSfE8zLCCMX3FXWuaOsQr/vT56BJNCsJGhM+JhO 1322007968
-Date: Tue, 22 Nov 2011 16:26:01 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/53] 3.1.3-stable review
-Message-ID: <20111123002601.GA14467@kroah.com>
+	id S1758901Ab1KWA2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:28:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16487 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754459Ab1KWA2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:28:07 -0500
+Message-ID: <4ECC3DF8.4090902@redhat.com>
+Date: Tue, 22 Nov 2011 19:27:36 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Johannes Weiner <jweiner@redhat.com>, Jon Masters <jcm@redhat.com>
+Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
+ flags
+References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org>  <4ECB6D60.1010702@redhat.com> <1321991338.6445.70.camel@work-vm>
+In-Reply-To: <1321991338.6445.70.camel@work-vm>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.1.3 release.
-There are 53 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+On 11/22/2011 02:48 PM, John Stultz wrote:
+> On Tue, 2011-11-22 at 04:37 -0500, Rik van Riel wrote:
+>> On 11/21/2011 10:33 PM, John Stultz wrote:
 
-Responses should be made by Friday, November 25, 2011, 20:00:00 UTC.
-Anything received after that time might be too late.
+> So similarly to Robert, I don't see this approach as necessarily
+> exclusive to the volatile flags. There are just some tradeoffs with the
+> different approaches.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.3-rc1.gz
-and the diffstat can be found below.
+Agreed, they might be complementary.
 
-thanks,
+> The upside with your approach is that applications don't have to
+> remember to re-pin the cache before using it and unpin it after its done
+> using it.
 
-greg k-h
+If using these volatile regions is going to become
+common, programs will be pinning and unpinning
+those cache regions all the time, even when there
+is no memory pressure at all.
 
+At that point, I wonder if userspace programmers will
+not end up making an automatic choice for a method
+that does not impact their fast path at all, and only
+gets invoked rarely.
 
- Makefile                                    |    4 +-
- arch/arm/kernel/head.S                      |    2 +-
- arch/s390/include/asm/kvm_host.h            |    2 +-
- arch/s390/kvm/diag.c                        |    2 +-
- arch/s390/kvm/intercept.c                   |    3 +-
- arch/s390/kvm/interrupt.c                   |    1 +
- arch/s390/kvm/kvm-s390.c                    |   10 +++-
- arch/s390/kvm/sigp.c                        |    6 +-
- drivers/base/core.c                         |    3 +
- drivers/base/node.c                         |   14 +++---
- drivers/gpu/drm/i915/i915_reg.h             |    9 ++++
- drivers/gpu/drm/i915/intel_display.c        |   42 +++++++++++++++--
- drivers/media/video/saa7164/saa7164-cards.c |   66 +++++++++++++++++++++++++++
- drivers/media/video/saa7164/saa7164-dvb.c   |    1 +
- drivers/media/video/saa7164/saa7164.h       |    1 +
- drivers/misc/Kconfig                        |   15 +++---
- drivers/misc/pch_phub.c                     |   22 +++++++++-
- drivers/misc/spear13xx_pcie_gadget.c        |    2 +-
- drivers/net/wireless/libertas/if_spi.c      |    1 +
- drivers/net/wireless/rt2x00/rt2x00.h        |    1 +
- drivers/net/wireless/rt2x00/rt2x00dev.c     |   22 ++++++++-
- drivers/scsi/aacraid/linit.c                |    4 ++
- drivers/scsi/hpsa.c                         |    5 ++
- drivers/scsi/scsi_scan.c                    |    6 +--
- drivers/tty/hvc/hvc_dcc.c                   |    2 +
- drivers/tty/serial/Kconfig                  |   14 +++---
- drivers/tty/serial/pch_uart.c               |   13 +++++-
- drivers/tty/tty_ldisc.c                     |   30 +++++++++---
- drivers/usb/class/cdc-acm.c                 |    8 ++-
- drivers/usb/core/hub.c                      |    6 +++
- drivers/usb/core/quirks.c                   |   27 +++++++++++
- drivers/usb/gadget/Kconfig                  |    9 ++--
- drivers/usb/gadget/pch_udc.c                |    6 +++
- drivers/usb/host/ehci-sched.c               |   15 ++++--
- drivers/usb/host/pci-quirks.c               |    7 +--
- drivers/usb/host/xhci-mem.c                 |    5 --
- drivers/usb/host/xhci-ring.c                |   13 +++---
- drivers/usb/host/xhci.c                     |   34 +++++++-------
- drivers/usb/serial/ark3116.c                |   10 ++--
- drivers/usb/serial/ftdi_sio.c               |   14 +++++-
- drivers/usb/serial/option.c                 |   23 +++++++++
- drivers/usb/serial/pl2303.c                 |    1 -
- drivers/usb/serial/pl2303.h                 |    4 --
- drivers/usb/storage/protocol.c              |    7 +--
- fs/nfs/dir.c                                |    2 +-
- fs/nfs/file.c                               |   32 +++++++++++++
- fs/nfs/inode.c                              |    2 +-
- fs/nfs/nfs3proc.c                           |    1 +
- fs/nfs/nfs4proc.c                           |    1 +
- fs/nfs/proc.c                               |    1 +
- fs/super.c                                  |    2 +-
- include/linux/nfs_fs.h                      |    3 +
- include/linux/nfs_xdr.h                     |    1 +
- include/linux/shrinker.h                    |    1 +
- kernel/irq/spurious.c                       |    2 +-
- net/batman-adv/translation-table.c          |   24 +++++++++-
- net/batman-adv/types.h                      |    4 +-
- net/ipv6/ip6_tunnel.c                       |    8 +++-
- net/mac80211/rx.c                           |    9 +++-
- net/mac80211/util.c                         |    4 ++
- net/wireless/nl80211.c                      |    3 +-
- net/wireless/reg.c                          |    3 +
- sound/pci/hda/hda_eld.c                     |    5 +--
- sound/pci/hda/patch_cirrus.c                |   23 +++++----
- sound/pci/hda/patch_hdmi.c                  |   15 ++++---
- 65 files changed, 489 insertions(+), 149 deletions(-)
+> The downside is that the "please shrink your caches" message is likely
+> to arrive when the system is low on resources. Once applications have
+> been asked to "be nice and get small!", having to wait for that action
+> to occur might not be great.
+
+The pageout code in vmscan.c can send these messages
+before we actually get around to evicting any anonymous
+page from memory.
+
+I believe the code we have there today can get these
+signals sent before we get in any serious trouble.
+
+> Where as with the volatile regions, there
+> are just additionally easily freeable pages available when the kernel
+> needs them.
+
+That is certainly true.  However, it is unclear how
+that would translate to virtualized solutions, since
+there is no way for a virtual machine to mark pages
+as volatile with the host (especially since there is
+no way to tell the host what pages belong together
+in objects).
+
+I'm not objecting to your idea - in fact I like it.
+
+However, I believe it would be good to answer some of
+these questions before adding another interface to the
+kernel that needs to be maintained forever.
