@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab1KWHhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:37:52 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34606 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab1KWHht convert rfc822-to-8bit (ORCPT
+	id S1759511Ab1KWHj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:39:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42789 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab1KWHj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:37:49 -0500
+	Wed, 23 Nov 2011 02:39:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyy19VYSdZW0+jNxAb8ix0xpX2j9YFw9oQi3jm3+mDEvw@mail.gmail.com>
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
-	<201111212249.31196.rjw@sisk.pl>
-	<CA+55aFyy19VYSdZW0+jNxAb8ix0xpX2j9YFw9oQi3jm3+mDEvw@mail.gmail.com>
-Date: Wed, 23 Nov 2011 08:37:45 +0100
-Message-ID: <CACna6rzQhp4DXonK_Mr+Od9yMQJtr24Z5TE27VxhcMrcY4u+EA@mail.gmail.com>
-Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        stephen hemminger <shemminger@vyatta.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
+In-Reply-To: <CAFQmdRYTgQOb53kQOvk1jubZbvaOrfjVCq4aG1H0ceshw2vVPA@mail.gmail.com>
+References: <20111123033850.GA11380@redhat.com>
+	<CAFQmdRYTgQOb53kQOvk1jubZbvaOrfjVCq4aG1H0ceshw2vVPA@mail.gmail.com>
+Date: Wed, 23 Nov 2011 15:39:57 +0800
+Message-ID: <CAM_iQpVONaS8hA7Be-FkqdDJCbt2sx_p1sX64nMbMpY5RyCdiA@mail.gmail.com>
+Subject: Re: tty related lockdep trace during bootup on 3.2-rc2
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Havard Skinnemoen <hskinnemoen@google.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 21 listopada 2011 23:22 użytkownik Linus Torvalds
-<torvalds@linux-foundation.org> napisał:
-> On Mon, Nov 21, 2011 at 1:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Wed, Nov 23, 2011 at 3:28 PM, Havard Skinnemoen
+<hskinnemoen@google.com> wrote:
+> On Tue, Nov 22, 2011 at 7:38 PM, Dave Jones <davej@redhat.com> wrote:
+>> From Linus' current tree...
 >>
->> Subject    : [3.1-rc8 REGRESSION] sky2 hangs machine on turning off or suspending
->> Submitter  : Rafał Miłecki <zajec5@gmail.com>
->> Date       : 2011-11-09 11:46
->> Message-ID : CACna6ryTdLcWVYgHu=_mRFga1sFivpE_DyZOY-HMmKggkWAJAw@mail.gmail.com
->> References : http://marc.info/?l=linux-netdev&m=132083922228088&w=4
+>> related to 5dc2470c602da8851907ec18942cd876c3b4ecc1 maybe ?
 >
-> This should be fixed by commit 1401a8008a09 ("sky2: fix hang on
-> shutdown (and other irq issues)") in current -git.
+> Yes, probably. I did have a bad feeling about the locking, but it
+> seemed to behave well during testing. Wonder why I didn't see this.
+>
+> So what's happening is that tty_open() holds big_tty_mutex while
+> calling acm_tty_open which takes open_lock, and acm_tty_close holds
+> open_lock while calling tty_port_close_start which takes
+> big_tty_mutex?
 
-This patch doesn't fix my hang.
+Yes, exactly.
 
-However git contains also:
-sky2: fix hang in napi_disable
-This is the one fixing my case.
+>
+> Not sure how to solve this. Not taking the lock before calling
+> tty_port_close_start means the tty_port may get freed before it
+> returns.
 
-So the bug is resolved, however I'm a little disappointed noone
-ping-ed me about that patches. I've spent some time on bisecting this
-issue, expected to get some response :/
+But...
 
--- 
-Rafał
+static void acm_tty_hangup(struct tty_struct *tty)
+{
+        struct acm *acm = tty->driver_data;
+        tty_port_hangup(&acm->port); //<---------------- No open_mutex
+protected neither...
+        mutex_lock(&open_mutex);
+        acm_port_down(acm);
+        mutex_unlock(&open_mutex);
+}
