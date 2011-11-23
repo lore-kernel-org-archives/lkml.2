@@ -1,129 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab1KWAj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:39:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42617 "EHLO mx2.suse.de"
+	id S1759198Ab1KWAjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:39:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19293 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932765Ab1KWAhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:37:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
-Message-Id: <20111123002556.942986048@clark.kroah.org>
-User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:43 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthieu Castet <matthieu.castet@parrot.com>,
-        Thomas Poussevin <thomas.poussevin@parrot.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [43/53] USB: EHCI: fix HUB TT scheduling issue with iso transfer
-In-Reply-To: <20111123002601.GA14467@kroah.com>
+	id S1759169Ab1KWAjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:39:41 -0500
+Message-ID: <4ECC40B0.5040108@redhat.com>
+Date: Tue, 22 Nov 2011 19:39:12 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Robert Love <rlove@google.com>
+CC: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Johannes Weiner <jweiner@redhat.com>, Jon Masters <jcm@redhat.com>
+Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and _NONVOLATILE
+ flags
+References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org> <4ECB6D60.1010702@redhat.com> <CAG6tG3xTkW1J=6xmUmmJoswJyR6ii5RDXvAsYrcH0CkVuUmJrQ@mail.gmail.com>
+In-Reply-To: <CAG6tG3xTkW1J=6xmUmmJoswJyR6ii5RDXvAsYrcH0CkVuUmJrQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+On 11/22/2011 10:40 AM, Robert Love wrote:
 
-------------------
+>     3) Isn't it too slow for something like Firefox to
+>        create a new tmpfs object for every single throw-away
+>        cache object?
+>
+>
+> Nope, although user-space might want to create larger mappings and
+> sub-divide them if its objects are *really* small.
 
-From: Thomas Poussevin <thomas.poussevin@parrot.com>
+At first glance, it sounds like a great idea to have a program
+like Firefox create a new object for every tab.
 
-commit 811c926c538f7e8d3c08b630dd5844efd7e000f6 upstream.
+However, this quickly runs into the practical problem that
+Firefox does not know in advance how much memory each tab will
+require.
 
-The current TT scheduling doesn't allow to play and then record on a
-full-speed device connected to a high speed hub.
+Without a good way to size each mapping in advance, it may not
+be practical to group related bits of memory together.
 
-The IN iso stream can only start on the first uframe (0-2 for a 165 us)
-because of CSPLIT transactions.
-For the OUT iso stream there no such restriction. uframe 0-5 are possible.
+Never mind that it would require userspace programs to grow new
+memory allocators...
 
-The idea of this patch is that the first uframe are precious (for IN TT iso
-stream) and we should allocate the last uframes first if possible.
+>     Johannes, Jon and I have looked at an alternative way to
+>     allow the kernel and userspace to cooperate in throwing
+>     out cached data.  This alternative way does not touch
+>     the alloc/free fast path at all, but does require some
+>     cooperation at "shrink cache" time.
+>
+>
+> I'm open to whatever works, and I need to think about your proposal
+> more, but it sounds inferior to the model John is proposing. I think we
+> can sum the two models up as,
+>
+> - User-space pins, unpins objects, and kernel handles eviction
+> - Kernel lets user-space register callbacks for notification during
+> cache shrink, user handles eviction
+>
+> Right?
 
-For that we reverse the order of uframe allocation (last uframe first).
+Yes, this characterization is correct.
 
-Here an example :
+Note how in the object I proposed, when there is no memory
+pressure, userspace can hold on to freed pages and quickly
+reuse them for something else.
 
-hid interrupt stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame | 13  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
-----------------------------------------------------------------------
+There is no need for pages to be handed back to the kernel,
+and then zeroed again when they get handed back to userspace
+later on.
 
-iso OUT stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame | 13  | 125 |  39 |  0  |  0  |  0  |  0  |  0  |
-----------------------------------------------------------------------
+There is also no need to write a new memory allocator for
+programs that want to pack related objects together in one
+_VOLATILE mapping.
 
-There no place for iso IN stream  (uframe 0-2 are used) and we got "cannot
-submit datapipe for urb 0, error -28: not enough bandwidth" error.
+The reason is that, on memory pressure, any arbitrary set of
+pages can be nuked from userspace, so any memory allocator will
+be compatible.
 
-With the patch this become.
+> Actually, I can see the need for both. But the first is simpler, lets
+> the kernel evict pages from user-space even in low memory situations
+> (since you can call the cache shrinker atomically), and relies on the
+> fact that the "free caches" action is just jettisoning the pages, so the
+> kernel can do it. The actual work is in repopulating the caches.
+>
+> That last point, btw, is why user-space developers like ashmem: It fits
+> their models of how they do work. They pin/unpin objects as part of
+> their normal access and repopulating is tied into the re-pin path, which
+> is where it makes sense.
 
-iso OUT stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame |  13 |  0  |  0  |  0  | 125 |  39 |  0  |  0  |
-----------------------------------------------------------------------
-
-iso IN stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame |  13 |  0  | 125 | 40  | 125 |  39 |  0  |  0  |
-----------------------------------------------------------------------
-
-Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
-Signed-off-by: Thomas Poussevin <thomas.poussevin@parrot.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/host/ehci-sched.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1480,10 +1480,15 @@ iso_stream_schedule (
- 
- 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
- 
--		/* find a uframe slot with enough bandwidth */
--		next = start + period;
--		for (; start < next; start++) {
--
-+		/* find a uframe slot with enough bandwidth.
-+		 * Early uframes are more precious because full-speed
-+		 * iso IN transfers can't use late uframes,
-+		 * and therefore they should be allocated last.
-+		 */
-+		next = start;
-+		start += period;
-+		do {
-+			start--;
- 			/* check schedule: enough space? */
- 			if (stream->highspeed) {
- 				if (itd_slot_ok(ehci, mod, start,
-@@ -1496,7 +1501,7 @@ iso_stream_schedule (
- 						start, sched, period))
- 					break;
- 			}
--		}
-+		} while (start > next);
- 
- 		/* no room in the schedule */
- 		if (start == next) {
-
+Which userspace programs work that way already?
 
