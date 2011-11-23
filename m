@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759882Ab1KWKCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:02:19 -0500
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:41683 "EHLO
+	id S1759849Ab1KWKB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:01:59 -0500
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:41682 "EHLO
 	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758761Ab1KWKB3 (ORCPT
+	with ESMTP id S1758766Ab1KWKB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Nov 2011 05:01:29 -0500
 From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
@@ -13,9 +13,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Benjamin Tissoires <benjamin.tissoires@enac.fr>,
         Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/8] hid-multitouch: cleanup eGalax quirks
-Date: Wed, 23 Nov 2011 10:54:29 +0100
-Message-Id: <1322042074-3759-4-git-send-email-benjamin.tissoires@enac.fr>
+Subject: [PATCH 5/8] HID: cleanup with eGalax PID definitions
+Date: Wed, 23 Nov 2011 10:54:31 +0100
+Message-Id: <1322042074-3759-6-git-send-email-benjamin.tissoires@enac.fr>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
 References: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
@@ -23,88 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous implementation of eGalax protocol was not satisfying as
-we had to manually set x/y ranges as they were corrupted after reading
-the report descriptor.
-Indeed, the report descriptor provided a stylus input interface which
-override the correct values.
-
-This patch omits this input, thus leaving the correct value untouched,
-and the MT_QUIRK_EGALAX_XYZ_FIXUP not required anymore.
+This is just a renaming of USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH{N}
+to USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_{PID} to handle more eGalax
+devices.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 ---
- drivers/hid/hid-multitouch.c |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
+ drivers/hid/hid-core.c       |   12 ++++++------
+ drivers/hid/hid-ids.h        |   12 ++++++------
+ drivers/hid/hid-multitouch.c |   24 ++++++++++++------------
+ 3 files changed, 24 insertions(+), 24 deletions(-)
 
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index eb26af4..b776bfb 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1404,12 +1404,12 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0006) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0011) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2515) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 33c26d5..a9526fd 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -230,12 +230,12 @@
+ 
+ #define USB_VENDOR_ID_DWAV		0x0eef
+ #define USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER	0x0001
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH	0x480d
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1	0x720c
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3	0x480e
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4	0x726b
+-#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5	0xa001
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D	0x480d
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E	0x480e
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C	0x720c
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B	0x726b
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1	0x72a1
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
+ 
+ #define USB_VENDOR_ID_ELECOM		0x056e
+ #define USB_DEVICE_ID_ELECOM_BM084	0x0061
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index f41bcea..8250f3c 100644
+index 354a5cd..db39228 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -50,7 +50,6 @@ MODULE_LICENSE("GPL");
- #define MT_QUIRK_ALWAYS_VALID		(1 << 4)
- #define MT_QUIRK_VALID_IS_INRANGE	(1 << 5)
- #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
--#define MT_QUIRK_EGALAX_XYZ_FIXUP	(1 << 7)
- #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
+@@ -682,26 +682,26 @@ static const struct hid_device_id mt_devices[] = {
+ 			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
  
- struct mt_slot {
-@@ -171,8 +170,7 @@ static struct mt_class mt_classes[] = {
- 		.maxcontacts = 10 },
- 	{ .name = MT_CLS_EGALAX,
- 		.quirks =  MT_QUIRK_SLOT_IS_CONTACTID |
--			MT_QUIRK_VALID_IS_INRANGE |
--			MT_QUIRK_EGALAX_XYZ_FIXUP,
-+			MT_QUIRK_VALID_IS_INRANGE,
- 		.maxcontacts = 2,
- 		.sn_move = 4096,
- 		.sn_pressure = 32,
-@@ -253,7 +251,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
- 	struct mt_class *cls = &td->mtclass;
--	__s32 quirks = cls->quirks;
+ 	/* eGalax devices (resistive) */
+-	{  .driver_data = MT_CLS_EGALAX,
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
  
- 	/* Only map fields from TouchScreen or TouchPad collections.
-          * We need to ignore fields that belong to other collections
-@@ -265,13 +262,17 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	else
- 		return 0;
+ 	/* eGalax devices (capacitive) */
+-	{  .driver_data = MT_CLS_EGALAX,
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
+-	{  .driver_data = MT_CLS_EGALAX,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
++	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+-			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH5) },
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
  
-+	/* eGalax devices provide a Digitizer.Stylus input which overrides
-+	 * the correct Digitizers.Finger X/Y ranges.
-+	 * Let's just ignore this input. */
-+	if (field->physical == HID_DG_STYLUS)
-+		return -1;
-+
- 	switch (usage->hid & HID_USAGE_PAGE) {
- 
- 	case HID_UP_GENDESK:
- 		switch (usage->hid) {
- 		case HID_GD_X:
--			if (quirks & MT_QUIRK_EGALAX_XYZ_FIXUP)
--				field->logical_maximum = 32760;
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_POSITION_X);
- 			set_abs(hi->input, ABS_MT_POSITION_X, field,
-@@ -284,8 +285,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			}
- 			return 1;
- 		case HID_GD_Y:
--			if (quirks & MT_QUIRK_EGALAX_XYZ_FIXUP)
--				field->logical_maximum = 32760;
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_POSITION_Y);
- 			set_abs(hi->input, ABS_MT_POSITION_Y, field,
-@@ -353,8 +352,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			}
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
--			if (quirks & MT_QUIRK_EGALAX_XYZ_FIXUP)
--				field->logical_minimum = 0;
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_PRESSURE);
- 			set_abs(hi->input, ABS_MT_PRESSURE, field,
+ 	/* Elo TouchSystems IntelliTouch Plus panel */
+ 	{ .driver_data = MT_CLS_DUAL_NSMU_CONTACTID,
 -- 
 1.7.4.4
 
