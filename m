@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab1KWUBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 15:01:55 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:42165 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750990Ab1KWUBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 15:01:53 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: "Menon\, Nishanth" <nm@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH/RESEND #3 1/7] OMAP3+: PM: SR: add suspend/resume handlers
-Organization: Texas Instruments, Inc.
-References: <1321346765-16633-1-git-send-email-balbi@ti.com>
-	<1321346765-16633-2-git-send-email-balbi@ti.com>
-	<87vcqj62gd.fsf@ti.com>
-	<CAOMWX4egSeBfHdD4LHxtvvaQj+MK0ecRrQGdQ+ELDRUz5tFUEg@mail.gmail.com>
-Date: Wed, 23 Nov 2011 12:01:46 -0800
-In-Reply-To: <CAOMWX4egSeBfHdD4LHxtvvaQj+MK0ecRrQGdQ+ELDRUz5tFUEg@mail.gmail.com>
-	(Nishanth Menon's message of "Fri, 18 Nov 2011 18:35:53 -0600")
-Message-ID: <87ty5ua9qt.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1752387Ab1KWUIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 15:08:47 -0500
+Received: from smtp13.mail.ru ([94.100.176.90]:40127 "EHLO smtp13.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab1KWUIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 15:08:46 -0500
+Date: Thu, 24 Nov 2011 00:08:43 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, pebolle@tiscali.nl
+Subject: Re: [RFC V4]Trivial: Fix typos in various parts of the kernel, and
+ fix some comments.
+Message-ID: <20111123200842.GA23790@rainbow>
+References: <1322062588-4318-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322062588-4318-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Menon, Nishanth" <nm@ti.com> writes:
+On 07:36 Wed 23 Nov     , Justin P. Mattock wrote:
 
-> On Wed, Nov 16, 2011 at 18:02, Kevin Hilman <khilman@ti.com> wrote:
->> Felipe Balbi <balbi@ti.com> writes:
->>
->>> From: Nishanth Menon <nm@ti.com>
->>>
->>> SmartReflex should be disabled while entering low power mode due to
->>> the following reasons:
->> [...]
->>
->> Nishanth, in the end, didn't you decide to drop this patch?
->>
->
-> Yes, I did eventually, once we implemented DVFS for GPU, Ducati, HSI,
-> and other drivers, there was no real way to ensure sequence of suspend
-> sequencing even after moving this to suspend_noirq. some of the other
-> reasons:
+> --- a/tools/power/cpupower/debug/i386/intel_gsic.c
+> +++ b/tools/power/cpupower/debug/i386/intel_gsic.c
+> @@ -53,7 +53,7 @@ int main (void)
+>  			       "RISK.\n");
+>  		}
+>  		if ((r.ebx & 0xffff) != 0xb2) {
+> -			printf("non-default command port. If speedstep-smi "
+> +			printf("non-default command port. If spedstep-smi "
 
-OK, thanks for the clarification.
+"spedstep"? Looks like your sed was too overzealous :)
 
-Kevin
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
+
