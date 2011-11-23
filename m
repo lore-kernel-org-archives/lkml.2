@@ -1,143 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759521Ab1KWBh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 20:37:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab1KWBhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 20:37:55 -0500
-Message-ID: <4ECC4EE7.4020108@redhat.com>
-Date: Wed, 23 Nov 2011 09:39:51 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1758997Ab1KWBmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 20:42:04 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53854 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751533Ab1KWBmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 20:42:02 -0500
+Message-ID: <4ECC4FDC.1010506@cn.fujitsu.com>
+Date: Wed, 23 Nov 2011 09:43:56 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [patch v2 for-3.2] block: initialize request_queue's numa node
- during allocation
-References: <4ECB5C80.8080609@redhat.com> <alpine.DEB.2.00.1111220140470.4306@chino.kir.corp.google.com> <20111122152739.GA5663@redhat.com> <20111122211954.GA17120@redhat.com> <alpine.DEB.2.00.1111221342320.2621@chino.kir.corp.google.com> <20111122220218.GA17543@redhat.com> <alpine.DEB.2.00.1111221703590.18644@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1111221703590.18644@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing: let trace_signal_generate() report more
+ info,	kill overflow_fail/lose_info
+References: <20111121191920.GA24883@redhat.com> <1321905799.20742.20.camel@frodo> <20111121202110.GA27966@redhat.com> <1321912356.20742.24.camel@frodo> <20111122205239.GA20971@redhat.com> <20111122205258.GB20971@redhat.com>
+In-Reply-To: <20111122205258.GB20971@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-23 09:41:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-23 09:41:47,
+	Serialize complete at 2011-11-23 09:41:47
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 09:14 AM, David Rientjes wrote:
+>  /**
+>   * signal_generate - called when a signal is generated
+>   * @sig: signal number
+>   * @info: pointer to struct siginfo
+>   * @task: pointer to struct task_struct
+> + * @group: shared or private
+> + * @resutl: TRACE_SIGNAL_*
+>   *
 
-> From: Mike Snitzer <snitzer@redhat.com>
-> 
-> struct request_queue is allocated with __GFP_ZERO so its "node" field is 
-> zero before initialization.  This causes an oops if node 0 is offline in 
-> the page allocator because its zonelists are not initialized.  From Dave 
-> Young's dmesg:
-> 
-> 	SRAT: Node 1 PXM 2 0-d0000000
-> 	SRAT: Node 1 PXM 2 100000000-330000000
-> 	SRAT: Node 0 PXM 1 330000000-630000000
-> 	Initmem setup node 1 0000000000000000-000000000affb000
-> 	...
-> 	Built 1 zonelists in Node order, mobility grouping on.
-> 	...
-> 	BUG: unable to handle kernel paging request at 0000000000001c08
-> 	IP: [<ffffffff8111c355>] __alloc_pages_nodemask+0xb5/0x870
-> 
-> and __alloc_pages_nodemask+0xb5 translates to a NULL pointer on 
-> zonelist->_zonerefs.
-> 
-> The fix is to initialize q->node at the time of allocation so the correct 
-> node is passed to the slab allocator later.
-> 
-> Since blk_init_allocated_queue_node() is no longer needed, merge it with 
-> blk_init_allocated_queue().
-> 
-> [rientjes@google.com: changelog, initializing q->node]
-> Cc: stable@vger.kernel.org [2.6.37+]
-> Reported-by: Dave Young <dyoung@redhat.com>
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
-
-
-Tested-by: Dave Young <dyoung@redhat.com>
-
-> ---
->  block/blk-core.c       |   14 +++-----------
->  include/linux/blkdev.h |    3 ---
->  2 files changed, 3 insertions(+), 14 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -467,6 +467,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
->  	q->backing_dev_info.state = 0;
->  	q->backing_dev_info.capabilities = BDI_CAP_MAP_COPY;
->  	q->backing_dev_info.name = "block";
-> +	q->node = node_id;
->  
->  	err = bdi_init(&q->backing_dev_info);
->  	if (err) {
-> @@ -551,7 +552,7 @@ blk_init_queue_node(request_fn_proc *rfn, spinlock_t *lock, int node_id)
->  	if (!uninit_q)
->  		return NULL;
->  
-> -	q = blk_init_allocated_queue_node(uninit_q, rfn, lock, node_id);
-> +	q = blk_init_allocated_queue(uninit_q, rfn, lock);
->  	if (!q)
->  		blk_cleanup_queue(uninit_q);
->  
-> @@ -563,18 +564,9 @@ struct request_queue *
->  blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
->  			 spinlock_t *lock)
->  {
-> -	return blk_init_allocated_queue_node(q, rfn, lock, -1);
-> -}
-> -EXPORT_SYMBOL(blk_init_allocated_queue);
-> -
-> -struct request_queue *
-> -blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
-> -			      spinlock_t *lock, int node_id)
-> -{
->  	if (!q)
->  		return NULL;
->  
-> -	q->node = node_id;
->  	if (blk_init_free_list(q))
->  		return NULL;
->  
-> @@ -604,7 +596,7 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
->  
->  	return NULL;
->  }
-> -EXPORT_SYMBOL(blk_init_allocated_queue_node);
-> +EXPORT_SYMBOL(blk_init_allocated_queue);
->  
->  int blk_get_queue(struct request_queue *q)
->  {
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -805,9 +805,6 @@ extern void blk_unprep_request(struct request *);
->   */
->  extern struct request_queue *blk_init_queue_node(request_fn_proc *rfn,
->  					spinlock_t *lock, int node_id);
-> -extern struct request_queue *blk_init_allocated_queue_node(struct request_queue *,
-> -							   request_fn_proc *,
-> -							   spinlock_t *, int node_id);
->  extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
->  extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
->  						      request_fn_proc *, spinlock_t *);
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-
-
-
--- 
-Thanks
-Dave
+s/resutl/result ;)
