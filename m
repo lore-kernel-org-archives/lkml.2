@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab1KWSQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 13:16:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54106 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab1KWSQT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 13:16:19 -0500
-Message-ID: <1322072149.14799.89.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
+	id S1755465Ab1KWSUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 13:20:04 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:28744 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753095Ab1KWSUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 13:20:02 -0500
+Message-ID: <4ECD3946.1030503@parallels.com>
+Date: Wed, 23 Nov 2011 22:19:50 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Pedro Alves <pedro@codesourcery.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Wed, 23 Nov 2011 19:15:49 +0100
-In-Reply-To: <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+        Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@hack.frob.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with given
+ pids
+References: <4EC4F2FB.408@parallels.com> <201111221204.39235.pedro@codesourcery.com> <20111122153326.GD322@google.com> <201111231620.45440.pedro@codesourcery.com> <20111123162417.GE25780@google.com>
+In-Reply-To: <20111123162417.GE25780@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> @@ -545,8 +547,14 @@ again:                     remove_next = 1 + (end > next->vm_end);
+On 11/23/2011 08:24 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Nov 23, 2011 at 04:20:44PM +0000, Pedro Alves wrote:
+>>> Would CAP_CHECKPOINT be a shame too?  
+>>
+>> I think CAP_CHECKPOINT (or something through some LSM) would be
+>> definitely better.
+>>
+>>> I'm reluctant about priviledge
+>>> through fd inheritance mostly because of its unusualness.  I don't
+>>> think priv management is a good problem space for small creative
+>>> solutions.  We're much better off with mundane mechanisms which people
+>>> are already familiar with and is easy to account for.
+>>
+>> fd inheritance wouldn't work for gdb; a user spawned gdb
+>> wouldn't inherit an open fd to kernel.ns_last_pid from anywhere.
+> 
+> I see.  So, let's do it for root for now and later add finer grained
+> CAP as necessary/viable.  Pavel, what do you think?
 
-I'm not sure if you use quilt or git to produce these patches but can
-you either add:
+OK, I'll send the respective patches soon.
 
-QUILT_DIFF_OPTS="-F ^[[:alpha:]\$_].*[^:]\$"
-
-to your .quiltrc, or:
-
-[diff "default"]
-                xfuncname = "^[[:alpha:]$_].*[^:]$"
-
-to your .gitconfig ?
-
+> Thanks.
+> 
 
