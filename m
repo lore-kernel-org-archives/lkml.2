@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1KWLxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:53:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58947 "EHLO
+	id S1754247Ab1KWLzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:55:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59506 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab1KWLxR convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753261Ab1KWLzi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:53:17 -0500
-Message-ID: <1322049186.14799.42.camel@twins>
-Subject: Re: [patch 3/7] sched: set skip_clock_update in yield_task_fair()
+	Wed, 23 Nov 2011 06:55:38 -0500
+Message-ID: <1322049330.14799.43.camel@twins>
+Subject: Re: [patch 4/7] sched: convert rq->avg_idle to rq->avg_event
 From: Peter Zijlstra <peterz@infradead.org>
 To: Mike Galbraith <mgalbraith@suse.de>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Wed, 23 Nov 2011 12:53:06 +0100
-In-Reply-To: <1321971686.6855.18.camel@marge.simson.net>
+Date: Wed, 23 Nov 2011 12:55:30 +0100
+In-Reply-To: <1321971751.6855.19.camel@marge.simson.net>
 References: <1321350377.1421.55.camel@twins>
 	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
 	 <1321435455.5072.64.camel@marge.simson.net>
@@ -29,7 +29,7 @@ References: <1321350377.1421.55.camel@twins>
 	 <1321629441.7080.15.camel@marge.simson.net>
 	 <1321630552.2197.15.camel@twins>
 	 <1321971445.6855.14.camel@marge.simson.net>
-	 <1321971686.6855.18.camel@marge.simson.net>
+	 <1321971751.6855.19.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.2.1- 
@@ -38,13 +38,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 15:21 +0100, Mike Galbraith wrote:
-> +++ linux-3.0-tip/kernel/sched/core.c
-> @@ -4547,7 +4547,13 @@ again: 
+On Tue, 2011-11-22 at 15:22 +0100, Mike Galbraith wrote:
+> We update rq->clock only at points of interest to the scheduler.
+> Using this distance has the same effect as measuring idle time
+> for idle_balance() throttling, and allows other uses as well. 
 
-Could you add:
-
-QUILT_DIFF_OPTS="-F ^[[:alpha:]\$_].*[^:]\$"
-
-
-to your quiltrc ?
+I'm not sure I follow, suppose we're happily context switching away, how
+is the avg distance between context switches related to idle time?
