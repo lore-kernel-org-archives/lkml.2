@@ -1,164 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1KWKwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 05:52:45 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:44492 "EHLO relay.sw.ru"
+	id S1754809Ab1KWKxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 05:53:12 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13852 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441Ab1KWKwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 05:52:43 -0500
-Subject: [PATCH 2/6] SUNRPC: handle GSS AUTH pipes by network namespace aware
-	routines
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Date: Wed, 23 Nov 2011 14:51:30 +0300
-Message-ID: <20111123105130.11077.65172.stgit@localhost6.localdomain6>
-In-Reply-To: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
-References: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754759Ab1KWKxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 05:53:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,558,1315206000"; 
+   d="scan'208";a="40453385"
+Subject: Re: [PATCH] dmaengine/dw_dmac: Reconfigure interrupt and chan_cfg
+ register on resume
+From: Vinod Koul <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>
+In-Reply-To: <4ECB3F1F.9060806@st.com>
+References: <69e29c139ba027029e11940c6693e9d50dc21613.1321525673.git.viresh.kumar@st.com>
+	 <1321935206.1516.217.camel@vkoul-udesk3>  <4ECB3F1F.9060806@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Nov 2011 16:19:35 +0530
+Message-ID: <1322045375.1516.249.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes RPC GSS PipeFs pipes allocated in it's RPC client owner
-network namespace context.
-Pipes creation and destruction now done in separated functions, which takes
-care about PipeFS superblock locking.
+On Tue, 2011-11-22 at 11:50 +0530, Viresh Kumar wrote:
+> On 11/22/2011 9:43 AM, Vinod Koul wrote:
+> > On Thu, 2011-11-17 at 16:01 +0530, Viresh Kumar wrote:
+> >> > In S2R all DMA registers are reset by hardware and thus they are required to be
+> > When are they reset, whenever you leave channel idle or once you come
+> > back from suspend?
+> 
+> Whenever we do S2R, many power islands are switched off and so DMAC controller looses
+> all its power. On resume, all registers are in their reset state.
+then why not perform save and restore in your suspend and restore
+callbacks. That way you don't pay penalty of doing that in every alloc
+as you seem to be doing now?
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
----
- net/sunrpc/auth_gss/auth_gss.c |   95 +++++++++++++++++++++++++++++++---------
- 1 files changed, 73 insertions(+), 22 deletions(-)
-
-diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index 2b25a7b..248acd0 100644
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -779,6 +779,73 @@ gss_pipe_destroy_msg(struct rpc_pipe_msg *msg)
- 	}
- }
- 
-+static void gss_pipes_dentries_destroy(struct rpc_auth *auth)
-+{
-+	struct gss_auth *gss_auth;
-+
-+	gss_auth = container_of(auth, struct gss_auth, rpc_auth);
-+	rpc_unlink(gss_auth->pipe[0]->dentry);
-+	rpc_unlink(gss_auth->pipe[1]->dentry);
-+}
-+
-+static int gss_pipes_dentries_create(struct rpc_auth *auth)
-+{
-+	int err;
-+	struct gss_auth *gss_auth;
-+	struct rpc_clnt *clnt;
-+
-+	gss_auth = container_of(auth, struct gss_auth, rpc_auth);
-+	clnt = gss_auth->client;
-+
-+	gss_auth->pipe[1]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
-+						      "gssd",
-+						      clnt, gss_auth->pipe[1]);
-+	if (IS_ERR(gss_auth->pipe[1]->dentry))
-+		return PTR_ERR(gss_auth->pipe[1]->dentry);
-+	gss_auth->pipe[0]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
-+						      gss_auth->mech->gm_name,
-+						      clnt, gss_auth->pipe[0]);
-+	if (IS_ERR(gss_auth->pipe[0]->dentry)) {
-+		err = PTR_ERR(gss_auth->pipe[0]->dentry);
-+		goto err_unlink_pipe_1;
-+	}
-+	return 0;
-+
-+err_unlink_pipe_1:
-+	rpc_unlink(gss_auth->pipe[1]->dentry);
-+	return err;
-+}
-+
-+static void gss_pipes_dentries_destroy_net(struct rpc_clnt *clnt,
-+					   struct rpc_auth *auth)
-+{
-+	struct net *net = clnt->cl_xprt->xprt_net;
-+	struct super_block *sb;
-+
-+	sb = rpc_get_sb_net(net);
-+	if (sb) {
-+		if (clnt->cl_path.dentry)
-+			gss_pipes_dentries_destroy(auth);
-+		rpc_put_sb_net(net);
-+	}
-+}
-+
-+static int gss_pipes_dentries_create_net(struct rpc_clnt *clnt,
-+					 struct rpc_auth *auth)
-+{
-+	struct net *net = clnt->cl_xprt->xprt_net;
-+	struct super_block *sb;
-+	int err = 0;
-+
-+	sb = rpc_get_sb_net(net);
-+	if (sb) {
-+		if (clnt->cl_path.dentry)
-+			err = gss_pipes_dentries_create(auth);
-+		rpc_put_sb_net(net);
-+	}
-+	return err;
-+}
-+
- /*
-  * NOTE: we have the opportunity to use different
-  * parameters based on the input flavor (which must be a pseudoflavor)
-@@ -834,31 +901,16 @@ gss_create(struct rpc_clnt *clnt, rpc_authflavor_t flavor)
- 		err = PTR_ERR(gss_auth->pipe[0]);
- 		goto err_destroy_pipe_1;
- 	}
--
--	gss_auth->pipe[1]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
--						      "gssd",
--						      clnt, gss_auth->pipe[1]);
--	if (IS_ERR(gss_auth->pipe[1]->dentry)) {
--		err = PTR_ERR(gss_auth->pipe[1]->dentry);
-+	err = gss_pipes_dentries_create_net(clnt, auth);
-+	if (err)
- 		goto err_destroy_pipe_0;
--	}
--
--	gss_auth->pipe[0]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
--						      gss_auth->mech->gm_name,
--						      clnt, gss_auth->pipe[0]);
--	if (IS_ERR(gss_auth->pipe[0]->dentry)) {
--		err = PTR_ERR(gss_auth->pipe[0]->dentry);
--		goto err_unlink_pipe_1;
--	}
- 	err = rpcauth_init_credcache(auth);
- 	if (err)
--		goto err_unlink_pipe_0;
-+		goto err_unlink_pipes;
- 
- 	return auth;
--err_unlink_pipe_0:
--	rpc_unlink(gss_auth->pipe[0]->dentry);
--err_unlink_pipe_1:
--	rpc_unlink(gss_auth->pipe[1]->dentry);
-+err_unlink_pipes:
-+	gss_pipes_dentries_destroy_net(clnt, auth);
- err_destroy_pipe_0:
- 	rpc_destroy_pipe_data(gss_auth->pipe[0]);
- err_destroy_pipe_1:
-@@ -875,8 +927,7 @@ out_dec:
- static void
- gss_free(struct gss_auth *gss_auth)
- {
--	rpc_unlink(gss_auth->pipe[0]->dentry);
--	rpc_unlink(gss_auth->pipe[1]->dentry);
-+	gss_pipes_dentries_destroy_net(gss_auth->client, &gss_auth->rpc_auth);
- 	rpc_destroy_pipe_data(gss_auth->pipe[0]);
- 	rpc_destroy_pipe_data(gss_auth->pipe[1]);
- 	gss_mech_put(gss_auth->mech);
+-- 
+~Vinod
 
