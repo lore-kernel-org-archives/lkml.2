@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab1KWQf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:35:29 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56913 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab1KWQf2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:35:28 -0500
-Message-ID: <1322066106.14799.84.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 3/30] uprobes: register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Wed, 23 Nov 2011 17:35:06 +0100
-In-Reply-To: <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1754149Ab1KWQgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 11:36:36 -0500
+Received: from fieldses.org ([174.143.236.118]:58947 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753688Ab1KWQge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 11:36:34 -0500
+Date: Wed, 23 Nov 2011 11:36:32 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
+Subject: Re: [PATCH 0/6] SUNRPC: make RPC clients use
+ network-namespace-aware PipeFS routines
+Message-ID: <20111123163632.GB30672@fieldses.org>
+References: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111123104945.11077.10270.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> +#define UPROBES_HASH_SZ        13
-> +/* serialize (un)register */
-> +static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
-> +#define uprobes_hash(v)        (&uprobes_mutex[((unsigned long)(v)) %\
-> +                                               UPROBES_HASH_SZ]) 
+On Wed, Nov 23, 2011 at 02:51:10PM +0300, Stanislav Kinsbursky wrote:
+> This patch set was created in context of clone of git
+> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+> tag: v3.1
+> 
+> This patch set depends on previous patch sets titled:
+> 1) "SUNRPC: initial part of making pipefs work in net ns"
+> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+> 
+> This patch set is a first part of reworking SUNPRC PipeFS users.
+> It makes SUNRPC clients using PipeFS nofitications for directory and GSS pipes
+> dentries creation. With this patch set RPC clients and GSS auth creations
+> routines doesn't force SUNRPC PipeFS mount point creation which actually means,
+> that they now can work without PipeFS dentries.
 
-Was there any reason to for using this hasing scheme, say over hash.h?
+I'm not following very well.  (My fault, I haven't been paying
+attention.)  Could you summarize the itended behavior of pipefs after
+all this is done?
+
+So there's a separate superblock (and separate dentries) for each
+namespace?
+
+What decides which clients are visible in which network namespaces?
+
+--b.
+
+> 
+> The following series consists of:
+> 
+> ---
+> 
+> Stanislav Kinsbursky (6):
+>       SUNRPC: handle RPC client pipefs dentries by network namespace aware routines
+>       SUNRPC: handle GSS AUTH pipes by network namespace aware routines
+>       SUNRPC: subscribe RPC clients to pipefs notifications
+>       SUNRPC: remove RPC client pipefs dentries after unregister
+>       SUNRPC: remove RPC pipefs mount point manipulations from RPC clients code
+>       SUNRPC: remove RPC PipeFS mount point reference from RPC client
+> 
+> 
+>  fs/nfs/idmap.c                 |    4 +
+>  fs/nfsd/nfs4callback.c         |    2 -
+>  include/linux/nfs.h            |    2 -
+>  include/linux/sunrpc/auth.h    |    2 +
+>  include/linux/sunrpc/clnt.h    |    2 -
+>  net/sunrpc/auth_gss/auth_gss.c |  101 +++++++++++++++++++++------
+>  net/sunrpc/clnt.c              |  151 +++++++++++++++++++++++++++++++---------
+>  net/sunrpc/rpc_pipe.c          |   19 +++--
+>  net/sunrpc/sunrpc.h            |    2 +
+>  9 files changed, 218 insertions(+), 67 deletions(-)
+> 
+> -- 
+> Signature
