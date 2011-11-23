@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1KWFsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 00:48:35 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40812 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab1KWFse (ORCPT
+	id S1753859Ab1KWFyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 00:54:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44255 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab1KWFyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 00:48:34 -0500
+	Wed, 23 Nov 2011 00:54:37 -0500
+Date: Tue, 22 Nov 2011 22:53:51 -0700
+From: Jean Sacren <sakiwit@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        vamos-dev@lists.informatik.uni-erlangen.de, amwang@redhat.com,
+        sakiwit@gmail.com
+Subject: Re: [PATCH] kconfig: Fix checking return value of 'fwrite'
+Message-ID: <20111123055351.GB14454@mail.gmail.com>
+References: <87lisype1v.fsf@faui43f.informatik.uni-erlangen.de>
+ <CACqU3MWZuqgpxG7FSvr2LkqTqwF-gQM8hQSnTTpHpcWT2LHGNA@mail.gmail.com>
+ <4EC8FF93.7010706@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20111122.232111.1611305088991571289.davem@davemloft.net>
-References: <jah1te$h33$1@dough.gmane.org>
-	<20111122.155557.1954460980055957565.davem@davemloft.net>
-	<4ECC512D.2010002@gmail.com>
-	<20111122.232111.1611305088991571289.davem@davemloft.net>
-Date: Tue, 22 Nov 2011 23:48:33 -0600
-Message-ID: <CADLC3L2SUPkDoLRiP8pjCv6f+QhqgRUkJpDj5MBkO6xS1zmZ_A@mail.gmail.com>
-Subject: Re: Kernelpanic on eeePC and MSI Wind (both using rt2800pci) with
- Linux 3.x
-From: Robert Hancock <hancockrwd@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: michael@alpha-unix.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EC8FF93.7010706@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 10:21 PM, David Miller <davem@davemloft.net> wrote:
-> From: Robert Hancock <hancockrwd@gmail.com>
-> Date: Tue, 22 Nov 2011 19:49:33 -0600
+From: Michal Marek <mmarek@suse.cz>
+Date: Sun, 20 Nov 2011 14:24:35 +0100
 >
->> On 11/22/2011 02:55 PM, David Miller wrote:
->>> From: Michael Basse<michael@alpha-unix.de>
->>> Date: Tue, 22 Nov 2011 21:49:49 +0100
->>>
->>>> Hi,
->>>>
->>>> just for the record. This thread is hopefully providing a patch
->>>>
->>>> http://thread.gmane.org/gmane.linux.kernel.wireless.general/80759
->>>>
->>>> already built the kernel and doing some testing now.
->>>
->>> That patch is wrong, it returns IRQ_HANDLED when it can't tell if the
->>> chip generated the interrupt or not.
->>>
->>> Therefore, if any other device shares that interrupt line it's
->>> interrupts can be lost when this case triggers.
->>>
->>> This has to be fixed another way.
->>
->> Huh? IRQ_HANDLED is the "safe" return value when you don't know for
->> sure whether your device generated the interrupt. Returning that
->> doesn't prevent other handlers on the same IRQ from being called.
->
-> But it prevents being able to notice spurious interrupts from
-> other devices sharing the IRQ.
->
-> You absolutely must return an accurate return value here for correct
-> operation, you simply cannot "guess".
+> On 7.10.2011 05:29, Arnaud Lacombe wrote:
+> > Hi,
+> > 
+> > 2011/10/6 Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>:
+> >> fwrite indicates '1' written member if a zero-length string is written.
+> > you forgot the "Signed-off-by: " part :)
+> 
+> Reinhard, can I assume
+> 
+> Signed-off-by: Reinhard Tartler
+> <Reinhard.Tartler@informatik.uni-erlangen.de>
+> 
+> ? The patch is otherwise correct.
 
-Certainly it's best to do so when possible, but with some hardware it
-simply isn't possible to do this. In some cases there's no register
-that reliably indicates whether or not the device raised an interrupt.
+I have two reasons to oppose this patch.
+
+1. If 'len' value is zero, there is an issue already and it should be
+taken care of _before_ calling fwrite().
+
+2. xfwrite() doesn't fix anything except for the compiler warning. It
+assumes this world is perfect and it's definitely not a place to take
+care of the zero-length string.
+
+-- 
+Jean Sacren
