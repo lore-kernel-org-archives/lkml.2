@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab1KWA6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:58:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42358 "EHLO mx2.suse.de"
+	id S932446Ab1KWAfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:35:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42325 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932086Ab1KWAfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:35:10 -0500
+	id S932429Ab1KWAe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:34:57 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:53 2011
-Message-Id: <20111123002552.948558271@clark.kroah.org>
+Message-Id: <20111123002553.539620788@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:01 -0800
+Date: Tue, 22 Nov 2011 16:25:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Edward Donovan <edward.donovan@numble.net>,
-        maciej.rutecki@gmail.com, Thomas Gleixner <tglx@linutronix.de>
-Subject: [01/53] genirq: Fix irqfixup, irqpoll regression
+        alan@lxorguk.ukuu.org.uk, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, Avi Kivity <avi@redhat.com>
+Subject: [07/53] KVM: s390: Fix RUNNING flag misinterpretation
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edward Donovan <edward.donovan@numble.net>
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-commit c75d720fca8a91ce99196d33adea383621027bf2 upstream.
+commit 9e6dabeffd1d0ec2aa19aa076c4886067238d442 upstream.
 
-commit d05c65fff0 ("genirq: spurious: Run only one poller at a time")
-introduced a regression, leaving the boot options 'irqfixup' and
-'irqpoll' non-functional. The patch placed tests in each function, to
-exit if the function is already running. The test in 'misrouted_irq'
-exited when it should have proceeded, effectively disabling
-'misrouted_irq' and 'poll_spurious_irqs'.
+CPUSTAT_RUNNING was implemented signifying that a vcpu is not stopped.
+This is not, however, what the architecture says: RUNNING should be
+set when the host is acting on the behalf of the guest operating
+system.
 
-The check for an already running poller needs to be "!= 1" not "== 1"
-as "1" is the value when the first poller starts running.
+CPUSTAT_RUNNING has been changed to be set in kvm_arch_vcpu_load()
+and to be unset in kvm_arch_vcpu_put().
 
-Signed-off-by: Edward Donovan <edward.donovan@numble.net>
-Cc: maciej.rutecki@gmail.com
-Link: http://lkml.kernel.org/r/1320175784-6745-1-git-send-email-edward.donovan@numble.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+For signifying stopped state of a vcpu, a host-controlled bit has
+been used and is set/unset basically on the reverse as the old
+CPUSTAT_RUNNING bit (including pushing it down into stop handling
+proper in handle_stop()).
+
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Carsten Otte <cotte@de.ibm.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/spurious.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/include/asm/kvm_host.h |    2 +-
+ arch/s390/kvm/diag.c             |    2 +-
+ arch/s390/kvm/intercept.c        |    3 ++-
+ arch/s390/kvm/interrupt.c        |    1 +
+ arch/s390/kvm/kvm-s390.c         |   10 +++++++---
+ arch/s390/kvm/sigp.c             |    6 +++---
+ 6 files changed, 15 insertions(+), 9 deletions(-)
 
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -115,7 +115,7 @@ static int misrouted_irq(int irq)
- 	struct irq_desc *desc;
- 	int i, ok = 0;
+--- a/arch/s390/include/asm/kvm_host.h
++++ b/arch/s390/include/asm/kvm_host.h
+@@ -47,7 +47,7 @@ struct sca_block {
+ #define KVM_HPAGE_MASK(x)	(~(KVM_HPAGE_SIZE(x) - 1))
+ #define KVM_PAGES_PER_HPAGE(x)	(KVM_HPAGE_SIZE(x) / PAGE_SIZE)
  
--	if (atomic_inc_return(&irq_poll_active) == 1)
-+	if (atomic_inc_return(&irq_poll_active) != 1)
- 		goto out;
+-#define CPUSTAT_HOST       0x80000000
++#define CPUSTAT_STOPPED    0x80000000
+ #define CPUSTAT_WAIT       0x10000000
+ #define CPUSTAT_ECALL_PEND 0x08000000
+ #define CPUSTAT_STOP_INT   0x04000000
+--- a/arch/s390/kvm/diag.c
++++ b/arch/s390/kvm/diag.c
+@@ -42,7 +42,7 @@ static int __diag_ipl_functions(struct k
+ 		return -EOPNOTSUPP;
+ 	}
  
- 	irq_poll_cpu = smp_processor_id();
+-	atomic_clear_mask(CPUSTAT_RUNNING, &vcpu->arch.sie_block->cpuflags);
++	atomic_set_mask(CPUSTAT_STOPPED, &vcpu->arch.sie_block->cpuflags);
+ 	vcpu->run->s390_reset_flags |= KVM_S390_RESET_SUBSYSTEM;
+ 	vcpu->run->s390_reset_flags |= KVM_S390_RESET_IPL;
+ 	vcpu->run->s390_reset_flags |= KVM_S390_RESET_CPU_INIT;
+--- a/arch/s390/kvm/intercept.c
++++ b/arch/s390/kvm/intercept.c
+@@ -132,7 +132,6 @@ static int handle_stop(struct kvm_vcpu *
+ 	int rc = 0;
+ 
+ 	vcpu->stat.exit_stop_request++;
+-	atomic_clear_mask(CPUSTAT_RUNNING, &vcpu->arch.sie_block->cpuflags);
+ 	spin_lock_bh(&vcpu->arch.local_int.lock);
+ 	if (vcpu->arch.local_int.action_bits & ACTION_STORE_ON_STOP) {
+ 		vcpu->arch.local_int.action_bits &= ~ACTION_STORE_ON_STOP;
+@@ -149,6 +148,8 @@ static int handle_stop(struct kvm_vcpu *
+ 	}
+ 
+ 	if (vcpu->arch.local_int.action_bits & ACTION_STOP_ON_STOP) {
++		atomic_set_mask(CPUSTAT_STOPPED,
++				&vcpu->arch.sie_block->cpuflags);
+ 		vcpu->arch.local_int.action_bits &= ~ACTION_STOP_ON_STOP;
+ 		VCPU_EVENT(vcpu, 3, "%s", "cpu stopped");
+ 		rc = -EOPNOTSUPP;
+--- a/arch/s390/kvm/interrupt.c
++++ b/arch/s390/kvm/interrupt.c
+@@ -224,6 +224,7 @@ static void __do_deliver_interrupt(struc
+ 			offsetof(struct _lowcore, restart_psw), sizeof(psw_t));
+ 		if (rc == -EFAULT)
+ 			exception = 1;
++		atomic_clear_mask(CPUSTAT_STOPPED, &vcpu->arch.sie_block->cpuflags);
+ 		break;
+ 
+ 	case KVM_S390_PROGRAM_INT:
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -265,10 +265,12 @@ void kvm_arch_vcpu_load(struct kvm_vcpu
+ 	restore_fp_regs(&vcpu->arch.guest_fpregs);
+ 	restore_access_regs(vcpu->arch.guest_acrs);
+ 	gmap_enable(vcpu->arch.gmap);
++	atomic_set_mask(CPUSTAT_RUNNING, &vcpu->arch.sie_block->cpuflags);
+ }
+ 
+ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+ {
++	atomic_clear_mask(CPUSTAT_RUNNING, &vcpu->arch.sie_block->cpuflags);
+ 	gmap_disable(vcpu->arch.gmap);
+ 	save_fp_regs(&vcpu->arch.guest_fpregs);
+ 	save_access_regs(vcpu->arch.guest_acrs);
+@@ -296,7 +298,9 @@ static void kvm_s390_vcpu_initial_reset(
+ 
+ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
+ {
+-	atomic_set(&vcpu->arch.sie_block->cpuflags, CPUSTAT_ZARCH | CPUSTAT_SM);
++	atomic_set(&vcpu->arch.sie_block->cpuflags, CPUSTAT_ZARCH |
++						    CPUSTAT_SM |
++						    CPUSTAT_STOPPED);
+ 	vcpu->arch.sie_block->ecb   = 6;
+ 	vcpu->arch.sie_block->eca   = 0xC1002001U;
+ 	vcpu->arch.sie_block->fac   = (int) (long) facilities;
+@@ -421,7 +425,7 @@ static int kvm_arch_vcpu_ioctl_set_initi
+ {
+ 	int rc = 0;
+ 
+-	if (atomic_read(&vcpu->arch.sie_block->cpuflags) & CPUSTAT_RUNNING)
++	if (!(atomic_read(&vcpu->arch.sie_block->cpuflags) & CPUSTAT_STOPPED))
+ 		rc = -EBUSY;
+ 	else {
+ 		vcpu->run->psw_mask = psw.mask;
+@@ -494,7 +498,7 @@ rerun_vcpu:
+ 	if (vcpu->sigset_active)
+ 		sigprocmask(SIG_SETMASK, &vcpu->sigset, &sigsaved);
+ 
+-	atomic_set_mask(CPUSTAT_RUNNING, &vcpu->arch.sie_block->cpuflags);
++	atomic_clear_mask(CPUSTAT_STOPPED, &vcpu->arch.sie_block->cpuflags);
+ 
+ 	BUG_ON(vcpu->kvm->arch.float_int.local_int[vcpu->vcpu_id] == NULL);
+ 
+--- a/arch/s390/kvm/sigp.c
++++ b/arch/s390/kvm/sigp.c
+@@ -57,8 +57,8 @@ static int __sigp_sense(struct kvm_vcpu
+ 	spin_lock(&fi->lock);
+ 	if (fi->local_int[cpu_addr] == NULL)
+ 		rc = 3; /* not operational */
+-	else if (atomic_read(fi->local_int[cpu_addr]->cpuflags)
+-		 & CPUSTAT_RUNNING) {
++	else if (!(atomic_read(fi->local_int[cpu_addr]->cpuflags)
++		  & CPUSTAT_STOPPED)) {
+ 		*reg &= 0xffffffff00000000UL;
+ 		rc = 1; /* status stored */
+ 	} else {
+@@ -212,7 +212,7 @@ static int __sigp_set_prefix(struct kvm_
+ 
+ 	spin_lock_bh(&li->lock);
+ 	/* cpu must be in stopped state */
+-	if (atomic_read(li->cpuflags) & CPUSTAT_RUNNING) {
++	if (!(atomic_read(li->cpuflags) & CPUSTAT_STOPPED)) {
+ 		rc = 1; /* incorrect state */
+ 		*reg &= SIGP_STAT_INCORRECT_STATE;
+ 		kfree(inti);
 
 
