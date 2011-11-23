@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab1KWEVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 23:21:20 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:58171 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab1KWEVT (ORCPT
+	id S1757076Ab1KWE2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 23:28:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35384 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab1KWE23 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 23:21:19 -0500
-Date: Tue, 22 Nov 2011 23:21:11 -0500 (EST)
-Message-Id: <20111122.232111.1611305088991571289.davem@davemloft.net>
-To: hancockrwd@gmail.com
-Cc: michael@alpha-unix.de, linux-kernel@vger.kernel.org
-Subject: Re: Kernelpanic on eeePC and MSI Wind (both using rt2800pci) with
- Linux 3.x
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4ECC512D.2010002@gmail.com>
-References: <jah1te$h33$1@dough.gmane.org>
-	<20111122.155557.1954460980055957565.davem@davemloft.net>
-	<4ECC512D.2010002@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 Nov 2011 20:21:15 -0800 (PST)
+	Tue, 22 Nov 2011 23:28:29 -0500
+From: Xi Wang <xi.wang@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH 1/2] ax25: integer overflows in ax25_setsockopt()
+Date: Tue, 22 Nov 2011 23:28:24 -0500
+Message-Id: <7187C142-99F1-4A96-9BE6-650B10C9B22D@gmail.com>
+Cc: Joerg Reuter <jreuter@yaina.de>, Ralf Baechle <ralf@linux-mips.org>,
+        David Miller <davem@davemloft.net>, linux-hams@vger.kernel.org,
+        netdev@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Hancock <hancockrwd@gmail.com>
-Date: Tue, 22 Nov 2011 19:49:33 -0600
+ax25_setsockopt() misses several upper-bound checks on the
+user-controlled value.
 
-> On 11/22/2011 02:55 PM, David Miller wrote:
->> From: Michael Basse<michael@alpha-unix.de>
->> Date: Tue, 22 Nov 2011 21:49:49 +0100
->>
->>> Hi,
->>>
->>> just for the record. This thread is hopefully providing a patch
->>>
->>> http://thread.gmane.org/gmane.linux.kernel.wireless.general/80759
->>>
->>> already built the kernel and doing some testing now.
->>
->> That patch is wrong, it returns IRQ_HANDLED when it can't tell if the
->> chip generated the interrupt or not.
->>
->> Therefore, if any other device shares that interrupt line it's
->> interrupts can be lost when this case triggers.
->>
->> This has to be fixed another way.
-> 
-> Huh? IRQ_HANDLED is the "safe" return value when you don't know for
-> sure whether your device generated the interrupt. Returning that
-> doesn't prevent other handlers on the same IRQ from being called.
 
-But it prevents being able to notice spurious interrupts from
-other devices sharing the IRQ.
+Reported-by: Fan Long <longfancn@gmail.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+---
+ net/ax25/af_ax25.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-You absolutely must return an accurate return value here for correct
-operation, you simply cannot "guess".
+diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
+index e7c69f4..be6a8cf 100644
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -571,7 +571,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
+ 		break;
+ 
+ 	case AX25_T1:
+-		if (opt < 1) {
++		if (opt < 1 || opt > 30) {
+ 			res = -EINVAL;
+ 			break;
+ 		}
+@@ -580,7 +580,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
+ 		break;
+ 
+ 	case AX25_T2:
+-		if (opt < 1) {
++		if (opt < 1 || opt > 20) {
+ 			res = -EINVAL;
+ 			break;
+ 		}
+@@ -596,7 +596,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
+ 		break;
+ 
+ 	case AX25_T3:
+-		if (opt < 1) {
++		if (opt < 0 || opt > 3600) {
+ 			res = -EINVAL;
+ 			break;
+ 		}
+@@ -604,7 +604,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
+ 		break;
+ 
+ 	case AX25_IDLE:
+-		if (opt < 0) {
++		if (opt < 0 || opt > 65535) {
+ 			res = -EINVAL;
+ 			break;
+ 		}
+-- 
+1.7.5.4
+
