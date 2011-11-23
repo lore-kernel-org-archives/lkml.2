@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab1KWGWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 01:22:13 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52410 "EHLO
+	id S1757535Ab1KWGXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 01:23:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50402 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab1KWGWL convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752469Ab1KWGXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 01:22:11 -0500
+	Wed, 23 Nov 2011 01:23:48 -0500
+Date: Wed, 23 Nov 2011 08:23:31 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        apkm@linux-foundation.org
+Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to
+ flush
+In-Reply-To: <1321960128-15191-5-git-send-email-gilad@benyossef.com>
+Message-ID: <alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
+References: <1321960128-15191-1-git-send-email-gilad@benyossef.com> <1321960128-15191-5-git-send-email-gilad@benyossef.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20111122221829.GB24283@suse.de>
-References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
-	<1321999366-23784-6-git-send-email-corentincj@iksaif.net>
-	<20111122221829.GB24283@suse.de>
-Date: Wed, 23 Nov 2011 07:22:08 +0100
-Message-ID: <CAHR064iYA+370fnoqzAMzcXMKga+x0XmkcR2Zoc+hvqHe_5CgA@mail.gmail.com>
-Subject: Re: [PATCH 05/15] samsung-laptop: ehance SABI support
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 22, 2011 at 11:18 PM, Greg KH <gregkh@suse.de> wrote:
-> On Tue, Nov 22, 2011 at 11:02:36PM +0100, Corentin Chary wrote:
->> * SABI command are on 16 bits, not 8
->
-> Are you sure about that?  I guess this would work, and we rely on the
-> bits being in the right order so everything works properly?
+On Tue, 22 Nov 2011, Gilad Ben-Yossef wrote:
+> static void flush_all(struct kmem_cache *s)
+> {
+> -	on_each_cpu(flush_cpu_slab, s, 1);
+> +	cpumask_var_t cpus;
+> +	struct kmem_cache_cpu *c;
+> +	int cpu;
+> +
+> +	if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
 
-Yep, I'm pretty sure this is the case, but I've not yet found a
-command using more than 8 bits. Anyway the 16 bit code works
-flawlessly here since we were already using "writew(command, ...);"
-since the beginning.
+__GFP_NOWARN too maybe?
 
-Regarding the bits order, the driver depends on X86, so I don't see
-this as a real issue.
+> +		for_each_online_cpu(cpu) {
+> +			c = per_cpu_ptr(s->cpu_slab, cpu);
+> +			if (c->page)
+> +				cpumask_set_cpu(cpu, cpus);
+> +		}
+> +		on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
+> +		free_cpumask_var(cpus);
+> +	} else
+> +		on_each_cpu(flush_cpu_slab, s, 1);
+> }
 
->> * SABI can read/write up to 11 byte of data
->
-> It can?
+Acked-by: Pekka Enberg <penberg@kernel.org>
 
-That's how it seems to work, but I didn't see any command using more
-that 24 bits yet.
+I can't take the patch because it depends on a new API introduced in the 
+first patch.
 
->> * There is not real difference between "get" and "set"
->>   commands, so refactorise the code of both functions
->
-> Ah, nice, I always wanted to do that.
->
->> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
->
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
->
->
+I'm CC'ing Andrew.
 
-
-
--- 
-Corentin Chary
-http://xf.iksaif.net
+ 			Pekka
