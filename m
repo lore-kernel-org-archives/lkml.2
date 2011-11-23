@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab1KWL4B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:56:01 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56886 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab1KWLz7 (ORCPT
+	id S1754586Ab1KWL40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:56:26 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44230 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab1KWL4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:55:59 -0500
-Date: Wed, 23 Nov 2011 12:55:55 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Carsten Emde <C.Emde@osadl.org>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>, kernel@pengutronix.de
-Subject: Re: [ANNOUNCE] 3.0.10-rt27
-Message-ID: <20111123115555.GN19986@pengutronix.de>
-References: <1322010805.20742.40.camel@frodo>
+	Wed, 23 Nov 2011 06:56:24 -0500
+Message-ID: <4ECCDF65.2050208@davidkrider.com>
+Date: Wed, 23 Nov 2011 06:56:21 -0500
+From: David Krider <david@davidkrider.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111110 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1322010805.20742.40.camel@frodo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Subject: Please, am I in danger of losing data?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+I get an lot of these messages these days. They don't fill me with
+confidence. I've searched the internet far and wide. I've filed bug
+reports with the kernel and the Ubuntu bugzillas. I've posted to this
+list. I'm not finding any solutions. At this point, can anyone just
+please tell me: Am I in danger of losing data? If so, I guess I can
+shelve my SSD until this stuff gets sorted.
 
-On Tue, Nov 22, 2011 at 08:13:25PM -0500, Steven Rostedt wrote:
-> I'm please to announce the 3.0.10-rt27 stable release.
-As Debian unstable already switched to 3.1 I provided this release on a
-Pengutronix server.
+[    7.630904] ata1: EH in SWNCQ mode,QC:qc_active 0xE sactive 0xE
+[    7.630987] ata1: SWNCQ:qc_active 0x6 defer_bits 0x8 last_issue_tag 0x2
+[    7.630988]   dhfis 0x6 dmafis 0x6 sdbfis 0x1
+[    7.631131] ata1: ATA_REG 0x41 ERR_REG 0x84
+[    7.631201] ata1: tag : dhfis dmafis sdbfis sacitve
+[    7.631273] ata1: tag 0x1: 1 1 0 1 
+[    7.631342] ata1: tag 0x2: 1 1 0 1 
+[    7.631417] ata1.00: exception Emask 0x1 SAct 0xe SErr 0x0 action 0x6
+frozen
+[    7.631492] ata1.00: Ata error. fis:0x21
+[    7.631563] ata1.00: failed command: READ FPDMA QUEUED
+[    7.631637] ata1.00: cmd 60/08:08:b0:48:33/00:00:10:00:00/40 tag 1
+ncq 4096 in
+[    7.631637]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
+0x10 (ATA bus error)
+[    7.631811] ata1.00: status: { DRDY ERR }
+[    7.631880] ata1.00: error: { ICRC ABRT }
+[    7.631950] ata1.00: failed command: READ FPDMA QUEUED
+[    7.632024] ata1.00: cmd 60/08:10:e0:64:f3/00:00:0f:00:00/40 tag 2
+ncq 4096 in
+[    7.632025]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
+0x10 (ATA bus error)
+[    7.632198] ata1.00: status: { DRDY ERR }
+[    7.632268] ata1.00: error: { ICRC ABRT }
+[    7.632338] ata1.00: failed command: READ FPDMA QUEUED
+[    7.632411] ata1.00: cmd 60/08:18:f0:a6:b6/00:00:10:00:00/40 tag 3
+ncq 4096 in
+[    7.632412]          res 41/84:14:e0:64:f3/84:00:0f:00:00/40 Emask
+0x10 (ATA bus error)
+[    7.632585] ata1.00: status: { DRDY ERR }
+[    7.632655] ata1.00: error: { ICRC ABRT }
+[    7.632727] ata1: hard resetting link
+[    7.632728] ata1: nv: skipping hardreset on occupied port
+[    8.130020] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[    8.161465] ata1.00: configured for UDMA/133
+[    8.161480] ata1: EH complete
 
-If you want it, you can just add
-
-	deb http://debian.pengutronix.de/debian sid main
-
-to your apt's sources list and after an list update install
-
-	linux-image-3.0.0-2-rt-amd64
-
-(and pengutronix-archive-keyring if you're embarrassed by the warnings
-about untrusted sources).
-
-Alternatively just download
-
-	http://debian.pengutronix.de/debian/pool/main/l/linux-2.6/linux-image-3.0.0-2-rt-amd64_3.0.0-6ptx3_amd64.deb
-
-and install it using dpkg.
-
-Version 3.0.0-6ptx3 includes 3.0.10-rt27 (well in fact it's 3.0.9-rt26 +
-3.0.10, but the result is the same).
-
-It should integrate well with a squeeze system, but note that I only
-tested it lightly. If you have any problems or suggestions free to
-report them to me via this list.
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
