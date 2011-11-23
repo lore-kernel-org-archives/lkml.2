@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289Ab1KWAxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:53:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42776 "EHLO mx2.suse.de"
+	id S1759225Ab1KWAxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:53:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42571 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755397Ab1KWAkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:40:21 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:24:05 2011
-Message-Id: <20111123002405.728956547@clark.kroah.org>
+	id S932696Ab1KWAgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:36:42 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:54 2011
+Message-Id: <20111123002554.695348965@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:23:19 -0800
+Date: Tue, 22 Nov 2011 16:25:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [12/53] nl80211: fix HT capability attribute validation
-In-Reply-To: <20111123002419.GA8531@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [19/53] pch_uart: Fix hw-flow control issue
+In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 
-commit 6c7394197af90f6a332180e33f5d025d3037d883 upstream.
+commit a1d7cfe29f13cf45f8094929864b9c66bf0cd91b upstream.
 
-Since the NL80211_ATTR_HT_CAPABILITY attribute is
-used as a struct, it needs a minimum, not maximum
-length. Enforce that properly. Not doing so could
-potentially lead to reading after the buffer.
+Using hardware flow control,
+currently, register of the control-bit(AFE) is not set.
+This patch fixes the issue.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/nl80211.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/tty/serial/pch_uart.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -126,8 +126,7 @@ static const struct nla_policy nl80211_p
- 	[NL80211_ATTR_MESH_CONFIG] = { .type = NLA_NESTED },
- 	[NL80211_ATTR_SUPPORT_MESH_AUTH] = { .type = NLA_FLAG },
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1278,6 +1278,7 @@ static void pch_uart_set_termios(struct
+ 	if (rtn)
+ 		goto out;
  
--	[NL80211_ATTR_HT_CAPABILITY] = { .type = NLA_BINARY,
--					 .len = NL80211_HT_CAPABILITY_LEN },
-+	[NL80211_ATTR_HT_CAPABILITY] = { .len = NL80211_HT_CAPABILITY_LEN },
- 
- 	[NL80211_ATTR_MGMT_SUBTYPE] = { .type = NLA_U8 },
- 	[NL80211_ATTR_IE] = { .type = NLA_BINARY,
++	pch_uart_set_mctrl(&priv->port, priv->port.mctrl);
+ 	/* Don't rewrite B0 */
+ 	if (tty_termios_baud_rate(termios))
+ 		tty_termios_encode_baud_rate(termios, baud, baud);
 
 
