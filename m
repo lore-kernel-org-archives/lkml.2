@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab1KWXpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 18:45:01 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50718 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab1KWXpA (ORCPT
+	id S1752152Ab1KWXrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 18:47:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47696 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1KWXrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 18:45:00 -0500
-MIME-Version: 1.0
-Date: Thu, 24 Nov 2011 00:44:59 +0100
-Message-ID: <CAGPN=9Q1HMVO27jr0e8az4SV9TyC_JL48mKWZHi8kHRfhQddMQ@mail.gmail.com>
-Subject: EHCI powersave causes shutdown to freeze
-From: Patrik Kullman <patrik.kullman@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Nov 2011 18:47:07 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, DM <dm.n9107@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH v3 0/2] Stop some of the abuse of BUG() where compile time checks should be used.
+Date: Wed, 23 Nov 2011 15:46:55 -0800
+Message-Id: <1322092017-21471-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-After creating a powersave script based on PowerTOP Tunables, this
-particular line prevented the system from being able to shutdown (Asus
-Zenbook UX31E, kernels 3.0 - 3.1.2):
-
-### Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced
-Host Controller #1
-echo auto > /sys/bus/pci/devices/0000:00:1d.0/power/control
+From: David Daney <david.daney@cavium.com>
 
 
-Kernel prints the "Power Down." message but machine doesn't power down.
+For v3:
 
-Is this a known bug?
-Could this be fixed in the driver instead of:
+No code changes.
 
-echo on > /sys/bus/pci/devices/0000:00:1d.0/power/control
+Fix comment text in kernel.h to correctly reflect the name
+BUILD_BUG().  Updated patch chanegelogs with slightly better
+descriptions and some Acked-by: headers.
 
-on system shutdown?
+Andrew, since you have version 2 in you tree currently, can you
+replace those patches with this version instead?
+
+Thanks,
+David Daney
+
+>From v2:
+
+   As suggested by 'DM', call the macro BUILD_BUG() instead of
+   BUILD_BUG_ON_USED().  Linus seemed satisfied with this, so if it
+   still looks good, can we put it in some linux-next tree (Perhaps
+   Andrew Morton's) to cook for a while?
+
+   The second patch now covers linux/huge_mm.h too.
+
+>From v1:
+
+   After some, perhaps justified, reluctance to merge dummy
+   symbol definitions containing BUG() into header files, I propose
+   these patches instead.
+
+   We define a new compile time assertion BUILD_BUG_ON_USED() that can
+   be used in places were we expect the compiler's dead code
+   elimination to get rid of code.  This happens mostly in code
+   dealing with huge pages, but in other places as well.
+
+   The first patch adds BUILD_BUG_ON_USED(), the second gets rid of
+   one of the main abusers of BUG().
+
+David Daney (2):
+  kernel.h: Add BUILD_BUG() macro.
+  hugetlb: Replace BUG() with BUILD_BUG() for dummy definitions.
+
+ include/linux/compiler-gcc4.h |    1 +
+ include/linux/compiler.h      |    4 +++-
+ include/linux/huge_mm.h       |    8 ++++----
+ include/linux/hugetlb.h       |   14 +++++++-------
+ include/linux/kernel.h        |   16 ++++++++++++++++
+ 5 files changed, 31 insertions(+), 12 deletions(-)
+
+-- 
+1.7.2.3
+
