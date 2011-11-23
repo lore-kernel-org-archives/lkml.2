@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758928Ab1KWHNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:13:53 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:35043 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab1KWHNw (ORCPT
+	id S1758826Ab1KWHRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:17:11 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42366 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab1KWHRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:13:52 -0500
-Date: Wed, 23 Nov 2011 08:13:49 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Christian Kujau <lists@nerdbynature.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111123071349.GA1671@x4.trippels.de>
-References: <1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121173556.GA1673@x4.trippels.de>
- <1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121185215.GA1673@x4.trippels.de>
- <20111121195113.GA1678@x4.trippels.de>
- <1321907275.13860.12.camel@pasglop>
- <alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
- <alpine.DEB.2.00.1111212105330.19606@router.home>
- <1321948113.27077.24.camel@edumazet-laptop>
- <1321950432.27077.27.camel@edumazet-laptop>
+	Wed, 23 Nov 2011 02:17:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1321950432.27077.27.camel@edumazet-laptop>
+In-Reply-To: <20111122222730.GM24283@suse.de>
+References: <1321999366-23784-1-git-send-email-corentincj@iksaif.net>
+	<1321999366-23784-14-git-send-email-corentincj@iksaif.net>
+	<20111122222730.GM24283@suse.de>
+Date: Wed, 23 Nov 2011 08:17:08 +0100
+Message-ID: <CAHR064igjTPmeeXrnO2BxNn_U0RXiw9fVJnERYj6f_Y1tChM0w@mail.gmail.com>
+Subject: Re: [PATCH 13/15] samsung-laptop: make the dmi check less strict
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.11.22 at 09:27 +0100, Eric Dumazet wrote:
-> Le mardi 22 novembre 2011 à 08:48 +0100, Eric Dumazet a écrit :
-> 
-> > For x86, I wonder if our !X86_FEATURE_CX16 support is correct on SMP
-> > machines.
-> > 
-> 
-> 
-> By the way, I wonder why we still emit this_cpu_cmpxchg16b_emu() code
-> and calls when compiling a kernel for a cpu implementing cmpxchg16b
-> 
-> (CONFIG_MCORE2=y)
+On Tue, Nov 22, 2011 at 11:27 PM, Greg KH <gregkh@suse.de> wrote:
+> On Tue, Nov 22, 2011 at 11:02:44PM +0100, Corentin Chary wrote:
+>> This enable the driver for everything that look like
+>> a laptop and is from vendor "SAMSUNG ELECTRONICS CO., LTD.".
+>> Note that laptop supported by samsung-q10 seem to have a different
+>> vendor strict.
+>>
+>> Also remove every log output until we know that we have a SABI interface
+>> (except if the driver is forced to load, or debug is enabled).
+>>
+>> Keeping a whitelist of laptop with a model granularity is something that can't
+>> work without close vendor cooperation (and we don't have that).
+>>
+>> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+>
+> Oh, this is bold.
+>
+> I would like to see this work, but I would need to see it tested on a
+> bunch of machines before I trust it.
+>
+> I guess you now have the acpi video backlight check, which is good, but
+> again, doesn't work for all devices.
+>
+> And yeah, a whitelist is tough, especially as the vendor isn't working
+> with us at all, but I don't want to break machines that don't need this
+> driver (and there are some, although I thought the newest ones would not
+> need it, but that might be true.)
 
-Yeah, it's strange (CONFIG_MK8):
+Here is what the driver does with the patch:
+- automatically load the driver and each machine with vendor =
+"SAMSUNG ELECTRONICS CO., LTD." and type looks like a laptop or
+netbook
+- map the f0000 segment (or exit gracefully)
+- find SwSMI or SECLINUX in this segment (or exit gracefully)
 
-ffffffff811058b0 <__kmalloc>:
-...
-ffffffff8110594f:       48 8d 4a 04             lea    0x4(%rdx),%rcx
-ffffffff81105953:       49 8b 1c 04             mov    (%r12,%rax,1),%rbx
-ffffffff81105957:       4c 89 e0                mov    %r12,%rax
-ffffffff8110595a:       e8 11 70 10 00          callq  ffffffff8120c970 <this_cpu_cmpxchg16b_emu>
-ffffffff8110595f:       66 66 90                data32 xchg %ax,%ax
-ffffffff81105962:       84 c0                   test   %al,%al
-ffffffff81105964:       74 c6                   je     ffffffff8110592c <__kmalloc+0x7c>
-...
+At this point, if the driver is still loaded, but the laptop doesn't
+support SABI, then it really looks like a model that should be
+blacklisted.
+I'm ok to use dmi for quirks, or blacklist, but honestly if a *samsung
+laptop* advertise SABI support, the driver should be loaded.
+We can't prevent samsung to built a laptop that will burn if we use
+SABI, but if samsung does that, they can also add some fake DMI
+strings too ! And has I said in the changelog, all models supported by
+samsung-q10 are not affected because they don't use the same vendor
+string, and even if they were, I doubt we would found a valid
+signature.
 
-There is a comment in arch/x86/include/asm/percpu.h:
+But yes, it needs testing, so if you know a samsung laptop user,
+please ask him to test this patch.
 
- * Pretty complex macro to generate cmpxchg16 instruction.  The instruction
- * is not supported on early AMD64 processors so we must be able to emulate
- * it in software.  The address used in the cmpxchg16 instruction must be
- * aligned to a 16 byte boundary.
+I set up a git repo that can help to build the driver more easilly:
+https://github.com/iksaif/samsung-laptop-dkms (yeah, it's named dkms,
+but there is no dkms.conf yet, that will come later).
+
+> Hm, if you can figure out how to get the acpi-video thing working for
+> some machines properly, I'll support this kind of change.
+
+For those, boot with acpi_backlight=vendor  :)
+
+Thanks,
+
 -- 
-Markus
+Corentin Chary
+http://xf.iksaif.net
