@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471Ab1KWEbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 23:31:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756388Ab1KWEbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 23:31:05 -0500
-Message-ID: <4ECC76F3.9050001@redhat.com>
-Date: Wed, 23 Nov 2011 12:30:43 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [V2 PATCH] tmpfs: add fallocate support
-References: <1321612791-4764-1-git-send-email-amwang@redhat.com> <20111122140630.9f37c907.akpm@linux-foundation.org>
-In-Reply-To: <20111122140630.9f37c907.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1759833Ab1KWEfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 23:35:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45915 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab1KWEfS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 23:35:18 -0500
+From: Xi Wang <xi.wang@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH 2/2] ax25: integer overflows in ax25_ctl_ioctl()
+Date: Tue, 22 Nov 2011 23:35:13 -0500
+Message-Id: <BE9FC917-43B3-47E1-BFC7-5E5F2B1F68A1@gmail.com>
+Cc: Joerg Reuter <jreuter@yaina.de>, Ralf Baechle <ralf@linux-mips.org>,
+        David Miller <davem@davemloft.net>, linux-hams@vger.kernel.org,
+        netdev@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年11月23日 06:06, Andrew Morton 写道:
-> On Fri, 18 Nov 2011 18:39:50 +0800
-> Cong Wang<amwang@redhat.com>  wrote:
->
->> It seems that systemd needs tmpfs to support fallocate,
->> see http://lkml.org/lkml/2011/10/20/275. This patch adds
->> fallocate support to tmpfs.
->>
->> As we already have shmem_truncate_range(), it is also easy
->> to add FALLOC_FL_PUNCH_HOLE support too.
->>
->>
->> ...
->>
->> +static long shmem_fallocate(struct file *file, int mode,
->> +				loff_t offset, loff_t len)
->> +{
->> +	struct inode *inode = file->f_path.dentry->d_inode;
->> +	pgoff_t start = offset>>  PAGE_CACHE_SHIFT;
->> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
->> +	pgoff_t index = start;
->> +	loff_t i_size = i_size_read(inode);
->> +	struct page *page = NULL;
->> +	int ret = 0;
->> +
->> +	mutex_lock(&inode->i_mutex);
->
-> It would be saner and less racy-looking to read i_size _after_ taking
-> i_mutex.
->
-> And if you do that, there's no need to use i_size_read() - just a plain
-> old
->
-> 	i_size = inode->i_size;
->
-> is OK.
+ax25_ctl_ioctl() misses several bound checks on the user-controlled value.
 
-Fair enough, I will fix that in V3.
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+---
+ net/ax25/af_ax25.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Thanks, Andrew!
+diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
+index be6a8cf..bd47e22 100644
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -402,14 +402,14 @@ static int ax25_ctl_ioctl(const unsigned int cmd, void __user *arg)
+ 		break;
+ 
+ 	case AX25_T1:
+-		if (ax25_ctl.arg < 1)
++		if (ax25_ctl.arg < 1 || ax25_ctl.arg > 30)
+ 			goto einval_put;
+ 		ax25->rtt = (ax25_ctl.arg * HZ) / 2;
+ 		ax25->t1  = ax25_ctl.arg * HZ;
+ 		break;
+ 
+ 	case AX25_T2:
+-		if (ax25_ctl.arg < 1)
++		if (ax25_ctl.arg < 1 || ax25_ctl.arg > 20)
+ 			goto einval_put;
+ 		ax25->t2 = ax25_ctl.arg * HZ;
+ 		break;
+@@ -422,10 +422,14 @@ static int ax25_ctl_ioctl(const unsigned int cmd, void __user *arg)
+ 		break;
+ 
+ 	case AX25_T3:
++		if (ax25_ctl.arg > 3600)
++			goto einval_put;
+ 		ax25->t3 = ax25_ctl.arg * HZ;
+ 		break;
+ 
+ 	case AX25_IDLE:
++		if (ax25_ctl.arg > 65535)
++			goto einval_put;
+ 		ax25->idle = ax25_ctl.arg * 60 * HZ;
+ 		break;
+ 
+-- 
+1.7.5.4
+
