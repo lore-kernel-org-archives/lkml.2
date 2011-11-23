@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1KWQ7m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 11:59:42 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39786 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab1KWQ7j (ORCPT
+	id S1754982Ab1KWRAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 12:00:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54015 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab1KWRAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 11:59:39 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/nFEvPYhnwBVbzr8AMqVQG
-Date: Wed, 23 Nov 2011 08:59:04 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Greg KH <greg@kroah.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linaro-dev@lists.linaro.org,
-        eric.miao@linaro.org, grant.likely@secretlab.ca,
-        jeremy.kerr@canonical.com, Mike Turquette <mturquette@ti.com>,
-        linux@arm.linux.org.uk, sboyd@quicinc.com, magnus.damm@gmail.com,
-        dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
-        arnd.bergmann@linaro.org, patches@linaro.org, tglx@linutronix.de,
-        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
-        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        amit.kucheria@linaro.org, skannan@quicinc.com
-Subject: Re: [PATCH v3 5/5] clk: export tree topology and clk data via sysfs
-Message-ID: <20111123165903.GF31337@atomide.com>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
- <1321926047-14211-6-git-send-email-mturquette@linaro.org>
- <20111122154900.GB18954@kroah.com>
- <CAPtuhThPQtWwihE8aGru55k87oV7QOr=O836TTJ+=30d6dtVhA@mail.gmail.com>
- <20111122191347.GB4844@kroah.com>
+	Wed, 23 Nov 2011 12:00:17 -0500
+Date: Wed, 23 Nov 2011 11:00:04 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [RFC] Make Yama pid_ns aware
+Message-ID: <20111123170004.GA23786@serge-laptop>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+ <20111121191811.GA24039@albatros>
+ <20111122181310.GA4235@sergelap>
+ <20111122192028.GA10458@albatros>
+ <20111122201007.GA21722@sergelap>
+ <20111123074510.GA2356@albatros>
+ <20111123144928.GA3893@hallyn.com>
+ <20111123165549.GB3463@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111122191347.GB4844@kroah.com>
+In-Reply-To: <20111123165549.GB3463@albatros>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-
-* Greg KH <greg@kroah.com> [111122 10:51]:
-> On Tue, Nov 22, 2011 at 09:57:41AM -0800, Mike Turquette wrote:
-> > > Ah, comments like this warm my heart.
-> > >
-> > > Come on, no abusing the kobject code please, if have problems with how
-> > > the kernel core works, and it doesn't do things you want it to, then why
-> > > not change it to work properly for you, or at the least, ASK ME!!!
+Quoting Vasiliy Kulikov (segoon@openwall.com):
+> On Wed, Nov 23, 2011 at 14:49 +0000, Serge E. Hallyn wrote:
+> > Quoting Vasiliy Kulikov (segoon@openwall.com):
+> > > Actually, what concerns me is not ptrace, but symlink/hardling
+> > > protection.  There is no interaction between namespaces in case of
+> > > containers via symlinks in the basic case.  In case of ptrace I don't
+> > > think the child ns may weaken the parent ns - child ns may not access
+> > > processes of the parent namespace and everything it may ptrace is
+> > > already inside of this ns.
 > > 
-> > Ok, I'm asking you now.  There are two ways to solve this problem:
+> > Oh, yes.  If you're saying the symlink protection shouldn't be
+> > per-pidns, I agree it seems an odd fit.
 > > 
-> > 1) have kobject core create the lists linking the objects but defer
-> > allocations and any interactions with sysfs until later in the boot
-> > sequence, OR
+> > How about a version of this patch leaving symlink protection
+> > out of pidns (maybe in user ns), and just putting ptrace
+> > protection per-pidns?
+> 
+> I don't think moving symlink/hardling from pid ns to user ns is a good
+> idea as user ns is not matured yet.  Also we (Openwall) want to use Yama
+> almost as-is in our RHEL6 and RHEL5-based kernels with OpenVZ support
+> which don't have user namespaces yet at all (yes, it is not a cause for
+> mainline decisions :-) ).
+> 
+> While user ns is not yet ready, I don't clearly see what is the division
+> of security policies among namespaces including user namespace.  I had
+> a view that all stuff related to processes (i.e. distinct processes in
+> several ways) belongs to pid ns, all net stuff to net ns, etc.  If we
+> differentiate user ns and pid ns, only strictly things handling pids
+> (like kill(2), procfs, ptrace(2), etc.) belong to pid ns and all other
+> process-related stuff (like credentials handling, these symlink/hardling
+> things, etc.) belong to user namespaces.
+> 
+> Can we probably leave them in pid ns for now and when user ns is matured
+> just move it from pid ns to user ns?  Is it possible without breaking
+> Yama's ABI (I think so)?
 
-Please just make it all a loadable module using regular devices. That
-makes the development a lot easier and as a side effect also guarantees
-we're using standard interfaces.
+That's fine with me.
 
-Sure most platforms using it want it compiled in at least for now,
-but in the long run it should be possible to load it when we get to
-initramfs. For the early usage of clocks..
-
-> > 2) my code can create a list of clks (the same way that clkdev does)
-> > and defer kobject/sysfs stuff until later, which walks the list made
-> > during early-boot
-
-..let's plan on getting rid of the early usage of clocks instead so
-you don't have the issue of deferring stuff.
-
-> > #1 is most closely aligned with the code I have here, #2 presents
-> > challenges that I haven't really though through.  I know that OMAP
-> > uses the clk framework VERY early in it's boot sequence, but as long
-> > as the per-clk data is properly initialized then it should be OK.
-> > 
-> > What do you think?
-
-We initialize clocksource/clockevent clocks early, but we can do that
-without clock fwk initially, then let a clockevent driver take over
-later on. That should solve your issues #1 and #2.
-
-> #3 - use debugfs and don't try to create a sysfs interface for the clock
-> structures :)
-
-Sounds like the debugfs is the way to go :)
-
-Tony
+thanks,
+-serge
