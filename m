@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759073Ab1KWAhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Nov 2011 19:37:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42631 "EHLO mx2.suse.de"
+	id S1759196Ab1KWAix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Nov 2011 19:38:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab1KWAhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Nov 2011 19:37:10 -0500
+	id S1759070Ab1KWAhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Nov 2011 19:37:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Nov 22 16:25:57 2011
-Message-Id: <20111123002557.131019184@clark.kroah.org>
+Message-Id: <20111123002557.325656786@clark.kroah.org>
 User-Agent: quilt/0.48-20.1.2
-Date: Tue, 22 Nov 2011 16:25:45 -0800
+Date: Tue, 22 Nov 2011 16:25:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, sordna <sordna@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [45/53] USB: quirks: adding more quirky webcams to avoid squeaky audio
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        Robert Hooker <robert.hooker@canonical.com>
+Subject: [47/53] drm/i915: always set FDI composite sync bit
 In-Reply-To: <20111123002601.GA14467@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: sordna <sordna@gmail.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 0d145d7d4a241c321c832a810bb6edad18e2217b upstream.
+commit c4f9c4c2b3f1831e932e04db992cf6fe92c2a95a upstream.
 
-The following patch contains additional affected webcam models, on top of the
-patches commited to linux-next 2394d67e446bf616a0885167d5f0d397bdacfdfc
-and 5b253d88cc6c65a23cefc457a5a4ef139913c5fc
+It's needed for 3 pipe support as well as just regular functionality
+(e.g. DisplayPort).
 
-Signed-off-by: sordna <sordna@gmail.com>
-Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Adam Jackson <ajax@redhat.com>
+Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Robert Hooker <robert.hooker@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/quirks.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -56,12 +56,36 @@ static const struct usb_device_id usb_qu
- 	/* Logitech Webcam Pro 9000 */
- 	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3175,6 +3175,7 @@
+ #define  FDI_LINK_TRAIN_NONE_IVB            (3<<8)
  
-+	/* Logitech Webcam C905 */
-+	{ USB_DEVICE(0x046d, 0x080a), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C210 */
-+	{ USB_DEVICE(0x046d, 0x0819), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C260 */
-+	{ USB_DEVICE(0x046d, 0x081a), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Webcam C310 */
- 	{ USB_DEVICE(0x046d, 0x081b), .driver_info = USB_QUIRK_RESET_RESUME },
+ /* both Tx and Rx */
++#define  FDI_COMPOSITE_SYNC		(1<<11)
+ #define  FDI_LINK_TRAIN_AUTO		(1<<10)
+ #define  FDI_SCRAMBLING_ENABLE          (0<<7)
+ #define  FDI_SCRAMBLING_DISABLE         (1<<7)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2600,6 +2600,7 @@ static void ivb_manual_fdi_link_train(st
+ 	temp |= FDI_LINK_TRAIN_PATTERN_1_IVB;
+ 	temp &= ~FDI_LINK_TRAIN_VOL_EMP_MASK;
+ 	temp |= FDI_LINK_TRAIN_400MV_0DB_SNB_B;
++	temp |= FDI_COMPOSITE_SYNC;
+ 	I915_WRITE(reg, temp | FDI_TX_ENABLE);
  
-+	/* Logitech Webcam C910 */
-+	{ USB_DEVICE(0x046d, 0x0821), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C160 */
-+	{ USB_DEVICE(0x046d, 0x0824), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Webcam C270 */
- 	{ USB_DEVICE(0x046d, 0x0825), .driver_info = USB_QUIRK_RESET_RESUME },
+ 	reg = FDI_RX_CTL(pipe);
+@@ -2607,6 +2608,7 @@ static void ivb_manual_fdi_link_train(st
+ 	temp &= ~FDI_LINK_TRAIN_AUTO;
+ 	temp &= ~FDI_LINK_TRAIN_PATTERN_MASK_CPT;
+ 	temp |= FDI_LINK_TRAIN_PATTERN_1_CPT;
++	temp |= FDI_COMPOSITE_SYNC;
+ 	I915_WRITE(reg, temp | FDI_RX_ENABLE);
  
-+	/* Logitech Quickcam Pro 9000 */
-+	{ USB_DEVICE(0x046d, 0x0990), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Quickcam E3500 */
-+	{ USB_DEVICE(0x046d, 0x09a4), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Quickcam Vision Pro */
-+	{ USB_DEVICE(0x046d, 0x09a6), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Logitech Harmony 700-series */
- 	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
- 
+ 	POSTING_READ(reg);
 
 
