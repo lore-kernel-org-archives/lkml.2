@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511Ab1KWHj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 02:39:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42789 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104Ab1KWHj6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 02:39:58 -0500
+	id S1758814Ab1KWHm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 02:42:56 -0500
+Received: from home.keithp.com ([63.227.221.253]:49228 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752816Ab1KWHmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 02:42:55 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Meelis Roos <mroos@linux.ee>
+Cc: David Woodhouse <dwmw2@infradead.org>, dri-devel@lists.freedesktop.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel@ffwll.ch>
+Subject: Re: Bisected regression: hang on i915 between 3.1.0-rc9 and 3.1.0
+In-Reply-To: <alpine.SOC.1.00.1111230911390.12655@math.ut.ee>
+References: <alpine.SOC.1.00.1111221207090.6490@math.ut.ee> <alpine.SOC.1.00.1111221306410.8925@math.ut.ee> <86vcqcf3da.fsf@sumi.keithp.com> <alpine.SOC.1.00.1111230911390.12655@math.ut.ee>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Tue, 22 Nov 2011 23:42:56 -0800
+Message-ID: <86obw3e133.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFQmdRYTgQOb53kQOvk1jubZbvaOrfjVCq4aG1H0ceshw2vVPA@mail.gmail.com>
-References: <20111123033850.GA11380@redhat.com>
-	<CAFQmdRYTgQOb53kQOvk1jubZbvaOrfjVCq4aG1H0ceshw2vVPA@mail.gmail.com>
-Date: Wed, 23 Nov 2011 15:39:57 +0800
-Message-ID: <CAM_iQpVONaS8hA7Be-FkqdDJCbt2sx_p1sX64nMbMpY5RyCdiA@mail.gmail.com>
-Subject: Re: tty related lockdep trace during bootup on 3.2-rc2
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Havard Skinnemoen <hskinnemoen@google.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 3:28 PM, Havard Skinnemoen
-<hskinnemoen@google.com> wrote:
-> On Tue, Nov 22, 2011 at 7:38 PM, Dave Jones <davej@redhat.com> wrote:
->> From Linus' current tree...
->>
->> related to 5dc2470c602da8851907ec18942cd876c3b4ecc1 maybe ?
->
-> Yes, probably. I did have a bad feeling about the locking, but it
-> seemed to behave well during testing. Wonder why I didn't see this.
->
-> So what's happening is that tty_open() holds big_tty_mutex while
-> calling acm_tty_open which takes open_lock, and acm_tty_close holds
-> open_lock while calling tty_port_close_start which takes
-> big_tty_mutex?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Yes, exactly.
+On Wed, 23 Nov 2011 09:28:52 +0200 (EET), Meelis Roos <mroos@linux.ee> wrot=
+e:
 
->
-> Not sure how to solve this. Not taking the lock before calling
-> tty_port_close_start means the tty_port may get freed before it
-> returns.
+> Yes, VT-x and VT-d are both enabled from BIOS setup.
 
-But...
+Any reason for that? We've found all kinds of problems with DMAR enabled
+on these machines that is only resolved by completely turning it
+off. You might try with intel_iommu=3Doff and make sure that's stable.
 
-static void acm_tty_hangup(struct tty_struct *tty)
-{
-        struct acm *acm = tty->driver_data;
-        tty_port_hangup(&acm->port); //<---------------- No open_mutex
-protected neither...
-        mutex_lock(&open_mutex);
-        acm_port_down(acm);
-        mutex_unlock(&open_mutex);
-}
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTsykADYtFsjWk68qAQjnnhAAsK0o+vB01L++73j0ub/hKMfQF76W0l46
+I+EPKLq+CBRYnWgqGSYSEy+U8BXyIQLCXidce8ZvaWR1pJx50Ai5aCov/NIDemQ5
+aVAA6b4nvjpFAqxSsl+5QQ+i3eaXmcOsx3zids5IgB4dorf+4To7mb3MGqORkUl8
++AmRnlXQZbDM5YTC8uEjF+SRIzpatq0GA7KYDPf4Q3/eOX5NTCqQ0K7o37BqWbUI
+myqMV/+FKJ0JHu220BZf2Es4xEWR7D206sUY+GBZbOQEHtmHasr2WI/Zw+KrY4Sn
+9HHHASrw5tTp6GkllZESV0cHeKVOPzfRjlXLMbwi4ZATldDl/n/08z1qqu30DTMU
+DiVYVilB4uRqu0PkLFC6mAjQKHGpVUjHKMOtQc7ZVzXu4osd1ifWcZS+b5rU4bZ0
+c+9YjvjcBuGJac11nGjqZ0lGZ9tTmjmkKo1dUgA8dXsQiC/I1P0lAeLEGTKVtlOt
+pm1lL6eBSAPydcHdz31QBb9rDzu752V+EiFtYBFHR59DRNE4hlIQJi2fNKDxmWmx
+mFPEAKpODmTaqcb0LcuHtnnnVHgjyKLJmY++4mLTeh1AKmH4o5akB3oFhe+z+Lpq
+GV7e3YiSSMjzhgvpScjIWx5b64/c6m1yG+QZyhLbNkC7XtfPcuY/GBCm9IMyIV0u
+YVaPKCgt94k=
+=8kab
+-----END PGP SIGNATURE-----
+--=-=-=--
