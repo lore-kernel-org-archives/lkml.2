@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab1KWLgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 06:36:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53453 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab1KWLgQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 06:36:16 -0500
+	id S1753436Ab1KWLjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 06:39:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49240 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752279Ab1KWLjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 06:39:43 -0500
+Date: Wed, 23 Nov 2011 12:39:39 +0100
+From: Jan Kara <jack@suse.cz>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Shaohua Li <shaohua.li@intel.com>, Linux-MM <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] mm: compaction: Introduce sync-light migration for
+ use by compaction
+Message-ID: <20111123113939.GC9775@quack.suse.cz>
+References: <1321900608-27687-1-git-send-email-mgorman@suse.de>
+ <20111122101451.GJ19415@suse.de>
+ <20111122115427.GA8058@quack.suse.cz>
+ <201111222159.24987.nai.xia@gmail.com>
+ <20111122191302.GF8058@quack.suse.cz>
+ <CAPQyPG6EComwoD7+SS7qDqU-G5OYrHbAWJG0gfmJPh9_2N=RZA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1111231228260.28728@pobox.suse.cz>
-References: <1322042074-3759-1-git-send-email-benjamin.tissoires@enac.fr>
-	<1322042074-3759-7-git-send-email-benjamin.tissoires@enac.fr>
-	<alpine.LNX.2.00.1111231228260.28728@pobox.suse.cz>
-Date: Wed, 23 Nov 2011 12:36:15 +0100
-X-Google-Sender-Auth: fzDdyqPIjU3yDJmzzShTZ4DmCXU
-Message-ID: <CAN+gG=HUFDxKp7UP8MwvprbKfNTM1Kr14SCphhMw-ZxSMB9z+Q@mail.gmail.com>
-Subject: Re: [PATCH 6/8] HID-multitouch: Add egalax ID for Acer Iconia W500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPQyPG6EComwoD7+SS7qDqU-G5OYrHbAWJG0gfmJPh9_2N=RZA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 12:28, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 23 Nov 2011, Benjamin Tissoires wrote:
->
->> From: Marek Vasut <marek.vasut@gmail.com>
->>
->> This patch adds USB ID for the touchpanel in Acer Iconia W500. The panel
->> supports up to five fingers, therefore the need for a new addition of panel
->> types.
->>
->> originally Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
->
-> Before taking this, I'd like to have the credits / signoffs for this patch
-> clarified.
+On Wed 23-11-11 06:44:23, Nai Xia wrote:
+> >> So that amounts to the following calculation that is important to the
+> >> statistical stall time for the compaction:
+> >>
+> >>      page_nr *  average_stall_window_time
+> >>
+> >> where average_stall_window_time is the window for a page between
+> >> NotUptoDate ---> UptoDate or Dirty --> Clean. And page_nr is the
+> >> number of pages in stall window for read or write.
+> >>
+> >> So for general cases,
+> >> Fact 1) may ensure that the page_nr is smaller for read, while
+> >> fact 2) may ensure the same for average_locking_window_time.
+> >  Well, page_nr really depends on the load. If the workload is only reads,
+> > clearly number of read pages is going to be higher than number of written
+> > pages. Once workload does heavy writing, I agree number of pages under
+> > writeback is likely going to be higher.
+> 
+> Think about process A linearly scans 100MB mapped file pages
+> area for read, and another process B linearly writes to a same sized area.
+> If there is no readahead, the read page in stall window in memory is only
+> *one* page each time.
+  Yes, I understand this. But in a situation where there is *no* process
+writing and *hundred* processes reading, you clearly have more pages locked
+for reading than for writing. All I wanted to say is that your broad
+statement that the number of pages read from disk is lower than the number
+of pages written is not true in general. It depends on the workload.
 
-Sorry for that,
+> However, 100MB dirty pages can be hold in memory
+> waiting to be write which may stall the compaction for fallback_migrate_page().
+> Even for buffer_migrate_page() these pages are much more likely to get locked
+> by other behaviors like you said for IO submission,etc.
+> 
+> I was not sure about readahead, of course,  I only theoretically
+> expected its still not
+> comparable to the totally async write behavior.
+> 
+> >
+> >> I am not sure this will be the same case for all workloads,
+> >> don't know if Mel has tested large readahead workloads which
+> >> has more async read IOs and less writebacks.
+> >>
+> >> But theoretically I expect things are not that bad even for large
+> >> readahead, because readahead is triggered by the readahead TAG in
+> >> linear order, which means for a process to generating readahead IO,
+> >> its speed is still somewhat govened by the read IO speed. While
+> >> for a process writing to a file mapped memory area, it may well
+> >> exceed the speed of its backing-store writing speed.
+> >>
+> >>
+> >> Aside from that, I think the relation between page locking and
+> >> page read is not 1-to-1, in other words, there maybe quite some
+> >> transient page locking is caused by mmap and then page fault into
+> >> already good-state pages requiring no IO at all. For these
+> >> transient page lockings I think it's reasonable to have light
+> >> waiting.
+> >  Definitely there are other lockings than for read. E.g. to write a page,
+> > we lock it first, submit IO (which can actually block waiting for request
+> > to get freed), set PageWriteback, and unlock the page. And there are more
+> > transient ones like you mention above...
+> 
+> Yes, you are right.
+> But I think we were talking about distinguishing page locking from page read
+> IO?
+> 
+> Well, I might also want to suggest that do an early dirty test before
+> taking the lock...but, I expect page NotUpToDate is much more likely an
+> indication that we are going to block for IO on the following page lock.
+> Dirty test is not that strong. Do you agree ?
+  Yes, I agree with this.
 
-I cherry-picked Marek's patch and do some modifications.
-I wanted to keep his "from" as he already sent 2 patches that were
-lost in the LKML (mostly because of my fault).
-
-So, in this one, you have at least my Signed-off-by.
-Marek, will you just answer to this mail with your signed-off-by?
-
-Cheers,
-Benjamin
-
->
-> Thanks,
->
-> --
-> Jiri Kosina
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
