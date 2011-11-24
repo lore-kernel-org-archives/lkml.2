@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab1KXC3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 21:29:42 -0500
-Received: from ozlabs.org ([203.10.76.45]:55648 "EHLO ozlabs.org"
+	id S1755486Ab1KXC3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 21:29:43 -0500
+Received: from ozlabs.org ([203.10.76.45]:56526 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671Ab1KXC3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750711Ab1KXC3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Nov 2011 21:29:41 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sasha Levin <levinsasha928@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
         Wang Sheng-Hui <shhuiw@gmail.com>,
         virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
 Subject: Re: [PATCHv3 RFC] virtio-pci: flexible configuration layout
-In-Reply-To: <1322041120.3581.6.camel@lappy>
-References: <20111122183621.GA5235@redhat.com> <87hb1v1scp.fsf@rustcorp.com.au>  <20111123084932.GF22734@redhat.com> <1322041120.3581.6.camel@lappy>
+In-Reply-To: <20111123084640.GE22734@redhat.com>
+References: <20111122183621.GA5235@redhat.com> <87hb1v1scp.fsf@rustcorp.com.au> <20111123084640.GE22734@redhat.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 24 Nov 2011 11:37:26 +1030
-Message-ID: <87r50yxr8x.fsf@rustcorp.com.au>
+Date: Thu, 24 Nov 2011 11:06:44 +1030
+Message-ID: <87ty5uxso3.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011 11:38:40 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Wed, 2011-11-23 at 10:49 +0200, Michael S. Tsirkin wrote:
-> > On Wed, Nov 23, 2011 at 01:02:22PM +1030, Rusty Russell wrote:
-> > > +/* Fields in VIRTIO_PCI_CAP_COMMON_CFG: */
-> > > +struct virtio_pci_common_cfg {
-> > > +	/* About the whole device. */
-> > > +	__u64 device_features;	/* read-only */
-> > > +	__u64 guest_features;	/* read-write */
+On Wed, 23 Nov 2011 10:46:41 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Wed, Nov 23, 2011 at 01:02:22PM +1030, Rusty Russell wrote:
+> > On Tue, 22 Nov 2011 20:36:22 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > Here's an updated vesion.
+> > > I'm alternating between updating the spec and the driver,
+> > > spec update to follow.
 > > 
-> > We currently require atomic accesses to common fields.
-> > Some architectures might not have such for 64 bit,
-> > so these need to be split I think ...
+> > Don't touch the spec yet, we have a long way to go :(
+> > 
+> > I want the ability for driver to set the ring size, and the device to
+> > set the alignment.
 > 
-> We can consider stealing the feature implementation from virtio-mmio:
-> Use the first 32 bits as a selector and the last as the features
-> themselves.
+> Did you mean driver to be able to set the alignment? This
+> is what BIOS guys want - after BIOS completes, guest driver gets handed
+> control and sets its own alignment to save memory.
+
+Yep, sorry.
+
+But we really do want the guest to set the ring size.  Because it has to
+be guest-physical-contiguous, the host currently sets a very small ring,
+because the guest is useless if it can't allocate.
+
+Either way, it's now the driver's responsibility to write those fields.
+
+> > That's a bigger change than you have here.
 > 
-> It's more complex to work with, but it provides 2**32 32 feature bits
-> (which should be enough for a while) and it solves the atomic access
-> issue.
+> Why can't we just add the new registers at the end?
+> With the new capability, we have as much space as we like for that.
 
-That works.  I don't expect we'll need more than 64 features given that
-virtio_net hasn't seen a new one in over a year, but it's gone from 5 to
-18 in 4 years, so another 32 bits at that rate only gets us another decade.
+We could, for sure.
 
-Unfortunately, it doesn't solve the queue_address problem.
+> > I imagine it almost rips the driver into two completely different drivers.
+> 
+> If you insist on moving all the rest of registers around, certainly. But
+> why do this?
 
-We currently multiply the (32-bit) address by 4096 (the alignment).  If
-drivers are going to reduce alignment, that makes it trickier, hence the
-change here to a 64.  Simplicity.
+Because I suspect we'll be different enough anyway, once we change the
+way we allocate the ring, and write the alignment.  It'll be *clearer*
+to have two completely separate paths than to fill with if() statements.
+And a rewrite won't hurt the driver.
 
-We could cheat and assert that a 32-bit write there implies 0 in the
-upper bits, and hope that all 64 bit platforms can do a 64-bit atomic
-write.  Or insist the value not be intepreted until the guest writes its
-(first) feature bit.
+But to be honest I don't really care about the Linux driver: we're
+steeped in this stuff and we'll get it right.  But I'm *terrified* of
+making the spec more complex; implementations will get it wrong.  I
+*really* want to banish the legacy stuff to an appendix where noone will
+ever know it's there :)
 
-Perhaps we really need a "I'm done configuring!" trigger, now we can't
-use the feature bit field for that.
+> Renaming constants in exported headers will break userspace builds.
+> Do we care? Why not?
 
-Thoughts welcome...
+As the patch shows, I decided not to do that.  It's a nice heads-up, but
+breaking older versions of the code is just mean.  Hence this:
+
+> > +#ifndef __KERNEL__
+> > +/* Don't break compile of old userspace code.  These will go away. */
+> > +#define VIRTIO_PCI_HOST_FEATURES VIRTIO_PCI_LEGACY_HOST_FEATURES
+> > +#define VIRTIO_PCI_GUEST_FEATURES VIRTIO_PCI_LEGACY_GUEST_FEATURES
+> > +#define VIRTIO_PCI_LEGACY_QUEUE_PFN VIRTIO_PCI_QUEUE_PFN
+> > +#define VIRTIO_PCI_LEGACY_QUEUE_NUM VIRTIO_PCI_QUEUE_NUM
+> > +#define VIRTIO_PCI_LEGACY_QUEUE_SEL VIRTIO_PCI_QUEUE_SEL
+> > +#define VIRTIO_PCI_LEGACY_QUEUE_NOTIFY VIRTIO_PCI_QUEUE_NOTIFY
+> > +#define VIRTIO_PCI_LEGACY_STATUS VIRTIO_PCI_STATUS
+> > +#define VIRTIO_PCI_LEGACY_ISR VIRTIO_PCI_ISR
+> > +#define VIRTIO_MSI_LEGACY_CONFIG_VECTOR VIRTIO_MSI_CONFIG_VECTOR
+> > +#define VIRTIO_MSI_LEGACY_QUEUE_VECTOR VIRTIO_MSI_QUEUE_VECTOR
+> > +#define VIRTIO_PCI_LEGACY_CONFIG(dev) VIRTIO_PCI_CONFIG(dev)
+> > +#define VIRTIO_PCI_LEGACY_QUEUE_ADDR_SHIFT VIRTIO_PCI_QUEUE_ADDR_SHIFT
+> > +#define VIRTIO_PCI_LEGACY_VRING_ALIGN VIRTIO_PCI_VRING_ALIGN
+> > +#endif /* ...!KERNEL */
+
+...
+> > +/* Fields in VIRTIO_PCI_CAP_COMMON_CFG: */
+> > +struct virtio_pci_common_cfg {
+> > +	/* About the whole device. */
+> > +	__u64 device_features;	/* read-only */
+> > +	__u64 guest_features;	/* read-write */
+> > +	__u64 queue_address;	/* read-write */
+> > +	__u16 msix_config;	/* read-write */
+> > +	__u8 device_status;	/* read-write */
+> > +	__u8 unused;
+> > +
+> > +	/* About a specific virtqueue. */
+> > +	__u16 queue_select;	/* read-write */
+> > +	__u16 queue_align;	/* read-write, power of 2. */
+> > +	__u16 queue_size;	/* read-write, power of 2. */
+> > +	__u16 queue_msix_vector;/* read-write */
+> > +};
+> 
+> Slightly confusing as the registers are in fact little endian ...
+
+Good point, should mark them appropriately with __le16.  That makes it
+even clearer.
+
+Thanks,
 Rusty.
