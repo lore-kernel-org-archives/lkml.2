@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab1KXDQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 22:16:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172Ab1KXDQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 22:16:18 -0500
-Message-ID: <4ECDB6E6.40304@redhat.com>
-Date: Thu, 24 Nov 2011 11:15:50 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1755913Ab1KXDQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 22:16:32 -0500
+Received: from mail.windriver.com ([147.11.1.11]:46309 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275Ab1KXDQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 22:16:31 -0500
+Date: Wed, 23 Nov 2011 22:16:19 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Wan ZongShun <mcuos.com@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH] spi: nuc900: Include linux/module.h
+Message-ID: <20111124031619.GC10880@windriver.com>
+References: <1322104251.16201.8.camel@phoenix>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Pekka Enberg <penberg@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Christoph Hellwig <hch@lst.de>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-mm@kvack.org
-Subject: Re: [V3 PATCH 1/2] tmpfs: add fallocate support
-References: <1322038412-29013-1-git-send-email-amwang@redhat.com> <CAHGf_=rOYkEGHakyHpihopMg2VtVfDV7XvC_QGs_kj6HgDmBRA@mail.gmail.com> <CAOJsxLH2foaRHYoPgRufu_J8B-YEvQ8aJNuQqHOPNj9YFvAubw@mail.gmail.com> <alpine.LSU.2.00.1111231407170.2573@sister.anvils>
-In-Reply-To: <alpine.LSU.2.00.1111231407170.2573@sister.anvils>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1322104251.16201.8.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年11月24日 06:20, Hugh Dickins 写道:
-> On Wed, 23 Nov 2011, Pekka Enberg wrote:
->>
->> Why do we need to undo anyway?
-...
-> Another answer would be: if fallocate() had been defined to return
-> the length that has been successfully allocated (as write() returns
-> the length written), then it would be reasonable to return partial
-> length instead of failing with ENOSPC, and not undo.  But it was
-> defined to return -1 on failure or 0 on success, so cannot report
-> partial success.
->
-> Another answer would be: if the disk is near full, it's not good
-> for a fallocate() to fail with -ENOSPC while nonetheless grabbing
-> all the remaining blocks; even worse if another fallocate() were
-> racing with it.
+[[PATCH] spi: nuc900: Include linux/module.h] On 24/11/2011 (Thu 11:10) Axel Lin wrote:
 
-Exactly, fallocate() should not make the bad situation even worse.
+> Include linux/module.h to fix below build error:
 
-Thanks.
+Looks fine to me ; I'll assume that this is going upstream via the
+nuc900 maintainer since the module split up is old news at this point
+in time.
+
+Thanks,
+Paul.
+
+> 
+>   CC      drivers/spi/spi-nuc900.o
+> drivers/spi/spi-nuc900.c:484: error: 'THIS_MODULE' undeclared here (not in a function)
+> drivers/spi/spi-nuc900.c:489: error: expected declaration specifiers or '...' before string constant
+> drivers/spi/spi-nuc900.c:489: warning: data definition has no type or storage class
+> drivers/spi/spi-nuc900.c:489: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+> drivers/spi/spi-nuc900.c:489: warning: function declaration isn't a prototype
+> drivers/spi/spi-nuc900.c:490: error: expected declaration specifiers or '...' before string constant
+> drivers/spi/spi-nuc900.c:490: warning: data definition has no type or storage class
+> drivers/spi/spi-nuc900.c:490: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+> drivers/spi/spi-nuc900.c:490: warning: function declaration isn't a prototype
+> drivers/spi/spi-nuc900.c:491: error: expected declaration specifiers or '...' before string constant
+> drivers/spi/spi-nuc900.c:491: warning: data definition has no type or storage class
+> drivers/spi/spi-nuc900.c:491: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/spi/spi-nuc900.c:491: warning: function declaration isn't a prototype
+> drivers/spi/spi-nuc900.c:492: error: expected declaration specifiers or '...' before string constant
+> drivers/spi/spi-nuc900.c:492: warning: data definition has no type or storage class
+> drivers/spi/spi-nuc900.c:492: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
+> drivers/spi/spi-nuc900.c:492: warning: function declaration isn't a prototype
+> make[2]: *** [drivers/spi/spi-nuc900.o] Error 1
+> make[1]: *** [drivers/spi] Error 2
+> make: *** [drivers] Error 2
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/spi/spi-nuc900.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-nuc900.c b/drivers/spi/spi-nuc900.c
+> index 21c70b2..182e9c8 100644
+> --- a/drivers/spi/spi-nuc900.c
+> +++ b/drivers/spi/spi-nuc900.c
+> @@ -8,6 +8,7 @@
+>   *
+>   */
+>  
+> +#include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/workqueue.h>
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
