@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab1KXOAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 09:00:00 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37958 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1KXN76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 08:59:58 -0500
+	id S1756211Ab1KXOBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 09:01:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41760 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750777Ab1KXOBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 09:01:34 -0500
 From: Borislav Petkov <bp@alien8.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>, Frank Seidel <frank@f-seidel.de>,
         Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
 Subject: [PATCH] hdaps: Shut up gcc uninitialized variable warnings
-Date: Thu, 24 Nov 2011 14:59:55 +0100
-Message-Id: <1322143195-5153-1-git-send-email-bp@alien8.de>
+Date: Thu, 24 Nov 2011 15:01:31 +0100
+Message-Id: <1322143291-5286-1-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
