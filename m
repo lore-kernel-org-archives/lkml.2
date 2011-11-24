@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab1KXDK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 22:10:59 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50494 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab1KXDK6 (ORCPT
+	id S1755773Ab1KXDLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 22:11:07 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34469 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab1KXDLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 22:10:58 -0500
-Message-ID: <1322104251.16201.8.camel@phoenix>
-Subject: [PATCH] spi: nuc900: Include linux/module.h
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wan ZongShun <mcuos.com@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        spi-devel-general@lists.sourceforge.net
-Date: Thu, 24 Nov 2011 11:10:51 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Nov 2011 22:11:04 -0500
+Date: Thu, 24 Nov 2011 14:10:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajendra Nayak <rnayak@ti.com>,
+        Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>
+Subject: linux-next: build failure after merge of the regulator tree
+Message-Id: <20111124141046.fdb4b9b923d850b0686924c3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Nov_2011_14_10_46_+1100_tR99srbXyEeP1xV."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include linux/module.h to fix below build error:
+--Signature=_Thu__24_Nov_2011_14_10_46_+1100_tR99srbXyEeP1xV.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  CC      drivers/spi/spi-nuc900.o
-drivers/spi/spi-nuc900.c:484: error: 'THIS_MODULE' undeclared here (not in a function)
-drivers/spi/spi-nuc900.c:489: error: expected declaration specifiers or '...' before string constant
-drivers/spi/spi-nuc900.c:489: warning: data definition has no type or storage class
-drivers/spi/spi-nuc900.c:489: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/spi/spi-nuc900.c:489: warning: function declaration isn't a prototype
-drivers/spi/spi-nuc900.c:490: error: expected declaration specifiers or '...' before string constant
-drivers/spi/spi-nuc900.c:490: warning: data definition has no type or storage class
-drivers/spi/spi-nuc900.c:490: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/spi/spi-nuc900.c:490: warning: function declaration isn't a prototype
-drivers/spi/spi-nuc900.c:491: error: expected declaration specifiers or '...' before string constant
-drivers/spi/spi-nuc900.c:491: warning: data definition has no type or storage class
-drivers/spi/spi-nuc900.c:491: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/spi/spi-nuc900.c:491: warning: function declaration isn't a prototype
-drivers/spi/spi-nuc900.c:492: error: expected declaration specifiers or '...' before string constant
-drivers/spi/spi-nuc900.c:492: warning: data definition has no type or storage class
-drivers/spi/spi-nuc900.c:492: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
-drivers/spi/spi-nuc900.c:492: warning: function declaration isn't a prototype
-make[2]: *** [drivers/spi/spi-nuc900.o] Error 1
-make[1]: *** [drivers/spi] Error 2
-make: *** [drivers] Error 2
+Hi all,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/spi/spi-nuc900.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+After merging the regulator tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-diff --git a/drivers/spi/spi-nuc900.c b/drivers/spi/spi-nuc900.c
-index 21c70b2..182e9c8 100644
---- a/drivers/spi/spi-nuc900.c
-+++ b/drivers/spi/spi-nuc900.c
-@@ -8,6 +8,7 @@
-  *
-  */
- 
-+#include <linux/module.h>
- #include <linux/init.h>
- #include <linux/spinlock.h>
- #include <linux/workqueue.h>
--- 
-1.7.5.4
+drivers/regulator/gpio-regulator.c: In function 'gpio_regulator_probe':
+drivers/regulator/gpio-regulator.c:287:8: error: too few arguments to funct=
+ion 'regulator_register'
+include/linux/regulator/driver.h:215:23: note: declared here
 
 
+Caused by commit 2c043bcbf287 ("regulator: pass additional of_node to
+regulator_register()").
 
+drivers/regulator/gpio-regulator.c was added in commit 3f0292ae8bb1
+("regulator: Add driver for gpio-controlled regulators") which was
+included in Linus' tree before v3.2-rc1.
+
+I have used the regulator tree from next-20111123 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__24_Nov_2011_14_10_46_+1100_tR99srbXyEeP1xV.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOzbW2AAoJEECxmPOUX5FEXJcP/R+2xrhw9aVkB7YeSG2dcSc5
+FlXdYp78wksZgX/LyUT1DY6ylNVYDYdglhoEq3Q3yvTKonGZHVEp+mccKmyf3cBr
+/lVN6A5EOuyrx7MwIVc1QghfPsup+cEuI1/sgRfh3IxZHviizIEzhVZkCiXLNt/4
+H590sXlAlBZ6RV2whMNdkCTNJ/Z6OBmCyAP/Xtvdh+70Lh5IA9aVmqQdvkKYzAJU
+oCl86BMiQZ3PcKqVSEuAL0grylYDOPpsQLBj/+dDPegVjv0bn2uk3b4OBI/znDrU
+BPdhBrJOLmTxSwmju84PBc4sCFZvjlDJZ/tmGZeoR5WZ94gpqiRvtPEmWUpVQrbh
+hgcTmW5GWJNY7y06oWTeLL5wCntIpC+Nsh+LK6KFZVp/Y/LhitDST5nLbLUzBHU7
+Tdl3thsRP8D+1yxH0wsLit+WMKLAeeINC6wlUSdpxeBuTsv2pDKQHz0FIPdqOZyV
+3sV3D5gY6QqlxuZ0WGXDhoBalsnR5/1KjjvNS3WJqJ762gmfGnd2DTxxrTLlBS/2
+mCS3QTPxi1Eo7fjsWM3uNM7hGSt0LAIgOu769sZqkHRKRue3aoYGfPvSVnLT9Jkz
+v/3AN+op6JIGOENvrrX1U0UgmMTM5ctoS+IVijRsvx0w4WyX3twYHQgmrnDhzY4T
+6dwKeyQPYio4fB5aYjjt
+=2iiz
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__24_Nov_2011_14_10_46_+1100_tR99srbXyEeP1xV.--
