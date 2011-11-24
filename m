@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1KXQfP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 11:35:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44492 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1KXQfN convert rfc822-to-8bit (ORCPT
+	id S1756628Ab1KXQgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 11:36:23 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:34056 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754982Ab1KXQgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 11:35:13 -0500
-Message-ID: <1322152478.2921.68.camel@twins>
-Subject: Re: Fwd: uprobes: register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>, tulasidhard@gmail.com
-Date: Thu, 24 Nov 2011 17:34:38 +0100
-In-Reply-To: <20111124145139.GK28065@linux.vnet.ibm.com>
-References: <hYuXv-26J-3@gated-at.bofh.it> <hYuXw-26J-5@gated-at.bofh.it>
-	 <i0nRU-7eK-11@gated-at.bofh.it>
-	 <603b0079-5f54-4299-9a9a-a5e237ccca73@l23g2000pro.googlegroups.com>
-	 <20111124070303.GB28065@linux.vnet.ibm.com> <1322128199.2921.3.camel@twins>
-	 <20111124145139.GK28065@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Thu, 24 Nov 2011 11:36:21 -0500
+Date: Thu, 24 Nov 2011 11:36:20 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH v3 3/6] [SCSI] runtime resume device before system suspend
+In-Reply-To: <1322137287.2597.10.camel@hp6530s>
+Message-ID: <Pine.LNX.4.44L0.1111241123030.21532-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-24 at 20:21 +0530, Srikar Dronamraju wrote:
-> > No you don't, you check the return value of igrab(), but you crash hard
-> > when someone calls register_uprobe(.inode=NULL).
+On Thu, 24 Nov 2011, Lin Ming wrote:
+
+> > The point of this patch is to handle drivers that do different things
+> > for runtime suspend and system sleep.  The only SCSI driver that
+> > currently supports runtime suspend is sd, and it treats runtime suspend
+> > the same as system sleep.  (Earlier I said it doesn't spin down disks
+> > for runtime suspend -- that was wrong, it does.  It skips the spin-down
+> > step only for PM_EVENT_FREEZE, which is part of the hibernation
+> > procedure.)
 > > 
+> > Until other SCSI drivers support runtime suspend, this patch shouldn't 
+> > be needed.  And spinning up runtime-suspended disks could add a lengthy 
+> > delay to the system sleep transition, so it's better not to do this if 
+> > at all possible.
 > 
-> Okay. will add a check for inode before we do the igrab. 
+> For sd driver, PMSG_SUSPEND and PMSG_HIBERNATE are compatible with
+> PMSG_AUTO_SUSPEND. PMSG_FREEZE is not compatible.
 
-No!!! its fcking pointless calling this function without a valid inode
-argument, don't mess about and try and deal with it.
+I'm not sure what you mean.  In the sd driver, PMSG_SUSPEND,
+PMSG_HIBERNATE, and PMSG_AUTO_SUSPEND all do exactly the same thing.  
+PMSG_FREEZE does a little less -- it doesn't spin down the drive.
 
-Same with the consumer thing, if you call it with a NULL consumer you're
-an idiot, try memcpy(NULL, foo, size), does that return -EINVAL?
+> So we only need to runtime resume sd for PMSG_FREEZE case.
 
-Also, what's the point of all this igrab() nonsense? We don't need extra
-references on the inode, the caller of these functions had better made
-sure the inode is stable and good to use, otherwise it could be freed
-before we do igrab() and we'd still crash.
+No, we don't.  PMSG_FREEZE does not care whether the drive is spinning
+or not.  (That's why it skips the spin-down step.)  Therefore it's
+silly to restart a stopped drive just in order to do a PMSG_FREEZE.
 
+> How about below?
+> 
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index 549ea72..e2759d9 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -50,7 +50,13 @@ static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
+>  	int err = 0;
+>  
+>  	if (scsi_is_sdev_device(dev)) {
+> -		pm_runtime_resume(dev);
+> +		if (pm_runtime_suspended(dev)) {
+> +			if (msg.event == PM_EVENT_FREEZE)
+> +				pm_runtime_resume(dev);
+> +			else
+
+The 3 lines above aren't needed.
+
+> +				return 0;
+> +		}
+> +
+>  		err = scsi_dev_type_suspend(dev, msg);
+>  	}
+>  	return err;
+
+Of course, this leaves the patch in pretty much the same state as what 
+Tejun objected to in
+
+	http://marc.info/?l=linux-ide&m=132136894329965&w=2
+
+I think this email discussion has answered his objection: The only SCSI
+top-level driver implementing runtime suspend is sd, and sd treats
+runtime suspend the same as system sleep.  It might be a good idea to
+add a comment with this explanation along with the new code, however.
+
+Alan Stern
 
