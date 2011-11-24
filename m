@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab1KXRvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 12:51:51 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55036 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab1KXRvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 12:51:50 -0500
-Date: Thu, 24 Nov 2011 17:51:47 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.1-rc10 oops in nameidata_to_filp
-Message-ID: <20111124175147.GN2203@ZenIV.linux.org.uk>
-References: <20111124145141.GB22640@quack.suse.cz>
- <20111124164406.22919.qmail@science.horizon.com>
- <20111124173829.GL2203@ZenIV.linux.org.uk>
- <20111124175002.GM2203@ZenIV.linux.org.uk>
+	id S1755900Ab1KXR6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 12:58:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750Ab1KXR6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 12:58:11 -0500
+Message-ID: <4ECE85A9.5070808@redhat.com>
+Date: Thu, 24 Nov 2011 12:58:01 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111124175002.GM2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: On numa interfaces and stuff
+References: <1321541021.27735.64.camel@twins>
+In-Reply-To: <1321541021.27735.64.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[grr... wrong To: on that one; instead of going it akpm it went to George,
-in one too many copies; my apologies...]
+On 11/17/2011 09:43 AM, Peter Zijlstra wrote:
 
-On Thu, Nov 24, 2011 at 05:50:03PM +0000, Al Viro wrote:
-> On Thu, Nov 24, 2011 at 05:38:29PM +0000, Al Viro wrote:
-> > Said that, I'm not buying the theory of open assigning to ->f_mapping and
-> > screwing it up; all such assignments end up with ->i_mapping of *some*
-> > inode, as far as I can see from cursory grep over the tree.  Just in case:
-> > do you have CONFIG_FS_POSIX_ACL set?
-> 
-> BTW, why are we going through that dance with ->host->i_mapping anyway?
-> It had been introduced by commit by akpm back in 2004 and from my reading
-> of the commit message it was an overkill even back then.  Basically,
-> that call got moved to the point past the call of ->open() (good, ->f_mapping
-> could've been changed by it) *and* converted from ->f_mapping to
-> ->f_mapping->host->i_mapping, which is useless.  Definitely so in the
-> case mentioned in that commit (blkdev_open() sets ->f_mapping 
-> bdev->bd_inode->i_mapping and that thing will have ->host pointing
-> back to bdev->bd_inode).  Commit was in BK, its copy in historical tree
-> is commit 1c211088833a27daa4512348bcae9890e8cf92d4
-> Author: Andrew Morton <akpm@osdl.org>
-> Date:   Wed May 26 17:35:42 2004 -0700
-> 
->     [PATCH] Fix the setting of file->f_ra on block-special files
->     
->     We need to set file->f_ra _after_ calling blkdev_open(), when inode->i_mapping
->     points at the right thing.  And we need to get it from
->     inode->i_mapping->host->i_mapping too, which represents the underlying device.
->     
->     Also, don't test for null file->f_mapping in the O_DIRECT checks.
->     
->     Signed-off-by: Andrew Morton <akpm@osdl.org>
-> 
-> and the only difference wrt setting ->f_mapping on bdev open back then
-> is that it used to be done in do_open() instead of blkdev_open() itself.
-> So I don't understand what that part of changes had been for...  Andrew?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> The abstraction proposed is that of coupling threads (tasks) with
+> virtual address ranges (vmas) and guaranteeing they are all located on
+> the same node. This leaves the kernel in charge of where to place all
+> that and gives it the freedom to move them around, as long as the
+> threads and v-ranges stay together.
+
+I believe this abstraction makes sense.
+
+Programs that are small enough to fit in one NUMA node
+do not need any modification, since the default could
+just be to keep all memory and threads together.
+
+With unmap & migrate-on-fault, we can make a reasonable
+attempt at leaving behind the memory that is not part of
+the working set if the programs running on one NUMA node
+do not quite fit on that node memory-wise.
+
+I expect we will always have some unbalance here, because
+we cannot expect memory and CPU use for programs to correspond
+in a predictable way.  Some small programs may use lots of
+CPU, and some large memory programs may use less CPU.
+
+> A typical use for this would be HPC where the compute threads and
+> v-space want to stay on the node, but starting multiple jobs will allow
+> the kernel to balance resources properly etc.
+>
+> Another use-case would be kvm/qemu like things where you group vcpus and
+> v-space to provide virtual numa nodes to the guest OS.
+
+Databases, Java and any other workload with long-running
+workloads are a good candidate, too.
+
+> I spoke to a number of people in Prague and PJT wanted to merge the task
+> grouping the below does into cgroups, preferably the cpu controller I
+> think. The advantage of doing so is that it removes a duplicate layer of
+> accounting, the dis-advantage however is that it entangles it with the
+> cpu-controller in that you might not want the threads you group to be
+> scheduled differently etc. Also it would restrict the functionality to a
+> cgroup enabled kernel only.
+>
+> AA mentioned wanting to run a pte scanner to dynamically find the numa
+> distribution of tasks, although I think assigning them to a particular
+> node and assuming they all end up there is simpler (and less overhead).
+
+
+> If your application is large enough to not fit on a single node you've
+> got to manually interfere anyway if you care about performance.
+
+There are two cases here.
+
+If the application is multi-threaded and needs more CPUs than
+what are available on one NUMA node, using your APIs to bind
+threads to memory areas is obviously the way to go.
+
+For programs that do not use all their memory simultaneously
+and do not use as many CPUs, unmap & migrate-on-fault may
+well "catch" the working set on the same node where the threads
+are running, leaving less used memory elsewhere.
+
+> As to memory migration (and I think a comment in the below patch refers
+> to it) we can unmap and lazy migrate on fault. Alternatively AA
+> mentioned a background process that trickle migrates everything. I don't
+> really like the latter option since it hides the work/overhead in yet
+> another opaque kernel thread.
+
+There's something to be said for both approaches.
+
+On the one hand, doing unmap & migrate-on-fault with 2MB
+pages could be slow. Especially if memory on the destination
+side needs to be compacted/defragmented first!
+
+Andrea and I talked about some ideas to reduce the latency
+of compacting memory.  I will try those ideas out soon, to
+see if they are realistic and make enough of a difference.
+
+On the other hand, moving the memory that is not in the
+working set is not only extra overhead, but it could even
+be counter-productive, since it can take away space from
+the memory that IS the working set.
+
+Since most of the code will be the stuff that does the
+actual mechanism of migration, we should be able to just
+experiment with both for a while.
+
