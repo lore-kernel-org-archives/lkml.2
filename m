@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab1KXJpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:45:51 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:40351 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab1KXJpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:45:49 -0500
-Date: Thu, 24 Nov 2011 10:45:32 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/8] mm: memcg fixlets for 3.3
-Message-ID: <20111124094532.GF6843@cmpxchg.org>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <CAKTCnzk0Jzq+o1Qv9hOO5ssO7U_xe1ZqUaWDhWEeJAQQPjPudg@mail.gmail.com>
+	id S1755295Ab1KXJq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:46:58 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:55878 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755128Ab1KXJq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:46:56 -0500
+Date: Thu, 24 Nov 2011 11:46:52 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mpn@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Felipe Balbi <balbi@ti.com>,
+        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Ben Dooks <ben@simtec.co.uk>, Heiko Stubner <heiko@sntech.de>,
+        Thomas Abraham <thomas.ab@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/3] usb: udc: Fix gadget driver's speed check in various
+ UDC drivers
+Message-ID: <20111124094651.GR3352@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <Pine.LNX.4.44L0.1111161624570.3443-100000@iolanthe.rowland.org>
+ <12833fb1f3db020248c582c1f947724056a34fe2.1321719300.git.mina86@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U5J2I87mWnf1KeOw"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKTCnzk0Jzq+o1Qv9hOO5ssO7U_xe1ZqUaWDhWEeJAQQPjPudg@mail.gmail.com>
+In-Reply-To: <12833fb1f3db020248c582c1f947724056a34fe2.1321719300.git.mina86@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 11:39:39AM +0530, Balbir Singh wrote:
-> On Wed, Nov 23, 2011 at 9:12 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >
-> > Here are some minor memcg-related cleanups and optimizations, nothing
-> > too exciting.  The bulk of the diffstat comes from renaming the
-> > remaining variables to describe a (struct mem_cgroup *) to "memcg".
-> > The rest cuts down on the (un)charge fastpaths, as people start to get
-> > annoyed by those functions showing up in the profiles of their their
-> > non-memcg workloads.  More is to come, but I wanted to get the more
-> > obvious bits out of the way.
-> 
-> Hi, Johannes
-> 
-> The renaming was a separate patch sent from Raghavendra as well, not
-> sure if you've seen it.
 
-I did and they are already in -mm, but unless I miss something, those
-were only for memcontrol.[ch].  My patch is for the rest of mm.
+--U5J2I87mWnf1KeOw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> What tests are you using to test these patches?
+On Sat, Nov 19, 2011 at 06:26:25PM +0100, Michal Nazarewicz wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+>=20
+> Several UDC drivers had a gadget driver's speed sanity check of the
+> form of:
+>=20
+> 	driver->speed !=3D USB_SPEED_HIGH
+>=20
+> or:
+>=20
+> 	driver->speed !=3D USB_SPEED_HIGH && driver->speed !=3D USB_SPEED_FULL
+>=20
+> As more and more gadget drivers support USB SuperSpeed, driver->speed
+> may be set to USB_SPEED_SUPER and UDC driver should handle such gadget
+> correctly.  The above checks however fail to recognise USB_SPEED_SUPER
+> as a valid speed.
+>=20
+> This commit changes the two checks to:
+>=20
+> 	driver->speed < USB_SPEED_HIGH
+>=20
+> or:
+>=20
+> 	driver->speed < USB_SPEED_FULL
+>=20
+> respectively.
+>=20
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Reported-by: Alan Stern <stern@rowland.harvard.edu>
 
-I usually run concurrent kernbench jobs in separate memcgs as a smoke
-test with these tools:
+applied, thanks
 
-	http://git.cmpxchg.org/?p=statutils.git;a=summary
+--=20
+balbi
 
-"runtest" takes a job-spec file that looks a bit like RPM spec to
-define works with preparation and cleanup phases, and data collectors.
-The memcg kernbench job I use is in the examples directory.  You just
-need to put separate kernel source directories into place (linux-`seq
--w 04`) and then launch it like this:
+--U5J2I87mWnf1KeOw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	runtest -s memcg-kernbench.load `uname -r`
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-which will run the test and collect memory.stat of the parent memcg
-every second, which you can then further evaluate with the other
-tools:
+iQIcBAEBAgAGBQJOzhKLAAoJEIaOsuA1yqRErO0QAJQPLfgzMS9TBVpU6WOd/VDg
+ZvoPO1oupoASf3mdPvPEWAics4n4Ct7Wrge6F8daS0lYJB/szOUTLx7ZZfiwP0k7
+B7e5pfq4RfTW/bfztPqMgpvxkhcCpPCxfYtV/KIoPaimv4+z+XyMIcpZs7OyAx6T
+IKtZls7jGvvQav5ANBzJuysVM2T6wA7qhmKBERU89rNmfz/N+RORcwQgOynTIfJC
+KguNnV3upVcg5utrqJ8YyV/jxmq6TQ5w7jnenLu0t42GHpo4+OYEW98Zoe6P638x
+UdOLTwjMmfm9s8lMDvO8MHr0YCQU0iYiofOtVVezz5kc9JbQz59Pz21doZOcrw5C
+bM3vQZFZX1/S1FFkinINi1hykhXX3pfzFYA43aC2l2lGC/TDKMJ8n35azmPfeKUn
+z0UaV3lY8cAyq0KWyQ/l6CYOJCE/25THBF1RuY6OVOgm+mtvJeFFirU3R7m7nK7h
+jWxiDSn/+2PLTn03V3+7amTV/DGQQHfqyMQh7o23QLFrX1189Agx47ZO3T07C64+
+ldQ9+nNMSUdPdjPn3fFWT+ZOn9oumNPRnwF0Spfk3lh10TmNkmDEFNU1Oq3kQxSG
+3WlyzWFXvR8WwcJCJoKJLQPmGdXe+cNM85KQLdmXY2tq71aIsW4HMdVDueuV95X9
+T60sYv+/Iiut3d5P0CPT
+=zqSO
+-----END PGP SIGNATURE-----
 
-	readdict < `uname -r`-memory.stat.data | columns 14 15 | plot
-
-for example, where readdict translates the "key value" lines of
-memory.stat into tables where each value is on its own row.  Columns
-14 and 15 are total_cache and total_rss (find out with cat -n -- yeah,
-still a bit rough).  You need python-matplotlib for plot to work.
-
-Multiple runs can be collected into the same logfiles and then fold
-ever-increasing counters with the "events" tool.  For example, to find
-the average fault count, you would do something like this (19 =
-total_pgfault, 20 = total_pgmajfault):
-
-	for x in `seq 10`; do runtest -s foo.load foo`; done
-	readdict < foo-memory.stat.data | columns 19 20 | events | mean -s
-
-Oh, and workload runtime is always recorded in NAME.time, so
-
-	events < `uname -r`.time
-
-gives you the timings of each run, which you can then further process
-with "mean" or "median" again.
+--U5J2I87mWnf1KeOw--
