@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1KXEUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 23:20:36 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:60587 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab1KXEUf (ORCPT
+	id S1753305Ab1KXEZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 23:25:03 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59024 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab1KXEZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 23:20:35 -0500
-Date: Thu, 24 Nov 2011 15:20:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: linux-next: manual merge of the cgroup tree with the pm tree
-Message-Id: <20111124152018.66ee4f15447837dd01443fdb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Wed, 23 Nov 2011 23:25:01 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 24 Nov 2011 13:23:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-mm@kvack.org
+Subject: Re: [V3 PATCH 1/2] tmpfs: add fallocate support
+Message-Id: <20111124132349.ca862c9e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4ECDB87A.90106@redhat.com>
+References: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+	<20111124105245.b252c65f.kamezawa.hiroyu@jp.fujitsu.com>
+	<CAHGf_=oD0Coc=k5kAAQoP=GqK+nc0jd3qq3TmLZaitSjH-ZPmQ@mail.gmail.com>
+	<20111124120126.9361b2c9.kamezawa.hiroyu@jp.fujitsu.com>
+	<4ECDB87A.90106@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Nov_2011_15_20_18_+1100_J2OPY9doEK=ZYCca"
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Nov_2011_15_20_18_+1100_J2OPY9doEK=ZYCca
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 24 Nov 2011 11:22:34 +0800
+Cong Wang <amwang@redhat.com> wrote:
 
-Hi Tejun,
+> 于 2011年11月24日 11:01, KAMEZAWA Hiroyuki 写道:
+> > On Wed, 23 Nov 2011 21:46:39 -0500
+> > KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>  wrote:
+> >
+> >>>> +     while (index<  end) {
+> >>>> +             ret = shmem_getpage(inode, index,&page, SGP_WRITE, NULL);
+> >>>
+> >>> If the 'page' for index exists before this call, this will return the page without
+> >>> allocaton.
+> >>>
+> >>> Then, the page may not be zero-cleared. I think the page should be zero-cleared.
+> >>
+> >> No. fallocate shouldn't destroy existing data. It only ensure
+> >> subsequent file access don't make ENOSPC error.
+> >>
+> >        FALLOC_FL_KEEP_SIZE
+> >                This flag allocates and initializes to zero the disk  space
+> >                within the range specified by offset and len. ....
+> >
+> > just manual is unclear ? it seems that the range [offset, offset+len) is
+> > zero cleared after the call.
+> 
+> I think we should fix the man page, because at least ext4 doesn't clear
+> the original contents,
+> 
+> % echo hi > /tmp/foobar
+> % fallocate -n -l 1 -o 10 /tmp/foobar
+> % hexdump -Cv /tmp/foobar
+> 00000000  68 69 0a                                          |hi.|
+> 00000003
+> 
 
-Today's linux-next merge of the cgroup tree got a conflict in
-kernel/cgroup_freezer.c between commit 6907483b4e80 ("freezer: make
-freezing indicate freeze condition in effect") from the pm tree and
-commit 41dfa07cedcc ("cgroup_freezer: fix freezing groups with stopped
-tasks") from the cgroup tree.
+thank you for checking. So, at failure path, original data should not be
+cleared, either.
 
-I think that the latter is a superset of the former (but I may be wrong),
-so I used that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
+-Kame
 
---Signature=_Thu__24_Nov_2011_15_20_18_+1100_J2OPY9doEK=ZYCca
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOzcYCAAoJEECxmPOUX5FEWTIQAJMxT1/uRdlcwtaFCbciUaXn
-UAnjLHjHfeNqC526tkIjsuLle2iyj2k1myX0uRyym1R2u9Y7t7fPtJCFElYWRwgg
-Ev87BRG3RcxvNhPPeusxFqdKgvj86CoFGwSrrDTaXhR4Z7pJiyWb2cNCfsv7qpiV
-BTa64iT1Yb91S+GW/V51Njh5Nb+X/jJEsiLL17UepUj1d1rzVsyOA46tkIvf+mB+
-8ztP5qsIV4qYNtT1QHmPULZe/HRd1DtweeNm4kEHg9xDSRZeZNi6VlYAq6pPrBJg
-WrzR0o9zKb19lM95aFDAo+D4lEmN3+KVij5sqXhI0VozOYevtrJpjO0H4E2JDY1l
-4cpYGk1njirjhGqE8cS39YqqTtFigdtQEDgBvDk4dMx6OWUZNT4gJ94Tp5Fv87EU
-zTrU4VTUgLKTdmgJ5ZuhKM6b68kTolc3m3HQq/I8u5/7FmKLJCi/DZeVkPPPOcF/
-6iZhySKaGFvHiIiCUqa59cKCnkS/Rg4Tmtc575l3I+BxX/O3GpdR1a5uACCuywjw
-jmTtm5U6egl/n3ucYM4uzg8XCocmVmO+BrSnCvtge4hNoAAKWsXzHghHqv1O4oyd
-ocXRY7D8OW25r8V8eprRfAbCmb4QC0cKq6JEaZwcmfDbDf0S76meZ4qFNi7rLKWf
-8oPLvgOJfQwhNObId3jR
-=dGe9
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Nov_2011_15_20_18_+1100_J2OPY9doEK=ZYCca--
