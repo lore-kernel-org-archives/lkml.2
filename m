@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab1KXXDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 18:03:12 -0500
-Received: from ozlabs.org ([203.10.76.45]:44195 "EHLO ozlabs.org"
+	id S1754966Ab1KXXDN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 18:03:13 -0500
+Received: from ozlabs.org ([203.10.76.45]:49293 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900Ab1KXXDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753852Ab1KXXDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Nov 2011 18:03:10 -0500
-Date: Fri, 25 Nov 2011 09:34:10 +1100
+Date: Fri, 25 Nov 2011 10:02:13 +1100
 From: Paul Mackerras <paulus@samba.org>
 To: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
 Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, Amerigo Wang <amwang@redhat.com>,
-        Kexec-ml <kexec@lists.infradead.org>, Milton Miller <miltonm@bga.com>,
+        Amerigo Wang <amwang@redhat.com>, Kexec-ml <kexec@lists.infradead.org>,
+        Milton Miller <miltonm@bga.com>, Haren Myneni <hbabu@us.ibm.com>,
         Randy Dunlap <rdunlap@xenotime.net>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC PATCH v5 1/9] fadump: Add documentation for
- firmware-assisted dump.
-Message-ID: <20111124223410.GB19828@bloggs.ozlabs.ibm.com>
+        Ananth Narayan <ananth@in.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [RFC PATCH v5 2/9] fadump: Reserve the memory for firmware
+ assisted dump.
+Message-ID: <20111124230213.GC19828@bloggs.ozlabs.ibm.com>
 References: <20111115151145.16533.16384.stgit@mars.in.ibm.com>
- <20111115151334.16533.5790.stgit@mars.in.ibm.com>
+ <20111115151343.16533.70101.stgit@mars.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111115151334.16533.5790.stgit@mars.in.ibm.com>
+In-Reply-To: <20111115151343.16533.70101.stgit@mars.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 08:43:34PM +0530, Mahesh J Salgaonkar wrote:
+On Tue, Nov 15, 2011 at 08:43:43PM +0530, Mahesh J Salgaonkar wrote:
 > From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 > 
-> Documentation for firmware-assisted dump. This document is based on the
-> original documentation written for phyp assisted dump by Linas Vepstas
-> and Manish Ahuja, with few changes to reflect the current implementation.
-> 
-> Change in v3:
-> - Modified the documentation to reflect introdunction of fadump_registered
->   sysfs file and few minor changes.
-> 
-> Change in v2:
-> - Modified the documentation to reflect the change of fadump_region
->   file under debugfs filesystem.
+> Reserve the memory during early boot to preserve CPU state data, HPTE region
+> and RMR region data in case of kernel crash. At the time of crash, powerpc
+> firmware will store CPU state data, HPTE region data and move RMR region
+> data to the reserved memory area.
 
-In general we don't want the changes between successive versions in
-the patch description; this information should go below the "---"
-line.  The patch description should describe how the patch is now and
-give any information that will be useful to someone looking at the
-resulting git commit later on, but it doesn't need to tell us about
-previous versions of the patch that will never appear in the git
-history.
+What is "RMR"?  I don't see anywhere that you explain this acronym.
+Is it the same as the RMA (real mode area)?
 
-> +-- Once the dump is copied out, the memory that held the dump
-> +   is immediately available to the running kernel. A further
-> +   reboot isn't required.
+> +config FA_DUMP
+> +	bool "Firmware-assisted dump"
 
-I have a general worry about the system making allocations that are
-intended to be node-local while it is running with restricted memory
-(i.e. after the crash and reboot and before the dump has been written
-out and the dump memory freed).  Those allocations will probably all
-come from one node and thus won't necessarily be on the desired node.
-So, for very large systems with significant NUMA characteristics, it
-may be desirable (though not required) to reboot after taking the
-dump.
+Is this new fadump infrastructure intended to supersede the existing
+phyp dump code?  Does it use the same phyp interfaces as phyp dump?
+If so, you should probably remove the phyp dump code and config option
+as the final patch in your series.
 
-What happens about the NUMA information in the kernel -- all the
-memory sections, etc.?  Do they get set up as normal even though the
-second kernel is booting with only a small amount of memory initially?
+> +/*
+> + * The RMR region will be saved for later dumping when kernel crashes.
+> + * Set this to RMO size.
+> + */
+> +#define RMR_START	0x0
+> +#define RMR_END		(ppc64_rma_size)
 
-> + /sys/kernel/debug/powerpc/fadump_region
+An explanation of "RMR" here, and what the distinction (if any)
+between RMR and RMA/RMO is, would help future readers.
+
+> +	sections = of_get_flat_dt_prop(node, "ibm,configure-kernel-dump-sizes",
+> +					&size);
 > +
-> +    This file shows the reserved memory regions if fadump is
-> +    enabled otherwise this file is empty. The output format
-> +    is:
-> +    <region>: [<start>-<end>] <reserved-size> bytes, Dumped: <dump-size>
+> +	if (!sections)
+> +		return 0;
 > +
-> +    e.g.
-> +    Contents when fadump is registered during first kernel
+> +	num_sections = size / sizeof(struct dump_section);
 > +
-> +    # cat /sys/kernel/debug/powerpc/fadump_region
-> +    CPU : [0x0000006ffb0000-0x0000006fff001f] 0x40020 bytes, Dumped: 0x0
-> +    HPTE: [0x0000006fff0020-0x0000006fff101f] 0x1000 bytes, Dumped: 0x0
-> +    DUMP: [0x0000006fff1020-0x0000007fff101f] 0x10000000 bytes, Dumped: 0x0
+> +	for (i = 0; i < num_sections; i++) {
+> +		switch (sections[i].dump_section) {
+> +		case FADUMP_CPU_STATE_DATA:
+> +			fw_dump.cpu_state_data_size = sections[i].section_size;
+> +			break;
+> +		case FADUMP_HPTE_REGION:
+> +			fw_dump.hpte_region_size = sections[i].section_size;
+> +			break;
 
-How come the HPTE region is only 0x1000 (4k) bytes?  The hashed page
-table (HPT) will be much bigger than this.  Is this our way of telling
-the hypervisor that we don't care about the HPT?  If so, is it
-possible to make this region 0 bytes instead of 0x1000?
+It's generally better to use of_read_number() or of_read_ulong() to
+parse OF properties, rather than using a structure like this.
+
+> +	/* divide by 20 to get 5% of value */
+> +	size = memblock_end_of_DRAM();
+> +	do_div(size, 20);
+
+You could just say size = memblock_end_of_DRAM() / 20 here; no need to
+use do_div, since we won't be using this code on 32-bit platforms.
+
+> +	if (!fw_dump.fadump_supported) {
+> +		printk(KERN_ERR "Firmware-assisted dump is not supported on"
+> +				" this hardware\n");
+
+This shouldn't be KERN_ERR; it's not an error to boot a kernel with
+fadump configured in on a machine that doesn't have firmware fadump
+support.  I don't think we really need any message, but if we have one
+it should be KERN_INFO at most.
+
+> +/* Look for fadump= cmdline option. */
+> +static int __init early_fadump_param(char *p)
+> +{
+> +	if (!p)
+> +		return 1;
+> +
+> +	if (p[0] == '1')
+> +		fw_dump.fadump_enabled = 1;
+> +	else if (p[0] == '0')
+> +		fw_dump.fadump_enabled = 0;
+
+I think it's usual to allow "on" and "off" as values for this kind of
+option.  There might be a handy little helper function to parse this
+sort of thing (but if there is I don't know what it is called).
 
 Paul.
