@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1KXKIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:08:44 -0500
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:45385 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab1KXKIn (ORCPT
+	id S1755493Ab1KXKJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:09:20 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44443 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab1KXKJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:08:43 -0500
-Message-ID: <1322129317.25125.13.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] [RESEND] leds: Kconfig: Fix typo 'D2NET_V2'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Simon Guinot <sguinot@lacie.com>, Nicolas Pitre <nico@fluxnic.net>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 Nov 2011 11:08:37 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 24 Nov 2011 05:09:18 -0500
+Message-ID: <4ECE17C7.2080801@gmail.com>
+Date: Thu, 24 Nov 2011 18:09:11 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: IA64: fix struct redefinition
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+
+There is the same struct definition in ia64 and kvm common code:
+arch/ia64/kvm//kvm-ia64.c: At top level:
+arch/ia64/kvm//kvm-ia64.c:777:8: error: redefinition of ‘struct kvm_io_range’
+include/linux/kvm_host.h:62:8: note: originally defined here
+
+So, rename kvm_io_range to kvm_ia64_io_range in ia64 code
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
-0) This corrects an obvious typo. That typo was added in commit
-84712e9aa4 ("[ARM] Kirkwood: add LaCie d2 Network v2 support") which
-added support for 'MACH_D2NET_V2'.
+ arch/ia64/kvm/kvm-ia64.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-1) I sent this yesterday to trivial@kernel.org only. However, this
-allows people using a "LaCie d2 Network v2 NAS Board" to enable "LED
-support for Network Space v2 GPIO LEDs" and thus lets them run code that
-they can't run now. So, to be really safe, this time I've also CC'd the
-people involved in that commit to (perhaps test this and) ACK or NAK
-this.
+diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+index 92d9f1e..4050520 100644
+--- a/arch/ia64/kvm/kvm-ia64.c
++++ b/arch/ia64/kvm/kvm-ia64.c
+@@ -774,13 +774,13 @@ struct kvm *kvm_arch_alloc_vm(void)
+ 	return kvm;
+ }
 
- drivers/leds/Kconfig |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+-struct kvm_io_range {
++struct kvm_ia64_io_range {
+ 	unsigned long start;
+ 	unsigned long size;
+ 	unsigned long type;
+ };
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index ff203a4..1b75a56 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -347,7 +347,8 @@ config LEDS_MC13783
- config LEDS_NS2
- 	tristate "LED support for Network Space v2 GPIO LEDs"
- 	depends on LEDS_CLASS
--	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || MACH_NETSPACE_MAX_V2 || D2NET_V2
-+	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || \
-+		   MACH_NETSPACE_MAX_V2 || MACH_D2NET_V2
- 	default y
- 	help
- 	  This option enable support for the dual-GPIO LED found on the
+-static const struct kvm_io_range io_ranges[] = {
++static const struct kvm_ia64_io_range io_ranges[] = {
+ 	{VGA_IO_START, VGA_IO_SIZE, GPFN_FRAME_BUFFER},
+ 	{MMIO_START, MMIO_SIZE, GPFN_LOW_MMIO},
+ 	{LEGACY_IO_START, LEGACY_IO_SIZE, GPFN_LEGACY_IO},
 -- 
 1.7.7.3
-
