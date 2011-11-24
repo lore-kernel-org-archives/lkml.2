@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1KXBdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 20:33:03 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52058 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297Ab1KXBdA (ORCPT
+	id S1753834Ab1KXBwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 20:52:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52727 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab1KXBwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 20:33:00 -0500
+	Wed, 23 Nov 2011 20:52:12 -0500
+Date: Wed, 23 Nov 2011 17:52:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
+ for mempolicy or disjoint nodemask
+In-Reply-To: <4ECD9D43.6090202@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1111231751480.9042@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com>
+ <4ECC5FC8.9070500@cn.fujitsu.com> <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com> <4ECC7B1E.6020108@cn.fujitsu.com> <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com> <4ECCA578.6020700@cn.fujitsu.com>
+ <alpine.DEB.2.00.1111231425030.5261@chino.kir.corp.google.com> <4ECD9D43.6090202@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20111124012344.GA2235@havoc.gtf.org>
-References: <20111124012344.GA2235@havoc.gtf.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 Nov 2011 17:32:38 -0800
-X-Google-Sender-Auth: HUlUJ8Akt8FPF-gTNduotWmE0TY
-Message-ID: <CA+55aFwOF4XzRqms_q5FozXdnqKtVHg-3hbEuFj_uL+-e4wZLQ@mail.gmail.com>
-Subject: Re: [git patches] libata fixes
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 5:23 PM, Jeff Garzik <jeff@garzik.org> wrote:
->
-> -----BEGIN PGP SIGNED MESSAGE-----
+On Thu, 24 Nov 2011, Miao Xie wrote:
 
-You *still* haven't found anybody but Hedrick to sign your key? And he
-hasn't found anybody but you?
+> Memory compaction will see an empty nodemask and do nothing, and then
+> we may fail to get several contiguous pages.
+> 
 
-It kind of makes that whole notion of "pgp network of trust" a bit pointless...
-
-Anyway, pulled,.
-
-                 Linus
+Where do we rely on a consistent nodemask for memory compaction?
