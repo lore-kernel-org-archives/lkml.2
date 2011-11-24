@@ -1,47 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1KXDIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 22:08:11 -0500
-Received: from dns1.mips.com ([12.201.5.69]:53507 "EHLO dns1.mips.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab1KXDIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 22:08:10 -0500
-Message-ID: <4ECDB4C1.30006@mips.com>
-Date: Thu, 24 Nov 2011 11:06:41 +0800
-From: Deng-Cheng Zhu <dczhu@mips.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] perf: Enable applicable siblings when group leader
- is enable-on-exec
-References: <1321932601-21128-1-git-send-email-dczhu@mips.com>	 ,<1321959115.5148.22.camel@twins>	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA82C@exchdb03.mips.com>	 ,<1321969559.14799.7.camel@twins>	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA871@exchdb03.mips.com>	 <1321971798.14799.12.camel@twins> <4ECC6AAC.4010504@mips.com>	,<1322048382.14799.41.camel@twins>	 <BD04AF0D5BE72443A0B69C1C0486AD3ECE8DA9FF@exchdb03.mips.com> <1322052511.14799.61.camel@twins>
-In-Reply-To: <1322052511.14799.61.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
-X-EMS-STAMP: 0ikYwNu7EXO8+KcwnaDJUA==
+	id S1755618Ab1KXDI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 22:08:28 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:52912 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab1KXDI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 22:08:27 -0500
+Date: Thu, 24 Nov 2011 03:05:55 +0000
+From: William Van <William.Van@huawei.com>
+Subject: [Help]  The kernel crashed after merging the iscsi patch .
+In-reply-to: <1321951821.12077.0.camel@dabdike.c.hospitality.swisscom.com>
+X-Originating-IP: [10.166.82.168]
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <176A8598E62E0048838E40BB7BB429E6F42F79@szxeml528-mbs.china.huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-language: zh-CN
+Accept-Language: zh-CN, en-US
+Thread-topic: [Help]  The kernel crashed after merging the iscsi patch .
+Thread-index: AQHMqlX735BxB6GLQ0u9+ClqMfX77g==
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-CFilter-Loop: Reflected
+References: <176A8598E62E0048838E40BB7BB429E6F42F02@szxeml528-mbs.china.huawei.com>
+ <1321951821.12077.0.camel@dabdike.c.hospitality.swisscom.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAO38f7B011670
 
-On 11/23/2011 08:48 PM, Peter Zijlstra wrote:
-> On Wed, 2011-11-23 at 12:40 +0000, Zhu, DengCheng wrote:
->>
->> Ah, yes you are right. Thanks. Your following patch looks good except
->> that event_entry should be used for ctx event_list, rather than
->> group_entry.
->
-> D'0h yes, I figure the next compile cycle would've caught that. Fixed it
-> though, thanks!
+First, I'm so sorry because I've forgotten the Email subject.  During these days ,I'm doing more tests.
 
-I tested it this morning. It passed my cases :) You may also add my:
+After merging the patch http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=0ccd644ce6a803b4f7ae5b3b4da614b8a51037cc,  the kernel crashed for an oops problem ,when I log out the iscsi session with command line "iscsiadm -m session -r sid -u" , and the call trace will be shown at the last of this text.
 
-Tested-by: Deng-Cheng Zhu <dczhu@mips.com>
+The function __scsi_remove_device() will be called when excecuting command line "iscsiadm -m session -r sid -u".After __scsi_remove_device() has been called, e->ops is set NULL by calling the function elevator_exit(). But the e->ops can be used util the sdev release function is called,then we can get an oops.
+
+I have tried to roll back this patch to do some test, the oops problem never occurred again,because e->ops is set NULL when sdev release function is called.The e->ops will not be used after sdev release.
+
+So do you have met such problem or have some thoughts with this problem?   
+
+The call trace of this oops problem as follows: 
+
+Trap number:14, message:Oops
+Error num: 0
+Sigal Num:11_SIGSEGV
+Event ID:DIE_OOPS
+RIP: e030:[<ffffffff801b53c2>]
+<ffffffff801b53c2>{elv_completed_request+0x72}
+RSP: e02b:ffff88000202fdb0  EFLAGS: 00010002
+RAX: 0000000000000000 RBX: ffff8800fae5cca0 RCX: 0000000000000000
+RDX: ffff8800fcbed4c0 RSI: ffff8800fc93b060 RDI: ffff8800fae5cca0
+RBP: ffff8800fc93b060 R08: ffff8800fe7a9040 R09: 0000000000000001
+R10: 000000010053fd4c R11: 0000000000000067 R12: ffff8800fae5cca0
+R13: ffff8800fae5cca0 R14: 0000000000000000 R15: 0000000000000000
+FS:  00007f0f11db5700(0000) GS:ffff88000202c000(0000) knlGS:0000000000000000
+CS:  e033 DS: 002b ES: 002b CR0: 000000008005003b
+CR2: 0000000000000050 CR3: 00000000c596a000 CR4: 0000000000002620
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<kernel_trace>
+       <ffffffff80009b05>{dump_trace+0x65}
+       <ffffffff8037b66b>{__die+0x8b}
+       <ffffffff8001bed1>{no_context+0xd1}
+       <ffffffff8001c1f5>{__bad_area_nosemaphore+0x175}
+       <ffffffff8037abf8>{page_fault+0x28}
+       <ffffffff801b53c2>{elv_completed_request+0x72}
+       <ffffffff801b7d97>{__blk_put_request+0x27}
+       <ffffffff801b83aa>{blk_end_bidi_request+0x4a}
+       <ffffffffa0008309>{scsi_mod:scsi_io_completion+0x119}
+       <ffffffff801bd8e5>{blk_done_softirq+0x85}
+       <ffffffff80043c4e>{__do_softirq+0xde}
+       <ffffffff80007f2c>{call_softirq+0x1c}
+       <ffffffff800095c5>{do_softirq+0xa5}
+       <ffffffff80043ab5>{irq_exit+0x55}
+       <ffffffff8027c6d2>{evtchn_do_upcall+0x2f2}
+       <ffffffff8000798e>{do_hypervisor_callback+0x1e}
+       [<ffffffff800033aa>]
+       <ffffffff8000a8af>{xen_safe_halt+0xcf}
+       <ffffffff8000deed>{xen_idle+0x5d}
+       <ffffffff800065bf>{cpu_idle+0x5f}
+</kernel_trace>
 
 
-Deng-Cheng
+
+Thanks & Best Wishes.
+
+William Van 
+
+
+
+> -----ÈÇÆ‰ª∂Âéü‰ª∂-----
+> Âèë‰ª∂‰∫∫: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> ÂèëÈÄÅÊó∂Èó¥: 2011Âπ¥11Êúà22Êó• 16:50
+> Êî∂‰ª∂‰∫∫: William Van
+> ‰∏ªÈ¢ò: Re:
+> 
+> On Tue, 2011-11-22 at 07:30 +0000, William Van wrote:
+> > Hi,J.
+> > After merging the patch
+> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=0c
+> cd644ce6a803b4f7ae5b3b4da614b8a51037cc,  the kernel crashed for an
+> oops problem ,when I log out the iscsi session with command line "iscsiadm -m
+> session -r sid -u" , and the call trace will be shown at the last of this text.
+> 
+> Could you send this to linux-scsi@vger.kernel.org (along with a proper
+> subject line and the kernel version)?
+> 
+> Thanks,
+> 
+> James
+> 
+> 
+> > After analyzing the function __scsi_remove_device(), which will be called
+> while excecuting command line "iscsiadm -m session -r sid -u", I found that this
+> function will send an request with cmd[0]=SYNCHRONIZE_CACHE and then
+> wait for the request's completion before removing the target device. When
+> this SYNCHRONIZE_CACHE request is completed, the function scsi_free_queue()
+> will be called to release the scsi device's request queue and then e->ops will be
+> set NULL by calling the function elevator_exit().
+> >
+> > By my guess, when the normal io request get completed after calling the
+> function elevator_exit(), we may use e->ops that has been NULL in the normal
+> io request end's callback function elv_completed_request(), and then the oops
+> problem occurs. I have tried to roll back this patch to do some test, finding
+> that the function scsi_free_queue() and elevator_exit() are not called, and the
+> oops problem never occurred again.
+> >
+> > So do you have met such problem or have some thoughts with this problem?
+> >
+> > Thanks.
+> >
+> > The call trace of this oops problem as follows:
+> >
+> > Trap number:14, message:Oops
+> > Error num: 0
+> > Sigal Num:11_SIGSEGV
+> > Event ID:DIE_OOPS
+> > RIP: e030:[<ffffffff801b53c2>]
+> > <ffffffff801b53c2>{elv_completed_request+0x72}
+> > RSP: e02b:ffff88000202fdb0  EFLAGS: 00010002
+> > RAX: 0000000000000000 RBX: ffff8800fae5cca0 RCX: 0000000000000000
+> > RDX: ffff8800fcbed4c0 RSI: ffff8800fc93b060 RDI: ffff8800fae5cca0
+> > RBP: ffff8800fc93b060 R08: ffff8800fe7a9040 R09: 0000000000000001
+> > R10: 000000010053fd4c R11: 0000000000000067 R12: ffff8800fae5cca0
+> > R13: ffff8800fae5cca0 R14: 0000000000000000 R15: 0000000000000000
+> > FS:  00007f0f11db5700(0000) GS:ffff88000202c000(0000)
+> knlGS:0000000000000000
+> > CS:  e033 DS: 002b ES: 002b CR0: 000000008005003b
+> > CR2: 0000000000000050 CR3: 00000000c596a000 CR4:
+> 0000000000002620
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> <kernel_trace>
+> >        <ffffffff80009b05>{dump_trace+0x65}
+> >        <ffffffff8037b66b>{__die+0x8b}
+> >        <ffffffff8001bed1>{no_context+0xd1}
+> >        <ffffffff8001c1f5>{__bad_area_nosemaphore+0x175}
+> >        <ffffffff8037abf8>{page_fault+0x28}
+> >        <ffffffff801b53c2>{elv_completed_request+0x72}
+> >        <ffffffff801b7d97>{__blk_put_request+0x27}
+> >        <ffffffff801b83aa>{blk_end_bidi_request+0x4a}
+> >        <ffffffffa0008309>{scsi_mod:scsi_io_completion+0x119}
+> >        <ffffffff801bd8e5>{blk_done_softirq+0x85}
+> >        <ffffffff80043c4e>{__do_softirq+0xde}
+> >        <ffffffff80007f2c>{call_softirq+0x1c}
+> >        <ffffffff800095c5>{do_softirq+0xa5}
+> >        <ffffffff80043ab5>{irq_exit+0x55}
+> >        <ffffffff8027c6d2>{evtchn_do_upcall+0x2f2}
+> >        <ffffffff8000798e>{do_hypervisor_callback+0x1e}
+> >        [<ffffffff800033aa>]
+> >        <ffffffff8000a8af>{xen_safe_halt+0xcf}
+> >        <ffffffff8000deed>{xen_idle+0x5d}
+> >        <ffffffff800065bf>{cpu_idle+0x5f} </kernel_trace>
+> >
+> >
+> >
+> > -----
+> > Thanks & Best Wishes.
+> >
+> > William Van
+> >
+> >
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
