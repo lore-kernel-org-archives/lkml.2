@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493Ab1KXFrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 00:47:51 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53014 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab1KXFru (ORCPT
+	id S1752124Ab1KXFuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 00:50:00 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60079 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab1KXFt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 00:47:50 -0500
-Date: Thu, 24 Nov 2011 07:47:31 +0200
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "rmallon@gmail.com" <rmallon@gmail.com>,
-        Rafal Prylowski <prylowski@metasoft.pl>
-Subject: Re: [PATCH 2/2] dma/ep93xx_dma: prevent ep93xx_dma_tasklet() to
- access empty list
-Message-ID: <20111124054731.GB2621@mwesterb-mobl.ger.corp.intel.com>
-References: <19bcd0ee953116fd71bc1c705636c5fec80608cb.1321990466.git.mika.westerberg@iki.fi>
- <707c0a5c61bd597ceed3871fc3528f687ac0fcff.1321990466.git.mika.westerberg@iki.fi>
- <ADE657CA350FB648AAC2C43247A983F001F3E96DA6B7@AUSP01VMBX24.collaborationhost.net>
- <1322046034.1516.254.camel@vkoul-udesk3>
+	Thu, 24 Nov 2011 00:49:59 -0500
+Message-ID: <4ECDDB04.5050307@gmail.com>
+Date: Wed, 23 Nov 2011 23:49:56 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322046034.1516.254.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: pata_jmicron triggers warning in PCIe code
+References: <20111123144344.GA5116@zod.bos.redhat.com>
+In-Reply-To: <20111123144344.GA5116@zod.bos.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 04:30:34PM +0530, Vinod Koul wrote:
-> 
-> will you still hit the problem if you do a proper check in tasklet for 
-> a) if list is empty
-> b) if _get_active_desc() returns valid desc
-> and the _get_active_desc() returns NULL on not finding active desc
+On 11/23/2011 08:43 AM, Josh Boyer wrote:
+> Hi,
+>
+> We have a report of the pata_jmicron driver hitting the following
+> warning in the 3.1.x kernel series:
+>
+> WARNING: at drivers/pci/search.c:44 pci_find_upstream_pcie_bridge+0x56/0x6f()
+> Hardware name: System Product Name
+> Modules linked in: pata_jmicron(+)
+> Pid: 256, comm: modprobe Not tainted 3.1.1-1.fc16.x86_64 #1
+> Call Trace:
+>   [<ffffffff81057a1e>] warn_slowpath_common+0x83/0x9b
+>   [<ffffffff81057a50>] warn_slowpath_null+0x1a/0x1c
+>   [<ffffffff81241643>] pci_find_upstream_pcie_bridge+0x56/0x6f
+>   [<ffffffff814b45d4>] get_domain_for_dev.part.9.constprop.13+0x2e/0x47f
+>   [<ffffffff814b4bf9>] __get_valid_domain_for_dev+0x2c/0xa0
+>   [<ffffffff813c1ca3>] __intel_map_single+0x5a/0x172
+>   [<ffffffff811103e8>] ? alloc_pages_current+0xc7/0xd8
+>   [<ffffffff813c1eb7>] intel_alloc_coherent+0xc7/0xee
+>   [<ffffffff812e7612>] ? dmam_noncoherent_release+0x1b/0x1b
+>   [<ffffffff812e757c>] dma_alloc_coherent+0x80/0x82
+>   [<ffffffff812e7721>] dmam_alloc_coherent+0x58/0x9c
+>   [<ffffffff81317e88>] ata_bmdma_port_start+0x43/0x58
+>   [<ffffffff81309ef6>] ata_host_start+0xdd/0x168
+>   [<ffffffff813184fd>] ? __ata_sff_interrupt+0x179/0x179
+>   [<ffffffff81318709>] ata_pci_sff_activate_host+0x36/0x1e0
+>   [<ffffffff813c2b1f>] ? pcibios_set_master+0x88/0x8f
+>   [<ffffffff81318bc7>] ata_pci_bmdma_init_one+0xc2/0xf8
+>   [<ffffffffa0000032>] jmicron_init_one+0x32/0x34 [pata_jmicron]
+>   [<ffffffff8123fce7>] local_pci_probe+0x44/0x75
+>   [<ffffffff8124084a>] pci_device_probe+0xd0/0xff
+>   [<ffffffff812dea17>] driver_probe_device+0x131/0x213
+>   [<ffffffff812deb53>] __driver_attach+0x5a/0x7e
+>   [<ffffffff812deaf9>] ? driver_probe_device+0x213/0x213
+>   [<ffffffff812dda9f>] bus_for_each_dev+0x53/0x89
+>   [<ffffffff812de5f6>] driver_attach+0x1e/0x20
+>   [<ffffffff812de21a>] bus_add_driver+0xd1/0x224
+>   [<ffffffffa0002000>] ? 0xffffffffa0001fff
+>   [<ffffffff812deff7>] driver_register+0x98/0x105
+>   [<ffffffffa0002000>] ? 0xffffffffa0001fff
+>   [<ffffffff8124110d>] __pci_register_driver+0x56/0xc1
+>   [<ffffffffa0002000>] ? 0xffffffffa0001fff
+>   [<ffffffffa000201e>] jmicron_init+0x1e/0x20 [pata_jmicron]
+>   [<ffffffff81002099>] do_one_initcall+0x7f/0x136
+>   [<ffffffff8108a595>] sys_init_module+0x88/0x1d0
+>   [<ffffffff814bd8c2>] system_call_fastpath+0x16/0x1b
+>
+> That boils down to the following check:
+>
+>                  /* PCI device should connect to a PCIe bridge */
+>                  if (pdev->pcie_type != PCI_EXP_TYPE_PCI_BRIDGE) {
+>                          /* Busted hardware? */
+>                          WARN_ON_ONCE(1);
+>                          return NULL;
+>                  }
+>
+> I don't recall seeing reports of this on the 3.0 kernel.  Should we add
+> some debugging code to print out what pdev->pcie_type is set to here?
+> Without knowing that, I can't tell if it's actually finding something weird
+> about the hardware, or memory corruption that seems to hit here.
+>
+> The user has hit it about 3 times thus far, so they can at least recreate
+> it fairly easily.
+>
+> Any other ideas?
 
-No, with the above the problem goes away.
+Well, I don't think it has anything to do with the driver. It seems like 
+the code is trying to go from the PCI device up the chain of PCI bridges 
+until it finds a PCI-E device that's a bridge. The warning indicates 
+that the first PCI-E device it found didn't seem to be a bridge.
 
-> The point is by adding a flag you are avoiding the condition hence it is
-> working for you whereas on other approach you exit gracefully without
-> crashing in all the cases (including potentially uncovered ones)
+Can we get the output of "lspci -vv" on this machine?
 
-Ok I see.
-
-I'll prepare a new version where ep93xx_dma_get_active() returns NULL in case
-of empty active list, and handle it properly in callers.
