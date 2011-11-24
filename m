@@ -1,36 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab1KXWvs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 17:51:48 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46952 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab1KXWvr (ORCPT
+	id S1754744Ab1KXWyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 17:54:40 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:37101 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753527Ab1KXWyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 17:51:47 -0500
-Date: Thu, 24 Nov 2011 14:51:41 -0800
-From: Tejun Heo <tj@kernel.org>
-To: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCHSET] cgroup: stable threadgroup during attach & subsys
- methods consolidation
-Message-ID: <20111124225141.GB14828@google.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+	Thu, 24 Nov 2011 17:54:37 -0500
+Date: Thu, 24 Nov 2011 17:54:36 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Lin Ming <ming.m.lin@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH v3 3/6] [SCSI] runtime resume device before system suspend
+In-Reply-To: <20111124195703.GA6735@google.com>
+Message-ID: <Pine.LNX.4.44L0.1111241735300.26861-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320191193-8110-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Series committed to cgroup/for-3.3 with updated patch and pushed out
-to linux-next.
+On Thu, 24 Nov 2011, Tejun Heo wrote:
 
-Thank you.
+> Hello,
+> 
+> On Thu, Nov 24, 2011 at 11:36:20AM -0500, Alan Stern wrote:
+> > I think this email discussion has answered his objection: The only SCSI
+> > top-level driver implementing runtime suspend is sd, and sd treats
+> > runtime suspend the same as system sleep.  It might be a good idea to
+> > add a comment with this explanation along with the new code, however.
+> 
+> Hmmm... I see.  This shouldn't affect host controller states - we'll
+> be skipping only the drive PM transitions, right?
 
--- 
-tejun
+Right.
+
+>  As long as it's
+> well documented, I guess it's okay but at the same time I don't think
+> it's such a big deal to spin up drives when the system is entering
+> hibernation from runtime powersave.  On most systems, they'll need to
+> be spun up for image dump pretty soon anyway.
+
+Hmm, that's true.  Or more precisely, they'll all be spun up for the
+THAW stage of hibernation, prior to storing the memory image -- even
+though the image is generally stored on only a single drive.
+
+Okay, Ming, your most recent suggested patch can be used as is (though
+adding a comment would be a good idea).  Here's my suggestion for the
+patch description:
+
+The only high-level SCSI driver that currently implements runtime PM is
+sd, and sd treats runtime suspend exactly the same as the SUSPEND and
+HIBERNATE stages of system sleep, but not the same as the FREEZE stage.
+
+Therefore, when entering the SUSPEND or HIBERNATE stages of system
+sleep, we can skip the callback to the driver if the device is already
+in runtime suspend.  When entering the FREEZE stage, however, we should
+first issue a runtime resume.  The overhead of doing this is
+negligible, because a suspended drive would be spun up during the THAW
+stage of hibernation anyway.
+
+Alan Stern
+
