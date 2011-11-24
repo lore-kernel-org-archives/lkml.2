@@ -1,104 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab1KXOwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 09:52:49 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:44227 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab1KXOwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 09:52:47 -0500
-Date: Thu, 24 Nov 2011 20:21:39 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>, tulasidhard@gmail.com
-Subject: Re: Fwd: uprobes: register/unregister probes.
-Message-ID: <20111124145139.GK28065@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <hYuXv-26J-3@gated-at.bofh.it>
- <hYuXw-26J-5@gated-at.bofh.it>
- <i0nRU-7eK-11@gated-at.bofh.it>
- <603b0079-5f54-4299-9a9a-a5e237ccca73@l23g2000pro.googlegroups.com>
- <20111124070303.GB28065@linux.vnet.ibm.com>
- <1322128199.2921.3.camel@twins>
+	id S1756518Ab1KXO60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 09:58:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35697 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab1KXO6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 09:58:25 -0500
+Date: Thu, 24 Nov 2011 15:58:22 +0100
+From: Jan Kara <jack@suse.cz>
+To: boyd yang <boyd.yang@gmail.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eparis@redhat.com,
+        xiyou.wangcong@gmail.com
+Subject: Re: [PATCH] fanotify: to differ file access event from different
+ threads
+Message-ID: <20111124145822.GC22640@quack.suse.cz>
+References: <CAE8kqZKQrDK4SAKc8vK7Wi46dGQBw6_LX2NFvkr-XZr_KmGhrQ@mail.gmail.com>
+ <20111013133815.GC2310@localhost.localdomain>
+ <CAE8kqZJGxra_tX=x-BQhnwKBDAhHLYq04Xon47coQ5JR5+0YmQ@mail.gmail.com>
+ <CAE8kqZ+GV3CoxWMV=4GXgc6YYCcnAk_jnBxzwRubgccZL8VstA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1322128199.2921.3.camel@twins>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE8kqZ+GV3CoxWMV=4GXgc6YYCcnAk_jnBxzwRubgccZL8VstA@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112414-3352-0000-0000-000000F6B5C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-11-24 10:49:59]:
+On Thu 17-11-11 18:21:26, boyd yang wrote:
+> How can this patch get merged?
+> Who is responsible for this?
+  Eric Paris is responsible for merging this patch. I see you have CCed him
+so that should be OK. Can you maybe resend the patch in a separate email
+again? I see your last submission was included in a reply to email together
+with other text etc. which makes merging it using our standard tools
+harder...
 
-> On Thu, 2011-11-24 at 12:33 +0530, Srikar Dronamraju wrote:
-> > > On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> > > > +int register_uprobe(struct inode *inode, loff_t offset,
-> > > > +                               struct uprobe_consumer *consumer)
-> > > > +{
-> > > > +       struct uprobe *uprobe;
-> > > > +       int ret = -EINVAL;
-> > > > +
-> > > > +       if (!consumer || consumer->next)
-> > > > +               return ret;
-> > > > +
-> > > > +       inode = igrab(inode);
-> > > 
-> > > So why are you dealing with !consumer but not with !inode? and why
-> > > does
-> > > it make sense to allow !consumer at all?
-> > > 
-> > 
-> > 
-> > I am not sure if I got your comment correctly.
-> > 
-> > I do check for inode just after the igrab.
+								Honza
+ 
+> We are developing some real-time antivirus software, the fanotify can make
+> it work without dirver/kenel-modues( like RedirFS).
+> But the bug costs a lot trouble.
+> If we used the patch, our software works great!
 > 
-> No you don't, you check the return value of igrab(), but you crash hard
-> when someone calls register_uprobe(.inode=NULL).
+> I think other antivirus or file-motoring softwares are influnced by the bug
+> too.
 > 
-
-Okay. will add a check for inode before we do the igrab.
-
-> > I am actually not dealing with !consumer.
-> > If the consumer is NULL, then we dont have any handler to run so why
-> > would we want to register such a probe?
 > 
-> Why allow someone calling register_uprobe(.consumer=NULL) to begin with?
-> That doesn't make any sense.
-> 
-> > Also if consumer->next is Non-NULL, that means that this consumer was
-> > already used.  Reusing the consumer, can result in consumers list getting
-> > broken into two.
-> 
-> Yeah, although at that point why be nice about it? Just but a WARN_ON()
-> in or so.
-> 
-
-I thought you werent happy with prints and WARN_ON/BUG_ON unless it was
-really really necessary. If we were to have a WARN_ON for a wrong
-consumer passed, then we would need a warn_On for NULL inode too.
-
-So I think we should leave this as is.
-
-Unless I have commented, I agree to your comments sent in other threads
-and will resolve them accordingly.
-
+> On Fri, Oct 14, 2011 at 2:56 PM, boyd yang <boyd.yang@gmail.com> wrote:
+> >
+> > Thanks, I updated the patch.
+> > Now it passed checkpatch.pl.
+> >
+> > I used the flag you mentioned.
+> >
+> > fanotify: to differ file access event from different threads
+> > When fanotify is monitoring the whole mount point "/", and multiple
+> > threads iterate the same direcotry, some thread will hang.
+> > This patch let fanotify to differ access events from different
+> > threads, prevent fanotify from merging access events from different
+> > threads.
+> > It also hide overflow events to reach user space.
+> > Signed-off-by: Boyd Yang <boyd.yang@gmail.com>
+> >
+> > diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+> > linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+> > --- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c    2011-08-29
+> > 12:16:01.000000000 +0800
+> > +++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c 2011-10-14
+> > 14:17:53.055958000 +0800
+> > @@ -15,7 +15,8 @@
+> >
+> >        if (old->to_tell == new->to_tell &&
+> >            old->data_type == new->data_type &&
+> > -           old->tgid == new->tgid) {
+> > +           old->tgid == new->tgid &&
+> > +           old->pid == new->pid) {
+> >                switch (old->data_type) {
+> >                case (FSNOTIFY_EVENT_PATH):
+> >                        if ((old->path.mnt == new->path.mnt) &&
+> > @@ -144,11 +145,16 @@
+> >                return PTR_ERR(notify_event);
+> >
+> >  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> > -       if (event->mask & FAN_ALL_PERM_EVENTS) {
+> > -               /* if we merged we need to wait on the new event */
+> > -               if (notify_event)
+> > -                       event = notify_event;
+> > -               ret = fanotify_get_response_from_access(group, event);
+> > +       /*if overflow, do not wait for response*/
+> > +       if (event->mask&FS_Q_OVERFLOW) {
+> > +               pr_debug("fanotify overflow!\n");
+> > +       }       else {
+> > +               if (event->mask & FAN_ALL_PERM_EVENTS) {
+> > +                       /* if we merged we need to wait on the new event */
+> > +                       if (notify_event)
+> > +                               event = notify_event;
+> > +                       ret = fanotify_get_response_from_access(group, event);
+> > +               }
+> >        }
+> >  #endif
+> >
+> > diff -r -u linux-3.1-rc4_orig/fs/notify/notification.c
+> > linux-3.1-rc4/fs/notify/notification.c
+> > --- linux-3.1-rc4_orig/fs/notify/notification.c 2011-08-29
+> > 12:16:01.000000000 +0800
+> > +++ linux-3.1-rc4/fs/notify/notification.c      2011-10-14 13:52:36.946608000 +0800
+> > @@ -95,6 +95,7 @@
+> >                BUG_ON(!list_empty(&event->private_data_list));
+> >
+> >                kfree(event->file_name);
+> > +               put_pid(event->pid);
+> >                put_pid(event->tgid);
+> >                kmem_cache_free(fsnotify_event_cachep, event);
+> >        }
+> > @@ -374,6 +375,7 @@
+> >                        return NULL;
+> >                }
+> >        }
+> > +       event->pid = get_pid(old_event->pid);
+> >        event->tgid = get_pid(old_event->tgid);
+> >        if (event->data_type == FSNOTIFY_EVENT_PATH)
+> >                path_get(&event->path);
+> > @@ -417,6 +419,7 @@
+> >                event->name_len = strlen(event->file_name);
+> >        }
+> >
+> > +       event->pid = get_pid(task_pid(current));
+> >        event->tgid = get_pid(task_tgid(current));
+> >        event->sync_cookie = cookie;
+> >        event->to_tell = to_tell;
+> > diff -r -u linux-3.1-rc4_orig/include/linux/fsnotify_backend.h
+> > linux-3.1-rc4/include/linux/fsnotify_backend.h
+> > --- linux-3.1-rc4_orig/include/linux/fsnotify_backend.h 2011-08-29
+> > 12:16:01.000000000 +0800
+> > +++ linux-3.1-rc4/include/linux/fsnotify_backend.h      2011-10-14
+> > 13:51:50.380168000 +0800
+> > @@ -238,6 +238,7 @@
+> >        u32 sync_cookie;        /* used to corrolate events, namely inotify mv events */
+> >        const unsigned char *file_name;
+> >        size_t name_len;
+> > +       struct pid *pid;
+> >        struct pid *tgid;
+> >
+> >  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> >
+> >
+> >
+> >
+> >
+> > On Thu, Oct 13, 2011 at 9:38 PM, Josef Bacik <josef@redhat.com> wrote:
+> > > On Thu, Oct 13, 2011 at 04:56:43PM +0800, boyd yang wrote:
+> > >> This patch fixes a hang problem of Eric Paris's fs Notification/fanotify.
+> > >>
+> > >> Fanotify brings a way to intercept file access events.
+> > >> When multiple threadsiterate the same direcotry, some thread will hang.
+> > >> This patch let fanotify to differ access events from different
+> > >> threads, prevent fanotify from merging access events from different
+> > >> threads.
+> > >>
+> > >
+> > > You need to run this through checkpatch.pl, you have a ton of formatting
+> > > problems.  Also your email client seems to have word-wrapped parts of this, so
+> > > use a email client that doesn't word wrap.
+> > >
+> > >> =============================================================
+> > >>
+> > >> diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+> > >> linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+> > >> --- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c  2011-08-29
+> > >> 12:16:01.000000000 +0800
+> > >> +++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c       2011-10-10
+> > >> 12:28:23.276847000 +0800
+> > >> @@ -15,7 +15,8 @@
+> > >>
+> > >>       if (old->to_tell == new->to_tell &&
+> > >>           old->data_type == new->data_type &&
+> > >> -         old->tgid == new->tgid) {
+> > >> +         old->tgid == new->tgid &&
+> > >> +         old->pid == new->pid) {
+> > >>               switch (old->data_type) {
+> > >>               case (FSNOTIFY_EVENT_PATH):
+> > >>                       if ((old->path.mnt == new->path.mnt) &&
+> > >> @@ -144,11 +145,19 @@
+> > >>               return PTR_ERR(notify_event);
+> > >>
+> > >>  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> > >> -     if (event->mask & FAN_ALL_PERM_EVENTS) {
+> > >> -             /* if we merged we need to wait on the new event */
+> > >> -             if (notify_event)
+> > >> -                     event = notify_event;
+> > >> -             ret = fanotify_get_response_from_access(group, event);
+> > >> +     //if overflow, do not wait for response
+> > >> +     if(fsnotify_isoverflow(event))
+> > >> +     {
+> > >> +             pr_debug("fanotify overflow!\n");
+> > >> +     }
+> > >> +     else
+> > >> +     {
+> > >> +             if (event->mask & FAN_ALL_PERM_EVENTS) {
+> > >> +                     /* if we merged we need to wait on the new event */
+> > >> +                     if (notify_event)
+> > >> +                             event = notify_event;
+> > >> +                     ret = fanotify_get_response_from_access(group, event);
+> > >> +             }
+> > >>       }
+> > >
+> > > The overflow event should only have FS_Q_OVERFLOW set in it's mask right?  So
+> > > why is this test needed at all?  Thanks,
+> > >
+> > > Josef
+> > >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-Thanks and Regards
-Srikar
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
