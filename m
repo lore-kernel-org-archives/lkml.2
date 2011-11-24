@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1KXGZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 01:25:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab1KXGZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 01:25:27 -0500
-Date: Thu, 24 Nov 2011 08:24:41 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: Re: [PATCHv3 RFC] virtio-pci: flexible configuration layout
-Message-ID: <20111124062440.GG29994@redhat.com>
-References: <20111122183621.GA5235@redhat.com>
- <87hb1v1scp.fsf@rustcorp.com.au>
- <20111123084640.GE22734@redhat.com>
- <87ty5uxso3.fsf@rustcorp.com.au>
+	id S1753575Ab1KXGcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 01:32:48 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63339 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab1KXGcr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 01:32:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ty5uxso3.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111124171949.994860621f4f83a650cf9b5b@canb.auug.org.au>
+References: <20111114142423.fe126b8c8cfd275d7dd138cc@canb.auug.org.au>
+	<201111150012.56306.rjw@sisk.pl>
+	<20111124171949.994860621f4f83a650cf9b5b@canb.auug.org.au>
+Date: Wed, 23 Nov 2011 22:32:45 -0800
+X-Google-Sender-Auth: xHsdDBkLf4QYZkE0aBjDaOOct4I
+Message-ID: <CAOS58YPAh3e_sa4JrHdVD40scNED5Z4g4t6JNU8MT8kq8vZV2Q@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (pm tree related)
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 11:06:44AM +1030, Rusty Russell wrote:
-> > > +/* Fields in VIRTIO_PCI_CAP_COMMON_CFG: */
-> > > +struct virtio_pci_common_cfg {
-> > > +	/* About the whole device. */
-> > > +	__u64 device_features;	/* read-only */
-> > > +	__u64 guest_features;	/* read-write */
-> > > +	__u64 queue_address;	/* read-write */
-> > > +	__u16 msix_config;	/* read-write */
-> > > +	__u8 device_status;	/* read-write */
-> > > +	__u8 unused;
-> > > +
-> > > +	/* About a specific virtqueue. */
-> > > +	__u16 queue_select;	/* read-write */
-> > > +	__u16 queue_align;	/* read-write, power of 2. */
-> > > +	__u16 queue_size;	/* read-write, power of 2. */
-> > > +	__u16 queue_msix_vector;/* read-write */
-> > > +};
-> > 
-> > Slightly confusing as the registers are in fact little endian ...
-> 
-> Good point, should mark them appropriately with __le16.  That makes it
-> even clearer.
-> 
-> Thanks,
-> Rusty.
+Hello,
 
-Do we still require atomic access to fields in common cfg?
-If yes it's a problem as some systems don't have 64 bit
-addresses. If no, implementations might get harder.
+On Wed, Nov 23, 2011 at 10:19 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> > Subject: [PATCH] freezer: fix more fallout from the thaw_process rename
+>> >
+>> > Commit 944e192db53c "freezer: rename thaw_process() to __thaw_task()
+>> > and simplify the implementation" did not create a !CONFIG_FREEZER version
+>> > of __thaw_task().
+>> >
+>> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>>
+>> I've applied your patch to linux-pm/pm-freezer and merged it into
+>> linux-pm/linux-next.
+
+Ah.. that's my bad. I was actually looking at that diff and somehow it
+just slipped my mind. Rafael, can you please apply Stephen's patch on
+top of pm-freezer?
+
+Thank you.
 
 -- 
-MST
+tejun
