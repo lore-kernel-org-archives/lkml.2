@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1KXUCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 15:02:03 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46645 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab1KXUCA (ORCPT
+	id S1754035Ab1KXUPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 15:15:12 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:43958 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab1KXUPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 15:02:00 -0500
-Subject: Re: busybox utility
-From: Geoff Levand <geoff@infradead.org>
-To: naveen yadav <yad.naveen@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
-In-Reply-To: <CAJ8eaTzgbPCgV1Bo7gGACKD_bKOmKb9KA_+LJQ1-L5Sgp=f5EQ@mail.gmail.com>
-References: <CAJ8eaTyYcJMjgj5AtFT7tgk9JEFHjHZbgBJcpenzAJ+KdFvnVw@mail.gmail.com>
-	 <CAJ8eaTzgbPCgV1Bo7gGACKD_bKOmKb9KA_+LJQ1-L5Sgp=f5EQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Nov 2011 12:02:02 -0800
-Message-ID: <1322164922.2686.5.camel@pump>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Nov 2011 15:15:11 -0500
+X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Nov 2011 15:15:11 EST
+Date: Thu, 24 Nov 2011 21:05:53 +0100
+From: Tino Keitel <tino.keitel@tikei.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+ metering applications has gone crackers
+Message-ID: <20111124200553.GA13353@mac.home>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Thu, Nov 24, 2011 at 10:30:15 +0000, Artem S. Tashkinov wrote:
+> Hello,
+> 
+> I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all CPU metering applications have gone terribly mad
+> under this kernel:
 
-On Tue, 2011-11-22 at 14:05 +0530, naveen yadav wrote:
-> I am checking busybox utility, Is there any other package available
-> similar to busybox which  we can use in embedded system .
+I get the same using top, htop and the gnome system monitor with kernel
+3.2 on a Sandy Bridge quad core box, running Debian unstable.
 
-I don't know anything about it, but I've recently heard  mention of
-toybox as an alternative to busybox because of its BSD-type license:
-
-  http://www.landley.net/code/toybox/about.html
-
--Geoff
-
+Regards,
+Tino
