@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1KXWNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 17:13:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44745 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab1KXWNJ (ORCPT
+	id S1754036Ab1KXWNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 17:13:19 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46579 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab1KXWNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 17:13:09 -0500
-Message-ID: <4ECEC16E.5080806@gmail.com>
-Date: Fri, 25 Nov 2011 09:13:02 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
+	Thu, 24 Nov 2011 17:13:16 -0500
+Date: Thu, 24 Nov 2011 22:13:13 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: George Spelvin <linux@horizon.com>
+Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rc10 oops in nameidata_to_filp
+Message-ID: <20111124221313.GO2203@ZenIV.linux.org.uk>
+References: <20111124173829.GL2203@ZenIV.linux.org.uk>
+ <20111124214710.13413.qmail@science.horizon.com>
 MIME-Version: 1.0
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-CC: "'Ben Dooks'" <ben-i2c@fluff.org>,
-        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
-        "'carsten.behling@garz-fricke.com'" <carsten.behling@garz-fricke.com>
-Subject: Re: [PATCH v7 0/5] AT91: replace broken TWI driver i2c-at91.c
-References: <cover.1322062555.git.n.voss@weinmann.de> <20111123233238.GL19115@trinity.fluff.org> <EF2E73589CA71846A15D0B2CDF79505D087B44FD63@wm021.weinmann.com>
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B44FD63@wm021.weinmann.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111124214710.13413.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/11/11 17:33, Voss, Nikolaus wrote:
-
-> Hi,
+On Thu, Nov 24, 2011 at 04:47:10PM -0500, George Spelvin wrote:
+> Thanks for the pointer.  I'll write some debug code.
 > 
-> Ben Dooks wrote on 2011-11-24:
->> On Wed, Nov 23, 2011 at 04:35:55PM +0100, Nikolaus Voss wrote:
->>> The old driver has two main deficencies:
->>> i)  No repeated start (Sr) condiction is possible, this makes it unusable
->>>     e.g. for most SMBus transfers.
->>> ii) I/O was done with polling/busy waiting what caused over-/underruns
->>>     even at light system loads and clock speeds.
->>>
->>> The new driver overcomes these deficencies and in addition allows for
->>> more than one TWI interface.
->>>
->>> A remaining limitation is the fact, that only one repeated start is
->>> possible (two concatenated messages). This limitation is imposed by
->>> the hardware. However, this should not be a problem as all common
->>> i2c-client communication does not rely on more than one repeated start.
->>>
->>> v7: Patch 4/5: i)  fix bug if internal address > 1 byte
->>>                ii) send stop when len == 1
->>>                    (both reported by Carsten Behling)
->>> v6: Patch 5/5: support for I2C_SMBUS_BLOCK_DATA transfers.
->>>     Better use of clk_(un)prepare().
->>>     More sensible transfer timeout.
->>> v5: Another round of review comments from Ryan Mallon, Felipe Balbi
->>>     and Russell King: convert twi clk to use .dev_id, cleanups
->>> v4: Integrated more review comments from Ryan Mallon and Felipe Balbi:
->>>     Moved register include file to local include, code cleanups
->>> v3: Integrated review comments from Ryan Mallon and Felipe Balbi
->>> v2: Fixed whitespace issue
->>>
->>> Nikolaus Voss (5):
->>>   drivers/i2c/busses/i2c-at91.c: remove broken driver
->>>   Replace clk_lookup.con_id with clk_lookup.dev_id entries for twi clk
->>>   drivers/i2c/busses/i2c-at91.c: add new driver
->>>   G45 TWI: remove open drain setting for twi function gpios
->>>   i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
->>
->> Is the original driver so broken that the two could not co-exist, or are
->> we making so many changes that there's no point in keeping the original
->> one?
+> > Said that, I'm not buying the theory of open assigning to ->f_mapping and
+> > screwing it up; all such assignments end up with ->i_mapping of *some*
+> > inode, as far as I can see from cursory grep over the tree.  Just in case:
+> > do you have CONFIG_FS_POSIX_ACL set?
 > 
-> The old driver was marked as broken for the above reasons and I can hardly
-> imagine any setup in which it would be preferable to i2c-gpio. So it does
-> not make any sense to keep the old driver alive. Though inspired by the old
-> driver, the new one is almost a rewrite from scratch, so for better reviewing,
-> I removed the old instead of doing a diff.
+> No, I always turn that off.  (And TMPFS_POSIX_ACL, too.)
 
+OK, then this 0x18 is very likely to be offset of i_mapping in struct inode
+and we have file->f_mapping->host == NULL.  Very odd...  The only struct
+address_space on your config besides inode->i_data (which _all_ get non-NULL
+->host, pointing straight back to the containing struct inode) is
+swapper_space.  And there's no way in hell for it to legitimately end up
+in file->f_mapping or inode->i_mapping.
 
-I can confirm this. I worked on a number of AT91 based platforms with
-several different i2c client devices and we always had to use the
-i2c-gpio driver because the at91-i2c driver would not reliably work with
-our client devices.
-
-None of the at91 defconfigs select I2C_AT91, so it should be fairly safe
-to remove the old driver. Getting this driver into linux-next (if it
-isn't already) would be good so we can see if it does cause problems for
-anybody.
-
-Thanks,
-~Ryan
-
-
-
-
+So the possibilities are:
+	legitimate ->f_mapping, fucked contents of address_space it points to.
+	fucked ->i_mapping, ->f_mapping copied from it.
+	legitimate ->i_mapping, open() callback fucking ->f_mapping up.
+Try to enable memory poisoning; if it turns those into oopsen on attempt
+to access poison + 0x18, we'll know it's some inode getting freed while we
+still have references to it...  OTOH, that would make your debugging printks
+not fire at all, so it might be better to get the pathname first before
+enabling that and seeing how behaviour changes...
