@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1KXTOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 14:14:23 -0500
-Received: from gate.crashing.org ([63.228.1.57]:56056 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab1KXTOW convert rfc822-to-8bit (ORCPT
+	id S1753894Ab1KXTT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 14:19:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42778 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753689Ab1KXTT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 14:14:22 -0500
-Subject: Re: [PATCH 1/1] SPI: disable CONFIG_SPI_FSL_ESPI=m build
-Mime-Version: 1.0 (Apple Message framework v1251.1)
+	Thu, 24 Nov 2011 14:19:29 -0500
+Date: Thu, 24 Nov 2011 19:19:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: samsung: drop unknown Kconfig symbol
+Message-ID: <20111124191925.GC3395@opensource.wolfsonmicro.com>
+References: <1322155037.25125.61.camel@x61.thuisdomein>
+ <20111124172216.GR8470@opensource.wolfsonmicro.com>
+ <1322161754.25125.72.camel@x61.thuisdomein>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1322131298-21511-1-git-send-email-jslaby@suse.cz>
-Date: Thu, 24 Nov 2011 13:12:08 -0600
-Cc: grant.likely@secretlab.ca, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5C7165B8-7ED5-444B-BF8B-DA049A432E6D@kernel.crashing.org>
-References: <1322131298-21511-1-git-send-email-jslaby@suse.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-X-Mailer: Apple Mail (2.1251.1)
+Content-Disposition: inline
+In-Reply-To: <1322161754.25125.72.camel@x61.thuisdomein>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 24, 2011 at 08:09:14PM +0100, Paul Bolle wrote:
 
-On Nov 24, 2011, at 4:41 AM, Jiri Slaby wrote:
+> - Kconfig"), both dated May 14, 2007. So I'm touching code here that has
+> been unbuildable (in the mainline tree) for over four years. Isn't that
+> in itself sufficient to drop this code (and the incomplete kbuild stuff
+> supporting it)?
 
-> When spi_fsl_espi is chosen to be built as a module, there is a build
-> error because we test only CONFIG_SPI_FSL_ESPI in declaration of
-> struct mpc8xxx_spi in drivers/spi/spi_fsl_lib.h. Also some called
-> functions are not exported.
-> 
-> So we forbid CONFIG_SPI_FSL_ESPI to be tristate here.
-> 
-> The error looks like:
-> drivers/spi/spi_fsl_espi.c: In function 'fsl_espi_bufs':
-> drivers/spi/spi_fsl_espi.c:232: error: 'struct mpc8xxx_spi' has no member named 'len'
-> ...
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Kumar Gala <galak@kernel.crashing.org>
-> ---
-> drivers/spi/Kconfig |    4 ++--
-> 1 files changed, 2 insertions(+), 2 deletions(-)
+No, not really.  None of the OpenMoko code (including GTA02) has ever
+been usable in mainline as there's a reasonable patch stack for it out
+of tree and the more of their code is in mainline the more likely it is
+that that situation will improve.  The cost of extra platforms is really
+very low and people actually send me patches for the OpenMoko devices
+from time to time (much more frequently than for most other boards) so
+at least someone cares.
 
-Acked-by: Kumar Gala <galak@kernel.crashing.org>
+> > I'd suggest discussing this with the OpenMoko guys if you want to do it.
 
-- k
+> Who would that be?
+
+Google tells me http://www.openmoko.org is a good start - you might want
+to ask on the openmoko-kernel list.
