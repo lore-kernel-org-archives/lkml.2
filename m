@@ -1,127 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab1KXQ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 11:58:25 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33518 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab1KXQ6S (ORCPT
+	id S1756832Ab1KXQ6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 11:58:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44817 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab1KXQ6a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 11:58:18 -0500
-Message-ID: <4ECE77A4.2040703@gmail.com>
-Date: Thu, 24 Nov 2011 17:58:12 +0100
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v5 10/10] x86, efi: EFI boot stub support
-References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>  <1318848017-12301-11-git-send-email-matt@console-pimps.org>  <4E9C8AAC.7080803@gmail.com>  <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECC4207.3010607@gmail.com> <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com> <4ECE5803.3060203@gmail.com>
-In-Reply-To: <4ECE5803.3060203@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Nov 2011 11:58:30 -0500
+Message-ID: <1322153899.2921.71.camel@twins>
+Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        daniel.lezcano@free.fr, jbottomley@parallels.com, fweisbec@gmail.com
+Date: Thu, 24 Nov 2011 17:58:19 +0100
+In-Reply-To: <4ECE731E.6030508@parallels.com>
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
+	   <1320182360-20043-15-git-send-email-glommer@parallels.com>
+	   <4EBD94A0.9070703@google.com> <4EBE4A80.6090607@parallels.com>
+	   <CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
+	   <CAKTCnzkFb2rRyOJ3Uxt13mXrB-9Ox=zgXAOZ5bZ_6Kwr64AbTA@mail.gmail.com>
+	   <20111117085251.443fefa5.kamezawa.hiroyu@jp.fujitsu.com>
+	   <4EC47632.2000904@parallels.com>
+	   <CAKTCnznzpqUbMJEMwaewwjvMW1fG0J3=a8JxqKiHKNuffO7azg@mail.gmail.com>
+	   <4EC52F32.2040708@parallels.com>
+	   <20111121105957.9c85db16.kamezawa.hiroyu@jp.fujitsu.com>
+	  <1322141073.2921.51.camel@twins> <4ECE6BC4.7090600@parallels.com>
+	 <1322152152.2921.64.camel@twins> <4ECE731E.6030508@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Matt,
+On Thu, 2011-11-24 at 14:38 -0200, Glauber Costa wrote:
+> It's hard for me to say that, since I come from a virtualization 
+> background: for us, a single cgroup would do just fine: even the 
+> division between mem and cpu is not needed. However, I've been learning 
+> recently that the use cases for that are quite diverse. So I'll have to 
+> leave the answer to Balbir, and other interested parties. 
 
-On 11/24/2011 03:43 PM, Maarten Lankhorst wrote:
-> Hey Matt,
->
-> On 11/23/2011 08:27 PM, Matt Fleming wrote:
->
->> On Wed, 2011-11-23 at 01:44 +0100, Maarten Lankhorst wrote:
->>> When I tested this with v3.2-rc2 it didn't boot, it hung before it
->>> initialized the kernel.
->>> Without initrd it works fine, though.
->> Bah, so this change actually makes booting worse? You said before that
->> you almost made it to userspace but this seems to hang much earlier now.
->> Is that correct?
->>
->> ... back to the drawing board.
-> I was looking at why grub2 could boot, seems to be it reads in chunks of
-> 256 kilobytes. I seem to be able to get it to boot with chunks of 4 mb
-> as well, but didn't test beyond that.
->
-> So the fix is to simply read the file in parts, otherwise efi hangs..
-> As a nice side effect, short reads are also handled, but the efi
-> firmware seems to choke over huge reads and dies.
-So after I was encouraged by mjg59 to find out the limit,
-I put this patch to test maximum file size with together..
+Hehe, I'm the one running a CGROUP=n kernel, so what do I know. Its just
+that all this stuff hurts my brain.
 
-Turns out that it pukes on 4 mb, my printf was fucked,
-in the patch below I corrected it, so I don't know for sure
-if that included 4 mb being bad or not. I suppose writing
-a test for read(fd, addr, 5 * 1024 * 1024) was too hard for
-efi to pass. ;)
+Maybe we should just add functionality that requires controllers to be
+co-mounted and this extra functionality will then make people co-mount
+since you know features.. :-)
 
-Just make a file with dd if=/dev/urandom of=initrd.img bs=1M count=99
-to find out when/if YOUR efi implementation will die! :D
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 8627a56..415b875 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -30,6 +30,19 @@
- #define PIXEL_BLT_ONLY					3
- #define PIXEL_FORMAT_MAX				4
- 
-+typedef struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
-+  void* Reset;
-+  void *OutputString;
-+  void *TestString;
-+  void *QueryMode;
-+  void *SetMode;
-+  void *SetAttribute;
-+  void *ClearScreen;
-+  void *SetCursorPosition;
-+  void *EnableCursor;
-+  void *Mode;
-+} __attribute__((packed)) EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
-+
- typedef struct {
- 	u32 red_mask;
- 	u32 green_mask;
-@@ -692,17 +705,27 @@ grow:
- 
- 		addr = initrd_addr;
- 		for (j = 0; j < nr_initrds; j++) {
--			u64 size;
--
--			size = initrds[j].size;
--			status = efi_call_phys3(fh->read, initrds[j].handle,
--						&size, addr);
--			if (status != EFI_SUCCESS)
--				goto free_initrd_total;
--
-+			u64 size, chunksize;
-+			uint16_t str[] = { 'S', 'i', 'z', 'e', ':', ' ', ' ',' ', ' ', '\r', '\n', 0 };
-+			EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *output = (void*)sys_table->stderr;
-+
-+			for (chunksize = 1024 * 1024; chunksize < initrds[j].size; chunksize += 1024 * 1024) {
-+				str[5] = ((chunksize / 1024 / 1024) / 10) + '0';
-+				str[6] = ((chunksize / 1024 / 1024) % 10) + '0';
-+				efi_call_phys2(output->OutputString, sys_table->stderr_handle, str);
-+				size = initrds[j].size;
-+				efi_call_phys2(fh->set_position, initrds[j].handle, 0);
-+				while (size) {
-+					u64 toread = size > chunksize ? chunksize : size;
-+					status = efi_call_phys3(fh->read, initrds[j].handle,
-+							&toread, addr);
-+					if (status != EFI_SUCCESS)
-+						goto free_initrd_total;
-+					size -= toread;
-+					addr += toread;
-+				}
-+			}
- 			efi_call_phys1(fh->close, initrds[j].handle);
--
--			addr += size;
- 		}
- 
- 	}
-
-
+I know I've wanted to do that several times, so far I've always resisted
+because it looked like pain, but hey, if I can cause more pain somewhere
+else and my life gets easier in the long run I might change my mind ;-)
