@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab1KXAVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 19:21:37 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:33188 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab1KXAVf (ORCPT
+	id S1754273Ab1KXAiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 19:38:00 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52354 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab1KXAh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 19:21:35 -0500
-Date: Thu, 24 Nov 2011 11:21:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: build failure of Linus' tree
-Message-Id: <20111124112117.f9abeb7a3f4868be71389372@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Nov_2011_11_21_17_+1100_SCtczkjnaQU+X..Y"
+	Wed, 23 Nov 2011 19:37:59 -0500
+Message-ID: <4ECD91E4.5090504@gmail.com>
+Date: Wed, 23 Nov 2011 16:37:56 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, DM <dm.n9107@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        David Daney <david.daney@cavium.com>,
+        "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
+Subject: Re: [PATCH v3 0/2] Stop some of the abuse of BUG() where compile
+ time checks should be used.
+References: <1322092017-21471-1-git-send-email-ddaney.cavm@gmail.com>  <CA+55aFwjUVhff6jADOSvAn=t4CTVf4ZODTNm7M6vYcmG6TikPA@mail.gmail.com>
+In-Reply-To: <CA+55aFwjUVhff6jADOSvAn=t4CTVf4ZODTNm7M6vYcmG6TikPA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Nov_2011_11_21_17_+1100_SCtczkjnaQU+X..Y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/23/2011 03:57 PM, Linus Torvalds wrote:
+> Btw, would it possibly make sense to make the string more useful?
+>
+> For example using __FILE__ and __LINE__, or possibly letting the user
+> of the BUILD_BUG() give a string ("Using HMASK without
+> CONFIG_HUGEPAGE").
 
-Hi all,
+We thought about doing that, but without doing some complex preprocessor 
+fu, the GCC attribute ((error())) thing doesn't do what we want.
 
-today's linux-next build of Linus' (x86_64_allmodconfig) failed like this:
+It appears that if more than a single instance of the construct is used 
+in a compilation unit, the string emitted by the compiler for any of the 
+violations will be the last string encountered.
 
-drivers/staging/iio/industrialio-core.c: In function 'iio_event_getfd':
-drivers/staging/iio/industrialio-core.c:262:32: error: 'ev_int' undeclared =
-(first use in this function)
+So if you did something like:
 
-Caused by commit b46413367961 ("iio: fix a leak due to improper use of
-anon_inode_getfd()").
+.
+.
+.
+Line 99:  BUILD_BUG("You failed on line 99");
+.
+.
+.
+.
+Line 666: BUILD_BUG("You failed on line 666");
+.
+.
+.
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The message emitted for a failure at line 99 would be "You failed on 
+line 666".  Which is probably worse than no message at all.
 
---Signature=_Thu__24_Nov_2011_11_21_17_+1100_SCtczkjnaQU+X..Y
-Content-Type: application/pgp-signature
+It may be possible to do something like:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+#define _LINENAME_CONCAT( _name_, _line_ ) _name_##_line_
+#define _LINENAME(_name_, _line_) _LINENAME_CONCAT(_name_,_line_)
 
-iQIcBAEBCAAGBQJOzY39AAoJEECxmPOUX5FEO44QAICWQVPkZYApOoer3k4Ps5JV
-yqir4XC1nlASGt8bOyhoIDjqZAnAYKGViyf59rvHPNTu5YYZ0IdFlU1sNCYZcVcn
-Cr/AY9qb22UY6gulBvnTCxEN7prWzxev4kHWlCaurAFRGX0RieUpWHofc9m8upwA
-g08yZxob1aNgBLF2N1LY58yIi9CBhfOzWXxrQURa7soMAwjUjNZE9FAIHjxmDvAa
-BrSPMbCUxnSvtoIlUgGJajbOAyEvlFXAkHZC49YxSrwo7gvzMlDzAOYoYRINn2E5
-5rqkSN2fCFwZY4FpmPy8CtsZPK/YuhtKHkLflaLEaTl2LSQNIgavCJ4o4AeNCTv+
-qDUIYBt9Sp8zRjUoMHgHozeFr51ieVKh3X6y3LX98BHkjUL5KPzDW+2EFm440bwb
-HGmTu29oiBQ4AVb/xO0xy6dR01eQ9tqdFuJ7XhSLiPparUbXBJLLHtJ6ctUBaRkz
-ZgdJqF51DeBYSagQx8RtRnozKgBErZ4LtuISQTgDW1+4UtrEelvUrdNEvznrGlVF
-fpNyEW7dafE+baozM8XBY6fV3iI+ORyj4PzLRwnSFjrYCJKi3K1zIrW1Zcqh9J+a
-vYAEgqK76JgRkAs9e54dhnTNxmN7ldcSfL6sn9Uc+eF85mPgNFhI5kdV2LZZVI26
-v7LbURyM2Y02iOVHXOJx
-=vY4r
------END PGP SIGNATURE-----
+#define _BUILD_BUG(MSG,FUBAR)		\
+do {					\
+   extern void FUBAR (void)		\
+      __linktime_error("BUILD_BUG failed: " MSG); \
+   FUBAR ();				\
+} while (0)
 
---Signature=_Thu__24_Nov_2011_11_21_17_+1100_SCtczkjnaQU+X..Y--
+#define BUILD_BUG(M,A) _BUILD_BUG(M, _LINENAME(__build_bug_failed,__LINE__))
+
+But it didn't seem worth it.
+
+>
+> Whatever. It's bikeshedding - what would probably be more important
+> would be to get this into linux-next so that we find out whether there
+> are any compile issues with it on other platforms or compiler
+> versions.
+>
+>                    Linus
+>
+
