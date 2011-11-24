@@ -1,222 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab1KXLEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 06:04:44 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44700 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1KXLEm (ORCPT
+	id S1756124Ab1KXLGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 06:06:34 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36336 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab1KXLGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 06:04:42 -0500
-Message-ID: <4ECE24C3.7040007@gmail.com>
-Date: Thu, 24 Nov 2011 19:04:35 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 4/6] KVM: introduce id_to_memslot function
-References: <4ECE1037.4060300@gmail.com> <4ECE10F8.9070707@gmail.com> <4ECE1948.2060907@oss.ntt.co.jp> <4ECE1B20.9040304@oss.ntt.co.jp>
-In-Reply-To: <4ECE1B20.9040304@oss.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Nov 2011 06:06:32 -0500
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: LiuShuo <b35362@freescale.com>
+Cc: Li Yang-R58472 <r58472@freescale.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Nov 2011 13:07:13 +0200
+In-Reply-To: <4ECE162D.7080408@freescale.com>
+References: <1322095306-13156-1-git-send-email-b35362@freescale.com>
+		 <1322095306-13156-3-git-send-email-b35362@freescale.com>
+		 <1322120515.24797.296.camel@sauron.fi.intel.com>
+		 <3F607A5180246847A760FD34122A1E052DC61F@039-SN1MPN1-003.039d.mgd.msft.net>
+	 <1322122592.24797.299.camel@sauron.fi.intel.com>
+	 <4ECE162D.7080408@freescale.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-QMGEMjzdNHkByEM8QSYD"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1322132839.24797.301.camel@sauron.fi.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2011 06:23 PM, Takuya Yoshikawa wrote:
 
-> (2011/11/24 19:15), Takuya Yoshikawa wrote:
->> (2011/11/24 18:40), Xiao Guangrong wrote:
-> 
->> You can eliminate this if you use old_slot and new_slot for the two memory slots.
-> 
-> Or old_bitmap and new_bitmap.  Anyway, calling id_to_memslot() for getting the
-> same slot twice is not good, IMO.
-> 
+--=-QMGEMjzdNHkByEM8QSYD
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, 2011-11-24 at 18:02 +0800, LiuShuo wrote:
+> =E4=BA=8E 2011=E5=B9=B411=E6=9C=8824=E6=97=A5 16:16, Artem Bityutskiy =E5=
+=86=99=E9=81=93:
+> > On Thu, 2011-11-24 at 07:49 +0000, Li Yang-R58472 wrote:
+> >>> Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to s=
+upport
+> >>> large-page Nand chip
+> >>>
+> >>> On Thu, 2011-11-24 at 08:41 +0800, b35362@freescale.com wrote:
+> >>>> +               /*
+> >>>> +                * Freescale FCM controller has a 2K size limitation=
+ of buffer
+> >>>> +                * RAM, so elbc_fcm_ctrl->buffer have to be used if =
+writesize
+> >>>> +                * of chip is greater than 2048.
+> >>>> +                * We malloc a large enough buffer (maximum page siz=
+e is
+> >>> 16K).
+> >>>> +                */
+> >>>> +               elbc_fcm_ctrl->buffer =3D kmalloc(1024 * 16 + 1024,
+> >>> GFP_KERNEL);
+> >>>
+> >>> Are there NANDs with 16KiB page size?
+> >> We are not sure, but are there possibility that chip with 16K page wil=
+l appear?  Or maybe we can add a MACRO for the maximum page size?
+> > I do not know, but I know that allocating 32KiB of contiguous physical
+> > RAM may cause unneeded memory pressure and even fail if the memory is
+> > too fragmented. So I would not go for this unless this is necessary.
+> What is your suggestion ? 8k is enough ?
 
-Sure. Thanks for your review, Takuya!
+Up to you, I do not have suggestions, just expressed a concern. I'd keep
+the buffer smaller if possible. By the time 16KiB pages appear, your HW
+may retire already :-)
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: KVM: introduce id_to_memslot function
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Introduce id_to_memslot to get memslot by slot id
+--=-QMGEMjzdNHkByEM8QSYD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/ia64/kvm/kvm-ia64.c  |    2 +-
- arch/powerpc/kvm/book3s.c |    2 +-
- arch/x86/kvm/vmx.c        |    6 ++++--
- arch/x86/kvm/x86.c        |   18 +++++++++---------
- include/linux/kvm_host.h  |    6 ++++++
- virt/kvm/kvm_main.c       |   13 +++++++++----
- 6 files changed, 30 insertions(+), 17 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-index 42ad1f9..92d9f1e 100644
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -1818,7 +1818,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 	if (log->slot >= KVM_MEMORY_SLOTS)
- 		goto out;
+iQIcBAABAgAGBQJOziVhAAoJECmIfjd9wqK0dUUQAJXvsAdOTgo3ewdN8MExeQ6q
+P6E8WMMcX+8RgPCAbnQjeGPYvKCdNq3bG0bWANrxBjOk5DoTePz+4C1DriIVFT3X
+WjL64fULmfDRAk/4yNx/J1+J8X3fEdI4GwSWnWeOCzZpm+9SWJaePj/2e5RpAbET
+AYRX22G/2Eh8kd89Vje3KYOtTBdaNgnQiOss1Tudr6qRaDrJENXlixSnqjnaInB/
+zEIDKc/tzgra/suVC8vIFhaoikYHycL0MSa59sXHU8hGcDz6j5iCjbiJC0jgMb7V
+4FOg4CxmpD9RonX2qydUQzfJXTHAC04zfOpkbv62Gc0fCYpcfhoqfrTaulL0+Rx+
+mlMqob7Dz2v24yul7muE9AL+WcwVTAf6Anx/RwIPGGN6I9NipfeCLQhs0BkUE8U/
+OylPpQ98BB5hmXzksSsG6PA7DGlF0xkUEZn5qCCDrFPUy5vhWeVS6suat6lyqG6Z
+WbNxUtBrExvlNh/5fWV3av0oz53wt+MQlqw4mJEopQTS0An+Dvw+Zc5y2dizl41M
+sJy1k5KE6g/F6zijsnzJLxRThOXsrl0AtviiZx7jirrbTW2US0Vw5L6goDxFbBUf
+1LmuslsdbMA2IqGiig52MGjGzoo7bks23Z+XwwyhagwleEHvSvo/2h5n4SJUWhN7
+eymrbGr9JfHjj5cM45Hs
+=+v3x
+-----END PGP SIGNATURE-----
 
--	memslot = &kvm->memslots->memslots[log->slot];
-+	memslot = id_to_memslot(kvm->memslots, log->slot);
- 	r = -ENOENT;
- 	if (!memslot->dirty_bitmap)
- 		goto out;
-diff --git a/arch/powerpc/kvm/book3s.c b/arch/powerpc/kvm/book3s.c
-index a459479..e41ac6f 100644
---- a/arch/powerpc/kvm/book3s.c
-+++ b/arch/powerpc/kvm/book3s.c
-@@ -498,7 +498,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
-
- 	/* If nothing is dirty, don't bother messing with page tables. */
- 	if (is_dirty) {
--		memslot = &kvm->memslots->memslots[log->slot];
-+		memslot = id_to_memslot(kvm->memslots, log->slot);
-
- 		ga = memslot->base_gfn << PAGE_SHIFT;
- 		ga_end = ga + (memslot->npages << PAGE_SHIFT);
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index ba24022..8f19d91 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -2711,11 +2711,13 @@ static gva_t rmode_tss_base(struct kvm *kvm)
- {
- 	if (!kvm->arch.tss_addr) {
- 		struct kvm_memslots *slots;
-+		struct kvm_memory_slot *slot;
- 		gfn_t base_gfn;
-
- 		slots = kvm_memslots(kvm);
--		base_gfn = slots->memslots[0].base_gfn +
--				 kvm->memslots->memslots[0].npages - 3;
-+		slot = id_to_memslot(slots, 0);
-+		base_gfn = slot->base_gfn + slot->npages - 3;
-+
- 		return base_gfn << PAGE_SHIFT;
- 	}
- 	return kvm->arch.tss_addr;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a9e5a59..886296e 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3521,7 +3521,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 	if (log->slot >= KVM_MEMORY_SLOTS)
- 		goto out;
-
--	memslot = &kvm->memslots->memslots[log->slot];
-+	memslot = id_to_memslot(kvm->memslots, log->slot);
- 	r = -ENOENT;
- 	if (!memslot->dirty_bitmap)
- 		goto out;
-@@ -3532,27 +3532,27 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 	/* If nothing is dirty, don't bother messing with page tables. */
- 	if (nr_dirty_pages) {
- 		struct kvm_memslots *slots, *old_slots;
--		unsigned long *dirty_bitmap;
-+		unsigned long *dirty_bitmap, *dirty_bitmap_head;
-
--		dirty_bitmap = memslot->dirty_bitmap_head;
--		if (memslot->dirty_bitmap == dirty_bitmap)
--			dirty_bitmap += n / sizeof(long);
--		memset(dirty_bitmap, 0, n);
-+		dirty_bitmap = memslot->dirty_bitmap;
-+		dirty_bitmap_head = memslot->dirty_bitmap_head;
-+		if (dirty_bitmap == dirty_bitmap_head)
-+			dirty_bitmap_head += n / sizeof(long);
-+		memset(dirty_bitmap_head, 0, n);
-
- 		r = -ENOMEM;
- 		slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
- 		if (!slots)
- 			goto out;
- 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
--		memslot = &slots->memslots[log->slot];
--		memslot->dirty_bitmap = dirty_bitmap;
-+		memslot = id_to_memslot(slots, log->slot);
- 		memslot->nr_dirty_pages = 0;
-+		memslot->dirty_bitmap = dirty_bitmap_head;
- 		update_memslots(slots, NULL);
-
- 		old_slots = kvm->memslots;
- 		rcu_assign_pointer(kvm->memslots, slots);
- 		synchronize_srcu_expedited(&kvm->srcu);
--		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
- 		kfree(old_slots);
-
- 		write_protect_slot(kvm, memslot, dirty_bitmap, nr_dirty_pages);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 392af47..123925c 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -333,6 +333,12 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
- 			|| lockdep_is_held(&kvm->slots_lock));
- }
-
-+static inline struct kvm_memory_slot *
-+id_to_memslot(struct kvm_memslots *slots, int id)
-+{
-+	return &slots->memslots[id];
-+}
-+
- #define HPA_MSB ((sizeof(hpa_t) * 8) - 1)
- #define HPA_ERR_MASK ((hpa_t)1 << HPA_MSB)
- static inline int is_error_hpa(hpa_t hpa) { return hpa >> HPA_MSB; }
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 4c2900c..7b60849 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -634,8 +634,9 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
- {
- 	if (new) {
- 		int id = new->id;
-+		struct kvm_memory_slot *old = id_to_memslot(slots, id);
-
--		slots->memslots[id] = *new;
-+		*old = *new;
- 		if (id >= slots->nmemslots)
- 			slots->nmemslots = id + 1;
- 	}
-@@ -681,7 +682,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	if (mem->guest_phys_addr + mem->memory_size < mem->guest_phys_addr)
- 		goto out;
-
--	memslot = &kvm->memslots->memslots[mem->slot];
-+	memslot = id_to_memslot(kvm->memslots, mem->slot);
- 	base_gfn = mem->guest_phys_addr >> PAGE_SHIFT;
- 	npages = mem->memory_size >> PAGE_SHIFT;
-
-@@ -788,12 +789,16 @@ skip_lpage:
- #endif /* not defined CONFIG_S390 */
-
- 	if (!npages) {
-+		struct kvm_memory_slot *slot;
-+
- 		r = -ENOMEM;
- 		slots = kmemdup(kvm->memslots, sizeof(struct kvm_memslots),
- 				GFP_KERNEL);
- 		if (!slots)
- 			goto out_free;
--		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
-+		slot = id_to_memslot(slots, mem->slot);
-+		slot->flags |= KVM_MEMSLOT_INVALID;
-+
- 		update_memslots(slots, NULL);
-
- 		old_memslots = kvm->memslots;
-@@ -897,7 +902,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
- 	if (log->slot >= KVM_MEMORY_SLOTS)
- 		goto out;
-
--	memslot = &kvm->memslots->memslots[log->slot];
-+	memslot = id_to_memslot(kvm->memslots, log->slot);
- 	r = -ENOENT;
- 	if (!memslot->dirty_bitmap)
- 		goto out;
--- 
-1.7.7.3
+--=-QMGEMjzdNHkByEM8QSYD--
 
