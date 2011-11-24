@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab1KXWNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 17:13:19 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46579 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab1KXWNQ (ORCPT
+	id S1753605Ab1KXWWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 17:22:15 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52996 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751090Ab1KXWWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 17:13:16 -0500
-Date: Thu, 24 Nov 2011 22:13:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: George Spelvin <linux@horizon.com>
-Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.1-rc10 oops in nameidata_to_filp
-Message-ID: <20111124221313.GO2203@ZenIV.linux.org.uk>
-References: <20111124173829.GL2203@ZenIV.linux.org.uk>
- <20111124214710.13413.qmail@science.horizon.com>
+	Thu, 24 Nov 2011 17:22:14 -0500
+Date: Thu, 24 Nov 2011 22:22:12 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: samsung: drop unknown Kconfig symbol
+Message-ID: <20111124222212.GA21244@opensource.wolfsonmicro.com>
+References: <1322155037.25125.61.camel@x61.thuisdomein> <20111124172216.GR8470@opensource.wolfsonmicro.com> <1322161754.25125.72.camel@x61.thuisdomein> <20111124191925.GC3395@opensource.wolfsonmicro.com> <1322164748.25125.88.camel@x61.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111124214710.13413.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322164748.25125.88.camel@x61.thuisdomein>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 04:47:10PM -0500, George Spelvin wrote:
-> Thanks for the pointer.  I'll write some debug code.
-> 
-> > Said that, I'm not buying the theory of open assigning to ->f_mapping and
-> > screwing it up; all such assignments end up with ->i_mapping of *some*
-> > inode, as far as I can see from cursory grep over the tree.  Just in case:
-> > do you have CONFIG_FS_POSIX_ACL set?
-> 
-> No, I always turn that off.  (And TMPFS_POSIX_ACL, too.)
+On Thu, Nov 24, 2011 at 08:59:08PM +0100, Paul Bolle wrote:
+> On Thu, 2011-11-24 at 19:19 +0000, Mark Brown wrote:
 
-OK, then this 0x18 is very likely to be offset of i_mapping in struct inode
-and we have file->f_mapping->host == NULL.  Very odd...  The only struct
-address_space on your config besides inode->i_data (which _all_ get non-NULL
-->host, pointing straight back to the containing struct inode) is
-swapper_space.  And there's no way in hell for it to legitimately end up
-in file->f_mapping or inode->i_mapping.
+> > The cost of extra platforms is really
+> > very low and people actually send me patches for the OpenMoko devices
+> > from time to time (much more frequently than for most other boards) so
+> > at least someone cares.
 
-So the possibilities are:
-	legitimate ->f_mapping, fucked contents of address_space it points to.
-	fucked ->i_mapping, ->f_mapping copied from it.
-	legitimate ->i_mapping, open() callback fucking ->f_mapping up.
-Try to enable memory poisoning; if it turns those into oopsen on attempt
-to access poison + 0x18, we'll know it's some inode getting freed while we
-still have references to it...  OTOH, that would make your debugging printks
-not fire at all, so it might be better to get the pathname first before
-enabling that and seeing how behaviour changes...
+> But - repeating my message - none of those patches made the code in the
+> mainline tree buildable.
+
+Which is a problem because...  (and note that you mean "selectable in
+Kconfig" here).
+
+> I don't have any stake in the GTA01 code. So I don't really mind
+> deferring this discussion to (say) the end of the v3.3 merge period.
+> But, surely, there must be a point where one can conclude that
+> unbuildable code is just that?
+
+No.  Removing this code has negative value.  There is no meaningful cost
+in having it in mainline; your patch has been the biggest piece of work
+so far other than updates done by people actively working on the
+machine.  On the other hand the OpenMoko guys from time to time send
+useful patches and report interesting bugs (they sent a patch only last
+week in fact) and are definitely a user for the code (which is more than
+can be said for most of the legacy boards in mainline).
+
+Please take a step back, think about what value would be brought by
+making this change.
