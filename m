@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab1KXN5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 08:57:39 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:13357
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752060Ab1KXN5i convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 08:57:38 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371K1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
-Thread-Topic: [PATCH] P1021: set IReady in QE Microcode Upload
-Thread-Index: AQHMoJB2KAiKIl6KR0iOAe8H9Sg5BpWsEXMggAMqaACADORnAIAAZSGA
-Date: Thu, 24 Nov 2011 13:57:31 +0000
-Message-ID: <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com>
-References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net>
- <4EBD4FB8.2020406@freescale.com>
- <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net>
- <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com>
- <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org>
-In-Reply-To: <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [68.203.10.197]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <90766ACF66764E4890DF79A04DAF84F4@freescale.net>
-Content-Transfer-Encoding: 8BIT
+	id S1756224Ab1KXOAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 09:00:00 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37958 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1KXN76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 08:59:58 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Frank Seidel <frank@f-seidel.de>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Subject: [PATCH] hdaps: Shut up gcc uninitialized variable warnings
+Date: Thu, 24 Nov 2011 14:59:55 +0100
+Message-Id: <1322143195-5153-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 24, 2011, at 1:55 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
+Turn off the following triggered with gcc 4.6.1 on Debian testing:
 
->> 
->> I'll have to check.  But this patch can't be applied as-is unless it's
->> proven safe for all QE-enabled chips.
-> 
-> Any update on trying this on a MPC8323?
+drivers/platform/x86/hdaps.c: In function ‘hdaps_temp2_show’:
+drivers/platform/x86/hdaps.c:398:16: warning: ‘temp’ may be used uninitialized in this function [-Wuninitialized]
+drivers/platform/x86/hdaps.c: In function ‘hdaps_temp1_show’:
+drivers/platform/x86/hdaps.c:385:16: warning: ‘temp’ may be used uninitialized in this function [-Wuninitialized]
 
-Haiying said it should be ok, but I haven't tried it yet.  I'll try it on Monday.
+Cc: Frank Seidel <frank@f-seidel.de>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ drivers/platform/x86/hdaps.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/platform/x86/hdaps.c b/drivers/platform/x86/hdaps.c
+index 5a34973..2fdacc2 100644
+--- a/drivers/platform/x86/hdaps.c
++++ b/drivers/platform/x86/hdaps.c
+@@ -375,7 +375,7 @@ static ssize_t hdaps_variance_show(struct device *dev,
+ static ssize_t hdaps_temp1_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+-	u8 temp;
++	u8 uninitialized_var(temp);
+ 	int ret;
+ 
+ 	ret = hdaps_readb_one(HDAPS_PORT_TEMP1, &temp);
+@@ -388,7 +388,7 @@ static ssize_t hdaps_temp1_show(struct device *dev,
+ static ssize_t hdaps_temp2_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+-	u8 temp;
++	u8 uninitialized_var(temp);
+ 	int ret;
+ 
+ 	ret = hdaps_readb_one(HDAPS_PORT_TEMP2, &temp);
+-- 
+1.7.8.rc0.35.gee6df
 
