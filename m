@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab1KXAKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 19:10:21 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53924 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab1KXAKU (ORCPT
+	id S1754023Ab1KXAKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 19:10:30 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40305 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab1KXAK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 19:10:20 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 24 Nov 2011 09:09:15 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 7/8] mm: memcg: modify PageCgroupAcctLRU non-atomically
-Message-Id: <20111124090915.2f6e2e2c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
-	<1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 23 Nov 2011 19:10:28 -0500
+Date: Wed, 23 Nov 2011 19:10:18 -0500 (EST)
+Message-Id: <20111123.191018.1357365541804012070.davem@davemloft.net>
+To: cascardo@linux.vnet.ibm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-driver@qlogic.com, ron.mercer@qlogic.com,
+        jitendra.kalsaria@qlogic.com, anirban.chakraborty@qlogic.com
+Subject: Re: [PATCH] qlge: fix size of external list for TX address
+ descriptors
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1322089842-11694-1-git-send-email-cascardo@linux.vnet.ibm.com>
+References: <1322089842-11694-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 23 Nov 2011 16:10:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011 16:42:30 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Date: Wed, 23 Nov 2011 21:10:42 -0200
 
-> From: Johannes Weiner <jweiner@redhat.com>
+> When transmiting a fragmented skb, qlge fills a descriptor with the
+> fragment addresses, after DMA-mapping them. If there are more than eight
+> fragments, it will use the eighth descriptor as a pointer to an external
+> list. After mapping this external list, called OAL to a structure
+> containing more descriptors, it fills it with the extra fragments.
 > 
-> This bit is protected by zone->lru_lock, there is no need for locked
-> operations when setting and clearing it.
+> However, considering that systems with pages larger than 8KiB would have
+> less than 8 fragments, which was true before commit a715dea3c8e, it
+> defined a macro for the OAL size as 0 in those cases.
 > 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Now, if a skb with more than 8 fragments (counting skb->data as one
+> fragment), this would start overwriting the list of addresses already
+> mapped and would make the driver fail to properly unmap the right
+> addresses on architectures with pages larger than 8KiB.
+> 
+> Besides that, the list of mappings was one size too small, since it must
+> have a mapping for the maxinum number of skb fragments plus one for
+> skb->data and another for the OAL. So, even on architectures with page
+> sizes 4KiB and 8KiB, a skb with the maximum number of fragments would
+> make the driver overwrite its counter for the number of mappings, which,
+> again, would make it fail to unmap the mapped DMA addresses.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-This atomic ops are for avoiding race with other ops as lock_page_cgroup().
-Or other Set/ClearPageCgroup....
-
-Do I misunderstand atomic ops v.s. non-atomic ops race ?
-
-Thanks,
--Kame
-
+Applied, thanks for the detailed commit message.
