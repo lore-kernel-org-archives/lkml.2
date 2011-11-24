@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab1KXGr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 01:47:58 -0500
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:55417 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab1KXGr5 (ORCPT
+	id S1753051Ab1KXGuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 01:50:00 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:38886 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab1KXGt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 01:47:57 -0500
-X-Greylist: delayed 612 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Nov 2011 01:47:56 EST
-Subject: [PATCH] crypto: serpent-sse2 - should select CRYPTO_CRYPTD
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Cc: Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 24 Nov 2011 08:37:41 +0200
-Message-ID: <20111124063741.17986.23462.stgit@localhost6.localdomain6>
-In-Reply-To: <4ECD527E.8000506@xenotime.net>
-References: <4ECD527E.8000506@xenotime.net>
-User-Agent: StGit/0.15
+	Thu, 24 Nov 2011 01:49:59 -0500
+Date: Thu, 24 Nov 2011 12:18:53 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, tulasidhard@gmail.com,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Subject: Re: Fwd: uprobes: register/unregister probes.
+Message-ID: <20111124064853.GA28065@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <hYuXv-26J-3@gated-at.bofh.it>
+ <hYuXw-26J-5@gated-at.bofh.it>
+ <i0o1A-7sd-9@gated-at.bofh.it>
+ <fe077f71-dce6-40cf-988c-cc35bf4c7ae1@o11g2000prg.googlegroups.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <fe077f71-dce6-40cf-988c-cc35bf4c7ae1@o11g2000prg.googlegroups.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112406-3352-0000-0000-000000F52980
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since serpent_sse2_glue.c uses cryptd, CRYPTO_SERPENT_SSE2_X86_64 and
-CRYPTO_SERPENT_SSE2_586 should be selecting CRYPTO_CRYPTD.
+> 
+> On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
+> > +#define UPROBES_HASH_SZ        13
+> > +/* serialize (un)register */
+> > +static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
+> > +#define uprobes_hash(v)        (&uprobes_mutex[((unsigned long)(v)) %\
+> > +                                               UPROBES_HASH_SZ])
+> 
+> Was there any reason to for using this hasing scheme, say over hash.h?
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
----
- crypto/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+There is no specific reason for choosing this hashing scheme over the
+current. I just say ext4_aio_mutex in fs/ext4/ext4.h and did something
+similar.
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 16e0c13..b8d1b10 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -770,6 +770,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
- 	tristate "Serpent cipher algorithm (x86_64/SSE2)"
- 	depends on X86 && 64BIT
- 	select CRYPTO_ALGAPI
-+	select CRYPTO_CRYPTD
- 	select CRYPTO_SERPENT
- 	help
- 	  Serpent cipher algorithm, by Anderson, Biham & Knudsen.
-@@ -787,6 +788,7 @@ config CRYPTO_SERPENT_SSE2_586
- 	tristate "Serpent cipher algorithm (i586/SSE2)"
- 	depends on X86 && !64BIT
- 	select CRYPTO_ALGAPI
-+	select CRYPTO_CRYPTD
- 	select CRYPTO_SERPENT
- 	help
- 	  Serpent cipher algorithm, by Anderson, Biham & Knudsen.
+-- 
+Thanks and Regards
+Srikar
 
