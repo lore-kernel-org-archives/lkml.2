@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab1KXPaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 10:30:55 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:51099
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752796Ab1KXP2h (ORCPT
+	id S1756547Ab1KXPa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 10:30:59 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:52216
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753123Ab1KXP2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Nov 2011 10:28:37 -0500
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh87h2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh87h2a8h668h839h)
 X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
 X-FB-DOMAIN-IP-MATCH: fail
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: <linux-kernel@vger.kernel.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        <linux-mtd@lists.infradead.org>
-Subject: [PATCH 06/11] mtd: Remove redundant spi driver bus initialization
-Date: Thu, 24 Nov 2011 16:29:16 +0100
-Message-ID: <1322148561-25138-6-git-send-email-lars@metafoo.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 05/11] mfd: Remove redundant spi driver bus initialization
+Date: Thu, 24 Nov 2011 16:29:15 +0100
+Message-ID: <1322148561-25138-5-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.7.1
 In-Reply-To: <1322148561-25138-1-git-send-email-lars@metafoo.de>
 References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
@@ -47,51 +44,50 @@ struct spi_driver _driver = {
 // </smpl>
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: linux-mtd@lists.infradead.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mtd/devices/m25p80.c        |    1 -
- drivers/mtd/devices/mtd_dataflash.c |    1 -
- drivers/mtd/devices/sst25l.c        |    1 -
+ drivers/mfd/mc13xxx-core.c |    1 -
+ drivers/mfd/tps65912-spi.c |    1 -
+ drivers/mfd/wm831x-spi.c   |    1 -
  3 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 884904d..7c60ddd 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -992,7 +992,6 @@ static int __devexit m25p_remove(struct spi_device *spi)
- static struct spi_driver m25p80_driver = {
+diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+index e9619ac..4417380 100644
+--- a/drivers/mfd/mc13xxx-core.c
++++ b/drivers/mfd/mc13xxx-core.c
+@@ -805,7 +805,6 @@ static struct spi_driver mc13xxx_driver = {
+ 	.id_table = mc13xxx_device_id,
  	.driver = {
- 		.name	= "m25p80",
+ 		.name = "mc13xxx",
+-		.bus = &spi_bus_type,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe = mc13xxx_probe,
+diff --git a/drivers/mfd/tps65912-spi.c b/drivers/mfd/tps65912-spi.c
+index 6d71e0d..27d3302 100644
+--- a/drivers/mfd/tps65912-spi.c
++++ b/drivers/mfd/tps65912-spi.c
+@@ -111,7 +111,6 @@ static int __devexit tps65912_spi_remove(struct spi_device *spi)
+ static struct spi_driver tps65912_spi_driver = {
+ 	.driver = {
+ 		.name = "tps65912",
+-		.bus = &spi_bus_type,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe	= tps65912_spi_probe,
+diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
+index 8d6a9a9..37b3756 100644
+--- a/drivers/mfd/wm831x-spi.c
++++ b/drivers/mfd/wm831x-spi.c
+@@ -95,7 +95,6 @@ MODULE_DEVICE_TABLE(spi, wm831x_spi_id);
+ static struct spi_driver wm831x_spi_driver = {
+ 	.driver = {
+ 		.name	= "wm831x",
 -		.bus	= &spi_bus_type,
  		.owner	= THIS_MODULE,
+ 		.pm	= &wm831x_spi_pm,
  	},
- 	.id_table	= m25p_ids,
-diff --git a/drivers/mtd/devices/mtd_dataflash.c b/drivers/mtd/devices/mtd_dataflash.c
-index d75c7af..236057e 100644
---- a/drivers/mtd/devices/mtd_dataflash.c
-+++ b/drivers/mtd/devices/mtd_dataflash.c
-@@ -936,7 +936,6 @@ static int __devexit dataflash_remove(struct spi_device *spi)
- static struct spi_driver dataflash_driver = {
- 	.driver = {
- 		.name		= "mtd_dataflash",
--		.bus		= &spi_bus_type,
- 		.owner		= THIS_MODULE,
- 		.of_match_table = dataflash_dt_ids,
- 	},
-diff --git a/drivers/mtd/devices/sst25l.c b/drivers/mtd/devices/sst25l.c
-index d38ef3b..e45f62e 100644
---- a/drivers/mtd/devices/sst25l.c
-+++ b/drivers/mtd/devices/sst25l.c
-@@ -444,7 +444,6 @@ static int __devexit sst25l_remove(struct spi_device *spi)
- static struct spi_driver sst25l_driver = {
- 	.driver = {
- 		.name	= "sst25l",
--		.bus	= &spi_bus_type,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= sst25l_probe,
 -- 
 1.7.7.1
 
