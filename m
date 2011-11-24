@@ -1,86 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab1KXV4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 16:56:55 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:19118 "EHLO
+	id S1754923Ab1KXV5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 16:57:11 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:52410 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab1KXV4y (ORCPT
+	with ESMTP id S1754806Ab1KXV4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 16:56:54 -0500
+	Thu, 24 Nov 2011 16:56:55 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: linux-arm-kernel@lists.infradead.org, robherring2@gmail.com,
         grant.likely@secretlab.ca
 Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         plagnioj@jcrosoft.com, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 2/3] ARM: at91/gpio: add irqdomain to gpio interrupts
-Date: Thu, 24 Nov 2011 22:56:28 +0100
-Message-Id: <edeb4da00527914f0e1038461539843c46ab0b50.1322171620.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 1/3] ARM: at91/aic: add device tree support for AIC
+Date: Thu, 24 Nov 2011 22:56:27 +0100
+Message-Id: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
-References: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
-In-Reply-To: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
-References: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ioremap registers from DT specification and adding
+of a simple irq domain for AIC interrupts.
+
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 ---
- arch/arm/mach-at91/gpio.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+ arch/arm/Kconfig         |    1 +
+ arch/arm/mach-at91/irq.c |   41 ++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 41 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
-index 74d6783..45a39d0 100644
---- a/arch/arm/mach-at91/gpio.c
-+++ b/arch/arm/mach-at91/gpio.c
-@@ -20,6 +20,7 @@
- #include <linux/list.h>
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 44789ef..293c152 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -318,6 +318,7 @@ config ARCH_AT91
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select HAVE_CLK
+ 	select CLKDEV_LOOKUP
++	select IRQ_DOMAIN
+ 	help
+ 	  This enables support for systems based on the Atmel AT91RM9200,
+ 	  AT91SAM9 and AT91CAP9 processors.
+diff --git a/arch/arm/mach-at91/irq.c b/arch/arm/mach-at91/irq.c
+index be6b639..80783b0 100644
+--- a/arch/arm/mach-at91/irq.c
++++ b/arch/arm/mach-at91/irq.c
+@@ -24,6 +24,8 @@
  #include <linux/module.h>
- #include <linux/io.h>
+ #include <linux/mm.h>
+ #include <linux/types.h>
++#include <linux/of_address.h>
 +#include <linux/irqdomain.h>
  
  #include <mach/hardware.h>
- #include <mach/at91_pio.h>
-@@ -32,6 +33,7 @@ struct at91_gpio_chip {
- 	int			id;		/* ID of register bank */
- 	void __iomem		*regbase;	/* Base of register bank */
- 	struct clk		*clock;		/* associated clock */
-+	struct irq_domain	domain;		/* associated irq domain */
+ #include <asm/irq.h>
+@@ -34,6 +36,7 @@
+ #include <asm/mach/map.h>
+ 
+ void __iomem *at91_aic_base;
++static struct irq_domain at91_aic_domain;
+ 
+ static void at91_aic_mask_irq(struct irq_data *d)
+ {
+@@ -127,14 +130,44 @@ static struct irq_chip at91_aic_chip = {
+ 	.irq_set_wake	= at91_aic_set_wake,
  };
  
- #define to_at91_gpio_chip(c) container_of(c, struct at91_gpio_chip, chip)
-@@ -483,6 +485,20 @@ postcore_initcall(at91_gpio_debugfs_init);
- /*--------------------------------------------------------------------------*/
- 
- /*
-+ * irqdomain initialization: pile up irqdomains on top of AIC range
-+ */
-+static void __init at91_gpio_irqdomain(struct at91_gpio_chip *at91_gpio)
++#if defined(CONFIG_OF)
++static struct of_device_id aic_ids[]  = {
++	{ .compatible = "atmel,at91rm9200-aic" },
++	{ /*sentinel*/ }
++};
++
++static int __init at91_aic_of_init(void)
 +{
-+	struct irq_domain	*gpio_irq_d = &at91_gpio->domain;
++	struct device_node *np;
 +
-+	gpio_irq_d->irq_base =
-+		gpio_irq_d->hwirq_base = gpio_to_irq(at91_gpio->chip.base);
-+	gpio_irq_d->nr_irq = at91_gpio->chip.ngpio;
-+	gpio_irq_d->ops = &irq_domain_simple_ops;
-+	irq_domain_add(gpio_irq_d);
++	np = of_find_matching_node(NULL, aic_ids);
++	if (np == NULL)
++		return -ENODEV;
++
++	at91_aic_base = of_iomap(np, 0);
++	at91_aic_domain.of_node = np;
++	/* Keep refcount of the node */
++
++	return 0;
 +}
++#else
++static int __init at91_aic_of_init(void)
++{
++	return -ENOSYS;
++}
++#endif
 +
-+/*
-  * This lock class tells lockdep that GPIO irqs are in a different
-  * category than their parents, so it won't report false recursion.
+ /*
+  * Initialize the AIC interrupt controller.
   */
-@@ -517,6 +533,9 @@ void __init at91_gpio_irq_setup(void)
- 			set_irq_flags(irq, IRQF_VALID);
- 		}
+ void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
+ {
+ 	unsigned int i;
++	int ret;
  
-+		/* setup irq domain for this GPIO controller */
-+		at91_gpio_irqdomain(this);
+-	at91_aic_base = ioremap(AT91_AIC, 512);
++	ret = at91_aic_of_init();
++	if (ret < 0)
++		at91_aic_base = ioremap(AT91_AIC, 512);
+ 
+ 	if (!at91_aic_base)
+ 		panic("Impossible to ioremap AT91_AIC\n");
+@@ -169,4 +202,10 @@ void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
+ 	/* Disable and clear all interrupts initially */
+ 	at91_aic_write(AT91_AIC_IDCR, 0xFFFFFFFF);
+ 	at91_aic_write(AT91_AIC_ICCR, 0xFFFFFFFF);
 +
- 		/* The toplevel handler handles one bank of GPIOs, except
- 		 * AT91SAM9263_ID_PIOCDE handles three... PIOC is first in
- 		 * the list, so we only set up that handler.
++	/* Add irq domain for AIC */
++	at91_aic_domain.irq_base = at91_aic_domain.hwirq_base = 0;
++	at91_aic_domain.nr_irq = NR_AIC_IRQS;
++	at91_aic_domain.ops = &irq_domain_simple_ops;
++	irq_domain_add(&at91_aic_domain);
+ }
 -- 
 1.7.5.4
 
