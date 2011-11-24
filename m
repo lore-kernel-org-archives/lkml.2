@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab1KXQr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 11:47:26 -0500
-Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:36583 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756650Ab1KXQrY (ORCPT
+	id S1756701Ab1KXQrv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 11:47:51 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:64753 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649Ab1KXQrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 11:47:24 -0500
-Date: Thu, 24 Nov 2011 17:47:19 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: wim@iguana.be
-Cc: w.sang@pengutronix.de, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, HaraldWelte@viatech.com,
-        broonie@opensource.wolfsonmicro.com
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <4ece7517.LRNwqXodeJ5rvC27%marc.vertes@sigfox.com>
-References: <4eccc3f0.iApQ//mCzaN3UsrB%marc.vertes@sigfox.com>
- <20111123104926.GB4063@pengutronix.de>
- <20111123121329.GM23376@infomag.iguana.be>
- <20111123122018.GA12227@opensource.wolfsonmicro.com>
- <20111123124037.GN23376@infomag.iguana.be>
- <4ecd075d.2YyTTCA13zxwZmwT%marc.vertes@sigfox.com>
- <20111123214614.GQ23376@infomag.iguana.be>
- <4ece231e./LkW+9i4Wmz+9zzn%marc.vertes@sigfox.com>
- <20111124134247.GS23376@infomag.iguana.be>
- <4ece57c9.2i1u841q3U3s+xD7%marc.vertes@sigfox.com>
- <20111124154847.GT23376@infomag.iguana.be>
-In-Reply-To: <20111124154847.GT23376@infomag.iguana.be>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Thu, 24 Nov 2011 11:47:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Voss, Nikolaus" <N.Voss@weinmann.de>
+Subject: Re: [PATCH v7 3/5] drivers/i2c/busses/i2c-at91.c: add new driver
+Date: Thu, 24 Nov 2011 16:47:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>
+References: <cover.1322062555.git.n.voss@weinmann.de> <201111241539.06990.arnd@arndb.de> <EF2E73589CA71846A15D0B2CDF79505D087B45007C@wm021.weinmann.com>
+In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B45007C@wm021.weinmann.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 8437212428927551279
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdelucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfhgjfgggtgfgsehtjeertddtredvnecuhfhrohhmpeforghrtgcugggvrhhtvghsuceomhgrrhgtrdhvvghrthgvshesshhighhfohigrdgtohhmqeenucffohhmrghinhepne
-X-Spam-Check: DONE|U 0.500001/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
+Message-Id: <201111241647.35818.arnd@arndb.de>
+X-Provags-ID: V02:K0:LKsGuMlgkk4GRzGjZb+O8FahNDX1i7ydEb+PVcMnNY/
+ UPnXoGbbzMQGtanbqkFRQjieKANOH09669G0hAVTjCWIGuJR4R
+ hCJnoLUXOrjLGl5WtxHUiS17ybY1Dj+Sq1UvtXzDADPZBWaXDu
+ mpiEVeglg1J8aDc4WGIDOhmSjm3i5xz5p4L+B5yqBH2pcMlbih
+ m+w2JpvQHTDQ4pdqNmBlEpYDYq2O/enfovhkAjgMX3k9nLAfPU
+ jsXUB/r/AQB7u4ek0aWMdtG0/SvOwLPb/4QZMqgFkzVOYcaC+Y
+ gI9cPi5mzTCoiAS7QYixrWgNT4C38xVFQa+Ls+CPTFX4z23Y1J
+ QAFjZzmBdyi2NCbDqThs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+On Thursday 24 November 2011, Voss, Nikolaus wrote:
+> > Aside from the flamewar in that thread, my impression is that in general
+> > people (me certainly) prefer to have driver-local workarounds be expressed
+> > in a driver specific way, not in a platform or architecture specific way
+> > because that makes the driver less portable.
+> 
+> I guess I see your point now. So you want something like pdev.has_bugX to be
+> set by mach setup and later check this flag in the driver?
 
-> Hope this is clearer now.
->
-Yes. All is clear now. Thanks. I was confusing WDT_HEARTBEAT and WDT_TIMEOUT.
-I fully agree with the way the timer is implemented.
+Yes, that would be the idea. I would not introduce platform_data for one
+driver just for this though, because we are generally moving away from
+platform_data towards device tree probing.
 
-> I think we should change the default timeout value to 60 seconds instead of 15.
->
-Agree on that too.
+You can do it with a match table that has two entries with different
+names for the two kinds of device that you need to distinguish and
+set the platform_device_id->driver_data field to '1' for the type
+that needs the fixup.
 
-Thanks for your patience.
-Kind regards,
---
-Marc
+> > > > #define       AT91_TWI_MMR            0x00000004
+> > > > #define       AT91_TWI_IADRSZ         0x00000300
+> > > > #define       AT91_TWI_IADRSZ_NO      0x00000000
+> > > > #define       AT91_TWI_IADRSZ_1       0x00000100
+> > > > ...
+> > >
+> > > I agree, but this header file was already used by the old driver and
+> > > converting would add possible errors to register definitions which are
+> > > not (yet) used. That's why I've left it as is and just made it a local
+> > > include.
+> > 
+> > But you are presenting the driver as a new one, so you should be
+> > prepared to get review comments like any other new code.
+> > 
+> > Please at least move the data into the main driver file to get rid of
+> > the header file.
+> 
+> I didn't want to appear ignorant about this, I actually appreciate your
+> comment. I just wanted to point out that there might be a reason to keep
+> the old file which you weren't aware of (because I presented this as a new
+> driver). So, I will move the register definitions to the main driver.
+
+Ok, good. Moving it into the driver is really the important part anyway,
+and I understand your reasoning for not wanting to modify the definitions,
+it just didn't apply to the one of the two comments I made about the header.
+
+	Arnd
