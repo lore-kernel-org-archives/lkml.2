@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab1KXOnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 09:43:21 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:51295 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab1KXOnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 09:43:20 -0500
-Date: Thu, 24 Nov 2011 20:09:52 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Subject: Re: [PATCH v7 3.2-rc2 3/30] uprobes: register/unregister probes.
-Message-ID: <20111124143952.GJ28065@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
- <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
- <1322064540.14799.78.camel@twins>
+	id S1756427Ab1KXOnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 09:43:25 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64737 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab1KXOnW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 09:43:22 -0500
+Message-ID: <4ECE5803.3060203@gmail.com>
+Date: Thu, 24 Nov 2011 15:43:15 +0100
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1322064540.14799.78.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112414-5112-0000-0000-0000025E1F93
+To: Matt Fleming <matt@console-pimps.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v5 10/10] x86, efi: EFI boot stub support
+References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>  <1318848017-12301-11-git-send-email-matt@console-pimps.org>  <4E9C8AAC.7080803@gmail.com>  <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECC4207.3010607@gmail.com> <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +                       ret = 0;
-> > +               if (!ret)
-> > +                       break;
-> 
-> Shouldn't that read:
-> 		if (ret)
-> 			break;
-> 
-> So that we bail when there's a real error instead of no error?
-> 
+Hey Matt,
 
-Right, will fix this and also do the PTR_ERR changes that you suggested.
+On 11/23/2011 08:27 PM, Matt Fleming wrote:
 
--- 
-thanks and regards
-Srikar
+> On Wed, 2011-11-23 at 01:44 +0100, Maarten Lankhorst wrote:
+>> When I tested this with v3.2-rc2 it didn't boot, it hung before it
+>> initialized the kernel.
+>> Without initrd it works fine, though.
+> Bah, so this change actually makes booting worse? You said before that
+> you almost made it to userspace but this seems to hang much earlier now.
+> Is that correct?
+>
+> ... back to the drawing board.
+I was looking at why grub2 could boot, seems to be it reads in chunks of
+256 kilobytes. I seem to be able to get it to boot with chunks of 4 mb
+as well, but didn't test beyond that.
+
+So the fix is to simply read the file in parts, otherwise efi hangs..
+As a nice side effect, short reads are also handled, but the efi
+firmware seems to choke over huge reads and dies.
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 8627a56..9b076f0 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -695,14 +695,16 @@ grow:
+ 			u64 size;
+ 
+ 			size = initrds[j].size;
+-			status = efi_call_phys3(fh->read, initrds[j].handle,
+-						&size, addr);
+-			if (status != EFI_SUCCESS)
+-				goto free_initrd_total;
+-
++			while (size) {
++				u64 toread = size > 1024 * 1024 ? 1024 * 1024 : size;
++				status = efi_call_phys3(fh->read, initrds[j].handle,
++							&toread, addr);
++				if (status != EFI_SUCCESS)
++					goto free_initrd_total;
++				size -= toread;
++				addr += toread;
++			}
+ 			efi_call_phys1(fh->close, initrds[j].handle);
+-
+-			addr += size;
+ 		}
+ 
+ 	}
+
 
