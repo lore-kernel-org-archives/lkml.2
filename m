@@ -1,115 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1KXJkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:40:37 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:40674 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755103Ab1KXJkb (ORCPT
+	id S1755233Ab1KXJlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:41:07 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40030 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755112Ab1KXJlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:40:31 -0500
-Date: Thu, 24 Nov 2011 11:40:26 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: Peter Chen <hzpeterchen@gmail.com>, Greg KH <gregkh@suse.de>,
-        "balbi@ti.com" <balbi@ti.com>, Haojian Zhuang <hzhuang1@marvell.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] USB: OTG should be linked before Host
-Message-ID: <20111124094024.GL3352@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1322044728-27080-1-git-send-email-zhangwm@marvell.com>
- <20111123161759.GA27000@suse.de>
- <CAL411-o0k_=HN+LH4Vx07=DTPOhs6iZuDXjdo1daBHov85Etaw@mail.gmail.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE19FD172883@SC-VEXCH4.marvell.com>
+	Thu, 24 Nov 2011 04:41:02 -0500
+Message-ID: <4ECE1129.2060305@gmail.com>
+Date: Thu, 24 Nov 2011 17:40:57 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NZiXfHLGvOGtDZMn"
-Content-Disposition: inline
-In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE19FD172883@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 5/6] KVM: sort memslots by its size and use line search
+References: <4ECE1037.4060300@gmail.com>
+In-Reply-To: <4ECE1037.4060300@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
---NZiXfHLGvOGtDZMn
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sort memslots base on its size and use line search to find it, so that the
+larger memslots have better fit
 
-On Wed, Nov 23, 2011 at 11:19:44PM -0800, Neil Zhang wrote:
-> > -----Original Message-----
-> > From: Peter Chen [mailto:hzpeterchen@gmail.com]
-> > Sent: 2011=E5=B9=B411=E6=9C=8824=E6=97=A5 14:06
-> > To: Greg KH
-> > Cc: Neil Zhang; balbi@ti.com; Haojian Zhuang; linux-usb@vger.kernel.org
-> > Subject: Re: [PATCH v1] USB: OTG should be linked before Host
-> >=20
-> > On Thu, Nov 24, 2011 at 12:17 AM, Greg KH <gregkh@suse.de> wrote:
-> > > On Wed, Nov 23, 2011 at 06:38:48PM +0800, Neil Zhang wrote:
-> > >> For OTG controller, the host driver will call function
-> > >> otg_get_transceiver to get the otg transceiver, so we need to init
-> > the
-> > >> OTG driver before HOST.
-> > >
-> > I agree with it, at freescale i.mx platform, we also need to init otg
-> > first, then the host
-> > if otg function is enabled.
-> >=20
-> > > How do you handle this if these drivers are built as modules?
-> > We require the user load module by order, and write it at UserGuide.
-> >=20
-> > I find at older kernel version, like 2.6.38, the otg was built firstly
-> > at usb module.
->=20
-> Actually, it was changed by the following patch.
->=20
-> commit 4661ffc91befc8c5ee080720120da1d53851060a
-> Author: Felipe Balbi <balbi@ti.com>
-> Date:   Thu Apr 7 10:59:34 2011 +0300
->=20
->     usb: don't enter usb subdirectories directly
->=20
->     Instead, make we enter usb/ directory on all
->     needed cases and enter the subdirectories from
->     drivers/usb/Makefile.
->=20
->     Signed-off-by: Felipe Balbi <balbi@ti.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->=20
-> Hi Balbi,
-> Do you have any concern to change it?
+The idea is from Avi
 
-not from my side, we need the transceivers before the DRD controllers
-can probe.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ include/linux/kvm_host.h |   18 +++++++++--
+ virt/kvm/kvm_main.c      |   79 +++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 72 insertions(+), 25 deletions(-)
 
-FWIW:
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 123925c..9efdf5c 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -231,8 +231,12 @@ struct kvm_irq_routing_table {};
+ #define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
+ #endif
 
-Acked-by: Felipe Balbi <balbi@ti.com>
++/*
++ * Note:
++ * memslots are not sorted by id anymore, please use id_to_memslot()
++ * to get the memslot by its id.
++ */
+ struct kvm_memslots {
+-	int nmemslots;
+ 	u64 generation;
+ 	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
+ };
+@@ -310,7 +314,8 @@ static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
 
---=20
-balbi
+ #define kvm_for_each_memslot(memslot, slots)	\
+ 	for (memslot = &slots->memslots[0];	\
+-	      memslot < slots->memslots + (slots)->nmemslots; memslot++)
++	      memslot < slots->memslots + KVM_MEM_SLOTS_NUM && memslot->npages;\
++		memslot++)
 
---NZiXfHLGvOGtDZMn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
+ void kvm_vcpu_uninit(struct kvm_vcpu *vcpu);
+@@ -336,7 +341,14 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+ static inline struct kvm_memory_slot *
+ id_to_memslot(struct kvm_memslots *slots, int id)
+ {
+-	return &slots->memslots[id];
++	int i;
++
++	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
++		if (slots->memslots[i].id == id)
++			return &slots->memslots[i];
++
++	WARN_ON(1);
++	return NULL;
+ }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ #define HPA_MSB ((sizeof(hpa_t) * 8) - 1)
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 7b60849..6e8eb15 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -440,6 +440,15 @@ static int kvm_init_mmu_notifier(struct kvm *kvm)
 
-iQIcBAEBAgAGBQJOzhEIAAoJEIaOsuA1yqRED90P/2zKdSk5tWwzWO99dKIWBI+B
-Y3JgQMtmm2RM2CaSj1ajDsV1VPt8oZBCG8joA6iouTT7iLdEyxBoXApqSy5w6iuG
-fljOClc/8o5BOMp+02Ic6oBZshVHu1trLxp3L3OuVR9sr5R4JW9DwMbvB6BaAWmR
-QPXhWD+RY1kAJ03G9ZTcO203q3vEusTLnRYC18uIvKqDzH1ObIrZPQS0fYlhWnMT
-TfCR43zD5MvaVYnP727l6sdJOqlsca/ymHGf4UUNSZcNU7kj//FxLOjgTHVsEFPN
-ljyfUnWzu9DhQcXqK7Fne5IZfYU0tkZbPsI0kImqn1+luq9yzPF0pyGnhT4KafOl
-HbJ99iGErLWUZfcXyLzi1/GBvyqQ8k9KDysho8IaYX3plgpRKSlwwfsUO5SolA+9
-33602jfB99SONzyQQTnK+SyrH/8BjUEyq4YAG9BEdElo91kV0VJLKgW8olRUKJOt
-udG2zqGd6KXC5V0dcIm1VboxpUG8OQB+99ligLfXOJXg4kkBEH647azPXxZgXoUr
-94j6Ijuh++cbKdl7m2M69Z/P/lrZoB8LFY2c4Livho5rrsGqaqmhfvr/wdCdPO5E
-4XhAd889p/laOJ3OID6Ge9wwEFehSscvh3p5vypEOehuSptF+Yw7NBUW+lB5fjho
-S3k5RqPj8+xLguwZMk/N
-=NsnZ
------END PGP SIGNATURE-----
+ #endif /* CONFIG_MMU_NOTIFIER && KVM_ARCH_WANT_MMU_NOTIFIER */
 
---NZiXfHLGvOGtDZMn--
++static void kvm_init_memslots_id(struct kvm *kvm)
++{
++	int i;
++	struct kvm_memslots *slots = kvm->memslots;
++
++	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
++		slots->memslots[i].id = i;
++}
++
+ static struct kvm *kvm_create_vm(void)
+ {
+ 	int r, i;
+@@ -465,6 +474,7 @@ static struct kvm *kvm_create_vm(void)
+ 	kvm->memslots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+ 	if (!kvm->memslots)
+ 		goto out_err_nosrcu;
++	kvm_init_memslots_id(kvm);
+ 	if (init_srcu_struct(&kvm->srcu))
+ 		goto out_err_nosrcu;
+ 	for (i = 0; i < KVM_NR_BUSES; i++) {
+@@ -630,15 +640,54 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
+ }
+ #endif /* !CONFIG_S390 */
+
++static struct kvm_memory_slot *
++search_memslots(struct kvm_memslots *slots, gfn_t gfn)
++{
++	struct kvm_memory_slot *memslot;
++
++	kvm_for_each_memslot(memslot, slots)
++		if (gfn >= memslot->base_gfn &&
++		      gfn < memslot->base_gfn + memslot->npages)
++			return memslot;
++
++	return NULL;
++}
++
++static int cmp_memslot(const void *slot1, const void *slot2)
++{
++	struct kvm_memory_slot *s1, *s2;
++
++	s1 = (struct kvm_memory_slot *)slot1;
++	s2 = (struct kvm_memory_slot *)slot2;
++
++	if (s1->npages < s2->npages)
++		return 1;
++	if (s1->npages > s2->npages)
++		return -1;
++
++	return 0;
++}
++
++/*
++ * Sort the memslots base on its size, so the larger slots
++ * will get better fit.
++ */
++static void sort_memslots(struct kvm_memslots *slots)
++{
++	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
++	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
++}
++
+ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
+ {
+ 	if (new) {
+ 		int id = new->id;
+ 		struct kvm_memory_slot *old = id_to_memslot(slots, id);
++		unsigned long npages = old->npages;
+
+ 		*old = *new;
+-		if (id >= slots->nmemslots)
+-			slots->nmemslots = id + 1;
++		if (new->npages != npages)
++			sort_memslots(slots);
+ 	}
+
+ 	slots->generation++;
+@@ -980,14 +1029,7 @@ EXPORT_SYMBOL_GPL(kvm_is_error_hva);
+ static struct kvm_memory_slot *__gfn_to_memslot(struct kvm_memslots *slots,
+ 						gfn_t gfn)
+ {
+-	struct kvm_memory_slot *memslot;
+-
+-	kvm_for_each_memslot(memslot, slots)
+-		if (gfn >= memslot->base_gfn
+-		    && gfn < memslot->base_gfn + memslot->npages)
+-			return memslot;
+-
+-	return NULL;
++	return search_memslots(slots, gfn);
+ }
+
+ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
+@@ -998,20 +1040,13 @@ EXPORT_SYMBOL_GPL(gfn_to_memslot);
+
+ int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn)
+ {
+-	int i;
+-	struct kvm_memslots *slots = kvm_memslots(kvm);
+-
+-	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
+-		struct kvm_memory_slot *memslot = &slots->memslots[i];
++	struct kvm_memory_slot *memslot = gfn_to_memslot(kvm, gfn);
+
+-		if (memslot->flags & KVM_MEMSLOT_INVALID)
+-			continue;
++	if (!memslot || memslot->id >= KVM_MEMORY_SLOTS ||
++	      memslot->flags & KVM_MEMSLOT_INVALID)
++		return 0;
+
+-		if (gfn >= memslot->base_gfn
+-		    && gfn < memslot->base_gfn + memslot->npages)
+-			return 1;
+-	}
+-	return 0;
++	return 1;
+ }
+ EXPORT_SYMBOL_GPL(kvm_is_visible_gfn);
+
+-- 
+1.7.7.3
+
