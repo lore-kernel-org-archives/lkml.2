@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1KXKOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:14:48 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:50010 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab1KXKOr (ORCPT
+	id S1755620Ab1KXKPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:15:06 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49451 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab1KXKPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:14:47 -0500
-Message-ID: <4ECE1948.2060907@oss.ntt.co.jp>
-Date: Thu, 24 Nov 2011 19:15:36 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.24) Gecko/20111103 Thunderbird/3.1.16
+	Thu, 24 Nov 2011 05:15:03 -0500
+Date: Thu, 24 Nov 2011 11:15:01 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, len.brown@intel.com, rdunlap@xenotime.net, tj@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM/Hibernation: Fix the early termination of test modes
+Message-ID: <20111124101501.GA3506@elf.ucw.cz>
+References: <20111117211537.31044.80826.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 4/6] KVM: introduce id_to_memslot function
-References: <4ECE1037.4060300@gmail.com> <4ECE10F8.9070707@gmail.com>
-In-Reply-To: <4ECE10F8.9070707@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111117211537.31044.80826.stgit@srivatsabhat.in.ibm.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/11/24 18:40), Xiao Guangrong wrote:
+On Fri 2011-11-18 02:45:44, Srivatsa S. Bhat wrote:
+> Commit 2aede851ddf08666f68ffc17be446420e9d2a056
+> (PM / Hibernate: Freeze kernel threads after preallocating memory)
+> postponed the freezing of kernel threads to after preallocating memory
+> for hibernation. But while doing that, the hibernation test TEST_FREEZER
+> and the test mode HIBERNATION_TESTPROC were not moved accordingly.
+> 
+> As a result, when using these test modes, it only goes upto the freezing of
+> userspace and exits, when in fact it should go till the complete end of task
+> freezing stage, namely the freezing of kernel threads as well.
+> 
+> So, move these points of exit to appropriate places so that freezing of
+> kernel threads is also tested while using these test harnesses. And while at
+> it, add some documentation about these test modes.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-...
-
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3521,7 +3521,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
->   	if (log->slot>= KVM_MEMORY_SLOTS)
->   		goto out;
->
-> -	memslot =&kvm->memslots->memslots[log->slot];
-> +	memslot = id_to_memslot(kvm->memslots, log->slot);
->   	r = -ENOENT;
->   	if (!memslot->dirty_bitmap)
->   		goto out;
-> @@ -3544,15 +3544,16 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
->   		if (!slots)
->   			goto out;
->   		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
-> -		memslot =&slots->memslots[log->slot];
-> -		memslot->dirty_bitmap = dirty_bitmap;
-> +		memslot = id_to_memslot(slots, log->slot);
->   		memslot->nr_dirty_pages = 0;
-> +		memslot->dirty_bitmap = dirty_bitmap;
->   		update_memslots(slots, NULL);
->
->   		old_slots = kvm->memslots;
->   		rcu_assign_pointer(kvm->memslots, slots);
->   		synchronize_srcu_expedited(&kvm->srcu);
-> -		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
-> +		dirty_bitmap = id_to_memslot(old_slots,
-> +					      log->slot)->dirty_bitmap;
-
-You can eliminate this if you use old_slot and new_slot for the two memory slots.
-
-	Takuya
-
->   		kfree(old_slots);
->
->   		write_protect_slot(kvm, memslot, dirty_bitmap, nr_dirty_pages);
+ACK.
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
