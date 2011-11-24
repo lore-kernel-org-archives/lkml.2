@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1KXK5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:57:40 -0500
-Received: from 2.mo2.mail-out.ovh.net ([188.165.53.149]:57656 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752227Ab1KXK5j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:57:39 -0500
-X-Greylist: delayed 83633 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Nov 2011 05:57:39 EST
-Date: Thu, 24 Nov 2011 11:57:34 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: wim@iguana.be
-Cc: w.sang@pengutronix.de, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, HaraldWelte@viatech.com,
-        broonie@opensource.wolfsonmicro.com
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <4ece231e./LkW+9i4Wmz+9zzn%marc.vertes@sigfox.com>
-References: <20111122112212.GD2734@pengutronix.de>
- <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com>
- <20111122173227.GK6624@sirena.org.uk>
- <20111122184051.GA30941@pengutronix.de>
- <4eccc3f0.iApQ//mCzaN3UsrB%marc.vertes@sigfox.com>
- <20111123104926.GB4063@pengutronix.de>
- <20111123121329.GM23376@infomag.iguana.be>
- <20111123122018.GA12227@opensource.wolfsonmicro.com>
- <20111123124037.GN23376@infomag.iguana.be>
- <4ecd075d.2YyTTCA13zxwZmwT%marc.vertes@sigfox.com>
- <20111123214614.GQ23376@infomag.iguana.be>
-In-Reply-To: <20111123214614.GQ23376@infomag.iguana.be>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	id S1756141Ab1KXLDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 06:03:37 -0500
+Received: from ns2.q-leap.de ([88.79.172.217]:47209 "EHLO mail.q-leap.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756099Ab1KXLDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 06:03:35 -0500
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Nov 2011 06:03:35 EST
+Message-ID: <4ECE222B.2030104@q-leap.de>
+Date: Thu, 24 Nov 2011 11:53:31 +0100
+From: Peter Kruse <pk@q-leap.de>
+Organization: Q-Leap Networks GmbH
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Christoph Lameter <cl@linux.com>
+CC: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
+        David Rientjes <rientjes@google.com>, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: I have a blaze of 353 page allocation failures, all alike
+References: <272bf0cc51439a2ab31ee2f06317dd9f.squirrel@www.q-leap.de> <4D6648B5.1090306@q-leap.com> <4DA4692D.7080207@q-leap.de> <alpine.DEB.2.00.1104121306581.14692@router.home> <alpine.DEB.2.00.1104121830030.14956@chino.kir.corp.google.com> <4DA54D2A.3050206@q-leap.de> <alpine.DEB.2.00.1104131116330.19493@router.home> <4E09BEA1.1080501@q-leap.de> <alpine.DEB.2.00.1107051013500.16869@router.home> <20110705172043.GA15147@csn.ul.ie> <20110706041602.GX1026@dastard> <4E1405C3.20904@q-leap.de> <alpine.DEB.2.00.1107060931190.17202@router.home> <4E147C0A.4080008@q-leap.de> <alpine.DEB.2.00.1107061030190.17624@router.home>
+In-Reply-To: <alpine.DEB.2.00.1107061030190.17624@router.home>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 2530741516842092335
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrtdekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfhgjfgggtgfgsehtjeertddtredvnecuhfhrohhmpeforghrtgcugggvrhhtvghsuceomhgrrhgtrdhvvghrthgvshesshhighhfohigrdgtohhmqeenucffohhmrghinhepne
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenuc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+Hello all,
 
->
-> I adapted my example on to your diff and below the result.
-> Can you test it? Could you also add some comments about the issues
-> with the datasheet as proposed earlier?
->
-I have tested your version and it works fine. I saw that you enforced
-the NO_WAY_OUT bit and implemented the KEEPALIVEPING and MAGICCLOSE
-features properly. Many thanks.
+On 07/06/2011 05:30 PM, Christoph Lameter wrote:
+> On Wed, 6 Jul 2011, Peter Kruse wrote:
+> 
+>>> Note that this is *not* the original problem you reported. I do not see
+>>> page alloc failures in your latest logs.
+>>>
+>>
+>> yes, I see.  Maybe originally there were two problems of which one is
+>> now solved?
+> 
+> That could be the case. Please run the latest 2.6.32 as requested by Mel.
+> 
 
-Regarding the timer, the driver can not read the timeout value set in
-the BIOS, so there is still a risk of reboot if the BIOS value is lower
-than driver one. I assume that other drivers may be in the same case,
-and that is required for user compatibility anyway.
+the problem seems to be solved indeed.  The server now has an uptime
+of 50 days without any problems where it crashed in the past
+after at most 42 days.
 
-Here is the comment block that I propose to insert regarding register
-programming issues:
+Thank you all,
 
-/*
- * Caveat: the only known way to activate the watchdog timer or to set
- * its period is through BIOS configuration, when the hardware supports it.
- * It seems that the watchdog control registers are locked and disabled if
- * the watchdog is not exposed or enabled by BIOS, and that writing them is
- * useless. No public documentation is available regarding this limitation.
- */
-
-Regards,
---
-Marc
+  Peter
