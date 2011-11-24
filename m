@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab1KXNM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 08:12:28 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:40396 "EHLO zene.cmpxchg.org"
+	id S1755981Ab1KXNNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 08:13:48 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52770 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755687Ab1KXNM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 08:12:26 -0500
-Date: Thu, 24 Nov 2011 14:11:55 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/5] mm: try to distribute dirty pages fairly across zones
-Message-ID: <20111124131155.GB1225@cmpxchg.org>
-References: <1322055258-3254-1-git-send-email-hannes@cmpxchg.org>
- <1322055258-3254-4-git-send-email-hannes@cmpxchg.org>
- <20111124100755.d8b783a8.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755719Ab1KXNNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 08:13:47 -0500
+Date: Thu, 24 Nov 2011 18:42:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH v7 3.2-rc2 20/30] tracing: Extract out common code for
+ kprobes/uprobes traceevents.
+Message-ID: <20111124131225.GE28065@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+ <20111118111039.10512.78989.sendpatchset@srdronam.in.ibm.com>
+ <1322076721.20742.66.camel@frodo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111124100755.d8b783a8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322076721.20742.66.camel@frodo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112413-5930-0000-0000-0000026858C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 10:07:55AM +0900, KAMEZAWA Hiroyuki wrote:
+> > + *
+> > + * Copyright (C) IBM Corporation, 2010
+> > + * Author:     Srikar Dronamraju
+> > + *
+> > + * Derived from kernel/trace/trace_kprobe.c written by
 > 
+> Shouldn't the above be:
 > 
-> Can I make a question ?
+>  include/linux/trace_kprobe.h ?
 > 
-> On Wed, 23 Nov 2011 14:34:16 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> Although, I would think both of these files are a bit more that derived
+> from. I would have been a bit stronger on the wording and say: This code
+> was copied from trace_kprobe.[ch] written by Masami ...
 > 
+> Then say,
 > 
-> > +		/*
-> > +		 * When allocating a page cache page for writing, we
-> > +		 * want to get it from a zone that is within its dirty
-> > +		 * limit, such that no single zone holds more than its
-> > +		 * proportional share of globally allowed dirty pages.
-> > +		 * The dirty limits take into account the zone's
-> > +		 * lowmem reserves and high watermark so that kswapd
-> > +		 * should be able to balance it without having to
-> > +		 * write pages from its LRU list.
-> > +		 *
-> > +		 * This may look like it could increase pressure on
-> > +		 * lower zones by failing allocations in higher zones
-> > +		 * before they are full.  But the pages that do spill
-> > +		 * over are limited as the lower zones are protected
-> > +		 * by this very same mechanism.  It should not become
-> > +		 * a practical burden to them.
-> > +		 *
-> > +		 * XXX: For now, allow allocations to potentially
-> > +		 * exceed the per-zone dirty limit in the slowpath
-> > +		 * (ALLOC_WMARK_LOW unset) before going into reclaim,
-> > +		 * which is important when on a NUMA setup the allowed
-> > +		 * zones are together not big enough to reach the
-> > +		 * global limit.  The proper fix for these situations
-> > +		 * will require awareness of zones in the
-> > +		 * dirty-throttling and the flusher threads.
-> > +		 */
-> > +		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-> > +		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
-> > +			goto this_zone_full;
-> >  
-> >  		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
-> >  		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
+> Updates to make this generic:
 > 
-> This wil call 
+>  * Copyright (C) IBM Corporation, 2010
+>  * Author:     Srikar Dronamraju
 > 
->                 if (NUMA_BUILD)
->                         zlc_mark_zone_full(zonelist, z);
+> -- Steve
 > 
-> And this zone will be marked as full. 
-> 
-> IIUC, zlc_clear_zones_full() is called only when direct reclaim ends.
-> So, if no one calls direct-reclaim, 'full' mark may never be cleared
-> even when number of dirty pages goes down to safe level ?
-> I'm sorry if this is alread discussed.
 
-It does not remember which zones are marked full for longer than a
-second - see zlc_setup() - and also ignores this information when an
-iteration over the zonelist with the cache enabled came up
-empty-handed.
+Okay, Will do as suggested.
+Thanks for reporting/suggesting.
 
-I thought it would make sense to take advantage of the cache and save
-the zone_dirty_ok() checks against ineligible zones too on subsequent
-iterations.
+-- 
+Thanks and Regards
+Srikar
+
