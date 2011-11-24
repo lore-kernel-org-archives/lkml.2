@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab1KXXBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 18:01:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50095 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab1KXXBM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 18:01:12 -0500
+	id S1754888Ab1KXXDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 18:03:12 -0500
+Received: from ozlabs.org ([203.10.76.45]:44195 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750900Ab1KXXDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 18:03:10 -0500
+Date: Fri, 25 Nov 2011 09:34:10 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, Amerigo Wang <amwang@redhat.com>,
+        Kexec-ml <kexec@lists.infradead.org>, Milton Miller <miltonm@bga.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC PATCH v5 1/9] fadump: Add documentation for
+ firmware-assisted dump.
+Message-ID: <20111124223410.GB19828@bloggs.ozlabs.ibm.com>
+References: <20111115151145.16533.16384.stgit@mars.in.ibm.com>
+ <20111115151334.16533.5790.stgit@mars.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1111241735300.26861-100000@netrider.rowland.org>
-References: <20111124195703.GA6735@google.com>
-	<Pine.LNX.4.44L0.1111241735300.26861-100000@netrider.rowland.org>
-Date: Thu, 24 Nov 2011 15:01:10 -0800
-X-Google-Sender-Auth: xA0uwMygfO1Dw4ZJgBX3t1wb2kA
-Message-ID: <CAOS58YMCv0syM7ggzaJeQp6oQxdNAJ9Y5Yn+6Q_Tb7ZjcvPzng@mail.gmail.com>
-Subject: Re: [PATCH v3 3/6] [SCSI] runtime resume device before system suspend
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111115151334.16533.5790.stgit@mars.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 15, 2011 at 08:43:34PM +0530, Mahesh J Salgaonkar wrote:
+> From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+> 
+> Documentation for firmware-assisted dump. This document is based on the
+> original documentation written for phyp assisted dump by Linas Vepstas
+> and Manish Ahuja, with few changes to reflect the current implementation.
+> 
+> Change in v3:
+> - Modified the documentation to reflect introdunction of fadump_registered
+>   sysfs file and few minor changes.
+> 
+> Change in v2:
+> - Modified the documentation to reflect the change of fadump_region
+>   file under debugfs filesystem.
 
-On Thu, Nov 24, 2011 at 2:54 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> Therefore, when entering the SUSPEND or HIBERNATE stages of system
-> sleep, we can skip the callback to the driver if the device is already
-> in runtime suspend.  When entering the FREEZE stage, however, we should
-> first issue a runtime resume.  The overhead of doing this is
-> negligible, because a suspended drive would be spun up during the THAW
-> stage of hibernation anyway.
+In general we don't want the changes between successive versions in
+the patch description; this information should go below the "---"
+line.  The patch description should describe how the patch is now and
+give any information that will be useful to someone looking at the
+resulting git commit later on, but it doesn't need to tell us about
+previous versions of the patch that will never appear in the git
+history.
 
-My brain is half fried at the moment so maybe you're saying the same
-thing, but I hope this is something simple. Like...
+> +-- Once the dump is copied out, the memory that held the dump
+> +   is immediately available to the running kernel. A further
+> +   reboot isn't required.
 
-    /* for libata runtime suspend is equivalent to suspend */
-    if (runtime suspended && target == SUSPEND) {
-        yeah! skip drive pm ops;
-    } else {
-        end runtime pm;
-        ask EH to enter target PM state;
-    }
+I have a general worry about the system making allocations that are
+intended to be node-local while it is running with restricted memory
+(i.e. after the crash and reboot and before the dump has been written
+out and the dump memory freed).  Those allocations will probably all
+come from one node and thus won't necessarily be on the desired node.
+So, for very large systems with significant NUMA characteristics, it
+may be desirable (though not required) to reboot after taking the
+dump.
 
-I really don't think we need to optimize this further than this.
+What happens about the NUMA information in the kernel -- all the
+memory sections, etc.?  Do they get set up as normal even though the
+second kernel is booting with only a small amount of memory initially?
 
-Thanks.
+> + /sys/kernel/debug/powerpc/fadump_region
+> +
+> +    This file shows the reserved memory regions if fadump is
+> +    enabled otherwise this file is empty. The output format
+> +    is:
+> +    <region>: [<start>-<end>] <reserved-size> bytes, Dumped: <dump-size>
+> +
+> +    e.g.
+> +    Contents when fadump is registered during first kernel
+> +
+> +    # cat /sys/kernel/debug/powerpc/fadump_region
+> +    CPU : [0x0000006ffb0000-0x0000006fff001f] 0x40020 bytes, Dumped: 0x0
+> +    HPTE: [0x0000006fff0020-0x0000006fff101f] 0x1000 bytes, Dumped: 0x0
+> +    DUMP: [0x0000006fff1020-0x0000007fff101f] 0x10000000 bytes, Dumped: 0x0
 
--- 
-tejun
+How come the HPTE region is only 0x1000 (4k) bytes?  The hashed page
+table (HPT) will be much bigger than this.  Is this our way of telling
+the hypervisor that we don't care about the HPT?  If so, is it
+possible to make this region 0 bytes instead of 0x1000?
+
+Paul.
