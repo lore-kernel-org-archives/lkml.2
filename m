@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1KXIyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 03:54:12 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:38282 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab1KXIyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 03:54:11 -0500
-Date: Thu, 24 Nov 2011 09:53:57 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 7/8] mm: memcg: modify PageCgroupAcctLRU non-atomically
-Message-ID: <20111124085357.GA6843@cmpxchg.org>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
- <alpine.LSU.2.00.1111231039390.2175@sister.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1111231039390.2175@sister.anvils>
+	id S1754065Ab1KXIyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 03:54:50 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36910 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab1KXIys (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 03:54:48 -0500
+Subject: Re: [PATCH] iio: Fix build error in industrialio-core.c
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org
+In-Reply-To: <4e3c37a6-3777-4138-800b-f055f7caa8f3@email.android.com>
+References: <1322043239-26082-1-git-send-email-levinsasha928@gmail.com>
+	 <4e3c37a6-3777-4138-800b-f055f7caa8f3@email.android.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 24 Nov 2011 10:54:41 +0200
+Message-ID: <1322124881.4248.8.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 10:52:39AM -0800, Hugh Dickins wrote:
-> On Wed, 23 Nov 2011, Johannes Weiner wrote:
+On Thu, 2011-11-24 at 08:49 +0000, Jonathan Cameron wrote:
 > 
-> > From: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > This bit is protected by zone->lru_lock, there is no need for locked
-> > operations when setting and clearing it.
-> > 
-> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Sasha Levin <levinsasha928@gmail.com> wrote:
 > 
-> Unless there are special considerations which you have not mentioned at
-> all in the description above, this 7/8 and the similar 8/8 are mistaken.
-> 
-> The atomic operation is not for guaranteeing the setting and clearing
-> of the bit in question: it's for guaranteeing that you don't accidentally
-> set or clear any of the other bits in the same word when you're doing so,
-> if another task is updating them at the same time as you're doing this.
-> 
-> There are circumstances when non-atomic shortcuts can be taken, when
-> you're sure the field cannot yet be visible to other tasks (we do that
-> when setting PageLocked on a freshly allocated page, for example - but
-> even then have to rely on others using get_page_unless_zero properly).
-> But I don't think that's the case here.
+> >The error was introduced in commit b4641336 ("iio: fix a leak due to
+> >improper use of anon_inode_getfd()").
+> >
+> >Looks like the code wasn't even compile tested. Instead of just fixing
+> >the
+> >error I changed the function a bit to make it nicer.
+> Minimal change would have been slightly nicer but clean up is obvious so fine. Thanks for doing this.  Andrew m has a dirty build fix in NM but he will drop that when this hits.
 
-I have no idea how I could oversee this.  You are, of course, right.
+If you'd like I can split it into two patches, the fix and the cleanup.
 
-That said, I *think* that it is safe for PageCgroupCache because
-nobody else should be modifying any pc->flags concurrently:
+-- 
 
-PCG_LOCK: by definition exclusive and held during setting and clearing
-PCG_CACHE
+Sasha.
 
-PCG_CACHE: serialized by PCG_LOCK
-
-PCG_USED: serialized by PCG_LOCK
-
-PCG_MIGRATION: serialized by PCG_LOCK
-
-PCG_MOVE_LOCK: 1. update_page_stat() is only called against file
-pages, and the page lock serializes charging against mapping.  the
-page is also charged before establishing a pte mapping, so an unmap
-can not race with a charge.  2. split_huge_fixup runs against already
-charged pages.  3. move_account is serialized both by LRU-isolation
-during charging and PCG_LOCK
-
-PCG_FILE_MAPPED: same as PCG_MOVE_LOCK's 1.
-
-PCG_ACCT_LRU: pages are isolated from the LRU during charging
-
-But all this is obviously anything but robust, and so I retract the
-broken 7/8 and the might-actually-work 8/8.
