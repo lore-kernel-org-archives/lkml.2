@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab1KXTiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 14:38:08 -0500
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:35600 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751517Ab1KXTiG (ORCPT
+	id S1752560Ab1KXTqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 14:46:34 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39995 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab1KXTqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 14:38:06 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAPeczk5tg6zW/2dsb2JhbABDqnKBBoFyAQEEATocIxAIA0YUJQMhiBgCtFUSilAElEmSDQ
-Date: Thu, 24 Nov 2011 20:34:29 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Marc Vertes <marc.vertes@sigfox.com>
-Cc: HaraldWelte@viatech.com, w.sang@pengutronix.de, mad_soft@inbox.ru,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <20111124193429.GU23376@infomag.iguana.be>
-References: <4ecb84b9.48rmEWqC3D6x18iE%marc.vertes@sigfox.com> <20111122112212.GD2734@pengutronix.de> <4ecbd66c.8a87vIwdu0Z+quuZ%marc.vertes@sigfox.com> <20111122173029.GA14349@pengutronix.de> <4ecbe56d.0B7WEVDKkK1s88MJ%marc.vertes@sigfox.com> <4ecbf011.dZASXe6D5kH4Uxve%marc.vertes@sigfox.com> <20111123121051.GA18320@rainbow> <20111123182209.GF5315@prithivi.gnumonks.org> <20111123214115.GO23376@infomag.iguana.be> <4ece995e.x4p0mK5XK7QoXS86%marc.vertes@sigfox.com>
+	Thu, 24 Nov 2011 14:46:32 -0500
+Date: Thu, 24 Nov 2011 11:46:26 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <koverstreet@google.com>, rickyb@google.com,
+        aberkan@google.com
+Subject: [PATCH] ext4: fix racy use-after-free in ext4_end_io_dio()
+Message-ID: <20111124194626.GA5260@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ece995e.x4p0mK5XK7QoXS86%marc.vertes@sigfox.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+ext4_end_io_dio() queues io_end->work and then clears iocb->private;
+however, io_end->work completes the iocb by calling aio_complete(),
+which may happen before io_end->work clearing thus leading to
+use-after-free.
 
-> > The BIOS can at least start the hardware, so the hardware does work :-)
-> >
-> Hey, I just discovered that enabling Plug&Play in the BIOS is the key!
-> 
-> It unlocks watchdog control registers and opens access to counters and
-> all the stuff. Sometimes lateral thinking helps :-)
-> 
-> So the driver will be able to normally support all features as documented
-> in the datasheet. I plan an update tomorrow.
+Detected and tested with slab poisoning.
 
-Nice !!! Please add a note about the fact that you need to enable PnP in the
-driver.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Kent Overstreet <koverstreet@google.com>
+Tested-by: Kent Overstreet <koverstreet@google.com>
+Cc: stable@kernel.org
+---
+I *think* this is the corret fix but am not too familiar with code
+path, so please proceed with caution.
 
-Kind regards,
-Wim.
+Thank you.
 
+ fs/ext4/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 240f6e2..0f5583b 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2806,8 +2806,8 @@ out:
+ 	spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
+ 
+ 	/* queue the work to convert unwritten extents to written */
+-	queue_work(wq, &io_end->work);
+ 	iocb->private = NULL;
++	queue_work(wq, &io_end->work);
+ 
+ 	/* XXX: probably should move into the real I/O completion handler */
+ 	inode_dio_done(inode);
