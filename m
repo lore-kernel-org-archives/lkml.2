@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1KXJMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:12:43 -0500
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:55626 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab1KXJMj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:12:39 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-References: <1322043239-26082-1-git-send-email-levinsasha928@gmail.com> <4e3c37a6-3777-4138-800b-f055f7caa8f3@email.android.com> <1322124881.4248.8.camel@lappy>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1322124881.4248.8.camel@lappy>
+	id S1754642Ab1KXJNW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:13:22 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42837 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754156Ab1KXJNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:13:19 -0500
+Date: Thu, 24 Nov 2011 10:13:12 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: memcg: modify PageCgroupCache non-atomically
+Message-ID: <20111124091312.GE6843@cmpxchg.org>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <1322062951-1756-9-git-send-email-hannes@cmpxchg.org>
+ <20111124091328.d28d9f55.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] iio: Fix build error in industrialio-core.c
-From: Jonathan Cameron <jic23@cam.ac.uk>
-Date: Thu, 24 Nov 2011 09:11:48 +0000
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org
-Message-ID: <44607571-8d2b-4425-bfea-10e18900b963@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111124091328.d28d9f55.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 24, 2011 at 09:13:28AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 23 Nov 2011 16:42:31 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > From: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > This bit is protected by lock_page_cgroup(), there is no need for
+> > locked operations when setting and clearing it.
+> > 
+> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> 
+> Hm. non-atomic ops for pc->flags seems dangerous.
+> How about try to remove PCG_CACHE ? Maybe we can depends on PageAnon(page).
+> We see 'page' on memcg->lru now.
+> I'm sorry I forgot why we needed PCG_CACHE flag..
 
+The problem is that we charge/uncharged pages that are not fully
+rmapped and so PageAnon() is not reliable.  I forgot if there are more
+places, but the commit_charge in migration was a prominent one.
 
-Sasha Levin <levinsasha928@gmail.com> wrote:
+I have a patch set that reworks migration so to only commit pages that
+are fully rmapped but it clashed with the THP patches and I didn't see
+too much value to fix it up.  But I should probably revive it, because
+it makes some things simpler.
 
->On Thu, 2011-11-24 at 08:49 +0000, Jonathan Cameron wrote:
->> 
->> Sasha Levin <levinsasha928@gmail.com> wrote:
->> 
->> >The error was introduced in commit b4641336 ("iio: fix a leak due to
->> >improper use of anon_inode_getfd()").
->> >
->> >Looks like the code wasn't even compile tested. Instead of just
->fixing
->> >the
->> >error I changed the function a bit to make it nicer.
->> Minimal change would have been slightly nicer but clean up is obvious
->so fine. Thanks for doing this.  Andrew m has a dirty build fix in NM
->but he will drop that when this hits.
->
->If you'd like I can split it into two patches, the fix and the cleanup.
-
-Unless Greg wants that don't bother. I just want the fix in place!
->-- 
->
->Sasha.
-
--- 
-Sent from my Android phone 
-with K-9 Mail. Please excuse my brevity.
+As I replied to Hugh, it might even work for PCG_CACHE, but it's
+definitely dangerous and not worth the complex dependencies it brings
+on other parts of the code, so please consider 7/8 and 8/8 dropped.
