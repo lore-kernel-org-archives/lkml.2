@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab1KXH3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 02:29:24 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56972 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab1KXH3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 02:29:23 -0500
-From: Rajendra Nayak <rnayak@ti.com>
-To: <sfr@canb.auug.org.au>, <broonie@opensource.wolfsonmicro.com>,
-        <lrg@slimlogic.co.uk>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <heiko@sntech.de>, Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH] regulator: Fix compile break due to missing arguments to regulator_register
-Date: Thu, 24 Nov 2011 12:57:17 +0530
-Message-ID: <1322119637-32634-1-git-send-email-rnayak@ti.com>
+	id S1752004Ab1KXHaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 02:30:23 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:53697 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab1KXHaW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 02:30:22 -0500
+From: jhbird.choi@samsung.com
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, jhbird.choi@gmail.com,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [PATCH] ARM: SAMSUNG: Add s3c_setparent_clksrc in s3c_set_clksrc
+Date: Thu, 24 Nov 2011 16:06:49 +0900
+Message-Id: <1322118409-23817-1-git-send-email-jhbird.choi@samsung.com>
 X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 2c043bcbf287 ("regulator: pass additional of_node to
-regulator_register()") caused a compile break because it missed
-updating the regulator_register() call in gpio-regulator.c with
-the additional parameter (NULL).
+From: Jonghwan Choi <jhbird.choi@samsung.com>
 
-The compile break as reported by Stephen Rothwell with the
-x86_64 allmodconfig looked like this
+Currently we have to run clk_set_parent to change clock source.
+But if there are sources & parent defined, it means we will select a parent
+in multiple clock sources. So sources & parent are already defined,
+set the parent clock int s3c_set_clksrc.
+Then we can reduce many clk_set_parent function in driver or setup_clock function.
 
-drivers/regulator/gpio-regulator.c: In function 'gpio_regulator_probe':
-drivers/regulator/gpio-regulator.c:287:8: error: too few arguments to function 'regulator_register'
-include/linux/regulator/driver.h:215:23: note: declared here
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- drivers/regulator/gpio-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/plat-samsung/clock-clksrc.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index f0acf52..42e1cb1 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -284,7 +284,7 @@ static int __devinit gpio_regulator_probe(struct platform_device *pdev)
- 	drvdata->state = state;
+diff --git a/arch/arm/plat-samsung/clock-clksrc.c b/arch/arm/plat-samsung/clock-clksrc.c
+index ae8b850..98bbefc 100644
+--- a/arch/arm/plat-samsung/clock-clksrc.c
++++ b/arch/arm/plat-samsung/clock-clksrc.c
+@@ -140,6 +140,13 @@ void __init_or_cpufreq s3c_set_clksrc(struct clksrc_clk *clk, bool announce)
+ 		return;
+ 	}
  
- 	drvdata->dev = regulator_register(&drvdata->desc, &pdev->dev,
--					  config->init_data, drvdata);
-+					  config->init_data, drvdata, NULL);
- 	if (IS_ERR(drvdata->dev)) {
- 		ret = PTR_ERR(drvdata->dev);
- 		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
++	if (clk->sources && clk->clk.parent)
++		if (s3c_setparent_clksrc(&clk->clk, clk->clk.parent)) {
++			printk(KERN_ERR "%s: bad source is %s\n",
++					clk->clk.name, clk->clk.parent->name);
++			return;
++		}
++
+ 	clksrc = __raw_readl(clk->reg_src.reg);
+ 	clksrc &= mask;
+ 	clksrc >>= clk->reg_src.shift;
 -- 
 1.7.1
 
