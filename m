@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1KXJZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:25:08 -0500
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:57591 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754612Ab1KXJZF (ORCPT
+	id S1754796Ab1KXJ0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:26:10 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:45626 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab1KXJ0I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:25:05 -0500
-Date: Thu, 24 Nov 2011 11:25:01 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "open list:MUSB MULTIPOINT H..." <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: musb: PM: fix context save/restore in
- suspend/resume path
-Message-ID: <20111124092500.GF3352@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1322011104-21817-1-git-send-email-khilman@ti.com>
+	Thu, 24 Nov 2011 04:26:08 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KJY2Ze80yH5MUxol"
-Content-Disposition: inline
-In-Reply-To: <1322011104-21817-1-git-send-email-khilman@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [86.212.46.203]
+In-Reply-To: <20111115230305.GA23325@khazad-dum.debian.net>
+References: <4EBAC3B5.5060405@gmail.com> <201111142031.06663.maciej.rutecki@gmail.com>
+ <4EC16F8E.7060601@gmail.com> <201111142118.47256.maciej.rutecki@gmail.com>
+ <CAG-2HqVnsmSyHVCvEVf+sZw5NxhR8qSDDB0AtR+igwCCFiwfgQ@mail.gmail.com> <20111115230305.GA23325@khazad-dum.debian.net>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 24 Nov 2011 10:25:44 +0100
+Message-ID: <CAG-2HqUgHAa=H6RBS2-Z3FG6OgmaWSJpdBWHn=n7Lm5O6G7ZWA@mail.gmail.com>
+Subject: Re: Regression in thinkpad-acpi events
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: maciej.rutecki@gmail.com, Natanji <natanji@gmail.com>,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Henrique,
 
---KJY2Ze80yH5MUxol
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 16, 2011 at 12:03 AM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+>> As requested:
+>> # grep . /sys/bus/platform/devices/thinkpad*/*
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_enable:1
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_mask:0x008dffff
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_poll_freq:10
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_radio_sw:1
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_recommended_mask:0x008dffff
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_report_mode:1
+>> /sys/bus/platform/devices/thinkpad_acpi/hotkey_source_mask:0x00000000
+>
+> Well, the driver has connected to the firmware, and should be working.  And
+> there were no changes to the code from v3.0 to v3.1.1.  So, it is either a
+> bug in something else, a problematic interaction of the driver with
+> something else, or a latent thinkpad-acpi bug that some change elsewhere has
+> exposed.
+>
+> Are the events reported by acpi_listen from arch-linux exactly the same in
+> v3.0.9 and v3.1.1 ?  I know some events are missing in your v3.1.1, but I am
+> interested in the ones that do get reported.
+>
+> Although you really should be using the input device for the hotkeys, and
+> not any of the 0x10xx events.  Those are driver-specific and deprecated, it
+> is all explained in Documentation/laptops/thinkpad-acpi.txt.  So, it really
+> might mean that you have something in userspace reading that input device
+> and synthesizing the ACPI HKEY events thinkpad-acpi deprecated for a long
+> time now.  I know some distros did that instead of switching to an
+> input-device-based hotkey daemon.  Please check for that possibility,
+> that daemon could be the one having problems with 3.1.1...
 
-Hi,
+It looks like my problem was something else. We don't do anything to
+synthesize the ACPI HKEY events (AFAIK), so I believe that KDE (which
+I am using) should be using the input events and that the HKEY stuff
+does not matter.
 
-On Tue, Nov 22, 2011 at 05:18:24PM -0800, Kevin Hilman wrote:
-> Currently the driver tries to save context in the suspend path, but
-> will cause an abort if the device is already runtime suspended.  This
-> happens, for example, if MUSB loaded/compiled-in, in host mode, but no
-> USB devices are attached.  MUSB will be runtime suspended, but then
-> attempting a system suspend will crash due to the context save
-> being attempted while the device is disabled.
->=20
-> On OMAP, as of v3.1, the driver's ->runtime_suspend() callback will be
-> called late in the suspend path (by the PM domain layer) if the driver
-> is not already runtime suspended, ensuring a full shutdown.
->=20
-> Therefore, the context save is not needed in the ->suspend() method
-> since it will be called in the ->runtime_suspend() method anyways
-> (similarily for resume.)
->=20
-> NOTE: this leaves the suspend/resume methods basically empty (with
->       some FIXMEs and comments, but I'll leave it to the maintainers
->       to decide whether to remove them.
->=20
-> Signed-off-by: Kevin Hilman <khilman@ti.com>
+I am still trying to figure out why my laptop does not always go to
+sleep when I close my lid, but it turns out that I cannot reproduce it
+reliably so it is taking me some time.
 
-3.1 ? so this should go to stable too, right ?
+As to the original report about the change in HKEY events, this is
+(probably) due to PROCFS_ACPI being disabled in the Arch kernel as of
+3.1.
 
---=20
-balbi
+Cheers,
 
---KJY2Ze80yH5MUxol
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOzg1sAAoJEIaOsuA1yqREZnsP/3nBhHFH3vQ8Hg4SBgqnHhmq
-tRjFBLThP+J9pDT9fR1ENqpyYa9X2JX34Ip+SmqVwxwDWWvuVCW926PWsh94CmC3
-C+ete8E25e3u5KBpMLGJ8Sryj55R/RwMiVuydDQyzRGe4zRgSV9kVKSOQ2erDEN9
-mM25xz7ERro2bJVsocHpJPrCzlrTY7q/zqbY3QlfRh5l1Z5uatvHKe6JsdhbuNKh
-ETYm70XC4sMj9DonjYltx2l+XZXrBOwcSHF1LJbWpngi2rprjz2f9Q2D4Om0HeDG
-cejda3EZ61rhA7CCOfiP+SYjMCOc1pYMVS/pevrUYaAXhJ9nj4+pmkjSu4hVrJjx
-tS7KBKuC/Yt3sYHEmQPnr/Wui14SK8JMOwHiQUnoL1jtDf2oIwSbVvvTwhpDwyor
-/mx1fIjRcyZpNc3u5SEFBVOYY9+bSwJOGK9x2mF0DMEvEYBPFxT/EzW9b7kVuGSq
-eXu1IskVGzGktiY7lJkOFj449SMJCX3ciHSXo83hE55VrHTJD00uaWt1tVf+8xSL
-mwp9IN8d/rUU5jfFlg1l1XUQbjygyvS4ezL8bca+sd6b9Nl2jzoytwHEUY9sbI2A
-U1zfYwebn5jsgA5Ab14wbYXnUc5up6q4moeyx2NOIdvXRKZ6qUsdsuDmBk1tn1p2
-Trus9FXcZ46YdX4iVCCK
-=yceo
------END PGP SIGNATURE-----
-
---KJY2Ze80yH5MUxol--
+Tom
