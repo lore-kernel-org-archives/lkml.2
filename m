@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab1KXJNW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:13:22 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42837 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156Ab1KXJNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:13:19 -0500
-Date: Thu, 24 Nov 2011 10:13:12 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/8] mm: memcg: modify PageCgroupCache non-atomically
-Message-ID: <20111124091312.GE6843@cmpxchg.org>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-9-git-send-email-hannes@cmpxchg.org>
- <20111124091328.d28d9f55.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111124091328.d28d9f55.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754664Ab1KXJOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:14:19 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:10176 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582Ab1KXJOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:14:16 -0500
+X-AuditID: cbfee61b-b7bfbae0000012f9-7c-4ece0ae789a3
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
+        akpm@linux-foundation.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com, dg77.kim@samsung.com
+Subject: [PATCH 0/2] misc: add MAX8997 MUIC driver
+Date: Thu, 24 Nov 2011 18:14:08 +0900
+Message-id: <1322126048-7024-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 09:13:28AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 23 Nov 2011 16:42:31 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > From: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > This bit is protected by lock_page_cgroup(), there is no need for
-> > locked operations when setting and clearing it.
-> > 
-> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> 
-> Hm. non-atomic ops for pc->flags seems dangerous.
-> How about try to remove PCG_CACHE ? Maybe we can depends on PageAnon(page).
-> We see 'page' on memcg->lru now.
-> I'm sorry I forgot why we needed PCG_CACHE flag..
+MAX8997 integrates serveral featuress in a single chip.
+It includes PMIC (Power Management IC), RTC, charger, fuel gauge, and so on.
+MUIC, which is one of the functional block in MAX8997, can be used to detect
+which device is connected via USB port.
+This patchset supports unimplemented MUIC feature of MAX8997.
 
-The problem is that we charge/uncharged pages that are not fully
-rmapped and so PageAnon() is not reliable.  I forgot if there are more
-places, but the commit_charge in migration was a prominent one.
+Donggeun Kim (2):
+  MFD: MAX8997: add platform data for MAX8997 MUIC driver
+  misc: add driver support for MAX8997 MUIC
 
-I have a patch set that reworks migration so to only commit pages that
-are fully rmapped but it clashed with the THP patches and I didn't see
-too much value to fix it up.  But I should probably revive it, because
-it makes some things simpler.
+ drivers/misc/Kconfig        |    8 +
+ drivers/misc/Makefile       |    1 +
+ drivers/misc/max8997-muic.c |  634 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max8997.h |   58 ++++-
+ 4 files changed, 700 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/misc/max8997-muic.c
 
-As I replied to Hugh, it might even work for PCG_CACHE, but it's
-definitely dangerous and not worth the complex dependencies it brings
-on other parts of the code, so please consider 7/8 and 8/8 dropped.
+-- 
+1.7.4.1
+
