@@ -1,46 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1KXVcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 16:32:12 -0500
-Received: from utopia.booyaka.com ([72.9.107.138]:42271 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab1KXVcJ (ORCPT
+	id S1754679Ab1KXVrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 16:47:13 -0500
+Received: from science.horizon.com ([71.41.210.146]:23828 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753837Ab1KXVrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 16:32:09 -0500
-Date: Thu, 24 Nov 2011 14:32:08 -0700 (MST)
-From: Paul Walmsley <paul@pwsan.com>
-To: Kyle Manna <kyle.manna@fuel7.com>
-cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: Add support for AM35xx UART4/ttyO3
-In-Reply-To: <1318963661-27755-1-git-send-email-kyle.manna@fuel7.com>
-Message-ID: <alpine.DEB.2.00.1111241430590.6289@utopia.booyaka.com>
-References: <1318963661-27755-1-git-send-email-kyle.manna@fuel7.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 24 Nov 2011 16:47:11 -0500
+Date: 24 Nov 2011 16:47:10 -0500
+Message-ID: <20111124214710.13413.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, viro@ZenIV.linux.org.uk
+Subject: Re: 3.1-rc10 oops in nameidata_to_filp
+Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20111124173829.GL2203@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Kyle Manna wrote:
+Thanks for the pointer.  I'll write some debug code.
 
-> Add hwmod support to enable access to UART4 of the AM35xx series of
-> chips.  The UART4 device referenced from the TRM will show up as ttyO3.
-> 
-> This was tested on an AM3505.
-> 
-> Signed-off-by: Kyle Manna <kyle.manna@fuel7.com>
+> Said that, I'm not buying the theory of open assigning to ->f_mapping and
+> screwing it up; all such assignments end up with ->i_mapping of *some*
+> inode, as far as I can see from cursory grep over the tree.  Just in case:
+> do you have CONFIG_FS_POSIX_ACL set?
 
-Thanks, provisionally queued for 3.3.  I've got some hwmod data cleanup 
-patches coming up that will require me to modify this patch slightly.  Do 
-you think you could give the modified patch a quick test when I repost it?
-
-regards,
-
-- Paul
+No, I always turn that off.  (And TMPFS_POSIX_ACL, too.)
