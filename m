@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab1KXGpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 01:45:38 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60938 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab1KXGpg convert rfc822-to-8bit (ORCPT
+	id S1753881Ab1KXGrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 01:47:42 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56270 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab1KXGrl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 01:45:36 -0500
+	Thu, 24 Nov 2011 01:47:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.01.1111231025180.8000@trent.utfs.org>
-References: <20111121131531.GA1679@x4.trippels.de>
-	<1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121161036.GA1679@x4.trippels.de>
-	<1321894353.10470.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<1321895706.10470.21.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121173556.GA1673@x4.trippels.de>
-	<1321900743.10470.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121185215.GA1673@x4.trippels.de>
-	<20111121195113.GA1678@x4.trippels.de>
-	<1321907275.13860.12.camel@pasglop>
-	<alpine.DEB.2.01.1111211617220.8000@trent.utfs.org>
-	<alpine.DEB.2.00.1111212105330.19606@router.home>
-	<1321948113.27077.24.camel@edumazet-laptop>
-	<1321999085.14573.2.camel@pasglop>
-	<alpine.DEB.2.01.1111221511070.8000@trent.utfs.org>
-	<1322007501.14573.15.camel@pasglop>
-	<alpine.DEB.2.01.1111222145470.8000@trent.utfs.org>
-	<CAOJsxLGWTRuwQ04Mg26fNhZEmo7yVXG5vSZgF7Q5GESCk65odA@mail.gmail.com>
-	<alpine.DEB.2.00.1111230907330.16139@router.home>
-	<alpine.DEB.2.01.1111231025180.8000@trent.utfs.org>
-Date: Thu, 24 Nov 2011 08:45:33 +0200
-X-Google-Sender-Auth: lRqk0uM1jXyuXBCzUhB7NCj4K0o
-Message-ID: <CAOJsxLHhxLGKwuBO=e2+c5bu4i32Hr8ztWifVtxhwYS9BR0cxQ@mail.gmail.com>
-Subject: Re: slub: use irqsafe_cpu_cmpxchg for put_cpu_partial
-From: Pekka Enberg <penberg@kernel.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: Christoph Lameter <cl@linux.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Alex,Shi" <alex.shi@intel.com>,
+In-Reply-To: <20111123015503.GC23203@gamma.logic.tuwien.ac.at>
+References: <CANUX_P2AA5stHwjegKdFhFGg7jxwdVU2Xr8OUtXUdEOKz_6E5A@mail.gmail.com>
+	<20111122051310.GA23705@gamma.logic.tuwien.ac.at>
+	<CANUX_P1RjcRD2tW1A6YYSEV9+aUZyTEro7tZXJWRoxk6gx-2jA@mail.gmail.com>
+	<CANUX_P2aFn84uSqgZA2gTBN7E4+0jGmJQTkx4eug4Ls0hK0==Q@mail.gmail.com>
+	<20111122072730.GA32225@gamma.logic.tuwien.ac.at>
+	<CANUX_P15En9bHVx4bhq6=XKPZnC2u+QyVJ+jnm4ns=39DrOBtg@mail.gmail.com>
+	<2D0C7905-AEB2-4DE4-89B1-945D89F2B5D6@logic.at>
+	<CANUX_P21PDdyo4u-x_1A0Lcqf-33yHgzUxddAoc3juGRNnrcDg@mail.gmail.com>
+	<20111122124357.GA32440@gamma.logic.tuwien.ac.at>
+	<CANUX_P0uyyuK4netV6srYCh9FsC4cpGzxobHE3T38n5RvvA0RQ@mail.gmail.com>
+	<20111123015503.GC23203@gamma.logic.tuwien.ac.at>
+Date: Thu, 24 Nov 2011 08:47:39 +0200
+Message-ID: <CANUX_P1zDDzMy5yrFXSZAkMQ-87uu-fE1e-2sCEgHJi4dh5eiw@mail.gmail.com>
+Subject: Re: iwlagn is getting very shaky
+From: Emmanuel Grumbach <egrumbach@gmail.com>
+To: Norbert Preining <preining@logic.at>
+Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        David Rientjes <rientjes@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Dave Jones <davej@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 23 Nov 2011 at 09:14, Christoph Lameter wrote:
->> I think he only tested the patch that he showed us.
-
-On Wed, Nov 23, 2011 at 8:33 PM, Christian Kujau <lists@nerdbynature.de> wrote:
-> Yes, that's the (only) one I tested so far. I did some overnight testing
-> (rsync'ing to the external disk again) for 6hrs and ran "slabinfo" every
-> 30s during the run: http://nerdbynature.de/bits/3.2.0-rc1/oops/slabinfo-1.txt.xz
+On Wed, Nov 23, 2011 at 03:55, Norbert Preining <preining@logic.at> wrote:
+> On Di, 22 Nov 2011, Emmanuel Grumbach wrote:
+>> This is completely broken. This log looks really bad. AGG are enabled
+>> and disabled right away, messing the queues completely.
 >
-> The machine is still up & running. So for me, your patch fixes it!
+> I can easily reproduce that here, today after reboot I saw something more:
+> [   82.894328] iwlwifi 0000:06:00.0: U iwl_trans_tx_queue_set_status Deactivate
+> AC/CMD Queue 11 on FIFO 0
+> [   83.072243] iwlwifi 0000:06:00.0: U iwl_trans_pcie_tx_agg_alloc HW queue is NOT empty: 85 packets in HW queue
+> [  288.039768] iwlwifi 0000:06:00.0: U iwl_trans_tx_queue_set_status Deactivate AC/CMD Queue 11 on FIFO 0
+> [  288.039884] wlan0: deauthenticating from 00:0a:79:eb:56:10 by local choice (reason=3)
+> [  288.040218] iwlwifi 0000:06:00.0: I iwl_stop_queue Stop hwq 2 ac 2 stop count 1. Queue is full
+> [  288.052312] iwlwifi 0000:06:00.0: I iwl_wake_queue Wake hwq 2 ac 2. Packets reclaimed
+> [  288.052542] iwlwifi 0000:06:00.0: I iwl_stop_queue Stop hwq 2 ac 2 stop count 1. Queue is full
+> [  288.064074] iwlwifi 0000:06:00.0: I iwl_wake_queue Wake hwq 2 ac 2. Packets reclaimed
+> [  288.064301] iwlwifi 0000:06:00.0: I iwl_stop_queue Stop hwq 2 ac 2 stop count 1. Queue is full
+> [  288.074618] iwlwifi 0000:06:00.0: I iwl_wake_queue Wake hwq 2 ac 2. Packets reclaimed
 >
->  Tested-by: Christian Kujau <lists@nerdbynature.de>
+>> Will send another patch later.
+>
 
-Applied, thanks!
+Please apply the patch attached on top of the one I previously sent.
+Let me know I you have trouble with patch.
+Please also enable the MAC80211_HT_DEBUG compilation flag
+I also the (HT + TXQUEUES) debug flag of the driver: modprobe iwlwifi
+debug=0x84000000
+
+Thanks
