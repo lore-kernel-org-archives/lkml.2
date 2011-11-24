@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1KXUAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 15:00:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64176 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab1KXUAQ (ORCPT
+	id S1754010Ab1KXUCD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 15:02:03 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46645 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab1KXUCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 15:00:16 -0500
-Date: Thu, 24 Nov 2011 12:00:09 -0800
-From: Tejun Heo <htejun@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        Tomasz Buchert <tomasz.buchert@inria.fr>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] cgroup_freezer: fix freezing groups with stopped tasks
-Message-ID: <20111124200009.GB6735@google.com>
-References: <1321480234-29241-1-git-send-email-mhocko@suse.cz>
- <20111121230709.GR25776@google.com>
- <4ECB06D2.6060106@cn.fujitsu.com>
- <20111122022118.GT25776@google.com>
- <20111122090522.GA26768@tiehlicka.suse.cz>
- <20111122153948.GE322@google.com>
- <20111122154748.GF322@google.com>
- <20111124100454.GE26036@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111124100454.GE26036@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Nov 2011 15:02:00 -0500
+Subject: Re: busybox utility
+From: Geoff Levand <geoff@infradead.org>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+In-Reply-To: <CAJ8eaTzgbPCgV1Bo7gGACKD_bKOmKb9KA_+LJQ1-L5Sgp=f5EQ@mail.gmail.com>
+References: <CAJ8eaTyYcJMjgj5AtFT7tgk9JEFHjHZbgBJcpenzAJ+KdFvnVw@mail.gmail.com>
+	 <CAJ8eaTzgbPCgV1Bo7gGACKD_bKOmKb9KA_+LJQ1-L5Sgp=f5EQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Nov 2011 12:02:02 -0800
+Message-ID: <1322164922.2686.5.camel@pump>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 11:04:54AM +0100, Michal Hocko wrote:
-> On Tue 22-11-11 07:48:06, Tejun Heo wrote:
-> > On Tue, Nov 22, 2011 at 07:39:48AM -0800, Tejun Heo wrote:
-> > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > > Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
-> > > > Cc: Paul Menage <paul@paulmenage.org>
-> > > > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > > Cc: Tejun Heo <htejun@gmail.com>
-> > > 
-> > > Applying to cgroup/for-3.2-fixes.
-> > 
-> > I'll apply the original version in cgroup/for-3.2-fixes and deal with
-> > conflict once pm-freezer branch is merged.  
-> 
-> Are you going to push this to the stable trees as well, or should I do
-> it?
+Hi Naveen,
 
-Tagged w/ stable.  Will push it upstream next week and the next stable
-release will pick it up.
+On Tue, 2011-11-22 at 14:05 +0530, naveen yadav wrote:
+> I am checking busybox utility, Is there any other package available
+> similar to busybox which  we can use in embedded system .
 
-Thanks.
+I don't know anything about it, but I've recently heard  mention of
+toybox as an alternative to busybox because of its BSD-type license:
 
--- 
-tejun
+  http://www.landley.net/code/toybox/about.html
+
+-Geoff
+
