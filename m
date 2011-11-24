@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1KXIvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 03:51:04 -0500
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:58024 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab1KXIvB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 03:51:01 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-References: <1322043239-26082-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1322043239-26082-1-git-send-email-levinsasha928@gmail.com>
+	id S1754028Ab1KXIyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 03:54:12 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38282 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752999Ab1KXIyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 03:54:11 -0500
+Date: Thu, 24 Nov 2011 09:53:57 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/8] mm: memcg: modify PageCgroupAcctLRU non-atomically
+Message-ID: <20111124085357.GA6843@cmpxchg.org>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
+ <alpine.LSU.2.00.1111231039390.2175@sister.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] iio: Fix build error in industrialio-core.c
-From: Jonathan Cameron <jic23@cam.ac.uk>
-Date: Thu, 24 Nov 2011 08:49:51 +0000
-To: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Message-ID: <4e3c37a6-3777-4138-800b-f055f7caa8f3@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1111231039390.2175@sister.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Sasha Levin <levinsasha928@gmail.com> wrote:
-
->The error was introduced in commit b4641336 ("iio: fix a leak due to
->improper use of anon_inode_getfd()").
->
->Looks like the code wasn't even compile tested. Instead of just fixing
->the
->error I changed the function a bit to make it nicer.
-Minimal change would have been slightly nicer but clean up is obvious so fine. Thanks for doing this.  Andrew m has a dirty build fix in NM but he will drop that when this hits.
->Cc: Jonathan Cameron <jic23@cam.ac.uk>
->Cc: Greg Kroah-Hartman <gregkh@suse.de>
->Cc: linux-iio@vger.kernel.org
->Cc: devel@driverdev.osuosl.org
->Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
->---
-> drivers/staging/iio/industrialio-core.c |   21 ++++++++++-----------
-> 1 files changed, 10 insertions(+), 11 deletions(-)
->
->diff --git a/drivers/staging/iio/industrialio-core.c
->b/drivers/staging/iio/industrialio-core.c
->index 2656409..5367914 100644
->--- a/drivers/staging/iio/industrialio-core.c
->+++ b/drivers/staging/iio/industrialio-core.c
->@@ -242,25 +242,24 @@ static const struct file_operations
->iio_event_chrdev_fileops = {
+On Wed, Nov 23, 2011 at 10:52:39AM -0800, Hugh Dickins wrote:
+> On Wed, 23 Nov 2011, Johannes Weiner wrote:
 > 
-> static int iio_event_getfd(struct iio_dev *indio_dev)
-> {
->+	struct iio_event_interface *ev_int = indio_dev->event_interface;
-> 	int fd;
+> > From: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > This bit is protected by zone->lru_lock, there is no need for locked
+> > operations when setting and clearing it.
+> > 
+> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 > 
->-	if (indio_dev->event_interface == NULL)
->+	if (ev_int == NULL)
-> 		return -ENODEV;
+> Unless there are special considerations which you have not mentioned at
+> all in the description above, this 7/8 and the similar 8/8 are mistaken.
 > 
->-	mutex_lock(&indio_dev->event_interface->event_list_lock);
->-	if (test_and_set_bit(IIO_BUSY_BIT_POS,
->-			     &indio_dev->event_interface->flags)) {
->-		mutex_unlock(&indio_dev->event_interface->event_list_lock);
->+	mutex_lock(&ev_int->event_list_lock);
->+	if (test_and_set_bit(IIO_BUSY_BIT_POS, &ev_int->flags)) {
->+		mutex_unlock(&ev_int->event_list_lock);
-> 		return -EBUSY;
-> 	}
->-	mutex_unlock(&indio_dev->event_interface->event_list_lock);
->-	fd = anon_inode_getfd("iio:event",
->-				&iio_event_chrdev_fileops,
->-				indio_dev->event_interface, O_RDONLY);
->+	mutex_unlock(&ev_int->event_list_lock);
->+	fd = anon_inode_getfd("iio:event", &iio_event_chrdev_fileops,
->+				ev_int, O_RDONLY);
-> 	if (fd < 0) {
->-		mutex_lock(&indio_dev->event_interface->event_list_lock);
->+		mutex_lock(&ev_int->event_list_lock);
-> 		clear_bit(IIO_BUSY_BIT_POS, &ev_int->flags);
->-		mutex_unlock(&indio_dev->event_interface->event_list_lock);
->+		mutex_unlock(&ev_int->event_list_lock);
-> 	}
-> 	return fd;
-> }
->-- 
->1.7.8.rc3
+> The atomic operation is not for guaranteeing the setting and clearing
+> of the bit in question: it's for guaranteeing that you don't accidentally
+> set or clear any of the other bits in the same word when you're doing so,
+> if another task is updating them at the same time as you're doing this.
+> 
+> There are circumstances when non-atomic shortcuts can be taken, when
+> you're sure the field cannot yet be visible to other tasks (we do that
+> when setting PageLocked on a freshly allocated page, for example - but
+> even then have to rely on others using get_page_unless_zero properly).
+> But I don't think that's the case here.
 
--- 
-Sent from my Android phone 
-with K-9 Mail. Please excuse my brevity.
+I have no idea how I could oversee this.  You are, of course, right.
+
+That said, I *think* that it is safe for PageCgroupCache because
+nobody else should be modifying any pc->flags concurrently:
+
+PCG_LOCK: by definition exclusive and held during setting and clearing
+PCG_CACHE
+
+PCG_CACHE: serialized by PCG_LOCK
+
+PCG_USED: serialized by PCG_LOCK
+
+PCG_MIGRATION: serialized by PCG_LOCK
+
+PCG_MOVE_LOCK: 1. update_page_stat() is only called against file
+pages, and the page lock serializes charging against mapping.  the
+page is also charged before establishing a pte mapping, so an unmap
+can not race with a charge.  2. split_huge_fixup runs against already
+charged pages.  3. move_account is serialized both by LRU-isolation
+during charging and PCG_LOCK
+
+PCG_FILE_MAPPED: same as PCG_MOVE_LOCK's 1.
+
+PCG_ACCT_LRU: pages are isolated from the LRU during charging
+
+But all this is obviously anything but robust, and so I retract the
+broken 7/8 and the might-actually-work 8/8.
