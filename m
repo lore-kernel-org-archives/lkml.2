@@ -1,128 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1KXKeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:34:05 -0500
-Received: from portal.weinmann.de ([62.8.140.122]:11742 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1KXKeD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:34:03 -0500
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
-        "'carsten.behling@garz-fricke.com'" <carsten.behling@garz-fricke.com>
-Date: Thu, 24 Nov 2011 11:33:41 +0100
-Subject: RE: [PATCH v7 3/5] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Topic: [PATCH v7 3/5] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Index: Acyp+5i2V3hYUyaqS/S25v/TBFl7vgAk6o3w
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B44FEAF@wm021.weinmann.com>
-References: <cover.1322062555.git.n.voss@weinmann.de>
- <ee23c49c5a190a2cce0859f7828c2dc771ff3207.1322062555.git.n.voss@weinmann.de>
- <201111231618.45951.arnd@arndb.de>
-In-Reply-To: <201111231618.45951.arnd@arndb.de>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755911Ab1KXKeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:34:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44634 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab1KXKeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 05:34:14 -0500
+Date: Thu, 24 Nov 2011 11:34:12 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/8] mm: memcg: remove unneeded checks from
+ uncharge_page()
+Message-ID: <20111124103411.GH26036@tiehlicka.suse.cz>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <1322062951-1756-7-git-send-email-hannes@cmpxchg.org>
+ <20111124090619.895988e7.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111124090639.GD6843@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111124090639.GD6843@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu 24-11-11 10:06:39, Johannes Weiner wrote:
+> On Thu, Nov 24, 2011 at 09:06:19AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 23 Nov 2011 16:42:29 +0100
+> > Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > 
+> > > From: Johannes Weiner <jweiner@redhat.com>
+> > > 
+> > > mem_cgroup_uncharge_page() is only called on either freshly allocated
+> > > pages without page->mapping or on rmapped PageAnon() pages.  There is
+> > > no need to check for a page->mapping that is not an anon_vma.
+> > > 
+> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > For making our assumption clearer to readers of codes,
+> > VM_BUG_ON(page->mapping && !PageAnon(page)) please.
+> 
+> Yep, delta patch below.
+> 
+> > Anyway,
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Thanks!
+> 
+> ---
+> From: Johannes Weiner <jweiner@redhat.com>
+> Subject: mm: memcg: remove unneeded checks from uncharge_page() fix
+> 
+> Document page state assumptions and catch if they are violated in
+> uncharge_page().
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-Arnd Bergmann wrote on 2011-11-23:
-> On Tuesday 08 November 2011, Nikolaus Voss wrote:
-> 
-> 
-> > +
-> > +static unsigned at91_twi_read(struct at91_twi_dev *dev, unsigned reg)
-> > +{
-> > +	return __raw_readl(dev->base + reg);
-> > +}
-> > +
-> > +static void at91_twi_write(struct at91_twi_dev *dev, unsigned reg, unsigned
-> val)
-> > +{
-> > +	__raw_writel(val, dev->base + reg);
-> > +}
-> 
-> Better use readl/writel or readl_relaxed/writel_relaxed.
+Same here
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-ok, changed.
-
+> ---
+>  mm/memcontrol.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> > +/*
-> > + * Calculate and set symmetric clock as stated in datasheet:
-> > + * twi_clk = F_MAIN / (2 * cdiv * (1 << ckdiv) + 4)
-> > + */
-> > +static void __devinit at91_set_twi_clock(struct at91_twi_dev *dev, int
-> twi_clk)
-> > +{
-> > +	const int div = DIV_ROUND_UP(clk_get_rate(dev->clk), 2 * twi_clk) - 2;
-> > +	int ckdiv = fls(div >> 8);
-> > +	const int cdiv = div >> ckdiv;
-> > +
-> > +	if (cpu_is_at91rm9200() && (ckdiv > 5)) {
-> > +		dev_warn(dev->dev, "AT91RM9200 erratum 22: using ckdiv = 5.\n");
-> > +		ckdiv = 5;
-> > +	}
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 2f1fdc4..872dae1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2992,6 +2992,7 @@ void mem_cgroup_uncharge_page(struct page *page)
+>  	/* early check. */
+>  	if (page_mapped(page))
+>  		return;
+> +	VM_BUG_ON(page->mapping && !PageAnon(page));
+>  	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_MAPPED);
+>  }
+>  
+> -- 
+> 1.7.6.4
 > 
-> Don't check a global property like this locally in the driver. Instead,
-> make it a property of the device that you check here and set it based on
-> the the device name set by the platform, or by a device tree property.
 
-Yes, this is a known problem and was discussed in
-https://lkml.org/lkml/2011/11/8/217 . The main problem is that there a no
-revisions for specific at91 IP devices but the revision is implicitly
-defined by the cpu type and version. Changing this would need to add some
-arch infrastructure which I think is beyond the scope of this driver.
-
-> > diff --git a/drivers/i2c/busses/i2c-at91.h b/drivers/i2c/busses/i2c-at91.h
-> > new file mode 100644
-> > index 0000000..a898159
-> > --- /dev/null
-> > +++ b/drivers/i2c/busses/i2c-at91.h
-> > @@ -0,0 +1,80 @@
-> > +
-> > +#ifndef AT91_TWI_H
-> > +#define AT91_TWI_H
-> > +
-> 
-> No need for a header file if all the values in it are used in only one
-> source file. Just move everything to i2c_at91.c
-> 
-> > +#define	AT91_TWI_MMR		0x04		/* Master Mode Register */
-> > +#define	AT91_TWI_IADRSZ		(3    <<  8)	/* Internal Device Address
-> > +						 *  Size */
-> > +#define	AT91_TWI_IADRSZ_NO	(0 << 8)
-> > +#define	AT91_TWI_IADRSZ_1	(1 << 8)
-> > +#define	AT91_TWI_IADRSZ_2	(2 << 8)
-> > +#define	AT91_TWI_IADRSZ_3	(3 << 8)
-> > +#define	AT91_TWI_MREAD		(1    << 12)	/* Master Read Direction
-> */
-> > +#define	AT91_TWI_DADR		(0x7f << 16)	/* Device Address */
-> 
-> These are harder to read than just using hexadecimal bitmasks:
-> 
-> #define	AT91_TWI_MMR		0x00000004
-> #define	AT91_TWI_IADRSZ		0x00000300
-> #define	AT91_TWI_IADRSZ_NO	0x00000000
-> #define	AT91_TWI_IADRSZ_1	0x00000100
-> ...
-
-I agree, but this header file was already used by the old driver and
-converting would add possible errors to register definitions which are
-not (yet) used. That's why I've left it as is and just made it a local
-include.
-
-Thanks,
-Niko
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
