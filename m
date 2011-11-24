@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab1KXAiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 19:38:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52354 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab1KXAh7 (ORCPT
+	id S1754379Ab1KXAkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 19:40:13 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53721 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab1KXAkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 19:37:59 -0500
-Message-ID: <4ECD91E4.5090504@gmail.com>
-Date: Wed, 23 Nov 2011 16:37:56 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Daney <ddaney.cavm@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+	Wed, 23 Nov 2011 19:40:10 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 24 Nov 2011 09:38:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: cgroups@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, DM <dm.n9107@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        David Daney <david.daney@cavium.com>,
-        "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
-Subject: Re: [PATCH v3 0/2] Stop some of the abuse of BUG() where compile
- time checks should be used.
-References: <1322092017-21471-1-git-send-email-ddaney.cavm@gmail.com>  <CA+55aFwjUVhff6jADOSvAn=t4CTVf4ZODTNm7M6vYcmG6TikPA@mail.gmail.com>
-In-Reply-To: <CA+55aFwjUVhff6jADOSvAn=t4CTVf4ZODTNm7M6vYcmG6TikPA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Daisuke Nishimura <nishmura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>
+Subject: [PATCH] update memory cgroup maintainer
+Message-Id: <20111124093857.c350d90f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 03:57 PM, Linus Torvalds wrote:
-> Btw, would it possibly make sense to make the string more useful?
->
-> For example using __FILE__ and __LINE__, or possibly letting the user
-> of the BUILD_BUG() give a string ("Using HMASK without
-> CONFIG_HUGEPAGE").
+>From 4bd0eecce89671dc379c17d66e010ce97d4bcba5 Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 24 Nov 2011 09:41:31 +0900
+Subject: [PATCH] update memory cgroup maintainer.
 
-We thought about doing that, but without doing some complex preprocessor 
-fu, the GCC attribute ((error())) thing doesn't do what we want.
+More players joined to memory cgroup developments and Johannes'
+great work changed internal design of memory cgroup dramatically.
+And he will do more works. Michal Hokko did many bug fixes and
+know memory cgroup very well. Daisuke Nishimura helped us very
+much but he seems busy now. Thanks to his works.
 
-It appears that if more than a single instance of the construct is used 
-in a compilation unit, the string emitted by the compiler for any of the 
-violations will be the last string encountered.
 
-So if you did something like:
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+---
+ MAINTAINERS |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-.
-.
-.
-Line 99:  BUILD_BUG("You failed on line 99");
-.
-.
-.
-.
-Line 666: BUILD_BUG("You failed on line 666");
-.
-.
-.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3523ab0..6d2a8db 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4311,8 +4311,9 @@ F:	include/linux/mm.h
+ F:	mm/
+ 
+ MEMORY RESOURCE CONTROLLER
++M:	Johannes Weiner <hannes@cmpxchg.org>
++M:	Michal Hocko <mhocko@suse.cz>
+ M:	Balbir Singh <bsingharora@gmail.com>
+-M:	Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+ M:	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+ L:	cgroups@vger.kernel.org
+ L:	linux-mm@kvack.org
+-- 
+1.7.4.1
 
-The message emitted for a failure at line 99 would be "You failed on 
-line 666".  Which is probably worse than no message at all.
-
-It may be possible to do something like:
-
-#define _LINENAME_CONCAT( _name_, _line_ ) _name_##_line_
-#define _LINENAME(_name_, _line_) _LINENAME_CONCAT(_name_,_line_)
-
-#define _BUILD_BUG(MSG,FUBAR)		\
-do {					\
-   extern void FUBAR (void)		\
-      __linktime_error("BUILD_BUG failed: " MSG); \
-   FUBAR ();				\
-} while (0)
-
-#define BUILD_BUG(M,A) _BUILD_BUG(M, _LINENAME(__build_bug_failed,__LINE__))
-
-But it didn't seem worth it.
-
->
-> Whatever. It's bikeshedding - what would probably be more important
-> would be to get this into linux-next so that we find out whether there
-> are any compile issues with it on other platforms or compiler
-> versions.
->
->                    Linus
->
 
