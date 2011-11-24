@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab1KXRgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 12:36:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51199 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab1KXRgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 12:36:15 -0500
-Date: Thu, 24 Nov 2011 18:31:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, Pedro Alves <pedro@codesourcery.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
-	given pids
-Message-ID: <20111124173121.GA23260@redhat.com>
-References: <4EC4F2FB.408@parallels.com> <201111221204.39235.pedro@codesourcery.com> <20111122153326.GD322@google.com> <201111231620.45440.pedro@codesourcery.com> <20111123162417.GE25780@google.com> <4ECD3946.1030503@parallels.com> <4ECD542C.7010705@parallels.com>
+	id S1756891Ab1KXRig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 12:38:36 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42723 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab1KXRie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 12:38:34 -0500
+Date: Thu, 24 Nov 2011 17:38:29 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: George Spelvin <linux@horizon.com>
+Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rc10 oops in nameidata_to_filp
+Message-ID: <20111124173829.GL2203@ZenIV.linux.org.uk>
+References: <20111124145141.GB22640@quack.suse.cz>
+ <20111124164406.22919.qmail@science.horizon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ECD542C.7010705@parallels.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111124164406.22919.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24, Pavel Emelyanov wrote:
->
-> Hm... Started testing this stuff and thought about Pedro's wish to use this
-> in gdb one more time :(
->
-> The thing is, that we (in checkpoint/restore) are going to use this sysctl
-> when creating a pid namespace from scratch, thus having full control over
-> all the forks happening in this namespace.
->
-> But when it comes to the ability for gdb to create a task with a given pid in
-> a _living_ namespace this solution simply won't work! It doesn't guarantee,
-> that after setting the last_pid via sysctl this last_pid stays the same at
-> the time we do call fork()/clone(). Because there are other tasks that can call
-> fork themselves ignoring any lask_pid locking we can play with.
+On Thu, Nov 24, 2011 at 11:44:06AM -0500, George Spelvin wrote:
 
-Sure. ->last_pid is a hint, nothing more.
+> It turned out the machine was quite recoverable and I've been running it without rebooting since then.
+> This includes several suspends to RAM and one to disk.
+> 
+> So far, it seems pretty reproducible, but I suppose it could be a kernel bit flip.
+> (F***ing Intel not even *allowing* ECC in "consumer" chipsets...)
+> 
+> I should probably add a debugging patch and reboot.  Is there a debugging helper
+> for printing a dentry and vfsmount?
 
-But nothing can work reliably on the running system. Even if we can't
-race with another fork(), the required pid_nr can be already in use.
+d_path(); takes struct path *, pointer to buffer and buffer length, puts
+the pathname into the end of buffer and returns a pointer to the beginning
+of resulting string.
 
-Oleg.
+I'd add (hell, maybe start with) printing this:
+	file->f_path.dentry->d_inode
+	inode
+	file->f_mapping
+	inode->i_mapping
+	inode->i_mapping->host
+just to see whether it's open() callback resetting ->f_mapping to NULL or
+weird inode->i_mapping->host.  All in case file->f_mapping->host == NULL
+just before the spot where it oopses.
 
+Getting pathname would be something like
+	static char name[4096];
+	struct path path = {.mnt = mnt, .dentry = dentry};
+	char *p = d_path(&path, name, 4096);
+	if (IS_ERR(p))
+		printk("[%d]", PTR_ERR(p));
+	else
+		printk("'%s'", p);
+conditional on the same test.  
+
+Said that, I'm not buying the theory of open assigning to ->f_mapping and
+screwing it up; all such assignments end up with ->i_mapping of *some*
+inode, as far as I can see from cursory grep over the tree.  Just in case:
+do you have CONFIG_FS_POSIX_ACL set?
