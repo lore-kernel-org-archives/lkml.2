@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab1KXKaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:30:35 -0500
-Received: from vm1.sequanux.org ([188.165.36.56]:37980 "EHLO vm1.sequanux.org"
+	id S1755835Ab1KXKax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:30:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44485 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755785Ab1KXKad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:30:33 -0500
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Nov 2011 05:30:33 EST
-Date: Thu, 24 Nov 2011 11:29:49 +0100
-From: Simon Guinot <simon@sequanux.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jiri Kosina <trivial@kernel.org>, Simon Guinot <sguinot@lacie.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] [RESEND] leds: Kconfig: Fix typo 'D2NET_V2'
-Message-ID: <20111124102949.GA18490@kw.sim.vm.gnt>
-References: <1322129317.25125.13.camel@x61.thuisdomein>
+	id S1754899Ab1KXKav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 05:30:51 -0500
+Date: Thu, 24 Nov 2011 11:30:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/8] mm: memcg: remove unneeded checks from
+ newpage_charge()
+Message-ID: <20111124103049.GG26036@tiehlicka.suse.cz>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <1322062951-1756-6-git-send-email-hannes@cmpxchg.org>
+ <20111124090443.d3f720c5.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111124090409.GC6843@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322129317.25125.13.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111124090409.GC6843@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 24-11-11 10:04:09, Johannes Weiner wrote:
+> On Thu, Nov 24, 2011 at 09:04:43AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 23 Nov 2011 16:42:28 +0100
+> > Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > 
+> > > From: Johannes Weiner <jweiner@redhat.com>
+> > > 
+> > > All callsites pass in freshly allocated pages and a valid mm.  As a
+> > > result, all checks pertaining the page's mapcount, page->mapping or
+> > > the fallback to init_mm are unneeded.
+> > > 
+> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > Hmm, it's true now. But for making clear our assumption to all readers of code,
+> > 
+> > could you add
+> > VM_BUG_ON(!mm || page_mapped(page) || (page->mapping && !PageAnon(page)) ?
+> 
+> Of course.  Please find the delta patch below.  I broke them up into
+> three separate checks to make the problem easier to find if the BUG
+> triggers.
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+sounds reasonable.
 
-Hi Paul,
-
-On Thu, Nov 24, 2011 at 11:08:37AM +0100, Paul Bolle wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> 
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Thank you.
+> 
 > ---
-> 0) This corrects an obvious typo. That typo was added in commit
-> 84712e9aa4 ("[ARM] Kirkwood: add LaCie d2 Network v2 support") which
-> added support for 'MACH_D2NET_V2'.
->=20
-> 1) I sent this yesterday to trivial@kernel.org only. However, this
-> allows people using a "LaCie d2 Network v2 NAS Board" to enable "LED
-> support for Network Space v2 GPIO LEDs" and thus lets them run code that
-> they can't run now. So, to be really safe, this time I've also CC'd the
+> From: Johannes Weiner <jweiner@redhat.com>
+> Subject: mm: memcg: remove unneeded checks from newpage_charge() fix
+> 
+> Document page state assumptions and catch if they are violated in
+> newpage_charge().
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-They can run this code because more likely the same binary kernel
-supports all the Kirkwood machines, including MACH_NETSPACE_V2, etc...
+I assume you are going to fold it into the previous one.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-And that's why I missed this typo :)
+> ---
+>  mm/memcontrol.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0d10be4..f338018 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2679,6 +2679,9 @@ int mem_cgroup_newpage_charge(struct page *page,
+>  {
+>  	if (mem_cgroup_disabled())
+>  		return 0;
+> +	VM_BUG_ON(page_mapped(page));
+> +	VM_BUG_ON(page->mapping && !PageAnon(page));
+> +	VM_BUG_ON(!mm);
+>  	return mem_cgroup_charge_common(page, mm, gfp_mask,
+>  					MEM_CGROUP_CHARGE_TYPE_MAPPED);
+>  }
+> -- 
+> 1.7.6.4
 
-> people involved in that commit to (perhaps test this and) ACK or NAK
-> this.
-
-Acked-by: Simon Guinot <sguinot@lacie.com>
-
-Thanks for the patch.
-
-Simon
-
->=20
->  drivers/leds/Kconfig |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index ff203a4..1b75a56 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -347,7 +347,8 @@ config LEDS_MC13783
->  config LEDS_NS2
->  	tristate "LED support for Network Space v2 GPIO LEDs"
->  	depends on LEDS_CLASS
-> -	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || MACH_NETSPACE_MAX_V=
-2 || D2NET_V2
-> +	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || \
-> +		   MACH_NETSPACE_MAX_V2 || MACH_D2NET_V2
->  	default y
->  	help
->  	  This option enable support for the dual-GPIO LED found on the
-> --=20
-> 1.7.7.3
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk7OHJ0ACgkQgtp0PDeOcDoZ+gCgoPIMcwXc6svBWcry009lsjyZ
-F0cAn0BUKMCkarcgbm9P3sJsxY5IPipb
-=7pWE
------END PGP SIGNATURE-----
-
---HlL+5n6rz5pIUxbD--
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
