@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab1KXNVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 08:21:40 -0500
-Received: from damascus.uab.es ([158.109.168.135]:23322 "EHLO damascus.uab.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024Ab1KXNVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 08:21:39 -0500
-Date: Thu, 24 Nov 2011 16:23:44 +0100
-From: Davidlohr Bueso <dave@gnu.org>
-Subject: [PATCH] USB: remove BKL comments
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <1322148224.6239.2.camel@offworld>
-Organization: GNU
-MIME-version: 1.0
-X-Mailer: Evolution 3.0.3-2
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-X-Spam-Tests: ALL_TRUSTED=-1
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:N SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18538.007)
-X-imss-scores: Clean:62.45850 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:3 C:3 M:3 S:3 R:3 (0.5000 0.5000)
+	id S1756023Ab1KXNWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 08:22:07 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:42038 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801Ab1KXNWE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 08:22:04 -0500
+Subject: Re: [PATCH v2] printk: add console output tracing
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20111123131622.GA10669@somewhere.redhat.com> (sfid-20111123_141710_048738_F7FB6F6D)
+References: <1321473443.4181.38.camel@frodo>
+	 <1321478719.4502.20.camel@jlt3.sipsolutions.net>
+	 <20111117145502.GA18437@somewhere>
+	 <1321541877.3997.31.camel@jlt3.sipsolutions.net>
+	 <20111117150040.GB18437@somewhere>
+	 <1321543268.3997.40.camel@jlt3.sipsolutions.net>
+	 <20111118184401.GA24787@somewhere.redhat.com>
+	 <1321641975.10266.73.camel@jlt3.sipsolutions.net>
+	 <20111118185449.GB24787@somewhere.redhat.com>
+	 <1321642752.10266.75.camel@jlt3.sipsolutions.net>
+	 <20111123131622.GA10669@somewhere.redhat.com>
+	 (sfid-20111123_141710_048738_F7FB6F6D)
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Nov 2011 14:21:59 +0100
+Message-ID: <1322140919.5366.17.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+On Wed, 2011-11-23 at 14:16 +0100, Frederic Weisbecker wrote:
 
-The BKL is a gonner.
+> > Also, call_console_drivers() doesn't pass this start/end through to
+> > _call_console_drivers(), it has loops and stuff there...
+> 
+> Yeah but looking at the loop there, start and end passed to
+> __call_console_drivers() are bounded between start and end passed to
+> call_console_drivers().
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/usb/core/hub.c          |    1 -
- drivers/usb/misc/usbtest.c      |    1 -
- drivers/usb/serial/usb-serial.c |    2 --
- 3 files changed, 0 insertions(+), 4 deletions(-)
+Looks like. Not that I have any idea why other code handles the wrap
+then?
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 7978146..29d0669 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1360,7 +1360,6 @@ descriptor_error:
- 	return -ENODEV;
- }
- 
--/* No BKL needed */
- static int
- hub_ioctl(struct usb_interface *intf, unsigned int code, void *user_data)
- {
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index bd6d008..959145b 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1765,7 +1765,6 @@ static int test_unaligned_bulk(
-  * off just killing the userspace task and waiting for it to exit.
-  */
- 
--/* No BKL needed */
- static int
- usbtest_ioctl(struct usb_interface *intf, unsigned int code, void *buf)
- {
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index cc274fd..3ed9e16 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -1336,7 +1336,6 @@ static void fixup_generic(struct usb_serial_driver *device)
- 
- int usb_serial_register(struct usb_serial_driver *driver)
- {
--	/* must be called with BKL held */
- 	int retval;
- 
- 	if (usb_disabled())
-@@ -1374,7 +1373,6 @@ EXPORT_SYMBOL_GPL(usb_serial_register);
- 
- void usb_serial_deregister(struct usb_serial_driver *device)
- {
--	/* must be called with BKL held */
- 	printk(KERN_INFO "USB Serial deregistering driver %s\n",
- 	       device->description);
- 	mutex_lock(&table_lock);
--- 
-1.7.7.3
+> > In any case -- feel free to clean it all up, I basically copied the
+> > logic from _call_console_drivers assuming it was needed.
+> 
+> I'm just reviewing and suggesting a way to keep the patch more simple.
+> Outside that, I don't really need that patch myself ;)
 
+:-)
 
+> > I don't really want to know about the printk details :-)
+> 
+> Well, it's like working out outside in winter. It may not sound
+> very entertaining in the beginning but then it quickly becomes
+> invigorating, toning and good for the mood...I think...
+
+Heh....
+
+I don't really feel comfortable modifying the _call_console_drivers()
+function to not handle start > end (modulo log buf size of course), but
+at the same time I don't feel comfortable putting code into it that
+doesn't handle it.
+
+johannes
 
