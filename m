@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab1KXP3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 10:29:21 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21665
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754522Ab1KXP2s (ORCPT
+	id S1755798Ab1KXP3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 10:29:17 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:28425
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755367Ab1KXP3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 10:28:48 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh87h2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: <linux-kernel@vger.kernel.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, <linux-can@vger.kernel.org>
-Subject: [PATCH 11/11] can: Remove redundant spi driver bus initialization
-Date: Thu, 24 Nov 2011 16:29:21 +0100
-Message-ID: <1322148561-25138-11-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1322148561-25138-1-git-send-email-lars@metafoo.de>
-References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
+	Thu, 24 Nov 2011 10:29:12 -0500
+X-SpamScore: -18
+X-BigFish: VPS-18(z1039oz179dN1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LV68CG-01-IYA-02
+X-M-MSG: 
+Date: Thu, 24 Nov 2011 16:27:47 +0100
+From: "'Joerg Roedel'" <Joerg.Roedel@amd.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: "'David Woodhouse'" <dwmw2@infradead.org>,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>,
+        "'KyongHo Cho'" <pullip.cho@samsung.com>,
+        "'Kai Huang'" <mail.kai.huang@gmail.com>, <kvm@vger.kernel.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <iommu@lists.linux-foundation.org>,
+        "'Laurent Pinchart'" <laurent.pinchart@ideasonboard.com>,
+        "'David Brown'" <davidb@codeaurora.org>, <linux-omap@vger.kernel.org>,
+        "'Stepan Moskovchenko'" <stepanm@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Changing IOMMU-API for generic DMA-mapping supported by the
+ hardware
+Message-ID: <20111124152747.GG11876@amd.com>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+ <1318850846-16066-3-git-send-email-ohad@wizery.com>
+ <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
+ <1320938930.22195.17.camel@i7.infradead.org>
+ <20111110170918.GE13213@amd.com>
+ <1320953319.535.11.camel@i7.infradead.org>
+ <20111111131728.GG13213@amd.com>
+ <023b01ccaaa7$ef16c910$cd445b30$%szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <023b01ccaaa7$ef16c910$cd445b30$%szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ancient times it was necessary to manually initialize the bus field of an
-spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
-so we can drop the manual assignment.
+On Thu, Nov 24, 2011 at 01:52:33PM +0100, Marek Szyprowski wrote:
+> In my DMA-mapping IOMMU integration I've used a dma_iommu_mapping structure,
+> which contains a pointer to iommu domain, a bitmap and a lock. Maybe we 
+> should consider extending iommu domain with allocation bitmap (or other 
+> structure that hold information about used/unused iova ranges)? From the
+> DMA-mapping (as a IOMMU client) perspective we only need 2 more callbacks
+> in IOMMU API: alloc_iova_range() and free_iova_range(). 
+> 
+> Each IOMMU implementation can provide these calls based on internal bitmap
+> allocator which will also cover the issue with reserved ranges. What do you
+> think about such solution?
 
-The patch was generated using the following coccinelle semantic patch:
-// <smpl>
-@@
-identifier _driver;
-@@
-struct spi_driver _driver = {
-	.driver = {
--		.bus = &spi_bus_type,
-	},
-};
-// </smpl>
+Hmm, the main point of a generic DMA-mapping implementation is that a
+common address-allocator will be used. Today every IOMMU driver that
+implements the DMA-API has its own allocator, this is something to unify
+between for all drivers.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: linux-can@vger.kernel.org
----
- drivers/net/can/mcp251x.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+The allocator information can be stored in the default iommu_domain. We
+need a user-private pointer there, but that is easy to add.
 
-diff --git a/drivers/net/can/mcp251x.c b/drivers/net/can/mcp251x.c
-index 330140e..5e10da5 100644
---- a/drivers/net/can/mcp251x.c
-+++ b/drivers/net/can/mcp251x.c
-@@ -1185,7 +1185,6 @@ MODULE_DEVICE_TABLE(spi, mcp251x_id_table);
- static struct spi_driver mcp251x_can_driver = {
- 	.driver = {
- 		.name = DEVICE_NAME,
--		.bus = &spi_bus_type,
- 		.owner = THIS_MODULE,
- 	},
- 
+
+	Joerg
+
 -- 
-1.7.7.1
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
