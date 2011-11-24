@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab1KXNwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 08:52:12 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:42679 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab1KXNwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 08:52:10 -0500
-Date: Thu, 24 Nov 2011 19:17:42 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
-Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
-Message-ID: <20111124134742.GH28065@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
- <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
- <1322071812.14799.87.camel@twins>
+	id S1756216Ab1KXN5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 08:57:39 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:13357
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752060Ab1KXN5i convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 08:57:38 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371K1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
+Thread-Topic: [PATCH] P1021: set IReady in QE Microcode Upload
+Thread-Index: AQHMoJB2KAiKIl6KR0iOAe8H9Sg5BpWsEXMggAMqaACADORnAIAAZSGA
+Date: Thu, 24 Nov 2011 13:57:31 +0000
+Message-ID: <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com>
+References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net>
+ <4EBD4FB8.2020406@freescale.com>
+ <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net>
+ <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com>
+ <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org>
+In-Reply-To: <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [68.203.10.197]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <90766ACF66764E4890DF79A04DAF84F4@freescale.net>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1322071812.14799.87.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112413-5112-0000-0000-0000025DA1DC
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-11-23 19:10:12]:
+On Nov 24, 2011, at 1:55 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
 
-> On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> > +                       ret = install_breakpoint(vma->vm_mm, uprobe);
-> > +                       if (ret == -EEXIST) {
-> > +                               atomic_inc(&vma->vm_mm->mm_uprobes_count);
-> > +                               ret = 0;
-> > +                       } 
+>> 
+>> I'll have to check.  But this patch can't be applied as-is unless it's
+>> proven safe for all QE-enabled chips.
 > 
-> Aren't you double counting that probe position here? The one that raced
-> you to inserting it will also have incremented that counter, no?
-> 
+> Any update on trying this on a MPC8323?
 
-No we arent.
-Because register_uprobe can never race with mmap_uprobe and register
-before mmap_uprobe registers .(Once we start mmap_region,
-register_uprobe waits for the read_lock of mmap_sem.)
-
-And we badly need this for mmap_uprobe case.  Because when we do mremap,
-or vma_adjust(), we do a munmap_uprobe() followed by mmap_uprobe() which
-would have decremented the count but not removed it. So when we do a
-mmap_uprobe, we need to increment the count. 
-
--- 
-Thanks and regards
-Srikar
+Haiying said it should be ok, but I haven't tried it yet.  I'll try it on Monday.
 
