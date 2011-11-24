@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab1KXAMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 19:12:51 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54997 "EHLO ogre.sisk.pl"
+	id S1754041Ab1KXAOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 19:14:03 -0500
+Received: from trinity.fluff.org ([89.16.178.74]:58257 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469Ab1KXAMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 19:12:50 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Patrik Kullman <patrik.kullman@gmail.com>
-Subject: Re: EHCI powersave causes shutdown to freeze
-Date: Thu, 24 Nov 2011 01:15:38 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <CAGPN=9Q1HMVO27jr0e8az4SV9TyC_JL48mKWZHi8kHRfhQddMQ@mail.gmail.com>
-In-Reply-To: <CAGPN=9Q1HMVO27jr0e8az4SV9TyC_JL48mKWZHi8kHRfhQddMQ@mail.gmail.com>
+	id S1753672Ab1KXAOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 19:14:00 -0500
+Date: Thu, 24 Nov 2011 00:13:42 +0000
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@kernel.org>,
+        Michael Hennerich <Michael.Hennerich@analog.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 3/5] SPI: Add helper macro for spi_driver boilerplate
+Message-ID: <20111124001342.GN19115@trinity.fluff.org>
+References: <1321434819-23678-1-git-send-email-lars@metafoo.de> <1321434819-23678-4-git-send-email-lars@metafoo.de> <CACxGe6tz0ppZj=a_e4rkgNxzhQ4MSCtXKXGk_dPov80QDU4MCg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111240115.39048.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6tz0ppZj=a_e4rkgNxzhQ4MSCtXKXGk_dPov80QDU4MCg@mail.gmail.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 24, 2011, Patrik Kullman wrote:
-> Hi,
+On Wed, Nov 16, 2011 at 10:12:54AM -0700, Grant Likely wrote:
+> On Wed, Nov 16, 2011 at 2:13 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> > This patch introduces the module_spi_driver macro which is a convenience macro
+> > for SPI driver modules similar to module_platform_driver. It is intended to be
+> > used by drivers which init/exit section does nothing but register/unregister
+> > the SPI driver. By using this macro it is possible to eliminate a few lines of
+> > boilerplate code per SPI driver.
+> >
+> > Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > 
-> After creating a powersave script based on PowerTOP Tunables, this
-> particular line prevented the system from being able to shutdown (Asus
-> Zenbook UX31E, kernels 3.0 - 3.1.2):
-> 
-> ### Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced
-> Host Controller #1
-> echo auto > /sys/bus/pci/devices/0000:00:1d.0/power/control
-> 
-> 
-> Kernel prints the "Power Down." message but machine doesn't power down.
-> 
-> Is this a known bug?
-> Could this be fixed in the driver instead of:
-> 
-> echo on > /sys/bus/pci/devices/0000:00:1d.0/power/control
-> 
-> on system shutdown?
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-This commit should address that issue:
+I'm begining to think we need to make some of these driver and device
+bits more generic... there seems to be so much similar but not quite
+the same code.
 
-commit af8db1508f2c9f3b6e633e2d2d906c6557c617f9
-Author: Peter Chen <peter.chen@freescale.com>
-Date:   Tue Nov 15 21:52:29 2011 +0100
+-- 
+Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
 
-    PM / driver core: disable device's runtime PM during shutdown
+Large Hadron Colada: A large Pina Colada that makes the universe disappear.
 
-Thanks,
-Rafael
