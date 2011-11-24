@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1KXPwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 10:52:08 -0500
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:45445 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754080Ab1KXPwG (ORCPT
+	id S1755451Ab1KXPy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 10:54:26 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49972 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab1KXPyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 10:52:06 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAK1mzk5tg6zW/2dsb2JhbABDqnGBBoFyAQEEATocHAcFCwgDRhQlAyGIGAK1ARKKUASUSZIN
-Date: Thu, 24 Nov 2011 16:48:47 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Marc Vertes <marc.vertes@sigfox.com>
-Cc: w.sang@pengutronix.de, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, HaraldWelte@viatech.com,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH RFC] watchdog: add a new driver for VIA chipsets
-Message-ID: <20111124154847.GT23376@infomag.iguana.be>
-References: <4eccc3f0.iApQ//mCzaN3UsrB%marc.vertes@sigfox.com> <20111123104926.GB4063@pengutronix.de> <20111123121329.GM23376@infomag.iguana.be> <20111123122018.GA12227@opensource.wolfsonmicro.com> <20111123124037.GN23376@infomag.iguana.be> <4ecd075d.2YyTTCA13zxwZmwT%marc.vertes@sigfox.com> <20111123214614.GQ23376@infomag.iguana.be> <4ece231e./LkW+9i4Wmz+9zzn%marc.vertes@sigfox.com> <20111124134247.GS23376@infomag.iguana.be> <4ece57c9.2i1u841q3U3s+xD7%marc.vertes@sigfox.com>
+	Thu, 24 Nov 2011 10:54:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Date: Thu, 24 Nov 2011 15:54:09 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>, Shawn Guo <shawn.guo@linaro.org>
+References: <20111124115239.ff33728e7e9a99426528c214@canb.auug.org.au>
+In-Reply-To: <20111124115239.ff33728e7e9a99426528c214@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ece57c9.2i1u841q3U3s+xD7%marc.vertes@sigfox.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111241554.09598.arnd@arndb.de>
+X-Provags-ID: V02:K0:AkV9fYRZJfGpFqlOmqegvHq5iV2nvqglywK9qnm0hbP
+ +V7CSUfkezSsduoK5QAq27G2f7hRvEEDBc1DzlJ26odTyV+WV1
+ /yPhsURJibawgxR2sizaSZrIjLtOZiDPzyk2ApzLRjeffYAfRG
+ hjOp3Fj0+l1NDDc5d6L7IlnqnFO/ohyw5XJZxJDQOtApmsZBVm
+ LhvlFpiz19DqYpw2bx872IY4OtiEq6QlIBc/YeoCgDDjkBr/m0
+ VZyNF8M3RW7+W33ed2PRlcEZ9V01sJI8DZEgaQu0NodZzpBogh
+ mRxrKVWFFlps6uriX8A6fxYlNSLWqmloa0fXZtA5JfdPC3IzZL
+ 1b0R5NzQISLf320GutpI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
-
-> The smallest possible value is 1 second, both in BIOS and datasheet. For
-> info, the maximum value is 1023 seconds, approx. 17 min.
-
-Good that means that the driver value is allready OK.
-
-> I think it is dangerous to set the timer to 1s, both in BIOS, obviously
-> as the boot is still in progress when it expires, and even in the driver,
-> where you loose a chance to avoid mandatory reboot after only 1 second
-> of latency, even if the hardware timer is higher.
+On Thursday 24 November 2011, Stephen Rothwell wrote:
+> Hi Arnd,
 > 
-> The value you have set, 15 seconds, is reasonable to me, and should not
-> be lowered. If the BIOS was well designed, it should also not allow less
-> than, say 1 minute.
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/tools/mach-types between commit bb9b25f923fc ("ARM: Update
+> mach-types") from the arm tree and commit 9b7c547f7747 ("ARM: Update
+> mach-types to fix mxs build breakage") from the arm-soc tree.
+> 
+> The arm tree version is a superset of the arm-soc version, so I used that.
 
-I have the feeling that you don't understand the function of the timer...
-The timer actually sperates the userspace timeout from the watchdog's heartbeat.
-The watchdog's heartbeat is what the hardware is actually using as it's timeout
-value. That is the 1 second minimum in this case. if userspace is not using
-the watchdog device then the timer will make sure that the watchdog is being
-reset each 1/2 seconds (or 500ms). We use the smallest value because we don't
-know what the actual value is and need to be safe. I do agree that you should
-set this higher in the BIOS to survice the actual boot sequence, but we should
-make sure that we reset regularly enough so that the system doesn't reboot in
-normal operation. That's why I needed to know the minimum value.
+Thanks for catching this!
 
-The userspace timeout is the timeout that the watchdog daemon will use.
-Meaning: in this time period the daemon needs to ping the watchdog, if not
-the system should reboot. So how does the timer do this? When userspace opens
-the watchdog (and thus takes control) the timer will know that we should
-receive a ping between now and now+timeout. In this period the timer will
-reset the watchdog each 500ms (the 1/2 seconds=half of the heartbeat time).
-when we are at now+timeout and we did not receive a ping the timer will stop
-resetting the watchdog, which will result in a reboot (after expiration of
-watchdog's real heartbeat). If in the period between now and now+timeout
-userspace did receive a ping, then the timer will now that now+timeout can
-be replaced by new_now+timeout. And that's how it works. So the userspace
-timeout has no real relation with the watchdog's heartbeat.
+Shawn, please make sure that any updates to mach-types go only through
+Russell's tree. Unfortunately I did not realize that this was out of
+scope when I merged it, otherwise I would have complained yesterday.
 
-Or in short the timer does the following:
-1) when /dev/watchdog is not opened by the watchdog dameon, it should reset
-the watchdog hardware so that the system doesn't reboot.
-2) when /dev/watchdog is opened by the watchdog dameon, it needs to reset
-the watchdog hardware so that the system does not reboot unless we didn't
-receive a ping in the timeout period. In that case the system should be
-rebooted (and we do this by not resetting the watchdog anymore).
+Russell, is it ok for you if the patch (see below for reference)
+goes into 3.2-rc4 through the arm-soc tree? I can remove if if you
+think that's better, but I have a lot of fixes stacked on top now
+that I'd prefer not to rebase.
 
-Hope this is clearer now.
+	Arnd
 
-Extra remark: the value in the BIOS should indeed be chosen with some
-common sense: you need to survice the boot sequence, but if the heartbeat
-is much higher then the timeout value, then you're system will not reboot
-before the heartbeat has passed away (which means that the heartbeat of
-your system will dominate anyway).
+---
+commit 9b7c547f7747991fe62f622698ea1bf470f256f4
+Author: Shawn Guo <shawn.guo@linaro.org>
+Date:   Wed Nov 16 21:44:33 2011 +0800
 
-I think we should change the default timeout value to 60 seconds instead of 15.
+    ARM: Update mach-types to fix mxs build breakage
+    
+    Add entry m28evk to fix the following mxs build breakage.
+    
+      CHK     include/generated/compile.h
+      CC      arch/arm/mach-mxs/clock-mx28.o
+    arch/arm/mach-mxs/clock-mx28.c: In function 'clk_misc_init':
+    arch/arm/mach-mxs/clock-mx28.c:748: error: implicit declaration of
+    function 'machine_is_m28evk'
+    make[1]: *** [arch/arm/mach-mxs/clock-mx28.o] Error 1
+    make: *** [arch/arm/mach-mxs] Error 2
+    
+    Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+    Acked-by: Uwe Kleine-K<C3><B6>nig <u.kleine-koenig@pengutronix.de>
 
-Kind regards,
-Wim.
-
+diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
+index 5bdeef9..ccbe16f 100644
+--- a/arch/arm/tools/mach-types
++++ b/arch/arm/tools/mach-types
+@@ -1123,5 +1123,6 @@ blissc                    MACH_BLISSC             BLISSC                  3491
+ thales_adc             MACH_THALES_ADC         THALES_ADC              3492
+ ubisys_p9d_evp         MACH_UBISYS_P9D_EVP     UBISYS_P9D_EVP          3493
+ atdgp318               MACH_ATDGP318           ATDGP318                3494
++m28evk                 MACH_M28EVK             M28EVK                  3613
+ smdk4212               MACH_SMDK4212           SMDK4212                3638
+ smdk4412               MACH_SMDK4412           SMDK4412                3765
