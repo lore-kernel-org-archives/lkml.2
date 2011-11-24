@@ -1,103 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab1KXJdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:33:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39330 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754552Ab1KXJdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:33:50 -0500
-Date: Thu, 24 Nov 2011 10:33:49 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/8] mm: memcg: clean up fault accounting
-Message-ID: <20111124093349.GC26036@tiehlicka.suse.cz>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-4-git-send-email-hannes@cmpxchg.org>
+	id S1754860Ab1KXJhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:37:06 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50832 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab1KXJhC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:37:02 -0500
+Message-ID: <4ECE1037.4060300@gmail.com>
+Date: Thu, 24 Nov 2011 17:36:55 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322062951-1756-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 0/6] KVM: optimize memslots searching
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-11-11 16:42:26, Johannes Weiner wrote:
-> From: Johannes Weiner <jweiner@redhat.com>
-> 
-> The fault accounting functions have a single, memcg-internal user, so
-> they don't need to be global.  In fact, their one-line bodies can be
-> directly folded into the caller.  
+Changelog:
+- rebase it on current kvm tree and some cleanups
 
-At first I thought that this doesn't help much because the generated
-code should be exactly same but thinking about it some more it makes
-sense.
-We should have a single place where we account for events. Maybe we
-should include also accounting done in mem_cgroup_charge_statistics
-(this would however mean that mem_cgroup_count_vm_event would have to be
-split). What do you think?
-
-> And since faults happen one at a time, use this_cpu_inc() directly
-> instead of this_cpu_add(foo, 1).
-
-The generated code will be same but it is easier to read, so agreed.
-
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-
-Anyway
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |   14 ++------------
->  1 files changed, 2 insertions(+), 12 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 473b99f..d825af9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -589,16 +589,6 @@ static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
->  	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAPOUT], val);
->  }
->  
-> -void mem_cgroup_pgfault(struct mem_cgroup *memcg, int val)
-> -{
-> -	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT], val);
-> -}
-> -
-> -void mem_cgroup_pgmajfault(struct mem_cgroup *memcg, int val)
-> -{
-> -	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT], val);
-> -}
-> -
->  static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
->  					    enum mem_cgroup_events_index idx)
->  {
-> @@ -913,10 +903,10 @@ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
->  
->  	switch (idx) {
->  	case PGMAJFAULT:
-> -		mem_cgroup_pgmajfault(memcg, 1);
-> +		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT]);
->  		break;
->  	case PGFAULT:
-> -		mem_cgroup_pgfault(memcg, 1);
-> +		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT]);
->  		break;
->  	default:
->  		BUG();
-> -- 
-> 1.7.6.4
-> 
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+This patchset is tested on x86 and build tested on powerpc and ia64
