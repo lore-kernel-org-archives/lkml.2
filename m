@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab1KXUPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 15:15:12 -0500
-Received: from eazy.amigager.de ([213.239.192.238]:43958 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab1KXUPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 15:15:11 -0500
-X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Nov 2011 15:15:11 EST
-Date: Thu, 24 Nov 2011 21:05:53 +0100
-From: Tino Keitel <tino.keitel@tikei.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
- metering applications has gone crackers
-Message-ID: <20111124200553.GA13353@mac.home>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
+	id S1754051Ab1KXUmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 15:42:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55999 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301Ab1KXUmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 15:42:22 -0500
+Message-ID: <4ECEAC1F.4070609@redhat.com>
+Date: Thu, 24 Nov 2011 18:42:07 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+CC: Greg KH <gregkh@suse.de>, Namhyung Kim <namhyung@gmail.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Joe Perches <joe@perches.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        Youquan Song <youquan.song@intel.com>, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/36] Staging: cx25821: Clean up patch series
+References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com> <20111022081941.GA5443@suse.de> <4EA3A7ED.8090404@redhat.com> <20111119142856.3c619022@inspire>
+In-Reply-To: <20111119142856.3c619022@inspire>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 10:30:15 +0000, Artem S. Tashkinov wrote:
-> Hello,
+Em 19-11-2011 04:28, Leonid V. Fedorenchik escreveu:
+> On Sun, 23 Oct 2011 07:36:45 +0200
+> Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
 > 
-> I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all CPU metering applications have gone terribly mad
-> under this kernel:
+>> Em 22-10-2011 10:19, Greg KH escreveu:
+>>> On Sat, Oct 22, 2011 at 01:43:20PM +0800, Leonid V. Fedorenchik wrote:
+>>>> This patch series fixes some style issues in drivers/staging/cx25821
+>>>> Mostly I was hoping to improve readability and fix some issues found by
+>>>> checkpatch.pl script.
+>>>
+>>> These are for Mauro to take through his tree.
+>>
+>> Yes. I'll put them on my queue.
+> 
+> I didn't find this patch series in any of linux, staging, linux-media,
+> and media-next trees. Since you moved driver cx25821 out of staging,
+> do you want me to resend this patch series rebased on top of media-next?
 
-I get the same using top, htop and the gnome system monitor with kernel
-3.2 on a Sandy Bridge quad core box, running Debian unstable.
+No need. I'll apply it with:
+
+$ more `quilt next` | sed s,drivers/staging/cx25821/,drivers/media/video/cx25821/, >a && mv a `quilt next` 
+
+> Or I missed it somewhere and you applied it?
+
+I was too busy those days due to KS and then LinuxCon Brazil. I'm handling your
+patches today.
 
 Regards,
-Tino
+Mauro
