@@ -1,93 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1KXKeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:34:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44634 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab1KXKeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:34:14 -0500
-Date: Thu, 24 Nov 2011 11:34:12 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/8] mm: memcg: remove unneeded checks from
- uncharge_page()
-Message-ID: <20111124103411.GH26036@tiehlicka.suse.cz>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-7-git-send-email-hannes@cmpxchg.org>
- <20111124090619.895988e7.kamezawa.hiroyu@jp.fujitsu.com>
- <20111124090639.GD6843@cmpxchg.org>
+	id S1755820Ab1KXKhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:37:16 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43488 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab1KXKhO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 05:37:14 -0500
+Date: Thu, 24 Nov 2011 11:37:12 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, len.brown@intel.com,
+        tj@kernel.org, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Hibernation: Fix *massive* memory leak at early
+ exits in hibernation
+Message-ID: <20111124103711.GA3734@elf.ucw.cz>
+References: <20111121173939.9486.38357.stgit@srivatsabhat.in.ibm.com>
+ <20111122114549.GC32023@elf.ucw.cz>
+ <4ECBF271.3040308@linux.vnet.ibm.com>
+ <201111222132.35984.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111124090639.GD6843@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201111222132.35984.rjw@sisk.pl>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-11-11 10:06:39, Johannes Weiner wrote:
-> On Thu, Nov 24, 2011 at 09:06:19AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Wed, 23 Nov 2011 16:42:29 +0100
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > From: Johannes Weiner <jweiner@redhat.com>
-> > > 
-> > > mem_cgroup_uncharge_page() is only called on either freshly allocated
-> > > pages without page->mapping or on rmapped PageAnon() pages.  There is
-> > > no need to check for a page->mapping that is not an anon_vma.
-> > > 
-> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > For making our assumption clearer to readers of codes,
-> > VM_BUG_ON(page->mapping && !PageAnon(page)) please.
-> 
-> Yep, delta patch below.
-> 
-> > Anyway,
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Thanks!
-> 
-> ---
-> From: Johannes Weiner <jweiner@redhat.com>
-> Subject: mm: memcg: remove unneeded checks from uncharge_page() fix
-> 
-> Document page state assumptions and catch if they are violated in
-> uncharge_page().
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Hi!
 
-Same here
-Acked-by: Michal Hocko <mhocko@suse.cz>
+> > The first patch below does the cleanup, the second patch fixes the memory
+> > leak and applies on top of the first patch.
+> 
+> Wait, wait.  These changes can be made in the 3.3 merge window, while I'd
+> like the fix the bug _now_.
+> 
+> Does anyone have any _technical_ problem with my patch posted previously
+> in this thread?
 
-> ---
->  mm/memcontrol.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2f1fdc4..872dae1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2992,6 +2992,7 @@ void mem_cgroup_uncharge_page(struct page *page)
->  	/* early check. */
->  	if (page_mapped(page))
->  		return;
-> +	VM_BUG_ON(page->mapping && !PageAnon(page));
->  	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_MAPPED);
->  }
->  
-> -- 
-> 1.7.6.4
-> 
+No, it was ok.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
