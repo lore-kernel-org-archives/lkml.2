@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1KXNWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 08:22:07 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:42038 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab1KXNWE (ORCPT
+	id S1756031Ab1KXNXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 08:23:17 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56372 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801Ab1KXNXQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 08:22:04 -0500
-Subject: Re: [PATCH v2] printk: add console output tracing
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20111123131622.GA10669@somewhere.redhat.com> (sfid-20111123_141710_048738_F7FB6F6D)
-References: <1321473443.4181.38.camel@frodo>
-	 <1321478719.4502.20.camel@jlt3.sipsolutions.net>
-	 <20111117145502.GA18437@somewhere>
-	 <1321541877.3997.31.camel@jlt3.sipsolutions.net>
-	 <20111117150040.GB18437@somewhere>
-	 <1321543268.3997.40.camel@jlt3.sipsolutions.net>
-	 <20111118184401.GA24787@somewhere.redhat.com>
-	 <1321641975.10266.73.camel@jlt3.sipsolutions.net>
-	 <20111118185449.GB24787@somewhere.redhat.com>
-	 <1321642752.10266.75.camel@jlt3.sipsolutions.net>
-	 <20111123131622.GA10669@somewhere.redhat.com>
-	 (sfid-20111123_141710_048738_F7FB6F6D)
+	Thu, 24 Nov 2011 08:23:16 -0500
+Message-ID: <1322140980.2921.49.camel@twins>
+Subject: Re: [PATCH RFC] remove jump_label optimization for perf sched events
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
+        Jason Baron <jbaron@redhat.com>, rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 24 Nov 2011 14:23:00 +0100
+In-Reply-To: <20111121131739.GF16853@redhat.com>
+References: <20111117123029.GB16853@redhat.com>
+	 <1321534159.27735.33.camel@twins> <20111121131739.GF16853@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Nov 2011 14:21:59 +0100
-Message-ID: <1322140919.5366.17.camel@jlt3.sipsolutions.net>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-23 at 14:16 +0100, Frederic Weisbecker wrote:
-
-> > Also, call_console_drivers() doesn't pass this start/end through to
-> > _call_console_drivers(), it has loops and stuff there...
+On Mon, 2011-11-21 at 15:17 +0200, Gleb Natapov wrote:
+> So how about throttling it like the patch below does until stop_machine()
+> no longer needed for patching (and it is possible that new way of patching
+> will still have significant overhead).
 > 
-> Yeah but looking at the loop there, start and end passed to
-> __call_console_drivers() are bounded between start and end passed to
-> call_console_drivers().
+> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 66f23dc..a4687f6 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -3,12 +3,15 @@
+>  
+>  #include <linux/types.h>
+>  #include <linux/compiler.h>
+> +#include <linux/workqueue.h>
+>  
+>  #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
+>  
+>  struct jump_label_key {
+>         atomic_t enabled;
+>         struct jump_entry *entries;
+> +       unsigned long rl_timeout;
+> +       struct delayed_work rl_work;
+>  #ifdef CONFIG_MODULES
+>         struct jump_label_mod *next;
 
-Looks like. Not that I have any idea why other code handles the wrap
-then?
 
-> > In any case -- feel free to clean it all up, I basically copied the
-> > logic from _call_console_drivers assuming it was needed.
-> 
-> I'm just reviewing and suggesting a way to keep the patch more simple.
-> Outside that, I don't really need that patch myself ;)
+I'm not sure its worth it doing in generic code like this, it bloats the
+jump_label_key structure quite significantly (and there's tons of those
+around) for only 1 real user.
 
-:-)
+If we want to do this in generic code, I think its best to introduce
+something like:
 
-> > I don't really want to know about the printk details :-)
-> 
-> Well, it's like working out outside in winter. It may not sound
-> very entertaining in the beginning but then it quickly becomes
-> invigorating, toning and good for the mood...I think...
+struct jump_label_key_deferred {
+	struct jump_label_key key;
+	unsigned long timeout;
+	struct delayed_work work;
+}
 
-Heh....
+But is there really any other user for this? All the trace bits are root
+only iirc and kvm itself only sets them on the guest kernel I think for
+paravirt, so that's not a problem.
 
-I don't really feel comfortable modifying the _call_console_drivers()
-function to not handle start > end (modulo log buf size of course), but
-at the same time I don't feel comfortable putting code into it that
-doesn't handle it.
-
-johannes
 
