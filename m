@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab1KXA6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 19:58:22 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:46160 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab1KXA6U (ORCPT
+	id S1754902Ab1KXBJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 20:09:10 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59283 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab1KXBJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 19:58:20 -0500
-Date: Thu, 24 Nov 2011 11:58:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Jamie Iles <jamie.iles@mathembedded.com>
-Subject: linux-next: manual merge of the arm-soc tree with Linus' tree
-Message-Id: <20111124115805.d2b5cdc699b9d6ed300b9c09@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Wed, 23 Nov 2011 20:09:08 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 24 Nov 2011 10:07:55 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/5] mm: try to distribute dirty pages fairly across
+ zones
+Message-Id: <20111124100755.d8b783a8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322055258-3254-4-git-send-email-hannes@cmpxchg.org>
+References: <1322055258-3254-1-git-send-email-hannes@cmpxchg.org>
+	<1322055258-3254-4-git-send-email-hannes@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Nov_2011_11_58_05_+1100_YyYFfRPsU6PwYaon"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Nov_2011_11_58_05_+1100_YyYFfRPsU6PwYaon
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Arnd,
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/net/ethernet/cadence/Kconfig between commit eccab1ec87d0
-("net/cadence: enable by default NET_ATMEL") from Linus' tree and commit
-f75ba50bdc2b ("macb: initial support for Cadence GEM") from the arm-soc
-tree.
+Can I make a question ?
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On Wed, 23 Nov 2011 14:34:16 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-diff --cc drivers/net/ethernet/cadence/Kconfig
-index b48378a,a2e1500..0000000
---- a/drivers/net/ethernet/cadence/Kconfig
-+++ b/drivers/net/ethernet/cadence/Kconfig
-@@@ -5,9 -5,8 +5,9 @@@
-  config HAVE_NET_MACB
-  	bool
- =20
-- config NET_ATMEL
-- 	bool "Atmel devices"
-+ config NET_CADENCE
-+ 	bool "Cadence devices"
- +	default y
-  	depends on HAVE_NET_MACB || (ARM && ARCH_AT91RM9200)
-  	---help---
-  	  If you have a network (Ethernet) card belonging to this class, say Y.
 
---Signature=_Thu__24_Nov_2011_11_58_05_+1100_YyYFfRPsU6PwYaon
-Content-Type: application/pgp-signature
+> +		/*
+> +		 * When allocating a page cache page for writing, we
+> +		 * want to get it from a zone that is within its dirty
+> +		 * limit, such that no single zone holds more than its
+> +		 * proportional share of globally allowed dirty pages.
+> +		 * The dirty limits take into account the zone's
+> +		 * lowmem reserves and high watermark so that kswapd
+> +		 * should be able to balance it without having to
+> +		 * write pages from its LRU list.
+> +		 *
+> +		 * This may look like it could increase pressure on
+> +		 * lower zones by failing allocations in higher zones
+> +		 * before they are full.  But the pages that do spill
+> +		 * over are limited as the lower zones are protected
+> +		 * by this very same mechanism.  It should not become
+> +		 * a practical burden to them.
+> +		 *
+> +		 * XXX: For now, allow allocations to potentially
+> +		 * exceed the per-zone dirty limit in the slowpath
+> +		 * (ALLOC_WMARK_LOW unset) before going into reclaim,
+> +		 * which is important when on a NUMA setup the allowed
+> +		 * zones are together not big enough to reach the
+> +		 * global limit.  The proper fix for these situations
+> +		 * will require awareness of zones in the
+> +		 * dirty-throttling and the flusher threads.
+> +		 */
+> +		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+> +		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
+> +			goto this_zone_full;
+>  
+>  		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
+>  		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This wil call 
 
-iQIcBAEBCAAGBQJOzZadAAoJEECxmPOUX5FEk3EP/RY6aPXwAihPWoblHNaVrWYS
-T0imAN0Ntl/xYavK1XVpt2/1zj4rztJM825uKHYBy5NOZuIBR2wS15Jjm4Hs27aB
-3g4ml9sJfgr+eUWMmyM92S+MLopc6CEMb5P/aYy+UpeY7smGRJ6g7A8s7AsIDW2s
-am9qK99aura6lxI4HPIyJTX8kWpNmGoF333esO4/4M9S7grPJ7SMB8GpqRSGgvDG
-NjkcGngm5aLxqeCN/RwaTZ7OZjBqtauslCqGsIYEZdXHqMH+QuQ0Q38S1T7W8ogG
-xJA+Wj+ggU7zzIe98f3NeSjcq76I6AGj17ElNWPlkaWpxNZ24bvuGabp82y4rLTd
-KcFRLLw4Zt0oH6XGx8fTi3iSwKlVRtgrs3q43RxAY7RW3EFjMhxK0NXvN9PoNDR0
-IWT/asQk27oO7oUlJx0PWCgyzmvWWhESYJ3VFbIBo7ND79a/sgSyulhVsDJQDuBt
-sHggyS7BwrGNDcsnCueX8VPIZnTfkuIcX/XAR+x1HAxxyvBx7FdBbmcUas2Emw1x
-awHe5L6gR5TbnCMfI4fP/Czyb8Zy8kzFVqp7FmPiHGzivx2xCZlSwqiGRzJ1cTHh
-JfFhUQK8lZyR5StqVmwvI+xKaO4PMl8FMMD8SUBzXqfWD/Y5YIGcVIFsC7XZd+JW
-neFqWdUPh3HXsQVc8UM/
-=72m5
------END PGP SIGNATURE-----
+                if (NUMA_BUILD)
+                        zlc_mark_zone_full(zonelist, z);
 
---Signature=_Thu__24_Nov_2011_11_58_05_+1100_YyYFfRPsU6PwYaon--
+And this zone will be marked as full. 
+
+IIUC, zlc_clear_zones_full() is called only when direct reclaim ends.
+So, if no one calls direct-reclaim, 'full' mark may never be cleared
+even when number of dirty pages goes down to safe level ?
+I'm sorry if this is alread discussed.
+
+Thanks,
+-Kame
+
+
