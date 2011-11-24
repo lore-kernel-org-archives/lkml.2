@@ -1,137 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1KXBx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 20:53:56 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48127 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab1KXBxz (ORCPT
+	id S1754707Ab1KXB5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 20:57:22 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:32659
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753661Ab1KXB5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 20:53:55 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 24 Nov 2011 10:52:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [V3 PATCH 1/2] tmpfs: add fallocate support
-Message-Id: <20111124105245.b252c65f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1322038412-29013-1-git-send-email-amwang@redhat.com>
-References: <1322038412-29013-1-git-send-email-amwang@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Nov 2011 20:57:21 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: <b35362@freescale.com>
+To: <dwmw2@infradead.org>, <Artem.Bityutskiy@nokia.com>,
+        <scottwood@freescale.com>
+CC: <linux-mtd@lists.infradead.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>
+Subject: [PATCH 1/3] mtd/nand : use elbc_fcm_ctrl->oob to set FPAR_MS bit of FPAR
+Date: Thu, 24 Nov 2011 08:41:44 +0800
+Message-ID: <1322095306-13156-1-git-send-email-b35362@freescale.com>
+X-Mailer: git-send-email 1.6.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Liu Shuo <b35362@freescale.com>
 
-I have a question.
+On both of large-page chip and small-page chip, we always should use
+'elbc_fcm_ctrl->oob' to set the FPAR_LP_MS/FPAR_SP_MS bit of FPAR, don't
+use a overflowed 'column' to set it.
 
-On Wed, 23 Nov 2011 16:53:30 +0800
-Cong Wang <amwang@redhat.com> wrote:
+Signed-off-by: Liu Shuo <b35362@freescale.com>
+Signed-off-by: Li Yang <leoli@freescale.com>
+---
+ drivers/mtd/nand/fsl_elbc_nand.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-> Systemd needs tmpfs to support fallocate [1], to be able
-> to safely use mmap(), regarding SIGBUS, on files on the
-> /dev/shm filesystem. The glibc fallback loop for -ENOSYS
-> on fallocate is just ugly.
-> 
-> This patch adds fallocate support to tmpfs, and as we
-> already have shmem_truncate_range(), it is also easy to
-> add FALLOC_FL_PUNCH_HOLE support too.
-> 
-> 1. http://lkml.org/lkml/2011/10/20/275
-> 
-> V2->V3:
-> a) Read i_size directly after holding i_mutex;
-> b) Call page_cache_release() too after shmem_getpage();
-> c) Undo previous changes when -ENOSPC.
-> 
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-> Cc: Lennart Poettering <lennart@poettering.net>
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
-> ---
->  mm/shmem.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 65 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index d672250..65f7a27 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -30,6 +30,7 @@
->  #include <linux/mm.h>
->  #include <linux/export.h>
->  #include <linux/swap.h>
-> +#include <linux/falloc.h>
->  
->  static struct vfsmount *shm_mnt;
->  
-> @@ -1431,6 +1432,69 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
->  	return error;
->  }
->  
-> +static void shmem_truncate_page(struct inode *inode, pgoff_t index)
-> +{
-> +	loff_t start = index << PAGE_CACHE_SHIFT;
-> +	loff_t end = ((index + 1) << PAGE_CACHE_SHIFT) - 1;
-> +	shmem_truncate_range(inode, start, end);
-> +}
-> +
-> +static long shmem_fallocate(struct file *file, int mode,
-> +				loff_t offset, loff_t len)
-> +{
-> +	struct inode *inode = file->f_path.dentry->d_inode;
-> +	pgoff_t start = offset >> PAGE_CACHE_SHIFT;
-> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
-> +	pgoff_t index = start;
-> +	loff_t i_size;
-> +	struct page *page = NULL;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&inode->i_mutex);
-> +	i_size = inode->i_size;
-> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
-> +		if (!(offset > i_size || (end << PAGE_CACHE_SHIFT) > i_size))
-> +			shmem_truncate_range(inode, offset,
-> +					     (end << PAGE_CACHE_SHIFT) - 1);
-> +		goto unlock;
-> +	}
-> +
-> +	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
-> +		ret = inode_newsize_ok(inode, (offset + len));
-> +		if (ret)
-> +			goto unlock;
-> +	}
-> +
-> +	while (index < end) {
-> +		ret = shmem_getpage(inode, index, &page, SGP_WRITE, NULL);
+diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
+index cc08a11..6fce7da 100644
+--- a/drivers/mtd/nand/fsl_elbc_nand.c
++++ b/drivers/mtd/nand/fsl_elbc_nand.c
+@@ -414,9 +414,17 @@ static void fsl_elbc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 		         page_addr, column);
+ 
+ 		elbc_fcm_ctrl->column = column;
+-		elbc_fcm_ctrl->oob = 0;
+ 		elbc_fcm_ctrl->use_mdr = 1;
+ 
++		if (column >= mtd->writesize) {
++			/* OOB area */
++			column -= mtd->writesize;
++			elbc_fcm_ctrl->oob = 1;
++		} else {
++			WARN_ON(column != 0);
++			elbc_fcm_ctrl->oob = 0;
++		}
++
+ 		fcr = (NAND_CMD_STATUS   << FCR_CMD1_SHIFT) |
+ 		      (NAND_CMD_SEQIN    << FCR_CMD2_SHIFT) |
+ 		      (NAND_CMD_PAGEPROG << FCR_CMD3_SHIFT);
+@@ -441,16 +449,12 @@ static void fsl_elbc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 			         (FIR_OP_CW1 << FIR_OP6_SHIFT) |
+ 			         (FIR_OP_RS  << FIR_OP7_SHIFT));
+ 
+-			if (column >= mtd->writesize) {
++			if (elbc_fcm_ctrl->oob)
+ 				/* OOB area --> READOOB */
+-				column -= mtd->writesize;
+ 				fcr |= NAND_CMD_READOOB << FCR_CMD0_SHIFT;
+-				elbc_fcm_ctrl->oob = 1;
+-			} else {
+-				WARN_ON(column != 0);
++			else
+ 				/* First 256 bytes --> READ0 */
+ 				fcr |= NAND_CMD_READ0 << FCR_CMD0_SHIFT;
+-			}
+ 		}
+ 
+ 		out_be32(&lbc->fcr, fcr);
+-- 
+1.7.1
 
-If the 'page' for index exists before this call, this will return the page without
-allocaton.
-
-Then, the page may not be zero-cleared. I think the page should be zero-cleared.
-But I'm not sure when we do zero-clear them.
-
-But I'm not sure how fallocate should work at error.
-Assume  some block already exists before fallocate(), possible side-effect will be
- - the contents will be zero-cleared even if fallocate fails.
- - the contents will be deallocated in undo path if fallocate fails.
-?
-maybe updates to man(2) fallocate will be appreciated...
-
-Anyway, don't you need zero-clear when you find an existing pages here ?
-
-Thanks,
--Kame
 
