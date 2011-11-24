@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1KXHWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 02:22:45 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:55547 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab1KXHWo (ORCPT
+	id S1754459Ab1KXHXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 02:23:33 -0500
+Received: from gate.crashing.org ([63.228.1.57]:60959 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753273Ab1KXHXc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 02:22:44 -0500
-Date: Thu, 24 Nov 2011 10:22:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] debugfs: remove unneeded cast in debugfs_print_regs32()
-Message-ID: <20111124072207.GD14122@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4ECDF0B9.00A6,ss=1,re=0.000,fgs=0
+	Thu, 24 Nov 2011 02:23:32 -0500
+Subject: Re: [PATCH] SPI: fix build with CONFIG_SPI_FSL_ESPI=m
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <4E5369A0.4080701@gmail.com>
+Date: Thu, 24 Nov 2011 01:22:57 -0600
+Cc: Jiri Slaby <jslaby@suse.cz>, grant.likely@secretlab.ca,
+        spi-devel-general@lists.sourceforge.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <F8B0661A-E43E-48B9-A8BB-B3D87999FD66@kernel.crashing.org>
+References: <1314086345-2818-1-git-send-email-jslaby@suse.cz> <4E5369A0.4080701@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cast here causes a Sparse warning:
-fs/debugfs/file.c:561:42: warning: cast removes address space of expression
-fs/debugfs/file.c:561:42: warning: incorrect type in argument 1 (different address spaces)
-fs/debugfs/file.c:561:42:    expected void const volatile [noderef] <asn:2>*addr
-fs/debugfs/file.c:561:42:    got void *<noident>
 
-It's redundant to cast it to a (void *) anyway when it is already a
-(void __iomem *).
+On Aug 23, 2011, at 3:49 AM, Jiri Slaby wrote:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> On 08/23/2011 09:59 AM, Jiri Slaby wrote:
+>> When spi_fsl_espi is chosen to be built as a module, there is a build
+>> error because we test only CONFIG_SPI_FSL_ESPI in declaration of
+>> struct mpc8xxx_spi in drivers/spi/spi_fsl_lib.h.
+>> 
+>> We need to add a test for CONFIG_SPI_FSL_ESPI_MODULE too.
+>> 
+>> The error looks like:
+>> drivers/spi/spi_fsl_espi.c: In function 'fsl_espi_bufs':
+>> drivers/spi/spi_fsl_espi.c:232: error: 'struct mpc8xxx_spi' has no member named 'len'
+>> ...
+>> 
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> ---
+>> drivers/spi/spi-fsl-lib.h |    2 +-
+>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
+>> index cbe881b..97968de 100644
+>> --- a/drivers/spi/spi-fsl-lib.h
+>> +++ b/drivers/spi/spi-fsl-lib.h
+>> @@ -28,7 +28,7 @@ struct mpc8xxx_spi {
+>> 	/* rx & tx bufs from the spi_transfer */
+>> 	const void *tx;
+>> 	void *rx;
+>> -#ifdef CONFIG_SPI_FSL_ESPI
+>> +#if defined(CONFIG_SPI_FSL_ESPI) || defined(CONFIG_SPI_FSL_ESPI_MODULE)
+>> 	int len;
+>> #endif
+> 
+> Oh, and there are still link errors:
+> ERROR: "mpc8xxx_spi_tx_buf_u32" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_rx_buf_u32" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_tx_buf_u16" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_rx_buf_u16" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_tx_buf_u8" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_rx_buf_u8" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "of_mpc8xxx_spi_probe" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_strmode" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_probe" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_remove" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "to_of_pinfo" [drivers/spi/spi_fsl_spi.ko] undefined!
+> ERROR: "mpc8xxx_spi_tx_buf_u32" [drivers/spi/spi_fsl_espi.ko] undefined!
+> ERROR: "mpc8xxx_spi_rx_buf_u32" [drivers/spi/spi_fsl_espi.ko] undefined!
+> ERROR: "of_mpc8xxx_spi_probe" [drivers/spi/spi_fsl_espi.ko] undefined!
+> ERROR: "mpc8xxx_spi_probe" [drivers/spi/spi_fsl_espi.ko] undefined!
+> ERROR: "mpc8xxx_spi_remove" [drivers/spi/spi_fsl_espi.ko] undefined!
+> 
+> The functions are not exported...
+> 
+> Should I export all those or deny CONFIG_SPI_FSL_ESPI=m?
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index e0a3a59..989f07f 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -558,7 +558,7 @@ int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
- 		if (prefix)
- 			ret += seq_printf(s, "%s", prefix);
- 		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
--				  readl((void *)(base + regs->offset)));
-+				  readl(base + regs->offset));
- 	}
- 	return ret;
- }
+I'd just deny CONFIG_SPI_FSL_ESPI=m, unless you have some need for it to be a module.
+
+- k
