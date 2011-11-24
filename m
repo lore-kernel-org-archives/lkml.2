@@ -1,91 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1KXJ15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:27:57 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:47740 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754045Ab1KXJ14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:27:56 -0500
-Date: Thu, 24 Nov 2011 11:27:52 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "open list:MUSB MULTIPOINT H..." <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: musb: PM: fix context save/restore in
- suspend/resume path
-Message-ID: <20111124092751.GG3352@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1322011104-21817-1-git-send-email-khilman@ti.com>
+	id S1754785Ab1KXJdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:33:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39330 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754552Ab1KXJdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:33:50 -0500
+Date: Thu, 24 Nov 2011 10:33:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/8] mm: memcg: clean up fault accounting
+Message-ID: <20111124093349.GC26036@tiehlicka.suse.cz>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <1322062951-1756-4-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qxfKREH7IwbezJ+T"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322011104-21817-1-git-send-email-khilman@ti.com>
+In-Reply-To: <1322062951-1756-4-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 23-11-11 16:42:26, Johannes Weiner wrote:
+> From: Johannes Weiner <jweiner@redhat.com>
+> 
+> The fault accounting functions have a single, memcg-internal user, so
+> they don't need to be global.  In fact, their one-line bodies can be
+> directly folded into the caller.  
 
---qxfKREH7IwbezJ+T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+At first I thought that this doesn't help much because the generated
+code should be exactly same but thinking about it some more it makes
+sense.
+We should have a single place where we account for events. Maybe we
+should include also accounting done in mem_cgroup_charge_statistics
+(this would however mean that mem_cgroup_count_vm_event would have to be
+split). What do you think?
 
-Hi,
+> And since faults happen one at a time, use this_cpu_inc() directly
+> instead of this_cpu_add(foo, 1).
 
-On Tue, Nov 22, 2011 at 05:18:24PM -0800, Kevin Hilman wrote:
-> Currently the driver tries to save context in the suspend path, but
-> will cause an abort if the device is already runtime suspended.  This
-> happens, for example, if MUSB loaded/compiled-in, in host mode, but no
-> USB devices are attached.  MUSB will be runtime suspended, but then
-> attempting a system suspend will crash due to the context save
-> being attempted while the device is disabled.
->=20
-> On OMAP, as of v3.1, the driver's ->runtime_suspend() callback will be
-> called late in the suspend path (by the PM domain layer) if the driver
-> is not already runtime suspended, ensuring a full shutdown.
->=20
-> Therefore, the context save is not needed in the ->suspend() method
-> since it will be called in the ->runtime_suspend() method anyways
-> (similarily for resume.)
->=20
-> NOTE: this leaves the suspend/resume methods basically empty (with
->       some FIXMEs and comments, but I'll leave it to the maintainers
->       to decide whether to remove them.
->=20
-> Signed-off-by: Kevin Hilman <khilman@ti.com>
+The generated code will be same but it is easier to read, so agreed.
 
-applied, thanks.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-I've added Cc: stable@vger.kernel.org so that this goes to v3.1 too.
+Anyway
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
---=20
-balbi
+> ---
+>  mm/memcontrol.c |   14 ++------------
+>  1 files changed, 2 insertions(+), 12 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 473b99f..d825af9 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -589,16 +589,6 @@ static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
+>  	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAPOUT], val);
+>  }
+>  
+> -void mem_cgroup_pgfault(struct mem_cgroup *memcg, int val)
+> -{
+> -	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT], val);
+> -}
+> -
+> -void mem_cgroup_pgmajfault(struct mem_cgroup *memcg, int val)
+> -{
+> -	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT], val);
+> -}
+> -
+>  static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+>  					    enum mem_cgroup_events_index idx)
+>  {
+> @@ -913,10 +903,10 @@ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+>  
+>  	switch (idx) {
+>  	case PGMAJFAULT:
+> -		mem_cgroup_pgmajfault(memcg, 1);
+> +		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT]);
+>  		break;
+>  	case PGFAULT:
+> -		mem_cgroup_pgfault(memcg, 1);
+> +		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT]);
+>  		break;
+>  	default:
+>  		BUG();
+> -- 
+> 1.7.6.4
+> 
 
---qxfKREH7IwbezJ+T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOzg4XAAoJEIaOsuA1yqREAw4P/0P5mQ6NwX7prw4VexJkGnYi
-KYYl5bNikmumRbZeE5FbZHhNNyCcXRCDGNv54VAWjaG0CJF49W+thnccKKtHiqxc
-3VnQRdKAOLD5Q/amR5DYDY2ghOIv/opmVxCeuAetcpkYXXjY9Yk/wom79tgXjAeA
-J1ZMctpLVQJghJ9fp01hT6FDtBwI/rTPq140u/OQjiFhlUIk2u4u2w6MIcUwamlY
-FuVfeHRPVmdzIJzPCC27ZtsFA7lUHLmQUzOe9YOV1Ik6sQlNtmsar5+dSaj6cfXw
-vDN/yHPfuC4xzgDaonQ9jvlAJ6oJQ7Bl/zv0zi8fTp9wBQHotEhP59KMKVTGM0fI
-3DQ8Z4xzVRKAtLk9xq6e3h0FPaoR21pPoolFCv+OjjyLPwz1CVl9hlzfW2sdGzm+
-BCoT5K/ve2mHyc1l+vqkyVgitMMvKXi/hsThV4g4hJgBm6MmzohPvls8PbQ41VI6
-0gy6heeKZvXfe3E54sfZNZaqrAdFyXyF1wy+Pu8BPIyNRkWKhm2e3WpPZQBKndel
-t2MKRP03+0teR/wLH6bsN3Q6tMCoQb0hYpchUHqU3887w/JINq1H1CDaXDLar+xJ
-VvKUMG6CUvRxGRuB4DP01rdpTAJTuO0JEaPXuf/D7kya+yMQFcINk1RRZMSX+w7L
-K87/S4SJ72K+P/B8sYby
-=2PQr
------END PGP SIGNATURE-----
-
---qxfKREH7IwbezJ+T--
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
