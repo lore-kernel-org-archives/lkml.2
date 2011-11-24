@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab1KXLJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 06:09:40 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43576 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1KXLJi convert rfc822-to-8bit (ORCPT
+	id S1752215Ab1KXL1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 06:27:32 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:42611 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1KXL1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 06:09:38 -0500
-MIME-Version: 1.0
-From: Rahul Bedarkar <rpal143@gmail.com>
-Date: Thu, 24 Nov 2011 16:39:17 +0530
-Message-ID: <CA+NV+Vkog3M6BMC9iMAdCJPbsDQUvPJx1ucsX5FV=kHJLu+ryw@mail.gmail.com>
-Subject: [path] adding header info in raw.h
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Nov 2011 06:27:30 -0500
+Message-ID: <1322134046.25125.35.camel@x61.thuisdomein>
+Subject: [PATCH] [TRIVIAL] clockevents: drop unknown Kconfig symbol
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 24 Nov 2011 12:27:26 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There's no Kconfig symbol GENERIC_CLOCKEVENTS_MIGR, so the check for it
+will always fail.
 
-    Adding header info in raw.h
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Added in commit de68d9b173 ("clockevents: Allow build w/o run-tine usage
+for migration purposes"), and part of mainline since v2.6.24, but it
+looks like it's always been unknown.
 
-[master 1e3c43b] Added info header in raw.h 1 files changed, 6
-insertions(+), 0 deletions(-)
+ kernel/time/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index b26c222..2cf9cc7 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -25,7 +25,7 @@ config HIGH_RES_TIMERS
+ config GENERIC_CLOCKEVENTS_BUILD
+ 	bool
+ 	default y
+-	depends on GENERIC_CLOCKEVENTS || GENERIC_CLOCKEVENTS_MIGR
++	depends on GENERIC_CLOCKEVENTS
+ 
+ config GENERIC_CLOCKEVENTS_MIN_ADJUST
+ 	bool
+-- 
+1.7.7.3
 
-diff --git a/include/linux/raw.h b/include/linux/raw.h
-index 62d543e..7ca527a 100644
---- a/include/linux/raw.h
-+++ b/include/linux/raw.h
-@@ -1,3 +1,9 @@
-+/*
-+* include/linux/raw.h
-+*
-+* include file for raw block device drivers
-+*/
-+
- #ifndef __LINUX_RAW_H
- #define __LINUX_RAW_H
-
-
-Regards,
-Rahul Bedarkar
