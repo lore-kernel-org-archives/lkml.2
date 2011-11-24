@@ -1,83 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab1KXQrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 11:47:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:64753 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab1KXQrt (ORCPT
+	id S1756811Ab1KXQ6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 11:58:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33518 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab1KXQ6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 11:47:49 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-Subject: Re: [PATCH v7 3/5] drivers/i2c/busses/i2c-at91.c: add new driver
-Date: Thu, 24 Nov 2011 16:47:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>
-References: <cover.1322062555.git.n.voss@weinmann.de> <201111241539.06990.arnd@arndb.de> <EF2E73589CA71846A15D0B2CDF79505D087B45007C@wm021.weinmann.com>
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B45007C@wm021.weinmann.com>
+	Thu, 24 Nov 2011 11:58:18 -0500
+Message-ID: <4ECE77A4.2040703@gmail.com>
+Date: Thu, 24 Nov 2011 17:58:12 +0100
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Matt Fleming <matt@console-pimps.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v5 10/10] x86, efi: EFI boot stub support
+References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>  <1318848017-12301-11-git-send-email-matt@console-pimps.org>  <4E9C8AAC.7080803@gmail.com>  <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECC4207.3010607@gmail.com> <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com> <4ECE5803.3060203@gmail.com>
+In-Reply-To: <4ECE5803.3060203@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111241647.35818.arnd@arndb.de>
-X-Provags-ID: V02:K0:LKsGuMlgkk4GRzGjZb+O8FahNDX1i7ydEb+PVcMnNY/
- UPnXoGbbzMQGtanbqkFRQjieKANOH09669G0hAVTjCWIGuJR4R
- hCJnoLUXOrjLGl5WtxHUiS17ybY1Dj+Sq1UvtXzDADPZBWaXDu
- mpiEVeglg1J8aDc4WGIDOhmSjm3i5xz5p4L+B5yqBH2pcMlbih
- m+w2JpvQHTDQ4pdqNmBlEpYDYq2O/enfovhkAjgMX3k9nLAfPU
- jsXUB/r/AQB7u4ek0aWMdtG0/SvOwLPb/4QZMqgFkzVOYcaC+Y
- gI9cPi5mzTCoiAS7QYixrWgNT4C38xVFQa+Ls+CPTFX4z23Y1J
- QAFjZzmBdyi2NCbDqThs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 November 2011, Voss, Nikolaus wrote:
-> > Aside from the flamewar in that thread, my impression is that in general
-> > people (me certainly) prefer to have driver-local workarounds be expressed
-> > in a driver specific way, not in a platform or architecture specific way
-> > because that makes the driver less portable.
-> 
-> I guess I see your point now. So you want something like pdev.has_bugX to be
-> set by mach setup and later check this flag in the driver?
+Hey Matt,
 
-Yes, that would be the idea. I would not introduce platform_data for one
-driver just for this though, because we are generally moving away from
-platform_data towards device tree probing.
+On 11/24/2011 03:43 PM, Maarten Lankhorst wrote:
+> Hey Matt,
+>
+> On 11/23/2011 08:27 PM, Matt Fleming wrote:
+>
+>> On Wed, 2011-11-23 at 01:44 +0100, Maarten Lankhorst wrote:
+>>> When I tested this with v3.2-rc2 it didn't boot, it hung before it
+>>> initialized the kernel.
+>>> Without initrd it works fine, though.
+>> Bah, so this change actually makes booting worse? You said before that
+>> you almost made it to userspace but this seems to hang much earlier now.
+>> Is that correct?
+>>
+>> ... back to the drawing board.
+> I was looking at why grub2 could boot, seems to be it reads in chunks of
+> 256 kilobytes. I seem to be able to get it to boot with chunks of 4 mb
+> as well, but didn't test beyond that.
+>
+> So the fix is to simply read the file in parts, otherwise efi hangs..
+> As a nice side effect, short reads are also handled, but the efi
+> firmware seems to choke over huge reads and dies.
+So after I was encouraged by mjg59 to find out the limit,
+I put this patch to test maximum file size with together..
 
-You can do it with a match table that has two entries with different
-names for the two kinds of device that you need to distinguish and
-set the platform_device_id->driver_data field to '1' for the type
-that needs the fixup.
+Turns out that it pukes on 4 mb, my printf was fucked,
+in the patch below I corrected it, so I don't know for sure
+if that included 4 mb being bad or not. I suppose writing
+a test for read(fd, addr, 5 * 1024 * 1024) was too hard for
+efi to pass. ;)
 
-> > > > #define       AT91_TWI_MMR            0x00000004
-> > > > #define       AT91_TWI_IADRSZ         0x00000300
-> > > > #define       AT91_TWI_IADRSZ_NO      0x00000000
-> > > > #define       AT91_TWI_IADRSZ_1       0x00000100
-> > > > ...
-> > >
-> > > I agree, but this header file was already used by the old driver and
-> > > converting would add possible errors to register definitions which are
-> > > not (yet) used. That's why I've left it as is and just made it a local
-> > > include.
-> > 
-> > But you are presenting the driver as a new one, so you should be
-> > prepared to get review comments like any other new code.
-> > 
-> > Please at least move the data into the main driver file to get rid of
-> > the header file.
-> 
-> I didn't want to appear ignorant about this, I actually appreciate your
-> comment. I just wanted to point out that there might be a reason to keep
-> the old file which you weren't aware of (because I presented this as a new
-> driver). So, I will move the register definitions to the main driver.
+Just make a file with dd if=/dev/urandom of=initrd.img bs=1M count=99
+to find out when/if YOUR efi implementation will die! :D
 
-Ok, good. Moving it into the driver is really the important part anyway,
-and I understand your reasoning for not wanting to modify the definitions,
-it just didn't apply to the one of the two comments I made about the header.
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 8627a56..415b875 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -30,6 +30,19 @@
+ #define PIXEL_BLT_ONLY					3
+ #define PIXEL_FORMAT_MAX				4
+ 
++typedef struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
++  void* Reset;
++  void *OutputString;
++  void *TestString;
++  void *QueryMode;
++  void *SetMode;
++  void *SetAttribute;
++  void *ClearScreen;
++  void *SetCursorPosition;
++  void *EnableCursor;
++  void *Mode;
++} __attribute__((packed)) EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
++
+ typedef struct {
+ 	u32 red_mask;
+ 	u32 green_mask;
+@@ -692,17 +705,27 @@ grow:
+ 
+ 		addr = initrd_addr;
+ 		for (j = 0; j < nr_initrds; j++) {
+-			u64 size;
+-
+-			size = initrds[j].size;
+-			status = efi_call_phys3(fh->read, initrds[j].handle,
+-						&size, addr);
+-			if (status != EFI_SUCCESS)
+-				goto free_initrd_total;
+-
++			u64 size, chunksize;
++			uint16_t str[] = { 'S', 'i', 'z', 'e', ':', ' ', ' ',' ', ' ', '\r', '\n', 0 };
++			EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *output = (void*)sys_table->stderr;
++
++			for (chunksize = 1024 * 1024; chunksize < initrds[j].size; chunksize += 1024 * 1024) {
++				str[5] = ((chunksize / 1024 / 1024) / 10) + '0';
++				str[6] = ((chunksize / 1024 / 1024) % 10) + '0';
++				efi_call_phys2(output->OutputString, sys_table->stderr_handle, str);
++				size = initrds[j].size;
++				efi_call_phys2(fh->set_position, initrds[j].handle, 0);
++				while (size) {
++					u64 toread = size > chunksize ? chunksize : size;
++					status = efi_call_phys3(fh->read, initrds[j].handle,
++							&toread, addr);
++					if (status != EFI_SUCCESS)
++						goto free_initrd_total;
++					size -= toread;
++					addr += toread;
++				}
++			}
+ 			efi_call_phys1(fh->close, initrds[j].handle);
+-
+-			addr += size;
+ 		}
+ 
+ 	}
 
-	Arnd
+
