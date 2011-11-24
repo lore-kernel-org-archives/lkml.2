@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1KXJmC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:42:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65289 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958Ab1KXJmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:42:00 -0500
-Message-ID: <4ECE1162.9080701@gmail.com>
-Date: Thu, 24 Nov 2011 17:41:54 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755243Ab1KXJpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:45:51 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:40351 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753295Ab1KXJpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:45:49 -0500
+Date: Thu, 24 Nov 2011 10:45:32 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/8] mm: memcg fixlets for 3.3
+Message-ID: <20111124094532.GF6843@cmpxchg.org>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <CAKTCnzk0Jzq+o1Qv9hOO5ssO7U_xe1ZqUaWDhWEeJAQQPjPudg@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 6/6] KVM: introduce a table to map slot id to index in
- memslots array
-References: <4ECE1037.4060300@gmail.com>
-In-Reply-To: <4ECE1037.4060300@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKTCnzk0Jzq+o1Qv9hOO5ssO7U_xe1ZqUaWDhWEeJAQQPjPudg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+On Thu, Nov 24, 2011 at 11:39:39AM +0530, Balbir Singh wrote:
+> On Wed, Nov 23, 2011 at 9:12 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >
+> > Here are some minor memcg-related cleanups and optimizations, nothing
+> > too exciting.  The bulk of the diffstat comes from renaming the
+> > remaining variables to describe a (struct mem_cgroup *) to "memcg".
+> > The rest cuts down on the (un)charge fastpaths, as people start to get
+> > annoyed by those functions showing up in the profiles of their their
+> > non-memcg workloads.  More is to come, but I wanted to get the more
+> > obvious bits out of the way.
+> 
+> Hi, Johannes
+> 
+> The renaming was a separate patch sent from Raghavendra as well, not
+> sure if you've seen it.
 
-The operation of getting dirty log is frequent when framebuffer-based
-displays are used(for example, Xwindow), so, we introduce a mapping table
-to speed up id_to_memslot()
+I did and they are already in -mm, but unless I miss something, those
+were only for memcontrol.[ch].  My patch is for the rest of mm.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- include/linux/kvm_host.h |   13 +++++++------
- virt/kvm/kvm_main.c      |    7 ++++++-
- 2 files changed, 13 insertions(+), 7 deletions(-)
+> What tests are you using to test these patches?
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 9efdf5c..8c5c303 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -239,6 +239,8 @@ struct kvm_irq_routing_table {};
- struct kvm_memslots {
- 	u64 generation;
- 	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
-+	/* The mapping table from slot id to the index in memslots[]. */
-+	int id_to_index[KVM_MEM_SLOTS_NUM];
- };
+I usually run concurrent kernbench jobs in separate memcgs as a smoke
+test with these tools:
 
- struct kvm {
-@@ -341,14 +343,13 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
- static inline struct kvm_memory_slot *
- id_to_memslot(struct kvm_memslots *slots, int id)
- {
--	int i;
-+	int index = slots->id_to_index[id];
-+	struct kvm_memory_slot *slot;
+	http://git.cmpxchg.org/?p=statutils.git;a=summary
 
--	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
--		if (slots->memslots[i].id == id)
--			return &slots->memslots[i];
-+	slot = &slots->memslots[index];
+"runtest" takes a job-spec file that looks a bit like RPM spec to
+define works with preparation and cleanup phases, and data collectors.
+The memcg kernbench job I use is in the examples directory.  You just
+need to put separate kernel source directories into place (linux-`seq
+-w 04`) and then launch it like this:
 
--	WARN_ON(1);
--	return NULL;
-+	WARN_ON(slot->id != id);
-+	return slot;
- }
+	runtest -s memcg-kernbench.load `uname -r`
 
- #define HPA_MSB ((sizeof(hpa_t) * 8) - 1)
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 6e8eb15..e289486 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -446,7 +446,7 @@ static void kvm_init_memslots_id(struct kvm *kvm)
- 	struct kvm_memslots *slots = kvm->memslots;
+which will run the test and collect memory.stat of the parent memcg
+every second, which you can then further evaluate with the other
+tools:
 
- 	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
--		slots->memslots[i].id = i;
-+		slots->id_to_index[i] = slots->memslots[i].id = i;
- }
+	readdict < `uname -r`-memory.stat.data | columns 14 15 | plot
 
- static struct kvm *kvm_create_vm(void)
-@@ -674,8 +674,13 @@ static int cmp_memslot(const void *slot1, const void *slot2)
-  */
- static void sort_memslots(struct kvm_memslots *slots)
- {
-+	int i;
-+
- 	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
- 	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
-+
-+	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-+		slots->id_to_index[slots->memslots[i].id] = i;
- }
+for example, where readdict translates the "key value" lines of
+memory.stat into tables where each value is on its own row.  Columns
+14 and 15 are total_cache and total_rss (find out with cat -n -- yeah,
+still a bit rough).  You need python-matplotlib for plot to work.
 
- void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
--- 
-1.7.7.3
+Multiple runs can be collected into the same logfiles and then fold
+ever-increasing counters with the "events" tool.  For example, to find
+the average fault count, you would do something like this (19 =
+total_pgfault, 20 = total_pgmajfault):
 
+	for x in `seq 10`; do runtest -s foo.load foo`; done
+	readdict < foo-memory.stat.data | columns 19 20 | events | mean -s
+
+Oh, and workload runtime is always recorded in NAME.time, so
+
+	events < `uname -r`.time
+
+gives you the timings of each run, which you can then further process
+with "mean" or "median" again.
