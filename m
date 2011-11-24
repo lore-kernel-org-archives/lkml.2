@@ -1,76 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1KXVOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 16:14:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32814 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab1KXVOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 16:14:05 -0500
-Date: Thu, 24 Nov 2011 22:14:03 +0100
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: George Spelvin <linux@horizon.com>, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.1-rc10 oops in nameidata_to_filp
-Message-ID: <20111124211403.GE29519@quack.suse.cz>
-References: <20111124145141.GB22640@quack.suse.cz>
- <20111124164406.22919.qmail@science.horizon.com>
- <20111124173829.GL2203@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111124173829.GL2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754436Ab1KXVVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 16:21:40 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:31253 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab1KXVVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 16:21:38 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: jamie@jamieiles.com, netdev@vger.kernel.org
+Cc: plagnioj@jcrosoft.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] at91_ether: use gpio_is_valid for phy IRQ line
+Date: Thu, 24 Nov 2011 22:21:14 +0100
+Message-Id: <1322169674-4109-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322128098-17724-1-git-send-email-jamie@jamieiles.com>
+References: <1322128098-17724-1-git-send-email-jamie@jamieiles.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-11-11 17:38:29, Al Viro wrote:
-> On Thu, Nov 24, 2011 at 11:44:06AM -0500, George Spelvin wrote:
-> 
-> > It turned out the machine was quite recoverable and I've been running it without rebooting since then.
-> > This includes several suspends to RAM and one to disk.
-> > 
-> > So far, it seems pretty reproducible, but I suppose it could be a kernel bit flip.
-> > (F***ing Intel not even *allowing* ECC in "consumer" chipsets...)
-> > 
-> > I should probably add a debugging patch and reboot.  Is there a debugging helper
-> > for printing a dentry and vfsmount?
-> 
-> d_path(); takes struct path *, pointer to buffer and buffer length, puts
-> the pathname into the end of buffer and returns a pointer to the beginning
-> of resulting string.
-> 
-> I'd add (hell, maybe start with) printing this:
-> 	file->f_path.dentry->d_inode
-> 	inode
-> 	file->f_mapping
-> 	inode->i_mapping
-> 	inode->i_mapping->host
-> just to see whether it's open() callback resetting ->f_mapping to NULL or
-> weird inode->i_mapping->host.  All in case file->f_mapping->host == NULL
-> just before the spot where it oopses.
-> 
-> Getting pathname would be something like
-> 	static char name[4096];
-> 	struct path path = {.mnt = mnt, .dentry = dentry};
-> 	char *p = d_path(&path, name, 4096);
-> 	if (IS_ERR(p))
-> 		printk("[%d]", PTR_ERR(p));
-> 	else
-> 		printk("'%s'", p);
-> conditional on the same test.  
-> 
-> Said that, I'm not buying the theory of open assigning to ->f_mapping and
-> screwing it up; all such assignments end up with ->i_mapping of *some*
-> inode, as far as I can see from cursory grep over the tree.
-  Yeah, after some thought and grepping, setting ->f_mapping to something
-bogus does not seem likely. More likely is that i_mapping got somehow
-corrupted (use after free?) or something like that.
+Use the generic gpiolib gpio_is_valid() function to test
+if the phy IRQ line GPIO is actually provided.
 
-> Just in case: do you have CONFIG_FS_POSIX_ACL set?
+For non-connected or non-existing phy IRQ lines, -EINVAL
+value is used for phy_irq_pin field of struct at91_eth_data.
 
-								Honza
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/net/ethernet/cadence/at91_ether.c |   23 +++++++++++++----------
+ 1 files changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
+index 56624d3..a1c4143 100644
+--- a/drivers/net/ethernet/cadence/at91_ether.c
++++ b/drivers/net/ethernet/cadence/at91_ether.c
+@@ -255,8 +255,7 @@ static void enable_phyirq(struct net_device *dev)
+ 	unsigned int dsintr, irq_number;
+ 	int status;
+ 
+-	irq_number = lp->board_data.phy_irq_pin;
+-	if (!irq_number) {
++	if (!gpio_is_valid(lp->board_data.phy_irq_pin)) {
+ 		/*
+ 		 * PHY doesn't have an IRQ pin (RTL8201, DP83847, AC101L),
+ 		 * or board does not have it connected.
+@@ -265,6 +264,7 @@ static void enable_phyirq(struct net_device *dev)
+ 		return;
+ 	}
+ 
++	irq_number = lp->board_data.phy_irq_pin;
+ 	status = request_irq(irq_number, at91ether_phy_interrupt, 0, dev->name, dev);
+ 	if (status) {
+ 		printk(KERN_ERR "at91_ether: PHY IRQ %d request failed - status %d!\n", irq_number, status);
+@@ -319,8 +319,7 @@ static void disable_phyirq(struct net_device *dev)
+ 	unsigned int dsintr;
+ 	unsigned int irq_number;
+ 
+-	irq_number = lp->board_data.phy_irq_pin;
+-	if (!irq_number) {
++	if (!gpio_is_valid(lp->board_data.phy_irq_pin)) {
+ 		del_timer_sync(&lp->check_timer);
+ 		return;
+ 	}
+@@ -365,6 +364,7 @@ static void disable_phyirq(struct net_device *dev)
+ 	disable_mdi();
+ 	spin_unlock_irq(&lp->lock);
+ 
++	irq_number = lp->board_data.phy_irq_pin;
+ 	free_irq(irq_number, dev);			/* Free interrupt handler */
+ }
+ 
+@@ -1077,7 +1077,7 @@ static int __init at91ether_setup(unsigned long phy_type, unsigned short phy_add
+ 	netif_carrier_off(dev);		/* will be enabled in open() */
+ 
+ 	/* If board has no PHY IRQ, use a timer to poll the PHY */
+-	if (!lp->board_data.phy_irq_pin) {
++	if (!gpio_is_valid(lp->board_data.phy_irq_pin)) {
+ 		init_timer(&lp->check_timer);
+ 		lp->check_timer.data = (unsigned long)dev;
+ 		lp->check_timer.function = at91ether_check_link;
+@@ -1169,7 +1169,8 @@ static int __devexit at91ether_remove(struct platform_device *pdev)
+ 	struct net_device *dev = platform_get_drvdata(pdev);
+ 	struct at91_private *lp = netdev_priv(dev);
+ 
+-	if (lp->board_data.phy_irq_pin >= 32)
++	if (gpio_is_valid(lp->board_data.phy_irq_pin) &&
++	    lp->board_data.phy_irq_pin >= 32)
+ 		gpio_free(lp->board_data.phy_irq_pin);
+ 
+ 	unregister_netdev(dev);
+@@ -1188,11 +1189,12 @@ static int at91ether_suspend(struct platform_device *pdev, pm_message_t mesg)
+ {
+ 	struct net_device *net_dev = platform_get_drvdata(pdev);
+ 	struct at91_private *lp = netdev_priv(net_dev);
+-	int phy_irq = lp->board_data.phy_irq_pin;
+ 
+ 	if (netif_running(net_dev)) {
+-		if (phy_irq)
++		if (gpio_is_valid(lp->board_data.phy_irq_pin)) {
++			int phy_irq = lp->board_data.phy_irq_pin;
+ 			disable_irq(phy_irq);
++		}
+ 
+ 		netif_stop_queue(net_dev);
+ 		netif_device_detach(net_dev);
+@@ -1206,7 +1208,6 @@ static int at91ether_resume(struct platform_device *pdev)
+ {
+ 	struct net_device *net_dev = platform_get_drvdata(pdev);
+ 	struct at91_private *lp = netdev_priv(net_dev);
+-	int phy_irq = lp->board_data.phy_irq_pin;
+ 
+ 	if (netif_running(net_dev)) {
+ 		clk_enable(lp->ether_clk);
+@@ -1214,8 +1215,10 @@ static int at91ether_resume(struct platform_device *pdev)
+ 		netif_device_attach(net_dev);
+ 		netif_start_queue(net_dev);
+ 
+-		if (phy_irq)
++		if (gpio_is_valid(lp->board_data.phy_irq_pin)) {
++			int phy_irq = lp->board_data.phy_irq_pin;
+ 			enable_irq(phy_irq);
++		}
+ 	}
+ 	return 0;
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.5.4
+
