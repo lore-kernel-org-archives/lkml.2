@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab1KXHtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 02:49:09 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:59465
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752994Ab1KXHtH (ORCPT
+	id S1752901Ab1KXHzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 02:55:32 -0500
+Received: from gate.crashing.org ([63.228.1.57]:56020 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab1KXHzb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 02:49:07 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz936eK1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Li Yang-R58472 <r58472@freescale.com>
-To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        Liu Shuo-B35362 <B35362@freescale.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-Thread-Topic: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-Thread-Index: AQHMqkxsR1hJSS+pyE+oUyIsXX6iVZW8CQcA//+cmWA=
-Date: Thu, 24 Nov 2011 07:49:03 +0000
-Message-ID: <3F607A5180246847A760FD34122A1E052DC61F@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <1322095306-13156-1-git-send-email-b35362@freescale.com>
-	 <1322095306-13156-3-git-send-email-b35362@freescale.com>
- <1322120515.24797.296.camel@sauron.fi.intel.com>
-In-Reply-To: <1322120515.24797.296.camel@sauron.fi.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.80]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Thu, 24 Nov 2011 02:55:31 -0500
+Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com>
+Date: Thu, 24 Nov 2011 01:55:16 -0600
+Cc: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org>
+References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net> <4EBD4FB8.2020406@freescale.com> <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net> <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com>
+To: Tabi Timur-B04825 <B04825@freescale.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAO7nGwV012656
 
-> Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
-> large-page Nand chip
+
+On Nov 15, 2011, at 9:02 PM, Tabi Timur-B04825 wrote:
+
+> On Mon, Nov 14, 2011 at 2:55 AM, Kokoris, Ioannis
+> <ioannis.kokoris@siemens-enterprise.com> wrote:
+>> Ready register is needed for ROM-less devices such as P1021, MPC859, MPC8306 etc.
+>> For ROM-based devices such as MCP8323 the Ready register does not exist.
+>> Is there a global definition for conditionally including this code?
 > 
-> On Thu, 2011-11-24 at 08:41 +0800, b35362@freescale.com wrote:
-> > +               /*
-> > +                * Freescale FCM controller has a 2K size limitation of buffer
-> > +                * RAM, so elbc_fcm_ctrl->buffer have to be used if writesize
-> > +                * of chip is greater than 2048.
-> > +                * We malloc a large enough buffer (maximum page size is
-> 16K).
-> > +                */
-> > +               elbc_fcm_ctrl->buffer = kmalloc(1024 * 16 + 1024,
-> GFP_KERNEL);
-> 
-> Are there NANDs with 16KiB page size?
+> I'll have to check.  But this patch can't be applied as-is unless it's
+> proven safe for all QE-enabled chips.
 
-We are not sure, but are there possibility that chip with 16K page will appear?  Or maybe we can add a MACRO for the maximum page size?
+Any update on trying this on a MPC8323?
 
-- Leo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+- k
