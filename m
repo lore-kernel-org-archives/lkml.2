@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab1KXIzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 03:55:40 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:47850 "EHLO zene.cmpxchg.org"
+	id S1754172Ab1KXJET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:04:19 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38677 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab1KXIzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 03:55:39 -0500
-Date: Thu, 24 Nov 2011 09:55:33 +0100
+	id S1753915Ab1KXJEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:04:16 -0500
+Date: Thu, 24 Nov 2011 10:04:09 +0100
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
         Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 7/8] mm: memcg: modify PageCgroupAcctLRU non-atomically
-Message-ID: <20111124085532.GB6843@cmpxchg.org>
+Subject: Re: [patch 5/8] mm: memcg: remove unneeded checks from
+ newpage_charge()
+Message-ID: <20111124090409.GC6843@cmpxchg.org>
 References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-8-git-send-email-hannes@cmpxchg.org>
- <20111124090915.2f6e2e2c.kamezawa.hiroyu@jp.fujitsu.com>
+ <1322062951-1756-6-git-send-email-hannes@cmpxchg.org>
+ <20111124090443.d3f720c5.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111124090915.2f6e2e2c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111124090443.d3f720c5.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 09:09:15AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 23 Nov 2011 16:42:30 +0100
+On Thu, Nov 24, 2011 at 09:04:43AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 23 Nov 2011 16:42:28 +0100
 > Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
 > > From: Johannes Weiner <jweiner@redhat.com>
 > > 
-> > This bit is protected by zone->lru_lock, there is no need for locked
-> > operations when setting and clearing it.
+> > All callsites pass in freshly allocated pages and a valid mm.  As a
+> > result, all checks pertaining the page's mapcount, page->mapping or
+> > the fallback to init_mm are unneeded.
 > > 
 > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 > 
-> This atomic ops are for avoiding race with other ops as lock_page_cgroup().
-> Or other Set/ClearPageCgroup....
+> Hmm, it's true now. But for making clear our assumption to all readers of code,
 > 
-> Do I misunderstand atomic ops v.s. non-atomic ops race ?
+> could you add
+> VM_BUG_ON(!mm || page_mapped(page) || (page->mapping && !PageAnon(page)) ?
 
-Nope, you are spot-on.  I'm the cretin. ;-) See my reply to Hugh's
-email.
+Of course.  Please find the delta patch below.  I broke them up into
+three separate checks to make the problem easier to find if the BUG
+triggers.
+
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Thank you.
+
+---
+From: Johannes Weiner <jweiner@redhat.com>
+Subject: mm: memcg: remove unneeded checks from newpage_charge() fix
+
+Document page state assumptions and catch if they are violated in
+newpage_charge().
+
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+---
+ mm/memcontrol.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 0d10be4..f338018 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2679,6 +2679,9 @@ int mem_cgroup_newpage_charge(struct page *page,
+ {
+ 	if (mem_cgroup_disabled())
+ 		return 0;
++	VM_BUG_ON(page_mapped(page));
++	VM_BUG_ON(page->mapping && !PageAnon(page));
++	VM_BUG_ON(!mm);
+ 	return mem_cgroup_charge_common(page, mm, gfp_mask,
+ 					MEM_CGROUP_CHARGE_TYPE_MAPPED);
+ }
+-- 
+1.7.6.4
