@@ -1,99 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab1KXFuA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 00:50:00 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60079 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1KXFt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 00:49:59 -0500
-Message-ID: <4ECDDB04.5050307@gmail.com>
-Date: Wed, 23 Nov 2011 23:49:56 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752272Ab1KXFwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 00:52:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26022 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab1KXFwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 00:52:34 -0500
+Message-ID: <4ECDDB86.5000208@redhat.com>
+Date: Thu, 24 Nov 2011 13:52:06 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: pata_jmicron triggers warning in PCIe code
-References: <20111123144344.GA5116@zod.bos.redhat.com>
-In-Reply-To: <20111123144344.GA5116@zod.bos.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-mm@kvack.org
+Subject: Re: [V3 PATCH 1/2] tmpfs: add fallocate support
+References: <1322038412-29013-1-git-send-email-amwang@redhat.com>	<20111124105245.b252c65f.kamezawa.hiroyu@jp.fujitsu.com>	<CAHGf_=oD0Coc=k5kAAQoP=GqK+nc0jd3qq3TmLZaitSjH-ZPmQ@mail.gmail.com>	<20111124120126.9361b2c9.kamezawa.hiroyu@jp.fujitsu.com>	<4ECDB87A.90106@redhat.com> <20111124132349.ca862c9e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111124132349.ca862c9e.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 08:43 AM, Josh Boyer wrote:
-> Hi,
->
-> We have a report of the pata_jmicron driver hitting the following
-> warning in the 3.1.x kernel series:
->
-> WARNING: at drivers/pci/search.c:44 pci_find_upstream_pcie_bridge+0x56/0x6f()
-> Hardware name: System Product Name
-> Modules linked in: pata_jmicron(+)
-> Pid: 256, comm: modprobe Not tainted 3.1.1-1.fc16.x86_64 #1
-> Call Trace:
->   [<ffffffff81057a1e>] warn_slowpath_common+0x83/0x9b
->   [<ffffffff81057a50>] warn_slowpath_null+0x1a/0x1c
->   [<ffffffff81241643>] pci_find_upstream_pcie_bridge+0x56/0x6f
->   [<ffffffff814b45d4>] get_domain_for_dev.part.9.constprop.13+0x2e/0x47f
->   [<ffffffff814b4bf9>] __get_valid_domain_for_dev+0x2c/0xa0
->   [<ffffffff813c1ca3>] __intel_map_single+0x5a/0x172
->   [<ffffffff811103e8>] ? alloc_pages_current+0xc7/0xd8
->   [<ffffffff813c1eb7>] intel_alloc_coherent+0xc7/0xee
->   [<ffffffff812e7612>] ? dmam_noncoherent_release+0x1b/0x1b
->   [<ffffffff812e757c>] dma_alloc_coherent+0x80/0x82
->   [<ffffffff812e7721>] dmam_alloc_coherent+0x58/0x9c
->   [<ffffffff81317e88>] ata_bmdma_port_start+0x43/0x58
->   [<ffffffff81309ef6>] ata_host_start+0xdd/0x168
->   [<ffffffff813184fd>] ? __ata_sff_interrupt+0x179/0x179
->   [<ffffffff81318709>] ata_pci_sff_activate_host+0x36/0x1e0
->   [<ffffffff813c2b1f>] ? pcibios_set_master+0x88/0x8f
->   [<ffffffff81318bc7>] ata_pci_bmdma_init_one+0xc2/0xf8
->   [<ffffffffa0000032>] jmicron_init_one+0x32/0x34 [pata_jmicron]
->   [<ffffffff8123fce7>] local_pci_probe+0x44/0x75
->   [<ffffffff8124084a>] pci_device_probe+0xd0/0xff
->   [<ffffffff812dea17>] driver_probe_device+0x131/0x213
->   [<ffffffff812deb53>] __driver_attach+0x5a/0x7e
->   [<ffffffff812deaf9>] ? driver_probe_device+0x213/0x213
->   [<ffffffff812dda9f>] bus_for_each_dev+0x53/0x89
->   [<ffffffff812de5f6>] driver_attach+0x1e/0x20
->   [<ffffffff812de21a>] bus_add_driver+0xd1/0x224
->   [<ffffffffa0002000>] ? 0xffffffffa0001fff
->   [<ffffffff812deff7>] driver_register+0x98/0x105
->   [<ffffffffa0002000>] ? 0xffffffffa0001fff
->   [<ffffffff8124110d>] __pci_register_driver+0x56/0xc1
->   [<ffffffffa0002000>] ? 0xffffffffa0001fff
->   [<ffffffffa000201e>] jmicron_init+0x1e/0x20 [pata_jmicron]
->   [<ffffffff81002099>] do_one_initcall+0x7f/0x136
->   [<ffffffff8108a595>] sys_init_module+0x88/0x1d0
->   [<ffffffff814bd8c2>] system_call_fastpath+0x16/0x1b
->
-> That boils down to the following check:
->
->                  /* PCI device should connect to a PCIe bridge */
->                  if (pdev->pcie_type != PCI_EXP_TYPE_PCI_BRIDGE) {
->                          /* Busted hardware? */
->                          WARN_ON_ONCE(1);
->                          return NULL;
->                  }
->
-> I don't recall seeing reports of this on the 3.0 kernel.  Should we add
-> some debugging code to print out what pdev->pcie_type is set to here?
-> Without knowing that, I can't tell if it's actually finding something weird
-> about the hardware, or memory corruption that seems to hit here.
->
-> The user has hit it about 3 times thus far, so they can at least recreate
-> it fairly easily.
->
-> Any other ideas?
+于 2011年11月24日 12:23, KAMEZAWA Hiroyuki 写道:
+> 
+> thank you for checking. So, at failure path, original data should not be
+> cleared, either.
+> 
 
-Well, I don't think it has anything to do with the driver. It seems like 
-the code is trying to go from the PCI device up the chain of PCI bridges 
-until it finds a PCI-E device that's a bridge. The warning indicates 
-that the first PCI-E device it found didn't seem to be a bridge.
-
-Can we get the output of "lspci -vv" on this machine?
-
+Yes, sure, I will fix that.
