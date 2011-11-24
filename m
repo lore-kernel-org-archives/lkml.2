@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab1KXKax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:30:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44485 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab1KXKav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:30:51 -0500
-Date: Thu, 24 Nov 2011 11:30:49 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/8] mm: memcg: remove unneeded checks from
- newpage_charge()
-Message-ID: <20111124103049.GG26036@tiehlicka.suse.cz>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-6-git-send-email-hannes@cmpxchg.org>
- <20111124090443.d3f720c5.kamezawa.hiroyu@jp.fujitsu.com>
- <20111124090409.GC6843@cmpxchg.org>
+	id S1755789Ab1KXKdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:33:11 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51745 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab1KXKdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 05:33:09 -0500
+Date: Thu, 24 Nov 2011 10:32:56 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Wan ZongShun <mcuos.com@gmail.com>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] ARM: add subname parameter to mfp_set_groupg callers
+Message-ID: <20111124103256.GE22232@flint.arm.linux.org.uk>
+References: <1322103983.16201.7.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111124090409.GC6843@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322103983.16201.7.camel@phoenix>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-11-11 10:04:09, Johannes Weiner wrote:
-> On Thu, Nov 24, 2011 at 09:04:43AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Wed, 23 Nov 2011 16:42:28 +0100
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > From: Johannes Weiner <jweiner@redhat.com>
-> > > 
-> > > All callsites pass in freshly allocated pages and a valid mm.  As a
-> > > result, all checks pertaining the page's mapcount, page->mapping or
-> > > the fallback to init_mm are unneeded.
-> > > 
-> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > Hmm, it's true now. But for making clear our assumption to all readers of code,
-> > 
-> > could you add
-> > VM_BUG_ON(!mm || page_mapped(page) || (page->mapping && !PageAnon(page)) ?
+On Thu, Nov 24, 2011 at 11:06:23AM +0800, Axel Lin wrote:
+> commit 798681bf "ARM: 7158/1: add new MFP implement for NUC900"
+> adds subname parameter for mfp_set_groupg.
 > 
-> Of course.  Please find the delta patch below.  I broke them up into
-> three separate checks to make the problem easier to find if the BUG
-> triggers.
-
-sounds reasonable.
-
+> Thus add subname parameter to the callers.
 > 
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Thank you.
-> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > ---
-> From: Johannes Weiner <jweiner@redhat.com>
-> Subject: mm: memcg: remove unneeded checks from newpage_charge() fix
-> 
-> Document page state assumptions and catch if they are violated in
-> newpage_charge().
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> commit 798681bf is in Russell King's tree,
 
-I assume you are going to fold it into the previous one.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+It's in mainline as of 20th November.
 
-> ---
->  mm/memcontrol.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 0d10be4..f338018 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2679,6 +2679,9 @@ int mem_cgroup_newpage_charge(struct page *page,
->  {
->  	if (mem_cgroup_disabled())
->  		return 0;
-> +	VM_BUG_ON(page_mapped(page));
-> +	VM_BUG_ON(page->mapping && !PageAnon(page));
-> +	VM_BUG_ON(!mm);
->  	return mem_cgroup_charge_common(page, mm, gfp_mask,
->  					MEM_CGROUP_CHARGE_TYPE_MAPPED);
->  }
-> -- 
-> 1.7.6.4
+> I think this patch should route via Russell's tree.
+> This patch is against linux-next 20111123.
+
+Is there a reason why this isn't copied to linux-arm-kernel ?
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
