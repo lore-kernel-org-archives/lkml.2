@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1KXHSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 02:18:50 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:18989 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab1KXHSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 02:18:48 -0500
-Date: Thu, 24 Nov 2011 10:17:16 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Jim Keniston <jkenisto@us.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] uprobes: add_utask() returns an ERR_PTR() not NULL
-Message-ID: <20111124071716.GA14122@elgon.mountain>
-MIME-Version: 1.0
+	id S1754263Ab1KXHTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 02:19:19 -0500
+Received: from gate.crashing.org ([63.228.1.57]:37467 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751450Ab1KXHTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 02:19:18 -0500
+Subject: Re: [PATCH 8/9] arch/powerpc/sysdev/ehv_pic.c: add missing kfree
+Mime-Version: 1.0 (Apple Message framework v1251.1)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4ECDEF95.0002,ss=1,re=0.000,fgs=0
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1312802283-9107-8-git-send-email-julia@diku.dk>
+Date: Thu, 24 Nov 2011 01:16:59 -0600
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Timur Tabi <timur@freescale.com>,
+        Ashish Kalra <ashish.kalra@freescale.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <3C33B018-7DA9-4818-A569-E3030ED993EE@kernel.crashing.org>
+References: <1312802283-9107-8-git-send-email-julia@diku.dk>
+To: Julia Lawall <julia@diku.dk>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to check for IS_ERR() here (add_utask() never returns NULL).
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Aug 8, 2011, at 6:18 AM, Julia Lawall wrote:
 
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 2493191..3360057 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -1387,8 +1387,10 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 		if (!utask) {
- 			utask = add_utask();
- 			/* Cannot Allocate; re-execute the instruction. */
--			if (!utask)
-+			if (IS_ERR(utask)) {
-+				utask = NULL;
- 				goto cleanup_ret;
-+			}
- 		}
- 		utask->active_uprobe = u;
- 		handler_chain(u, regs);
+> From: Julia Lawall <julia@diku.dk>
+> 
+> At this point, ehv_pic has been allocated but not stored anywhere, so it
+> should be freed before leaving the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @exists@
+> local idexpression x;
+> statement S,S1;
+> expression E;
+> identifier fl;
+> expression *ptr != NULL;
+> @@
+> 
+> x = \(kmalloc\|kzalloc\|kcalloc\)(...);
+> ...
+> if (x == NULL) S
+> <... when != x
+>     when != if (...) { <+...kfree(x)...+> }
+>     when any
+>     when != true x == NULL
+> x->fl
+> ...>
+> (
+> if (x == NULL) S1
+> |
+> if (...) { ... when != x
+>               when forall
+> (
+> return \(0\|<+...x...+>\|ptr\);
+> |
+> * return ...;
+> )
+> }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> arch/powerpc/sysdev/ehv_pic.c |    1 +
+> 1 file changed, 1 insertion(+)
+
+applied to next
+
+- k
