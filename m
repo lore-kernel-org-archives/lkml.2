@@ -1,39 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab1KXBwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 20:52:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52727 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab1KXBwM (ORCPT
+	id S1753984Ab1KXBx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 20:53:56 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48127 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab1KXBxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 20:52:12 -0500
-Date: Wed, 23 Nov 2011 17:52:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miao Xie <miaox@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-In-Reply-To: <4ECD9D43.6090202@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1111231751480.9042@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com>
- <4ECC5FC8.9070500@cn.fujitsu.com> <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com> <4ECC7B1E.6020108@cn.fujitsu.com> <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com> <4ECCA578.6020700@cn.fujitsu.com>
- <alpine.DEB.2.00.1111231425030.5261@chino.kir.corp.google.com> <4ECD9D43.6090202@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 23 Nov 2011 20:53:55 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 24 Nov 2011 10:52:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [V3 PATCH 1/2] tmpfs: add fallocate support
+Message-Id: <20111124105245.b252c65f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+References: <1322038412-29013-1-git-send-email-amwang@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Nov 2011, Miao Xie wrote:
 
-> Memory compaction will see an empty nodemask and do nothing, and then
-> we may fail to get several contiguous pages.
+I have a question.
+
+On Wed, 23 Nov 2011 16:53:30 +0800
+Cong Wang <amwang@redhat.com> wrote:
+
+> Systemd needs tmpfs to support fallocate [1], to be able
+> to safely use mmap(), regarding SIGBUS, on files on the
+> /dev/shm filesystem. The glibc fallback loop for -ENOSYS
+> on fallocate is just ugly.
 > 
+> This patch adds fallocate support to tmpfs, and as we
+> already have shmem_truncate_range(), it is also easy to
+> add FALLOC_FL_PUNCH_HOLE support too.
+> 
+> 1. http://lkml.org/lkml/2011/10/20/275
+> 
+> V2->V3:
+> a) Read i_size directly after holding i_mutex;
+> b) Call page_cache_release() too after shmem_getpage();
+> c) Undo previous changes when -ENOSPC.
+> 
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Lennart Poettering <lennart@poettering.net>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> 
+> ---
+>  mm/shmem.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 65 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index d672250..65f7a27 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/export.h>
+>  #include <linux/swap.h>
+> +#include <linux/falloc.h>
+>  
+>  static struct vfsmount *shm_mnt;
+>  
+> @@ -1431,6 +1432,69 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
+>  	return error;
+>  }
+>  
+> +static void shmem_truncate_page(struct inode *inode, pgoff_t index)
+> +{
+> +	loff_t start = index << PAGE_CACHE_SHIFT;
+> +	loff_t end = ((index + 1) << PAGE_CACHE_SHIFT) - 1;
+> +	shmem_truncate_range(inode, start, end);
+> +}
+> +
+> +static long shmem_fallocate(struct file *file, int mode,
+> +				loff_t offset, loff_t len)
+> +{
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+> +	pgoff_t start = offset >> PAGE_CACHE_SHIFT;
+> +	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
+> +	pgoff_t index = start;
+> +	loff_t i_size;
+> +	struct page *page = NULL;
+> +	int ret = 0;
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +	i_size = inode->i_size;
+> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
+> +		if (!(offset > i_size || (end << PAGE_CACHE_SHIFT) > i_size))
+> +			shmem_truncate_range(inode, offset,
+> +					     (end << PAGE_CACHE_SHIFT) - 1);
+> +		goto unlock;
+> +	}
+> +
+> +	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
+> +		ret = inode_newsize_ok(inode, (offset + len));
+> +		if (ret)
+> +			goto unlock;
+> +	}
+> +
+> +	while (index < end) {
+> +		ret = shmem_getpage(inode, index, &page, SGP_WRITE, NULL);
 
-Where do we rely on a consistent nodemask for memory compaction?
+If the 'page' for index exists before this call, this will return the page without
+allocaton.
+
+Then, the page may not be zero-cleared. I think the page should be zero-cleared.
+But I'm not sure when we do zero-clear them.
+
+But I'm not sure how fallocate should work at error.
+Assume  some block already exists before fallocate(), possible side-effect will be
+ - the contents will be zero-cleared even if fallocate fails.
+ - the contents will be deallocated in undo path if fallocate fails.
+?
+maybe updates to man(2) fallocate will be appreciated...
+
+Anyway, don't you need zero-clear when you find an existing pages here ?
+
+Thanks,
+-Kame
+
