@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab1KXB5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 20:57:45 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:36634
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753665Ab1KXB5m (ORCPT
+	id S1754633Ab1KXCD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 21:03:56 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46460 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab1KXCDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 20:57:42 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: <b35362@freescale.com>
-To: <dwmw2@infradead.org>, <Artem.Bityutskiy@nokia.com>,
-        <scottwood@freescale.com>
-CC: <linux-mtd@lists.infradead.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>
-Subject: [PATCH 2/3] mtd/nand : set correct length to FBCR for a non-full-page write
-Date: Thu, 24 Nov 2011 08:41:45 +0800
-Message-ID: <1322095306-13156-2-git-send-email-b35362@freescale.com>
-X-Mailer: git-send-email 1.6.4
-In-Reply-To: <1322095306-13156-1-git-send-email-b35362@freescale.com>
-References: <1322095306-13156-1-git-send-email-b35362@freescale.com>
+	Wed, 23 Nov 2011 21:03:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Reply-To: myungjoo.ham@gmail.com
+Date: Thu, 24 Nov 2011 11:03:53 +0900
+X-Google-Sender-Auth: vbdmdEv_BskdrzakmuIjfn5QYis
+Message-ID: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+Subject: [RFC PATCH 0/3] introduce: Multistate Switch Class
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>, MyungJoo Ham <myungjoo.ham@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Shuo <b35362@freescale.com>
+For switch ports, which may have different types of cables
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-When we do a non-full-page write, the length be set to FBCR should
-not be 'elbc_fcm_ctrl->index', it should be 'elbc_fcm_ctrl->index -
-elbc_fcm_ctrl->column'.
+For example, when MAX8997-MUIC detects a Charger cable insertion, another
+device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
+or board file) needs to set charger current limit accordingly and when
+MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
+need to do some operations accordingly.
 
-Signed-off-by: Liu Shuo <b35362@freescale.com>
-Signed-off-by: Li Yang <leoli@freescale.com>
----
- drivers/mtd/nand/fsl_elbc_nand.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+This patchset supports the usage of notifier for passing such information
+between device drivers.
 
-diff --git a/drivers/mtd/nand/fsl_elbc_nand.c b/drivers/mtd/nand/fsl_elbc_nand.c
-index 6fce7da..d634c5f 100644
---- a/drivers/mtd/nand/fsl_elbc_nand.c
-+++ b/drivers/mtd/nand/fsl_elbc_nand.c
-@@ -474,7 +474,8 @@ static void fsl_elbc_cmdfunc(struct mtd_info *mtd, unsigned int command,
- 		 */
- 		if (elbc_fcm_ctrl->oob || elbc_fcm_ctrl->column != 0 ||
- 		    elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize)
--			out_be32(&lbc->fbcr, elbc_fcm_ctrl->index);
-+			out_be32(&lbc->fbcr,
-+				elbc_fcm_ctrl->index - elbc_fcm_ctrl->column);
- 		else
- 			out_be32(&lbc->fbcr, 0);
- 
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides, the state
+(Attached or Detached) of each cable may alter independently.
+
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
+
+Donggeun Kim (1):
+  Multistate Switch Class: add notifier block
+
+MyungJoo Ham (2):
+  Multistate Switch Class: import Android's switch class and modify.
+  Multistate Switch Class: support multiple states at a device.
+
+ drivers/Makefile            |    1 +
+ drivers/misc/Kconfig        |   21 +++
+ drivers/misc/Makefile       |    2 +
+ drivers/misc/switch_class.c |  332 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/switch_gpio.c  |  174 ++++++++++++++++++++++
+ include/linux/switch.h      |  164 +++++++++++++++++++++
+ 6 files changed, 694 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/switch_class.c
+ create mode 100644 drivers/misc/switch_gpio.c
+ create mode 100644 include/linux/switch.h
+
 -- 
-1.7.1
-
-
+1.7.4.1
