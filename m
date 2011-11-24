@@ -1,227 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1KXMA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 07:00:57 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50546 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab1KXMA4 (ORCPT
+	id S1754122Ab1KXMFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 07:05:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57166 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753786Ab1KXMFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 07:00:56 -0500
-Date: Thu, 24 Nov 2011 16:00:51 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [RFC] prctl: Add PR_ codes to restore vDSO and tune up mm_struct
- entires
-Message-ID: <20111124120051.GV1820@moon>
+	Thu, 24 Nov 2011 07:05:45 -0500
+Date: Thu, 24 Nov 2011 12:05:42 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v8
+Message-ID: <20111124120541.GG8470@opensource.wolfsonmicro.com>
+References: <1321607994.10344.20.camel@dhruva>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1321607994.10344.20.camel@dhruva>
+X-Cookie: Beware of Bigfoot!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing restore of a task we need to setup vDSO at predefined address
-unmapping current one and tune up mm_struct members which are set at Elf
-loading stage.
+On Fri, Nov 18, 2011 at 02:49:54PM +0530, Ashish Jangam wrote:
 
-So I would like to know what people think about the patch below? Maybe I
-miss something and we already have some convenient way to deal with it?
+There's still a few issues in here.  It'd be very much easier to review
+this stuff if you split the patch down into smaller patches, for example
+having the ADC, SPI and I2C as separate patches.  The bigger each
+individual e-mail is the more work it is to review.
 
-Complains are highly appreciated!
+Please also try to fix whatever problems you're having posting patch
+serieses - this claims to be patch 1/11 but it looked like only patches
+numbered 1, 4 and 5 got posted and none of those were threaded together.
 
----
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-Date: Tue, 22 Nov 2011 21:08:43 +0400
-Subject: [PATCH] prctl: Add PR_ codes to restore vDSO and tune up mm_struct entires
+> +int da9052_adc_manual_read(struct da9052 *da9052, unsigned char channel)
+> +{
+> +	struct da9052_auxadc_req *req;
+> +	int ret;
+> +	unsigned short calc_data;
+> +	unsigned short data;
+> +	unsigned char mux_sel;
+> +
+> +	req = kzalloc(sizeof(*req), GFP_KERNEL);
+> +	if (!req)
+> +		return -ENOMEM;
 
-To be able to use vDSO facility at process restore time we need it
-being mapped at predefined address (at the address it had at checkpoint
-time). For this sake PR_SETUP_VDSO_AT is introduced.
+This function sometimes returns errnos but at other times...
 
-Same time a few members in mm_struct are set up by a binfmt
-handler code, such as mm_struct -> start_code, end_code,
-start_data, end_data, start_stack, start_brk, brk. So at
-restore time we need them to have exactly the same values
-as they had at checkpoint time. This is handled by PR_SET_MM
-prctl opcode.
+> +	ret = da9052_reg_read(da9052, DA9052_ADC_RES_H_REG);
+> +	if (ret < 0)
+> +		return IRQ_NONE;
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- arch/x86/vdso/vma.c   |   39 +++++++++++++++++++++++++++
- include/linux/prctl.h |   18 ++++++++++++
- kernel/sys.c          |   71 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 128 insertions(+), 0 deletions(-)
+...it returns irqreturn_t values.  In the above case I'd *really* expect
+to see the error from the return passed back to the caller.  It also
+looks like this error case returns with the auxadc_lock held which is
+going to deadlock the next time someone tries to use the ADC - the same
+problem exists for some other code.
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 153407c..e0f03da 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -137,6 +137,45 @@ up_fail:
- 	return ret;
- }
- 
-+int arch_setup_additional_pages_at(void *addr)
-+{
-+	struct mm_struct *mm = current->mm;
-+	int ret;
-+
-+	if (!vdso_enabled)
-+		return 0;
-+
-+	if ((unsigned long)addr > TASK_SIZE - vdso_size)
-+		return -ENOMEM;
-+
-+	if ((unsigned long)addr & ~PAGE_MASK)
-+		return -EINVAL;
-+
-+	down_write(&mm->mmap_sem);
-+
-+	/*
-+	 * Unmap previous entry.
-+	 */
-+	if (mm->context.vdso) {
-+		ret = do_munmap(mm, (unsigned long)mm->context.vdso, vdso_size);
-+		if (ret)
-+			goto err;
-+	}
-+
-+	mm->context.vdso = addr;
-+	ret = install_special_mapping(mm, (unsigned long)addr, vdso_size,
-+				      VM_READ | VM_EXEC |
-+				      VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC |
-+				      VM_ALWAYSDUMP,
-+				      vdso_pages);
-+	if (ret)
-+		mm->context.vdso = NULL;
-+
-+err:
-+	up_write(&mm->mmap_sem);
-+	return ret;
-+}
-+
- static __init int vdso_setup(char *s)
- {
- 	vdso_enabled = simple_strtoul(s, NULL, 0);
-diff --git a/include/linux/prctl.h b/include/linux/prctl.h
-index a3baeb2..dddacb0 100644
---- a/include/linux/prctl.h
-+++ b/include/linux/prctl.h
-@@ -102,4 +102,22 @@
- 
- #define PR_MCE_KILL_GET 34
- 
-+/*
-+ * Tune up process memory map specifics.
-+ */
-+#define PR_SET_MM		35
-+# define PR_SET_MM_START_CODE		1
-+# define PR_SET_MM_END_CODE		2
-+# define PR_SET_MM_START_DATA		3
-+# define PR_SET_MM_END_DATA		4
-+# define PR_SET_MM_START_STACK		5
-+# define PR_SET_MM_START_BRK		6
-+# define PR_SET_MM_BRK			7
-+
-+/*
-+ * Unmap current vDSO and setup new one
-+ * at predefined address.
-+ */
-+#define PR_SETUP_VDSO_AT	36
-+
- #endif /* _LINUX_PRCTL_H */
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 481611f..96ee568 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -123,6 +123,12 @@ EXPORT_SYMBOL(cad_pid);
- 
- void (*pm_power_off_prepare)(void);
- 
-+#ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
-+extern int arch_setup_additional_pages_at(void *addr);
-+#else
-+static int arch_setup_additional_pages_at(void *addr) { return 0; }
-+#endif
-+
- /*
-  * Returns true if current's euid is same as p's uid or euid,
-  * or has CAP_SYS_NICE to p's user_ns.
-@@ -1841,6 +1847,71 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 			else
- 				error = PR_MCE_KILL_DEFAULT;
- 			break;
-+		case PR_SETUP_VDSO_AT:
-+			if (arg3 | arg4 | arg5)
-+				return -EINVAL;
-+
-+			if (!capable(CAP_SYS_ADMIN))
-+				return -EPERM;
-+
-+#ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
-+			error = arch_setup_additional_pages_at((void *)arg2);
-+#else
-+			error = -ENOSYS;
-+#endif
-+			break;
-+		case PR_SET_MM: {
-+			struct mm_struct *mm;
-+			struct vm_area_struct *vma;
-+
-+			if (arg4 | arg5)
-+				return -EINVAL;
-+
-+			if (!capable(CAP_SYS_ADMIN))
-+				return -EPERM;
-+
-+			error = -ENOENT;
-+			mm = get_task_mm(current);
-+			if (!mm)
-+				return error;
-+
-+			down_read(&mm->mmap_sem);
-+			vma = find_vma(mm, arg3);
-+			if (!vma)
-+				goto out;
-+
-+			error = 0;
-+			switch (arg2) {
-+			case PR_SET_MM_START_CODE:
-+				current->mm->start_code = arg3;
-+				break;
-+			case PR_SET_MM_END_CODE:
-+				current->mm->end_code = arg3;
-+				break;
-+			case PR_SET_MM_START_DATA:
-+				current->mm->start_data = arg3;
-+				break;
-+			case PR_SET_MM_END_DATA:
-+				current->mm->end_data = arg3;
-+				break;
-+			case PR_SET_MM_START_STACK:
-+				current->mm->start_stack = arg3;
-+				break;
-+			case PR_SET_MM_START_BRK:
-+				current->mm->start_brk = arg3;
-+				break;
-+			case PR_SET_MM_BRK:
-+				current->mm->brk = arg3;
-+				break;
-+			default:
-+				error = -EINVAL;
-+				break;
-+			}
-+out:
-+			up_read(&mm->mmap_sem);
-+			mmput(mm);
-+			break;
-+		}
- 		default:
- 			error = -EINVAL;
- 			break;
--- 
-1.7.7.3
+> +int da9052_add_regulator_devices(struct da9052 *da9052,
+> +				  struct da9052_pdata *pdata)
+> +{
+> +	struct platform_device *pdev;
+> +	int i, ret;
+> +
+> +	for (i = 0; i < pdata->num_regulators; i++) {
+> +		pdev = platform_device_alloc("da9052-regulator", i);
+> +		if (!pdev)
+> +			return -ENOMEM;
+> +
+> +		pdev->dev.parent = da9052->dev;
+> +		ret = platform_device_add(pdev);
+> +		if (ret) {
+> +			platform_device_put(pdev);
+> +			return ret;
+> +		}
 
+As I think has been previously said it's better style to unconditionally
+register all the regulators the device has.  The core should cope fine
+with missing platform data and this gives readback support for the
+regulators that aren't software configured yet.
+
+> +static struct mfd_cell __initdata da9052_subdev_info[] = {
+> +	{"da9052-onkey", .resources = &da9052_onkey_resource,
+> +	 .num_resources = 1},
+
+Spaces around the { }.
+
+> +	ret = request_threaded_irq(pdata->irq_base + 13,
+> +				   NULL, da9052_auxadc_irq,
+
+Should replace the magic number with a define.
+
+> +	da9052_i2c->bustype = BUS_I2C;
+
+bustype should be redundant now, it certianly doesn't seem to be
+referred to in this patch.
+
+> +/*
+> + * Interrupt controller support for Dilaog DA9052 PMICs.
+
+This looks very much like it could be replaced with regmap-irq.  The
+code would be slightly less efficient due to the support for sparse
+interrupt registers but it'd be less code.
+
+> +static struct spi_driver da9053_ba_spi_driver = {
+> +	.probe = da9052_spi_probe,
+> +	.remove = __devexit_p(da9052_spi_remove),
+> +	.driver = {
+> +		.name = "da9053-ba",
+> +		.bus = &spi_bus_type,
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +
+> +static struct spi_driver da9053_bb_spi_driver = {
+
+Use spi_device_id rather than registering multiple driver instances.
