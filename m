@@ -1,33 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab1KXQ31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 11:29:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44397 "EHLO
+	id S1756593Ab1KXQfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 11:35:15 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44492 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab1KXQ30 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752268Ab1KXQfN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 11:29:26 -0500
-Message-ID: <1322152152.2921.64.camel@twins>
-Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, jbottomley@parallels.com, fweisbec@gmail.com
-Date: Thu, 24 Nov 2011 17:29:12 +0100
-In-Reply-To: <4ECE6BC4.7090600@parallels.com>
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
-	  <1320182360-20043-15-git-send-email-glommer@parallels.com>
-	  <4EBD94A0.9070703@google.com> <4EBE4A80.6090607@parallels.com>
-	  <CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
-	  <CAKTCnzkFb2rRyOJ3Uxt13mXrB-9Ox=zgXAOZ5bZ_6Kwr64AbTA@mail.gmail.com>
-	  <20111117085251.443fefa5.kamezawa.hiroyu@jp.fujitsu.com>
-	  <4EC47632.2000904@parallels.com>
-	  <CAKTCnznzpqUbMJEMwaewwjvMW1fG0J3=a8JxqKiHKNuffO7azg@mail.gmail.com>
-	  <4EC52F32.2040708@parallels.com>
-	  <20111121105957.9c85db16.kamezawa.hiroyu@jp.fujitsu.com>
-	 <1322141073.2921.51.camel@twins> <4ECE6BC4.7090600@parallels.com>
+	Thu, 24 Nov 2011 11:35:13 -0500
+Message-ID: <1322152478.2921.68.camel@twins>
+Subject: Re: Fwd: uprobes: register/unregister probes.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>, tulasidhard@gmail.com
+Date: Thu, 24 Nov 2011 17:34:38 +0100
+In-Reply-To: <20111124145139.GK28065@linux.vnet.ibm.com>
+References: <hYuXv-26J-3@gated-at.bofh.it> <hYuXw-26J-5@gated-at.bofh.it>
+	 <i0nRU-7eK-11@gated-at.bofh.it>
+	 <603b0079-5f54-4299-9a9a-a5e237ccca73@l23g2000pro.googlegroups.com>
+	 <20111124070303.GB28065@linux.vnet.ibm.com> <1322128199.2921.3.camel@twins>
+	 <20111124145139.GK28065@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.2.1- 
@@ -36,22 +40,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-24 at 14:07 -0200, Glauber Costa wrote:
-> OTOH, if the use case for it includes separating processes for the cpu 
-> and cpuacct cgroups in an independent manner - which apparently it does, 
-> I've just learned, there isn't much we can do except try to make it cheaper.
+On Thu, 2011-11-24 at 20:21 +0530, Srikar Dronamraju wrote:
+> > No you don't, you check the return value of igrab(), but you crash hard
+> > when someone calls register_uprobe(.inode=NULL).
+> > 
+> 
+> Okay. will add a check for inode before we do the igrab. 
 
-Yeah it allows that, but is that really useful? If we buy that argument
-shouldn't we split up controllers to be as minimal as possible to that
-you get as great a number of independent cgroups as possible?
+No!!! its fcking pointless calling this function without a valid inode
+argument, don't mess about and try and deal with it.
 
-That way lies madness if you ask me. The two biggest controllers we
-currently have are cpu and memcg, and they aren't as orthogonal as you
-might think, see how cpusets has both a task affinity as well as node
-affinity side.
+Same with the consumer thing, if you call it with a NULL consumer you're
+an idiot, try memcpy(NULL, foo, size), does that return -EINVAL?
 
-The more comprehensive these controllers become, the greater also the
-overlap in functionality and thus a reduction in separation.
+Also, what's the point of all this igrab() nonsense? We don't need extra
+references on the inode, the caller of these functions had better made
+sure the inode is stable and good to use, otherwise it could be freed
+before we do igrab() and we'd still crash.
 
-Really, what is the killer case for separating all this nonsense? And
-no: 'Because $ustomer wants it', doesn't count.
+
