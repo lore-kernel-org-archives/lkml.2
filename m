@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab1KXALF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 19:11:05 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:48236 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab1KXALD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 19:11:03 -0500
-Date: Thu, 24 Nov 2011 09:10:58 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v2] kdump: crashk_res init check for
- /sys/kernel/kexec_crash_size
-Message-ID: <20111124001058.GB10562@verge.net.au>
-References: <1322043068.10119.7.camel@br98xy6r>
- <20111123102214.GA4914@verge.net.au>
- <1322054283.10119.11.camel@br98xy6r>
+	id S1753896Ab1KXAMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 19:12:51 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54997 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469Ab1KXAMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 19:12:50 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Patrik Kullman <patrik.kullman@gmail.com>
+Subject: Re: EHCI powersave causes shutdown to freeze
+Date: Thu, 24 Nov 2011 01:15:38 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <CAGPN=9Q1HMVO27jr0e8az4SV9TyC_JL48mKWZHi8kHRfhQddMQ@mail.gmail.com>
+In-Reply-To: <CAGPN=9Q1HMVO27jr0e8az4SV9TyC_JL48mKWZHi8kHRfhQddMQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322054283.10119.11.camel@br98xy6r>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111240115.39048.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 02:18:03PM +0100, Michael Holzheu wrote:
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+On Thursday, November 24, 2011, Patrik Kullman wrote:
+> Hi,
 > 
-> Currently it is possible to set the crash_size via the sysfs
-> /sys/kernel/kexec_crash_size even if no crash kernel memory has
-> been defined with the "crashkernel" parameter. In this case
-> "crashk_res" is not initialized and crashk_res.start = crashk_res.end = 0.
-> Unfortunately resource_size(&crashk_res) returns 1 in this case.
-> This breaks the s390 implementation of crash_(un)map_reserved_pages().
+> After creating a powersave script based on PowerTOP Tunables, this
+> particular line prevented the system from being able to shutdown (Asus
+> Zenbook UX31E, kernels 3.0 - 3.1.2):
 > 
-> To fix the problem the correct "old_size" is now calculated in
-> crash_shrink_memory(). "old_size is set to "0" if crashk_res is
-> not initialized. With this change crash_shrink_memory() will do nothing,
-> when "crashk_res" is not initialized. It will return "0" for
-> "echo 0 > /sys/kernel/kexec_crash_size" and -EINVAL for
-> "echo [not zero] > /sys/kernel/kexec_crash_size".
+> ### Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced
+> Host Controller #1
+> echo auto > /sys/bus/pci/devices/0000:00:1d.0/power/control
 > 
-> In addition to that this patch also simplifies the "ret = -EINVAL"
-> vs. "ret = 0" logic as suggested by Simon Horman.
 > 
-> Cc: Simon Horman <horms@verge.net.au>
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> Kernel prints the "Power Down." message but machine doesn't power down.
+> 
+> Is this a known bug?
+> Could this be fixed in the driver instead of:
+> 
+> echo on > /sys/bus/pci/devices/0000:00:1d.0/power/control
+> 
+> on system shutdown?
 
-Thanks Michael,
+This commit should address that issue:
 
-Reviewed-by: Simon Horman <horms@verge.net.au>
+commit af8db1508f2c9f3b6e633e2d2d906c6557c617f9
+Author: Peter Chen <peter.chen@freescale.com>
+Date:   Tue Nov 15 21:52:29 2011 +0100
+
+    PM / driver core: disable device's runtime PM during shutdown
+
+Thanks,
+Rafael
