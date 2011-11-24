@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab1KXCvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Nov 2011 21:51:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58676 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab1KXCvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Nov 2011 21:51:53 -0500
-Message-ID: <4ECDB10E.1080007@cn.fujitsu.com>
-Date: Thu, 24 Nov 2011 10:50:54 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755126Ab1KXC6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Nov 2011 21:58:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46117 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab1KXC6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Nov 2011 21:58:07 -0500
+Message-ID: <4ECDB2B2.2000206@gmail.com>
+Date: Thu, 24 Nov 2011 10:57:54 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch for-3.2-rc3] cpusets: stall when updating mems_allowed
- for mempolicy or disjoint nodemask
-References: <alpine.DEB.2.00.1111161307020.23629@chino.kir.corp.google.com> <4EC4C603.8050704@cn.fujitsu.com> <alpine.DEB.2.00.1111171328120.15918@chino.kir.corp.google.com> <4EC62AEA.2030602@cn.fujitsu.com> <alpine.DEB.2.00.1111181545170.24487@chino.kir.corp.google.com> <4ECC5FC8.9070500@cn.fujitsu.com> <alpine.DEB.2.00.1111221902300.30008@chino.kir.corp.google.com> <4ECC7B1E.6020108@cn.fujitsu.com> <alpine.DEB.2.00.1111222210341.21009@chino.kir.corp.google.com> <4ECCA578.6020700@cn.fujitsu.com> <alpine.DEB.2.00.1111231425030.5261@chino.kir.corp.google.com> <4ECD9D43.6090202@cn.fujitsu.com> <alpine.DEB.2.00.1111231751480.9042@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1111231751480.9042@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-24 10:51:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-24 10:51:36,
-	Serialize complete at 2011-11-24 10:51:36
-Content-Transfer-Encoding: 7bit
+To: mel@csn.ul.ie, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] cleanup comment in include/linux/compaction.h for defer_compaction
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011 17:52:08 -0800 (pst), David Rientjes wrote:
-> On Thu, 24 Nov 2011, Miao Xie wrote:
-> 
->> Memory compaction will see an empty nodemask and do nothing, and then
->> we may fail to get several contiguous pages.
->>
-> 
-> Where do we rely on a consistent nodemask for memory compaction?
+No compact_defer_limit is found in kernel source code.
+Per the code implementation, compact_defer_limit should be
+zone->compact_defer_shift. Cleanup the comment.
 
-Maybe I am overcautious.
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ include/linux/compaction.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index cc9f7a4..b297a9c 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -32,8 +32,8 @@ extern unsigned long compact_zone_order(struct zone *zone, int order,
+ 
+ /*
+  * Compaction is deferred when compaction fails to result in a page
+- * allocation success. 1 << compact_defer_limit compactions are skipped up
+- * to a limit of 1 << COMPACT_MAX_DEFER_SHIFT
++ * allocation success. 1 << zone->compact_defer_shift compactions are
++ * skipped up to a limit of 1 << COMPACT_MAX_DEFER_SHIFT
+  */
+ static inline void defer_compaction(struct zone *zone)
+ {
+-- 
+1.7.1
+
