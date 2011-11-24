@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab1KXGcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 01:32:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63339 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab1KXGcr (ORCPT
+	id S1753680Ab1KXGdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 01:33:37 -0500
+Received: from portal.weinmann.de ([62.8.140.122]:6920 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab1KXGdg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 01:32:47 -0500
+	Thu, 24 Nov 2011 01:33:36 -0500
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Ben Dooks'" <ben-i2c@fluff.org>
+CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
+        "'carsten.behling@garz-fricke.com'" <carsten.behling@garz-fricke.com>
+Date: Thu, 24 Nov 2011 07:33:09 +0100
+Subject: RE: [PATCH v7 0/5] AT91: replace broken TWI driver i2c-at91.c
+Thread-Topic: [PATCH v7 0/5] AT91: replace broken TWI driver i2c-at91.c
+Thread-Index: AcyqODW0mvs8CjqUSAu+q0bw0ht8BAAN8boQ
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B44FD63@wm021.weinmann.com>
+References: <cover.1322062555.git.n.voss@weinmann.de>
+ <20111123233238.GL19115@trinity.fluff.org>
+In-Reply-To: <20111123233238.GL19115@trinity.fluff.org>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20111124171949.994860621f4f83a650cf9b5b@canb.auug.org.au>
-References: <20111114142423.fe126b8c8cfd275d7dd138cc@canb.auug.org.au>
-	<201111150012.56306.rjw@sisk.pl>
-	<20111124171949.994860621f4f83a650cf9b5b@canb.auug.org.au>
-Date: Wed, 23 Nov 2011 22:32:45 -0800
-X-Google-Sender-Auth: xHsdDBkLf4QYZkE0aBjDaOOct4I
-Message-ID: <CAOS58YPAh3e_sa4JrHdVD40scNED5Z4g4t6JNU8MT8kq8vZV2Q@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (pm tree related)
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Wed, Nov 23, 2011 at 10:19 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > Subject: [PATCH] freezer: fix more fallout from the thaw_process rename
->> >
->> > Commit 944e192db53c "freezer: rename thaw_process() to __thaw_task()
->> > and simplify the implementation" did not create a !CONFIG_FREEZER version
->> > of __thaw_task().
->> >
->> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>
->> I've applied your patch to linux-pm/pm-freezer and merged it into
->> linux-pm/linux-next.
+Ben Dooks wrote on 2011-11-24:
+> On Wed, Nov 23, 2011 at 04:35:55PM +0100, Nikolaus Voss wrote:
+> > The old driver has two main deficencies:
+> > i)  No repeated start (Sr) condiction is possible, this makes it unusable
+> >     e.g. for most SMBus transfers.
+> > ii) I/O was done with polling/busy waiting what caused over-/underruns
+> >     even at light system loads and clock speeds.
+> >
+> > The new driver overcomes these deficencies and in addition allows for
+> > more than one TWI interface.
+> >
+> > A remaining limitation is the fact, that only one repeated start is
+> > possible (two concatenated messages). This limitation is imposed by
+> > the hardware. However, this should not be a problem as all common
+> > i2c-client communication does not rely on more than one repeated start.
+> >
+> > v7: Patch 4/5: i)  fix bug if internal address > 1 byte
+> >                ii) send stop when len == 1
+> >                    (both reported by Carsten Behling)
+> > v6: Patch 5/5: support for I2C_SMBUS_BLOCK_DATA transfers.
+> >     Better use of clk_(un)prepare().
+> >     More sensible transfer timeout.
+> > v5: Another round of review comments from Ryan Mallon, Felipe Balbi
+> >     and Russell King: convert twi clk to use .dev_id, cleanups
+> > v4: Integrated more review comments from Ryan Mallon and Felipe Balbi:
+> >     Moved register include file to local include, code cleanups
+> > v3: Integrated review comments from Ryan Mallon and Felipe Balbi
+> > v2: Fixed whitespace issue
+> >
+> > Nikolaus Voss (5):
+> >   drivers/i2c/busses/i2c-at91.c: remove broken driver
+> >   Replace clk_lookup.con_id with clk_lookup.dev_id entries for twi clk
+> >   drivers/i2c/busses/i2c-at91.c: add new driver
+> >   G45 TWI: remove open drain setting for twi function gpios
+> >   i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
+> 
+> Is the original driver so broken that the two could not co-exist, or are
+> we making so many changes that there's no point in keeping the original
+> one?
 
-Ah.. that's my bad. I was actually looking at that diff and somehow it
-just slipped my mind. Rafael, can you please apply Stephen's patch on
-top of pm-freezer?
+The old driver was marked as broken for the above reasons and I can hardly
+imagine any setup in which it would be preferable to i2c-gpio. So it does
+not make any sense to keep the old driver alive. Though inspired by the old
+driver, the new one is almost a rewrite from scratch, so for better reviewing,
+I removed the old instead of doing a diff.
 
-Thank you.
+Niko
 
--- 
-tejun
