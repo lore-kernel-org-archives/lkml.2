@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab1KYH0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 02:26:05 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:16904 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab1KYH0D (ORCPT
+	id S1752165Ab1KYH2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 02:28:42 -0500
+Received: from nm8.bullet.mail.sp2.yahoo.com ([98.139.91.78]:21977 "HELO
+	nm8.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751173Ab1KYH2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 02:26:03 -0500
-Date: Fri, 25 Nov 2011 10:25:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        "security@kernel.org" <security@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>, Franky Lin <frankyl@broadcom.com>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
-        Mark Pearson <markpearson_de@yahoo.de>
-Subject: Re: [PATCH] comedi: integer overflow in do_insnlist_ioctl()
-Message-ID: <20111125072550.GK3195@mwanda>
-References: <5C0D372F-F03E-4EB8-8440-83A8D1C95363@gmail.com>
- <20111123061355.GA3295@mwanda>
- <CAKU6vyZdC64piK-mn6kLMt1-RhhM8D-4KbAGxje087FJ9X=fNA@mail.gmail.com>
- <20111123145020.GA3258@mwanda>
- <4ECD1A01.3060503@mev.co.uk>
- <4ECD6873.7080106@metafoo.de>
- <20111123215111.GD3258@mwanda>
- <97189E06-26D8-4CF9-B325-06403FB1C42C@gmail.com>
+	Fri, 25 Nov 2011 02:28:41 -0500
+X-Yahoo-Newman-Id: 367410.17062.bm@smtp105.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: U6bP8CYVM1m.UCa.8_jtuSBNCArwiyfSOSQMT5mkZtS2I.g
+ 3H4WtEcj6G2OG6s_fRESQgb8Cbug48FHsxN2D_DqvI.PK46j2N_M4u8Safcv
+ Y0ob0X6PNVqZutIVKsa1ZbtJ8iwJvcmHUqaeIl58gnjmKqD63OR0X4mc0Iej
+ OSfFs5DiBF3yaJTD4Ko_SOQN6AdU7UEJjX2uGUnqT5Qud3YxZxF2isaPuhJz
+ B6U3HlCrht5dA9B_cuTsO9GjvYU2E3sYoRgfob4gFOhivIFir4Mv3SSOgAQq
+ FIICUFk4ZQqrq3n7rrY5utk5zbAJLIsuhoVbDVw2MXAJYSGN0msc7yraoP8r
+ qJ7PJs5km28nslcqeNruL_vqcNW1IBzXCPJAtaLItgyxAu06Cp_tb1eBAS6M
+ vcEw2
+X-Yahoo-SMTP: aMbIJLiswBDXCpmvBlMgj9YOrQYlvNCIW6o-
+Message-ID: <F0066C5465FE621CF4EC084D83B55F94@bv>
+From: =?utf-8?B?6YOR5Yab5bmz?= <tylerburke765@yahoo.com>
+To: <linuxhack@163.net>
+Subject: =?utf-8?B?ZHRhZ3FmdHF5LOWEquaDoOS7o+mWi+S8gealreeoheelqO+8jOmplw==?=
+	=?utf-8?B?6K2J5rKS5pyJ5ZWP6aGM5b6M5LuY5qy+77yB6Kmz5oOFMTM2LTYyNjAt?=
+	=?utf-8?B?Nzc0OOeOizzlhYjnlJ8+LFFROjk1ODgtMTE=?=
+	=?utf-8?B?NjM5?=
+Date: Thu, 24 Nov 2011 15:27:13 +0800
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sU4rRG038CsJurvk"
-Content-Disposition: inline
-In-Reply-To: <97189E06-26D8-4CF9-B325-06403FB1C42C@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4ECF42F7.00C3,ss=1,re=0.000,fgs=0
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAP7SmJK017696
 
-
---sU4rRG038CsJurvk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Nov 24, 2011 at 02:07:49PM -0500, Xi Wang wrote:
-> Using kcalloc looks good to me.  Do you want to redo the patch in that wa=
-y?
->=20
-
-It's your choice.  The other fix you wrote is valid as well.
-
-regards,
-dan carpenter
-
-
---sU4rRG038CsJurvk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOz0L9AAoJEOnZkXI/YHqRZNcP/R2W8s9QTGNrfLi3QZZs8ec/
-NoBACvzGXYjPadUlp21Uodi5p3zES5N6Rt8Tpv/WcoFJG7y6ZLAVvlUUcxJ8MGN9
-vOXmMYkEj63H/nygv63oQaDliVN3QNr3IRxa4kEa5CwSrL4o2i7vxxoMh5JKzkV4
-0VDYXlPDHngpnEjnIl3TPBIQYMHk0iTE/N+2foJEZa59PIw3H9pQhc2G+c5yDZPA
-g/kNwZixikt/4UPEA46OYlUY5/IZKmc33bXH02vRG7j9keK/N4eceoAPOmZYVTUw
-GYFDB4D5fBFpTOEvGLaOwHu8aUQEOdaNxTZ9XG+WaXY3Ts3GJNAixIkzT1s5jFQ7
-8JwgEd4QkhhLe7DR1aI1kvcfHij+y+hh1Xh27aQn94U3GpF2LGPeqV+JEpzb3qLJ
-dwup6GJqhix+OBv4/n9/jht3fV9lcJ93uRnC++pgxYO75iK+Be1x1I5TUUrUqDCl
-naH30yxVTikXbsL4C6gNqi/FbIM51eou5Rr8mZnNBScgM9DeNko2gmCC8bfNNieG
-ZzeVAMIyfdgJTLXWf2YV+g67Vh6rggSU90XdgSHhzBw/jkDKISauczZ36KbCnSCH
-2nJe+ZMcf2VTfqRpVS+AHle30tITAwAw6kDn9oOjdjmwmqduzMpPOWTyNLq+SxFm
-f1FVonP3n0H1tuYW304a
-=7Wgl
------END PGP SIGNATURE-----
-
---sU4rRG038CsJurvk--
+4fmoxccˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
