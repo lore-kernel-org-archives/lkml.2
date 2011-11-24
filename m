@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab1KXJwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 04:52:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41456 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab1KXJwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 04:52:53 -0500
-Date: Thu, 24 Nov 2011 10:52:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/8] mm: memcg: lookup_page_cgroup (almost) never returns
- NULL
-Message-ID: <20111124095251.GD26036@tiehlicka.suse.cz>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
- <1322062951-1756-5-git-send-email-hannes@cmpxchg.org>
+	id S1755137Ab1KXJ4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 04:56:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52512 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab1KXJ4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 04:56:07 -0500
+Date: Thu, 24 Nov 2011 09:56:03 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jamie Iles <jamie@jamieiles.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: linux-next: manual merge of the at91 tree with the arm-soc tree
+Message-ID: <20111124095603.GA5048@totoro>
+References: <20111124121611.fe102955910da2b603032d07@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322062951-1756-5-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <20111124121611.fe102955910da2b603032d07@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-11-11 16:42:27, Johannes Weiner wrote:
-> From: Johannes Weiner <jweiner@redhat.com>
-> 
-> Pages have their corresponding page_cgroup descriptors set up before
-> they are used in userspace, and thus managed by a memory cgroup.
-> 
-> The only time where lookup_page_cgroup() can return NULL is in the
-> page sanity checking code that executes while feeding pages into the
-> page allocator for the first time.
-> 
-> Remove the NULL checks against lookup_page_cgroup() results from all
-> callsites where we know that corresponding page_cgroup descriptors
-> must be allocated.
+Hi Stephen,
 
-OK, shouldn't we add
-
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 2d123f9..cb93f64 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -35,8 +35,7 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
- 	struct page_cgroup *base;
- 
- 	base = NODE_DATA(page_to_nid(page))->node_page_cgroup;
--	if (unlikely(!base))
--		return NULL;
-+	BUG_ON(!base);
- 
- 	offset = pfn - NODE_DATA(page_to_nid(page))->node_start_pfn;
- 	return base + offset;
-@@ -112,8 +111,7 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
- 	unsigned long pfn = page_to_pfn(page);
- 	struct mem_section *section = __pfn_to_section(pfn);
- 
--	if (!section->page_cgroup)
--		return NULL;
-+	BUG_ON(!section->page_cgroup);
- 	return section->page_cgroup + pfn;
- }
- 
-just to make it explicit?
-
+On Thu, Nov 24, 2011 at 12:16:11PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-
-Other than that
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |    8 ++------
->  1 files changed, 2 insertions(+), 6 deletions(-)
+> Today's linux-next merge of the at91 tree got conflicts in
+> arch/arm/mach-at91/board-cap9adk.c, arch/arm/mach-at91/board-cpu9krea.c,
+> arch/arm/mach-at91/board-cpuat91.c,
+> arch/arm/mach-at91/board-snapper9260.c and
+> arch/arm/mach-at91/include/mach/board.h between commit 84e0cdb0a262
+> ("macb: unify at91 and avr32 platform data") from the arm-soc tree and
+> commit 1509f4847dd1 ("at91/boards: use -EINVAL for invalid gpio") from
+> the at91 tree.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d825af9..d4d139a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1894,9 +1894,6 @@ void mem_cgroup_update_page_stat(struct page *page,
->  	bool need_unlock = false;
->  	unsigned long uninitialized_var(flags);
->  
-> -	if (unlikely(!pc))
-> -		return;
-> -
->  	rcu_read_lock();
->  	memcg = pc->mem_cgroup;
->  	if (unlikely(!memcg || !PageCgroupUsed(pc)))
-> @@ -2669,8 +2666,6 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
->  	}
->  
->  	pc = lookup_page_cgroup(page);
-> -	BUG_ON(!pc); /* XXX: remove this and move pc lookup into commit */
-> -
->  	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
->  	if (ret || !memcg)
->  		return ret;
-> @@ -2942,7 +2937,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
->  	 * Check if our page_cgroup is valid
->  	 */
->  	pc = lookup_page_cgroup(page);
-> -	if (unlikely(!pc || !PageCgroupUsed(pc)))
-> +	if (unlikely(!PageCgroupUsed(pc)))
->  		return NULL;
->  
->  	lock_page_cgroup(pc);
-> @@ -3326,6 +3321,7 @@ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
->  	struct page_cgroup *pc;
->  
->  	pc = lookup_page_cgroup(page);
-> +	/* Can be NULL while bootstrapping the page allocator */
->  	if (likely(pc) && PageCgroupUsed(pc))
->  		return pc;
->  	return NULL;
-> -- 
-> 1.7.6.4
+> I fixed them up (see below) and can carry the fix as necessary.
 > 
+> However, it looks to me that struct macb_platform_data (in
+> include/linux/platform_data/macb.h) will need its phy_irq_pin members
+> changed to int as well (which may have other consequences).
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+That looks correct to me.  I've just posted a patch to convert 
+phy_irq_pin to an int and from inspection that shouldn't break anything 
+by itself.
+
+The macb driver doesn't currently use the phy_irq_pin member, but the 
+at91_ether driver does and that compares to 0 for no IRQ so the 
+assignment of -EINVAL _could_.
+
+Jamie
