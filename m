@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab1KXKMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 05:12:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40604 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab1KXKMd convert rfc822-to-8bit (ORCPT
+	id S1755575Ab1KXKOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 05:14:48 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:50010 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab1KXKOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 05:12:33 -0500
-Message-ID: <1322129545.2921.6.camel@twins>
-Subject: Re: [patch 3/7] sched: set skip_clock_update in yield_task_fair()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Thu, 24 Nov 2011 11:12:25 +0100
-In-Reply-To: <1322106615.6222.10.camel@marge.simson.net>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1321629441.7080.15.camel@marge.simson.net>
-	 <1321630552.2197.15.camel@twins>
-	 <1321971445.6855.14.camel@marge.simson.net>
-	 <1321971686.6855.18.camel@marge.simson.net>
-	 <1322059696.14799.68.camel@twins>
-	 <1322106615.6222.10.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Thu, 24 Nov 2011 05:14:47 -0500
+Message-ID: <4ECE1948.2060907@oss.ntt.co.jp>
+Date: Thu, 24 Nov 2011 19:15:36 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.24) Gecko/20111103 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 4/6] KVM: introduce id_to_memslot function
+References: <4ECE1037.4060300@gmail.com> <4ECE10F8.9070707@gmail.com>
+In-Reply-To: <4ECE10F8.9070707@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-24 at 04:50 +0100, Mike Galbraith wrote:
-> On Wed, 2011-11-23 at 15:48 +0100, Peter Zijlstra wrote:
-> > On Tue, 2011-11-22 at 15:21 +0100, Mike Galbraith wrote:
-> > > This is another case where we are on our way to schedule(),
-> > > so can save a useless clock update and resulting microscopic
-> > > vruntime update.
-> > > 
-> > 
-> > Everytime I see one of these skip_clock_update thingies I get the idea
-> > we should do something smarter, because its most fragile and getting it
-> > wrong results in a subtle trainwreck..
-> > 
-> > Would something like the below help in validating this stuff?
-> 
-> No, because switch itself is irrelevant to fair-beans counting.
+(2011/11/24 18:40), Xiao Guangrong wrote:
 
-Hmm, right, but we can keep another counter that is more relevant, like
-all schedule(),ttwu() and various other calls, right?
+...
 
-Thing is, is that going to be less fragile than the current crap :-(
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -3521,7 +3521,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+>   	if (log->slot>= KVM_MEMORY_SLOTS)
+>   		goto out;
+>
+> -	memslot =&kvm->memslots->memslots[log->slot];
+> +	memslot = id_to_memslot(kvm->memslots, log->slot);
+>   	r = -ENOENT;
+>   	if (!memslot->dirty_bitmap)
+>   		goto out;
+> @@ -3544,15 +3544,16 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+>   		if (!slots)
+>   			goto out;
+>   		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+> -		memslot =&slots->memslots[log->slot];
+> -		memslot->dirty_bitmap = dirty_bitmap;
+> +		memslot = id_to_memslot(slots, log->slot);
+>   		memslot->nr_dirty_pages = 0;
+> +		memslot->dirty_bitmap = dirty_bitmap;
+>   		update_memslots(slots, NULL);
+>
+>   		old_slots = kvm->memslots;
+>   		rcu_assign_pointer(kvm->memslots, slots);
+>   		synchronize_srcu_expedited(&kvm->srcu);
+> -		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
+> +		dirty_bitmap = id_to_memslot(old_slots,
+> +					      log->slot)->dirty_bitmap;
+
+You can eliminate this if you use old_slot and new_slot for the two memory slots.
+
+	Takuya
+
+>   		kfree(old_slots);
+>
+>   		write_protect_slot(kvm, memslot, dirty_bitmap, nr_dirty_pages);
