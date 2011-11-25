@@ -1,128 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab1KYP2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 10:28:22 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51278 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab1KYP2V (ORCPT
+	id S1752735Ab1KYPeO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 10:34:14 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43773 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab1KYPeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 10:28:21 -0500
-Date: Fri, 25 Nov 2011 15:28:17 +0000
-From: Jamie Iles <jamie@jamieiles.com>
+	Fri, 25 Nov 2011 10:34:13 -0500
+Date: Fri, 25 Nov 2011 15:34:09 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: at91/aic: add device tree support for AIC
-Message-ID: <20111125152817.GA8866@totoro>
-References: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
- <20111124222601.GA28582@gallagher>
- <20111125135106.GN15531@game.jcrosoft.org>
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] gpiolib: introduce gpio_set_pullup
+Message-ID: <20111125153409.GA4975@sirena.org.uk>
+References: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111125135106.GN15531@game.jcrosoft.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
+X-Cookie: bug, n:
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 25, 2011 at 02:51:06PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 22:26 Thu 24 Nov     , Jamie Iles wrote:
-> > Hi Nicolas,
-> > On Thu, Nov 24, 2011 at 10:56:27PM +0100, Nicolas Ferre wrote:
-[...]
-> > > +#if defined(CONFIG_OF)
-> > > +static struct of_device_id aic_ids[]  = {
-> > > +	{ .compatible = "atmel,at91rm9200-aic" },
-> > > +	{ /*sentinel*/ }
-> > > +};
-> > > +
-> > > +static int __init at91_aic_of_init(void)
-> > > +{
-> > > +	struct device_node *np;
-> > > +
-> > > +	np = of_find_matching_node(NULL, aic_ids);
-> > > +	if (np == NULL)
-> > > +		return -ENODEV;
-> > > +
-> > > +	at91_aic_base = of_iomap(np, 0);
-> > > +	at91_aic_domain.of_node = np;
-> > 
-> > I think this needs to be:
-> > 
-> > 	at91_aic_domain.of_node = of_node_get(np);
-> > 
-> > to keep the reference count.
-> > 
-> > > +	/* Keep refcount of the node */
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +#else
-> > > +static int __init at91_aic_of_init(void)
-> > > +{
-> > > +	return -ENOSYS;
-> > > +}
-> > > +#endif
-> > 
-> > I think it's preferred if you use of_irq_init() here as it can handle 
-> > the ordering of IRQ controllers.  There are GIC and VIC bindings in 
-> > -next that use this and provide a way for non-DT platforms to still use 
-> > the drivers.
-> which is the case here as if the of_init fail we failback to the non-dt init
-> 
-> and this IP is AT91 only
+On Fri, Nov 25, 2011 at 03:08:39PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-Right, but it's not using the of_irq_init() interface which is the 
-standard way of registering interrupt controllers and will correctly 
-dependencies for you.
+> +/**
+> + * gpio_set_pullup - sets @pullup for a @gpio
+> + * @gpio: the gpio to set pullup
+> + * @pullup: pullup level
+> + */
+> +int gpio_set_pullup(unsigned gpio, unsigned pullup)
 
-So if you could have something like:
-
-void __init __at91_aic_init(unsigned int priority[NR_AIC_IRQS],
-			    void __iomem *regs,
-			    struct device_node *np)
-{
-	/*
-	 * Do all of the writes to the AIC itself and configure 
-	 * the IRQ domain.
-	 */
-}
-
-void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
-{
-	void __iomem *base = ioremap(AT91_AIC, 512);
-
-	__at91_aic_init(priority, base, NULL);
-}
-
-int __init at91_aic_of_init(struct device_node *node,
-			    struct device_node *parent)
-{
-	void __iomem *regs = of_iomap(node, 0);
-
-	/*
-	 * Get priorities from the DT.  If this was an array of cells 
-	 * then that should be okay.
-	 */
-	__at91_aic_init(dt_priorities, regs, node);
-}
-
-Then the DT based board initialisation can do:
-
-static const struct of_device_id at91_irq_of_match[] __initconst = {
-	{ .compatible = "atmel,at91-aic", .data = at91_aic_of_init },
-	{}
-};
-
-static void __init at91_of_irq_init(void)
-{
-	of_irq_init(at91_of_irq_init);
-}
-
-Which is consistent with other platforms.  However this does require 
-that the priorities are encoded in the device-tree, but I guess that's a 
-good thing anyway isn't it?
-
-Jamie
+This has some overlap with the pinmux subsystem.  We also need
+documentation of what the pullup values mean.
