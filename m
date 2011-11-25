@@ -1,132 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1KYUaf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 15:30:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53616 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab1KYUae (ORCPT
+	id S1753219Ab1KYUbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 15:31:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35573 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab1KYUbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 15:30:34 -0500
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        syed rafiuddin <rafiuddin.sayed@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 8/9] bq27x00: Add miscdevice for each battery with ioctl for reading registers
-Date: Fri, 25 Nov 2011 21:30:28 +0100
-Message-ID: <7780165.E3DXgdWAv1@pali-elitebook>
-User-Agent: KMail/4.7.3 (Linux/3.2.0-1-generic; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <20111125201011.GA14217@oksana.dev.rtsoft.ru>
-References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com> <CAHYPw2F3mYD2R4C_XCDc6wBbsEfz_wscEGdmHONhKRr9jbeEaw@mail.gmail.com> <20111125201011.GA14217@oksana.dev.rtsoft.ru>
+	Fri, 25 Nov 2011 15:31:16 -0500
+Date: Fri, 25 Nov 2011 14:31:12 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: netdev@vger.kernel.org
+Cc: nic_swsd@realtek.com, Francois Romieu <romieu@fr.zoreil.com>,
+        linux-kernel@vger.kernel.org, Armin Kazmi <armin.kazmi@tu-dortmund.de>,
+        Gerd <booster@wolke7.net>
+Subject: Re: [bug?] r8169: hangs under heavy load
+Message-ID: <20111125203111.GC26692@elie.hsd1.il.comcast.net>
+References: <4E7F4D45.7040902@wolke7.net>
+ <1316978632.4122.103.camel@deadeye>
+ <4E82C0B5.1050902@wolke7.net>
+ <1317254171.4068.12.camel@deadeye>
+ <20111124044137.GA18262@elie.hsd1.il.comcast.net>
+ <4ECFE7A7.5070300@wolke7.net>
+ <20111125201936.GA26692@elie.hsd1.il.comcast.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2250936.Wg3QI4pDok"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111125201936.GA26692@elie.hsd1.il.comcast.net>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jonathan Nieder wrote:
 
---nextPart2250936.Wg3QI4pDok
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="iso-8859-1"
-
-On Saturday 26 November 2011 00:10:11 you wrote:
-> Hello Pali,
-
-Hello,
-
->=20
-> On Tue, Nov 01, 2011 at 01:53:26PM +0100, Pali Roh=E1r wrote:
+> From another log, using a kernel without pae support:
+>
+>> [  844.056012] BUG: soft lockup - CPU#0 stuck for 23s! [smbd:2770]
 > [...]
->=20
-> > >> Also on Nokia N900 is needed proprietary pogram BME for
-> > >> battery charging which need to access to bq27200 registers. A
-> > >> simple
-> > >> LD_PRELOAD library which wrap i2c-dev access to this device
-> > >> provided
-> > >> by this patch is here:
-> > >> https://code.launchpad.net/~pali/+junk/maemo_libbqioctl
-> > >=20
-> > > Yes, but that really is a hack to work around the closed source
-> > > nature of the BME program. I don't think we should put such hacks=
+>> [  872.056011] BUG: soft lockup - CPU#0 stuck for 23s! [smbd:2770]
+> [...]
+>> [  900.056011] BUG: soft lockup - CPU#0 stuck for 23s! [smbd:2770]
 
-> > > into the kernel.>=20
-> > Not only BME. All programs (and shell scripts and all which use
-> > i2cget) need this interface, bacuse loading bq module will block
-> > ic2-dev.
->=20
-> A million thanks for your work! Though, on this particular patch I
-> agree with Lars-Peter here. The raw abi interface ought to exist only=
+What I meant is a kernel without SMP support (it lacks PAE, too, but
+that's less relevant).  Description:
 
-> because proprietary nature of BME, which is not good.
+ http://packages.debian.org/sid/linux-image-3.1.0-1-486
 
-This interface is not only for BME. Also some popular bq27200.sh script=
- which=20
-print bq registers in human readable form needs this interface (with=20=
+.configs for the two kernels mentioned:
 
-LD_PRELOAD library).
+ http://alioth.debian.org/~jrnieder-guest/temp/config-3.1.0-1-686-pae
+ http://alioth.debian.org/~jrnieder-guest/temp/config-3.1.0-1-486
 
-Link for that shell script http://enivax.net/jk/n900/bq.tar
-
->=20
-> IIRC, there is some shell script that makes it possible to charge
-> N900 without BME?
-
-bq27200 chip is for retrieving informations about battery. Chip bq24150=
- is=20
-responsible for charging battery. And yes, there is shell script which =
-use=20
-this chip and can charge N900 battery (when BME is stopped).
-
-Link: http://enivax.net/jk/n900/charge21.sh.txt
-
-Problem is that this charge script need access to bq27200 registers too=
- and=20
-the only way is again rmmod bq27x00_battery driver or using that my int=
-erface.
-
-> Is it possible to convert it to some "n900 charger driver"?
-
-And two hours ago I started writing kernel driver for chip bq2415x whic=
-h will=20
-support charging battery. So I think yes!
-
-So I think, one day I will delete BME from my Nokia N900.
-
->=20
-> I applied all patches from this series, except this one.
->=20
-> Thanks,
-
-Ok, thanks!
-
-I need some interface from userspace which can access to bq27200 regist=
-ers.=20
-Problem is that if driver bq27x00_battery is loaded it is not possible =
-to=20
-access to registers via i2c-tools. If this patch is not acceptable to=20=
-
-upstream, what is solution to this problem? I think that it is not good=
- idea=20
-to rmmod bq27x00_batery driver before executing scripts and then modpro=
-bing it=20
-again...
-
---=20
-Pali Roh=E1r
-pali.rohar@gmail.com
---nextPart2250936.Wg3QI4pDok
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk7P+uQACgkQi/DJPQPkQ1IwWQCgmohblvTAaZEdQe2p5GVQERqa
-ElUAoLK88BMm68+Je/HBSiQSdcHjhuS1
-=yAbc
------END PGP SIGNATURE-----
-
---nextPart2250936.Wg3QI4pDok--
-
+Sorry for the lack of clarity.
