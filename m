@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1KYN4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 08:56:32 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:6416 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab1KYN4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 08:56:31 -0500
-Message-ID: <4ECF9E71.2050305@atmel.com>
-Date: Fri, 25 Nov 2011 14:56:01 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+	id S1755650Ab1KYN6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 08:58:36 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53345 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386Ab1KYN6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 08:58:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 1/2] MISC: convert drivers/misc/* to use module_i2c_driver()
+Date: Fri, 25 Nov 2011 13:58:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Anantha Narayanan <Anantha.Narayanan@intel.com>,
+        Samu Onkalo <samu.p.onkalo@nokia.com>, Hemanth V <hemanthv@ti.com>,
+        Christoph Mair <christoph.mair@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Gardner <bgardner@wabtec.com>, Minkyu Kang <mk7.kang@samsung.com>,
+        Kalhan Trisal <kalhan.trisal@intel.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, Daniel Mack <zonque@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        "Greg Kroah-Hartman" <greg@kroah.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Anatolij Gustschin <agust@denx.de>
+References: <1322194447.30842.0.camel@phoenix> <201111251015.43439.arnd@arndb.de> <4ECF70BB.2080904@metafoo.de>
+In-Reply-To: <4ECF70BB.2080904@metafoo.de>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Jamie Iles <jamie@jamieiles.com>
-CC: netdev@vger.kernel.org, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] at91_ether: use gpio_is_valid for phy IRQ line
-References: <1322128098-17724-1-git-send-email-jamie@jamieiles.com> <1322169674-4109-1-git-send-email-nicolas.ferre@atmel.com> <20111124222836.GB28582@gallagher> <20111125134708.GM15531@game.jcrosoft.org>
-In-Reply-To: <20111125134708.GM15531@game.jcrosoft.org>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111251358.19779.arnd@arndb.de>
+X-Provags-ID: V02:K0:C8LFenwho5gwO1Lpw6xCrX3qJ8j3PnZUaTQsFMZJzbu
+ N+vRMPHTIHr3or9OffNh4TN0vuZiKwT4L2SrxkDGLc6Gt1IBa2
+ gDuMnpnAbi9gMNe6e1nGCpxOknywoHmVwzxovqA18ZWeSoOcvB
+ PtMr6yXuCA/d0A6jVQ2vziAn31DpOCsZzaFaN/uwTBk2MC+hWh
+ Gviej5eCQWfQOiTP7TOLiBsqWFV5pY3ytpkdb8kcPyWKxSpjLp
+ +jMcMUlVPNaQH3BhaT/BDr2kgpDmZpt6Xz+QTu9CCIyz8+ZnRc
+ VsjBfMyoZHCKNhDgKMF5OSqz6QR4C5gR8qUuPDlE8G/+/obQjq
+ u8yfN8Jv/Spg74vyw3C0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2011 02:47 PM, Jean-Christophe PLAGNIOL-VILLARD :
-> On 22:28 Thu 24 Nov     , Jamie Iles wrote:
->> Hi Nicolas,
->>
->> On Thu, Nov 24, 2011 at 10:21:14PM +0100, Nicolas Ferre wrote:
->>> Use the generic gpiolib gpio_is_valid() function to test
->>> if the phy IRQ line GPIO is actually provided.
->>>
->>> For non-connected or non-existing phy IRQ lines, -EINVAL
->>> value is used for phy_irq_pin field of struct at91_eth_data.
->>>
->>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>> ---
->>>  drivers/net/ethernet/cadence/at91_ether.c |   23 +++++++++++++----------
->>>  1 files changed, 13 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
->>> index 56624d3..a1c4143 100644
->>> --- a/drivers/net/ethernet/cadence/at91_ether.c
->>> +++ b/drivers/net/ethernet/cadence/at91_ether.c
->>> @@ -255,8 +255,7 @@ static void enable_phyirq(struct net_device *dev)
->>>  	unsigned int dsintr, irq_number;
->>>  	int status;
->>>  
->>> -	irq_number = lp->board_data.phy_irq_pin;
->>> -	if (!irq_number) {
->>> +	if (!gpio_is_valid(lp->board_data.phy_irq_pin)) {
->>>  		/*
->>>  		 * PHY doesn't have an IRQ pin (RTL8201, DP83847, AC101L),
->>>  		 * or board does not have it connected.
->>> @@ -265,6 +264,7 @@ static void enable_phyirq(struct net_device *dev)
->>>  		return;
->>>  	}
->>>  
->>> +	irq_number = lp->board_data.phy_irq_pin;
->>
->> Does this need to be:
->>
->> 	irq_number = gpio_to_irq(lp->board_data.phy_irq_pin);
->>
->> and the same for the other occurrences?  Otherwise this looks like the 
->> right thing to me.
-> yes
+On Friday 25 November 2011, Lars-Peter Clausen wrote:
+> > Obviously it can only go in after the patches introducing the macros.
+> > Since Greg owns both the char-misc and driver-core trees, there should
+> > be no problem coordinating between the two.
+> > 
+> Yes, but a similar patch has been send out for of a bunch of other trees.
+> And the commit message does not state that there is a dependency on not yet
+> applied patches and neither where to get them.
 
-True but I prefered to separate changes. As it was not addressed like
-this in the code I clung to it. I will post an additional patch on top
-of this one to add the gpio_to_irq() call.
+Yes, good point. That should probably be mentioned so people don't just
+apply the patches and find out the hard way that they don't work.
 
-> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-
-Best regards,
--- 
-Nicolas Ferre
+	Arnd
