@@ -1,83 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab1KYNOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 08:14:47 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38633 "EHLO relay.sw.ru"
+	id S1755450Ab1KYNRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 08:17:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755639Ab1KYNOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 08:14:45 -0500
-Subject: [PATCH 6/6] NFS: remove RPC PipeFS mount point references from NFS
-	cache routines
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Fri, 25 Nov 2011 17:13:20 +0300
-Message-ID: <20111125131320.6271.49000.stgit@localhost6.localdomain6>
-In-Reply-To: <20111125130557.6271.95071.stgit@localhost6.localdomain6>
-References: <20111125130557.6271.95071.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1754099Ab1KYNRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 08:17:13 -0500
+Date: Fri, 25 Nov 2011 14:12:41 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Youquan Song <youquan.song@intel.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        wli@holomorphy.com, david.woodhouse@intel.com, allen.m.kay@intel.com,
+        mtosatti@redhat.com, chrisw@redhat.com, andi@firstfloor.org,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH 1/2] thp: Add compound tail page _mapcount when mapped
+Message-ID: <20111125131241.GZ8397@redhat.com>
+References: <1322200030-26350-1-git-send-email-youquan.song@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322200030-26350-1-git-send-email-youquan.song@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch. We don't need this reference anymore, because DNS
-resolver cache now creates it's dentries in per-net operations and on PipeFS
-mount/umount notification.
-Note that nfs_cache_register_net() now returns 0 instead of -ENOENT in case of
-PiepFS superblock absence. This is ok, Dns resolver cache will be regestered on
-PipeFS mount event.
+Both are needed to take care of CONFIG_DEBUG_VM false positives. Worst
+case a false positive hits, but if it doesn't there was no risk because
+the tail page refcounting isn't actively used by that code and the
+refcounting on the head page was done right already.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
----
- fs/nfs/cache_lib.c |   19 ++++---------------
- 1 files changed, 4 insertions(+), 15 deletions(-)
-
-diff --git a/fs/nfs/cache_lib.c b/fs/nfs/cache_lib.c
-index 5905a31..dded263 100644
---- a/fs/nfs/cache_lib.c
-+++ b/fs/nfs/cache_lib.c
-@@ -126,24 +126,14 @@ int nfs_cache_register_sb(struct super_block *sb, struct cache_detail *cd)
- 
- int nfs_cache_register_net(struct net *net, struct cache_detail *cd)
- {
--	struct vfsmount *mnt;
- 	struct super_block *pipefs_sb;
--	int ret;
-+	int ret = 0;
- 
--	mnt = rpc_get_mount();
--	if (IS_ERR(mnt))
--		return PTR_ERR(mnt);
- 	pipefs_sb = rpc_get_sb_net(net);
--	if (!pipefs_sb) {
--		ret = -ENOENT;
--		goto err;
-+	if (pipefs_sb) {
-+		ret = nfs_cache_register_sb(pipefs_sb, cd);
-+		rpc_put_sb_net(net);
- 	}
--	ret = nfs_cache_register_sb(pipefs_sb, cd);
--	rpc_put_sb_net(net);
--	if (!ret)
--		return ret;
--err:
--	rpc_put_mount();
- 	return ret;
- }
- 
-@@ -162,7 +152,6 @@ void nfs_cache_unregister_net(struct net *net, struct cache_detail *cd)
- 		nfs_cache_unregister_sb(pipefs_sb, cd);
- 		rpc_put_sb_net(net);
- 	}
--	rpc_put_mount();
- }
- 
- void nfs_cache_init(struct cache_detail *cd)
-
+Thanks,
+Andrea
