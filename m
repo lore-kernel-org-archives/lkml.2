@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1KYI1F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 03:27:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab1KYI1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 03:27:03 -0500
-Date: Fri, 25 Nov 2011 16:29:10 +0800
-From: Dave Young <dyoung@redhat.com>
-To: axboe@kernel.dk, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH]loop: fix loop block driver comment
-Message-ID: <20111125082910.GA2661@darkstar.nay.redhat.com>
+	id S1752996Ab1KYI3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 03:29:16 -0500
+Received: from smtp-out-169.synserver.de ([212.40.185.169]:1063 "HELO
+	smtp-out-169.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752216Ab1KYI3P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 03:29:15 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 14290
+Message-ID: <4ECF5213.20501@metafoo.de>
+Date: Fri, 25 Nov 2011 09:30:11 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Anantha Narayanan <Anantha.Narayanan@intel.com>,
+        Samu Onkalo <samu.p.onkalo@nokia.com>, Hemanth V <hemanthv@ti.com>,
+        Christoph Mair <christoph.mair@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Gardner <bgardner@wabtec.com>, Minkyu Kang <mk7.kang@samsung.com>,
+        Kalhan Trisal <kalhan.trisal@intel.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, Daniel Mack <zonque@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Anatolij Gustschin <agust@denx.de>
+Subject: Re: [PATCH 1/2] MISC: convert drivers/misc/* to use module_i2c_driver()
+References: <1322194447.30842.0.camel@phoenix>
+In-Reply-To: <1322194447.30842.0.camel@phoenix>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop driver do not support discard if encryption is enabled, fix the comment.
+On 11/25/2011 05:14 AM, Axel Lin wrote:
+> This patch converts the drivers in drivers/misc/* to use the
+> module_i2c_driver() macro which makes the code smaller and a bit
+> simpler.
+> 
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- drivers/block/loop.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-2.6.orig/drivers/block/loop.c	2011-11-21 17:24:16.000000000 +0800
-+++ linux-2.6/drivers/block/loop.c	2011-11-25 16:25:42.075280030 +0800
-@@ -422,7 +422,7 @@ static int do_bio_filebacked(struct loop
- 
- 		/*
- 		 * We use punch hole to reclaim the free space used by the
--		 * image a.k.a. discard. However we do support discard if
-+		 * image a.k.a. discard. However we do not support discard if
- 		 * encryption is enabled, because it may give an attacker
- 		 * useful information.
- 		 */
+I think we should wait with spi and i2c patches until the macro can actually
+be found in respective subsystem tree. Or do you want these patches to go
+through GregKH's driver-core tree?
