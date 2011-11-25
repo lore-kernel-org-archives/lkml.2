@@ -1,116 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab1KYOFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 09:05:43 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:44451
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755482Ab1KYOFm (ORCPT
+	id S1755736Ab1KYOJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 09:09:05 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62369 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab1KYOJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 09:05:42 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LV7Z5D-01-81C-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH] perf script: Implement option for system-wide profiling
-Date: Fri, 25 Nov 2011 15:05:25 +0100
-Message-ID: <1322229925-10075-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
+	Fri, 25 Nov 2011 09:09:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 25 Nov 2011 15:09:02 +0100
+Message-ID: <CA+icZUV10tQu3AHx5WLTbb4Bc=O_mdvw0Gi_K0FbG0ud+2ob2A@mail.gmail.com>
+Subject: LKML offline mail-archives not accessible
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: j@jasper.es
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The option is documented in man perf-script but was not yet
-implemented:
+Trying for example <http://lkml.org/lkml/last100/> gives this
+error-messages back:
 
-       -a
-           Force system-wide collection. Scripts run without a
-           <command> normally use -a by default, while scripts run
-           with a <command> normally don't - this option allows the
-           latter to be run in system-wide mode.
+<br />
+<b>Warning</b>:  DOMDocument::loadXML() [<a
+href='domdocument.loadxml'>domdocument.loadxml</a>]: Input is not
+proper UTF-8, indicate encoding !
+Bytes: 0xEF 0x20 0x2E 0x2E in Entity, line: 1359 in
+<b>/srv/lkml.org/scripts/getlist.php</b> on line <b>133</b><br />
+<br />
+<b>Warning</b>:  XSLTProcessor::transformToXml() expects parameter 1
+to be object, boolean given in
+<b>/srv/lkml.org/scripts/getlist.php</b> on line <b>136</b><br />
+XSLT error or server overload; admin notified. The system should heal
+itself, please try again in a few minutes<br />
+<b>Fatal error</b>:  Call to undefined function xslt_error() in
+<b>/srv/lkml.org/scripts/getlist.php</b> on line <b>160</b><br />
 
-As with perf record you now can profile in system-wide mode for the
-runtime of a given command, e.g.:
-
- # perf script -a syscall-counts sleep 2
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/builtin-script.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index bcfc00e..82cca10 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -23,6 +23,7 @@ static u64			nr_unordered;
- extern const struct option	record_options[];
- static bool			no_callchain;
- static bool			show_full_info;
-+static bool			system_wide;
- static const char		*cpu_list;
- static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- 
-@@ -1093,6 +1094,8 @@ static const struct option options[] = {
- 	OPT_CALLBACK('f', "fields", NULL, "str",
- 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
- 		     parse_output_fields),
-+	OPT_BOOLEAN('a', "all-cpus", &system_wide,
-+			    "system-wide collection from all CPUs"),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
- 	OPT_BOOLEAN('I', "show-info", &show_full_info,
- 		    "display extended information from perf.data file"),
-@@ -1120,7 +1123,6 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 	struct perf_session *session;
- 	char *script_path = NULL;
- 	const char **__argv;
--	bool system_wide;
- 	int i, j, err;
- 
- 	setup_scripting();
-@@ -1188,15 +1190,17 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		}
- 
- 		if (!pid) {
--			system_wide = true;
- 			j = 0;
- 
- 			dup2(live_pipe[1], 1);
- 			close(live_pipe[0]);
- 
--			if (!is_top_script(argv[0]))
-+			if (is_top_script(argv[0])) {
-+				system_wide = true;
-+			} else if (!system_wide) {
- 				system_wide = !have_cmd(argc - rep_args,
- 							&argv[rep_args]);
-+			}
- 
- 			__argv = malloc((argc + 6) * sizeof(const char *));
- 			if (!__argv)
-@@ -1244,10 +1248,11 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		script_path = rep_script_path;
- 
- 	if (script_path) {
--		system_wide = false;
- 		j = 0;
- 
--		if (rec_script_path)
-+		if (!rec_script_path)
-+			system_wide = false;
-+		else if (!system_wide)
- 			system_wide = !have_cmd(argc - 1, &argv[1]);
- 
- 		__argv = malloc((argc + 2) * sizeof(const char *));
--- 
-1.7.7
-
-
+- Sedat -
