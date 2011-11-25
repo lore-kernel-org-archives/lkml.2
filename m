@@ -1,68 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1KYDVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 22:21:21 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43290 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1KYDVU (ORCPT
+	id S1752017Ab1KYDgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 22:36:13 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36422 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab1KYDgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 22:21:20 -0500
-Date: Fri, 25 Nov 2011 14:21:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: linux-next: manual merge of the cgroup tree with the pm tree
-Message-Id: <20111125142111.ddfd48752425ddf79f194770@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Thu, 24 Nov 2011 22:36:12 -0500
+Message-ID: <1322192160.24988.1.camel@phoenix>
+Subject: [PATCH] Input: convert drivers/input/* to use module_spi_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Barry Song <21cnbao@gmail.com>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Anatolij Gustschin <agust@denx.de>,
+        Lauri Leukkunen <lauri.leukkunen@nokia.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Date: Fri, 25 Nov 2011 11:36:00 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__25_Nov_2011_14_21_11_+1100_tOchpYrLVwXUezLa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__25_Nov_2011_14_21_11_+1100_tOchpYrLVwXUezLa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch converts the drivers in drivers/input/* to use the
+module_spi_driver() macro which makes the code smaller and a bit
+simpler.
 
-Hi Tejun,
+Cc: Barry Song <21cnbao@gmail.com>
+Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
+Cc: Anatolij Gustschin <agust@denx.de>
+Cc: Lauri Leukkunen <lauri.leukkunen@nokia.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/misc/ad714x-spi.c        |   12 +-----------
+ drivers/input/misc/adxl34x-spi.c       |   12 +-----------
+ drivers/input/touchscreen/ad7877.c     |   12 +-----------
+ drivers/input/touchscreen/ad7879-spi.c |   12 +-----------
+ drivers/input/touchscreen/ads7846.c    |   12 +-----------
+ drivers/input/touchscreen/tsc2005.c    |   12 +-----------
+ 6 files changed, 6 insertions(+), 66 deletions(-)
 
-Today's linux-next merge of the cgroup tree got a conflict in
-kernel/cgroup_freezer.c between commit 22b4e111fa01 ("cgroup_freezer:
-prepare for removal of TIF_FREEZE") from the pm tree and commit
-cfb5ec210751 ("cgroup: don't use subsys->can_attach_task() or
-->attach_task()") from the cgroup tree.
+diff --git a/drivers/input/misc/ad714x-spi.c b/drivers/input/misc/ad714x-spi.c
+index 875b508..75f6136d 100644
+--- a/drivers/input/misc/ad714x-spi.c
++++ b/drivers/input/misc/ad714x-spi.c
+@@ -123,17 +123,7 @@ static struct spi_driver ad714x_spi_driver = {
+ 	.remove		= __devexit_p(ad714x_spi_remove),
+ };
+ 
+-static __init int ad714x_spi_init(void)
+-{
+-	return spi_register_driver(&ad714x_spi_driver);
+-}
+-module_init(ad714x_spi_init);
+-
+-static __exit void ad714x_spi_exit(void)
+-{
+-	spi_unregister_driver(&ad714x_spi_driver);
+-}
+-module_exit(ad714x_spi_exit);
++module_spi_driver(ad714x_spi_driver);
+ 
+ MODULE_DESCRIPTION("Analog Devices AD714X Capacitance Touch Sensor SPI Bus Driver");
+ MODULE_AUTHOR("Barry Song <21cnbao@gmail.com>");
+diff --git a/drivers/input/misc/adxl34x-spi.c b/drivers/input/misc/adxl34x-spi.c
+index f29de22..69bc4c0 100644
+--- a/drivers/input/misc/adxl34x-spi.c
++++ b/drivers/input/misc/adxl34x-spi.c
+@@ -130,17 +130,7 @@ static struct spi_driver adxl34x_driver = {
+ 	.remove  = __devexit_p(adxl34x_spi_remove),
+ };
+ 
+-static int __init adxl34x_spi_init(void)
+-{
+-	return spi_register_driver(&adxl34x_driver);
+-}
+-module_init(adxl34x_spi_init);
+-
+-static void __exit adxl34x_spi_exit(void)
+-{
+-	spi_unregister_driver(&adxl34x_driver);
+-}
+-module_exit(adxl34x_spi_exit);
++module_spi_driver(adxl34x_driver);
+ 
+ MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+ MODULE_DESCRIPTION("ADXL345/346 Three-Axis Digital Accelerometer SPI Bus Driver");
+diff --git a/drivers/input/touchscreen/ad7877.c b/drivers/input/touchscreen/ad7877.c
+index 2da9f18..7a3fd9b 100644
+--- a/drivers/input/touchscreen/ad7877.c
++++ b/drivers/input/touchscreen/ad7877.c
+@@ -861,17 +861,7 @@ static struct spi_driver ad7877_driver = {
+ 	.remove		= __devexit_p(ad7877_remove),
+ };
+ 
+-static int __init ad7877_init(void)
+-{
+-	return spi_register_driver(&ad7877_driver);
+-}
+-module_init(ad7877_init);
+-
+-static void __exit ad7877_exit(void)
+-{
+-	spi_unregister_driver(&ad7877_driver);
+-}
+-module_exit(ad7877_exit);
++module_spi_driver(ad7877_driver);
+ 
+ MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+ MODULE_DESCRIPTION("AD7877 touchscreen Driver");
+diff --git a/drivers/input/touchscreen/ad7879-spi.c b/drivers/input/touchscreen/ad7879-spi.c
+index 8f391ff..3a029f9 100644
+--- a/drivers/input/touchscreen/ad7879-spi.c
++++ b/drivers/input/touchscreen/ad7879-spi.c
+@@ -158,17 +158,7 @@ static struct spi_driver ad7879_spi_driver = {
+ 	.remove		= __devexit_p(ad7879_spi_remove),
+ };
+ 
+-static int __init ad7879_spi_init(void)
+-{
+-	return spi_register_driver(&ad7879_spi_driver);
+-}
+-module_init(ad7879_spi_init);
+-
+-static void __exit ad7879_spi_exit(void)
+-{
+-	spi_unregister_driver(&ad7879_spi_driver);
+-}
+-module_exit(ad7879_spi_exit);
++module_spi_driver(ad7879_spi_driver);
+ 
+ MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+ MODULE_DESCRIPTION("AD7879(-1) touchscreen SPI bus driver");
+diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+index 4cedae6..a155e0d 100644
+--- a/drivers/input/touchscreen/ads7846.c
++++ b/drivers/input/touchscreen/ads7846.c
+@@ -1434,17 +1434,7 @@ static struct spi_driver ads7846_driver = {
+ 	.remove		= __devexit_p(ads7846_remove),
+ };
+ 
+-static int __init ads7846_init(void)
+-{
+-	return spi_register_driver(&ads7846_driver);
+-}
+-module_init(ads7846_init);
+-
+-static void __exit ads7846_exit(void)
+-{
+-	spi_unregister_driver(&ads7846_driver);
+-}
+-module_exit(ads7846_exit);
++module_spi_driver(ads7846_driver);
+ 
+ MODULE_DESCRIPTION("ADS7846 TouchScreen Driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
+index cbf0ff3..a7dc23a 100644
+--- a/drivers/input/touchscreen/tsc2005.c
++++ b/drivers/input/touchscreen/tsc2005.c
+@@ -747,17 +747,7 @@ static struct spi_driver tsc2005_driver = {
+ 	.remove	= __devexit_p(tsc2005_remove),
+ };
+ 
+-static int __init tsc2005_init(void)
+-{
+-	return spi_register_driver(&tsc2005_driver);
+-}
+-module_init(tsc2005_init);
+-
+-static void __exit tsc2005_exit(void)
+-{
+-	spi_unregister_driver(&tsc2005_driver);
+-}
+-module_exit(tsc2005_exit);
++module_spi_driver(tsc2005_driver);
+ 
+ MODULE_AUTHOR("Lauri Leukkunen <lauri.leukkunen@nokia.com>");
+ MODULE_DESCRIPTION("TSC2005 Touchscreen Driver");
+-- 
+1.7.5.4
 
-The latter removes the code modified by the latter, so I just removed it
-(freezer_can_attach_task).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__25_Nov_2011_14_21_11_+1100_tOchpYrLVwXUezLa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOzwmnAAoJEECxmPOUX5FEuUkP/3AJMVuXZ3Q5TMplvPkDnVkW
-WClekeoE9fy040Z9pfE/vNFtKpRKtaZyudpJuz3rSJd6dOSMWVHh056lWEO0A9ju
-U2x8ahTz1IHWLsSmBrWfui8x4aVmodut+uHSGnS7F4hqwz/xgKgd57HLZQdrwtDx
-f2BmIHvXYM0N4zCmdYVtjjAbdduBfErzzY/aFo2WpkEANT68cIDn9YYaD4F26fUY
-7/HmmD2o/rDFvxLM3yVwGQG3dehz7TLe12KiuIPbVLzsf45v7VS4rjkTknMqy68V
-brWi+4Dr9Juyp1pIDDlhcnNtyKD1tfFd3mgLnrWrodRMrK+mZv4O3GQnibbN+eMM
-uj9myfC1n+2DQenwJbKW4K32UImbeu0TAbvp7vPUkXbC/RFpQ4U0TpxD3XpTK/p/
-o5XBfg5gVCQnK2xd66WLvpS2lcpmtGk/NcsZShS+/igh8Hmz7r1P0Bbs0Iz2cDrj
-KLY/L2PXYNBY64sHSNrhptBrtmklnTViGQ8eHyQzsDAixOIL4IILDTQGpGJ8tCQW
-dU3GennAqIDD6Hs3XGAA3IOeFQohAUgoiWQNd4WpfB3Khd4ECrV3e+7VRsc4KegB
-3glZ9qPHK08mtpCEgAU+3uAcl+v2Xo7I0hr5BUqRCpocD8qdCQniPVl8SntCUSU6
-bm5MmloJMWO+IGqqUJJl
-=cj90
------END PGP SIGNATURE-----
-
---Signature=_Fri__25_Nov_2011_14_21_11_+1100_tOchpYrLVwXUezLa--
