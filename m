@@ -1,103 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab1KYPf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 10:35:58 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45002 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1KYPf5 (ORCPT
+	id S1753423Ab1KYPgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 10:36:38 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37947 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab1KYPgg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 10:35:57 -0500
-Date: Fri, 25 Nov 2011 15:35:53 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Jamie Iles <jamie@jamieiles.com>, Rob Herring <robherring2@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] irq: fix possible null-pointer deref irq_domain_to_irq
-Message-ID: <20111125153553.GB8866@totoro>
-References: <1320922383-15312-1-git-send-email-jamie@jamieiles.com>
- <20111110111446.GB16018@totoro>
- <4EBBD39C.9000400@gmail.com>
- <20111123122308.GA7382@totoro>
+	Fri, 25 Nov 2011 10:36:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111123122308.GA7382@totoro>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <edeb4da00527914f0e1038461539843c46ab0b50.1322171620.git.nicolas.ferre@atmel.com>
+References: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
+	<edeb4da00527914f0e1038461539843c46ab0b50.1322171620.git.nicolas.ferre@atmel.com>
+Date: Fri, 25 Nov 2011 09:36:36 -0600
+Message-ID: <CAL_JsqLnNtou2gPzEJ4U3_m=RB5FZx3HLoNU5WFAGZBAWSj1tw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: at91/gpio: add irqdomain to gpio interrupts
+From: Rob Herring <robherring2@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        plagnioj@jcrosoft.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Thu, Nov 24, 2011 at 3:56 PM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> ---
+>  arch/arm/mach-at91/gpio.c |   19 +++++++++++++++++++
+>  1 files changed, 19 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
+> index 74d6783..45a39d0 100644
+> --- a/arch/arm/mach-at91/gpio.c
+> +++ b/arch/arm/mach-at91/gpio.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/list.h>
+>  #include <linux/module.h>
+>  #include <linux/io.h>
+> +#include <linux/irqdomain.h>
+>
+>  #include <mach/hardware.h>
+>  #include <mach/at91_pio.h>
+> @@ -32,6 +33,7 @@ struct at91_gpio_chip {
+>        int                     id;             /* ID of register bank */
+>        void __iomem            *regbase;       /* Base of register bank */
+>        struct clk              *clock;         /* associated clock */
+> +       struct irq_domain       domain;         /* associated irq domain */
+>  };
+>
+>  #define to_at91_gpio_chip(c) container_of(c, struct at91_gpio_chip, chip)
+> @@ -483,6 +485,20 @@ postcore_initcall(at91_gpio_debugfs_init);
+>  /*--------------------------------------------------------------------------*/
+>
+>  /*
+> + * irqdomain initialization: pile up irqdomains on top of AIC range
+> + */
+> +static void __init at91_gpio_irqdomain(struct at91_gpio_chip *at91_gpio)
+> +{
+> +       struct irq_domain       *gpio_irq_d = &at91_gpio->domain;
+> +
+> +       gpio_irq_d->irq_base =
+> +               gpio_irq_d->hwirq_base = gpio_to_irq(at91_gpio->chip.base);
 
-On Wed, Nov 23, 2011 at 12:23:08PM +0000, Jamie Iles wrote:
-> On Thu, Nov 10, 2011 at 07:37:32AM -0600, Rob Herring wrote:
-> > On 11/10/2011 05:14 AM, Jamie Iles wrote:
-> > > On Thu, Nov 10, 2011 at 10:53:03AM +0000, Jamie Iles wrote:
-> > >> It is optional for an irqdomain to have a to_irq() method, and for
-> > >> simple domains they often don't require any operations at all - just
-> > >> hwirq to Linux irq translation.  Check we have valid ops before
-> > >> dereferencing them.
-> > >>
-> > >> Patch originally by Rob Herring.
-> > >>
-> > >> Suggested-by: Rob Herring <robherring2@gmail.com>
-> > > 
-> > > Naturally git send-email doesn't know how to convert this into a CC, so 
-> > > Rob is now CC'd!
-> > > 
-> > > Jamie
-> > > 
-> > >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> > >> Cc: Grant Likely <grant.likely@secretlab.ca>
-> > >> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> > >> ---
-> > >>
-> > >> Rob, I can't see that you've already posted this but I didn't want to
-> > >> hold Marc's GIC patches up.
-> > 
-> > Thanks. I didn't get around to it yesterday.
-> > 
-> > Acked-by: Rob Herring <rob.herring@calxeda.com>
-> 
-> I've just noticed in kernel/irq/irqdomain.c, that the kerneldoc for 
-> irq_domain_add() says that a valid ops structure is required, so perhaps 
-> this fix isn't right and we should just have an empty ops structure for 
-> simple controllers...
+This is wrong. hwirq_base is the first irq number relative to the
+irq_chip and is generally 0.
 
-I wonder if this might make more sense instead.  I'll post a proper 
-patch if you think so.
+irq_base should come from the platform if you need it hardcoded.
+Otherwise, it should come from irq_alloc_descs.
 
-Regards,
+> +       gpio_irq_d->nr_irq = at91_gpio->chip.ngpio;
+> +       gpio_irq_d->ops = &irq_domain_simple_ops;
+> +       irq_domain_add(gpio_irq_d);
+> +}
+> +
+> +/*
+>  * This lock class tells lockdep that GPIO irqs are in a different
+>  * category than their parents, so it won't report false recursion.
+>  */
+> @@ -517,6 +533,9 @@ void __init at91_gpio_irq_setup(void)
+>                        set_irq_flags(irq, IRQF_VALID);
+>                }
+>
+> +               /* setup irq domain for this GPIO controller */
+> +               at91_gpio_irqdomain(this);
 
-Jamie
+I would just inline this code.
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 200ce83..92c3484 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -143,11 +143,6 @@ int irq_domain_simple_dt_translate(struct irq_domain *d,
- 	return 0;
- }
- 
--struct irq_domain_ops irq_domain_simple_ops = {
--	.dt_translate = irq_domain_simple_dt_translate,
--};
--EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
--
- /**
-  * irq_domain_create_simple() - Set up a 'simple' translation range
-  */
-@@ -181,4 +176,11 @@ void irq_domain_generate_simple(const struct of_device_id *match,
- 		pr_info("no node found\n");
- }
- EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
-+#else /* CONFIG_OF_IRQ */
-+#define irq_domain_simple_dt_translate NULL
- #endif /* CONFIG_OF_IRQ */
-+
-+struct irq_domain_ops irq_domain_simple_ops = {
-+	.dt_translate = irq_domain_simple_dt_translate,
-+};
-+EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
+Can you use the generic irqchip here? I'm working on a patch to add
+irqdomain support to that.
+
+Rob
