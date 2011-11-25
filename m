@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab1KYRni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 12:43:38 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43086 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab1KYRng (ORCPT
+	id S1753164Ab1KYRoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 12:44:54 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:42802 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698Ab1KYRox convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 12:43:36 -0500
-Date: Fri, 25 Nov 2011 18:43:31 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v2] printk: add console output tracing
-Message-ID: <20111125174327.GB23978@somewhere.redhat.com>
-References: <20111117150040.GB18437@somewhere>
- <1321543268.3997.40.camel@jlt3.sipsolutions.net>
- <20111118184401.GA24787@somewhere.redhat.com>
- <1321641975.10266.73.camel@jlt3.sipsolutions.net>
- <20111118185449.GB24787@somewhere.redhat.com>
- <1321642752.10266.75.camel@jlt3.sipsolutions.net>
- <20111123131622.GA10669@somewhere.redhat.com>
- <1322140919.5366.17.camel@jlt3.sipsolutions.net>
- <20111124154519.GB18579@somewhere.redhat.com>
- <1322161216.5366.52.camel@jlt3.sipsolutions.net>
+	Fri, 25 Nov 2011 12:44:53 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: dedekind1@gmail.com
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/16] DocG3 fixes and write support
+References: <1321714978-24543-1-git-send-email-robert.jarzmik@free.fr>
+	<1321997351.2222.14.camel@koala>
+X-URL: http://belgarath.falguerolles.org/
+Date: Fri, 25 Nov 2011 18:44:43 +0100
+In-Reply-To: <1321997351.2222.14.camel@koala> (Artem Bityutskiy's message of
+	"Tue, 22 Nov 2011 23:29:08 +0200")
+Message-ID: <87hb1sw0z8.fsf@free.fr>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322161216.5366.52.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 08:00:16PM +0100, Johannes Berg wrote:
-> On Thu, 2011-11-24 at 16:45 +0100, Frederic Weisbecker wrote:
-> 
-> > > I don't really feel comfortable modifying the _call_console_drivers()
-> > > function to not handle start > end (modulo log buf size of course), but
-> > > at the same time I don't feel comfortable putting code into it that
-> > > doesn't handle it.
-> > 
-> > So, the:
-> > 
-> > 	BUG_ON(((int)(start - end)) > 0);
-> > 
-> > check is there to ensure we haven't wrapped INT_MAX. If we have reached
-> > that point it definetly means we have a bug because log_buf_len is itself
-> > an int and we shouldn't overlap INT_MAX.
-> 
-> Ok that makes sense.
-> 
-> > The care on the wrapping that is done in _call_console_drivers() is
-> > different and concerns log_buf_len itself. If log_buf_len = 8, start = 7
-> > and end = 9, then you will enter the "((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK))"
-> > condition that handle the wrap on LOG_BUF_MASK to print the two chars.
-> > But this is totally different from "start > end" which would mean we have
-> > a bug.
-> 
-> Oh. So we get end = 9 in that case? That seems confusing ... I would
-> have expected end = 1 then! Which is the whole reason I got confused I
-> guess.
+Artem Bityutskiy <dedekind1@gmail.com> writes:
 
-end = 9 but (end & LOG_BUF_MASK) = 1
+> Hi, pushed to l2-mtd-2.6.git, thanks!
+Great, seen it coming down to linux-next :)
 
-> 
-> > So, in your tracepoint you can safely use "end - start" as a length for your
-> > dynamic array. But the rest of your tracepoint (all the fast assign part)
-> > still needs the masks as you did.
-> 
-> Oh, that's all you were trying to say?
+> 1. The reviewers did not give you any "Reviewed-by:" ?
+You already did all the work for me in linux-next, thanks.
 
-Yeah I first thought my comment applied to all the mask game in the tracepoint but then
-I started to feel ashamed when I realized it was only on the dynamic array declaration :)
+> 2. This series has one checkpatch.pl complaint in patch 15, which looks
+> fair:
+In the patch following this mail taken into account.
 
-> I can see that, ok. I just didn't
-> see that end would be 9 instead of 1 and tried to handle that. The
-> _call_console_drivers() code is a bit different I guess.
-> 
-> I'll send a new version.
+> 3. When I compile with gcc-4.6 for x68_64 I see the following
+> compilation warnings:
+>
+>   CC [M]  drivers/mtd/devices/docg3.o
+> drivers/mtd/devices/docg3.c: In function ‘doc_read_oob’:
+> drivers/mtd/devices/docg3.c:630:3: warning: passing argument 2 of ‘doc_get_hw_bch_syndroms’ from incompatible pointer type [enabled by default]
+> drivers/mtd/devices/docg3.c:513:13: note: expected ‘int *’ but argument is of
+> type ‘u8 *’
+In the patch following the mail, it was in one of Mike's last remarks.
 
-Thanks.
+> drivers/mtd/devices/docg3.c: At top level:
+> drivers/mtd/devices/docg3.c:762:12: warning: ‘doc_get_erase_count’ defined but
+> not used [-Wunused-function]
+Ah, this one gives me trouble. I made that function so that future evolutions of
+MTD api can cope with hardware knowing how many times a block was erased.
 
-> 
-> johannes
-> 
+My proposition is to make a sysfs entry which will dump the list of all blocks
+(from 0 to 2047 for docg3), and for each block print the number of erases. This
+will clear the warning, and can be used for very specialized userspace
+applications when they choose which block to erase.
+This will be another patch I didn't do yet.
+
+> 4. sparse gives the following warning:
+I don't have that warning with C=1.
+Moreover, the line (630) in l2-mtd-git or linux-next points towards a comment
+line. I tried to have a peek at all "syns" usage and it seems correct to me.
+So let's think this was a transient error in the whole patch serie.
+
+> Could you please look at 2, 3, and 4? I did not look whether they are
+> fair or not. Please, do not re-send the series again, I think it is OK
+> if you send incremental fixes instead. Or if you at some point re-send
+> v4, you can incorporate the warnings fixes, but please, do not send 16
+> patches again only because of this :-)
+
+Roger, single little patch. Don't worry, I think the big work is over for
+docg3 ... now Mike's docg3 will be comming soon :)
+
+-- 
+Robert
