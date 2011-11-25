@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab1KYGIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 01:08:53 -0500
-Received: from mga03.intel.com ([143.182.124.21]:43615 "EHLO mga03.intel.com"
+	id S1752002Ab1KYGj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 01:39:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55739 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab1KYGIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 01:08:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,569,1315206000"; 
-   d="scan'208";a="79021042"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        aarcange@redhat.com, wli@holomorphy.com
-Cc: david.woodhouse@intel.com, allen.m.kay@intel.com, mtosatti@redhat.com,
-        chrisw@redhat.com, andi@firstfloor.org, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH 2/2] thp: Set compound tail page _count to zero
-Date: Fri, 25 Nov 2011 13:47:10 +0800
-Message-Id: <1322200030-26350-2-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1322200030-26350-1-git-send-email-youquan.song@intel.com>
-References: <1322200030-26350-1-git-send-email-youquan.song@intel.com>
+	id S1751177Ab1KYGj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 01:39:57 -0500
+Subject: Re: [patch 3/7] sched: set skip_clock_update in yield_task_fair()
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+In-Reply-To: <1322129545.2921.6.camel@twins>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1321629441.7080.15.camel@marge.simson.net>
+	 <1321630552.2197.15.camel@twins>
+	 <1321971445.6855.14.camel@marge.simson.net>
+	 <1321971686.6855.18.camel@marge.simson.net>
+	 <1322059696.14799.68.camel@twins>
+	 <1322106615.6222.10.camel@marge.simson.net> <1322129545.2921.6.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Nov 2011 07:39:31 +0100
+Message-ID: <1322203171.8286.22.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 70b50f94f1644e2aa7cb374819cfd93f3c28d725 "mm: thp: tail page refcounting fix"
- it keep all page_tail->_count zero at all times.
-But current kernel, it does not set page_tail->_count to zero if 1GB page is
-utilized.
-So when IOMMU 1GB page is used at KVM, it wil result in kernel oops because
-a tail page its _count does not equal zero.
+On Thu, 2011-11-24 at 11:12 +0100, Peter Zijlstra wrote:
+> On Thu, 2011-11-24 at 04:50 +0100, Mike Galbraith wrote:
+> > On Wed, 2011-11-23 at 15:48 +0100, Peter Zijlstra wrote:
+> > > On Tue, 2011-11-22 at 15:21 +0100, Mike Galbraith wrote:
+> > > > This is another case where we are on our way to schedule(),
+> > > > so can save a useless clock update and resulting microscopic
+> > > > vruntime update.
+> > > > 
+> > > 
+> > > Everytime I see one of these skip_clock_update thingies I get the idea
+> > > we should do something smarter, because its most fragile and getting it
+> > > wrong results in a subtle trainwreck..
+> > > 
+> > > Would something like the below help in validating this stuff?
+> > 
+> > No, because switch itself is irrelevant to fair-beans counting.
+> 
+> Hmm, right, but we can keep another counter that is more relevant, like
+> all schedule(),ttwu() and various other calls, right?
 
-kernel BUG at include/linux/mm.h:386!
-invalid opcode: 0000 [#1] SMP
-Call Trace:
- [<ffffffff81072f7f>] gup_pud_range+0xb8/0x19d
- [<ffffffff8107312f>] get_user_pages_fast+0xcb/0x192
- [<ffffffff810bc450>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffff81006a24>] hva_to_pfn+0x119/0x2f2
- [<ffffffff81006c29>] gfn_to_pfn_memslot+0x2c/0x2e
- [<ffffffff8100b909>] kvm_iommu_map_pages+0xfd/0x1c1
- [<ffffffff8100ba49>] kvm_iommu_map_memslots+0x7c/0xbd
- [<ffffffff8100b9cd>] ? kvm_iommu_map_pages+0x1c1/0x1c1
- [<ffffffff8100bb34>] kvm_iommu_map_guest+0xaa/0xbf
- [<ffffffff8100aeb0>] kvm_vm_ioctl_assigned_device+0x2ef/0xa47
- [<ffffffff8100ac6d>] ? kvm_vm_ioctl_assigned_device+0xac/0xa47
- [<ffffffff8104f2a6>] ? native_sched_clock+0x32/0x6b
- [<ffffffff810b0c02>] ? sched_clock_cpu+0x45/0xd4
- [<ffffffff810bc450>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffff810b0cd2>] ? local_clock+0x41/0x5a
- [<ffffffff810bc8a1>] ? lock_release_holdtime+0x2c/0x129
- [<ffffffff8115762d>] ? cmpxchg_double_slab+0xd0/0x12b
- [<ffffffff81248f47>] ? avc_has_perm_noaudit+0x388/0x399
- [<ffffffff8104f2a6>] ? native_sched_clock+0x32/0x6b
- [<ffffffff8104f2e8>] ? sched_clock+0x9/0xd
- [<ffffffff81007dcb>] kvm_vm_ioctl+0x36c/0x3a2
- [<ffffffff8104f2a6>] ? native_sched_clock+0x32/0x6b
- [<ffffffff8104f2e8>] ? sched_clock+0x9/0xd
- [<ffffffff81174b10>] do_vfs_ioctl+0x49e/0x4e4
- [<ffffffff81174bb0>] sys_ioctl+0x5a/0x7c
- [<ffffffff81500e02>] system_call_fastpath+0x16/0x1b
-RIP  [<ffffffff81072d13>] gup_huge_pud+0xf2/0x159
+Yeah, there's gotta be a way to be smarter about this.  When waking a
+gaggle, we'll do useless microscopic updates and preempt checks for each
+and every wakeup (not to mention waker can be preempted).  It's one
+event per touched rq really, but we treat is as many.  The skip thing
+just binds a couple obvious spots in a hacky way.
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- mm/hugetlb.c    |    1 +
- mm/page_alloc.c |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
+> Thing is, is that going to be less fragile than the current crap :-(
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index bb28a5f..73f17c0 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -576,6 +576,7 @@ static void prep_compound_gigantic_page(struct page *page, unsigned long order)
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++, p = mem_map_next(p, page, i)) {
- 		__SetPageTail(p);
-+		set_page_count(p, 0);
- 		p->first_page = page;
- 	}
- }
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9dd443d..850009a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -356,8 +356,8 @@ void prep_compound_page(struct page *page, unsigned long order)
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++) {
- 		struct page *p = page + i;
--
- 		__SetPageTail(p);
-+		set_page_count(p, 0);
- 		p->first_page = page;
- 	}
- }
--- 
-1.6.4.2
+I agree it's fragile.
+
+	-Mike
 
