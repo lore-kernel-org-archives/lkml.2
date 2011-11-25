@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab1KXX6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 18:58:22 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:42481 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab1KXX6V (ORCPT
+	id S1754244Ab1KYARM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 19:17:12 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:42147 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752555Ab1KYARJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 18:58:21 -0500
+	Thu, 24 Nov 2011 19:17:09 -0500
+Date: Thu, 24 Nov 2011 19:17:08 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Lin Ming <ming.m.lin@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH v3 3/6] [SCSI] runtime resume device before system suspend
+In-Reply-To: <CAOS58YMCv0syM7ggzaJeQp6oQxdNAJ9Y5Yn+6Q_Tb7ZjcvPzng@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1111241906020.26861-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
-References: <BANLkTinM_=bAjD59=GiKtTvjLtoOs7KCFA@mail.gmail.com>
-Date: Thu, 24 Nov 2011 15:58:19 -0800
-Message-ID: <CAMe9rOom59dS1X6tfUec36O3Q0jFDZiE36Pesw3+Nvr7kyTUqg@mail.gmail.com>
-Subject: X32 project status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 24 Nov 2011, Tejun Heo wrote:
 
-This is the x32 project status update:
+> Hello,
+> 
+> On Thu, Nov 24, 2011 at 2:54 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > Therefore, when entering the SUSPEND or HIBERNATE stages of system
+> > sleep, we can skip the callback to the driver if the device is already
+> > in runtime suspend.  When entering the FREEZE stage, however, we should
+> > first issue a runtime resume.  The overhead of doing this is
+> > negligible, because a suspended drive would be spun up during the THAW
+> > stage of hibernation anyway.
+> 
+> My brain is half fried at the moment so maybe you're saying the same
+> thing, but I hope this is something simple. Like...
+> 
+>     /* for libata runtime suspend is equivalent to suspend */
+>     if (runtime suspended && target == SUSPEND) {
+>         yeah! skip drive pm ops;
+>     } else {
+>         end runtime pm;
+>         ask EH to enter target PM state;
+>     }
 
-https://sites.google.com/site/x32abi/
+Almost.  More like this:
 
-There are several changes:
+	/*
+	 * sd is the only high-level SCSI driver to implement runtime 
+	 * PM, and sd treats runtime suspend, system suspend, and 
+	 * system hibernate identically (but not system freeze).
+	 */
+	if (runtime-suspended) {
+		if (target == SUSPEND || target == HIBERNATE)
+			return 0;	/* already suspended */
+		/* wake up device so that FREEZE will succeed */
+		pm_runtime_resume();
+	}
+	tell device driver to enter target PM state
 
-1. We changed x32 kernel to use the 64bit filesystem interface (LFS) as well as
-64bit time_t.  We are targeting Linux kernel 3.3.
-2. I backported x32 support to glibc 2.14, 2.13, 2.12 and 2.11.  Since
-glibc 2.11
-is the first x32 release now, the x32 minimum ABI is changed from GLIBC_2.14
-to GLIBC_2.11, which require recompiling all existing x32 binaries.
-3. I am implementing address-size override:
+libata does not contain the SCSI device driver; it contains the host
+driver.
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=50797
+> I really don't think we need to optimize this further than this.
 
-The result shows that it can improve SPEC CPU performance by another 5%
-over the current x32 implementation.  I am putting this on hjl/x32/addr32 branch
-at
+The above has two lines (plus comments) of optimization.  Okay?
 
-http://gcc.gnu.org/git/?p=gcc.git;a=summary
+Alan Stern
 
-I also backported it to GCC 4.6 on hjl/x32/gcc-4_6-branch branch.
-
-
--- 
-H.J.
