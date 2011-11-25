@@ -1,49 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab1KYPXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 10:23:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38463 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1KYPXj (ORCPT
+	id S1752969Ab1KYP2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 10:28:22 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51278 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab1KYP2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 10:23:39 -0500
-Subject: Re: [PATCH v7 3.2-rc2 12/30] uprobes: Handle breakpoint and
- Singlestep
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-In-Reply-To: <20111118110903.10512.88532.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110903.10512.88532.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Nov 2011 16:24:22 +0100
-Message-ID: <1322234662.2535.8.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Nov 2011 10:28:21 -0500
+Date: Fri, 25 Nov 2011 15:28:17 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: at91/aic: add device tree support for AIC
+Message-ID: <20111125152817.GA8866@totoro>
+References: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com>
+ <20111124222601.GA28582@gallagher>
+ <20111125135106.GN15531@game.jcrosoft.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111125135106.GN15531@game.jcrosoft.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:39 +0530, Srikar Dronamraju wrote:
+On Fri, Nov 25, 2011 at 02:51:06PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 22:26 Thu 24 Nov     , Jamie Iles wrote:
+> > Hi Nicolas,
+> > On Thu, Nov 24, 2011 at 10:56:27PM +0100, Nicolas Ferre wrote:
+[...]
+> > > +#if defined(CONFIG_OF)
+> > > +static struct of_device_id aic_ids[]  = {
+> > > +	{ .compatible = "atmel,at91rm9200-aic" },
+> > > +	{ /*sentinel*/ }
+> > > +};
+> > > +
+> > > +static int __init at91_aic_of_init(void)
+> > > +{
+> > > +	struct device_node *np;
+> > > +
+> > > +	np = of_find_matching_node(NULL, aic_ids);
+> > > +	if (np == NULL)
+> > > +		return -ENODEV;
+> > > +
+> > > +	at91_aic_base = of_iomap(np, 0);
+> > > +	at91_aic_domain.of_node = np;
+> > 
+> > I think this needs to be:
+> > 
+> > 	at91_aic_domain.of_node = of_node_get(np);
+> > 
+> > to keep the reference count.
+> > 
+> > > +	/* Keep refcount of the node */
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +#else
+> > > +static int __init at91_aic_of_init(void)
+> > > +{
+> > > +	return -ENOSYS;
+> > > +}
+> > > +#endif
+> > 
+> > I think it's preferred if you use of_irq_init() here as it can handle 
+> > the ordering of IRQ controllers.  There are GIC and VIC bindings in 
+> > -next that use this and provide a way for non-DT platforms to still use 
+> > the drivers.
+> which is the case here as if the of_init fail we failback to the non-dt init
+> 
+> and this IP is AT91 only
 
-> +       consumer = uprobe->consumers;
-> +       for (consumer = uprobe->consumers; consumer;
-> +                                       consumer = consumer->next) { 
+Right, but it's not using the of_irq_init() interface which is the 
+standard way of registering interrupt controllers and will correctly 
+dependencies for you.
 
-that first expression seems redundant..
+So if you could have something like:
 
+void __init __at91_aic_init(unsigned int priority[NR_AIC_IRQS],
+			    void __iomem *regs,
+			    struct device_node *np)
+{
+	/*
+	 * Do all of the writes to the AIC itself and configure 
+	 * the IRQ domain.
+	 */
+}
+
+void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
+{
+	void __iomem *base = ioremap(AT91_AIC, 512);
+
+	__at91_aic_init(priority, base, NULL);
+}
+
+int __init at91_aic_of_init(struct device_node *node,
+			    struct device_node *parent)
+{
+	void __iomem *regs = of_iomap(node, 0);
+
+	/*
+	 * Get priorities from the DT.  If this was an array of cells 
+	 * then that should be okay.
+	 */
+	__at91_aic_init(dt_priorities, regs, node);
+}
+
+Then the DT based board initialisation can do:
+
+static const struct of_device_id at91_irq_of_match[] __initconst = {
+	{ .compatible = "atmel,at91-aic", .data = at91_aic_of_init },
+	{}
+};
+
+static void __init at91_of_irq_init(void)
+{
+	of_irq_init(at91_of_irq_init);
+}
+
+Which is consistent with other platforms.  However this does require 
+that the priorities are encoded in the device-tree, but I guess that's a 
+good thing anyway isn't it?
+
+Jamie
