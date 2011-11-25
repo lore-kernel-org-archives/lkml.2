@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab1KYKBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 05:01:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57094 "EHLO mx1.redhat.com"
+	id S1753927Ab1KYKCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 05:02:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40642 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752571Ab1KYKBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 05:01:48 -0500
-Message-ID: <4ECF680C.7060606@redhat.com>
-Date: Fri, 25 Nov 2011 18:03:56 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kexec: do not call kmsg_dump in crashdump
-References: <20111125081959.GA2505@darkstar.nay.redhat.com> <CAM_iQpW7WXeUihgbJneJUJ1GAMzXfONfV69dpqeRbUt_781M=Q@mail.gmail.com>
-In-Reply-To: <CAM_iQpW7WXeUihgbJneJUJ1GAMzXfONfV69dpqeRbUt_781M=Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753551Ab1KYKCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 05:02:47 -0500
+From: Petr Uzel <petr.uzel@suse.cz>
+To: linux-scsi@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com> (maintainer:SCSI
+	SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 2/2] [SCSI] sd: Adapt comment and printk string after renaming sd_attach to sd_probe
+Date: Fri, 25 Nov 2011 11:02:45 +0100
+Message-Id: <1322215365-15655-2-git-send-email-petr.uzel@suse.cz>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1322215365-15655-1-git-send-email-petr.uzel@suse.cz>
+References: <1322215365-15655-1-git-send-email-petr.uzel@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2011 05:32 PM, Cong Wang wrote:
+Make the comment and printk string match the code.
 
-> On Fri, Nov 25, 2011 at 4:19 PM, Dave Young <dyoung@redhat.com> wrote:
->> mtd/ram oops dumper will make more functions envolved. In case crash kexec,
->> we should avoid kmsg dumper to ensure crashdump success.
->>
->> kill kmsg_dump callback while crash dumping
-> 
-> https://lkml.org/lkml/2011/2/1/33
+Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
+---
+ drivers/scsi/sd.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-
-Thanks for give the link. So it's intend to be that.
-
-I'm still confused with the KMSG_DUMP_KEXEC.
-
-crash_kexec()
-	kmsg_dump(KMSG_DUMP_KEXEC)
-kmsg_dump(KMSG_DUMP_PANIC)
-
-Looks like it's equal to original logic, isn't it?
-
-kmsg_dump(anything);
-crash_kexec()
-
-So why intruduce KMSG_DUMP_KEXEC? why not just kmsg_dump before crash_kexec?
-
-thoughts?
-
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index c368e88..4b4233b 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2554,8 +2554,8 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+  *	(e.g. /dev/sda). More precisely it is the block device major 
+  *	and minor number that is chosen here.
+  *
+- *	Assume sd_attach is not re-entrant (for time being)
+- *	Also think about sd_attach() and sd_remove() running coincidentally.
++ *	Assume sd_probe is not re-entrant (for time being)
++ *	Also think about sd_probe() and sd_remove() running coincidentally.
+  **/
+ static int sd_probe(struct device *dev)
+ {
+@@ -2570,7 +2570,7 @@ static int sd_probe(struct device *dev)
+ 		goto out;
+ 
+ 	SCSI_LOG_HLQUEUE(3, sdev_printk(KERN_INFO, sdp,
+-					"sd_attach\n"));
++					"sd_probe\n"));
+ 
+ 	error = -ENOMEM;
+ 	sdkp = kzalloc(sizeof(*sdkp), GFP_KERNEL);
 -- 
-Thanks
-Dave
+1.7.7
+
