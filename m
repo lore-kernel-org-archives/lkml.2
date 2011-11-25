@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab1KYF2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 00:28:48 -0500
-Received: from mail20.svc.cra.dublin.eircom.net ([159.134.118.221]:46020 "HELO
-	mail20.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750893Ab1KYF2r (ORCPT
+	id S1751449Ab1KYFnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 00:43:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60951 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab1KYFm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 00:28:47 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 00:28:47 EST
-Date: Fri, 25 Nov 2011 05:21:02 +0000 (GMT)
-From: VITTORIO FOUNDATION <clifferna.ias@eircom.net>
-Reply-To: VITTORIO FOUNDATION <vittorio_foundation@rocketmail.com>
-Message-ID: <18297604.576.1322198462877.JavaMail.root@webmailbox102.eircom.net>
-Subject: !!AWARD NOTICE!!
+	Fri, 25 Nov 2011 00:42:59 -0500
+Message-ID: <4ECF2AD3.5050801@gmail.com>
+Date: Fri, 25 Nov 2011 13:42:43 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie
+Subject: Question about mm/compaction.c/acct_isolated: computing nr_anon,
+ nr_file
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.58.102.67]
-X-Mailer: Zimbra 6.0.8_GA_2685 (zclient/6.0.8_GA_2685)
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corso Ercole I d'Este 44,
-Ferrara 44100 - Italy.
 
-You were selected among the lucky recipients to receive the award sum of USD$100,000,000.00.  here is your Qualification numbers (P-333-7858,B-011-67)
+Why does it double the number in line 233/234?
  
-1.Name in Full
-2.Address
-3.Nationality
-4.Age
-5.Sex
-6.Occupation
-7.Phone/Fax
-8.Present Country
-9.Qualification numbers (P-333-7858,B-011-67)
-Regards,
-Mrs.Jennifer James.
-Email:vittorio_foundation@rocketmail.com
- 
+ 222/* Update the number of anon and file isolated pages in the zone */
+ 223static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ 224{
+ 225        struct page *page;
+ 226        unsigned int count[NR_LRU_LISTS] = { 0, };
+ 227
+ 228        list_for_each_entry(page, &cc->migratepages, lru) {
+ 229                int lru = page_lru_base_type(page);
+ 230                count[lru]++;
+ 231        }
+ 232
+ 233        cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+ 234        cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+ 235        __mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
+ 236        __mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
+ 237}
+
+thanks,
+
