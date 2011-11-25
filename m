@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1KYWQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 17:16:16 -0500
-Received: from mail.df.lth.se ([194.47.250.12]:34090 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408Ab1KYWQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 17:16:15 -0500
-X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 17:16:15 EST
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [GIT PULL] GPIO fixes for -rc series
-Date: Fri, 25 Nov 2011 23:07:20 +0100
-Message-Id: <1322258840-9206-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.6.4
+	id S1753697Ab1KYW2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 17:28:17 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:39460 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595Ab1KYW2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 17:28:15 -0500
+Date: Fri, 25 Nov 2011 23:22:11 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, netdev@vger.kernel.org,
+        nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        Armin Kazmi <armin.kazmi@tu-dortmund.de>, Gerd <booster@wolke7.net>
+Subject: Re: [bug?] r8169: hangs under heavy load
+Message-ID: <20111125222211.GA13719@electric-eye.fr.zoreil.com>
+References: <4E7F4D45.7040902@wolke7.net> <1316978632.4122.103.camel@deadeye> <4E82C0B5.1050902@wolke7.net> <1317254171.4068.12.camel@deadeye> <20111124044137.GA18262@elie.hsd1.il.comcast.net> <4ECFE7A7.5070300@wolke7.net> <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322253122.2550.3.camel@edumazet-laptop>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Eric Dumazet <eric.dumazet@gmail.com> :
+[...]
+> rtl8169_rx_interrupt(..., budget) can return budget + 1 sometimes
+> because of :
+> 
+>                 /* Work around for AMD plateform. */
+>                 if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
+>                     (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
+>                         desc->opts2 = 0;
+>                         cur_rx++;
+>                 }
 
-Hi Linus,
+It needs fixing but RTL_GIGA_MAC_VER_05 is an old PCI 8169sc while
+debian's bug #642911 is about a 8168c (aka RTL_GIGA_MAC_VER_{19 .. 22}).
 
-Grant asked me to harvest GPIO fixes in his absence,
-and so I've done. But so far I've seen only one,
-anyway, here it is, please pull it in.
+This path is not used.
 
-The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37:
-
-  Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git gpio-fixes
-
-Mark Brown (1):
-      gpio: pca953x: Staticise pca953x_get_altdata()
-
- drivers/gpio/gpio-pca953x.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO0BC7AAoJEEEQszewGV1zw/wP/j87GuAeQpGX90TaDjH8dQ17
-wWbfNofxdYPzElIsu6/9QPDMj9TkfHSBySteXVBFvSfOOdYBCwmnOf0WDqQEbg6K
-voG5R2dG0ksQpK6tkjZAWM6DJ5XeEXc0skf2+XauD84df2EAlnFc1kHeX7i08k0Q
-pvow6tCGadHiuRD3waS2nuDDoBC7d0dcB8kPAYgZ9BuJA9eysWoeNJB3YIun+tdT
-7qkexhj0YvKV9PmcAA5P2TaJ/HQPX+9ycc+pzAqxRgfqeN7NQ1PrKym40+wTiGyB
-bnG7VRkSHk1VAO3waf2VUmE1qJ7o1uKPpSHIbwceIdlMFqnfpYrtTb6w6iR1T8uu
-SZIaDKV+3afVROInwdGNMf1m/Amzbabh0ECbSYwkChUO0wQ3TgE1a5LyOMmDO7Ih
-EuexSnRZ30sUjyQtV4fqDJN5EcsoqiqTgVbZlKcrO+uYLiOmQTCutjJxrhSmSxgm
-L28y8by9Ixttklp/2I0KE8skTQC3igYJYEwgfzDgIphGlfxBeevjalU4Pk2SCs5Z
-55GZ68B8tFT1CT8YShnrXbKXxw9eSum+DhJwMPliCLIi5+JrMufYZMomCreCZPGU
-cKs/Qkv7ne6Z16SO36Tzf3vWn9MoDW+rxPQtuHlm+QfQjfTnYeyBL+JdI1eTVZW3
-Z4L4qxXg42xqNGDl7NUa
-=dsSG
------END PGP SIGNATURE-----
+-- 
+Ueimor
