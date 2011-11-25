@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab1KYEfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 23:35:52 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:48114 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750862Ab1KYEfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 23:35:52 -0500
-Message-ID: <4ECF1A89.2070600@xenotime.net>
-Date: Thu, 24 Nov 2011 20:33:13 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Rahul Bedarkar <rpal143@gmail.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [path] adding header info in raw.h
-References: <CA+NV+Vkog3M6BMC9iMAdCJPbsDQUvPJx1ucsX5FV=kHJLu+ryw@mail.gmail.com> <CACVxJT8D_9T+N8siZBGMccjUTeyip5YxNPg_jFTjpE4Bwb+CLA@mail.gmail.com> <CA+NV+Vn7y7VNwuFueM2JeoXiA1azE_8pyAZwHi-M1EB0X-aBZg@mail.gmail.com>
-In-Reply-To: <CA+NV+Vn7y7VNwuFueM2JeoXiA1azE_8pyAZwHi-M1EB0X-aBZg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753003Ab1KYEsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 23:48:31 -0500
+Received: from gate.crashing.org ([63.228.1.57]:38159 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751820Ab1KYEsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 23:48:30 -0500
+Message-ID: <1322196490.32635.18.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Nov 2011 15:48:10 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2011 08:28 PM, Rahul Bedarkar wrote:
-> On Thu, Nov 24, 2011 at 9:44 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
->> On Thu, Nov 24, 2011 at 1:09 PM, Rahul Bedarkar <rpal143@gmail.com> wrote:
->>> --- a/include/linux/raw.h
->>> +++ b/include/linux/raw.h
->>> @@ -1,3 +1,9 @@
->>> +/*
->>> +* include/linux/raw.h
->>> +*
->>> +* include file for raw block device drivers
->>> +*/
->>
->> Quite a useless comment.
->> Filename inside file especially.
->>
-> I have seen File name inside file rbtree.h, it is 19th line in my repo.
+Hi Linus !
 
-It's still useless (and sometimes incorrect in files that have it).
+Here are a handful of tiny fixes for ppc, essentially embedded bits and
+all reasonably trivial.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Cheers,
+Ben.
+
+The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+
+  Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+Alexandre Rusev (1):
+      powerpc/fsl-lbc: Fix for fsl_upm
+
+Joakim Tjernlund (1):
+      powerpc/qe: Fixup QE_General4 errata
+
+Julia Lawall (1):
+      arch/powerpc/sysdev/ehv_pic.c: add missing kfree
+
+Kumar Gala (2):
+      powerpc/85xx: Fix compile error on p3060_qds.c
+      powerpc: Fix compiliation with hugetlbfs enabled
+
+Paul Bolle (1):
+      powerpc/p3060qds: Fix select of 'MPC8xxx_GPIO'
+
+Roy Zang (1):
+      powerpc/p1023: set IRQ[4:6,11] to active-high level sensitive for PCIe
+
+Shaohui Xie (1):
+      drivers/edac/mpc85xx_edac.c: fix memory controller compatible for edac
+
+Tony Breeds (1):
+      powerpc/44x: Add mtd ndfc to the ppx44x defconfig
+
+ arch/powerpc/boot/dts/p1023rds.dts      |   17 +++++++++++++----
+ arch/powerpc/configs/ppc44x_defconfig   |    2 ++
+ arch/powerpc/mm/hugetlbpage.c           |    1 +
+ arch/powerpc/platforms/85xx/Kconfig     |    2 +-
+ arch/powerpc/platforms/85xx/p3060_qds.c |    2 +-
+ arch/powerpc/sysdev/ehv_pic.c           |    1 +
+ arch/powerpc/sysdev/fsl_lbc.c           |    1 +
+ arch/powerpc/sysdev/qe_lib/qe.c         |    2 +-
+ drivers/edac/mpc85xx_edac.c             |    2 +-
+ 9 files changed, 22 insertions(+), 8 deletions(-)
+
+
