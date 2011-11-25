@@ -1,47 +1,40 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1753348Ab1KWX1D (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Wed, 23 Nov 2011 18:27:03 -0500
-Received: from [70.33.214.132] ([70.33.214.132]:37630 "EHLO vps.aarm.org"
-        rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-        id S1752463Ab1KWX1B convert rfc822-to-8bit (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Wed, 23 Nov 2011 18:27:01 -0500
-Message-Id: <rUY20HQGImL8G32EbGtiYUwdkvuIqfgxmaXtxR0FBbCb@aarm.org>
-Mime-Version: 1.0
-From: Robert Stacey <roberttstacey@aarm.org>
-To: linux-kernel@vger.kernel.org
-Subject: Alert - The Branding Revolution
-Date: Wed, 23 Nov 2011 19:22:19 -0400
-X-Bounce-Tracking-Info: <CQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlBbGVydCAtIFRoZSBCcmFuZGluZyBSZXZvbHV0aW9uCTI3OAkJNDA3OTcJYm91bmNlCW5vCW5v>
-Content-Type: text/plain; charset=US-ASCII;
-        format=flowed
-Content-Transfer-Encoding: 7BIT
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - vps.aarm.org
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - aarm.org
+        id S1755238Ab1KYBa6 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Thu, 24 Nov 2011 20:30:58 -0500
+Received: from smtpfree.forptr.21cn.com ([59.36.102.63]:14587 "EHLO 21cn.com"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1755105Ab1KYBa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 24 Nov 2011 20:30:57 -0500
+HMM_SOURCE_IP: 10.27.2.11:36757.631986415
+HMM_ATTACHE_NUM: 0000
+HMM_SOURCE_TYPE: SMTP
+0/X-Brightmail-Tracker: AAAAAA==
+1/X-Total-Score: 0:
+X-FILTER-SCORE: to=<linux-india-help-admin@lists.sourceforge.netlinuxjava01@hotmail.comlinux-kernel@vger.kernel.orglinuxl4@sohu.comlinux-leman-admin@alphanet.chlinux-leman-commercial@alphanet.ch>, score=<1322184656zzzzvzzBzzpzvBp8a5ilTzHHHHAHHMHHYHAMYoEPTs6H>  
+Reply-To: <xtay131415@126.com>
+Message-ID: <2C35326B6429DC1EF507F8FE7DB3147B@npsb>
+From: =?utf-8?B?5bCPLeW8oA==?= <qiehuting@21cn.com>
+To: <linux-india-help-admin@lists.sourceforge.net>,
+        <linuxjava01@hotmail.com>, <linux-kernel@vger.kernel.org>,
+        <linuxl4@sohu.com>, <linux-leman-admin@alphanet.ch>,
+        <linux-leman-commercial@alphanet.ch>
+Subject: 2011-11-25
+Date: Fri, 25 Nov 2011 09:27:43 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: base64
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-As you know the world's biggest branding revolution starts January 2012.
-
-What direct implications does it have for your organization? What do your teams need to know now and what must they be prepared for in advance to face the tidal wave?
-
-This White Paper provides an in-depth overview and can be downloaded directly download from the AARM web site at http://www.aarm.org
-
-I hope you'll find it helpful.
-
-Robert
-
-Robert T. Stacey
-President - AARM
-roberttstacey@aarm.org
-bba
-___________________________
-
-If you have received this email in errror please accept my apologies. Insert removal in the subject line and email to removal@aarm.org and I'll see that appropriate action is taken. To reach the AARM website <<AARM WEB>>
+ICAgDQoNCg0KDSAgICAgICAwLi4u5Y2O5oSP56iO5Yqh5YWs5Y+45LiT5Lia5Luj55CG5YWo5Zu9
+5ZCE55yB5biCPD7mma4t6YCaLeeoji3lmIwsPD4NCg0KICDngrnmlbDlupUs6aqM6K+B5peg6Zeu
+6aKY5ZCO5LuY5qy+LDEwMCXmlL7lv4Mu5aaC5pyJ6ZyA5Y+v5p2l55S15rS96LCILi4uDQoNCiAg
+5bygYFI6MS4zLjQuMi44LjYuNi45LjUuNS45ICAgIFFROjkgMCA4IDEgOSA5IDUgOCA4DQoNCg0K
+DQoNCg0K
 
