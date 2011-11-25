@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab1KYRk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 12:40:58 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:4770 "EHLO relay.sw.ru"
+	id S1753613Ab1KYRlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 12:41:05 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9653 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab1KYRk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 12:40:56 -0500
+	id S1752969Ab1KYRk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 12:40:59 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
@@ -13,9 +13,9 @@ Cc: lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
         netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
         avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
         cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v6 07/10] Display current tcp memory allocation in kmem cgroup
-Date: Fri, 25 Nov 2011 15:38:13 -0200
-Message-Id: <1322242696-27682-8-git-send-email-glommer@parallels.com>
+Subject: [PATCH v6 08/10] Display current tcp failcnt in kmem cgroup
+Date: Fri, 25 Nov 2011 15:38:14 -0200
+Message-Id: <1322242696-27682-9-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1322242696-27682-1-git-send-email-glommer@parallels.com>
 References: <1322242696-27682-1-git-send-email-glommer@parallels.com>
@@ -23,77 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces kmem.tcp.usage_in_bytes file, living in the
-kmem_cgroup filesystem. It is a simple read-only file that displays the
-amount of kernel memory currently consumed by the cgroup.
+This patch introduces kmem.tcp.failcnt file, living in the
+kmem_cgroup filesystem. Following the pattern in the other
+memcg resources, this files keeps a counter of how many times
+allocation failed due to limits being hit in this cgroup.
+The root cgroup will always show a failcnt of 0.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Eric W. Biederman <ebiederm@xmission.com>
 ---
- Documentation/cgroups/memory.txt |    1 +
- net/ipv4/tcp_memcg.c             |   21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ net/ipv4/tcp_memcg.c |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index c1db134..00f1a88 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -79,6 +79,7 @@ Brief summary of control files.
-  memory.independent_kmem_limit	 # select whether or not kernel memory limits are
- 				   independent of user limits
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-+ memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
- 
- 1. History
- 
 diff --git a/net/ipv4/tcp_memcg.c b/net/ipv4/tcp_memcg.c
-index b3721c3..a1ab613 100644
+index a1ab613..da8d9c0 100644
 --- a/net/ipv4/tcp_memcg.c
 +++ b/net/ipv4/tcp_memcg.c
-@@ -16,6 +16,11 @@ static struct cftype tcp_files[] = {
+@@ -8,6 +8,7 @@
+ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft);
+ static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			    const char *buffer);
++static int tcp_cgroup_reset(struct cgroup *cont, unsigned int event);
+ 
+ static struct cftype tcp_files[] = {
+ 	{
+@@ -21,6 +22,12 @@ static struct cftype tcp_files[] = {
  		.read_u64 = tcp_cgroup_read,
- 		.private = RES_LIMIT,
+ 		.private = RES_USAGE,
  	},
 +	{
-+		.name = "kmem.tcp.usage_in_bytes",
++		.name = "kmem.tcp.failcnt",
++		.private = RES_FAILCNT,
++		.trigger = tcp_cgroup_reset,
 +		.read_u64 = tcp_cgroup_read,
-+		.private = RES_USAGE,
 +	},
  };
  
  static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
-@@ -158,6 +163,19 @@ static u64 tcp_read_stat(struct mem_cgroup *memcg, int type, u64 default_val)
- 	return res_counter_read_u64(&tcp->tcp_memory_allocated, type);
- }
- 
-+static u64 tcp_read_usage(struct mem_cgroup *memcg)
-+{
-+	struct tcp_memcontrol *tcp;
-+	struct cg_proto *cg_proto;
-+
-+	cg_proto = tcp_prot.proto_cgroup(memcg);
-+	if (!cg_proto)
-+		return atomic_long_read(&tcp_memory_allocated) << PAGE_SHIFT;
-+
-+	tcp = tcp_from_cgproto(cg_proto);
-+	return res_counter_read_u64(&tcp->tcp_memory_allocated, RES_USAGE);
-+}
-+
- static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-@@ -167,6 +185,9 @@ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
- 	case RES_LIMIT:
- 		val = tcp_read_stat(memcg, RES_LIMIT, RESOURCE_MAX);
+@@ -188,12 +195,36 @@ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ 	case RES_USAGE:
+ 		val = tcp_read_usage(memcg);
  		break;
-+	case RES_USAGE:
-+		val = tcp_read_usage(memcg);
++	case RES_FAILCNT:
++		val = tcp_read_stat(memcg, RES_FAILCNT, 0);
 +		break;
  	default:
  		BUG();
  	}
+ 	return val;
+ }
+ 
++static int tcp_cgroup_reset(struct cgroup *cont, unsigned int event)
++{
++	struct mem_cgroup *memcg;
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	memcg = mem_cgroup_from_cont(cont);
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return 0;
++	tcp = tcp_from_cgproto(cg_proto);
++
++	switch (event) {
++	case RES_FAILCNT:
++		res_counter_reset_failcnt(&tcp->tcp_memory_allocated);
++		break;
++	}
++
++	return 0;
++}
++
+ unsigned long long tcp_max_memory(const struct mem_cgroup *memcg)
+ {
+ 	struct tcp_memcontrol *tcp;
 -- 
 1.7.6.4
 
