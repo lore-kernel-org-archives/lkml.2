@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1KYWxL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 17:53:11 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48017 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab1KYWxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 17:53:10 -0500
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+	id S1753690Ab1KYXAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 18:00:15 -0500
+Received: from gherkin.frus.com ([192.158.254.49]:39251 "EHLO gherkin.frus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371Ab1KYXAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 18:00:13 -0500
+Date: Fri, 25 Nov 2011 17:00:12 -0600
+From: Bob Tracy <rct@gherkin.frus.com>
 To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbou@mail.ru>, syed rafiuddin <rafiuddin.sayed@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH] rx51: add bq27200 i2c board info
-Date: Fri, 25 Nov 2011 23:53:06 +0100
-Message-ID: <1680176.R2HCxgKt4B@pali-elitebook>
-User-Agent: KMail/4.7.3 (Linux/3.2.0-1-generic; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
-References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart9943996.a5Fj0bHdOn"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Cc: airlied@linux.ie
+Subject: Re: [BUG] 3.2-rcX radeon KMS system freeze
+Message-ID: <20111125230012.GA4014@gherkin.frus.com>
+References: <20111125203351.GA3651@gherkin.frus.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111125203351.GA3651@gherkin.frus.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 25, 2011 at 02:33:51PM -0600, Bob Tracy wrote:
+> Apologies for the less-than-useful bug report.  If there's anything I
+> can do to generate/capture more diagnostic info, please don't hesitate
+> to let me know.  I'll be able to try a 3.2-rc3 kernel later today.
 
---nextPart9943996.a5Fj0bHdOn
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Update for 3.2-rc3.  Logged-in via the kdm-greeter screen, and just as
+soon as the kde session initialization started, I toggled back to a
+virtual console to see if any error messages were being written there.
+The only suspicious thing I saw was *many* messages in syslog of the
+form:
 
-I forgot to send patch which enable bq27x00_battery driver on Nokia N900 RX51. Here is:
+<date> <hostname> kernel: do_entUnaUser: 836779 callbacks suppressed
 
->From c06d00aa9d394ab5b65bbd5361c6da8424afbfe5 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Fri, 25 Nov 2011 23:42:54 +0100
-Subject: [PATCH] rx51: add bq27200 i2c board info
+as "virtuoso-t" started running.  I decided to chance switching to the
+X11 session, and it ran for a little while before the system froze.  The
+freeze "feels" like an out-of-memory condition, which could explain the
+lack of error messages.  Things got really slow just before the system
+became completely unresponsive.
 
----
- arch/arm/mach-omap2/board-rx51-peripherals.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index 5a886cd..23c626e 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -940,6 +940,11 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
- 		.platform_data  = &rx51_lp5523_platform_data,
- 	},
- #endif
-+#if defined(CONFIG_BATTERY_BQ27X00_I2C) || defined(CONFIG_BATTERY_BQ27X00_I2C_MODULE)
-+	{
-+		I2C_BOARD_INFO("bq27200", 0x55),
-+	},
-+#endif
- 	{
- 		I2C_BOARD_INFO("tpa6130a2", 0x60),
- 		.platform_data = &rx51_tpa6130a2_data,
--- 
-1.7.5.4
-
---nextPart9943996.a5Fj0bHdOn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk7QHFIACgkQi/DJPQPkQ1Js/QCeLCQtu9owiWhpYg4nDfwDeNNZ
-c6YAn3vLXzcJLh7OtNgYwhbQnMFaUB0W
-=peIP
------END PGP SIGNATURE-----
-
---nextPart9943996.a5Fj0bHdOn--
-
+--Bob
