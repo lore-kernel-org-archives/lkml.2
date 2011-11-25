@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab1KYR3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 12:29:33 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53530 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab1KYR3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 12:29:32 -0500
+	id S1752595Ab1KYRbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 12:31:51 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:54334 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab1KYRbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 12:31:50 -0500
+Date: Fri, 25 Nov 2011 09:29:50 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 04/11] hwmon: Remove redundant spi driver bus
+ initialization
+Message-ID: <20111125172950.GA12324@ericsson.com>
+References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
+ <1322148561-25138-4-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <861usye0og.fsf@sumi.keithp.com>
-References: <CAGPN=9THOv-M4Td4haE94uDcsAjW3eGMG7ioLeu+p8xUOBPd7w@mail.gmail.com>
-	<861usye0og.fsf@sumi.keithp.com>
-Date: Fri, 25 Nov 2011 18:29:31 +0100
-Message-ID: <CAGPN=9ROa_Pf242jxPy-6XfmFNW3+sCMj6M+pFbw+wgCX3tu1Q@mail.gmail.com>
-Subject: Re: i915: 3.2 rc1/2 KMS regression
-From: Patrik Kullman <patrik.kullman@gmail.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=14dae9399db1f600fd04b2927e3c
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1322148561-25138-4-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9399db1f600fd04b2927e3c
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, Nov 24, 2011 at 10:29:14AM -0500, Lars-Peter Clausen wrote:
+> In ancient times it was necessary to manually initialize the bus field of an
+> spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
+> so we can drop the manual assignment.
+> 
+> The patch was generated using the following coccinelle semantic patch:
+> // <smpl>
+> @@
+> identifier _driver;
+> @@
+> struct spi_driver _driver = {
+> 	.driver = {
+> -		.bus = &spi_bus_type,
+> 	},
+> };
+> // </smpl>
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+> Cc: lm-sensors@lm-sensors.org
 
-Ok, so I've now bisected, and it turns out that
-dc22ee6fc18ce0f15424e753e8473c306ece95c1 is the first bad revision.
+Applied.
 
-Would it be safe to checkout 3.2-rc3 and git revert
-dc22ee6fc18ce0f15424e753e8473c306ece95c1 (to test that it's the only
-bad commit) ?
-
-Attaching bisect log.
-
-2011/11/24 Keith Packard <keithp@keithp.com>:
-> On Thu, 24 Nov 2011 00:43:03 +0100, Patrik Kullman <patrik.kullman@gmail.com> wrote:
->> Hi,
->>
->> With the Asus Zenbook UX31E, kernel 3.1.1/2 works perfectly, but 3.2
->> rc1 and rc2 freezes on boot with KMS.
->
-> If you can bisect between those two versions, you should be able to
-> isolate the change which is causing this problem. Without that, it's
-> unlikely that we'll be able to help much.
->
-> --
-> keith.packard@intel.com
->
-
---14dae9399db1f600fd04b2927e3c
-Content-Type: text/x-log; charset=US-ASCII; name="git-bisect.log"
-Content-Disposition: attachment; filename="git-bisect.log"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvfgsi9p1
-
-Z2l0IGJpc2VjdCBzdGFydAojIGdvb2Q6IFtjM2I5MmM4Nzg3MzY3YThiYjUzZDU3ZDk3ODliNTU4
-ZjEyOTVjYzk2XSBMaW51eCAzLjEKZ2l0IGJpc2VjdCBnb29kIGMzYjkyYzg3ODczNjdhOGJiNTNk
-NTdkOTc4OWI1NThmMTI5NWNjOTYKIyBiYWQ6IFsxZWE2YjhmNDg5MTgyODJiZGNhMGIzMmEzNDA5
-NTUwNGVlNjViYWI1XSBMaW51eCAzLjItcmMxCmdpdCBiaXNlY3QgYmFkIDFlYTZiOGY0ODkxODI4
-MmJkY2EwYjMyYTM0MDk1NTA0ZWU2NWJhYjUKIyBiYWQ6IFszN2JlOTQ0YTAyNzA0MDJmOWNkYTI5
-MWE5MzBiMDI4NmY2ZGM5MmY1XSBNZXJnZSBicmFuY2ggJ2RybS1jb3JlLW5leHQnIG9mIGdpdDov
-L3Blb3BsZS5mcmVlZGVza3RvcC5vcmcvfmFpcmxpZWQvbGludXgKZ2l0IGJpc2VjdCBiYWQgMzdi
-ZTk0NGEwMjcwNDAyZjljZGEyOTFhOTMwYjAyODZmNmRjOTJmNQojIGdvb2Q6IFs3ZTBiYjcxZTc1
-MDIwMzQ4YmVlNTIzNzIwYTBjMmYwNGNjNzJmNTQwXSBNZXJnZSBicmFuY2ggJ3BtLWZvci1saW51
-cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3JhZmFl
-bC9saW51eC1wbQpnaXQgYmlzZWN0IGdvb2QgN2UwYmI3MWU3NTAyMDM0OGJlZTUyMzcyMGEwYzJm
-MDRjYzcyZjU0MAojIGdvb2Q6IFs0NmE5NzE5MTM2MTFhMjM0NzgyODM5MzE0NjBhOTViZTk2MmNl
-MzI5XSBTdGFnaW5nOiBodjogbW92ZSBoeXBlcnYgY29kZSBvdXQgb2Ygc3RhZ2luZyBkaXJlY3Rv
-cnkKZ2l0IGJpc2VjdCBnb29kIDQ2YTk3MTkxMzYxMWEyMzQ3ODI4MzkzMTQ2MGE5NWJlOTYyY2Uz
-MjkKIyBnb29kOiBbOGE0YTg5MThlZDZlNGEzNjFmNGRmMTlmMTk5YmJjMmQwYTg5YTQ2Y10gTWVy
-Z2UgYnJhbmNoICdzY2hlZC1jb3JlLWZvci1saW51cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcv
-cHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RpcC90aXAKZ2l0IGJpc2VjdCBnb29kIDhhNGE4OTE4
-ZWQ2ZTRhMzYxZjRkZjE5ZjE5OWJiYzJkMGE4OWE0NmMKIyBnb29kOiBbZTM0ZWIzOWMxYzc5MWZl
-NzlkYTZhYWUwZDkwNTdmMGM3NGMyZjBlZF0gTWVyZ2UgYnJhbmNoICd4ODYtY3B1LWZvci1saW51
-cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RpcC90
-aXAKZ2l0IGJpc2VjdCBnb29kIGUzNGViMzljMWM3OTFmZTc5ZGE2YWFlMGQ5MDU3ZjBjNzRjMmYw
-ZWQKIyBnb29kOiBbMjg2ZTBjOTRmOWMzZjI5MmNiMzhhOTc3ZmJiZGUzNDMzMzQ3YTg2OF0gZHJt
-L3JhZGVvbi9rbXM6IEZpeCBJMkMgbWFzayBkZWZpbml0aW9ucwpnaXQgYmlzZWN0IGdvb2QgMjg2
-ZTBjOTRmOWMzZjI5MmNiMzhhOTc3ZmJiZGUzNDMzMzQ3YTg2OAojIGJhZDogWzgyZDE2NTU1N2Vm
-MDk0ZDRiNGRmYzA1ODcxYWVlNjE4ZWM3MTAyYjBdIGRybS9pOTE1L2RwOiBGaXggZURQIG9uIFBD
-SCBEUCBvbiBDUFQvUFBUCmdpdCBiaXNlY3QgYmFkIDgyZDE2NTU1N2VmMDk0ZDRiNGRmYzA1ODcx
-YWVlNjE4ZWM3MTAyYjAKIyBnb29kOiBbZDUwOTBiOTYyNTZiOWJjNDc5NTE0ZDU0Y2I1NWRjYWJh
-MzE0NGE4ZF0gZHJtL2k5MTU6IFJlbW92ZSByZWR1bmRhbnQgYml0IHNoaWZ0aW5nIGZyb20gaW50
-ZWxfZ21idXNfc2V0X3NwZWVkCmdpdCBiaXNlY3QgZ29vZCBkNTA5MGI5NjI1NmI5YmM0Nzk1MTRk
-NTRjYjU1ZGNhYmEzMTQ0YThkCiMgZ29vZDogW2Q5ZDQ0NGNiYzUzNjA1MGVmNjZlNGNlZmNkNTUy
-MjRjNDZjYmJhZGZdIGRybS9pOTE1OiBzcGxpdCByZWZjbGsgY29kZSBvdXQgb2YgaXJvbmxha2Vf
-Y3J0Y19tb2RlX3NldApnaXQgYmlzZWN0IGdvb2QgZDlkNDQ0Y2JjNTM2MDUwZWY2NmU0Y2VmY2Q1
-NTIyNGM0NmNiYmFkZgojIGdvb2Q6IFthNDg3OTI4OTA4MjI2ZGY0OTNhM2NlMTQ1ZWNmNGJiMzky
-OTY3MTRlXSBkcm0vaTkxNTogcmVtb3ZlIHRyYW5zY29kZXIgUExMIG1hc2hpbmcgZnJvbSBtb2Rl
-X3NldCBwZXIgc3BlY3MKZ2l0IGJpc2VjdCBnb29kIGE0ODc5Mjg5MDgyMjZkZjQ5M2EzY2UxNDVl
-Y2Y0YmIzOTI5NjcxNGUKIyBiYWQ6IFthMjAwNmNmNWE3YWQzNDYzZTdjMWU5ZGEyYzRiYzkwNDk5
-NDI3NTU4XSBkcm0vaTkxNTogcmVhZCBmdWxsIHJlY2VpdmVyIGNhcGFiaWxpdHkgZmllbGQgZHVy
-aW5nIERQIGhvdCBwbHVnCmdpdCBiaXNlY3QgYmFkIGEyMDA2Y2Y1YTdhZDM0NjNlN2MxZTlkYTJj
-NGJjOTA0OTk0Mjc1NTgKIyBnb29kOiBbZjUyYzYxOWE1OTBmYTc1Mjc2YzA3ZGZjYWYzODBkZWU1
-M2U0ZWE0Y10gZHJtL2k5MTUvcGFuZWw6IEFsd2F5cyByZWNvcmQgdGhlIGJhY2tsaWdodCBsZXZl
-bCBhZ2FpbiAoYnV0IGNsZXZlcmx5KQpnaXQgYmlzZWN0IGdvb2QgZjUyYzYxOWE1OTBmYTc1Mjc2
-YzA3ZGZjYWYzODBkZWU1M2U0ZWE0YwojIGJhZDogW2RjMjJlZTZmYzE4Y2UwZjE1NDI0ZTc1M2U4
-NDczYzMwNmVjZTk1YzFdIGRybS9pOTE1L2RwOiBSZW1vdmUgZURQIHNwZWNpYWwgY2FzZXMgZnJv
-bSBiYW5kd2lkdGggY2hlY2tzCmdpdCBiaXNlY3QgYmFkIGRjMjJlZTZmYzE4Y2UwZjE1NDI0ZTc1
-M2U4NDczYzMwNmVjZTk1YzEKIyBnb29kOiBbY2Q5ZGRlNDRmNDc1MDEzOTRiOWYwNzE1YjZhMzZh
-OTJhYTc0YzBkMF0gZHJtL2k5MTUvZHA6IEZpeCB0aGUgbWF0aCBpbiBpbnRlbF9kcF9saW5rX3Jl
-cXVpcmVkCmdpdCBiaXNlY3QgZ29vZCBjZDlkZGU0NGY0NzUwMTM5NGI5ZjA3MTViNmEzNmE5MmFh
-NzRjMGQwCg==
---14dae9399db1f600fd04b2927e3c--
+Thanks,
+Guenter
