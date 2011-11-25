@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab1KYRqv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 12:46:51 -0500
-Received: from mx01.edigma.com ([195.22.21.235]:51281 "EHLO mx01.edigma.com"
+	id S1753167Ab1KYRvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 12:51:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32734 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384Ab1KYRqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 12:46:50 -0500
-Message-ID: <4ECFD488.4060805@edigma.com>
-Date: Fri, 25 Nov 2011 17:46:48 +0000
-From: Nuno Santos <nsantos@edigma.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1752417Ab1KYRvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 12:51:49 -0500
+Date: Fri, 25 Nov 2011 15:51:40 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>, mingo@redhat.com,
+        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        efault@gmx.de, peterz@infradead.org, Arun Sharma <asharma@fb.com>
+Subject: Re: strace based on perf [Re: libperf interface stability]
+Message-ID: <20111125175140.GD7098@infradead.org>
+References: <new-submission> <tip-06daaaba7c211ca6a8227b9a54dbc86dd837f034@git.kernel.org> <20111124162845.GB7795@erda.amd.com> <20111124181052.GA4058@infradead.org> <4ECE98CD.7060902@gmail.com> <4ECFD16F.8090305@gmail.com>
 MIME-Version: 1.0
-To: Paulo Marques <pmarques@grupopie.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Floating point usage inside kernel
-References: <S1754322Ab1KYK6W/20111125105822Z+929@vger.kernel.org> <4ECF789F.3040001@edigma.com> <4ECF8528.9080800@gmail.com> <4ECFBF56.4000002@edigma.com> <4ECFCAD5.5040606@grupopie.com>
-In-Reply-To: <4ECFCAD5.5040606@grupopie.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ECFD16F.8090305@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Given the range of numbers you're working with, you can probably get
-> away with just a 16.16 fixed point representation. The operations go
-> like this:
->
-> convert a double to a fixed point number just do (but not on the kernel):
->
->    fixed = (s32)(double * 65536.0);
->
-> convert an integer to fixed:
->
->    fixed = integer<<  16;
->
-> multiplication:
->
->    result = (s32)(((s64) fixed_a * fixed_b)>>  16);
->
-> addition:
->
->    result = fixed_a + fixed_b;
->
-> etc...
->
-> Unless you have overflow or need more than 16 bits of fractional
-> precision, you'll have no problem with this approach.
->
-> I hope this helps,
-Sorry, i'm not sure if I have completely understand your suggestion. Are 
-you telling me to apply this transform only to my input data, or to all 
-the operations that are applied in the function used in kernel?
+Em Fri, Nov 25, 2011 at 10:33:35AM -0700, David Ahern escreveu:
+> On 11/24/2011 12:19 PM, David Ahern wrote:
+> > On 11/24/2011 11:10 AM, Arnaldo Carvalho de Melo wrote:
+> >> I have a branch that I explicitely mark as unstable where I'm putting
+> >> what I have at:
+> >>
+> >> https://github.com/acmel/linux/commits/tmp.perf/trace4
+> 
+> I don't see the strace command in this branch.
 
-Thanks,
+Its not there yet, lemme check some stuff here and I'll push it, but
+still has ways to go. It'll be on tools/perf/builtin-trace.c
 
-With my best regards,
+For the reference implementation I'll be picking code/ideas from:
 
-Nuno
+https://github.com/acmel/linux/tree/tmp.perf/trace2
+
+This is what Thomas, Ingo et al came to in '10.
+
+That was done with the tooling infrastructure at that point in time,
+lotsa happened since then and there are still more to do for me to get
+into it confortably.
+
+Take a look, probably some of your questions will be answered there.
+
+- Arnaldo
