@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1KYUyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 15:54:10 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39066 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab1KYUyI (ORCPT
+	id S1753450Ab1KYUy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 15:54:57 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56098 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab1KYUy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 15:54:08 -0500
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        syed rafiuddin <rafiuddin.sayed@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 8/9] bq27x00: Add miscdevice for each battery with ioctl for reading registers
-Date: Fri, 25 Nov 2011 21:54:04 +0100
-Message-ID: <33058541.3DK13LYaLI@pali-elitebook>
-User-Agent: KMail/4.7.3 (Linux/3.2.0-1-generic; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <20111125204626.GA25003@oksana.dev.rtsoft.ru>
-References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com> <7780165.E3DXgdWAv1@pali-elitebook> <20111125204626.GA25003@oksana.dev.rtsoft.ru>
+	Fri, 25 Nov 2011 15:54:56 -0500
+Date: Fri, 25 Nov 2011 14:54:51 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com,
+        Francois Romieu <romieu@fr.zoreil.com>, linux-kernel@vger.kernel.org,
+        Armin Kazmi <armin.kazmi@tu-dortmund.de>, Gerd <booster@wolke7.net>
+Subject: Re: [bug?] r8169: hangs under heavy load
+Message-ID: <20111125205451.GG26692@elie.hsd1.il.comcast.net>
+References: <4E7F4D45.7040902@wolke7.net>
+ <1316978632.4122.103.camel@deadeye>
+ <4E82C0B5.1050902@wolke7.net>
+ <1317254171.4068.12.camel@deadeye>
+ <20111124044137.GA18262@elie.hsd1.il.comcast.net>
+ <4ECFE7A7.5070300@wolke7.net>
+ <20111125201936.GA26692@elie.hsd1.il.comcast.net>
+ <1322253122.2550.3.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2662651.PunVPAgCBg"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322253122.2550.3.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Eric Dumazet wrote:
 
---nextPart2662651.PunVPAgCBg
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="iso-8859-1"
+> rtl8169_rx_interrupt(..., budget) can return budget + 1 sometimes
+> because of :
+>
+>                 /* Work around for AMD plateform. */
+>                 if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
+>                     (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
+>                         desc->opts2 = 0;
+>                         cur_rx++;
+>                 }
+>
+> Sorry, I wont patch this today, its black Friday, and David said to
+> patch submitters :
+>
+> "stick to turkey and wine you're better at it" 
 
-On Saturday 26 November 2011 00:46:26 Anton Vorontsov wrote:
-> On Fri, Nov 25, 2011 at 09:30:28PM +0100, Pali Roh=E1r wrote:
-> [...]
->=20
-> > This interface is not only for BME. Also some popular bq27200.sh sc=
-ript
-> > which print bq registers in human readable form needs this interfac=
-e
-> > (with LD_PRELOAD library).
-> >=20
-> > Link for that shell script http://enivax.net/jk/n900/bq.tar
->=20
-> That might be a good excuse to have the raw interface. Although,
-> as this is for debugging purposes only, the same effect can be
-> accomplished by unloading bq module and using i2c userspace
-> interface directly... I guess.
->=20
-
-Yes, unloading bq module and then starting script working. But I think =
-that we=20
-could have some interface how to access directly to i2c when some i2c m=
-odule=20
-for chip is loaded.
-
---=20
-Pali Roh=E1r
-pali.rohar@gmail.com
---nextPart2662651.PunVPAgCBg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk7QAGwACgkQi/DJPQPkQ1LtowCgw1v9Azk9C3flDna/Q1XI15wk
-KK0AnRupK25vliCh6ELTCSSs/Iu7fRzl
-=IRoF
------END PGP SIGNATURE-----
-
---nextPart2662651.PunVPAgCBg--
-
+:)  Sensible enough.  Thanks for the quick response!
