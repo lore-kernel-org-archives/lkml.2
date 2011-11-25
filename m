@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab1KYQnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 11:43:14 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32821 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab1KYQnM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 11:43:12 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Fri, 25 Nov 2011 17:43:07 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH] mm: cma: hack/workaround for some allocation issues
-In-reply-to: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Message-id: <1322239387-31394-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.7.1
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+	id S1752171Ab1KYQog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 11:44:36 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:48322 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751029Ab1KYQof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 11:44:35 -0500
+Message-ID: <4ECFC5E3.5090900@parallels.com>
+Date: Fri, 25 Nov 2011 20:44:19 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Pedro Alves <pedro@codesourcery.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with	given
+ pids
+References: <4EC4F2FB.408@parallels.com> <201111221204.39235.pedro@codesourcery.com> <20111122153326.GD322@google.com> <201111231620.45440.pedro@codesourcery.com> <20111123162417.GE25780@google.com> <4ECD3946.1030503@parallels.com> <4ECD542C.7010705@parallels.com> <20111124173121.GA23260@redhat.com> <4ECF6AA0.80006@parallels.com> <20111125162220.GA17173@redhat.com>
+In-Reply-To: <20111125162220.GA17173@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a quick and dirty patch and hack to solve some memory allocation
-issues that appeared at CMA v17 after switching migration code from
-hotplug to memory compaction. Especially the issue with watermark
-adjustment need a real fix instead of disabling the code.
+On 11/25/2011 08:22 PM, Oleg Nesterov wrote:
+> On 11/25, Pavel Emelyanov wrote:
+>>
+>> The proposal is to implement the PR_RESERVE_PID prctl which allocates and puts a
+>> pid on the current. The subsequent fork() uses this pid,
+> 
+> Oh. This is subjective, yes, but this doesn't clean to me.
+> 
+> Amd why?? On the running system PR_RESERVE_PID can obviously fail anyway.
+> It only helps to avoid the race with another fork.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
+No. It can fail if you try to allocate a pid with given number. The API allows for
+pid generation. AFAIU this can help with Pedro's requirements to resurrect task with
+the same pid value it used to have before.
 
-Hello,
+>>  * one more field on struct pid is OK, since it size doesn't change (32 bit level is
+>>    anyway not required, it's OK to reduce on down to 16 bits)
+> 
+> Even if sizeof is the same, the new member and the code which plays
+> with ->flags doesn't make the things better ;)
+> 
+>>  * yes, we have +1 member on task_struct :(
+> 
+> Yes, and this task_struct->rsv_pid acts as implicit parameter for the
+> next clone(). Doesn't look very nice to me. Plus the code complications.
 
-This patch fixes the issues that have been reported recently. It should
-be considered only as a temporary solution until a new version of CMA
-patches is ready.
+Well, the last_pid is also an implicit parameter for the next clone() with sysctl
+approach :) But the code complication is the problem, yes :(
 
-Best regards
---
-Marek Szyprowski
-Samsung Poland R&D Center
+>> Oleg, Tejun, do you agree with such an approach?
+> 
+> If set_last_pid doesn't work, I'd prefer CLONE_CHILD_USEPIDS.
 
----
- mm/compaction.c |    5 ++++-
- mm/page_alloc.c |   12 +++++++++---
- 2 files changed, 13 insertions(+), 4 deletions(-)
+OK, thanks.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 3e07341..41976f8 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -79,8 +79,9 @@ isolate_freepages_range(struct zone *zone,
- skip:
- 			if (freelist)
- 				goto next;
-+failed:
- 			for (; start < pfn; ++start)
--				__free_page(pfn_to_page(pfn));
-+				__free_page(pfn_to_page(start));
- 			return 0;
- 		}
- 
-@@ -91,6 +92,8 @@ skip:
- 			struct page *p = page;
- 			for (i = isolated; i; --i, ++p)
- 				list_add(&p->lru, freelist);
-+		} else if (!isolated) {
-+			goto failed;
- 		}
- 
- next:
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 714b1c1..b4a46c7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1303,12 +1303,12 @@ int split_free_page(struct page *page)
- 
- 	zone = page_zone(page);
- 	order = page_order(page);
--
-+#if 0
- 	/* Obey watermarks as if the page was being allocated */
- 	watermark = low_wmark_pages(zone) + (1 << order);
- 	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
- 		return 0;
--
-+#endif
- 	/* Remove page from free list */
- 	list_del(&page->lru);
- 	zone->free_area[order].nr_free--;
-@@ -5734,6 +5734,12 @@ static unsigned long pfn_align_to_maxpage_up(unsigned long pfn)
- 	return ALIGN(pfn, MAX_ORDER_NR_PAGES);
- }
- 
-+static struct page *
-+cma_migrate_alloc(struct page *page, unsigned long private, int **x)
-+{
-+	return alloc_page(GFP_HIGHUSER_MOVABLE);
-+}
-+
- static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- {
- 	/* This function is based on compact_zone() from compaction.c. */
-@@ -5801,7 +5807,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 		}
- 
- 		/* Try to migrate. */
--		ret = migrate_pages(&cc.migratepages, compaction_alloc,
-+		ret = migrate_pages(&cc.migratepages, cma_migrate_alloc,
- 				    (unsigned long)&cc, false, cc.sync);
- 
- 		/* Migrated all of them? Great! */
--- 
-1.7.1.569.g6f426
+> Oleg.
+> 
+> .
+> 
 
