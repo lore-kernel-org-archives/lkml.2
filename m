@@ -1,48 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab1KYKeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 05:34:24 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58141 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab1KYKeX (ORCPT
+	id S1754156Ab1KYKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 05:38:59 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:22019
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752655Ab1KYKi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 05:34:23 -0500
+	Fri, 25 Nov 2011 05:38:58 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LV7PKS-01-NER-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] perf script: Fix mem leaks and NULL pointer checks around strdup()s
+Date: Fri, 25 Nov 2011 11:38:40 +0100
+Message-ID: <1322217520-3287-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-In-Reply-To: <20111125103011.18e167cd@lxorguk.ukuu.org.uk>
-References: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
-	<20111125124913.405fc8360a185f3116adb5ec@canb.auug.org.au>
-	<20111125103011.18e167cd@lxorguk.ukuu.org.uk>
-Date: Fri, 25 Nov 2011 10:34:19 +0000
-Message-ID: <CAPM=9twsvX=hFS9S01-ht8JHhAAy4uP8N5NxPUDY9UpbsvQWmw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the drm tree
-From: Dave Airlie <airlied@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 25, 2011 at 10:30 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Ping?
->
-> As I said last time you asked this - the correct merge resolution is to
-> pull the DRM updates and mark the staging GMA500 Kconfig "&& BROKEN". The
-> staging driver is frozen while we merge outside of staging and will not
-> be getting any attention at this point - changes there just mess up the
-> move work which is far more important.
->
-> Also nothing in staging should be allowed to hold up real work. The
-> resolution for anything in staging blocking merges is to mark the staging
-> parts && BROKEN IMHO
->
+Fix mem leaks and missing null pointer checks after strdup().
+get_script_path() did not free __script_root in case of continue.
 
-I just pushed jbarnes patch into my tree for now, at pushed out the
-mainline gma500 code with it.
+Introducing a helper function get_script_root().
 
-But if someone can send a patch to Greg to mark GMA500 broken in
-staging that would be good.
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/builtin-script.c |   48 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 29 insertions(+), 19 deletions(-)
 
-Dave.
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 2f62a29..bcfc00e 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -681,7 +681,8 @@ static int parse_output_fields(const struct option *opt __used,
+ 			type = PERF_TYPE_RAW;
+ 		else {
+ 			fprintf(stderr, "Invalid event type in field string.\n");
+-			return -EINVAL;
++			rc = -EINVAL;
++			goto out;
+ 		}
+ 
+ 		if (output[type].user_set)
+@@ -923,6 +924,24 @@ static int read_script_info(struct script_desc *desc, const char *filename)
+ 	return 0;
+ }
+ 
++static char *get_script_root(struct dirent *script_dirent, const char *suffix)
++{
++	char *script_root, *str;
++
++	script_root = strdup(script_dirent->d_name);
++	if (!script_root)
++		return NULL;
++
++	str = (char *)ends_with(script_root, suffix);
++	if (!str) {
++		free(script_root);
++		return NULL;
++	}
++
++	*str = '\0';
++	return script_root;
++}
++
+ static int list_available_scripts(const struct option *opt __used,
+ 				  const char *s __used, int unset __used)
+ {
+@@ -934,7 +953,6 @@ static int list_available_scripts(const struct option *opt __used,
+ 	struct script_desc *desc;
+ 	char first_half[BUFSIZ];
+ 	char *script_root;
+-	char *str;
+ 
+ 	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
+ 
+@@ -950,16 +968,14 @@ static int list_available_scripts(const struct option *opt __used,
+ 			continue;
+ 
+ 		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+-			script_root = strdup(script_dirent.d_name);
+-			str = (char *)ends_with(script_root, REPORT_SUFFIX);
+-			if (str) {
+-				*str = '\0';
++			script_root = get_script_root(&script_dirent, REPORT_SUFFIX);
++			if (script_root) {
+ 				desc = script_desc__findnew(script_root);
+ 				snprintf(script_path, MAXPATHLEN, "%s/%s",
+ 					 lang_path, script_dirent.d_name);
+ 				read_script_info(desc, script_path);
++				free(script_root);
+ 			}
+-			free(script_root);
+ 		}
+ 	}
+ 
+@@ -981,8 +997,7 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 	char script_path[MAXPATHLEN];
+ 	DIR *scripts_dir, *lang_dir;
+ 	char lang_path[MAXPATHLEN];
+-	char *str, *__script_root;
+-	char *path = NULL;
++	char *__script_root;
+ 
+ 	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
+ 
+@@ -998,23 +1013,18 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 			continue;
+ 
+ 		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+-			__script_root = strdup(script_dirent.d_name);
+-			str = (char *)ends_with(__script_root, suffix);
+-			if (str) {
+-				*str = '\0';
+-				if (strcmp(__script_root, script_root))
+-					continue;
++			__script_root = get_script_root(&script_dirent, suffix);
++			if (__script_root && !strcmp(script_root, __script_root)) {
++				free(__script_root);
+ 				snprintf(script_path, MAXPATHLEN, "%s/%s",
+ 					 lang_path, script_dirent.d_name);
+-				path = strdup(script_path);
+-				free(__script_root);
+-				break;
++				return strdup(script_path);
+ 			}
+ 			free(__script_root);
+ 		}
+ 	}
+ 
+-	return path;
++	return NULL;
+ }
+ 
+ static bool is_top_script(const char *script_path)
+-- 
+1.7.7
+
+
