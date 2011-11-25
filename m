@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1KYWOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 17:14:15 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:58282 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753389Ab1KYWOO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 17:14:14 -0500
-Date: Fri, 25 Nov 2011 17:14:11 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH] Tracepoint: introduce tracepoint() API
-Message-ID: <20111125221411.GA11733@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:04:28 up 367 days,  3:07,  8 users,  load average: 0.14, 0.03,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753648Ab1KYWQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 17:16:16 -0500
+Received: from mail.df.lth.se ([194.47.250.12]:34090 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab1KYWQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 17:16:15 -0500
+X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 17:16:15 EST
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [GIT PULL] GPIO fixes for -rc series
+Date: Fri, 25 Nov 2011 23:07:20 +0100
+Message-Id: <1322258840-9206-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-  tracepoint(event_name, arg1, arg2, ...)
+Hi Linus,
 
-while keeping the old tracepoint API in place, e.g.:
+Grant asked me to harvest GPIO fixes in his absence,
+and so I've done. But so far I've seen only one,
+anyway, here it is, please pull it in.
 
-  trace_event_name(arg1, arg2, ...)
+The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37:
 
-This allows skipping parameter side-effects (pointer dereference,
-function calls, ...) when the tracepoint is not dynamically activated.
+  Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
 
-This allows progressive (and partial) API transition from trace_*(...)
-to tracepoint(*, ...). This differs from the previous attempt to
-introduce this change by Jason Baron in that it supports both the
-original and new tracepoint APIs, which makes the transition smoother
-than having to change all instrumentation at once.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git gpio-fixes
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Link: https://lkml.org/lkml/2009/5/19/328
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Christoph Lameter <cl@linux-foundation.org>
----
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index d530a44..c9c73f7 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -107,6 +107,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
- 
- #ifdef CONFIG_TRACEPOINTS
- 
-+#define tracepoint(name, args...)					\
-+	do {								\
-+		if (static_branch(&__tracepoint_##name.key))		\
-+			__trace_##name(args);				\
-+	} while (0)
-+
- /*
-  * it_func[0] is never NULL because there is at least one element in the array
-  * when the array itself is non NULL.
-@@ -144,13 +150,17 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
-  */
- #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
- 	extern struct tracepoint __tracepoint_##name;			\
-+	static inline void __trace_##name(proto)			\
-+	{								\
-+		__DO_TRACE(&__tracepoint_##name,			\
-+			TP_PROTO(data_proto),				\
-+			TP_ARGS(data_args),				\
-+			TP_CONDITION(cond));				\
-+	}								\
- 	static inline void trace_##name(proto)				\
- 	{								\
- 		if (static_branch(&__tracepoint_##name.key))		\
--			__DO_TRACE(&__tracepoint_##name,		\
--				TP_PROTO(data_proto),			\
--				TP_ARGS(data_args),			\
--				TP_CONDITION(cond));			\
-+			__trace_##name(args);				\
- 	}								\
- 	static inline int						\
- 	register_trace_##name(void (*probe)(data_proto), void *data)	\
-@@ -193,7 +203,12 @@ void tracepoint_update_probe_range(struct tracepoint * const *begin,
- 	EXPORT_SYMBOL(__tracepoint_##name)
- 
- #else /* !CONFIG_TRACEPOINTS */
-+
-+#define tracepoint(name, args...)	__trace_##name(args)
-+
- #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
-+	static inline void __trace_##name(proto)			\
-+	{ }								\
- 	static inline void trace_##name(proto)				\
- 	{ }								\
- 	static inline int						\
+Mark Brown (1):
+      gpio: pca953x: Staticise pca953x_get_altdata()
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+ drivers/gpio/gpio-pca953x.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO0BC7AAoJEEEQszewGV1zw/wP/j87GuAeQpGX90TaDjH8dQ17
+wWbfNofxdYPzElIsu6/9QPDMj9TkfHSBySteXVBFvSfOOdYBCwmnOf0WDqQEbg6K
+voG5R2dG0ksQpK6tkjZAWM6DJ5XeEXc0skf2+XauD84df2EAlnFc1kHeX7i08k0Q
+pvow6tCGadHiuRD3waS2nuDDoBC7d0dcB8kPAYgZ9BuJA9eysWoeNJB3YIun+tdT
+7qkexhj0YvKV9PmcAA5P2TaJ/HQPX+9ycc+pzAqxRgfqeN7NQ1PrKym40+wTiGyB
+bnG7VRkSHk1VAO3waf2VUmE1qJ7o1uKPpSHIbwceIdlMFqnfpYrtTb6w6iR1T8uu
+SZIaDKV+3afVROInwdGNMf1m/Amzbabh0ECbSYwkChUO0wQ3TgE1a5LyOMmDO7Ih
+EuexSnRZ30sUjyQtV4fqDJN5EcsoqiqTgVbZlKcrO+uYLiOmQTCutjJxrhSmSxgm
+L28y8by9Ixttklp/2I0KE8skTQC3igYJYEwgfzDgIphGlfxBeevjalU4Pk2SCs5Z
+55GZ68B8tFT1CT8YShnrXbKXxw9eSum+DhJwMPliCLIi5+JrMufYZMomCreCZPGU
+cKs/Qkv7ne6Z16SO36Tzf3vWn9MoDW+rxPQtuHlm+QfQjfTnYeyBL+JdI1eTVZW3
+Z4L4qxXg42xqNGDl7NUa
+=dsSG
+-----END PGP SIGNATURE-----
