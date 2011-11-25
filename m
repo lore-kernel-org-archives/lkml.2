@@ -1,92 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab1KYO3E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 09:29:04 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50618 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753611Ab1KYO3C (ORCPT
+	id S1755858Ab1KYOft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 09:35:49 -0500
+Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:57535 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754762Ab1KYOfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 09:29:02 -0500
-Date: Fri, 25 Nov 2011 14:28:58 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH v2] sound/soc/codecs: add LAPIS Semiconductor ML26124
-Message-ID: <20111125142858.GE5315@opensource.wolfsonmicro.com>
-References: <1322224743-15671-1-git-send-email-tomoya.rohm@gmail.com>
+	Fri, 25 Nov 2011 09:35:48 -0500
+X-Greylist: delayed 1798 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 09:35:48 EST
+Date: Fri, 25 Nov 2011 15:23:05 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH 1/2] gpiolib: introduce gpio_set_pullup
+Message-ID: <20111125142305.GA15008@game.jcrosoft.org>
+References: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
+ <20111125141640.GB13747@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322224743-15671-1-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111125141640.GB13747@legolas.emea.dhcp.ti.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 11919339365623245765
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrudduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -215
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddmnehjucdnkihjvgculddqhedmnehlihhnuhigucdlqddutddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 25, 2011 at 09:39:03PM +0900, Tomoya MORINAGA wrote:
+On 16:16 Fri 25 Nov     , Felipe Balbi wrote:
+> Hi,
+> 
+> On Fri, Nov 25, 2011 at 03:08:39PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > ---
+> >  drivers/gpio/gpiolib.c     |   44 ++++++++++++++++++++++++++++++++++++++++++++
+> >  include/asm-generic/gpio.h |    4 ++++
+> >  include/linux/gpio.h       |    5 +++++
+> >  3 files changed, 53 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> > index a971e3d..b7e5e75 100644
+> > --- a/drivers/gpio/gpiolib.c
+> > +++ b/drivers/gpio/gpiolib.c
+> > @@ -1519,6 +1519,50 @@ fail:
+> >  }
+> >  EXPORT_SYMBOL_GPL(gpio_set_debounce);
+> >  
+> > +/**
+> > + * gpio_set_pullup - sets @pullup for a @gpio
+> > + * @gpio: the gpio to set pullup
+> > + * @pullup: pullup level
+> > + */
+> > +int gpio_set_pullup(unsigned gpio, unsigned pullup)
+> > +{
+> > +	unsigned long		flags;
+> > +	struct gpio_chip	*chip;
+> > +	struct gpio_desc	*desc = &gpio_desc[gpio];
+> > +	int			status = -EINVAL;
+> > +
+> > +	spin_lock_irqsave(&gpio_lock, flags);
+> > +
+> > +	if (!gpio_is_valid(gpio))
+> > +		goto fail;
+> > +	chip = desc->chip;
+> > +	if (!chip || !chip->set_pullup)
+> > +		goto fail;
+> > +	gpio -= chip->base;
+> > +	if (gpio >= chip->ngpio)
+> > +		goto fail;
+> > +	status = gpio_ensure_requested(desc, gpio);
+> > +	if (status < 0)
+> > +		goto fail;
+> > +
+> > +	/* now we know the gpio is valid and chip won't vanish */
+> > +
+> > +	spin_unlock_irqrestore(&gpio_lock, flags);
+> > +
+> > +	might_sleep_if(chip->can_sleep);
+> > +
+> > +	return chip->set_pullup(chip, gpio, pullup);
+> > +
+> > +fail:
+> > +	spin_unlock_irqrestore(&gpio_lock, flags);
+> > +	if (status)
+> > +		pr_debug("%s: gpio-%d status %d\n",
+> > +			__func__, gpio, status);
+> > +
+> > +	return status;
+> > +}
+> > +EXPORT_SYMBOL_GPL(gpio_set_pullup);
+> 
+> Maybe I'm missing something, but isn't it essentially what
+> gpio_set_value() does ? I mean, you set a pullup and you get '1' value
+> and set a pulldown and you get a '0' value ??
+> 
+> Without a proper description of the necessity for this change, I can't
+> easily tell them apart :-(
+set_value is for output set_pullup is for input mode
 
-This is better than the previous version but the major issue is that the
-driver isn't really fitting in with the subsystem - it's still relying
-on hard coded register write sequences for example.
+some IP allow you when you configure an gpio as input to enable the internal pullup
+so no need on the board to add an external pull up
 
-> ML26124-01HB/ML26124-02GD is 16bit monaural audio CODEC which has high
-> resistance to voltage noise. On chip regulator realizes power supply rejection
-> ratio (PSRR) be over 90dB so more than 50dB is improved than ever. ML26124-01HB/
+Best Regards,
+J.
 
-You should fix the word wrapping in your commit message to be well
-within 80 columns.
+> 
+> -- 
+> balbi
 
-> +struct ml26124_priv {
-> +	enum snd_soc_control_type control_type;
 
-Since the device only supports I2C you should just unconditionally use
-I2C.  You should also use regmap for register access.
-
-> +static const struct snd_kcontrol_new ml26124_snd_controls[] = {
-> +	SOC_SINGLE_TLV("Capture Digital Volume", ML26124_RECORD_DIG_VOL, 0, 0xff, 1, rec_play_digi_vol),
-> +	SOC_SINGLE_TLV("Playback Digital Volume", ML26124_PLBAK_DIG_VOL, 0, 0xff, 1, rec_play_digi_vol),
-
-> +	SOC_SINGLE("Digital Volume Switch", ML26124_FILTER_EN, 4, 1, 0),
-
-This needs either a Playback or Capture in there to match up with the
-above unless it genuinely does mute both which would be really weird.
-
-> +	SND_SOC_DAPM_VMID("VMID"),
-
-Remove this unless it's actually used in your routing.
-
-> +	SND_SOC_DAPM_MICBIAS("MICBIAS", ML26124_PW_REF_PW_MNG, 0, 0),
-
-This should be a supply widget, MICBIAS widgets are legacy.
-
-> +	SND_SOC_DAPM_MIXER("Output Mixer", ML26124_PW_SPAMP_PW_MNG, 0x1f, 0, 
-> +			   &ml26124_output_mixer_controls[0],
-> +			   ARRAY_SIZE(ml26124_output_mixer_controls)),
-
-Do you *really* have a shift of 0x1f for the enable bit?
-
-> +static int ml26124_snd_card_codec_set(int number, struct ml26124_priv *priv,
-> +				      struct snd_soc_codec *codec)
-> +{
-> +	unsigned char data;
-> +	unsigned int rate = priv->rate;
-> +	unsigned int channels = priv->ch;
-> +
-> +	data = snd_soc_read(codec, ML26124_PW_MICBIAS_VOL);
-> +	snd_soc_update_bits(codec, ML26124_SW_RST, 0x01, 1);	/* soft reset assert */
-> +	snd_soc_update_bits(codec, ML26124_SW_RST, 0x01, 0);	/* soft reset negate */
-> +
-> +	snd_soc_update_bits(codec, 0x0c, 0x1f, 0);	/* Stop clock  */
-
-The same issue as with your previous submission applies to this function
-- you shouldn't have hard coded register write sequences in your code,
-the driver should use the facilities of the subsystem to allow the user
-to configure it at runtime.  Given how big an issue this is I've stopped
-reading at this point.
