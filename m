@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab1KYJsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 04:48:16 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53687 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab1KYJsP (ORCPT
+	id S1753663Ab1KYJvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 04:51:53 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59204 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab1KYJvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 04:48:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH] MISC: convert drivers/misc/* to use module_platform_driver()
-Date: Fri, 25 Nov 2011 09:48:09 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Pavan Savoy <pavan_savoy@ti.com>,
-        "Greg Kroah-Hartman" <greg@kroah.com>
-References: <1322195099.30842.4.camel@phoenix>
-In-Reply-To: <1322195099.30842.4.camel@phoenix>
+	Fri, 25 Nov 2011 04:51:52 -0500
+Date: Fri, 25 Nov 2011 10:51:44 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: zhao zhang <zhzhl555@gmail.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, keguang.zhang@gmail.com, wuzhangjin@gmail.com,
+        r0bertz@gentoo.org
+Subject: Re: [rtc-linux] [PATCH V1] MIPS: Add RTC support for loongson1B
+Message-ID: <20111125095144.GC2535@pengutronix.de>
+References: <1322189527-4761-1-git-send-email-zhzhl555@gmail.com>
+ <20111125091311.GB2535@pengutronix.de>
+ <CANY2MLJ6e02--f6D5yAK0Q6C57QGo5gqyBjWGmvCGhNr0XajJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111250948.09761.arnd@arndb.de>
-X-Provags-ID: V02:K0:K0rP4JZMeihsVoWJFI3QJzPp4Dfy+7USYLrWiChaw+a
- cqmXRPb/9PsAXNY8P6QuPni7+7NA4THiv0gpGxnlNCLdx1aE7E
- gwHP6424Ib6tuqHHDPfeRoZtAUP9/Psd0LkKZM7EG7tqwqJtyH
- AxJCH//nb8em56xJBuRF6plrqzaQpray3u8gYt46TUu9gPaCw7
- jmF/V/57V/EqWzwYmPza3LWeNGHDkk3Azbfh4/xotpj6TojFAA
- EgtvTQuNajV+9Wq/qxScBRoqYSvjhjJNqZnnx8P6GT0hmi6pVe
- /WcH6QQeYxhZszOqwKBiEGon7wClBtLjUdItXPMB/G3R85qa+D
- q+7zx45pIMoAQvfe3eXQ=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kVXhAStRUZ/+rrGn"
+Content-Disposition: inline
+In-Reply-To: <CANY2MLJ6e02--f6D5yAK0Q6C57QGo5gqyBjWGmvCGhNr0XajJQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 November 2011, Axel Lin wrote:
-> 
-> This patch converts the drivers in drivers/misc/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Ira W. Snyder <iws@ovro.caltech.edu>
-> Cc: Pratyush Anand <pratyush.anand@st.com>
-> Cc: Pavan Savoy <pavan_savoy@ti.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+--kVXhAStRUZ/+rrGn
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Nov 25, 2011 at 05:49:04PM +0800, zhao zhang wrote:
+>    I have checked carefully,
+>    1:the au1xx used one register but loongon1B used two 32bit registers
+>    (write0/write1 and read0/read1) to represent time.
+>    2:the data organization are also different.=A0
+>    so, it's hard to reuse.
+
+Fair enough, thanks for checking.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--kVXhAStRUZ/+rrGn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7PZTAACgkQD27XaX1/VRvTuQCcC8O7fpDjulCrLAuvz5GBno22
+QuEAoLnV4x0EZGQNA0XOAYIfy16IFnrf
+=SRqo
+-----END PGP SIGNATURE-----
+
+--kVXhAStRUZ/+rrGn--
