@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab1KYVq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 16:46:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50720 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab1KYVq4 (ORCPT
+	id S1753579Ab1KYWEy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 17:04:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45422 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1KYWEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 16:46:56 -0500
-Message-ID: <4ED00CCB.80604@gmail.com>
-Date: Fri, 25 Nov 2011 16:46:51 -0500
-From: Xi Wang <xi.wang@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 25 Nov 2011 17:04:53 -0500
+Date: Sat, 26 Nov 2011 02:04:48 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        syed rafiuddin <rafiuddin.sayed@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 8/9] bq27x00: Add miscdevice for each battery with ioctl
+ for reading registers
+Message-ID: <20111125220448.GA2078@oksana.dev.rtsoft.ru>
+References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
+ <7780165.E3DXgdWAv1@pali-elitebook>
+ <20111125204626.GA25003@oksana.dev.rtsoft.ru>
+ <33058541.3DK13LYaLI@pali-elitebook>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        "security@kernel.org" <security@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>, Franky Lin <frankyl@broadcom.com>,
-        Greg Dietsche <gregory.dietsche@cuw.edu>,
-        Mark Pearson <markpearson_de@yahoo.de>
-Subject: [PATCH v3] comedi: integer overflow in do_insnlist_ioctl()
-References: <5C0D372F-F03E-4EB8-8440-83A8D1C95363@gmail.com> <20111123061355.GA3295@mwanda> <CAKU6vyZdC64piK-mn6kLMt1-RhhM8D-4KbAGxje087FJ9X=fNA@mail.gmail.com> <20111123145020.GA3258@mwanda> <4ECD1A01.3060503@mev.co.uk> <4ECD6873.7080106@metafoo.de> <20111123215111.GD3258@mwanda> <97189E06-26D8-4CF9-B325-06403FB1C42C@gmail.com> <20111125072550.GK3195@mwanda>
-In-Reply-To: <20111125072550.GK3195@mwanda>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <33058541.3DK13LYaLI@pali-elitebook>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a potential integer overflow in do_insnlist_ioctl() if
-userspace passes in a large insnlist.n_insns.  The call to kmalloc()
-would allocate a small buffer, leading to a memory corruption.
+On Fri, Nov 25, 2011 at 09:54:04PM +0100, Pali Rohár wrote:
+> On Saturday 26 November 2011 00:46:26 Anton Vorontsov wrote:
+> > On Fri, Nov 25, 2011 at 09:30:28PM +0100, Pali Rohár wrote:
+> > [...]
+> > 
+> > > This interface is not only for BME. Also some popular bq27200.sh script
+> > > which print bq registers in human readable form needs this interface
+> > > (with LD_PRELOAD library).
+> > > 
+> > > Link for that shell script http://enivax.net/jk/n900/bq.tar
+> > 
+> > That might be a good excuse to have the raw interface. Although,
+> > as this is for debugging purposes only, the same effect can be
+> > accomplished by unloading bq module and using i2c userspace
+> > interface directly... I guess.
+> > 
+> 
+> Yes, unloading bq module and then starting script working. But I think that we 
+> could have some interface how to access directly to i2c when some i2c module 
+> for chip is loaded.
 
-The bug was reported by Dan Carpenter <dan.carpenter@oracle.com>
-and Haogang Chen <haogangchen@gmail.com>.  The patch was suggested by
-Ian Abbott <abbotti@mev.co.uk> and Lars-Peter Clausen <lars@metafoo.de>.
+This would be not safe as this might (in case of RW registers)
+break kernel's driver behaviour (well, in bq case you only allow
+reading, so not problem in this particular case).
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
----
-  drivers/staging/comedi/comedi_fops.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+What would be more practical, is to allow I2C core to provide
+userspace interface even for already bound I2C devices.
 
-diff --git a/drivers/staging/comedi/comedi_fops.c 
-b/drivers/staging/comedi/comedi_fops.c
-index 21d8c1c..7f7d79e 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -671,7 +671,7 @@ static int do_insnlist_ioctl(struct comedi_device *dev,
-  	}
+That could be some kind of CONFIG_I2C_UNSAFE_DEBUG: when
+selected I2C core would allow access to all I2C devices. But still,
+the niche for such a feature is tiny, so I doubt that it is worth
+doing at all.
 
-  	insns =
--	    kmalloc(sizeof(struct comedi_insn) * insnlist.n_insns, GFP_KERNEL);
-+	    kcalloc(insnlist.n_insns, sizeof(struct comedi_insn), GFP_KERNEL);
-  	if (!insns) {
-  		DPRINTK("kmalloc failed\n");
-  		ret = -ENOMEM;
+In any case, I just think that being able to access already bound
+I2C devices from userspace might be a good thing for debugging,
+but having such an interface per-driver is impractical.
+
+Thanks,
+
 -- 
-1.7.5.4
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
