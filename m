@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab1KYEQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 23:16:28 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44138 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab1KYEQ1 (ORCPT
+	id S1752911Ab1KYEZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 23:25:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35212 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab1KYEZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 23:16:27 -0500
-Message-ID: <1322194579.30842.2.camel@phoenix>
-Subject: [PATCH 2/2] MISC: convert drivers/misc/* to use module_spi_driver()
+	Thu, 24 Nov 2011 23:25:07 -0500
+Message-ID: <1322195099.30842.4.camel@phoenix>
+Subject: [PATCH] MISC: convert drivers/misc/* to use module_platform_driver()
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        Anatolij Gustschin <agust@denx.de>, Daniel Mack <zonque@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
-Date: Fri, 25 Nov 2011 12:16:19 +0800
-In-Reply-To: <1322194447.30842.0.camel@phoenix>
-References: <1322194447.30842.0.camel@phoenix>
+Cc: "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Pavan Savoy <pavan_savoy@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Date: Fri, 25 Nov 2011 12:24:59 +0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
@@ -26,140 +25,96 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch converts the drivers in drivers/misc/* to use the
-module_spi_driver() macro which makes the code smaller and a bit
+module_platform_driver() macro which makes the code smaller and a bit
 simpler.
 
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
-Cc: Anatolij Gustschin <agust@denx.de>
-Cc: Daniel Mack <zonque@gmail.com>
+Cc: Ira W. Snyder <iws@ovro.caltech.edu>
+Cc: Pratyush Anand <pratyush.anand@st.com>
+Cc: Pavan Savoy <pavan_savoy@ti.com>
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/misc/ad525x_dpot-spi.c         |   12 +-----------
- drivers/misc/eeprom/at25.c             |   12 +-----------
- drivers/misc/eeprom/eeprom_93xx46.c    |   12 +-----------
- drivers/misc/lis3lv02d/lis3lv02d_spi.c |   13 +------------
- drivers/misc/ti_dac7512.c              |   13 +------------
- 5 files changed, 5 insertions(+), 57 deletions(-)
+ drivers/misc/carma/carma-fpga.c      |   17 +----------------
+ drivers/misc/spear13xx_pcie_gadget.c |   12 +-----------
+ drivers/misc/ti-st/st_kim.c          |   13 +------------
+ 3 files changed, 3 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/misc/ad525x_dpot-spi.c b/drivers/misc/ad525x_dpot-spi.c
-index 822749e..f623175 100644
---- a/drivers/misc/ad525x_dpot-spi.c
-+++ b/drivers/misc/ad525x_dpot-spi.c
-@@ -135,17 +135,7 @@ static struct spi_driver ad_dpot_spi_driver = {
- 	.id_table	= ad_dpot_spi_id,
+diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+index 14e974b2..366bc15 100644
+--- a/drivers/misc/carma/carma-fpga.c
++++ b/drivers/misc/carma/carma-fpga.c
+@@ -1410,23 +1410,8 @@ static struct platform_driver data_of_driver = {
+ 	},
  };
  
--static int __init ad_dpot_spi_init(void)
--{
--	return spi_register_driver(&ad_dpot_spi_driver);
--}
--module_init(ad_dpot_spi_init);
+-/*
+- * Module Init / Exit
+- */
 -
--static void __exit ad_dpot_spi_exit(void)
+-static int __init data_init(void)
 -{
--	spi_unregister_driver(&ad_dpot_spi_driver);
+-	return platform_driver_register(&data_of_driver);
 -}
--module_exit(ad_dpot_spi_exit);
-+module_spi_driver(ad_dpot_spi_driver);
- 
- MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
- MODULE_DESCRIPTION("digital potentiometer SPI bus driver");
-diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
-index c627e41..01ab3c9 100644
---- a/drivers/misc/eeprom/at25.c
-+++ b/drivers/misc/eeprom/at25.c
-@@ -405,17 +405,7 @@ static struct spi_driver at25_driver = {
- 	.remove		= __devexit_p(at25_remove),
- };
- 
--static int __init at25_init(void)
--{
--	return spi_register_driver(&at25_driver);
--}
--module_init(at25_init);
 -
--static void __exit at25_exit(void)
+-static void __exit data_exit(void)
 -{
--	spi_unregister_driver(&at25_driver);
+-	platform_driver_unregister(&data_of_driver);
 -}
--module_exit(at25_exit);
-+module_spi_driver(at25_driver);
++module_platform_driver(data_of_driver);
  
- MODULE_DESCRIPTION("Driver for most SPI EEPROMs");
- MODULE_AUTHOR("David Brownell");
-diff --git a/drivers/misc/eeprom/eeprom_93xx46.c b/drivers/misc/eeprom/eeprom_93xx46.c
-index 0c7ebb1..ce3fe36 100644
---- a/drivers/misc/eeprom/eeprom_93xx46.c
-+++ b/drivers/misc/eeprom/eeprom_93xx46.c
-@@ -392,17 +392,7 @@ static struct spi_driver eeprom_93xx46_driver = {
- 	.remove		= __devexit_p(eeprom_93xx46_remove),
- };
- 
--static int __init eeprom_93xx46_init(void)
--{
--	return spi_register_driver(&eeprom_93xx46_driver);
--}
--module_init(eeprom_93xx46_init);
--
--static void __exit eeprom_93xx46_exit(void)
--{
--	spi_unregister_driver(&eeprom_93xx46_driver);
--}
--module_exit(eeprom_93xx46_exit);
-+module_spi_driver(eeprom_93xx46_driver);
- 
+ MODULE_AUTHOR("Ira W. Snyder <iws@ovro.caltech.edu>");
+ MODULE_DESCRIPTION("CARMA DATA-FPGA Access Driver");
  MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Driver for 93xx46 EEPROMs");
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d_spi.c b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-index b2c1be1..80880e9 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-@@ -126,18 +126,7 @@ static struct spi_driver lis302dl_spi_driver = {
- 	.remove	= __devexit_p(lis302dl_spi_remove),
+-
+-module_init(data_init);
+-module_exit(data_exit);
+diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
+index 43d073b..123ed98 100644
+--- a/drivers/misc/spear13xx_pcie_gadget.c
++++ b/drivers/misc/spear13xx_pcie_gadget.c
+@@ -891,17 +891,7 @@ static struct platform_driver spear_pcie_gadget_driver = {
+ 	},
  };
  
--static int __init lis302dl_init(void)
+-static int __init spear_pcie_gadget_init(void)
 -{
--	return spi_register_driver(&lis302dl_spi_driver);
+-	return platform_driver_register(&spear_pcie_gadget_driver);
 -}
+-module_init(spear_pcie_gadget_init);
 -
--static void __exit lis302dl_exit(void)
+-static void __exit spear_pcie_gadget_exit(void)
 -{
--	spi_unregister_driver(&lis302dl_spi_driver);
+-	platform_driver_unregister(&spear_pcie_gadget_driver);
 -}
--
--module_init(lis302dl_init);
--module_exit(lis302dl_exit);
-+module_spi_driver(lis302dl_spi_driver);
+-module_exit(spear_pcie_gadget_exit);
++module_platform_driver(spear_pcie_gadget_driver);
  
- MODULE_AUTHOR("Daniel Mack <daniel@caiaq.de>");
- MODULE_DESCRIPTION("lis3lv02d SPI glue layer");
-diff --git a/drivers/misc/ti_dac7512.c b/drivers/misc/ti_dac7512.c
-index d3f229a..5acbba1 100644
---- a/drivers/misc/ti_dac7512.c
-+++ b/drivers/misc/ti_dac7512.c
-@@ -82,20 +82,9 @@ static struct spi_driver dac7512_driver = {
- 	.remove	= __devexit_p(dac7512_remove),
+ MODULE_ALIAS("platform:pcie-gadget-spear");
+ MODULE_AUTHOR("Pratyush Anand");
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 43ef8d1..533f426 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -813,19 +813,8 @@ static struct platform_driver kim_platform_driver = {
+ 	},
  };
  
--static int __init dac7512_init(void)
+-static int __init st_kim_init(void)
 -{
--	return spi_register_driver(&dac7512_driver);
+-	return platform_driver_register(&kim_platform_driver);
 -}
 -
--static void __exit dac7512_exit(void)
+-static void __exit st_kim_deinit(void)
 -{
--	spi_unregister_driver(&dac7512_driver);
+-	platform_driver_unregister(&kim_platform_driver);
 -}
-+module_spi_driver(dac7512_driver);
+-
++module_platform_driver(kim_platform_driver);
  
- MODULE_AUTHOR("Daniel Mack <daniel@caiaq.de>");
- MODULE_DESCRIPTION("DAC7512 16-bit DAC");
- MODULE_LICENSE("GPL v2");
- MODULE_VERSION(DRIVER_VERSION);
--
--module_init(dac7512_init);
--module_exit(dac7512_exit);
+-module_init(st_kim_init);
+-module_exit(st_kim_deinit);
+ MODULE_AUTHOR("Pavan Savoy <pavan_savoy@ti.com>");
+ MODULE_DESCRIPTION("Shared Transport Driver for TI BT/FM/GPS combo chips ");
+ MODULE_LICENSE("GPL");
 -- 
 1.7.5.4
 
