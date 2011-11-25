@@ -1,102 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab1KYMue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 07:50:34 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48013 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab1KYMud (ORCPT
+	id S1755099Ab1KYMxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 07:53:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50046 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab1KYMxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 07:50:33 -0500
+	Fri, 25 Nov 2011 07:53:37 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Subject: Re: [PATCH] powerpc/40x: Add APM8018X SOC support
+Date: Fri, 25 Nov 2011 12:53:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: jwboyer@gmail.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+References: <1322041464-20605-1-git-send-email-tinamdar@apm.com> <201111231415.51985.arnd@arndb.de> <CACoXjcnfCM8Z5qFfrHtxsXkpf492LVbkDA3X=a9dRv9Lcv7Asw@mail.gmail.com>
+In-Reply-To: <CACoXjcnfCM8Z5qFfrHtxsXkpf492LVbkDA3X=a9dRv9Lcv7Asw@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 25 Nov 2011 18:20:31 +0530
-Message-ID: <CAFPAmTQCcWf0yLm239b_fQTv9CY9t=B5gUrDO1wKM97pyrJurQ@mail.gmail.com>
-Subject: linux-2.6.35.13: Schedule while atomic bug and kernel crash in kswapd.
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111251253.29528.arnd@arndb.de>
+X-Provags-ID: V02:K0:c7KXaaYVm7z1wdVXxkKxcV+PDzA5qysZw39KU/hVB9a
+ 256MMR0Lzc2R6MMtijEMVDKyGIqiDxm6F/laDjUoyOYScKESFV
+ qqtJHJEu2CVLr/rLJK3+o/XvXiEB1VSHUazVZzbF3xpSbnN/PQ
+ hd51mzO5ULmI60zHF8Kn2Qzgj+rIzpIZwNeYnGu1eG1G+p/5xc
+ 3kVsa1pLayJ8JDB01czYRXSro2mXPXdxUWa02yIwtNlTQ80xSK
+ pj0VwC30Zy+h3gExhKnV54zhbwv2f2eNxH4ZUYjyKJUXp+VIwd
+ lS2d04SyOMIqm4o+muemhiGCzhDDWi9+VCmjaDB6mzr7pfmjBp
+ YSBt1FR7tpDYnYs3tYzc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Friday 25 November 2011, Tanmay Inamdar wrote:
+> > >
+> > > +#if defined(CONFIG_APM8018X)
+> > > +/* CPR */
+> > > +#define DCRN_CPR0_CONFIG_ADDR        0xa
+> > > +#define DCRN_CPR1_CONFIG_DATA        0xb
+> > > +/* AHB */
+> > > +#define DCRN_SDR1_CONFIG_ADDR        0xc
+> > > +#define DCRN_SDR1_CONFIG_DATA        0xd
+> > > +#else
+> > >  /* CPRs (440GX and 440SP/440SPe) */
+> > >  #define DCRN_CPR0_CONFIG_ADDR        0xc
+> > >  #define DCRN_CPR0_CONFIG_DATA        0xd
+> > > +#endif /* CONFIG_APM8018X */
+> >
+> > same comment as above.
+> >
+> 
+> Some existing drivers use these macros. If I change the names, I will have
+> to update the
+> driver code.
 
-I am running linux-2.6.35.31 on my ARM system and I got around 197
-schedule while atomics and then finally a kernel crash.
+Not so many apparently:
 
-Can anyone suggest some MMpatches to apply on this fix this problem ?
+$ git grep DCRN_CPR._CONFIG 
+arch/powerpc/include/asm/dcr-regs.h:#define DCRN_CPR0_CONFIG_ADDR       0xc
+arch/powerpc/include/asm/dcr-regs.h:#define DCRN_CPR0_CONFIG_DATA       0xd
+arch/powerpc/kvm/44x_emulate.c:                 case DCRN_CPR0_CONFIG_ADDR:
+arch/powerpc/kvm/44x_emulate.c:                 case DCRN_CPR0_CONFIG_DATA:
+arch/powerpc/kvm/44x_emulate.c:                         mtdcr(DCRN_CPR0_CONFIG_ADDR,
+arch/powerpc/kvm/44x_emulate.c:                                        mfdcr(DCRN_CPR0_CONFIG_DATA));
+arch/powerpc/kvm/44x_emulate.c:                 case DCRN_CPR0_CONFIG_ADDR:
 
-I got the following schedule while atomic log around 197 times:
-------------------------------------------------------------------------------------------
-Backtrace(CPU 0):
-[<c00393a0>] (dump_backtrace+0x0/0x11c) from [<c0393728>] (dump_stack+0x20/0x24)
-[<c0393708>] (dump_stack+0x0/0x24) from [<c0058ad0>] (__schedule_bug+0x70/0x7c)
-[<c0058a60>] (__schedule_bug+0x0/0x7c) from [<c03939f8>] (schedule+0x74/0x5a4)
-  r5:d2002000 r4:d1f79440
- [<c0393984>] (schedule+0x0/0x5a4) from [<c03948a0>]
-(schedule_timeout+0x2c8/0x304)
- [<c03945d8>] (schedule_timeout+0x0/0x304) from [<c0393958>]
-(io_schedule_timeout+0x50/0x7c)
-  r7:d1f79440 r6:d2002000 r5:c04c0088 r4:c04bfc88
- [<c0393908>] (io_schedule_timeout+0x0/0x7c) from [<c0109cbc>]
-(congestion_wait+0x7c/0xa0)
-  r6:00000019 r5:c04c6230 r4:d2003edc r3:00000000
- [<c0109c40>] (congestion_wait+0x0/0xa0) from [<c0102268>] (kswapd+0x594/0x61c)
-  r7:00000000 r6:c04d7a28 r5:00000008 r4:c04d76f4
- [<c0101cd4>] (kswapd+0x0/0x61c) from [<c007db6c>] (kthread+0x90/0x98)
- [<c007dadc>] (kthread+0x0/0x98) from [<c00642f4>] (do_exit+0x0/0x708)
-  r7:00000013 r6:c00642f4 r5:c007dadc r4:d1f47f3c
- BUG: scheduling while atomic: kswapd0/16/0x00000000
+Don't worry about out of tree drivers. If you want to be nice to the authors,
+rename the macros so that the drivers break in an obvious way rather than
+silently.
 
-Finally, I got the following kernel crash:
---------------------------------------------------------
- CPU: 0    Tainted: P             (2.6.35.13 #1)
-PC is at __bug+0x2c/0x38
-LR is at sub_preempt_count+0x48/0x64
-pc : [<c00390dc>]    lr : [<c0398984>]    psr: 60000193
-sp : d2003d78  ip : d2003cb0  fp : d2003d84
-r10: 00000004  r9 : 00c83880  r8 : c0647838
-r7 : c04d7960  r6 : 00000004  r5 : c0647820  r4 : d2003e64
-r3 : 00000000  r2 : d2003cc8  r1 : c0398978  r0 : 00000034
-Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c53c7d  Table: 7aad4059  DAC: 00000017
-Process kswapd0 (pid: 16, stack limit = 0xd20022e8)
-Stack: (0xd2003d78 to 0xd2004000)
-3d60:                                                       d2003dd4 d2003d88
-3d80: c00ffd74 c00390bc d2003e6c 00000020 00000000 000641c4 fffffffc 00000002
-3da0: 000641c3 00000004 00000005 c04d76f4 d2002000 d2003f44 c04d79f4 c04d79f8
-3dc0: 00000000 00000000 d2003e9c d2003dd8 c010117c c00ffc54 00000002 c04d76f4
-3de0: 00000000 00000001 00000020 00000000 00000001 c04d79ac c04d79b4 00000000
-3e00: 1ae147ae c04d79a8 c04d79b0 c007dadc 00000000 00000001 d2003e3c d2003e28
-3e20: c00fbd50 c00ff0b4 00000000 d2003e84 d2003e7c d2003e40 c00fbde4 c00fbd3c
-3e40: c0061d80 d2003e60 d2003e60 d2003eb4 00000000 00000000 00000000 00000000
-3e60: 00000000 c0647858 c0647878 00000000 d2003e9c 00000002 00000002 00000008
-3e80: d2003f44 c04d76f4 00000000 00000000 d2003f0c d2003ea0 c0101a68 c0100fb0
-3ea0: 00000008 d2003eb0 00000000 ffffffff 00000000 00000002 d2003ed4 00000000
-3ec0: 00000000 00000010 0000002a c04d76f4 00000048 00000000 0001b836 00000000
-3ee0: 00000000 c04d76f4 00000008 c04d76f4 00000000 c04d76f4 00000000 00000001
-3f00: d2003fc4 d2003f10 c01020fc c0101714 00000000 c0055d4c c005a728 00000002
-3f20: d2003f94 00000001 d2002000 0000ffbc 00000002 00000000 00000000 c04d7d90
-3f40: c0393ec4 00000000 00000000 ffffffff 00000000 000000d0 00000001 00000001
-3f60: 00000001 0000003c 00000002 00000001 00000000 00000000 00000000 d1f79440
-3f80: c007e048 d2003f84 d2003f84 00000008 c0393ec4 00000000 00000000 d1f47f3c
-3fa0: d2003fcc c0101cd4 c04d76f4 00000000 00000000 00000000 d2003ff4 d2003fc8
-3fc0: c007db6c c0101ce0 00000000 00000000 d2003fd0 d2003fd0 d1f47f3c c007dadc
-3fe0: c00642f4 00000013 00000000 d2003ff8 c00642f4 c007dae8 ff7f7fff beffffff
-Backtrace(CPU 0):
-[<c00390b0>] (__bug+0x0/0x38) from [<c00ffd74>]
-(isolate_pages_global+0x12c/0x2c0)
-[<c00ffc48>] (isolate_pages_global+0x0/0x2c0) from [<c010117c>]
-(shrink_list+0x1d8/0x764)
-[<c0100fa4>] (shrink_list+0x0/0x764) from [<c0101a68>] (shrink_zone+0x360/0x418)
-[<c0101708>] (shrink_zone+0x0/0x418) from [<c01020fc>] (kswapd+0x428/0x61c)
-[<c0101cd4>] (kswapd+0x0/0x61c) from [<c007db6c>] (kthread+0x90/0x98)
-[<c007dadc>] (kthread+0x0/0x98) from [<c00642f4>] (do_exit+0x0/0x708)
-r7:00000013 r6:c00642f4 r5:c007dadc r4:d1f47f3c
-Code: e59f0010 e1a01003 eb0d69d2 e3a03000 (e5833000)
+Note that any drivers relying on these as a constant are already broken
+as soon as you try to build a kernel with both APM8018X and 440 enabled,
+so you absolutely have to change the device drivers to work with those
+kernels.
 
-Thanks,
-Kautuk.
+> > > diff --git a/arch/powerpc/kernel/cputable.c
+> > b/arch/powerpc/kernel/cputable.c
+> > > index edae5bb..e5c51a6 100644
+> > > --- a/arch/powerpc/kernel/cputable.c
+> > > +++ b/arch/powerpc/kernel/cputable.c
+> > > @@ -1505,6 +1505,58 @@ static struct cpu_spec __initdata cpu_specs[] = {
+> > >               .machine_check          = machine_check_4xx,
+> > >               .platform               = "ppc405",
+> > >       },
+> > > +     {       /* APM80186-SK */
+> > > +             .pvr_mask               = 0xffffffff,
+> > > +             .pvr_value              = 0x7ff11432,
+> >
+> > If you mask out the lower bits, you only need a single entry instead of
+> > four identical ones.
+> >
+> 
+> You are right. But each PVR represent different version of SOC. If I create
+> single
+> entry, then I will have to give generic cpu_name which I don't want.
+
+Isn't the common name for these always "APM80186"? If you don't need to tell
+the difference between them for the purposes of cpu_spec, then don't do
+it here.
+
+	Arnd
