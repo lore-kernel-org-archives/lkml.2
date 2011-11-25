@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab1KYRZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 12:25:24 -0500
-Received: from bipbip.grupopie.com ([195.23.16.24]:33441 "EHLO
-	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab1KYRZY (ORCPT
+	id S1752560Ab1KYR3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 12:29:33 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53530 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab1KYR3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 12:25:24 -0500
-X-Greylist: delayed 1196 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 12:25:23 EST
-Message-ID: <4ECFCAD5.5040606@grupopie.com>
-Date: Fri, 25 Nov 2011 17:05:25 +0000
-From: Paulo Marques <pmarques@grupopie.com>
-Organization: Grupo PIE
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 25 Nov 2011 12:29:32 -0500
 MIME-Version: 1.0
-To: Nuno Santos <nsantos@edigma.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Floating point usage inside kernel
-References: <S1754322Ab1KYK6W/20111125105822Z+929@vger.kernel.org> <4ECF789F.3040001@edigma.com> <4ECF8528.9080800@gmail.com> <4ECFBF56.4000002@edigma.com>
-In-Reply-To: <4ECFBF56.4000002@edigma.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <861usye0og.fsf@sumi.keithp.com>
+References: <CAGPN=9THOv-M4Td4haE94uDcsAjW3eGMG7ioLeu+p8xUOBPd7w@mail.gmail.com>
+	<861usye0og.fsf@sumi.keithp.com>
+Date: Fri, 25 Nov 2011 18:29:31 +0100
+Message-ID: <CAGPN=9ROa_Pf242jxPy-6XfmFNW3+sCMj6M+pFbw+wgCX3tu1Q@mail.gmail.com>
+Subject: Re: i915: 3.2 rc1/2 KMS regression
+From: Patrik Kullman <patrik.kullman@gmail.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae9399db1f600fd04b2927e3c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nuno Santos wrote:
-> Hi Jiri,
+--14dae9399db1f600fd04b2927e3c
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi, Nuno
+Ok, so I've now bisected, and it turns out that
+dc22ee6fc18ce0f15424e753e8473c306ece95c1 is the first bad revision.
 
-> [...]
-> But now that I have opened this question here I should ask... is it safe?
+Would it be safe to checkout 3.2-rc3 and git revert
+dc22ee6fc18ce0f15424e753e8473c306ece95c1 (to test that it's the only
+bad commit) ?
 
-No!
+Attaching bisect log.
 
-> [...]
-> And the input data is the following:
-> 
-> src[0] = [0,6300]; src[1] = [0,6300]; src[2] = 1.0;
-> zone->Matrix (double[3][3])
-> 
-> u: 492.188 v: 615.234 sx: 683.158 sy: 5790.13
-> 
-> u: 5807.81 v: 615.234 sx: 5944.9 sy: 5900.58
-> 
-> u: 5807.81 v: 5684.77 sx: 6027.46 sy: 560.337
-> 
-> u: 492.188 v: 5684.77 sx: 751.198 sy: 476.455
-> 
-> 
-> and tex is output (double[3])
-[...]
+2011/11/24 Keith Packard <keithp@keithp.com>:
+> On Thu, 24 Nov 2011 00:43:03 +0100, Patrik Kullman <patrik.kullman@gmail.com> wrote:
+>> Hi,
+>>
+>> With the Asus Zenbook UX31E, kernel 3.1.1/2 works perfectly, but 3.2
+>> rc1 and rc2 freezes on boot with KMS.
+>
+> If you can bisect between those two versions, you should be able to
+> isolate the change which is causing this problem. Without that, it's
+> unlikely that we'll be able to help much.
+>
+> --
+> keith.packard@intel.com
+>
 
-Given the range of numbers you're working with, you can probably get
-away with just a 16.16 fixed point representation. The operations go
-like this:
+--14dae9399db1f600fd04b2927e3c
+Content-Type: text/x-log; charset=US-ASCII; name="git-bisect.log"
+Content-Disposition: attachment; filename="git-bisect.log"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvfgsi9p1
 
-convert a double to a fixed point number just do (but not on the kernel):
-
-  fixed = (s32)(double * 65536.0);
-
-convert an integer to fixed:
-
-  fixed = integer << 16;
-
-multiplication:
-
-  result = (s32)(((s64) fixed_a * fixed_b) >> 16);
-
-addition:
-
-  result = fixed_a + fixed_b;
-
-etc...
-
-Unless you have overflow or need more than 16 bits of fractional
-precision, you'll have no problem with this approach.
-
-I hope this helps,
-
--- 
-Paulo Marques - www.grupopie.com
-
-"All generalizations are false."
+Z2l0IGJpc2VjdCBzdGFydAojIGdvb2Q6IFtjM2I5MmM4Nzg3MzY3YThiYjUzZDU3ZDk3ODliNTU4
+ZjEyOTVjYzk2XSBMaW51eCAzLjEKZ2l0IGJpc2VjdCBnb29kIGMzYjkyYzg3ODczNjdhOGJiNTNk
+NTdkOTc4OWI1NThmMTI5NWNjOTYKIyBiYWQ6IFsxZWE2YjhmNDg5MTgyODJiZGNhMGIzMmEzNDA5
+NTUwNGVlNjViYWI1XSBMaW51eCAzLjItcmMxCmdpdCBiaXNlY3QgYmFkIDFlYTZiOGY0ODkxODI4
+MmJkY2EwYjMyYTM0MDk1NTA0ZWU2NWJhYjUKIyBiYWQ6IFszN2JlOTQ0YTAyNzA0MDJmOWNkYTI5
+MWE5MzBiMDI4NmY2ZGM5MmY1XSBNZXJnZSBicmFuY2ggJ2RybS1jb3JlLW5leHQnIG9mIGdpdDov
+L3Blb3BsZS5mcmVlZGVza3RvcC5vcmcvfmFpcmxpZWQvbGludXgKZ2l0IGJpc2VjdCBiYWQgMzdi
+ZTk0NGEwMjcwNDAyZjljZGEyOTFhOTMwYjAyODZmNmRjOTJmNQojIGdvb2Q6IFs3ZTBiYjcxZTc1
+MDIwMzQ4YmVlNTIzNzIwYTBjMmYwNGNjNzJmNTQwXSBNZXJnZSBicmFuY2ggJ3BtLWZvci1saW51
+cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3JhZmFl
+bC9saW51eC1wbQpnaXQgYmlzZWN0IGdvb2QgN2UwYmI3MWU3NTAyMDM0OGJlZTUyMzcyMGEwYzJm
+MDRjYzcyZjU0MAojIGdvb2Q6IFs0NmE5NzE5MTM2MTFhMjM0NzgyODM5MzE0NjBhOTViZTk2MmNl
+MzI5XSBTdGFnaW5nOiBodjogbW92ZSBoeXBlcnYgY29kZSBvdXQgb2Ygc3RhZ2luZyBkaXJlY3Rv
+cnkKZ2l0IGJpc2VjdCBnb29kIDQ2YTk3MTkxMzYxMWEyMzQ3ODI4MzkzMTQ2MGE5NWJlOTYyY2Uz
+MjkKIyBnb29kOiBbOGE0YTg5MThlZDZlNGEzNjFmNGRmMTlmMTk5YmJjMmQwYTg5YTQ2Y10gTWVy
+Z2UgYnJhbmNoICdzY2hlZC1jb3JlLWZvci1saW51cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcv
+cHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RpcC90aXAKZ2l0IGJpc2VjdCBnb29kIDhhNGE4OTE4
+ZWQ2ZTRhMzYxZjRkZjE5ZjE5OWJiYzJkMGE4OWE0NmMKIyBnb29kOiBbZTM0ZWIzOWMxYzc5MWZl
+NzlkYTZhYWUwZDkwNTdmMGM3NGMyZjBlZF0gTWVyZ2UgYnJhbmNoICd4ODYtY3B1LWZvci1saW51
+cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RpcC90
+aXAKZ2l0IGJpc2VjdCBnb29kIGUzNGViMzljMWM3OTFmZTc5ZGE2YWFlMGQ5MDU3ZjBjNzRjMmYw
+ZWQKIyBnb29kOiBbMjg2ZTBjOTRmOWMzZjI5MmNiMzhhOTc3ZmJiZGUzNDMzMzQ3YTg2OF0gZHJt
+L3JhZGVvbi9rbXM6IEZpeCBJMkMgbWFzayBkZWZpbml0aW9ucwpnaXQgYmlzZWN0IGdvb2QgMjg2
+ZTBjOTRmOWMzZjI5MmNiMzhhOTc3ZmJiZGUzNDMzMzQ3YTg2OAojIGJhZDogWzgyZDE2NTU1N2Vm
+MDk0ZDRiNGRmYzA1ODcxYWVlNjE4ZWM3MTAyYjBdIGRybS9pOTE1L2RwOiBGaXggZURQIG9uIFBD
+SCBEUCBvbiBDUFQvUFBUCmdpdCBiaXNlY3QgYmFkIDgyZDE2NTU1N2VmMDk0ZDRiNGRmYzA1ODcx
+YWVlNjE4ZWM3MTAyYjAKIyBnb29kOiBbZDUwOTBiOTYyNTZiOWJjNDc5NTE0ZDU0Y2I1NWRjYWJh
+MzE0NGE4ZF0gZHJtL2k5MTU6IFJlbW92ZSByZWR1bmRhbnQgYml0IHNoaWZ0aW5nIGZyb20gaW50
+ZWxfZ21idXNfc2V0X3NwZWVkCmdpdCBiaXNlY3QgZ29vZCBkNTA5MGI5NjI1NmI5YmM0Nzk1MTRk
+NTRjYjU1ZGNhYmEzMTQ0YThkCiMgZ29vZDogW2Q5ZDQ0NGNiYzUzNjA1MGVmNjZlNGNlZmNkNTUy
+MjRjNDZjYmJhZGZdIGRybS9pOTE1OiBzcGxpdCByZWZjbGsgY29kZSBvdXQgb2YgaXJvbmxha2Vf
+Y3J0Y19tb2RlX3NldApnaXQgYmlzZWN0IGdvb2QgZDlkNDQ0Y2JjNTM2MDUwZWY2NmU0Y2VmY2Q1
+NTIyNGM0NmNiYmFkZgojIGdvb2Q6IFthNDg3OTI4OTA4MjI2ZGY0OTNhM2NlMTQ1ZWNmNGJiMzky
+OTY3MTRlXSBkcm0vaTkxNTogcmVtb3ZlIHRyYW5zY29kZXIgUExMIG1hc2hpbmcgZnJvbSBtb2Rl
+X3NldCBwZXIgc3BlY3MKZ2l0IGJpc2VjdCBnb29kIGE0ODc5Mjg5MDgyMjZkZjQ5M2EzY2UxNDVl
+Y2Y0YmIzOTI5NjcxNGUKIyBiYWQ6IFthMjAwNmNmNWE3YWQzNDYzZTdjMWU5ZGEyYzRiYzkwNDk5
+NDI3NTU4XSBkcm0vaTkxNTogcmVhZCBmdWxsIHJlY2VpdmVyIGNhcGFiaWxpdHkgZmllbGQgZHVy
+aW5nIERQIGhvdCBwbHVnCmdpdCBiaXNlY3QgYmFkIGEyMDA2Y2Y1YTdhZDM0NjNlN2MxZTlkYTJj
+NGJjOTA0OTk0Mjc1NTgKIyBnb29kOiBbZjUyYzYxOWE1OTBmYTc1Mjc2YzA3ZGZjYWYzODBkZWU1
+M2U0ZWE0Y10gZHJtL2k5MTUvcGFuZWw6IEFsd2F5cyByZWNvcmQgdGhlIGJhY2tsaWdodCBsZXZl
+bCBhZ2FpbiAoYnV0IGNsZXZlcmx5KQpnaXQgYmlzZWN0IGdvb2QgZjUyYzYxOWE1OTBmYTc1Mjc2
+YzA3ZGZjYWYzODBkZWU1M2U0ZWE0YwojIGJhZDogW2RjMjJlZTZmYzE4Y2UwZjE1NDI0ZTc1M2U4
+NDczYzMwNmVjZTk1YzFdIGRybS9pOTE1L2RwOiBSZW1vdmUgZURQIHNwZWNpYWwgY2FzZXMgZnJv
+bSBiYW5kd2lkdGggY2hlY2tzCmdpdCBiaXNlY3QgYmFkIGRjMjJlZTZmYzE4Y2UwZjE1NDI0ZTc1
+M2U4NDczYzMwNmVjZTk1YzEKIyBnb29kOiBbY2Q5ZGRlNDRmNDc1MDEzOTRiOWYwNzE1YjZhMzZh
+OTJhYTc0YzBkMF0gZHJtL2k5MTUvZHA6IEZpeCB0aGUgbWF0aCBpbiBpbnRlbF9kcF9saW5rX3Jl
+cXVpcmVkCmdpdCBiaXNlY3QgZ29vZCBjZDlkZGU0NGY0NzUwMTM5NGI5ZjA3MTViNmEzNmE5MmFh
+NzRjMGQwCg==
+--14dae9399db1f600fd04b2927e3c--
