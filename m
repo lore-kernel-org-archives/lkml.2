@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab1KYBBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 20:01:38 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39562 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab1KYBBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 20:01:37 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 25 Nov 2011 10:00:09 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/5] mm: try to distribute dirty pages fairly across
- zones
-Message-Id: <20111125100009.a87094fa.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111124131155.GB1225@cmpxchg.org>
-References: <1322055258-3254-1-git-send-email-hannes@cmpxchg.org>
-	<1322055258-3254-4-git-send-email-hannes@cmpxchg.org>
-	<20111124100755.d8b783a8.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111124131155.GB1225@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755262Ab1KYBeW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 20:34:22 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:33316 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755131Ab1KYBeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 20:34:21 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: lizf@cn.fujitsu.com, daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
+        jbottomley@parallels.com, pjt@google.com, cgroups@vger.kernel.org,
+        devel@openvz.org
+Subject: [PATCH 0/4] cpuacct cleanup
+Date: Thu, 24 Nov 2011 23:33:22 -0200
+Message-Id: <1322184806-20421-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Nov 2011 14:11:55 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+Hi,
 
-> On Thu, Nov 24, 2011 at 10:07:55AM +0900, KAMEZAWA Hiroyuki wrote:
-			goto this_zone_full;
-> > >  
-> > >  		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
-> > >  		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
-> > 
-> > This wil call 
-> > 
-> >                 if (NUMA_BUILD)
-> >                         zlc_mark_zone_full(zonelist, z);
-> > 
-> > And this zone will be marked as full. 
-> > 
-> > IIUC, zlc_clear_zones_full() is called only when direct reclaim ends.
-> > So, if no one calls direct-reclaim, 'full' mark may never be cleared
-> > even when number of dirty pages goes down to safe level ?
-> > I'm sorry if this is alread discussed.
-> 
-> It does not remember which zones are marked full for longer than a
-> second - see zlc_setup() - and also ignores this information when an
-> iteration over the zonelist with the cache enabled came up
-> empty-handed.
-> 
-Ah, thank you for clarification.
-I understand how zlc_active/did_zlc_setup/zlc_setup()...complicated ;)
+Leaving aside all the hierarchy walk discussion, I tried to come up
+with a series that concentrates only the basic points of it all.
+I think we benefit from having it independently of the rest of the work:
+in general (comments on the specifics welcome) cpuacct is made more naturally
+integrated with the scheduler, and the statistics it collects are now exactly
+the same as the system-wide ones for the root cgroup case. I think quite similar
+can be done with cpuusage by associating the root cgroup with the main runqueues,
+but this here is just me scratching my own itches - we can do it later.
 
-Thanks,
--Kame
+Please let me know if this is acceptable.
+
+Glauber Costa (4):
+  Change cpustat fields to an array.
+  Reuse cgroup's parent pointer
+  Move part of cpuacct code
+  cpuacct.stat: re-use scheduler statistics for the root cgroup
+
+ arch/s390/appldata/appldata_os.c       |   16 +-
+ arch/x86/include/asm/i387.h            |    2 +-
+ drivers/cpufreq/cpufreq_conservative.c |   38 ++---
+ drivers/cpufreq/cpufreq_ondemand.c     |   38 ++---
+ drivers/macintosh/rack-meter.c         |    8 +-
+ fs/proc/stat.c                         |   63 ++++----
+ fs/proc/uptime.c                       |    4 +-
+ include/linux/kernel_stat.h            |   36 +++--
+ kernel/sched.c                         |  270 ++++++++++++++++++--------------
+ 9 files changed, 252 insertions(+), 223 deletions(-)
+
+-- 
+1.7.6.4
 
