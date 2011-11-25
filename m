@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab1KYOJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 09:09:05 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62369 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab1KYOJD (ORCPT
+	id S1755762Ab1KYOLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 09:11:20 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:13444
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754580Ab1KYOLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 09:09:03 -0500
+	Fri, 25 Nov 2011 09:11:19 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LV7ZEO-01-8ED-02
+X-M-MSG: 
+Date: Fri, 25 Nov 2011 15:11:10 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: <mingo@redhat.com>, <eranian@google.com>, <linux-kernel@vger.kernel.org>,
+        <fweisbec@gmail.com>, <efault@gmx.de>, <peterz@infradead.org>
+Subject: Re: libperf interface stability
+Message-ID: <20111125141110.GO15738@erda.amd.com>
+References: <new-submission>
+ <tip-06daaaba7c211ca6a8227b9a54dbc86dd837f034@git.kernel.org>
+ <20111124162845.GB7795@erda.amd.com>
+ <20111124181052.GA4058@infradead.org>
+ <20111125104535.GN15738@erda.amd.com>
+ <20111125114611.GA7098@infradead.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 25 Nov 2011 15:09:02 +0100
-Message-ID: <CA+icZUV10tQu3AHx5WLTbb4Bc=O_mdvw0Gi_K0FbG0ud+2ob2A@mail.gmail.com>
-Subject: LKML offline mail-archives not accessible
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: j@jasper.es
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111125114611.GA7098@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trying for example <http://lkml.org/lkml/last100/> gives this
-error-messages back:
+On 25.11.11 09:46:11, Arnaldo Carvalho de Melo wrote:
+> 1) get the above list of c files except for util/python.c that is just
+> glue stuff for the python binding and make it the new libperf.a
+> 
+> 2) make a perf.a that just is libperf.a + the rest of the .c files today
+> in libperf.a, i.e. perf.a would be the "just for perf tools for now"
+> bundle
+> 
+> 3) make the python binding be just this new libperf.a + util/python.c
+> 
+> 4) make libperf.so.0.0.1 be just what is in this new libperf.a
 
-<br />
-<b>Warning</b>:  DOMDocument::loadXML() [<a
-href='domdocument.loadxml'>domdocument.loadxml</a>]: Input is not
-proper UTF-8, indicate encoding !
-Bytes: 0xEF 0x20 0x2E 0x2E in Entity, line: 1359 in
-<b>/srv/lkml.org/scripts/getlist.php</b> on line <b>133</b><br />
-<br />
-<b>Warning</b>:  XSLTProcessor::transformToXml() expects parameter 1
-to be object, boolean given in
-<b>/srv/lkml.org/scripts/getlist.php</b> on line <b>136</b><br />
-XSLT error or server overload; admin notified. The system should heal
-itself, please try again in a few minutes<br />
-<b>Fatal error</b>:  Call to undefined function xslt_error() in
-<b>/srv/lkml.org/scripts/getlist.php</b> on line <b>160</b><br />
+Yeah, I was thinking about something like this.
 
-- Sedat -
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
