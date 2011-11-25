@@ -1,143 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab1KYOLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 09:11:43 -0500
-Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:39964 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755785Ab1KYOLa (ORCPT
+	id S1755786Ab1KYONY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 09:13:24 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42988 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab1KYONX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 09:11:30 -0500
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH 2/2] gpiolib: introduce gpio_set_deglitch
-Date: Fri, 25 Nov 2011 15:08:40 +0100
-Message-Id: <1322230120-14120-2-git-send-email-plagnioj@jcrosoft.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
-References: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
-X-Ovh-Tracer-Id: 11676707935440382744
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrudduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhephffvufffkffojghfsedttdertdertddtnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepne
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -230
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnehlihhnuhigfeigucdlqdeftddmnehvohhiugdpihhnthculddquddttddm
+	Fri, 25 Nov 2011 09:13:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+Date: Fri, 25 Nov 2011 14:13:22 +0000
+Message-ID: <CAPM=9tzAgCSDgdvi=9QZa-gEVXwKp_gpCPTtQ10XS=Z9K4805w@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Dave Airlie <airlied@gmail.com>
+To: Sumit Semwal <sumit.semwal@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de, jesse.barker@linaro.org,
+        daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this will allow to manage the Glitch Input Filter
-as present on AT91 as example
+On Tue, Oct 11, 2011 at 10:23 AM, Sumit Semwal <sumit.semwal@ti.com> wrote:
+> This is the first step in defining a dma buffer sharing mechanism.
+>
+> A new buffer object dma_buf is added, with operations and API to allow easy
+> sharing of this buffer object across devices.
+>
+> The framework allows:
+> - a new buffer-object to be created with fixed size.
+> - different devices to 'attach' themselves to this buffer, to facilitate
+>  backing storage negotiation, using dma_buf_attach() API.
+> - association of a file pointer with each user-buffer and associated
+>   allocator-defined operations on that buffer. This operation is called the
+>   'export' operation.
+> - this exported buffer-object to be shared with the other entity by asking for
+>   its 'file-descriptor (fd)', and sharing the fd across.
+> - a received fd to get the buffer object back, where it can be accessed using
+>   the associated exporter-defined operations.
+> - the exporter and user to share the scatterlist using get_scatterlist and
+>   put_scatterlist operations.
+>
+> Atleast one 'attach()' call is required to be made prior to calling the
+> get_scatterlist() operation.
+>
+> Couple of building blocks in get_scatterlist() are added to ease introduction
+> of sync'ing across exporter and users, and late allocation by the exporter.
+>
+> mmap() file operation is provided for the associated 'fd', as wrapper over the
+> optional allocator defined mmap(), to be used by devices that might need one.
+>
+> More details are there in the documentation patch.
+>
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/gpio/gpiolib.c     |   44 ++++++++++++++++++++++++++++++++++++++++++++
- include/asm-generic/gpio.h |    4 ++++
- include/linux/gpio.h       |    5 +++++
- 3 files changed, 53 insertions(+), 0 deletions(-)
+Some questions, I've started playing around with using this framework
+to do buffer sharing between DRM devices,
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index b7e5e75..d2b1833 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1563,6 +1563,50 @@ fail:
- }
- EXPORT_SYMBOL_GPL(gpio_set_pullup);
- 
-+/**
-+ * gpio_set_deglitch - sets @deglitch for a @gpio
-+ * @gpio: the gpio to set deglitch
-+ * @deglitch: deglitch level
-+ */
-+int gpio_set_deglitch(unsigned gpio, unsigned deglitch)
-+{
-+	unsigned long		flags;
-+	struct gpio_chip	*chip;
-+	struct gpio_desc	*desc = &gpio_desc[gpio];
-+	int			status = -EINVAL;
-+
-+	spin_lock_irqsave(&gpio_lock, flags);
-+
-+	if (!gpio_is_valid(gpio))
-+		goto fail;
-+	chip = desc->chip;
-+	if (!chip || !chip->set_deglitch)
-+		goto fail;
-+	gpio -= chip->base;
-+	if (gpio >= chip->ngpio)
-+		goto fail;
-+	status = gpio_ensure_requested(desc, gpio);
-+	if (status < 0)
-+		goto fail;
-+
-+	/* now we know the gpio is valid and chip won't vanish */
-+
-+	spin_unlock_irqrestore(&gpio_lock, flags);
-+
-+	might_sleep_if(chip->can_sleep);
-+
-+	return chip->set_deglitch(chip, gpio, deglitch);
-+
-+fail:
-+	spin_unlock_irqrestore(&gpio_lock, flags);
-+	if (status)
-+		pr_debug("%s: gpio-%d status %d\n",
-+			__func__, gpio, status);
-+
-+	return status;
-+}
-+EXPORT_SYMBOL_GPL(gpio_set_deglitch);
-+
- /* I/O calls are only valid after configuration completed; the relevant
-  * "is this a valid GPIO" error checks should already have been done.
-  *
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 085ef16..20a9786 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -110,6 +110,9 @@ struct gpio_chip {
- 	int			(*set_pullup)(struct gpio_chip *chip,
- 						unsigned offset, unsigned pullup);
- 
-+	int			(*set_deglitch)(struct gpio_chip *chip,
-+						unsigned offset, unsigned deglitch);
-+
- 	void			(*set)(struct gpio_chip *chip,
- 						unsigned offset, int value);
- 
-@@ -159,6 +162,7 @@ extern int gpio_direction_output(unsigned gpio, int value);
- 
- extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
- extern int gpio_set_pullup(unsigned gpio, unsigned pullup);
-+extern int gpio_set_deglitch(unsigned gpio, unsigned deglitch);
- 
- extern int gpio_get_value_cansleep(unsigned gpio);
- extern void gpio_set_value_cansleep(unsigned gpio, int value);
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 5c786e7..bfbc3d7 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -95,6 +95,11 @@ static inline int gpio_set_pullup(unsigned gpio, unsigned pullup)
- 	return -ENOSYS;
- }
- 
-+static inline int gpio_set_deglitch(unsigned gpio, unsigned deglitch)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int gpio_get_value(unsigned gpio)
- {
- 	/* GPIO can never have been requested or set as {in,out}put */
--- 
-1.7.7
+Why struct scatterlist and not struct sg_table? it seems like I really
+want to use an sg_table,
 
+I'm not convinced fd's are really useful over just some idr allocated
+handle, so far I'm just returning the "fd" to userspace as a handle,
+and passing it back in the other side, so I'm not really sure what an
+fd wins us here, apart from the mmap thing which I think shouldn't be
+here anyways.
+(if fd's do win us more we should probably record that in the docs patch).
+
+Dave.
