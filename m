@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab1KYEsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 23:48:31 -0500
-Received: from gate.crashing.org ([63.228.1.57]:38159 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751820Ab1KYEsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 23:48:30 -0500
-Message-ID: <1322196490.32635.18.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 25 Nov 2011 15:48:10 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753251Ab1KYEuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 23:50:06 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52114 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab1KYEuE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 23:50:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111124230254.GA2100@gamma.logic.tuwien.ac.at>
+References: <CANUX_P1RjcRD2tW1A6YYSEV9+aUZyTEro7tZXJWRoxk6gx-2jA@mail.gmail.com>
+	<CANUX_P2aFn84uSqgZA2gTBN7E4+0jGmJQTkx4eug4Ls0hK0==Q@mail.gmail.com>
+	<20111122072730.GA32225@gamma.logic.tuwien.ac.at>
+	<CANUX_P15En9bHVx4bhq6=XKPZnC2u+QyVJ+jnm4ns=39DrOBtg@mail.gmail.com>
+	<2D0C7905-AEB2-4DE4-89B1-945D89F2B5D6@logic.at>
+	<CANUX_P21PDdyo4u-x_1A0Lcqf-33yHgzUxddAoc3juGRNnrcDg@mail.gmail.com>
+	<20111122124357.GA32440@gamma.logic.tuwien.ac.at>
+	<CANUX_P0uyyuK4netV6srYCh9FsC4cpGzxobHE3T38n5RvvA0RQ@mail.gmail.com>
+	<20111123015503.GC23203@gamma.logic.tuwien.ac.at>
+	<CANUX_P1zDDzMy5yrFXSZAkMQ-87uu-fE1e-2sCEgHJi4dh5eiw@mail.gmail.com>
+	<20111124230254.GA2100@gamma.logic.tuwien.ac.at>
+Date: Fri, 25 Nov 2011 06:50:03 +0200
+Message-ID: <CANUX_P0EMQra_JS5xb5dfjDUO+QwhmJ9LPANfX+89hApXU4hvw@mail.gmail.com>
+Subject: Re: iwlagn is getting very shaky
+From: Emmanuel Grumbach <egrumbach@gmail.com>
+To: Norbert Preining <preining@logic.at>
+Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Dave Jones <davej@redhat.com>
+Content-Type: multipart/mixed; boundary=f46d04428fe8dd567f04b287e2fe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+--f46d04428fe8dd567f04b287e2fe
+Content-Type: text/plain; charset=ISO-8859-1
 
-Here are a handful of tiny fixes for ppc, essentially embedded bits and
-all reasonably trivial.
+On Fri, Nov 25, 2011 at 01:02, Norbert Preining <preining@logic.at> wrote:
+> On Do, 24 Nov 2011, Emmanuel Grumbach wrote:
+>> Please apply the patch attached on top of the one I previously sent.
+>> Let me know I you have trouble with patch.
+>
+> Which patch? Nothing attached, I also checked in the mail archives
+> in case I had again problems with attached patches. Nothing.
+> Please resend.
+>
 
-Cheers,
-Ben.
+Oh well... Sorry again....
 
-The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+--f46d04428fe8dd567f04b287e2fe
+Content-Type: text/x-patch; charset=US-ASCII; name="DEBUG_QUEUE2.patch"
+Content-Disposition: attachment; filename="DEBUG_QUEUE2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvepnfhv0
 
-  Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Alexandre Rusev (1):
-      powerpc/fsl-lbc: Fix for fsl_upm
-
-Joakim Tjernlund (1):
-      powerpc/qe: Fixup QE_General4 errata
-
-Julia Lawall (1):
-      arch/powerpc/sysdev/ehv_pic.c: add missing kfree
-
-Kumar Gala (2):
-      powerpc/85xx: Fix compile error on p3060_qds.c
-      powerpc: Fix compiliation with hugetlbfs enabled
-
-Paul Bolle (1):
-      powerpc/p3060qds: Fix select of 'MPC8xxx_GPIO'
-
-Roy Zang (1):
-      powerpc/p1023: set IRQ[4:6,11] to active-high level sensitive for PCIe
-
-Shaohui Xie (1):
-      drivers/edac/mpc85xx_edac.c: fix memory controller compatible for edac
-
-Tony Breeds (1):
-      powerpc/44x: Add mtd ndfc to the ppx44x defconfig
-
- arch/powerpc/boot/dts/p1023rds.dts      |   17 +++++++++++++----
- arch/powerpc/configs/ppc44x_defconfig   |    2 ++
- arch/powerpc/mm/hugetlbpage.c           |    1 +
- arch/powerpc/platforms/85xx/Kconfig     |    2 +-
- arch/powerpc/platforms/85xx/p3060_qds.c |    2 +-
- arch/powerpc/sysdev/ehv_pic.c           |    1 +
- arch/powerpc/sysdev/fsl_lbc.c           |    1 +
- arch/powerpc/sysdev/qe_lib/qe.c         |    2 +-
- drivers/edac/mpc85xx_edac.c             |    2 +-
- 9 files changed, 22 insertions(+), 8 deletions(-)
-
-
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWNvcmUuYyBiL2Ry
+aXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWNvcmUuYwppbmRleCA4ZWZhMTBmLi40Zjdj
+NzU4IDEwMDY0NAotLS0gYS9kcml2ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3bC1jb3JlLmMK
+KysrIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtY29yZS5jCkBAIC0xNTk2LDYg
+KzE1OTYsNyBAQCB2b2lkIGl3bF9zdGFydF90eF9iYV90cmFuc19yZWFkeShzdHJ1Y3QgaXdsX3By
+aXYgKnByaXYsCiAJCWN0eCA9IHByaXYtPnN0YXRpb25zW3N0YV9pZF0uY3R4aWQ7CiAJdmlmID0g
+cHJpdi0+Y29udGV4dHNbY3R4XS52aWY7CiAKKwlJV0xfREVCVUdfVFhfUVVFVUVTKHByaXYsICJU
+ZWxsaW5nIG1hYyBzdGFydCBCQSByZWFkeSB0aWQ6ICVkIiwgdGlkKTsKIAlpZWVlODAyMTFfc3Rh
+cnRfdHhfYmFfY2JfaXJxc2FmZSh2aWYsIGFkZHIsIHRpZCk7CiB9CiAKQEAgLTE2MTAsNiArMTYx
+MSw3IEBAIHZvaWQgaXdsX3N0b3BfdHhfYmFfdHJhbnNfcmVhZHkoc3RydWN0IGl3bF9wcml2ICpw
+cml2LAogCQljdHggPSBwcml2LT5zdGF0aW9uc1tzdGFfaWRdLmN0eGlkOwogCXZpZiA9IHByaXYt
+PmNvbnRleHRzW2N0eF0udmlmOwogCisJSVdMX0RFQlVHX1RYX1FVRVVFUyhwcml2LCAiVGVsbGlu
+ZyBtYWMgc3RvcCBCQSByZWFkeSB0aWQ6ICVkIiwgdGlkKTsKIAlpZWVlODAyMTFfc3RvcF90eF9i
+YV9jYl9pcnFzYWZlKHZpZiwgYWRkciwgdGlkKTsKIH0KIApkaWZmIC0tZ2l0IGEvZHJpdmVycy9u
+ZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtbWFjODAyMTEuYyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNz
+L2l3bHdpZmkvaXdsLW1hYzgwMjExLmMKaW5kZXggZWMzMTQ4Mi4uMTRmODllZSAxMDA2NDQKLS0t
+IGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtbWFjODAyMTEuYworKysgYi9kcml2
+ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3bC1tYWM4MDIxMS5jCkBAIC02MzIsNiArNjMyLDcg
+QEAgc3RhdGljIGludCBpd2xhZ25fbWFjX2FtcGR1X2FjdGlvbihzdHJ1Y3QgaWVlZTgwMjExX2h3
+ICpodywKIAkJYnJlYWs7CiAJY2FzZSBJRUVFODAyMTFfQU1QRFVfVFhfU1RPUDoKIAkJSVdMX0RF
+QlVHX0hUKHByaXYsICJzdG9wIFR4XG4iKTsKKwkJSVdMX0RFQlVHX1RYX1FVRVVFUyhwcml2LCAi
+U3RvcCBUeCBhZ2cgZm9yIHRpZCAlZCIsIHRpZCk7CiAJCXJldCA9IGl3bGFnbl90eF9hZ2dfc3Rv
+cChwcml2LCB2aWYsIHN0YSwgdGlkKTsKIAkJaWYgKChyZXQgPT0gMCkgJiYgKHByaXYtPmFnZ190
+aWRzX2NvdW50ID4gMCkpIHsKIAkJCXByaXYtPmFnZ190aWRzX2NvdW50LS07CmRpZmYgLS1naXQg
+YS9kcml2ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3bC10cmFucy1wY2llLWludC5oIGIvZHJp
+dmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtdHJhbnMtcGNpZS1pbnQuaAppbmRleCA4NGNm
+NjQxLi4xN2U3OTNmIDEwMDY0NAotLS0gYS9kcml2ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3
+bC10cmFucy1wY2llLWludC5oCisrKyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXds
+LXRyYW5zLXBjaWUtaW50LmgKQEAgLTQyNCwxMiArNDI0LDE0IEBAIHN0YXRpYyBpbmxpbmUgdm9p
+ZCBpd2xfc3RvcF9xdWV1ZShzdHJ1Y3QgaXdsX3RyYW5zICp0cmFucywKIHN0YXRpYyBpbmxpbmUg
+dm9pZCBpd2xfdHhxX2N0eF9hY3RpdmF0ZShzdHJ1Y3QgaXdsX3RyYW5zX3BjaWUgKnRyYW5zX3Bj
+aWUsCiAJCQkJCWludCB0eHFfaWQpCiB7CisJSVdMX0RFQlVHX1RYX1FVRVVFUyh0cmFuc19wY2ll
+LT50cmFucywgIkFjdGl2YXRlIHR4cSAlZCIsIHR4cV9pZCk7CiAJc2V0X2JpdCh0eHFfaWQsICZ0
+cmFuc19wY2llLT50eHFfY3R4X2FjdGl2ZV9tc2spOwogfQogCiBzdGF0aWMgaW5saW5lIHZvaWQg
+aXdsX3R4cV9jdHhfZGVhY3RpdmF0ZShzdHJ1Y3QgaXdsX3RyYW5zX3BjaWUgKnRyYW5zX3BjaWUs
+CiAJCQkJCSAgaW50IHR4cV9pZCkKIHsKKwlJV0xfREVCVUdfVFhfUVVFVUVTKHRyYW5zX3BjaWUt
+PnRyYW5zLCAiRGVhY3RpdmF0ZSB0eHEgJWQiLCB0eHFfaWQpOwogCWNsZWFyX2JpdCh0eHFfaWQs
+ICZ0cmFuc19wY2llLT50eHFfY3R4X2FjdGl2ZV9tc2spOwogfQogCmRpZmYgLS1naXQgYS9kcml2
+ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3bC10cmFucy1wY2llLXR4LmMgYi9kcml2ZXJzL25l
+dC93aXJlbGVzcy9pd2x3aWZpL2l3bC10cmFucy1wY2llLXR4LmMKaW5kZXggMDQ5ZTNiNi4uMTFl
+MGI1NiAxMDA2NDQKLS0tIGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtdHJhbnMt
+cGNpZS10eC5jCisrKyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXdsLXRyYW5zLXBj
+aWUtdHguYwpAQCAtNDcyLDYgKzQ3Miw4IEBAIHZvaWQgaXdsX3RyYW5zX3BjaWVfdHhfYWdnX3Nl
+dHVwKHN0cnVjdCBpd2xfdHJhbnMgKnRyYW5zLAogCQlyZXR1cm47CiAJfQogCisJSVdMX0RFQlVH
+X1RYX1FVRVVFUyh0cmFucywgIlNldHVwIEFHRyBmb3IgdGlkICVkIiwgdGlkKTsKKwogCXNwaW5f
+bG9ja19pcnFzYXZlKCZ0cmFucy0+c2hyZC0+c3RhX2xvY2ssIGZsYWdzKTsKIAl0aWRfZGF0YSA9
+ICZ0cmFucy0+c2hyZC0+dGlkX2RhdGFbc3RhX2lkXVt0aWRdOwogCXNzbl9pZHggPSBTRVFfVE9f
+U04odGlkX2RhdGEtPnNlcV9udW1iZXIpOwpAQCAtNTM2LDggKzUzOCwxMCBAQCBzdGF0aWMgaW50
+IGl3bGFnbl90eHFfY3R4X2FjdGl2YXRlX2ZyZWUoc3RydWN0IGl3bF90cmFucyAqdHJhbnMpCiAK
+IAlmb3IgKHR4cV9pZCA9IDA7IHR4cV9pZCA8IGh3X3BhcmFtcyh0cmFucykubWF4X3R4cV9udW07
+IHR4cV9pZCsrKQogCQlpZiAoIXRlc3RfYW5kX3NldF9iaXQodHhxX2lkLAotCQkJCQkmdHJhbnNf
+cGNpZS0+dHhxX2N0eF9hY3RpdmVfbXNrKSkKKwkJCQkJJnRyYW5zX3BjaWUtPnR4cV9jdHhfYWN0
+aXZlX21zaykpIHsKKwkJCUlXTF9ERUJVR19UWF9RVUVVRVModHJhbnMsICJBY3RpdmF0ZSB0eHEg
+JWQiLCB0eHFfaWQpOwogCQkJcmV0dXJuIHR4cV9pZDsKKwkJfQogCXJldHVybiAtMTsKIH0KIApA
+QCAtNTgyLDYgKzU4Niw4IEBAIHZvaWQgaXdsX3RyYW5zX3BjaWVfdHhxX2FnZ19kaXNhYmxlKHN0
+cnVjdCBpd2xfdHJhbnMgKnRyYW5zLCBpbnQgdHhxX2lkKQogCXN0cnVjdCBpd2xfdHJhbnNfcGNp
+ZSAqdHJhbnNfcGNpZSA9IElXTF9UUkFOU19HRVRfUENJRV9UUkFOUyh0cmFucyk7CiAJaXdsYWdu
+X3R4X3F1ZXVlX3N0b3Bfc2NoZWR1bGVyKHRyYW5zLCB0eHFfaWQpOwogCisJSVdMX0RFQlVHX1RY
+X1FVRVVFUyh0cmFucywgIkRpc2FibGUgQUdHIHR4cV9pZCAlZCIsIHR4cV9pZCk7CisKIAlpd2xf
+Y2xlYXJfYml0c19wcnBoKGJ1cyh0cmFucyksIFNDRF9BR0dSX1NFTCwgKDEgPDwgdHhxX2lkKSk7
+CiAKIAl0cmFuc19wY2llLT50eHFbdHhxX2lkXS5xLnJlYWRfcHRyID0gMDsK
+--f46d04428fe8dd567f04b287e2fe--
