@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab1KYOkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 09:40:25 -0500
-Received: from [83.111.60.184] ([83.111.60.184]:12688 "EHLO mail.mcycd.gov.ae"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755843Ab1KYOkY convert rfc822-to-8bit (ORCPT
+	id S1755921Ab1KYOpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 09:45:15 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:43192
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755468Ab1KYOpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 09:40:24 -0500
-X-Greylist: delayed 5025 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 09:40:23 EST
-Reply-To: <cbnbankofnig@rediffmail.com>
-From: "Please Confirm This Information:(CODE :FGN/CBN3124-FILE111-CBN)" 
-	<summer@mcycd.gov.ae>
-Subject: Please Confirm This Information:(CODE :FGN/CBN3124-FILE111-CBN)?
-Date: Fri, 25 Nov 2011 13:34:47 +0100
+	Fri, 25 Nov 2011 09:45:13 -0500
+X-SpamScore: -3
+X-BigFish: VS-3(zz1102Kzz1202hzzz2dh87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>
+CC: <cocci@diku.dk>, <linux-kernel@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] coccinelle: Add patch to use kcalloc instead of kzalloc for array allocations
+Date: Fri, 25 Nov 2011 15:46:08 +0100
+Message-ID: <1322232368-28814-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-Message-ID: <efe84e14-b6dd-431c-9af3-54320549206e@MCYCD-HUBCAS2.MCYCD.UAE.GOV.AE>
-To: Undisclosed recipients:;
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attn:Beneficiary,
+This patch adds a coccinelle patch to convert array allocations which use
+kzalloc to kcalloc. The advantage of kcalloc is, that will take care of
+integer overflows which could result from the multiplication and it is also
+nicer to read.
+
+The coccinelle patch does not convert array allocations using kmalloc, since
+kcalloc will zero the allocated memory which is considered too much overhead
+in some situations.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ scripts/coccinelle/api/alloc/kcalloc.cocci |   59 ++++++++++++++++++++++++++++
+ 1 files changed, 59 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/coccinelle/api/alloc/kcalloc.cocci
+
+diff --git a/scripts/coccinelle/api/alloc/kcalloc.cocci b/scripts/coccinelle/api/alloc/kcalloc.cocci
+new file mode 100644
+index 0000000..b2a5893
+--- /dev/null
++++ b/scripts/coccinelle/api/alloc/kcalloc.cocci
+@@ -0,0 +1,59 @@
++///
++/// Use kcalloc instead of kzalloc to allocate array.
++/// The advantage of kcalloc is, that will prevent integer overflows which could
++/// result from the multiplication of number of elements and size and it is also
++/// a bit nicer to read.
++///
++// Confidence: High
++// Options: -no_includes -include_headers
++//
++// Keywords: kzalloc, kcalloc
++// Version min: < 2.6.12 kcalloc
++// Version min:   2.6.14 kzalloc
++//
++
++virtual context
++virtual patch
++virtual org
++virtual report
++
++//----------------------------------------------------------
++//  For patch mode
++//----------------------------------------------------------
++
++@depends on patch@
++expression E;
++expression E2;
++expression gfp;
++expression x;
++@@
++-x = kzalloc(sizeof(E2) * (E), gfp);
+++x = kcalloc(E, sizeof(E2), gfp);
++
++//----------------------------------------------------------
++//  For org and report mode
++//----------------------------------------------------------
++
++@r depends on org || report@
++expression E;
++expression E2;
++expression gfp;
++position p;
++expression x;
++@@
++x = kzalloc@p(sizeof(E2) * (E), gfp);
++
++@script:python depends on org@
++p << r.p;
++x << r.x;
++@@
++
++coccilib.org.print_safe_todo(p[0], "%s" % x)
++
++@script:python depends on report@
++p << r.p;
++x << r.x;
++@@
++
++msg="WARNING: kcalloc should be used to allocate an array instead of kzalloc"
++coccilib.report.print_report(p[0], msg)
+-- 
+1.7.7.1
 
 
-Please confirm this information. Did you ask MR Edmond Stock Beneker from
-USA to claim your funds Valued at $ 10 million from the central bank of
-Nigeria? This man was directed to us by Mr.John Adams the diplomat that are
-suppose to deliver your fund to you Please with matter of urgency get back
-to me immediately before things will go wrong. Below is the account details
-of Mr Edmond Beneker Where he want us to transfer your fund into.
-
-Name on account: Edmond Beneker
-Bank:Wachovia
-Address:8233 Rochester Hwy. SC4600 Salem, SC 29676 USA
-Acct.# : 1010246561978
-Routing#:053207766
-Swift Code: pnbpus76
-
-He is trying to pay all the charges about your funds and claim your funds.
-Please your urgent confirmation is highly needed now before Your fund will
-be released to him in the next 48 hours,and please if you know that you
-never instructed him kindly get back to me immediately via my alternative
-email address:- info.cbn.office@accountant.com
-
-Re-confirm the following immediately for payment approval:
-
-1) Your full name.
-2) Phone, fax and mobile #.
-3) Company name, position and address.
-4) Profession, age and marital status.
-5) Copy of int'l passport, driver's license, or any valid ID card.
-
-Please quote this payment codes (CODE :FGN/CBN3124-FILE111-CBN) in all
-conversation or else you will not be recognized as a beneficiary/contractor
-with this Government and note any further message without my pictured
-should be disregarded to avoid any fraudulent hijack of information.
-
-Regards,
-SANUSI LAMIDO
-Governor Central Bank of Nigeria.
-
-تنبيـه
-هذه الرسالة (بما في ذلك أي مرفقات) قد تحتوي على معلومات سرية ومخصصة حصرياً للشخص أو للمنظمة المرسل لها، لذا يحظر عليك نسخ وتوزيع هذه الرسالة أو استخدام أياً من محتوياتها بأي شكل من الأشكال مالم تكن الشخص المقصود. في حال استلام هذه الرسالة عن طريق الخطأ يرجى إخطارنا على الفور بالهاتف أو بإرسال رسالة بالبريد الإلكتروني للمرسل.
-
-Disclaimer
-This message (including any attachments) is confidential and intended solely for the person or organization to whom it is addressed.It may contain privileged and confidential information. If you are not the intended recipient, you should not copy, distribute or take any action in reliance on it.If you have received this message in error, please notify us immediately by telephon or email the sender.
