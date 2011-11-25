@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab1KYW2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 17:28:17 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:39460 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab1KYW2P (ORCPT
+	id S1753684Ab1KYWgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 17:36:49 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:58612 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab1KYWgs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 17:28:15 -0500
-Date: Fri, 25 Nov 2011 23:22:11 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, netdev@vger.kernel.org,
-        nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        Armin Kazmi <armin.kazmi@tu-dortmund.de>, Gerd <booster@wolke7.net>
-Subject: Re: [bug?] r8169: hangs under heavy load
-Message-ID: <20111125222211.GA13719@electric-eye.fr.zoreil.com>
-References: <4E7F4D45.7040902@wolke7.net> <1316978632.4122.103.camel@deadeye> <4E82C0B5.1050902@wolke7.net> <1317254171.4068.12.camel@deadeye> <20111124044137.GA18262@elie.hsd1.il.comcast.net> <4ECFE7A7.5070300@wolke7.net> <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322253122.2550.3.camel@edumazet-laptop>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Fri, 25 Nov 2011 17:36:48 -0500
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks 
+ =?iso-8859-1?q?with=09given?= pids
+Date: Fri, 25 Nov 2011 22:36:39 +0000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-12-generic; KDE/4.7.2; x86_64; ; )
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        James Bottomley <jbottomley@parallels.com>
+References: <201111221204.39235.pedro@codesourcery.com> <20111125165409.GA19238@redhat.com> <4ECFCA5E.1020307@parallels.com>
+In-Reply-To: <4ECFCA5E.1020307@parallels.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201111252236.40246.pedro@codesourcery.com>
+X-OriginalArrivalTime: 25 Nov 2011 22:36:43.0391 (UTC) FILETIME=[B4E678F0:01CCABC2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> :
-[...]
-> rtl8169_rx_interrupt(..., budget) can return budget + 1 sometimes
-> because of :
+On Friday 25 November 2011 17:03:26, Pavel Emelyanov wrote:
+> On 11/25/2011 08:54 PM, Oleg Nesterov wrote:
+> > How you can restore the multithread tracee?
 > 
->                 /* Work around for AMD plateform. */
->                 if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
->                     (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
->                         desc->opts2 = 0;
->                         cur_rx++;
->                 }
+> Don't know :) But if this approach sounds promising (I see, that now it's not, but...) I
+> can think more on it.
+> 
+> > You need to unreserve/reserve the previous pid, and we have the same problems again, no?
+> 
+> With the existing patch - yes, but as I said above - we need to decide which direction to
+> go and then I'll think further.
 
-It needs fixing but RTL_GIGA_MAC_VER_05 is an old PCI 8169sc while
-debian's bug #642911 is about a 8168c (aka RTL_GIGA_MAC_VER_{19 .. 22}).
+Thanks for thinking about all this.  Being able to reserve pids would be
+nice, but I won't pretend to know the kernel's internals enough to be able
+to suggest a sane and acceptable way to do it.  We'd have to be able
+to restore multi-threaded tracees (which would also mean that there are
+pids which leaders and others which are clones), and, we'd have to support
+a single-threaded tracer debugging (and spawning) more than one process,
+while not all tracees are involved in C/R.  Maybe this (reservation) issue
+should be be considered an orthogonal mechanism for now.
 
-This path is not used.
+> By now your opinion is to better stay where we are ;) but if moving is unavoidable, then
+> it's better to take the CLONE_CHILD_USEPIDS route. That's my position as well.
+
+>From the perspective of a client that is
+going to use this on a live system, CLONE_CHILD_USEPIDS seems a little better,
+in that the pid race is only against another task reusing the same pid,
+while with setting last_pid, you have a try/whoops-not-the-pid-I-want/kill/retry/rinse/repeat/
+loop racing against all fork/clone's in the system, along with possibly
+needing to first to do a kill(PID, 0) to check whether the PID is
+available (unless setting last_pid already detects that).
+
+BTW, it's not only GDB that would want this for live systems.
+Check out Berkeley Lab's C/R (https://ftg.lbl.gov/projects/CheckpointRestart/),
+where these guys use mixed kernel/userspace C/R in clusters for high-end
+scientific computing to e.g., migrate tasks between nodes, and pause/resume
+parallel MPI jobs (on live systems).  (Apologies if everyone already knows
+about this :-) .)
+
+>From what I read from their papers, in their approach, from userspace, they
+spawn new children as usual, with whatever pids the kernel wants, and then
+afterwards (from userspace, but through a kernel module), magically change
+the process and threads's pids to the pids they really want.  They also fixup
+the parent pids, and session ids after the fact, along the way.
 
 -- 
-Ueimor
+Pedro Alves
