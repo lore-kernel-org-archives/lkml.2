@@ -1,254 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1KYBfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Nov 2011 20:35:45 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:48817 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753244Ab1KYBfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Nov 2011 20:35:44 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: lizf@cn.fujitsu.com, daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
-        jbottomley@parallels.com, pjt@google.com, cgroups@vger.kernel.org,
-        devel@openvz.org, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 4/4] cpuacct.stat: re-use scheduler statistics for the root cgroup
-Date: Thu, 24 Nov 2011 23:33:26 -0200
-Message-Id: <1322184806-20421-5-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1322184806-20421-1-git-send-email-glommer@parallels.com>
-References: <1322184806-20421-1-git-send-email-glommer@parallels.com>
+	id S1755258Ab1KYBhO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Nov 2011 20:37:14 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57113 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757Ab1KYBhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Nov 2011 20:37:12 -0500
+Message-ID: <4ECEF144.8020303@gmail.com>
+Date: Fri, 25 Nov 2011 02:37:08 +0100
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Matt Fleming <matt@console-pimps.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Peter Jones <pjones@redhat.com>
+Subject: [PATCH] x86, efi: Break up large initrd reads
+References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>  <1318848017-12301-11-git-send-email-matt@console-pimps.org>  <4E9C8AAC.7080803@gmail.com>  <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECC4207.3010607@gmail.com>  <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECE5803.3060203@gmail.com> <1322168216.24448.61.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1322168216.24448.61.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now, after we collect tick statistics for user and system and store them
-in a well known location, we keep the same statistics again for cpuacct.
-Since cpuacct is hierarchical, the numbers for the root cgroup should be
-absolutely equal to the system-wide numbers.
+The efi boot stub tries to read the entire initrd in 1 go,
+however some efi implementations hang if too much if asked
+to read too much data at the same time. After some
+experimentation I found out that my asrock p67 board will
+hang if asked to read chunks of 4mb, so use a safe value.
 
-So it would be better to just use it: this patch changes cpuacct accounting
-in a way that the cpustat statistics are kept in a struct kernel_cpustat percpu
-array. In the root cgroup case, we just point it to the main array. The rest of
-the hierarchy walk can be totally disabled later with a static branch - but I am
-not doing it here.
+>From elilo source code:
+/*
+ * We load by chunks rather than a single big read because
+ * early versions of EFI had troubles loading files
+ * from floppies in a single big request.  Breaking
+ * the read down into chunks of 4KB fixed that
+ * problem. While this problem has been fixed, we still prefer
+ * this method because it tells us whether or not we're making
+ * forward progress.
+ */
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Paul Tuner <pjt@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+While the comment says 4KB, it's using 4 * EFI_PAGE_SIZE (16KB),
+so I went by the safest route of following elilo here.
+
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 ---
- kernel/sched.c |  118 ++++++++++++++++++++++++++++++++++----------------------
- 1 files changed, 72 insertions(+), 46 deletions(-)
+ arch/x86/boot/compressed/eboot.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 9b70305..9961817 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1608,10 +1608,11 @@ struct cpuacct {
- 	struct cgroup_subsys_state css;
- 	/* cpuusage holds pointer to a u64-type object on every cpu */
- 	u64 __percpu *cpuusage;
--	struct percpu_counter cpustat[CPUACCT_STAT_NSTATS];
-+	struct kernel_cpustat __percpu *cpustat;
- };
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 8627a56..a26be50 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -695,14 +695,22 @@ grow:
+ 			u64 size;
  
- struct cgroup_subsys cpuacct_subsys;
-+struct cpuacct root_cpuacct;
+ 			size = initrds[j].size;
+-			status = efi_call_phys3(fh->read, initrds[j].handle,
+-						&size, addr);
+-			if (status != EFI_SUCCESS)
+-				goto free_initrd_total;
++			while (size) {
++				u64 chunksize;
++				if (size > 4 * EFI_PAGE_SIZE)
++					chunksize = 4 * EFI_PAGE_SIZE;
++				else
++					chunksize = size;
++				status = efi_call_phys3(fh->read,
++							initrds[j].handle,
++							&chunksize, addr);
++				if (status != EFI_SUCCESS)
++					goto free_initrd_total;
++				addr += chunksize;
++				size -= chunksize;
++			}
  
- /* return cpu accounting group corresponding to this container */
- static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
-@@ -1635,14 +1636,40 @@ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
- }
+ 			efi_call_phys1(fh->close, initrds[j].handle);
+-
+-			addr += size;
+ 		}
  
- static void cpuacct_charge(struct task_struct *tsk, u64 cputime);
--static void cpuacct_update_stats(struct task_struct *tsk,
--		enum cpuacct_stat_index idx, cputime_t val);
- #else
- static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
--static inline void cpuacct_update_stats(struct task_struct *tsk,
--		enum cpuacct_stat_index idx, cputime_t val) {}
- #endif
- 
-+static inline void task_group_account_field(struct task_struct *p,
-+					     u64 tmp, int index)
-+{
-+#ifdef CONFIG_CGROUP_CPUACCT
-+	struct kernel_cpustat *kcpustat;
-+	struct cpuacct *ca;
-+#endif
-+	/*
-+	 * Since all updates are sure to touch the root cgroup, we
-+	 * get ourselves ahead and touch it first. If the root cgroup
-+	 * is the only cgroup, then nothing else should be necessary.
-+	 *
-+	 */
-+	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
-+
-+#ifdef CONFIG_CGROUP_CPUACCT
-+	if (unlikely(!cpuacct_subsys.active))
-+		return;
-+
-+	rcu_read_lock();
-+	ca = task_ca(p);
-+	while (ca && (ca != &root_cpuacct)) {
-+		kcpustat = this_cpu_ptr(ca->cpustat);
-+		kcpustat->cpustat[index] += tmp;
-+		ca = parent_ca(ca);
-+	}
-+	rcu_read_unlock();
-+#endif
-+}
-+
- static inline void inc_cpu_load(struct rq *rq, unsigned long load)
- {
- 	update_load_add(&rq->load, load);
-@@ -3921,7 +3948,7 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
- 	index = (TASK_NICE(p) > 0) ? CPUTIME_NICE : CPUTIME_USER;
- 	cpustat[index] += tmp;
- 
--	cpuacct_update_stats(p, CPUACCT_STAT_USER, cputime);
-+	task_group_account_field(p, index, cputime);
- 	/* Account for user time used */
- 	acct_update_integrals(p);
- }
-@@ -3977,7 +4004,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
- 
- 	/* Add system time to cpustat. */
- 	cpustat[index] += tmp;
--	cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
-+	task_group_account_field(p, index, cputime);
- 
- 	/* Account for system time used */
- 	acct_update_integrals(p);
-@@ -8275,8 +8302,15 @@ void __init sched_init(void)
- 	list_add(&root_task_group.list, &task_groups);
- 	INIT_LIST_HEAD(&root_task_group.children);
- 	autogroup_init(&init_task);
-+
- #endif /* CONFIG_CGROUP_SCHED */
- 
-+#ifdef CONFIG_CGROUP_CPUACCT
-+	root_cpuacct.cpustat = &kernel_cpustat;
-+	root_cpuacct.cpuusage = alloc_percpu(u64);
-+	/* Too early, not expected to fail */
-+	BUG_ON(!root_cpuacct.cpuusage);
-+#endif
- 	for_each_possible_cpu(i) {
- 		struct rq *rq;
- 
-@@ -9537,9 +9571,12 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- static struct cgroup_subsys_state *cpuacct_create(
- 	struct cgroup_subsys *ss, struct cgroup *cgrp)
- {
--	struct cpuacct *ca = kzalloc(sizeof(*ca), GFP_KERNEL);
--	int i;
-+	struct cpuacct *ca;
-+
-+	if (!cgrp->parent)
-+		return &root_cpuacct.css;
- 
-+	ca = kzalloc(sizeof(*ca), GFP_KERNEL);
- 	if (!ca)
- 		goto out;
- 
-@@ -9547,15 +9584,13 @@ static struct cgroup_subsys_state *cpuacct_create(
- 	if (!ca->cpuusage)
- 		goto out_free_ca;
- 
--	for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
--		if (percpu_counter_init(&ca->cpustat[i], 0))
--			goto out_free_counters;
-+	ca->cpustat = alloc_percpu(struct kernel_cpustat);
-+	if (!ca->cpustat)
-+		goto out_free_cpuusage;
- 
- 	return &ca->css;
- 
--out_free_counters:
--	while (--i >= 0)
--		percpu_counter_destroy(&ca->cpustat[i]);
-+out_free_cpuusage:
- 	free_percpu(ca->cpuusage);
- out_free_ca:
- 	kfree(ca);
-@@ -9568,10 +9603,8 @@ static void
- cpuacct_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
- {
- 	struct cpuacct *ca = cgroup_ca(cgrp);
--	int i;
- 
--	for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
--		percpu_counter_destroy(&ca->cpustat[i]);
-+	free_percpu(ca->cpustat);
- 	free_percpu(ca->cpuusage);
- 	kfree(ca);
- }
-@@ -9664,16 +9697,31 @@ static const char *cpuacct_stat_desc[] = {
- };
- 
- static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
--		struct cgroup_map_cb *cb)
-+			      struct cgroup_map_cb *cb)
- {
- 	struct cpuacct *ca = cgroup_ca(cgrp);
--	int i;
-+	int cpu;
-+	s64 val = 0;
-+
-+	for_each_online_cpu(cpu) {
-+		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
-+		val += kcpustat->cpustat[CPUTIME_USER];
-+		val += kcpustat->cpustat[CPUTIME_NICE];
-+	}
-+	val = cputime64_to_clock_t(val);
-+	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
- 
--	for (i = 0; i < CPUACCT_STAT_NSTATS; i++) {
--		s64 val = percpu_counter_read(&ca->cpustat[i]);
--		val = cputime64_to_clock_t(val);
--		cb->fill(cb, cpuacct_stat_desc[i], val);
-+	val = 0;
-+	for_each_online_cpu(cpu) {
-+		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
-+		val += kcpustat->cpustat[CPUTIME_SYSTEM];
-+		val += kcpustat->cpustat[CPUTIME_IRQ];
-+		val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
  	}
-+
-+	val = cputime64_to_clock_t(val);
-+	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
-+
- 	return 0;
- }
- 
-@@ -9742,28 +9790,6 @@ static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
- #define CPUACCT_BATCH	0
- #endif
- 
--/*
-- * Charge the system/user time to the task's accounting group.
-- */
--static void cpuacct_update_stats(struct task_struct *tsk,
--		enum cpuacct_stat_index idx, cputime_t val)
--{
--	struct cpuacct *ca;
--	int batch = CPUACCT_BATCH;
--
--	if (unlikely(!cpuacct_subsys.active))
--		return;
--
--	rcu_read_lock();
--	ca = task_ca(tsk);
--
--	do {
--		__percpu_counter_add(&ca->cpustat[idx], val, batch);
--		ca = parent_ca(ca);
--	} while (ca);
--	rcu_read_unlock();
--}
--
- struct cgroup_subsys cpuacct_subsys = {
- 	.name = "cpuacct",
- 	.create = cpuacct_create,
 -- 
-1.7.6.4
+1.7.7.1
+
+
 
