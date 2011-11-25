@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab1KYKA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 05:00:26 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:46325 "EHLO imr4.ericy.com"
+	id S1753745Ab1KYKBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 05:01:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57094 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753550Ab1KYKAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 05:00:25 -0500
-Date: Fri, 25 Nov 2011 01:58:23 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 04/11] hwmon: Remove redundant spi driver bus
- initialization
-Message-ID: <20111125095823.GB8908@ericsson.com>
-References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
- <1322148561-25138-4-git-send-email-lars@metafoo.de>
+	id S1752571Ab1KYKBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 05:01:48 -0500
+Message-ID: <4ECF680C.7060606@redhat.com>
+Date: Fri, 25 Nov 2011 18:03:56 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1322148561-25138-4-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: ebiederm@xmission.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kexec: do not call kmsg_dump in crashdump
+References: <20111125081959.GA2505@darkstar.nay.redhat.com> <CAM_iQpW7WXeUihgbJneJUJ1GAMzXfONfV69dpqeRbUt_781M=Q@mail.gmail.com>
+In-Reply-To: <CAM_iQpW7WXeUihgbJneJUJ1GAMzXfONfV69dpqeRbUt_781M=Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 10:29:14AM -0500, Lars-Peter Clausen wrote:
-> In ancient times it was necessary to manually initialize the bus field of an
-> spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
+On 11/25/2011 05:32 PM, Cong Wang wrote:
 
-s/spi_driver_register/spi_register_driver/
-
-Otherwise
-
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-
-Jean, ok if I take this and the others, or do you want to handle it ?
-
-Guenter
-
-> so we can drop the manual assignment.
+> On Fri, Nov 25, 2011 at 4:19 PM, Dave Young <dyoung@redhat.com> wrote:
+>> mtd/ram oops dumper will make more functions envolved. In case crash kexec,
+>> we should avoid kmsg dumper to ensure crashdump success.
+>>
+>> kill kmsg_dump callback while crash dumping
 > 
-> The patch was generated using the following coccinelle semantic patch:
-> // <smpl>
-> @@
-> identifier _driver;
-> @@
-> struct spi_driver _driver = {
-> 	.driver = {
-> -		.bus = &spi_bus_type,
-> 	},
-> };
-> // </smpl>
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-> Cc: lm-sensors@lm-sensors.org
-> ---
->  drivers/hwmon/ad7314.c  |    1 -
->  drivers/hwmon/ads7871.c |    1 -
->  2 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/hwmon/ad7314.c b/drivers/hwmon/ad7314.c
-> index 318e38e..5d760f3 100644
-> --- a/drivers/hwmon/ad7314.c
-> +++ b/drivers/hwmon/ad7314.c
-> @@ -160,7 +160,6 @@ MODULE_DEVICE_TABLE(spi, ad7314_id);
->  static struct spi_driver ad7314_driver = {
->  	.driver = {
->  		.name = "ad7314",
-> -		.bus = &spi_bus_type,
->  		.owner = THIS_MODULE,
->  	},
->  	.probe = ad7314_probe,
-> diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
-> index 5231934..04450f8 100644
-> --- a/drivers/hwmon/ads7871.c
-> +++ b/drivers/hwmon/ads7871.c
-> @@ -227,7 +227,6 @@ static int __devexit ads7871_remove(struct spi_device *spi)
->  static struct spi_driver ads7871_driver = {
->  	.driver = {
->  		.name = DEVICE_NAME,
-> -		.bus = &spi_bus_type,
->  		.owner = THIS_MODULE,
->  	},
->  
-> -- 
-> 1.7.7.1
-> 
-> 
+> https://lkml.org/lkml/2011/2/1/33
+
+
+Thanks for give the link. So it's intend to be that.
+
+I'm still confused with the KMSG_DUMP_KEXEC.
+
+crash_kexec()
+	kmsg_dump(KMSG_DUMP_KEXEC)
+kmsg_dump(KMSG_DUMP_PANIC)
+
+Looks like it's equal to original logic, isn't it?
+
+kmsg_dump(anything);
+crash_kexec()
+
+So why intruduce KMSG_DUMP_KEXEC? why not just kmsg_dump before crash_kexec?
+
+thoughts?
 
 -- 
-Guenter Roeck
-Distinguished Engineer
-PDU IP Systems
+Thanks
+Dave
