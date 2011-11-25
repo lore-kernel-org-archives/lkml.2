@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab1KYJvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 04:51:53 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59204 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab1KYJvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 04:51:52 -0500
-Date: Fri, 25 Nov 2011 10:51:44 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: zhao zhang <zhzhl555@gmail.com>
-Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, keguang.zhang@gmail.com, wuzhangjin@gmail.com,
-        r0bertz@gentoo.org
-Subject: Re: [rtc-linux] [PATCH V1] MIPS: Add RTC support for loongson1B
-Message-ID: <20111125095144.GC2535@pengutronix.de>
-References: <1322189527-4761-1-git-send-email-zhzhl555@gmail.com>
- <20111125091311.GB2535@pengutronix.de>
- <CANY2MLJ6e02--f6D5yAK0Q6C57QGo5gqyBjWGmvCGhNr0XajJQ@mail.gmail.com>
+	id S1753729Ab1KYKA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 05:00:26 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:46325 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753550Ab1KYKAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 05:00:25 -0500
+Date: Fri, 25 Nov 2011 01:58:23 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 04/11] hwmon: Remove redundant spi driver bus
+ initialization
+Message-ID: <20111125095823.GB8908@ericsson.com>
+References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
+ <1322148561-25138-4-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kVXhAStRUZ/+rrGn"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CANY2MLJ6e02--f6D5yAK0Q6C57QGo5gqyBjWGmvCGhNr0XajJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1322148561-25138-4-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 24, 2011 at 10:29:14AM -0500, Lars-Peter Clausen wrote:
+> In ancient times it was necessary to manually initialize the bus field of an
+> spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
 
---kVXhAStRUZ/+rrGn
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+s/spi_driver_register/spi_register_driver/
 
-On Fri, Nov 25, 2011 at 05:49:04PM +0800, zhao zhang wrote:
->    I have checked carefully,
->    1:the au1xx used one register but loongon1B used two 32bit registers
->    (write0/write1 and read0/read1) to represent time.
->    2:the data organization are also different.=A0
->    so, it's hard to reuse.
+Otherwise
 
-Fair enough, thanks for checking.
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Jean, ok if I take this and the others, or do you want to handle it ?
 
---kVXhAStRUZ/+rrGn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Guenter
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> so we can drop the manual assignment.
+> 
+> The patch was generated using the following coccinelle semantic patch:
+> // <smpl>
+> @@
+> identifier _driver;
+> @@
+> struct spi_driver _driver = {
+> 	.driver = {
+> -		.bus = &spi_bus_type,
+> 	},
+> };
+> // </smpl>
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+> Cc: lm-sensors@lm-sensors.org
+> ---
+>  drivers/hwmon/ad7314.c  |    1 -
+>  drivers/hwmon/ads7871.c |    1 -
+>  2 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hwmon/ad7314.c b/drivers/hwmon/ad7314.c
+> index 318e38e..5d760f3 100644
+> --- a/drivers/hwmon/ad7314.c
+> +++ b/drivers/hwmon/ad7314.c
+> @@ -160,7 +160,6 @@ MODULE_DEVICE_TABLE(spi, ad7314_id);
+>  static struct spi_driver ad7314_driver = {
+>  	.driver = {
+>  		.name = "ad7314",
+> -		.bus = &spi_bus_type,
+>  		.owner = THIS_MODULE,
+>  	},
+>  	.probe = ad7314_probe,
+> diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
+> index 5231934..04450f8 100644
+> --- a/drivers/hwmon/ads7871.c
+> +++ b/drivers/hwmon/ads7871.c
+> @@ -227,7 +227,6 @@ static int __devexit ads7871_remove(struct spi_device *spi)
+>  static struct spi_driver ads7871_driver = {
+>  	.driver = {
+>  		.name = DEVICE_NAME,
+> -		.bus = &spi_bus_type,
+>  		.owner = THIS_MODULE,
+>  	},
+>  
+> -- 
+> 1.7.7.1
+> 
+> 
 
-iEYEARECAAYFAk7PZTAACgkQD27XaX1/VRvTuQCcC8O7fpDjulCrLAuvz5GBno22
-QuEAoLnV4x0EZGQNA0XOAYIfy16IFnrf
-=SRqo
------END PGP SIGNATURE-----
-
---kVXhAStRUZ/+rrGn--
+-- 
+Guenter Roeck
+Distinguished Engineer
+PDU IP Systems
