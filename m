@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1KYR4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 12:56:20 -0500
-Received: from home.keithp.com ([63.227.221.253]:33107 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab1KYR4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 12:56:19 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Patrik Kullman <patrik.kullman@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: i915: 3.2 rc1/2 KMS regression
-In-Reply-To: <CAGPN=9ROa_Pf242jxPy-6XfmFNW3+sCMj6M+pFbw+wgCX3tu1Q@mail.gmail.com>
-References: <CAGPN=9THOv-M4Td4haE94uDcsAjW3eGMG7ioLeu+p8xUOBPd7w@mail.gmail.com> <861usye0og.fsf@sumi.keithp.com> <CAGPN=9ROa_Pf242jxPy-6XfmFNW3+sCMj6M+pFbw+wgCX3tu1Q@mail.gmail.com>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 25 Nov 2011 09:56:27 -0800
-Message-ID: <86sjlccchg.fsf@sumi.keithp.com>
+	id S1752502Ab1KYSKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 13:10:42 -0500
+Received: from bipbip.grupopie.com ([195.23.16.24]:40252 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab1KYSKl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 13:10:41 -0500
+Message-ID: <4ECFDA1D.3090303@grupopie.com>
+Date: Fri, 25 Nov 2011 18:10:37 +0000
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+To: Nuno Santos <nsantos@edigma.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Floating point usage inside kernel
+References: <S1754322Ab1KYK6W/20111125105822Z+929@vger.kernel.org> <4ECF789F.3040001@edigma.com> <4ECF8528.9080800@gmail.com> <4ECFBF56.4000002@edigma.com> <4ECFCAD5.5040606@grupopie.com> <4ECFD488.4060805@edigma.com>
+In-Reply-To: <4ECFD488.4060805@edigma.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Nuno Santos wrote:
+>>[...]
+>> Unless you have overflow or need more than 16 bits of fractional
+>> precision, you'll have no problem with this approach.
+>>
+>> I hope this helps,
+> Sorry, i'm not sure if I have completely understand your suggestion. Are
+> you telling me to apply this transform only to my input data, or to all
+> the operations that are applied in the function used in kernel?
 
-On Fri, 25 Nov 2011 18:29:31 +0100, Patrik Kullman <patrik.kullman@gmail.co=
-m> wrote:
-> Ok, so I've now bisected, and it turns out that
-> dc22ee6fc18ce0f15424e753e8473c306ece95c1 is the first bad revision.
->=20
-> Would it be safe to checkout 3.2-rc3 and git revert
-> dc22ee6fc18ce0f15424e753e8473c306ece95c1 (to test that it's the only
-> bad commit) ?
+Imagine that your matrix coefficients are:
 
-Yes, that would be very useful. Please send kernel logs with drm.debug=3D4
-for an older working kernel, a broken kernel and a patched
-kernel with this commit reverted.
+ 2.5,     1, 4.7
+45.3, 0.765,  10
+   0,     0,   1
 
-=2D-=20
-keith.packard@intel.com
+and your input is:
 
---=-=-=
-Content-Type: application/pgp-signature
+3420.56, 5410.76, 1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+You start by converting the matrix coefficients:
 
-iQIVAwUBTs/WyzYtFsjWk68qAQiYjBAAy+j23exexzClHOBAGOZCTkyPcaNAr1tp
-sbKkG3MBTLexhZyJjPU4X1z7XeDnDd0HHPDJ/th7LzCC9EAYcptcBBntrFbywC8g
-CLOWo3mVcQZcPsvUBVIdWOc3U3EWFhrnQZLWkfbQyhSPDTlu008/cOtij0n3PMey
-F0koRfPTWUOzE3c+yQ3LYKadyopBsbNT/Paoh0fEQaJc/weaoiKz8sH9HOWVNvP3
-ROiojo+Zid+Swq6+WV+ZKqwB+q1hzYdbfnhWL6Np2qsMRSXim/mYGqa1pKqjqxjW
-wXeGry3Ew/t5yyNP+5gd+fPrhovVoJEcl22fSlqLdb78uPSnI6JkocOgtWdSZDmU
-DYK7lLR6qetkAsWyRerrQgQf4I/kXYss86tvT1kc79l7zTxV6vLudRjnmuSkyBoP
-OQoaAF5xJMgsZzyfn67xujXO3K2dy7fhJS9gG0r7usun936ZCB2MaNBQQFTkna1U
-gDrOdWzONZ+7jHZTGb/1siitLdjwHuV+wQ+Pnua2nw2Bys+seSO3b/9FXJjlqt/W
-kw5doU3NaO9VJz2pmg4r5SOIY0W3ukgRwPYAkZqohxWe0d7lcqYPKXpWtUCBOhgA
-Anxmzzf6d+zMpocp7+LRPYfi+QG0BNrGBNpPtsU7Q18PLBhChBoOHSLXh7XZfbyk
-6T521LCI1qc=
-=Jbil
------END PGP SIGNATURE-----
---=-=-=--
+2.5 * 65536.0 = 163840
+....
+
+so the matrix becomes:
+
+ 163840 65536 308019
+2968781 50135 655360
+      0     0  65536
+
+This can be done in userspace and the coefficients can be sent to the
+kernel as fixed point numbers.
+
+You do the same (this time on the kernel) with your input, so it becomes:
+
+224169820 354599567 65536
+
+Now you can do:
+
+q[0] = fixed_mul(p[0], a[0][0]) + fixed_mul(p[1], a[1][0]) +
+fixed_mul(p[2], a[2][0]);
+....
+
+where "fixed_mul" is a function that does the multiplication as I
+explained earlier.
+
+To convert the result back to an integer, just shift down by 16.
+
+-- 
+Paulo Marques - www.grupopie.com
+
+"Feed the hungry, save the whales, free the mallocs!"
