@@ -1,66 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab1KYOCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 09:02:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:56004 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290Ab1KYOCa (ORCPT
+	id S1755745Ab1KYOFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 09:05:43 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:44451
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755482Ab1KYOFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 09:02:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: myungjoo.ham@gmail.com
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-Date: Fri, 25 Nov 2011 14:02:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
-In-Reply-To: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+	Fri, 25 Nov 2011 09:05:42 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LV7Z5D-01-81C-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] perf script: Implement option for system-wide profiling
+Date: Fri, 25 Nov 2011 15:05:25 +0100
+Message-ID: <1322229925-10075-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111251402.28016.arnd@arndb.de>
-X-Provags-ID: V02:K0:C6TNYykHs8eDxyoNu27YcHptOWpCD7On1zB/qOd0XLF
- 7tZdwr8JPkbTGo4jhGb4BrWGwZzNV8Yae4fLn9ItbonnE9V09f
- ARJGVE4j9BlzyGsASCo3g41U5d7lNe+OIFo5pA7wJhsW9RoOLK
- Edc/gzkF0UVjWoYKi8/vuDzt/gLEc5lNbDE9jr3iaNLa+ijVth
- ZGcgJNVM01Q4OnXDlT0UZuWAd2pKK21GU6nYdH3qbESZekwEYE
- QRweKg1nxHjhuw36K4tSidiOX1OX+C4hTBe//rgy49O/wzZ/M7
- yyOF20DWKRmT8poIQW2yEUMYLl3/gH4H7lWCXRWXgonxfcGiE9
- /zeTPksmDEzjJgXmGBgs=
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 November 2011, MyungJoo Ham wrote:
-> For switch ports, which may have different types of cables
-> (USB, TA, HDMI, Analog A/V, and others), we often have seperated device
-> drivers that detect the state changes at the port and device drivers that
-> do something according to the state changes.
-> 
-> For example, when MAX8997-MUIC detects a Charger cable insertion, another
-> device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
-> or board file) needs to set charger current limit accordingly and when
-> MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
-> need to do some operations accordingly.
-> 
-> This patchset supports the usage of notifier for passing such information
-> between device drivers.
-> 
-> Another issue is that at a single switch port, there might be multiple
-> and heterogeneous cables attached at the same time. Besides, the state
-> (Attached or Detached) of each cable may alter independently.
-> 
-> In order to address such issues, Android kernel's "Switch" class seems to
-> be a good basis and we have implemented "Multistate Switch Class" based on
-> it. The "Switch" class code of Android kernel is GPL as well.
+The option is documented in man perf-script but was not yet
+implemented:
 
-How does this relate to the new "pinmux" subsystem that Linus Walleij
-maintains? Would it be useful to integrate your driver into pinmux
-instead of starting a new subsystem?
+       -a
+           Force system-wide collection. Scripts run without a
+           <command> normally use -a by default, while scripts run
+           with a <command> normally don't - this option allows the
+           latter to be run in system-wide mode.
 
-	Arnd
+As with perf record you now can profile in system-wide mode for the
+runtime of a given command, e.g.:
+
+ # perf script -a syscall-counts sleep 2
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/builtin-script.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index bcfc00e..82cca10 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -23,6 +23,7 @@ static u64			nr_unordered;
+ extern const struct option	record_options[];
+ static bool			no_callchain;
+ static bool			show_full_info;
++static bool			system_wide;
+ static const char		*cpu_list;
+ static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ 
+@@ -1093,6 +1094,8 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+ 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
++	OPT_BOOLEAN('a', "all-cpus", &system_wide,
++			    "system-wide collection from all CPUs"),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_BOOLEAN('I', "show-info", &show_full_info,
+ 		    "display extended information from perf.data file"),
+@@ -1120,7 +1123,6 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 	struct perf_session *session;
+ 	char *script_path = NULL;
+ 	const char **__argv;
+-	bool system_wide;
+ 	int i, j, err;
+ 
+ 	setup_scripting();
+@@ -1188,15 +1190,17 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 		}
+ 
+ 		if (!pid) {
+-			system_wide = true;
+ 			j = 0;
+ 
+ 			dup2(live_pipe[1], 1);
+ 			close(live_pipe[0]);
+ 
+-			if (!is_top_script(argv[0]))
++			if (is_top_script(argv[0])) {
++				system_wide = true;
++			} else if (!system_wide) {
+ 				system_wide = !have_cmd(argc - rep_args,
+ 							&argv[rep_args]);
++			}
+ 
+ 			__argv = malloc((argc + 6) * sizeof(const char *));
+ 			if (!__argv)
+@@ -1244,10 +1248,11 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 		script_path = rep_script_path;
+ 
+ 	if (script_path) {
+-		system_wide = false;
+ 		j = 0;
+ 
+-		if (rec_script_path)
++		if (!rec_script_path)
++			system_wide = false;
++		else if (!system_wide)
+ 			system_wide = !have_cmd(argc - 1, &argv[1]);
+ 
+ 		__argv = malloc((argc + 2) * sizeof(const char *));
+-- 
+1.7.7
+
+
