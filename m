@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1KYXem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 18:34:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38502 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab1KYXel (ORCPT
+	id S1753989Ab1KYXiG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 18:38:06 -0500
+Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:60633 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753797Ab1KYXiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 18:34:41 -0500
-Date: Sat, 26 Nov 2011 03:34:36 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: =?utf-8?B?7LWc7KKF7ZmY?= <jhbird.choi@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] max8997_charger: Remove duplicate module.h
-Message-ID: <20111125233436.GA19161@oksana.dev.rtsoft.ru>
-References: <16505126.116361322047601084.JavaMail.weblogic@epml27>
+	Fri, 25 Nov 2011 18:38:05 -0500
+X-Greylist: delayed 1701 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Nov 2011 18:38:05 EST
+Date: Sat, 26 Nov 2011 00:38:01 +0100
+From: Marc Vertes <marc.vertes@sigfox.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Dimitry Andric <dimitry.andric@tomtom.com>,
+        Ben Dooks <ben@simtec.co.uk>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH] watchdog: fix nowayout setting in s3c2410_wdt
+Message-ID: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com>
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <16505126.116361322047601084.JavaMail.weblogic@epml27>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 2799268644863133673
+X-Ovh-Remote: 78.224.61.197 (lys31-1-78-224-61-197.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrudefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfgfgggtgfesthejredttdervdenucfhrhhomhepofgrrhgtucggvghrthgvshcuoehmrghrtgdrvhgvrhhtvghssehsihhgfhhogidrtghomheqnecuffhomhgrihhnpeen
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -120
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnehlihhnuhigvdigucdlqddvtddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 11:26:41AM +0000, MyungJoo Ham wrote:
-> Sender : 최종환<jhbird.choi@samsung.com> S4(선임)/선임/S/W Solution개발팀(S.LSI)/삼성전자
-> Date : 2011-11-23 13:40 (GMT+09:00)
-> Title : [PATCH] max8997_charger: Remove duplicate module.h
-> > 
-> > From: Jonghwan Choi <jhbird.choi@samsung.com>
-> > 
-> > module.h was included twice.
-> > 
-> > Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> 
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Set nowayout flag in probe function, otherwise option is useless.
 
-The issue introduced in post-3.1 kernels, and since I don't want
-to send it to Linus now (as it is not a regression fix), nor I want
-to pull -rc kernels into battery GIT tree, I'll just let the patch
-sit for awhile till 3.2 released. And during merge window I'll apply
-it, just before sending pull request.
+Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
+---
 
-That is, I noticed the patch, it looks OK, and I'll apply it. Just
-not now.
+ s3c2410_wdt.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Thanks!
-
-p.s.
-The other option you have is to send the patch via -trivial tree.
-I'm fine either way.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+--- linux-3.2-rc3/drivers/watchdog/s3c2410_wdt.c.orig	2011-11-24 05:20:28.000000000 +0100
++++ linux-3.2-rc3/drivers/watchdog/s3c2410_wdt.c	2011-11-26 00:08:58.985896169 +0100
+@@ -395,6 +395,9 @@ static int __devinit s3c2410wdt_probe(st
+ 		s3c2410wdt_stop(&s3c2410_wdd);
+ 	}
+ 
++	if (nowayout)
++		set_bit(WDOG_NO_WAY_OUT, &s3c2410_wdd.status);
++
+ 	/* print out a statement of readiness */
+ 
+ 	wtcon = readl(wdt_base + S3C2410_WTCON);
