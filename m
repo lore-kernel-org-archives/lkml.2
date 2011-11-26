@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab1KZUUC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 15:20:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41363 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547Ab1KZUT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 15:19:58 -0500
-From: NeilBrown <neilb@suse.de>
-To: Felipe Balbi <balbi@ti.com>
-Date: Sun, 27 Nov 2011 07:17:41 +1100
-Subject: [PATCH 4/4] twl4030-irq: fix typo
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, NeilBrown <neilb@suse.de>
-Message-ID: <20111126201741.16080.59032.stgit@notabene.brown>
-In-Reply-To: <20111126201334.16080.85045.stgit@notabene.brown>
-References: <20111126201334.16080.85045.stgit@notabene.brown>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754798Ab1KZUpN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 15:45:13 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:39651 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1KZUpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 15:45:11 -0500
+Date: Sat, 26 Nov 2011 15:45:03 -0500 (EST)
+Message-Id: <20111126.154503.1317670837061338352.davem@davemloft.net>
+To: levinsasha928@gmail.com
+Cc: linux-kernel@vger.kernel.org, mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-net: Acquire device lock when releasing device
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
+References: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 26 Nov 2011 12:45:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-overwriten -> overwritten
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 18 Nov 2011 11:19:42 +0200
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
+> Device lock should be held when releasing a device, and specifically
+> when calling vhost_dev_cleanup(). Otherwise, RCU complains about it:
+ ...
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
- drivers/mfd/twl4030-irq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Michael et al., are you guys going to gather this fix or should I
+apply it directly to thet net tree?
 
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 3ac7216..b69bb51 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -492,7 +492,7 @@ static void twl4030_sih_bus_sync_unlock(struct irq_data *data)
- 			u8	bytes[4];
- 		} imr;
- 
--		/* byte[0] gets overwriten as we write ... */
-+		/* byte[0] gets overwritten as we write ... */
- 		imr.word = cpu_to_le32(agent->imr << 8);
- 		agent->imr_change_pending = false;
- 
-
-
+Thanks.
