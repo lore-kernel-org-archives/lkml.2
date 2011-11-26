@@ -1,149 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab1K2NEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:04:52 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:34012 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab1K2NEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:04:50 -0500
-Message-ID: <4ED4D858.40506@atmel.com>
-Date: Tue, 29 Nov 2011 14:04:24 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1755286Ab1K2NJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:09:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:51179 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754356Ab1K2NJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:09:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="80868917"
+From: Keith Packard <keith.packard@intel.com>
+To: Jerker Buud <b.jerker@gmail.com>,
+        Patrik Kullman <patrik.kullman@gmail.com>
+Subject: Re: drivers/gpu/drm/i915/intel_dp.c problem with commit dc22ee6fc18ce0f15424e753e8473c306ece95c1
+In-Reply-To: <CACVkyFdhpU1sQb-T-pXYkV8Ot27+LYxV_=FGd=aPLLyrD3-1dg@mail.gmail.com>
+References: <CACVkyFdhpU1sQb-T-pXYkV8Ot27+LYxV_=FGd=aPLLyrD3-1dg@mail.gmail.com>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 26 Nov 2011 11:27:11 -0800
+Message-ID: <86k46m8z1s.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-To: Jamie Iles <jamie@jamieiles.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: at91/aic: add device tree support for AIC
-References: <167b5ccfc31d9637186c5201cd83cb62df81fc0f.1322171620.git.nicolas.ferre@atmel.com> <20111124222601.GA28582@gallagher> <20111125135106.GN15531@game.jcrosoft.org> <20111125152817.GA8866@totoro>
-In-Reply-To: <20111125152817.GA8866@totoro>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2011 04:28 PM, Jamie Iles :
-> On Fri, Nov 25, 2011 at 02:51:06PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 22:26 Thu 24 Nov     , Jamie Iles wrote:
->>> Hi Nicolas,
->>> On Thu, Nov 24, 2011 at 10:56:27PM +0100, Nicolas Ferre wrote:
-> [...]
->>>> +#if defined(CONFIG_OF)
->>>> +static struct of_device_id aic_ids[]  = {
->>>> +	{ .compatible = "atmel,at91rm9200-aic" },
->>>> +	{ /*sentinel*/ }
->>>> +};
->>>> +
->>>> +static int __init at91_aic_of_init(void)
->>>> +{
->>>> +	struct device_node *np;
->>>> +
->>>> +	np = of_find_matching_node(NULL, aic_ids);
->>>> +	if (np == NULL)
->>>> +		return -ENODEV;
->>>> +
->>>> +	at91_aic_base = of_iomap(np, 0);
->>>> +	at91_aic_domain.of_node = np;
->>>
->>> I think this needs to be:
->>>
->>> 	at91_aic_domain.of_node = of_node_get(np);
->>>
->>> to keep the reference count.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Well, in fact the of_find_matching_node() function already indent the 
-ref. count...
+On Sat, 26 Nov 2011 09:50:41 -0800, Jerker Buud <b.jerker@gmail.com> wrote:
 
->>>> +	/* Keep refcount of the node */
+> 245,247c245,246
+> <       if (!is_edp(intel_dp) &&
+> <           (intel_dp_link_required(intel_dp, mode->clock)
+> <            > intel_dp_max_data_rate(max_link_clock, max_lanes)))
+> ---
+> >       if (intel_dp_link_required(intel_dp, mode->clock)
+> >           > intel_dp_max_data_rate(max_link_clock, max_lanes))
 
-... That is why I added this comment ^^
+Ok, I think I understand why this change is required.
 
-But maybe for sake of clarity, I may have used what you propose anyway. 
-What it your opinion?
+These machines are 'optimized' to provide the bare minimum connection
+necessary between the CPU and the eDP panel -- a single lane is hooked
+up, which is just enough to run the link at 18bpp, but not enough to run
+it at 24bpp.
 
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +#else
->>>> +static int __init at91_aic_of_init(void)
->>>> +{
->>>> +	return -ENOSYS;
->>>> +}
->>>> +#endif
->>>
->>> I think it's preferred if you use of_irq_init() here as it can handle
->>> the ordering of IRQ controllers.  There are GIC and VIC bindings in
->>> -next that use this and provide a way for non-DT platforms to still use
->>> the drivers.
->> which is the case here as if the of_init fail we failback to the non-dt init
->>
->> and this IP is AT91 only
->
-> Right, but it's not using the of_irq_init() interface which is the
-> standard way of registering interrupt controllers and will correctly
-> dependencies for you.
->
-> So if you could have something like:
->
-> void __init __at91_aic_init(unsigned int priority[NR_AIC_IRQS],
-> 			    void __iomem *regs,
-> 			    struct device_node *np)
-> {
-> 	/*
-> 	 * Do all of the writes to the AIC itself and configure
-> 	 * the IRQ domain.
-> 	 */
-> }
->
-> void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
-> {
-> 	void __iomem *base = ioremap(AT91_AIC, 512);
->
-> 	__at91_aic_init(priority, base, NULL);
-> }
->
-> int __init at91_aic_of_init(struct device_node *node,
-> 			    struct device_node *parent)
-> {
-> 	void __iomem *regs = of_iomap(node, 0);
->
-> 	/*
-> 	 * Get priorities from the DT.  If this was an array of cells
-> 	 * then that should be okay.
-> 	 */
-> 	__at91_aic_init(dt_priorities, regs, node);
-> }
->
-> Then the DT based board initialisation can do:
->
-> static const struct of_device_id at91_irq_of_match[] __initconst = {
-> 	{ .compatible = "atmel,at91-aic", .data = at91_aic_of_init },
-> 	{}
-> };
->
-> static void __init at91_of_irq_init(void)
-> {
-> 	of_irq_init(at91_of_irq_init);
-> }
+The problem here (in intel_dp_link_required) is that this is being
+called to see which modes can be supported on the panel. Without the
+CRTC being configured with the appropriate bpp value, this code assumes
+24bpp.
 
-That looks nice. I will try to implement this. I will try to figure out 
-when of_irq_init() is called compared to the other init_IRQ() function.
+I thought Adam Jackson had some code around that automatically switched
+From=2024bpp to 18bpp when the link didn't have enough bandwidth for
+24bpp, but I can't find that now.
 
-> Which is consistent with other platforms.  However this does require
-> that the priorities are encoded in the device-tree, but I guess that's a
-> good thing anyway isn't it?
+In any case, I think we need to centralize the bpp selection inside
+intel_dp.c instead of having it in both places. Then, we can make that
+depend on the requested mode as well as the machine configuration.
 
-That is a annoying point: I do not want to add all this "default" 
-priority stuff in the DT. It is kind of useless until we use the 
-threaded interrupts everywhere and may bloat the DT...
+Here's a patch which uses the VBT configured bpp value in this case. I'd
+love to hear whether this suffices to resolve your problem.
 
-I will try to find a way to pass the default priority table to the DT 
-called function.
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_d=
+p.c
+index 294f557..3e15479 100644
+=2D-- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -212,10 +212,16 @@ intel_dp_link_required(struct intel_dp *intel_dp, int=
+ pixel_clock)
+ {
+ 	struct drm_crtc *crtc =3D intel_dp->base.base.crtc;
+ 	struct intel_crtc *intel_crtc =3D to_intel_crtc(crtc);
+=2D	int bpp =3D 24;
++	struct drm_device *dev =3D intel_dp->base.base.dev;
++	struct drm_i915_private *dev_priv =3D dev->dev_private;
++	int bpp;
+=20
+ 	if (intel_crtc)
+ 		bpp =3D intel_crtc->bpp;
++	else if (intel_dp->base.type =3D=3D INTEL_OUTPUT_EDP)
++		bpp =3D dev_priv->edp.bpp;
++	else
++		bpp =3D 24;
+=20
+ 	return (pixel_clock * bpp + 9) / 10;
+ }
 
-Thanks for your review,
--- 
-Nicolas Ferre
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTtE9jzYtFsjWk68qAQjxChAA0Q28ficEMzuyf2sUE6FfkSyKAy/ykmU+
+/LTK+9UShE8AeZ0h5g5Dd5inj2vqqgpFBL8OkZEGoDxcs1nCQVDeuNoPoW9uuenY
+bKTwZbwXEe8Ms9gAahuqv2Drygwu7djIjF0IFD93lI1uvc59oH+ql2LNpdWyfsgU
+GQ+J3M3Z3Zn8SAmNko9fLbpeI61rMKhIMYbcMGUfCqF/sTN38XqW15ZNINeIk9+6
+GkHG+mqzWTSFRPjPYop4UB90jcFHy2sVtFCLAaauHvd0Gm+g2bByuB5vR9fMIxQR
+1YLOAU/8f89oFvTTMBVygebUfjDC7PNNIux8WVMtSxr5F8SRHpZYAJkW6mfY4XOX
+ETxnPHufBm3fBhBG5fPt0yCq59Ecvut0tcJP+GLKIFhkVcr5Ys5gl2mxuvGRSG8g
+e4UNVTCBVjvj3etTVP5Q3ojPUiwa1uiuSTi/gVNvyMKZxtR3CSVMBWIY7RL1VPn3
+oQ9CX50y9PVycNQ9XM3YXIawAkJUzjSq6jkWpsw9tS+3whT86zsZNlkxZM3vZp5r
+t4YySL0DAb7TQXvpEk3PM2W17y6gBUa/Xb6Qr7p0WSzquGY4FSQxuAj1/roDg8GI
+3go3GMnTxpA2F8a4+WakSwvqD120kOFrmPJTNcbGZ5ihW7hVDZvo2CKSAmx2LRcR
+kcpefyeyQSU=
+=NbGF
+-----END PGP SIGNATURE-----
+--=-=-=--
