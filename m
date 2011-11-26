@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab1KZFZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 00:25:16 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:55469 "HELO nudt.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750806Ab1KZFZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 00:25:13 -0500
-X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Nov 2011 00:25:12 EST
-Date: Sat, 26 Nov 2011 13:04:36 +0800
-From: "Li Wang" <liwang@nudt.edu.cn>
-Subject: [PATCH]eCryptfs: quota check ignored in the context of kernel thr
- ead
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, ecryptfs@vger.kernel.org
-Message-Id: <11112613043689e4ebac922bdda45ca181757479edcf@nudt.edu.cn>
+	id S1754734Ab1KZFql (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 00:46:41 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44331 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab1KZFqj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 00:46:39 -0500
 MIME-Version: 1.0
-X-Mailer: eYou WebMail 5.0.3
-X-Eyou-Client: 222.247.142.1
-Content-Type: text/plain;
- charset="GBK"
-X-Eyou-Sender: <liwang@nudt.edu.cn>
-X-Eyou-MID: <e4c8ddeb78f3d5934075682ae7d5c83c>
+In-Reply-To: <201111251402.28016.arnd@arndb.de>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+	<201111251402.28016.arnd@arndb.de>
+Date: Sat, 26 Nov 2011 14:46:38 +0900
+Message-ID: <CAJ0PZbQEpnJoKaX-BOMPN-=xQAKLegkqBf52azAF_Xosxi8ukQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAQ5PV18021875
 
-Hi there,
-   The latest eCryptfs changes the write path to perform the encryption in ecryptfs_writepage, which minimizes the number of encryptions, however, if the ecryptfs_writepage is invoked in the context of page cache write back kernel thread, to write out the dirty pages to the lower page cache, the quota check by the lower file system gotta be ignored since the kernel thread has the CAP_SYS_CAPABILITY. To validate this, just let a user application open a file, write much data into it, then sleep for several miniutes before close it, those data gotta definitely be safely written into the disk in despite of the user quota limit. The patch below try to fix this by simply temporarily removing the capability from the kernel thread before invoking ecryptfs_write_lower, thereafter, reassign it.
+On Fri, Nov 25, 2011 at 11:02 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 24 November 2011, MyungJoo Ham wrote:
+>> For switch ports, which may have different types of cables
+>> (USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+>> drivers that detect the state changes at the port and device drivers that
+>> do something according to the state changes.
+>>
+>> For example, when MAX8997-MUIC detects a Charger cable insertion, another
+>> device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
+>> or board file) needs to set charger current limit accordingly and when
+>> MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
+>> need to do some operations accordingly.
+>>
+>> This patchset supports the usage of notifier for passing such information
+>> between device drivers.
+>>
+>> Another issue is that at a single switch port, there might be multiple
+>> and heterogeneous cables attached at the same time. Besides, the state
+>> (Attached or Detached) of each cable may alter independently.
+>>
+>> In order to address such issues, Android kernel's "Switch" class seems to
+>> be a good basis and we have implemented "Multistate Switch Class" based on
+>> it. The "Switch" class code of Android kernel is GPL as well.
+>
+> How does this relate to the new "pinmux" subsystem that Linus Walleij
+> maintains? Would it be useful to integrate your driver into pinmux
+> instead of starting a new subsystem?
+>
+>        Arnd
+>
 
-  Fixme: It seems those commented codes in the patch (prepare_creds(), ..., commit_creds()) do the thing in a more official way, but they perform too much validity checks which are not needed in our case. Only if the simple cap_lower/cap_raise call will trigger some race condtions, otherwise I think it should be ok?         
+I haven't thought about pinmux subsystem and wasn't aware of it.
+However the name, pinmux, suggests that it supports similar devices if
+not same. I'll read pinmux subsystem first. Thamks a lot.
 
-Cheers,
-Li Wang
+Cheers!
+MyungJoo
 
-signed-off-by: Li Wang <liwang@nudt.edu.cn>
-               Yong Peng <pengyong@kylinos.com.cn>
 
----
---- fs/ecryptfs/crypto.c.orig 2011-11-26 20:21:08.109304786 +0800
-+++ fs/ecryptfs/crypto.c 2011-11-26 20:20:09.651315978 +0800
-@@ -506,8 +506,33 @@ int ecryptfs_encrypt_page(struct page *p
-        * (PAGE_CACHE_SIZE
-           / crypt_stat->extent_size))
-       + extent_offset), crypt_stat);
-+  /*
-+    * Temporarily remove the CAP_SYS_RESOURCE capability from the
-+    * write back kernel thread to let it undergo quota check by
-+    * the lower file system
-+    */
-+  if (current->flags & PF_KTHREAD) {
-+   cap_lower(((struct cred *)current->cred)->cap_effective, CAP_SYS_RESOURCE);
-+   /*
-+     * struct cred *cred;
-+     * cred = prepare_creds();
-+     * if (unlikely(!cred)) {
-+     *  rc = -ENOMEM;
-+     * goto out;
-+     * }
-+     * cap_lower(cred->cap_effective, CAP_SYS_RESOURCE);
-+     * rc = commit_creds(cred);
-+     * if (rc)
-+     *  goto out;
-+     */  
-+  }
-   rc = ecryptfs_write_lower(ecryptfs_inode, enc_extent_virt,
-        offset, crypt_stat->extent_size);
-+  /*
-+    * Reassign the CAP_SYS_RESOURCE capability
-+    */
-+  if (current->flags & PF_KTHREAD)
-+   cap_raise(((struct cred *)current->cred)->cap_effective, CAP_SYS_RESOURCE);
-   if (rc < 0) {
-    ecryptfs_printk(KERN_ERR, "Error attempting "
-      "to write lower page; rc = [%d]"
-  
- ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
