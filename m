@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab1KZTLx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 14:11:53 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:63664 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753661Ab1KZTLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 14:11:49 -0500
-Date: Sat, 26 Nov 2011 20:11:37 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: lars@metafoo.de
-Cc: linux-iio@vger.kernel.org, greg@kroah.com, linux-kernel@vger.kernel.org,
-        federico.vaga@gmail.com, dcobas@cern.ch, siglesia@cern.ch,
-        manohar.vanga@cern.ch
-Subject: Re: [RFC PATCH 0/7] Introducing ZIO, a new I/O framework
-Message-ID: <20111126191137.GA1046@mail.gnudd.com>
+	id S1754070Ab1KZTOg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 14:14:36 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:48592 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753694Ab1KZTOe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 14:14:34 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/dLoxs6DPdGlVKELtgRlWvdn1F0lIZZFSPVdwyWr
+	I3bQMsImp5fpMq
+Message-ID: <4ED13A7A.1090504@gmx.de>
+Date: Sat, 26 Nov 2011 19:14:02 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <4ED12B50.9090206@metafoo.de>
-References: <4ED12B50.9090206@metafoo.de>
-  <cover.1322328073.git.rubini@gnudd.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You've Cc'ed the IIO mailinglist, so you know about the IIO
-> framework.
+Hi Linus,
 
-Yes, we are aware of it. Initially we hoped to use it for our
-boards. There is an analysis by Federico on the ohwr wiki:
+please pull the following changes to the fbdev subsystem.
+Nothing exciting here, just one regression fix for viafb, 3 trivial patches for
+OMAP and one patch to fix the reset sequence for da8xx-fb.
 
-http://www.ohwr.org/projects/zio/wiki/Iio
 
-See especially the final table about how it fits our requirements:
+Thanks,
 
-http://www.ohwr.org/projects/zio/wiki/Requirements
+Florian Tobias Schandinat
 
-> Could you explain why you need a new framework and your devices
-> can't be supported by the IIO framework?
 
-Mainly, because the use-cases it is designed for are different.  It
-handles data one sample at a time while our data blocks are tens of
-hundreds of megabytes; there is still no support for output; data is
-expected to be analog only; timestamps are assumed to be nanoseconds.
-Also, we need easy off-line elaboration of data, that's why we attach
-a control structure to each data block (and user-space can ignore the
-control structure and work with data alone, if needed).
+The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37:
 
-ZIO can work with accelerometers (we have one we'll support soon),
-but we need to support accelerators too.  I think IIO is much better
-than ZIO for accelerometers, thermometers and similar stuff.
+  Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
 
-> After a first quick glance ZIO looks to me like a subset of IIO.
+are available in the git repository at:
+  git://github.com/schandinat/linux-2.6.git fbdev-for-linus
 
-In some sense, yes. It's only a mechanism for data transfer, insisting
-to not attach any meaning to the data it carries around.
+Daniel Drake (1):
+      viafb: correct sync polarity for OLPC DCON
 
-I'm open to suggestions (_we_ are) about how to easily use IIO for
-output, for hardware timestamps (we have 3 32-bit fields) and for very
-large data blocks, with DMA to/from user space -- sure we don't have this
-last point in ZIO at this point in time.
+Florian Tobias Schandinat (1):
+      Merge branch 'for-3.2-rc' of git://gitorious.org/linux-omap-dss2/linux
+into fbdev-for-linus
 
-Thank you for your interest
-/alessandro
+Manjunathappa, Prakash (1):
+      video:da8xx-fb: Disable and reset sequence on version2 of LCDC
+
+Tomi Valkeinen (3):
+      OMAPDSS: HDMI: fix returned HDMI pixel clock
+      OMAPFB: fix compilation warnings due to missing include
+      OMAPDSS: DISPC: skip scaling calculations when not scaling
+
+ drivers/video/da8xx-fb.c        |   15 ++++++++++++++-
+ drivers/video/omap/dispc.c      |    1 +
+ drivers/video/omap2/dss/dispc.c |   11 +++++------
+ drivers/video/omap2/dss/hdmi.c  |    2 +-
+ drivers/video/via/share.h       |    4 ++--
+ 5 files changed, 23 insertions(+), 10 deletions(-)
