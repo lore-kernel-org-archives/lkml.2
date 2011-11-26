@@ -1,67 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1KZEcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 23:32:13 -0500
+	id S1754486Ab1KZEc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 23:32:29 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:47954 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab1KZEcM (ORCPT
+	with ESMTP id S1754412Ab1KZEc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 23:32:12 -0500
+	Fri, 25 Nov 2011 23:32:27 -0500
 From: tom.leiming@gmail.com
 To: tony@atomide.com, greg@kroah.com, arnd@arndb.de
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] OMAP4&drivers/misc: introduce face detection module driver
-Date: Sat, 26 Nov 2011 12:31:41 +0800
-Message-Id: <1322281904-14526-1-git-send-email-tom.leiming@gmail.com>
+        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 1/3] omap4: introduce fdif(face detect module) hwmod
+Date: Sat, 26 Nov 2011 12:31:42 +0800
+Message-Id: <1322281904-14526-2-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322281904-14526-1-git-send-email-tom.leiming@gmail.com>
+References: <1322281904-14526-1-git-send-email-tom.leiming@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Ming Lei <ming.lei@canonical.com>
 
-These patches(against -next tree) introduce a device driver under
-drivers/misc for enabling one face detection IP[1] which is
-integrated inside OMAP4 SoC currently, and have some OMAP4
-platform dependent changes to make the module workable on OMAP4 SoC.
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   81 ++++++++++++++++++++++++++++
+ 1 files changed, 81 insertions(+), 0 deletions(-)
 
-For verification purpose, I write one user space utility[2] to
-test the module and driver, follows its basic functions:
-
-	- detect faces in a input grayscal picture(PGM raw, 320 by 240)
-	- plot a rectangle to mark the detected faces, and save it as
-	another same type grayscal picture
-	- set detection parameters
-
-I should have though about implementing a face detection demo on video
-playback from uvc camera, but OMAP4 DSS on -next tree can't work,
-so have to quit the idea.
-
-Looks the performance of the module is not bad, see some detection
-results on the link[3][4]. 
-
-Face detection can be used to implement some interesting applications
-(camera, face unlock, baby monitor, ...).
-
- arch/arm/mach-omap2/devices.c              |   33 +
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   81 +++
- drivers/misc/Kconfig                       |    7 +
- drivers/misc/Makefile                      |    1 +
- drivers/misc/fdif.c                        |  874 ++++++++++++++++++++++++++++
- include/linux/fdif.h                       |   67 +++
- include/linux/major.h                      |    1 +
- 7 files changed, 1064 insertions(+), 0 deletions(-)
-
-
-thanks,
---
-Ming Lei
-
-
-[1], Ch9 of OMAP4 Technical Reference Manual
-[2], http://kernel.ubuntu.com/git?p=ming/fdif.git;a=summary
-[3], http://kernel.ubuntu.com/~ming/dev/fdif/output
-[4], All pictures are taken from http://www.google.com/imghp
-and converted to pnm from jpeg format, only for test purpose.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 6cf21ee..30db754 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -53,6 +53,7 @@ static struct omap_hwmod omap44xx_dmm_hwmod;
+ static struct omap_hwmod omap44xx_dsp_hwmod;
+ static struct omap_hwmod omap44xx_dss_hwmod;
+ static struct omap_hwmod omap44xx_emif_fw_hwmod;
++static struct omap_hwmod omap44xx_fdif_hwmod;
+ static struct omap_hwmod omap44xx_hsi_hwmod;
+ static struct omap_hwmod omap44xx_ipu_hwmod;
+ static struct omap_hwmod omap44xx_iss_hwmod;
+@@ -354,6 +355,14 @@ static struct omap_hwmod_ocp_if omap44xx_dma_system__l3_main_2 = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++/* fdif -> l3_main_2 */
++static struct omap_hwmod_ocp_if omap44xx_fdif__l3_main_2 = {
++	.master		= &omap44xx_fdif_hwmod,
++	.slave		= &omap44xx_l3_main_2_hwmod,
++	.clk		= "l3_div_ck",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
+ /* hsi -> l3_main_2 */
+ static struct omap_hwmod_ocp_if omap44xx_hsi__l3_main_2 = {
+ 	.master		= &omap44xx_hsi_hwmod,
+@@ -5444,6 +5453,75 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
+ 	.slaves_cnt	= ARRAY_SIZE(omap44xx_wd_timer3_slaves),
+ };
+ 
++/* 'fdif' class */
++static struct omap_hwmod_class_sysconfig omap44xx_fdif_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_RESET_STATUS |
++			   SYSC_HAS_SIDLEMODE | SYSC_HAS_SOFTRESET),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   MSTANDBY_FORCE | MSTANDBY_NO |
++			   MSTANDBY_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class omap44xx_fdif_hwmod_class = {
++	.name	= "fdif",
++	.sysc	= &omap44xx_fdif_sysc,
++};
++
++/*fdif*/
++static struct omap_hwmod_addr_space omap44xx_fdif_addrs[] = {
++	{
++		.pa_start	= 0x4a10a000,
++		.pa_end		= 0x4a10afff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{ }
++};
++
++/* l4_cfg -> fdif */
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__fdif = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_fdif_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_fdif_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* fdif slave ports */
++static struct omap_hwmod_ocp_if *omap44xx_fdif_slaves[] = {
++	&omap44xx_l4_cfg__fdif,
++};
++static struct omap_hwmod_irq_info omap44xx_fdif_irqs[] = {
++	{ .irq = 69 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++/* fdif master ports */
++static struct omap_hwmod_ocp_if *omap44xx_fdif_masters[] = {
++	&omap44xx_fdif__l3_main_2,
++};
++
++static struct omap_hwmod omap44xx_fdif_hwmod = {
++	.name		= "fdif",
++	.class		= &omap44xx_fdif_hwmod_class,
++	.clkdm_name	= "iss_clkdm",
++	.mpu_irqs	= omap44xx_fdif_irqs,
++	.main_clk	= "fdif_fck",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_CAM_FDIF_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_CAM_FDIF_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++	.slaves		= omap44xx_fdif_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_fdif_slaves),
++	.masters	= omap44xx_fdif_masters,
++	.masters_cnt	= ARRAY_SIZE(omap44xx_fdif_masters),
++};
++
+ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 
+ 	/* dmm class */
+@@ -5593,6 +5671,9 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	&omap44xx_wd_timer2_hwmod,
+ 	&omap44xx_wd_timer3_hwmod,
+ 
++	/* fdif class */
++	&omap44xx_fdif_hwmod,
++
+ 	NULL,
+ };
+ 
+-- 
+1.7.5.4
 
