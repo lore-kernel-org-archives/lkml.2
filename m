@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab1KZKBM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 05:01:12 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:43337 "EHLO smtp5-g21.free.fr"
+	id S1754475Ab1KZKBZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 05:01:25 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:43643 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753207Ab1KZKBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 05:01:09 -0500
+	id S1754208Ab1KZKBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 05:01:17 -0500
 From: Corentin Chary <corentincj@iksaif.net>
 To: platform-driver-x86@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/16] samsung-laptop: add usb charge support
-Date: Sat, 26 Nov 2011 11:00:06 +0100
-Message-Id: <1322301613-8801-10-git-send-email-corentincj@iksaif.net>
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 11/16] samsung-laptop: add keyboard backlight support
+Date: Sat, 26 Nov 2011 11:00:08 +0100
+Message-Id: <1322301613-8801-12-git-send-email-corentincj@iksaif.net>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1322301613-8801-1-git-send-email-corentincj@iksaif.net>
 References: <1322301613-8801-1-git-send-email-corentincj@iksaif.net>
@@ -23,152 +21,227 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- .../ABI/testing/sysfs-driver-samsung-laptop        |    8 ++
- drivers/platform/x86/samsung-laptop.c              |   82 ++++++++++++++++++++
- 2 files changed, 90 insertions(+), 0 deletions(-)
+ drivers/platform/x86/Kconfig          |    2 +
+ drivers/platform/x86/samsung-laptop.c |  136 +++++++++++++++++++++++++++++++++
+ 2 files changed, 138 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-samsung-laptop b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
-index a6a56e1..f05b897 100644
---- a/Documentation/ABI/testing/sysfs-driver-samsung-laptop
-+++ b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
-@@ -27,3 +27,11 @@ Description:	Max battery charge level can be modified, battery cycle
- 		level.
- 		0 means normal battery mode (100% charge)
- 		1 means battery life extender mode (80% charge)
-+
-+What:		/sys/devices/platform/samsung/usb_charge
-+Date:		December 1, 2011
-+KernelVersion:	3.3
-+Contact:	Corentin Chary <corentin.chary@gmail.com>
-+Description:	Use your USB ports to charge devices, even
-+		when your laptop is powered off.
-+		1 means enabled, 0 means disabled.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index ec13bc5..1d89c3a 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -747,6 +747,8 @@ config SAMSUNG_LAPTOP
+ 	depends on X86
+ 	depends on RFKILL || RFKILL = n
+ 	depends BACKLIGHT_CLASS_DEVICE
++	select LEDS_CLASS
++	select NEW_LEDS
+ 	---help---
+ 	  This module implements a driver for a wide range of different
+ 	  Samsung laptops.  It offers control over the different
 diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index 74c34ce..d7cbee9 100644
+index d7cbee9..4a46a7b 100644
 --- a/drivers/platform/x86/samsung-laptop.c
 +++ b/drivers/platform/x86/samsung-laptop.c
-@@ -108,6 +108,10 @@ struct sabi_commands {
- 	u16 get_battery_life_extender;
- 	u16 set_battery_life_extender;
+@@ -17,6 +17,7 @@
+ #include <linux/delay.h>
+ #include <linux/pci.h>
+ #include <linux/backlight.h>
++#include <linux/leds.h>
+ #include <linux/fb.h>
+ #include <linux/dmi.h>
+ #include <linux/platform_device.h>
+@@ -112,6 +113,9 @@ struct sabi_commands {
+ 	u16 get_usb_charge;
+ 	u16 set_usb_charge;
  
-+	/* 0x80 is off, 0x81 is on */
-+	u16 get_usb_charge;
-+	u16 set_usb_charge;
++	/* 0x81 to read, (0x82 | level << 8) to set, 0xaabb to enable */
++	u16 kbd_backlight;
 +
  	/*
  	 * Tell the BIOS that Linux is running on this machine.
  	 * 81 is on, 80 is off
-@@ -164,6 +168,9 @@ static const struct sabi_config sabi_configs[] = {
- 			.get_battery_life_extender = 0xFFFF,
- 			.set_battery_life_extender = 0xFFFF,
+@@ -171,6 +175,8 @@ static const struct sabi_config sabi_configs[] = {
+ 			.get_usb_charge = 0xFFFF,
+ 			.set_usb_charge = 0xFFFF,
  
-+			.get_usb_charge = 0xFFFF,
-+			.set_usb_charge = 0xFFFF,
++			.kbd_backlight = 0xFFFF,
 +
  			.set_linux = 0x0a,
  		},
  
-@@ -214,6 +221,9 @@ static const struct sabi_config sabi_configs[] = {
- 			.get_battery_life_extender = 0x65,
- 			.set_battery_life_extender = 0x66,
+@@ -224,6 +230,8 @@ static const struct sabi_config sabi_configs[] = {
+ 			.get_usb_charge = 0x67,
+ 			.set_usb_charge = 0x68,
  
-+			.get_usb_charge = 0x67,
-+			.set_usb_charge = 0x68,
++			.kbd_backlight = 0x78,
 +
  			.set_linux = 0xff,
  		},
  
-@@ -622,9 +632,79 @@ static ssize_t set_battery_life_extender(struct device *dev,
- static DEVICE_ATTR(battery_life_extender, S_IWUSR | S_IRUGO,
- 		   get_battery_life_extender, set_battery_life_extender);
+@@ -290,6 +298,11 @@ struct samsung_laptop {
+ 	struct backlight_device *backlight_device;
+ 	struct rfkill *rfk;
  
-+static int read_usb_charge(struct samsung_laptop *samsung)
++	struct led_classdev kbd_led;
++	int kbd_led_wk;
++	struct workqueue_struct *led_workqueue;
++	struct work_struct kbd_led_work;
++
+ 	struct samsung_laptop_debug debug;
+ 
+ 	bool handle_backlight;
+@@ -757,6 +770,122 @@ static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
+ 	return 0;
+ }
+ 
++static int kbd_backlight_enable(struct samsung_laptop *samsung)
 +{
 +	const struct sabi_commands *commands = &samsung->config->commands;
 +	struct sabi_data data;
 +	int retval;
 +
-+	if (commands->get_usb_charge == 0xFFFF)
++	if (commands->kbd_backlight == 0xFFFF)
 +		return -ENODEV;
 +
 +	memset(&data, 0, sizeof(data));
-+	data.data[0] = 0x80;
-+	retval = sabi_command(samsung, commands->get_usb_charge,
++	data.d0 = 0xaabb;
++	retval = sabi_command(samsung, commands->kbd_backlight,
 +			      &data, &data);
 +
 +	if (retval)
 +		return retval;
 +
-+	if (data.data[0] != 0 && data.data[0] != 1)
++	if (data.d0 != 0xccdd)
 +		return -ENODEV;
++	return 0;
++}
++
++static int kbd_backlight_read(struct samsung_laptop *samsung)
++{
++	const struct sabi_commands *commands = &samsung->config->commands;
++	struct sabi_data data;
++	int retval;
++
++	memset(&data, 0, sizeof(data));
++	data.data[0] = 0x81;
++	retval = sabi_command(samsung, commands->kbd_backlight,
++			      &data, &data);
++
++	if (retval)
++		return retval;
 +
 +	return data.data[0];
 +}
 +
-+static int write_usb_charge(struct samsung_laptop *samsung,
-+			    int enabled)
++static int kbd_backlight_write(struct samsung_laptop *samsung, int brightness)
 +{
 +	const struct sabi_commands *commands = &samsung->config->commands;
 +	struct sabi_data data;
 +
 +	memset(&data, 0, sizeof(data));
-+	data.data[0] = 0x80 | enabled;
-+	return sabi_command(samsung, commands->set_usb_charge,
++	data.d0 = 0x82 | ((brightness & 0xFF) << 8);
++	return sabi_command(samsung, commands->kbd_backlight,
 +			    &data, NULL);
 +}
 +
-+static ssize_t get_usb_charge(struct device *dev,
-+			      struct device_attribute *attr,
-+			      char *buf)
++static void kbd_led_update(struct work_struct *work)
 +{
-+	struct samsung_laptop *samsung = dev_get_drvdata(dev);
-+	int ret;
++	struct samsung_laptop *samsung;
 +
-+	ret = read_usb_charge(samsung);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", ret);
++	samsung = container_of(work, struct samsung_laptop, kbd_led_work);
++	kbd_backlight_write(samsung, samsung->kbd_led_wk);
 +}
 +
-+static ssize_t set_usb_charge(struct device *dev,
-+			      struct device_attribute *attr,
-+			      const char *buf, size_t count)
++static void kbd_led_set(struct led_classdev *led_cdev,
++			enum led_brightness value)
 +{
-+	struct samsung_laptop *samsung = dev_get_drvdata(dev);
-+	int ret, value;
++	struct samsung_laptop *samsung;
 +
-+	if (!count || sscanf(buf, "%i", &value) != 1)
-+		return -EINVAL;
++	samsung = container_of(led_cdev, struct samsung_laptop, kbd_led);
 +
-+	ret = write_usb_charge(samsung, !!value);
-+	if (ret < 0)
-+		return ret;
++	if (value > samsung->kbd_led.max_brightness)
++		value = samsung->kbd_led.max_brightness;
++	else if (value < 0)
++		value = 0;
 +
-+	return count;
++	samsung->kbd_led_wk = value;
++	queue_work(samsung->led_workqueue, &samsung->kbd_led_work);
 +}
 +
-+static DEVICE_ATTR(usb_charge, S_IWUSR | S_IRUGO,
-+		   get_usb_charge, set_usb_charge);
++static enum led_brightness kbd_led_get(struct led_classdev *led_cdev)
++{
++	struct samsung_laptop *samsung;
 +
- static struct attribute *platform_attributes[] = {
- 	&dev_attr_performance_level.attr,
- 	&dev_attr_battery_life_extender.attr,
-+	&dev_attr_usb_charge.attr,
- 	NULL
- };
++	samsung = container_of(led_cdev, struct samsung_laptop, kbd_led);
++	return kbd_backlight_read(samsung);
++}
++
++static void samsung_leds_exit(struct samsung_laptop *samsung)
++{
++	if (!IS_ERR_OR_NULL(samsung->kbd_led.dev))
++		led_classdev_unregister(&samsung->kbd_led);
++	if (samsung->led_workqueue)
++		destroy_workqueue(samsung->led_workqueue);
++}
++
++static int __init samsung_leds_init(struct samsung_laptop *samsung)
++{
++	int ret = 0;
++
++	samsung->led_workqueue = create_singlethread_workqueue("led_workqueue");
++	if (!samsung->led_workqueue)
++		return -ENOMEM;
++
++	if (kbd_backlight_enable(samsung) >= 0) {
++		INIT_WORK(&samsung->kbd_led_work, kbd_led_update);
++
++		samsung->kbd_led.name = "samsung::kbd_backlight";
++		samsung->kbd_led.brightness_set = kbd_led_set;
++		samsung->kbd_led.brightness_get = kbd_led_get;
++		samsung->kbd_led.max_brightness = 8;
++
++		ret = led_classdev_register(&samsung->platform_device->dev,
++					   &samsung->kbd_led);
++	}
++
++	if (ret)
++		samsung_leds_exit(samsung);
++
++	return ret;
++}
++
+ static void samsung_backlight_exit(struct samsung_laptop *samsung)
+ {
+ 	if (samsung->backlight_device) {
+@@ -1366,6 +1495,10 @@ static int __init samsung_init(void)
+ 	if (ret)
+ 		goto error_rfkill;
  
-@@ -725,6 +805,8 @@ static mode_t samsung_sysfs_is_visible(struct kobject *kobj,
- 		ok = !!samsung->config->performance_levels[0].name;
- 	if (attr == &dev_attr_battery_life_extender.attr)
- 		ok = !!(read_battery_life_extender(samsung) >= 0);
-+	if (attr == &dev_attr_usb_charge.attr)
-+		ok = !!(read_usb_charge(samsung) >= 0);
++	ret = samsung_leds_init(samsung);
++	if (ret)
++		goto error_leds;
++
+ 	ret = samsung_debugfs_init(samsung);
+ 	if (ret)
+ 		goto error_debugfs;
+@@ -1374,6 +1507,8 @@ static int __init samsung_init(void)
+ 	return ret;
  
- 	return ok ? attr->mode : 0;
- }
+ error_debugfs:
++	samsung_leds_exit(samsung);
++error_leds:
+ 	samsung_rfkill_exit(samsung);
+ error_rfkill:
+ 	samsung_backlight_exit(samsung);
+@@ -1395,6 +1530,7 @@ static void __exit samsung_exit(void)
+ 	samsung = platform_get_drvdata(samsung_platform_device);
+ 
+ 	samsung_debugfs_exit(samsung);
++	samsung_leds_exit(samsung);
+ 	samsung_rfkill_exit(samsung);
+ 	samsung_backlight_exit(samsung);
+ 	samsung_sysfs_exit(samsung);
 -- 
 1.7.5.4
 
