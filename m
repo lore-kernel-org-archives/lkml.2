@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab1KZMUD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 07:20:03 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65310 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab1KZMT7 (ORCPT
+	id S1754734Ab1KZNHs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 08:07:48 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41332 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab1KZNHr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 07:19:59 -0500
-Date: Sat, 26 Nov 2011 16:19:53 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Micha <mirq-linux@rere.qmqm.pl>,
-        David Brown <davidb@codeaurora.org>, Ben Dooks <ben-linux@fluff.org>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ian Molton <ian@mnementh.co.uk>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: convert drivers/mmc/host/* to use
- module_platform_driver()
-Message-ID: <20111126121953.GA11865@oksana.dev.rtsoft.ru>
-References: <1322283343.14278.2.camel@phoenix>
+	Sat, 26 Nov 2011 08:07:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1322283343.14278.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4ECEF7DD.6010403@cn.fujitsu.com>
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
+ <1320182360-20043-15-git-send-email-glommer@parallels.com>
+ <4EBD94A0.9070703@google.com> <4EBE4A80.6090607@parallels.com>
+ <CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com> <4ECEF7DD.6010403@cn.fujitsu.com>
+From: Paul Turner <pjt@google.com>
+Date: Sat, 26 Nov 2011 05:07:12 -0800
+Message-ID: <CAPM31RLnSYKLjUx4ntkxD5TJ2qbQAXX0p9TVBC77OsPHVoP5XQ@mail.gmail.com>
+Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
+        jbottomley@parallels.com, fweisbec@gmail.com,
+        Balbir Singh <bsingharora@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 12:55:43PM +0800, Axel Lin wrote:
-> This patch converts the drivers in drivers/mmc/host/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
+On Thu, Nov 24, 2011 at 6:05 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>> despite it being a not entirely natural fit.  Something I proposed at
+>> Prague and that we could explore here is the idea of a co-mounted
+>> controller.  In this example it would only be mountable with cpu so
+>> you could always depend on the cpu hierarchy being there; likewise we
+>> can put (jump-labeled) touchpoints within the cpu-subsystem to call
+>> out for updates as appropriate when the co-mount exists.
+>>
+>
+> IIUC, this co-mounting idea is something I implemented years ago:
+>
+> https://lkml.org/lkml/2008/6/18/389
+>
+> The use case and the reason it was rejected:
+>
+> https://lkml.org/lkml/2008/7/1/97
+>
 
-Personally I would prefer the macro name capitalized.
+Rejection is a bit of a strong statement -- the idea seemed amenable
+but lacking a strong use-case.  That said, taking a deep look at some
+of what Glauber is trying to do in this series I don't think it's
+something that would help here.
 
-Other than that, it look OK.
+For this discussion the motivation for a co-mount would be to
+piggy-back on the cpu sub-systems own hierarchy walks to reduce
+overhead.  However, this is not structured in a way that can take
+advantage of this, and, looking at what Glauber is attempting to
+collect it's not clear that it can be.
 
-Thanks,
+I think this moves the discussion towards whether we should consider
+deprecating some of the exported fields (namely usage and
+usage_per_cpu) from cpuacct instead of the entire controller as we had
+initially desired.  This would allow cpuacct to exist with a much
+lower overhead, especially within the context-switch path.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+- Paul
+
+> --
+> Li Zefan
+>
