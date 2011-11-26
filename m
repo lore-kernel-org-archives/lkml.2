@@ -1,653 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750860Ab1KZFEE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 00:04:04 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:39489
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750717Ab1KZFD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 00:03:59 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com, joe@perches.com,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: mousevsc: Remove the mouse driver from the staging tree
-Date: Fri, 25 Nov 2011 21:28:28 -0800
-Message-Id: <1322285308-3507-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751109Ab1KZFZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 00:25:16 -0500
+Received: from mail.nudt.edu.cn ([61.187.54.11]:55469 "HELO nudt.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750806Ab1KZFZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 00:25:13 -0500
+X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Nov 2011 00:25:12 EST
+Date: Sat, 26 Nov 2011 13:04:36 +0800
+From: "Li Wang" <liwang@nudt.edu.cn>
+Subject: [PATCH]eCryptfs: quota check ignored in the context of kernel thr
+ ead
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, ecryptfs@vger.kernel.org
+Message-Id: <11112613043689e4ebac922bdda45ca181757479edcf@nudt.edu.cn>
+MIME-Version: 1.0
+X-Mailer: eYou WebMail 5.0.3
+X-Eyou-Client: 222.247.142.1
+Content-Type: text/plain;
+ charset="GBK"
+X-Eyou-Sender: <liwang@nudt.edu.cn>
+X-Eyou-MID: <e4c8ddeb78f3d5934075682ae7d5c83c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAQ5PV18021875
 
-The mouse driver for Hyper-V is a HID compliant mouse driver.
-Now that all relevant review comments have been addressed,
-Jiri has agreed to merge this mouse driver into 3.3 hid.git.
-This patch takes care of removing the mouse driver from the
-staging area. Greg, if you can ack this patch, Jiri will proceed
-with his merge.
+Hi there,
+   The latest eCryptfs changes the write path to perform the encryption in ecryptfs_writepage, which minimizes the number of encryptions, however, if the ecryptfs_writepage is invoked in the context of page cache write back kernel thread, to write out the dirty pages to the lower page cache, the quota check by the lower file system gotta be ignored since the kernel thread has the CAP_SYS_CAPABILITY. To validate this, just let a user application open a file, write much data into it, then sleep for several miniutes before close it, those data gotta definitely be safely written into the disk in despite of the user quota limit. The patch below try to fix this by simply temporarily removing the capability from the kernel thread before invoking ecryptfs_write_lower, thereafter, reassign it.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+  Fixme: It seems those commented codes in the patch (prepare_creds(), ..., commit_creds()) do the thing in a more official way, but they perform too much validity checks which are not needed in our case. Only if the simple cap_lower/cap_raise call will trigger some race condtions, otherwise I think it should be ok?         
+
+Cheers,
+Li Wang
+
+signed-off-by: Li Wang <liwang@nudt.edu.cn>
+               Yong Peng <pengyong@kylinos.com.cn>
+
 ---
- drivers/staging/hv/Kconfig    |    6 -
- drivers/staging/hv/Makefile   |    1 -
- drivers/staging/hv/hv_mouse.c |  582 -----------------------------------------
- 3 files changed, 0 insertions(+), 589 deletions(-)
- delete mode 100644 drivers/staging/hv/hv_mouse.c
-
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index 072185e..6c0dc30 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -9,9 +9,3 @@ config HYPERV_NET
- 	depends on HYPERV && NET
- 	help
- 	  Select this option to enable the Hyper-V virtual network driver.
--
--config HYPERV_MOUSE
--	tristate "Microsoft Hyper-V mouse driver"
--	depends on HYPERV && HID
--	help
--	  Select this option to enable the Hyper-V mouse driver.
-diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
-index 0f55cee..fbe9a42 100644
---- a/drivers/staging/hv/Makefile
-+++ b/drivers/staging/hv/Makefile
-@@ -1,6 +1,5 @@
- obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
- obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
--obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
- 
- hv_storvsc-y := storvsc_drv.o
- hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-deleted file mode 100644
-index d503cbb..0000000
---- a/drivers/staging/hv/hv_mouse.c
-+++ /dev/null
-@@ -1,582 +0,0 @@
--/*
-- *  Copyright (c) 2009, Citrix Systems, Inc.
-- *  Copyright (c) 2010, Microsoft Corporation.
-- *  Copyright (c) 2011, Novell Inc.
-- *
-- *  This program is free software; you can redistribute it and/or modify it
-- *  under the terms and conditions of the GNU General Public License,
-- *  version 2, as published by the Free Software Foundation.
-- *
-- *  This program is distributed in the hope it will be useful, but WITHOUT
-- *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- *  more details.
-- */
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/device.h>
--#include <linux/completion.h>
--#include <linux/input.h>
--#include <linux/hid.h>
--#include <linux/hiddev.h>
--#include <linux/hyperv.h>
--
--
--struct hv_input_dev_info {
--	unsigned int size;
--	unsigned short vendor;
--	unsigned short product;
--	unsigned short version;
--	unsigned short reserved[11];
--};
--
--/* The maximum size of a synthetic input message. */
--#define SYNTHHID_MAX_INPUT_REPORT_SIZE 16
--
--/*
-- * Current version
-- *
-- * History:
-- * Beta, RC < 2008/1/22        1,0
-- * RC > 2008/1/22              2,0
-- */
--#define SYNTHHID_INPUT_VERSION_MAJOR	2
--#define SYNTHHID_INPUT_VERSION_MINOR	0
--#define SYNTHHID_INPUT_VERSION		(SYNTHHID_INPUT_VERSION_MINOR | \
--					 (SYNTHHID_INPUT_VERSION_MAJOR << 16))
--
--
--#pragma pack(push, 1)
--/*
-- * Message types in the synthetic input protocol
-- */
--enum synthhid_msg_type {
--	SYNTH_HID_PROTOCOL_REQUEST,
--	SYNTH_HID_PROTOCOL_RESPONSE,
--	SYNTH_HID_INITIAL_DEVICE_INFO,
--	SYNTH_HID_INITIAL_DEVICE_INFO_ACK,
--	SYNTH_HID_INPUT_REPORT,
--	SYNTH_HID_MAX
--};
--
--/*
-- * Basic message structures.
-- */
--struct synthhid_msg_hdr {
--	enum synthhid_msg_type type;
--	u32 size;
--};
--
--struct synthhid_msg {
--	struct synthhid_msg_hdr header;
--	char data[1]; /* Enclosed message */
--};
--
--union synthhid_version {
--	struct {
--		u16 minor_version;
--		u16 major_version;
--	};
--	u32 version;
--};
--
--/*
-- * Protocol messages
-- */
--struct synthhid_protocol_request {
--	struct synthhid_msg_hdr header;
--	union synthhid_version version_requested;
--};
--
--struct synthhid_protocol_response {
--	struct synthhid_msg_hdr header;
--	union synthhid_version version_requested;
--	unsigned char approved;
--};
--
--struct synthhid_device_info {
--	struct synthhid_msg_hdr header;
--	struct hv_input_dev_info hid_dev_info;
--	struct hid_descriptor hid_descriptor;
--};
--
--struct synthhid_device_info_ack {
--	struct synthhid_msg_hdr header;
--	unsigned char reserved;
--};
--
--struct synthhid_input_report {
--	struct synthhid_msg_hdr header;
--	char buffer[1];
--};
--
--#pragma pack(pop)
--
--#define INPUTVSC_SEND_RING_BUFFER_SIZE		(10*PAGE_SIZE)
--#define INPUTVSC_RECV_RING_BUFFER_SIZE		(10*PAGE_SIZE)
--
--
--enum pipe_prot_msg_type {
--	PIPE_MESSAGE_INVALID,
--	PIPE_MESSAGE_DATA,
--	PIPE_MESSAGE_MAXIMUM
--};
--
--
--struct pipe_prt_msg {
--	enum pipe_prot_msg_type type;
--	u32 size;
--	char data[1];
--};
--
--struct  mousevsc_prt_msg {
--	enum pipe_prot_msg_type type;
--	u32 size;
--	union {
--		struct synthhid_protocol_request request;
--		struct synthhid_protocol_response response;
--		struct synthhid_device_info_ack ack;
--	};
--};
--
--/*
-- * Represents an mousevsc device
-- */
--struct mousevsc_dev {
--	struct hv_device	*device;
--	bool			init_complete;
--	bool			connected;
--	struct mousevsc_prt_msg	protocol_req;
--	struct mousevsc_prt_msg	protocol_resp;
--	/* Synchronize the request/response if needed */
--	struct completion	wait_event;
--	int			dev_info_status;
--
--	struct hid_descriptor	*hid_desc;
--	unsigned char		*report_desc;
--	u32			report_desc_size;
--	struct hv_input_dev_info hid_dev_info;
--	struct hid_device       *hid_device;
--};
--
--
--static struct mousevsc_dev *mousevsc_alloc_device(struct hv_device *device)
--{
--	struct mousevsc_dev *input_dev;
--
--	input_dev = kzalloc(sizeof(struct mousevsc_dev), GFP_KERNEL);
--
--	if (!input_dev)
--		return NULL;
--
--	input_dev->device = device;
--	hv_set_drvdata(device, input_dev);
--	init_completion(&input_dev->wait_event);
--	input_dev->init_complete = false;
--
--	return input_dev;
--}
--
--static void mousevsc_free_device(struct mousevsc_dev *device)
--{
--	kfree(device->hid_desc);
--	kfree(device->report_desc);
--	hv_set_drvdata(device->device, NULL);
--	kfree(device);
--}
--
--static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
--				struct synthhid_device_info *device_info)
--{
--	int ret = 0;
--	struct hid_descriptor *desc;
--	struct mousevsc_prt_msg ack;
--
--	input_device->dev_info_status = -ENOMEM;
--
--	input_device->hid_dev_info = device_info->hid_dev_info;
--	desc = &device_info->hid_descriptor;
--	if (desc->bLength == 0)
--		goto cleanup;
--
--	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
--
--	if (!input_device->hid_desc)
--		goto cleanup;
--
--	memcpy(input_device->hid_desc, desc, desc->bLength);
--
--	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
--	if (input_device->report_desc_size == 0) {
--		input_device->dev_info_status = -EINVAL;
--		goto cleanup;
--	}
--
--	input_device->report_desc = kzalloc(input_device->report_desc_size,
--					  GFP_ATOMIC);
--
--	if (!input_device->report_desc) {
--		input_device->dev_info_status = -ENOMEM;
--		goto cleanup;
--	}
--
--	memcpy(input_device->report_desc,
--	       ((unsigned char *)desc) + desc->bLength,
--	       desc->desc[0].wDescriptorLength);
--
--	/* Send the ack */
--	memset(&ack, 0, sizeof(struct mousevsc_prt_msg));
--
--	ack.type = PIPE_MESSAGE_DATA;
--	ack.size = sizeof(struct synthhid_device_info_ack);
--
--	ack.ack.header.type = SYNTH_HID_INITIAL_DEVICE_INFO_ACK;
--	ack.ack.header.size = 1;
--	ack.ack.reserved = 0;
--
--	ret = vmbus_sendpacket(input_device->device->channel,
--			&ack,
--			sizeof(struct pipe_prt_msg) - sizeof(unsigned char) +
--			sizeof(struct synthhid_device_info_ack),
--			(unsigned long)&ack,
--			VM_PKT_DATA_INBAND,
--			VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
--
--	if (!ret)
--		input_device->dev_info_status = 0;
--
--cleanup:
--	complete(&input_device->wait_event);
--
--	return;
--}
--
--static void mousevsc_on_receive(struct hv_device *device,
--				struct vmpacket_descriptor *packet)
--{
--	struct pipe_prt_msg *pipe_msg;
--	struct synthhid_msg *hid_msg;
--	struct mousevsc_dev *input_dev = hv_get_drvdata(device);
--	struct synthhid_input_report *input_report;
--
--	pipe_msg = (struct pipe_prt_msg *)((unsigned long)packet +
--						(packet->offset8 << 3));
--
--	if (pipe_msg->type != PIPE_MESSAGE_DATA)
--		return;
--
--	hid_msg = (struct synthhid_msg *)pipe_msg->data;
--
--	switch (hid_msg->header.type) {
--	case SYNTH_HID_PROTOCOL_RESPONSE:
--		/*
--		 * While it will be impossible for us to protect against
--		 * malicious/buggy hypervisor/host, add a check here to
--		 * ensure we don't corrupt memory.
--		 */
--		if ((pipe_msg->size + sizeof(struct pipe_prt_msg)
--			- sizeof(unsigned char))
--			> sizeof(struct mousevsc_prt_msg)) {
--			WARN_ON(1);
--			break;
--		}
--
--		memcpy(&input_dev->protocol_resp, pipe_msg,
--		       pipe_msg->size + sizeof(struct pipe_prt_msg) -
--		       sizeof(unsigned char));
--		complete(&input_dev->wait_event);
--		break;
--
--	case SYNTH_HID_INITIAL_DEVICE_INFO:
--		WARN_ON(pipe_msg->size < sizeof(struct hv_input_dev_info));
--
--		/*
--		 * Parse out the device info into device attr,
--		 * hid desc and report desc
--		 */
--		mousevsc_on_receive_device_info(input_dev,
--			(struct synthhid_device_info *)pipe_msg->data);
--		break;
--	case SYNTH_HID_INPUT_REPORT:
--		input_report =
--			(struct synthhid_input_report *)pipe_msg->data;
--		if (!input_dev->init_complete)
--			break;
--		hid_input_report(input_dev->hid_device,
--				HID_INPUT_REPORT, input_report->buffer,
--				input_report->header.size, 1);
--		break;
--	default:
--		pr_err("unsupported hid msg type - type %d len %d",
--		       hid_msg->header.type, hid_msg->header.size);
--		break;
--	}
--
--}
--
--static void mousevsc_on_channel_callback(void *context)
--{
--	const int packet_size = 0x100;
--	int ret;
--	struct hv_device *device = context;
--	u32 bytes_recvd;
--	u64 req_id;
--	struct vmpacket_descriptor *desc;
--	unsigned char	*buffer;
--	int	bufferlen = packet_size;
--
--	buffer = kmalloc(bufferlen, GFP_ATOMIC);
--	if (!buffer)
--		return;
--
--	do {
--		ret = vmbus_recvpacket_raw(device->channel, buffer,
--					bufferlen, &bytes_recvd, &req_id);
--
--		switch (ret) {
--		case 0:
--			if (bytes_recvd <= 0) {
--				kfree(buffer);
--				return;
--			}
--			desc = (struct vmpacket_descriptor *)buffer;
--
--			switch (desc->type) {
--			case VM_PKT_COMP:
--				break;
--
--			case VM_PKT_DATA_INBAND:
--				mousevsc_on_receive(device, desc);
--				break;
--
--			default:
--				pr_err("unhandled packet type %d, tid %llx len %d\n",
--					desc->type, req_id, bytes_recvd);
--				break;
--			}
--
--			break;
--
--		case -ENOBUFS:
--			kfree(buffer);
--			/* Handle large packet */
--			bufferlen = bytes_recvd;
--			buffer = kmalloc(bytes_recvd, GFP_ATOMIC);
--
--			if (!buffer)
--				return;
--
--			break;
--		}
--	} while (1);
--
--}
--
--static int mousevsc_connect_to_vsp(struct hv_device *device)
--{
--	int ret = 0;
--	int t;
--	struct mousevsc_dev *input_dev = hv_get_drvdata(device);
--	struct mousevsc_prt_msg *request;
--	struct mousevsc_prt_msg *response;
--
--	request = &input_dev->protocol_req;
--	memset(request, 0, sizeof(struct mousevsc_prt_msg));
--
--	request->type = PIPE_MESSAGE_DATA;
--	request->size = sizeof(struct synthhid_protocol_request);
--	request->request.header.type = SYNTH_HID_PROTOCOL_REQUEST;
--	request->request.header.size = sizeof(unsigned int);
--	request->request.version_requested.version = SYNTHHID_INPUT_VERSION;
--
--	ret = vmbus_sendpacket(device->channel, request,
--				sizeof(struct pipe_prt_msg) -
--				sizeof(unsigned char) +
--				sizeof(struct synthhid_protocol_request),
--				(unsigned long)request,
--				VM_PKT_DATA_INBAND,
--				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
--	if (ret)
--		goto cleanup;
--
--	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
--	if (!t) {
--		ret = -ETIMEDOUT;
--		goto cleanup;
--	}
--
--	response = &input_dev->protocol_resp;
--
--	if (!response->response.approved) {
--		pr_err("synthhid protocol request failed (version %d)\n",
--		       SYNTHHID_INPUT_VERSION);
--		ret = -ENODEV;
--		goto cleanup;
--	}
--
--	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
--	if (!t) {
--		ret = -ETIMEDOUT;
--		goto cleanup;
--	}
--
--	/*
--	 * We should have gotten the device attr, hid desc and report
--	 * desc at this point
--	 */
--	ret = input_dev->dev_info_status;
--
--cleanup:
--	return ret;
--}
--
--static int mousevsc_hid_open(struct hid_device *hid)
--{
--	return 0;
--}
--
--static int mousevsc_hid_start(struct hid_device *hid)
--{
--	return 0;
--}
--
--static void mousevsc_hid_close(struct hid_device *hid)
--{
--}
--
--static void mousevsc_hid_stop(struct hid_device *hid)
--{
--}
--
--static struct hid_ll_driver mousevsc_ll_driver = {
--	.open = mousevsc_hid_open,
--	.close = mousevsc_hid_close,
--	.start = mousevsc_hid_start,
--	.stop = mousevsc_hid_stop,
--};
--
--static struct hid_driver mousevsc_hid_driver;
--
--static int mousevsc_probe(struct hv_device *device,
--			const struct hv_vmbus_device_id *dev_id)
--{
--	int ret;
--	struct mousevsc_dev *input_dev;
--	struct hid_device *hid_dev;
--
--	input_dev = mousevsc_alloc_device(device);
--
--	if (!input_dev)
--		return -ENOMEM;
--
--	ret = vmbus_open(device->channel,
--		INPUTVSC_SEND_RING_BUFFER_SIZE,
--		INPUTVSC_RECV_RING_BUFFER_SIZE,
--		NULL,
--		0,
--		mousevsc_on_channel_callback,
--		device
--		);
--
--	if (ret)
--		goto probe_err0;
--
--	ret = mousevsc_connect_to_vsp(device);
--
--	if (ret)
--		goto probe_err1;
--
--	/* workaround SA-167 */
--	if (input_dev->report_desc[14] == 0x25)
--		input_dev->report_desc[14] = 0x29;
--
--	hid_dev = hid_allocate_device();
--	if (IS_ERR(hid_dev)) {
--		ret = PTR_ERR(hid_dev);
--		goto probe_err1;
--	}
--
--	hid_dev->ll_driver = &mousevsc_ll_driver;
--	hid_dev->driver = &mousevsc_hid_driver;
--	hid_dev->bus = BUS_VIRTUAL;
--	hid_dev->vendor = input_dev->hid_dev_info.vendor;
--	hid_dev->product = input_dev->hid_dev_info.product;
--	hid_dev->version = input_dev->hid_dev_info.version;
--	input_dev->hid_device = hid_dev;
--
--	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
--
--	ret = hid_parse_report(hid_dev, input_dev->report_desc,
--				input_dev->report_desc_size);
--
--	if (ret) {
--		hid_err(hid_dev, "parse failed\n");
--		goto probe_err2;
--	}
--
--	ret = hid_hw_start(hid_dev, HID_CONNECT_HIDINPUT | HID_CONNECT_HIDDEV);
--
--	if (ret) {
--		hid_err(hid_dev, "hw start failed\n");
--		goto probe_err2;
--	}
--
--	input_dev->connected = true;
--	input_dev->init_complete = true;
--
--	return ret;
--
--probe_err2:
--	hid_destroy_device(hid_dev);
--
--probe_err1:
--	vmbus_close(device->channel);
--
--probe_err0:
--	mousevsc_free_device(input_dev);
--
--	return ret;
--}
--
--
--static int mousevsc_remove(struct hv_device *dev)
--{
--	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
--
--	vmbus_close(dev->channel);
--	hid_destroy_device(input_dev->hid_device);
--	mousevsc_free_device(input_dev);
--
--	return 0;
--}
--
--static const struct hv_vmbus_device_id id_table[] = {
--	/* Mouse guid */
--	{ VMBUS_DEVICE(0x9E, 0xB6, 0xA8, 0xCF, 0x4A, 0x5B, 0xc0, 0x4c,
--		       0xB9, 0x8B, 0x8B, 0xA1, 0xA1, 0xF3, 0xF9, 0x5A) },
--	{ },
--};
--
--MODULE_DEVICE_TABLE(vmbus, id_table);
--
--static struct  hv_driver mousevsc_drv = {
--	.name = KBUILD_MODNAME,
--	.id_table = id_table,
--	.probe = mousevsc_probe,
--	.remove = mousevsc_remove,
--};
--
--static int __init mousevsc_init(void)
--{
--	return vmbus_driver_register(&mousevsc_drv);
--}
--
--static void __exit mousevsc_exit(void)
--{
--	vmbus_driver_unregister(&mousevsc_drv);
--}
--
--MODULE_LICENSE("GPL");
--MODULE_VERSION(HV_DRV_VERSION);
--module_init(mousevsc_init);
--module_exit(mousevsc_exit);
--- 
-1.7.4.1
-
+--- fs/ecryptfs/crypto.c.orig 2011-11-26 20:21:08.109304786 +0800
++++ fs/ecryptfs/crypto.c 2011-11-26 20:20:09.651315978 +0800
+@@ -506,8 +506,33 @@ int ecryptfs_encrypt_page(struct page *p
+        * (PAGE_CACHE_SIZE
+           / crypt_stat->extent_size))
+       + extent_offset), crypt_stat);
++  /*
++    * Temporarily remove the CAP_SYS_RESOURCE capability from the
++    * write back kernel thread to let it undergo quota check by
++    * the lower file system
++    */
++  if (current->flags & PF_KTHREAD) {
++   cap_lower(((struct cred *)current->cred)->cap_effective, CAP_SYS_RESOURCE);
++   /*
++     * struct cred *cred;
++     * cred = prepare_creds();
++     * if (unlikely(!cred)) {
++     *  rc = -ENOMEM;
++     * goto out;
++     * }
++     * cap_lower(cred->cap_effective, CAP_SYS_RESOURCE);
++     * rc = commit_creds(cred);
++     * if (rc)
++     *  goto out;
++     */  
++  }
+   rc = ecryptfs_write_lower(ecryptfs_inode, enc_extent_virt,
+        offset, crypt_stat->extent_size);
++  /*
++    * Reassign the CAP_SYS_RESOURCE capability
++    */
++  if (current->flags & PF_KTHREAD)
++   cap_raise(((struct cred *)current->cred)->cap_effective, CAP_SYS_RESOURCE);
+   if (rc < 0) {
+    ecryptfs_printk(KERN_ERR, "Error attempting "
+      "to write lower page; rc = [%d]"
+  
+ ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
