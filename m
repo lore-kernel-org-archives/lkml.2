@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab1KZKDk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 05:03:40 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:42009 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab1KZKAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 05:00:38 -0500
-From: Corentin Chary <corentincj@iksaif.net>
-To: platform-driver-x86@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
-        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/16] samsung-laptop: don't handle backlight if handled by acpi/video
-Date: Sat, 26 Nov 2011 11:00:00 +0100
-Message-Id: <1322301613-8801-4-git-send-email-corentincj@iksaif.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322301613-8801-1-git-send-email-corentincj@iksaif.net>
-References: <1322301613-8801-1-git-send-email-corentincj@iksaif.net>
+	id S1753282Ab1KZK31 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 05:29:27 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46319 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab1KZK3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 05:29:24 -0500
+Date: Sat, 26 Nov 2011 11:29:15 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Marc Vertes <marc.vertes@sigfox.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
+        Dimitry Andric <dimitry.andric@tomtom.com>,
+        Ben Dooks <ben@simtec.co.uk>
+Subject: Re: [PATCH] watchdog: fix nowayout setting in s3c2410_wdt
+Message-ID: <20111126102915.GA7517@pengutronix.de>
+References: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-samsung-laptop is not at all related to ACPI, but since this interface
-is not documented at all, and the driver has to use it at load to
-understand how it works on the laptop, I think it's a good idea to
-disable it if a better solution is available.
 
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/platform/x86/samsung-laptop.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index be96910..49933d2 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -21,6 +21,7 @@
- #include <linux/dmi.h>
- #include <linux/platform_device.h>
- #include <linux/rfkill.h>
-+#include <linux/acpi.h>
- 
- /*
-  * This driver is needed because a number of Samsung laptops do not hook
-@@ -230,6 +231,7 @@ struct samsung_laptop {
- 	struct backlight_device *backlight_device;
- 	struct rfkill *rfk;
- 
-+	bool handle_backlight;
- 	bool has_stepping_quirk;
- };
- 
-@@ -616,6 +618,9 @@ static int __init samsung_backlight_init(struct samsung_laptop *samsung)
- 	struct backlight_device *bd;
- 	struct backlight_properties props;
- 
-+	if (!samsung->handle_backlight)
-+		return 0;
-+
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = samsung->config->max_brightness -
-@@ -698,7 +703,8 @@ static void __init samsung_sabi_selftest(struct samsung_laptop *samsung,
- 	printk(KERN_DEBUG "ifaceP = 0x%08x\n", ifaceP);
- 	printk(KERN_DEBUG "sabi_iface = %p\n", samsung->sabi_iface);
- 
--	test_backlight(samsung);
-+	if (samsung->handle_backlight)
-+		test_backlight(samsung);
- 	test_wireless(samsung);
- 
- 	sabi_get_command(samsung, config->commands.get_brightness, &sretval);
-@@ -771,7 +777,8 @@ static int __init samsung_sabi_init(struct samsung_laptop *samsung)
- 	}
- 
- 	/* Check for stepping quirk */
--	check_for_stepping_quirk(samsung);
-+	if (samsung->handle_backlight)
-+		check_for_stepping_quirk(samsung);
- 
- exit:
- 	if (ret)
-@@ -1059,6 +1066,15 @@ static int __init samsung_init(void)
- 		return -ENOMEM;
- 
- 	mutex_init(&samsung->sabi_mutex);
-+	samsung->handle_backlight = true;
-+
-+#ifdef CONFIG_ACPI
-+	/* Don't handle backlight here if the acpi video already handle it */
-+	if (acpi_video_backlight_support()) {
-+		pr_info("Backlight controlled by ACPI video driver\n");
-+		samsung->handle_backlight = false;
-+	}
-+#endif
- 
- 	ret = samsung_platform_init(samsung);
- 	if (ret)
--- 
-1.7.5.4
+On Sat, Nov 26, 2011 at 12:38:01AM +0100, Marc Vertes wrote:
+> Set nowayout flag in probe function, otherwise option is useless.
+>=20
+> Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
 
+Similar as
+
+http://www.spinics.net/lists/linux-watchdog/msg00704.html
+
+which depends on
+
+http://www.spinics.net/lists/linux-watchdog/msg00703.html
+
+which has the advantage that it can be used for static initialization.
+
+@Wim: are you fine with that old series BTW? If so, I will resend and try to
+get the RTC-ack from Andrew.
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7Qv3sACgkQD27XaX1/VRuJnQCgxd38tD7eogZ+5boKo7cUGIVr
+O4sAnjVDRbktchLhMkkAdfrhPI41nIBN
+=FRP9
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
