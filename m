@@ -1,574 +1,653 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1KZEz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 23:55:57 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57110 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab1KZEzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 23:55:55 -0500
-Message-ID: <1322283343.14278.2.camel@phoenix>
-Subject: [PATCH] mmc: convert drivers/mmc/host/* to use
- module_platform_driver()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Micha <mirq-linux@rere.qmqm.pl>, David Brown <davidb@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Viresh Kumar <viresh.kumar@st.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ian Molton <ian@mnementh.co.uk>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org
-Date: Sat, 26 Nov 2011 12:55:43 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1750860Ab1KZFEE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 00:04:04 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:39489
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750717Ab1KZFD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 00:03:59 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com, joe@perches.com,
+        dmitry.torokhov@gmail.com, jkosina@suse.cz
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: mousevsc: Remove the mouse driver from the staging tree
+Date: Fri, 25 Nov 2011 21:28:28 -0800
+Message-Id: <1322285308-3507-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the drivers in drivers/mmc/host/* to use the
-module_platform_driver() macro which makes the code smaller and a bit
-simpler.
+The mouse driver for Hyper-V is a HID compliant mouse driver.
+Now that all relevant review comments have been addressed,
+Jiri has agreed to merge this mouse driver into 3.3 hid.git.
+This patch takes care of removing the mouse driver from the
+staging area. Greg, if you can ack this patch, Jiri will proceed
+with his merge.
 
-Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Ian Molton <ian@mnementh.co.uk>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/mmc/host/bfin_sdh.c        |   12 +-----------
- drivers/mmc/host/cb710-mmc.c       |   13 +------------
- drivers/mmc/host/jz4740_mmc.c      |   12 +-----------
- drivers/mmc/host/msm_sdcc.c        |   13 +------------
- drivers/mmc/host/mxcmmc.c          |   13 +------------
- drivers/mmc/host/mxs-mmc.c         |   13 +------------
- drivers/mmc/host/pxamci.c          |   13 +------------
- drivers/mmc/host/s3cmci.c          |   13 +------------
- drivers/mmc/host/sdhci-cns3xxx.c   |   12 +-----------
- drivers/mmc/host/sdhci-dove.c      |   12 +-----------
- drivers/mmc/host/sdhci-esdhc-imx.c |   12 +-----------
- drivers/mmc/host/sdhci-of-esdhc.c  |   12 +-----------
- drivers/mmc/host/sdhci-of-hlwd.c   |   12 +-----------
- drivers/mmc/host/sdhci-pxav2.c     |   12 +-----------
- drivers/mmc/host/sdhci-pxav3.c     |   12 +-----------
- drivers/mmc/host/sdhci-s3c.c       |   13 +------------
- drivers/mmc/host/sdhci-spear.c     |   12 +-----------
- drivers/mmc/host/sdhci-tegra.c     |   12 +-----------
- drivers/mmc/host/sh_mmcif.c        |   14 +-------------
- drivers/mmc/host/sh_mobile_sdhi.c  |   13 +------------
- drivers/mmc/host/tmio_mmc.c        |   14 +-------------
- 21 files changed, 21 insertions(+), 243 deletions(-)
+ drivers/staging/hv/Kconfig    |    6 -
+ drivers/staging/hv/Makefile   |    1 -
+ drivers/staging/hv/hv_mouse.c |  582 -----------------------------------------
+ 3 files changed, 0 insertions(+), 589 deletions(-)
+ delete mode 100644 drivers/staging/hv/hv_mouse.c
 
-diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
-index 0371bf5..0366617 100644
---- a/drivers/mmc/host/bfin_sdh.c
-+++ b/drivers/mmc/host/bfin_sdh.c
-@@ -627,17 +627,7 @@ static struct platform_driver sdh_driver = {
- 	},
- };
- 
--static int __init sdh_init(void)
--{
--	return platform_driver_register(&sdh_driver);
--}
--module_init(sdh_init);
+diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+index 072185e..6c0dc30 100644
+--- a/drivers/staging/hv/Kconfig
++++ b/drivers/staging/hv/Kconfig
+@@ -9,9 +9,3 @@ config HYPERV_NET
+ 	depends on HYPERV && NET
+ 	help
+ 	  Select this option to enable the Hyper-V virtual network driver.
 -
--static void __exit sdh_exit(void)
--{
--	platform_driver_unregister(&sdh_driver);
--}
--module_exit(sdh_exit);
-+module_platform_driver(sdh_driver);
+-config HYPERV_MOUSE
+-	tristate "Microsoft Hyper-V mouse driver"
+-	depends on HYPERV && HID
+-	help
+-	  Select this option to enable the Hyper-V mouse driver.
+diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
+index 0f55cee..fbe9a42 100644
+--- a/drivers/staging/hv/Makefile
++++ b/drivers/staging/hv/Makefile
+@@ -1,6 +1,5 @@
+ obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+ obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
+-obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
  
- MODULE_DESCRIPTION("Blackfin Secure Digital Host Driver");
- MODULE_AUTHOR("Cliff Cai, Roy Huang");
-diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
-index ce2a47b..83693fd 100644
---- a/drivers/mmc/host/cb710-mmc.c
-+++ b/drivers/mmc/host/cb710-mmc.c
-@@ -780,18 +780,7 @@ static struct platform_driver cb710_mmc_driver = {
- #endif
- };
- 
--static int __init cb710_mmc_init_module(void)
--{
--	return platform_driver_register(&cb710_mmc_driver);
--}
+ hv_storvsc-y := storvsc_drv.o
+ hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+deleted file mode 100644
+index d503cbb..0000000
+--- a/drivers/staging/hv/hv_mouse.c
++++ /dev/null
+@@ -1,582 +0,0 @@
+-/*
+- *  Copyright (c) 2009, Citrix Systems, Inc.
+- *  Copyright (c) 2010, Microsoft Corporation.
+- *  Copyright (c) 2011, Novell Inc.
+- *
+- *  This program is free software; you can redistribute it and/or modify it
+- *  under the terms and conditions of the GNU General Public License,
+- *  version 2, as published by the Free Software Foundation.
+- *
+- *  This program is distributed in the hope it will be useful, but WITHOUT
+- *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- *  more details.
+- */
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/completion.h>
+-#include <linux/input.h>
+-#include <linux/hid.h>
+-#include <linux/hiddev.h>
+-#include <linux/hyperv.h>
 -
--static void __exit cb710_mmc_cleanup_module(void)
--{
--	platform_driver_unregister(&cb710_mmc_driver);
--}
 -
--module_init(cb710_mmc_init_module);
--module_exit(cb710_mmc_cleanup_module);
-+module_platform_driver(cb710_mmc_driver);
- 
- MODULE_AUTHOR("Michał Mirosław <mirq-linux@rere.qmqm.pl>");
- MODULE_DESCRIPTION("ENE CB710 memory card reader driver - MMC/SD part");
-diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
-index 74218ad..c8852a8 100644
---- a/drivers/mmc/host/jz4740_mmc.c
-+++ b/drivers/mmc/host/jz4740_mmc.c
-@@ -1012,17 +1012,7 @@ static struct platform_driver jz4740_mmc_driver = {
- 	},
- };
- 
--static int __init jz4740_mmc_init(void)
--{
--	return platform_driver_register(&jz4740_mmc_driver);
--}
--module_init(jz4740_mmc_init);
+-struct hv_input_dev_info {
+-	unsigned int size;
+-	unsigned short vendor;
+-	unsigned short product;
+-	unsigned short version;
+-	unsigned short reserved[11];
+-};
 -
--static void __exit jz4740_mmc_exit(void)
--{
--	platform_driver_unregister(&jz4740_mmc_driver);
--}
--module_exit(jz4740_mmc_exit);
-+module_platform_driver(jz4740_mmc_driver);
- 
- MODULE_DESCRIPTION("JZ4740 SD/MMC controller driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index 80d8eb1..4755966 100644
---- a/drivers/mmc/host/msm_sdcc.c
-+++ b/drivers/mmc/host/msm_sdcc.c
-@@ -1480,18 +1480,7 @@ static struct platform_driver msmsdcc_driver = {
- 	},
- };
- 
--static int __init msmsdcc_init(void)
--{
--	return platform_driver_register(&msmsdcc_driver);
--}
+-/* The maximum size of a synthetic input message. */
+-#define SYNTHHID_MAX_INPUT_REPORT_SIZE 16
 -
--static void __exit msmsdcc_exit(void)
--{
--	platform_driver_unregister(&msmsdcc_driver);
--}
+-/*
+- * Current version
+- *
+- * History:
+- * Beta, RC < 2008/1/22        1,0
+- * RC > 2008/1/22              2,0
+- */
+-#define SYNTHHID_INPUT_VERSION_MAJOR	2
+-#define SYNTHHID_INPUT_VERSION_MINOR	0
+-#define SYNTHHID_INPUT_VERSION		(SYNTHHID_INPUT_VERSION_MINOR | \
+-					 (SYNTHHID_INPUT_VERSION_MAJOR << 16))
 -
--module_init(msmsdcc_init);
--module_exit(msmsdcc_exit);
-+module_platform_driver(msmsdcc_driver);
- 
- MODULE_DESCRIPTION("Qualcomm MSM 7X00A Multimedia Card Interface driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-index f07bd87..4184b79 100644
---- a/drivers/mmc/host/mxcmmc.c
-+++ b/drivers/mmc/host/mxcmmc.c
-@@ -1051,18 +1051,7 @@ static struct platform_driver mxcmci_driver = {
- 	}
- };
- 
--static int __init mxcmci_init(void)
--{
--	return platform_driver_register(&mxcmci_driver);
--}
 -
--static void __exit mxcmci_exit(void)
--{
--	platform_driver_unregister(&mxcmci_driver);
--}
+-#pragma pack(push, 1)
+-/*
+- * Message types in the synthetic input protocol
+- */
+-enum synthhid_msg_type {
+-	SYNTH_HID_PROTOCOL_REQUEST,
+-	SYNTH_HID_PROTOCOL_RESPONSE,
+-	SYNTH_HID_INITIAL_DEVICE_INFO,
+-	SYNTH_HID_INITIAL_DEVICE_INFO_ACK,
+-	SYNTH_HID_INPUT_REPORT,
+-	SYNTH_HID_MAX
+-};
 -
--module_init(mxcmci_init);
--module_exit(mxcmci_exit);
-+module_platform_driver(mxcmci_driver);
- 
- MODULE_DESCRIPTION("i.MX Multimedia Card Interface Driver");
- MODULE_AUTHOR("Sascha Hauer, Pengutronix");
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 0a878b1..571c9ff 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -860,18 +860,7 @@ static struct platform_driver mxs_mmc_driver = {
- 	},
- };
- 
--static int __init mxs_mmc_init(void)
--{
--	return platform_driver_register(&mxs_mmc_driver);
--}
+-/*
+- * Basic message structures.
+- */
+-struct synthhid_msg_hdr {
+-	enum synthhid_msg_type type;
+-	u32 size;
+-};
 -
--static void __exit mxs_mmc_exit(void)
--{
--	platform_driver_unregister(&mxs_mmc_driver);
--}
+-struct synthhid_msg {
+-	struct synthhid_msg_hdr header;
+-	char data[1]; /* Enclosed message */
+-};
 -
--module_init(mxs_mmc_init);
--module_exit(mxs_mmc_exit);
-+module_platform_driver(mxs_mmc_driver);
- 
- MODULE_DESCRIPTION("FREESCALE MXS MMC peripheral");
- MODULE_AUTHOR("Freescale Semiconductor");
-diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
-index fc4356e..cb2dc0e 100644
---- a/drivers/mmc/host/pxamci.c
-+++ b/drivers/mmc/host/pxamci.c
-@@ -872,18 +872,7 @@ static struct platform_driver pxamci_driver = {
- 	},
- };
- 
--static int __init pxamci_init(void)
--{
--	return platform_driver_register(&pxamci_driver);
--}
+-union synthhid_version {
+-	struct {
+-		u16 minor_version;
+-		u16 major_version;
+-	};
+-	u32 version;
+-};
 -
--static void __exit pxamci_exit(void)
--{
--	platform_driver_unregister(&pxamci_driver);
--}
+-/*
+- * Protocol messages
+- */
+-struct synthhid_protocol_request {
+-	struct synthhid_msg_hdr header;
+-	union synthhid_version version_requested;
+-};
 -
--module_init(pxamci_init);
--module_exit(pxamci_exit);
-+module_platform_driver(pxamci_driver);
- 
- MODULE_DESCRIPTION("PXA Multimedia Card Interface Driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/mmc/host/s3cmci.c b/drivers/mmc/host/s3cmci.c
-index 720f993..1bcfd6d 100644
---- a/drivers/mmc/host/s3cmci.c
-+++ b/drivers/mmc/host/s3cmci.c
-@@ -1914,18 +1914,7 @@ static struct platform_driver s3cmci_driver = {
- 	.shutdown	= s3cmci_shutdown,
- };
- 
--static int __init s3cmci_init(void)
--{
--	return platform_driver_register(&s3cmci_driver);
--}
+-struct synthhid_protocol_response {
+-	struct synthhid_msg_hdr header;
+-	union synthhid_version version_requested;
+-	unsigned char approved;
+-};
 -
--static void __exit s3cmci_exit(void)
--{
--	platform_driver_unregister(&s3cmci_driver);
--}
+-struct synthhid_device_info {
+-	struct synthhid_msg_hdr header;
+-	struct hv_input_dev_info hid_dev_info;
+-	struct hid_descriptor hid_descriptor;
+-};
 -
--module_init(s3cmci_init);
--module_exit(s3cmci_exit);
-+module_platform_driver(s3cmci_driver);
- 
- MODULE_DESCRIPTION("Samsung S3C MMC/SD Card Interface driver");
- MODULE_LICENSE("GPL v2");
-diff --git a/drivers/mmc/host/sdhci-cns3xxx.c b/drivers/mmc/host/sdhci-cns3xxx.c
-index b4257e7..28a8708 100644
---- a/drivers/mmc/host/sdhci-cns3xxx.c
-+++ b/drivers/mmc/host/sdhci-cns3xxx.c
-@@ -115,17 +115,7 @@ static struct platform_driver sdhci_cns3xxx_driver = {
- 	.remove		= __devexit_p(sdhci_cns3xxx_remove),
- };
- 
--static int __init sdhci_cns3xxx_init(void)
--{
--	return platform_driver_register(&sdhci_cns3xxx_driver);
--}
--module_init(sdhci_cns3xxx_init);
+-struct synthhid_device_info_ack {
+-	struct synthhid_msg_hdr header;
+-	unsigned char reserved;
+-};
 -
--static void __exit sdhci_cns3xxx_exit(void)
--{
--	platform_driver_unregister(&sdhci_cns3xxx_driver);
--}
--module_exit(sdhci_cns3xxx_exit);
-+module_platform_driver(sdhci_cns3xxx_driver);
- 
- MODULE_DESCRIPTION("SDHCI driver for CNS3xxx");
- MODULE_AUTHOR("Scott Shu, "
-diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
-index a81312c..46fd1fd 100644
---- a/drivers/mmc/host/sdhci-dove.c
-+++ b/drivers/mmc/host/sdhci-dove.c
-@@ -88,17 +88,7 @@ static struct platform_driver sdhci_dove_driver = {
- 	.remove		= __devexit_p(sdhci_dove_remove),
- };
- 
--static int __init sdhci_dove_init(void)
--{
--	return platform_driver_register(&sdhci_dove_driver);
--}
--module_init(sdhci_dove_init);
+-struct synthhid_input_report {
+-	struct synthhid_msg_hdr header;
+-	char buffer[1];
+-};
 -
--static void __exit sdhci_dove_exit(void)
--{
--	platform_driver_unregister(&sdhci_dove_driver);
--}
--module_exit(sdhci_dove_exit);
-+module_platform_driver(sdhci_dove_driver);
- 
- MODULE_DESCRIPTION("SDHCI driver for Dove");
- MODULE_AUTHOR("Saeed Bishara <saeed@marvell.com>, "
-diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-index 38ebc4e..d601e41 100644
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -606,17 +606,7 @@ static struct platform_driver sdhci_esdhc_imx_driver = {
- 	.remove		= __devexit_p(sdhci_esdhc_imx_remove),
- };
- 
--static int __init sdhci_esdhc_imx_init(void)
--{
--	return platform_driver_register(&sdhci_esdhc_imx_driver);
--}
--module_init(sdhci_esdhc_imx_init);
+-#pragma pack(pop)
 -
--static void __exit sdhci_esdhc_imx_exit(void)
--{
--	platform_driver_unregister(&sdhci_esdhc_imx_driver);
--}
--module_exit(sdhci_esdhc_imx_exit);
-+module_platform_driver(sdhci_esdhc_imx_driver);
- 
- MODULE_DESCRIPTION("SDHCI driver for Freescale i.MX eSDHC");
- MODULE_AUTHOR("Wolfram Sang <w.sang@pengutronix.de>");
-diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
-index 01e5f62..ff4adc0 100644
---- a/drivers/mmc/host/sdhci-of-esdhc.c
-+++ b/drivers/mmc/host/sdhci-of-esdhc.c
-@@ -131,17 +131,7 @@ static struct platform_driver sdhci_esdhc_driver = {
- 	.remove = __devexit_p(sdhci_esdhc_remove),
- };
- 
--static int __init sdhci_esdhc_init(void)
--{
--	return platform_driver_register(&sdhci_esdhc_driver);
--}
--module_init(sdhci_esdhc_init);
+-#define INPUTVSC_SEND_RING_BUFFER_SIZE		(10*PAGE_SIZE)
+-#define INPUTVSC_RECV_RING_BUFFER_SIZE		(10*PAGE_SIZE)
 -
--static void __exit sdhci_esdhc_exit(void)
--{
--	platform_driver_unregister(&sdhci_esdhc_driver);
--}
--module_exit(sdhci_esdhc_exit);
-+module_platform_driver(sdhci_esdhc_driver);
- 
- MODULE_DESCRIPTION("SDHCI OF driver for Freescale MPC eSDHC");
- MODULE_AUTHOR("Xiaobo Xie <X.Xie@freescale.com>, "
-diff --git a/drivers/mmc/host/sdhci-of-hlwd.c b/drivers/mmc/host/sdhci-of-hlwd.c
-index 3619adc..0ce088ae 100644
---- a/drivers/mmc/host/sdhci-of-hlwd.c
-+++ b/drivers/mmc/host/sdhci-of-hlwd.c
-@@ -93,17 +93,7 @@ static struct platform_driver sdhci_hlwd_driver = {
- 	.remove = __devexit_p(sdhci_hlwd_remove),
- };
- 
--static int __init sdhci_hlwd_init(void)
--{
--	return platform_driver_register(&sdhci_hlwd_driver);
--}
--module_init(sdhci_hlwd_init);
 -
--static void __exit sdhci_hlwd_exit(void)
+-enum pipe_prot_msg_type {
+-	PIPE_MESSAGE_INVALID,
+-	PIPE_MESSAGE_DATA,
+-	PIPE_MESSAGE_MAXIMUM
+-};
+-
+-
+-struct pipe_prt_msg {
+-	enum pipe_prot_msg_type type;
+-	u32 size;
+-	char data[1];
+-};
+-
+-struct  mousevsc_prt_msg {
+-	enum pipe_prot_msg_type type;
+-	u32 size;
+-	union {
+-		struct synthhid_protocol_request request;
+-		struct synthhid_protocol_response response;
+-		struct synthhid_device_info_ack ack;
+-	};
+-};
+-
+-/*
+- * Represents an mousevsc device
+- */
+-struct mousevsc_dev {
+-	struct hv_device	*device;
+-	bool			init_complete;
+-	bool			connected;
+-	struct mousevsc_prt_msg	protocol_req;
+-	struct mousevsc_prt_msg	protocol_resp;
+-	/* Synchronize the request/response if needed */
+-	struct completion	wait_event;
+-	int			dev_info_status;
+-
+-	struct hid_descriptor	*hid_desc;
+-	unsigned char		*report_desc;
+-	u32			report_desc_size;
+-	struct hv_input_dev_info hid_dev_info;
+-	struct hid_device       *hid_device;
+-};
+-
+-
+-static struct mousevsc_dev *mousevsc_alloc_device(struct hv_device *device)
 -{
--	platform_driver_unregister(&sdhci_hlwd_driver);
--}
--module_exit(sdhci_hlwd_exit);
-+module_platform_driver(sdhci_hlwd_driver);
- 
- MODULE_DESCRIPTION("Nintendo Wii SDHCI OF driver");
- MODULE_AUTHOR("The GameCube Linux Team, Albert Herranz");
-diff --git a/drivers/mmc/host/sdhci-pxav2.c b/drivers/mmc/host/sdhci-pxav2.c
-index 7a039c3..dbb75bf 100644
---- a/drivers/mmc/host/sdhci-pxav2.c
-+++ b/drivers/mmc/host/sdhci-pxav2.c
-@@ -223,18 +223,8 @@ static struct platform_driver sdhci_pxav2_driver = {
- 	.probe		= sdhci_pxav2_probe,
- 	.remove		= __devexit_p(sdhci_pxav2_remove),
- };
--static int __init sdhci_pxav2_init(void)
--{
--	return platform_driver_register(&sdhci_pxav2_driver);
+-	struct mousevsc_dev *input_dev;
+-
+-	input_dev = kzalloc(sizeof(struct mousevsc_dev), GFP_KERNEL);
+-
+-	if (!input_dev)
+-		return NULL;
+-
+-	input_dev->device = device;
+-	hv_set_drvdata(device, input_dev);
+-	init_completion(&input_dev->wait_event);
+-	input_dev->init_complete = false;
+-
+-	return input_dev;
 -}
 -
--static void __exit sdhci_pxav2_exit(void)
+-static void mousevsc_free_device(struct mousevsc_dev *device)
 -{
--	platform_driver_unregister(&sdhci_pxav2_driver);
--}
- 
--module_init(sdhci_pxav2_init);
--module_exit(sdhci_pxav2_exit);
-+module_platform_driver(sdhci_pxav2_driver);
- 
- MODULE_DESCRIPTION("SDHCI driver for pxav2");
- MODULE_AUTHOR("Marvell International Ltd.");
-diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index 15673a7..f296956 100644
---- a/drivers/mmc/host/sdhci-pxav3.c
-+++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -269,18 +269,8 @@ static struct platform_driver sdhci_pxav3_driver = {
- 	.probe		= sdhci_pxav3_probe,
- 	.remove		= __devexit_p(sdhci_pxav3_remove),
- };
--static int __init sdhci_pxav3_init(void)
--{
--	return platform_driver_register(&sdhci_pxav3_driver);
+-	kfree(device->hid_desc);
+-	kfree(device->report_desc);
+-	hv_set_drvdata(device->device, NULL);
+-	kfree(device);
 -}
 -
--static void __exit sdhci_pxav3_exit(void)
+-static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
+-				struct synthhid_device_info *device_info)
 -{
--	platform_driver_unregister(&sdhci_pxav3_driver);
--}
- 
--module_init(sdhci_pxav3_init);
--module_exit(sdhci_pxav3_exit);
-+module_platform_driver(sdhci_pxav3_driver);
- 
- MODULE_DESCRIPTION("SDHCI driver for pxav3");
- MODULE_AUTHOR("Marvell International Ltd.");
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index 4cb272c..c28ab53 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -656,18 +656,7 @@ static struct platform_driver sdhci_s3c_driver = {
- 	},
- };
- 
--static int __init sdhci_s3c_init(void)
--{
--	return platform_driver_register(&sdhci_s3c_driver);
+-	int ret = 0;
+-	struct hid_descriptor *desc;
+-	struct mousevsc_prt_msg ack;
+-
+-	input_device->dev_info_status = -ENOMEM;
+-
+-	input_device->hid_dev_info = device_info->hid_dev_info;
+-	desc = &device_info->hid_descriptor;
+-	if (desc->bLength == 0)
+-		goto cleanup;
+-
+-	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
+-
+-	if (!input_device->hid_desc)
+-		goto cleanup;
+-
+-	memcpy(input_device->hid_desc, desc, desc->bLength);
+-
+-	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
+-	if (input_device->report_desc_size == 0) {
+-		input_device->dev_info_status = -EINVAL;
+-		goto cleanup;
+-	}
+-
+-	input_device->report_desc = kzalloc(input_device->report_desc_size,
+-					  GFP_ATOMIC);
+-
+-	if (!input_device->report_desc) {
+-		input_device->dev_info_status = -ENOMEM;
+-		goto cleanup;
+-	}
+-
+-	memcpy(input_device->report_desc,
+-	       ((unsigned char *)desc) + desc->bLength,
+-	       desc->desc[0].wDescriptorLength);
+-
+-	/* Send the ack */
+-	memset(&ack, 0, sizeof(struct mousevsc_prt_msg));
+-
+-	ack.type = PIPE_MESSAGE_DATA;
+-	ack.size = sizeof(struct synthhid_device_info_ack);
+-
+-	ack.ack.header.type = SYNTH_HID_INITIAL_DEVICE_INFO_ACK;
+-	ack.ack.header.size = 1;
+-	ack.ack.reserved = 0;
+-
+-	ret = vmbus_sendpacket(input_device->device->channel,
+-			&ack,
+-			sizeof(struct pipe_prt_msg) - sizeof(unsigned char) +
+-			sizeof(struct synthhid_device_info_ack),
+-			(unsigned long)&ack,
+-			VM_PKT_DATA_INBAND,
+-			VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+-
+-	if (!ret)
+-		input_device->dev_info_status = 0;
+-
+-cleanup:
+-	complete(&input_device->wait_event);
+-
+-	return;
 -}
 -
--static void __exit sdhci_s3c_exit(void)
+-static void mousevsc_on_receive(struct hv_device *device,
+-				struct vmpacket_descriptor *packet)
 -{
--	platform_driver_unregister(&sdhci_s3c_driver);
+-	struct pipe_prt_msg *pipe_msg;
+-	struct synthhid_msg *hid_msg;
+-	struct mousevsc_dev *input_dev = hv_get_drvdata(device);
+-	struct synthhid_input_report *input_report;
+-
+-	pipe_msg = (struct pipe_prt_msg *)((unsigned long)packet +
+-						(packet->offset8 << 3));
+-
+-	if (pipe_msg->type != PIPE_MESSAGE_DATA)
+-		return;
+-
+-	hid_msg = (struct synthhid_msg *)pipe_msg->data;
+-
+-	switch (hid_msg->header.type) {
+-	case SYNTH_HID_PROTOCOL_RESPONSE:
+-		/*
+-		 * While it will be impossible for us to protect against
+-		 * malicious/buggy hypervisor/host, add a check here to
+-		 * ensure we don't corrupt memory.
+-		 */
+-		if ((pipe_msg->size + sizeof(struct pipe_prt_msg)
+-			- sizeof(unsigned char))
+-			> sizeof(struct mousevsc_prt_msg)) {
+-			WARN_ON(1);
+-			break;
+-		}
+-
+-		memcpy(&input_dev->protocol_resp, pipe_msg,
+-		       pipe_msg->size + sizeof(struct pipe_prt_msg) -
+-		       sizeof(unsigned char));
+-		complete(&input_dev->wait_event);
+-		break;
+-
+-	case SYNTH_HID_INITIAL_DEVICE_INFO:
+-		WARN_ON(pipe_msg->size < sizeof(struct hv_input_dev_info));
+-
+-		/*
+-		 * Parse out the device info into device attr,
+-		 * hid desc and report desc
+-		 */
+-		mousevsc_on_receive_device_info(input_dev,
+-			(struct synthhid_device_info *)pipe_msg->data);
+-		break;
+-	case SYNTH_HID_INPUT_REPORT:
+-		input_report =
+-			(struct synthhid_input_report *)pipe_msg->data;
+-		if (!input_dev->init_complete)
+-			break;
+-		hid_input_report(input_dev->hid_device,
+-				HID_INPUT_REPORT, input_report->buffer,
+-				input_report->header.size, 1);
+-		break;
+-	default:
+-		pr_err("unsupported hid msg type - type %d len %d",
+-		       hid_msg->header.type, hid_msg->header.size);
+-		break;
+-	}
+-
 -}
 -
--module_init(sdhci_s3c_init);
--module_exit(sdhci_s3c_exit);
-+module_platform_driver(sdhci_s3c_driver);
- 
- MODULE_DESCRIPTION("Samsung SDHCI (HSMMC) glue");
- MODULE_AUTHOR("Ben Dooks, <ben@simtec.co.uk>");
-diff --git a/drivers/mmc/host/sdhci-spear.c b/drivers/mmc/host/sdhci-spear.c
-index dee70b6..883548e 100644
---- a/drivers/mmc/host/sdhci-spear.c
-+++ b/drivers/mmc/host/sdhci-spear.c
-@@ -320,17 +320,7 @@ static struct platform_driver sdhci_driver = {
- 	.remove		= __devexit_p(sdhci_remove),
- };
- 
--static int __init sdhci_init(void)
+-static void mousevsc_on_channel_callback(void *context)
 -{
--	return platform_driver_register(&sdhci_driver);
--}
--module_init(sdhci_init);
+-	const int packet_size = 0x100;
+-	int ret;
+-	struct hv_device *device = context;
+-	u32 bytes_recvd;
+-	u64 req_id;
+-	struct vmpacket_descriptor *desc;
+-	unsigned char	*buffer;
+-	int	bufferlen = packet_size;
 -
--static void __exit sdhci_exit(void)
--{
--	platform_driver_unregister(&sdhci_driver);
--}
--module_exit(sdhci_exit);
-+module_platform_driver(sdhci_driver);
- 
- MODULE_DESCRIPTION("SPEAr Secure Digital Host Controller Interface driver");
- MODULE_AUTHOR("Viresh Kumar <viresh.kumar@st.com>");
-diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-index e2e18d3..78a36eb 100644
---- a/drivers/mmc/host/sdhci-tegra.c
-+++ b/drivers/mmc/host/sdhci-tegra.c
-@@ -324,17 +324,7 @@ static struct platform_driver sdhci_tegra_driver = {
- 	.remove		= __devexit_p(sdhci_tegra_remove),
- };
- 
--static int __init sdhci_tegra_init(void)
--{
--	return platform_driver_register(&sdhci_tegra_driver);
--}
--module_init(sdhci_tegra_init);
+-	buffer = kmalloc(bufferlen, GFP_ATOMIC);
+-	if (!buffer)
+-		return;
 -
--static void __exit sdhci_tegra_exit(void)
--{
--	platform_driver_unregister(&sdhci_tegra_driver);
--}
--module_exit(sdhci_tegra_exit);
-+module_platform_driver(sdhci_tegra_driver);
- 
- MODULE_DESCRIPTION("SDHCI driver for Tegra");
- MODULE_AUTHOR(" Google, Inc.");
-diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
-index 1c0c10b..591345d3 100644
---- a/drivers/mmc/host/sh_mmcif.c
-+++ b/drivers/mmc/host/sh_mmcif.c
-@@ -1206,19 +1206,7 @@ static struct platform_driver sh_mmcif_driver = {
- 	},
- };
- 
--static int __init sh_mmcif_init(void)
--{
--	return platform_driver_register(&sh_mmcif_driver);
+-	do {
+-		ret = vmbus_recvpacket_raw(device->channel, buffer,
+-					bufferlen, &bytes_recvd, &req_id);
+-
+-		switch (ret) {
+-		case 0:
+-			if (bytes_recvd <= 0) {
+-				kfree(buffer);
+-				return;
+-			}
+-			desc = (struct vmpacket_descriptor *)buffer;
+-
+-			switch (desc->type) {
+-			case VM_PKT_COMP:
+-				break;
+-
+-			case VM_PKT_DATA_INBAND:
+-				mousevsc_on_receive(device, desc);
+-				break;
+-
+-			default:
+-				pr_err("unhandled packet type %d, tid %llx len %d\n",
+-					desc->type, req_id, bytes_recvd);
+-				break;
+-			}
+-
+-			break;
+-
+-		case -ENOBUFS:
+-			kfree(buffer);
+-			/* Handle large packet */
+-			bufferlen = bytes_recvd;
+-			buffer = kmalloc(bytes_recvd, GFP_ATOMIC);
+-
+-			if (!buffer)
+-				return;
+-
+-			break;
+-		}
+-	} while (1);
+-
 -}
 -
--static void __exit sh_mmcif_exit(void)
+-static int mousevsc_connect_to_vsp(struct hv_device *device)
 -{
--	platform_driver_unregister(&sh_mmcif_driver);
+-	int ret = 0;
+-	int t;
+-	struct mousevsc_dev *input_dev = hv_get_drvdata(device);
+-	struct mousevsc_prt_msg *request;
+-	struct mousevsc_prt_msg *response;
+-
+-	request = &input_dev->protocol_req;
+-	memset(request, 0, sizeof(struct mousevsc_prt_msg));
+-
+-	request->type = PIPE_MESSAGE_DATA;
+-	request->size = sizeof(struct synthhid_protocol_request);
+-	request->request.header.type = SYNTH_HID_PROTOCOL_REQUEST;
+-	request->request.header.size = sizeof(unsigned int);
+-	request->request.version_requested.version = SYNTHHID_INPUT_VERSION;
+-
+-	ret = vmbus_sendpacket(device->channel, request,
+-				sizeof(struct pipe_prt_msg) -
+-				sizeof(unsigned char) +
+-				sizeof(struct synthhid_protocol_request),
+-				(unsigned long)request,
+-				VM_PKT_DATA_INBAND,
+-				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+-	if (ret)
+-		goto cleanup;
+-
+-	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
+-	if (!t) {
+-		ret = -ETIMEDOUT;
+-		goto cleanup;
+-	}
+-
+-	response = &input_dev->protocol_resp;
+-
+-	if (!response->response.approved) {
+-		pr_err("synthhid protocol request failed (version %d)\n",
+-		       SYNTHHID_INPUT_VERSION);
+-		ret = -ENODEV;
+-		goto cleanup;
+-	}
+-
+-	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
+-	if (!t) {
+-		ret = -ETIMEDOUT;
+-		goto cleanup;
+-	}
+-
+-	/*
+-	 * We should have gotten the device attr, hid desc and report
+-	 * desc at this point
+-	 */
+-	ret = input_dev->dev_info_status;
+-
+-cleanup:
+-	return ret;
 -}
 -
--module_init(sh_mmcif_init);
--module_exit(sh_mmcif_exit);
--
-+module_platform_driver(sh_mmcif_driver);
- 
- MODULE_DESCRIPTION("SuperH on-chip MMC/eMMC interface driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/mmc/host/sh_mobile_sdhi.c b/drivers/mmc/host/sh_mobile_sdhi.c
-index 41ae646..58da3c4 100644
---- a/drivers/mmc/host/sh_mobile_sdhi.c
-+++ b/drivers/mmc/host/sh_mobile_sdhi.c
-@@ -282,18 +282,7 @@ static struct platform_driver sh_mobile_sdhi_driver = {
- 	.remove		= __devexit_p(sh_mobile_sdhi_remove),
- };
- 
--static int __init sh_mobile_sdhi_init(void)
+-static int mousevsc_hid_open(struct hid_device *hid)
 -{
--	return platform_driver_register(&sh_mobile_sdhi_driver);
+-	return 0;
 -}
 -
--static void __exit sh_mobile_sdhi_exit(void)
+-static int mousevsc_hid_start(struct hid_device *hid)
 -{
--	platform_driver_unregister(&sh_mobile_sdhi_driver);
+-	return 0;
 -}
 -
--module_init(sh_mobile_sdhi_init);
--module_exit(sh_mobile_sdhi_exit);
-+module_platform_driver(sh_mobile_sdhi_driver);
- 
- MODULE_DESCRIPTION("SuperH Mobile SDHI driver");
- MODULE_AUTHOR("Magnus Damm");
-diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
-index a4ea102..113ce6c 100644
---- a/drivers/mmc/host/tmio_mmc.c
-+++ b/drivers/mmc/host/tmio_mmc.c
-@@ -138,19 +138,7 @@ static struct platform_driver tmio_mmc_driver = {
- 	.resume = tmio_mmc_resume,
- };
- 
--
--static int __init tmio_mmc_init(void)
+-static void mousevsc_hid_close(struct hid_device *hid)
 -{
--	return platform_driver_register(&tmio_mmc_driver);
 -}
 -
--static void __exit tmio_mmc_exit(void)
+-static void mousevsc_hid_stop(struct hid_device *hid)
 -{
--	platform_driver_unregister(&tmio_mmc_driver);
 -}
 -
--module_init(tmio_mmc_init);
--module_exit(tmio_mmc_exit);
-+module_platform_driver(tmio_mmc_driver);
- 
- MODULE_DESCRIPTION("Toshiba TMIO SD/MMC driver");
- MODULE_AUTHOR("Ian Molton <spyro@f2s.com>");
+-static struct hid_ll_driver mousevsc_ll_driver = {
+-	.open = mousevsc_hid_open,
+-	.close = mousevsc_hid_close,
+-	.start = mousevsc_hid_start,
+-	.stop = mousevsc_hid_stop,
+-};
+-
+-static struct hid_driver mousevsc_hid_driver;
+-
+-static int mousevsc_probe(struct hv_device *device,
+-			const struct hv_vmbus_device_id *dev_id)
+-{
+-	int ret;
+-	struct mousevsc_dev *input_dev;
+-	struct hid_device *hid_dev;
+-
+-	input_dev = mousevsc_alloc_device(device);
+-
+-	if (!input_dev)
+-		return -ENOMEM;
+-
+-	ret = vmbus_open(device->channel,
+-		INPUTVSC_SEND_RING_BUFFER_SIZE,
+-		INPUTVSC_RECV_RING_BUFFER_SIZE,
+-		NULL,
+-		0,
+-		mousevsc_on_channel_callback,
+-		device
+-		);
+-
+-	if (ret)
+-		goto probe_err0;
+-
+-	ret = mousevsc_connect_to_vsp(device);
+-
+-	if (ret)
+-		goto probe_err1;
+-
+-	/* workaround SA-167 */
+-	if (input_dev->report_desc[14] == 0x25)
+-		input_dev->report_desc[14] = 0x29;
+-
+-	hid_dev = hid_allocate_device();
+-	if (IS_ERR(hid_dev)) {
+-		ret = PTR_ERR(hid_dev);
+-		goto probe_err1;
+-	}
+-
+-	hid_dev->ll_driver = &mousevsc_ll_driver;
+-	hid_dev->driver = &mousevsc_hid_driver;
+-	hid_dev->bus = BUS_VIRTUAL;
+-	hid_dev->vendor = input_dev->hid_dev_info.vendor;
+-	hid_dev->product = input_dev->hid_dev_info.product;
+-	hid_dev->version = input_dev->hid_dev_info.version;
+-	input_dev->hid_device = hid_dev;
+-
+-	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
+-
+-	ret = hid_parse_report(hid_dev, input_dev->report_desc,
+-				input_dev->report_desc_size);
+-
+-	if (ret) {
+-		hid_err(hid_dev, "parse failed\n");
+-		goto probe_err2;
+-	}
+-
+-	ret = hid_hw_start(hid_dev, HID_CONNECT_HIDINPUT | HID_CONNECT_HIDDEV);
+-
+-	if (ret) {
+-		hid_err(hid_dev, "hw start failed\n");
+-		goto probe_err2;
+-	}
+-
+-	input_dev->connected = true;
+-	input_dev->init_complete = true;
+-
+-	return ret;
+-
+-probe_err2:
+-	hid_destroy_device(hid_dev);
+-
+-probe_err1:
+-	vmbus_close(device->channel);
+-
+-probe_err0:
+-	mousevsc_free_device(input_dev);
+-
+-	return ret;
+-}
+-
+-
+-static int mousevsc_remove(struct hv_device *dev)
+-{
+-	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
+-
+-	vmbus_close(dev->channel);
+-	hid_destroy_device(input_dev->hid_device);
+-	mousevsc_free_device(input_dev);
+-
+-	return 0;
+-}
+-
+-static const struct hv_vmbus_device_id id_table[] = {
+-	/* Mouse guid */
+-	{ VMBUS_DEVICE(0x9E, 0xB6, 0xA8, 0xCF, 0x4A, 0x5B, 0xc0, 0x4c,
+-		       0xB9, 0x8B, 0x8B, 0xA1, 0xA1, 0xF3, 0xF9, 0x5A) },
+-	{ },
+-};
+-
+-MODULE_DEVICE_TABLE(vmbus, id_table);
+-
+-static struct  hv_driver mousevsc_drv = {
+-	.name = KBUILD_MODNAME,
+-	.id_table = id_table,
+-	.probe = mousevsc_probe,
+-	.remove = mousevsc_remove,
+-};
+-
+-static int __init mousevsc_init(void)
+-{
+-	return vmbus_driver_register(&mousevsc_drv);
+-}
+-
+-static void __exit mousevsc_exit(void)
+-{
+-	vmbus_driver_unregister(&mousevsc_drv);
+-}
+-
+-MODULE_LICENSE("GPL");
+-MODULE_VERSION(HV_DRV_VERSION);
+-module_init(mousevsc_init);
+-module_exit(mousevsc_exit);
 -- 
-1.7.5.4
-
-
+1.7.4.1
 
