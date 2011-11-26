@@ -1,65 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1KZAF0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 19:05:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54088 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab1KZAFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 19:05:25 -0500
-Date: Sat, 26 Nov 2011 01:05:21 +0100
-From: Jan Kara <jack@suse.cz>
-To: Rik van Riel <riel@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Love <rlove@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Eric Anholt <eric@anholt.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Johannes Weiner <jweiner@redhat.com>, Jon Masters <jcm@redhat.com>
-Subject: Re: [PATCH] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-Message-ID: <20111126000521.GA26326@quack.suse.cz>
-References: <1321932788-18043-1-git-send-email-john.stultz@linaro.org>
- <4ECB6D60.1010702@redhat.com>
+	id S1754080Ab1KZAPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 19:15:52 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36277 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797Ab1KZAPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Nov 2011 19:15:51 -0500
+Date: Sat, 26 Nov 2011 04:15:45 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        =?utf-8?B?77+92rDvv73vv73vv70=?= <kyungmin.park@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042
+ fuel gauge
+Message-ID: <20111126001545.GA24278@oksana.dev.rtsoft.ru>
+References: <18021216.478661315185875229.JavaMail.weblogic@epml15>
+ <12D0C12AF19E15409D57F22566E88EF50975BF4F98@bgsmsx501.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4ECB6D60.1010702@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <12D0C12AF19E15409D57F22566E88EF50975BF4F98@bgsmsx501.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-11-11 04:37:36, Rik van Riel wrote:
-> On 11/21/2011 10:33 PM, John Stultz wrote:
-> The idea is quite simple:
+On Wed, Sep 07, 2011 at 02:00:29PM +0530, Pallala, Ramakrishna wrote:
+> > > In max17042_get_property(...), the values returned by
+> > > max17042_read_reg are directly assigned to the variables,
+> > > even if the read results in an error.
+> > >
+> > > This patch checks for the return code from max17042_read_reg and
+> > > exits the function if there is any error.
+> > >
+> > > Signed-off-by: Ramakrishna Pallala
+> > > ---
+> > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
+> > > 1 files changed, 58 insertions(+), 27 deletions(-)
+> > >
+> > 
+> > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 > 
-> 1) Every program that we are interested in already has
->    some kind of main loop where it polls on file descriptors.
->    It is easy for such programs to add an additional file,
->    which would be a device or sysfs file that wakes up the
->    program from its poll/select loop when memory is getting
->    full to the point that userspace needs to shrink its
->    caches.
-> 
->    The kernel can be smart here and wake up just one process
->    at a time, targeting specific NUMA nodes or cgroups. Such
->    kernel smarts do not require additional userspace changes.
-> 
-> 2) When userspace gets such a "please shrink your caches"
->    event, it can do various things.  A program like firefox
->    could throw away several cached objects, eg. uncompressed
->    images or entire pre-rendered tabs, while a JVM can shrink
->    its heap size and a database could shrink its internal
->    cache.
-  Hmm, I wonder here: How much should a program free? A single object? Or
-one meg of memory? I find this decision rather problematic. How much should
-be reclaimed depends on the number of applications listening, how aggressive
-they are, and current memory pressure => it's basically unpredictable from
-userspace so you are almost guaranteed to either reclaim too much or too
-few. Advantage of the VOLATILE approach is that kernel (which is the only
-place where there is all necessary information) controls how much memory
-is evicted... Just one argument for VOLATILE approach I didn't see
-mentioned in the discussion yet.
+> Thanks for the Ack.
+> When can I expect the patch to be merged ?
 
-								Honza
+Merged, much thanks!
+
+Note that I had to manually fix conflicts with
+
+	commit cf7a8c03db792894f436db5f3ffc44d947b9b068
+	Author: MyungJoo Ham <myungjoo.ham@samsung.com>
+	Date:   Wed Aug 17 10:18:34 2011 +0900
+
+	    max17042_battery: Bugfix of incorrect voltage register value interpretation
+
+
+So, the resulting patch in battery-2.6.git tree as follows, please
+check if everything is OK:
+
+- - - -
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Date: Sat, 26 Nov 2011 04:11:15 +0400
+Subject: [PATCH] max17042_battery: Fix error handling
+
+In max17042_get_property(...), the values returned by
+max17042_read_reg are directly assigned to the variables,
+even if the read results in an error.
+
+This patch checks for the return code from max17042_read_reg and
+exits the function if there is any error.
+
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+---
+ drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
+ 1 files changed, 58 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index a6dc9c7..10ffa8c 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -84,55 +84,79 @@ static int max17042_get_property(struct power_supply *psy,
+ {
+ 	struct max17042_chip *chip = container_of(psy,
+ 				struct max17042_chip, battery);
++	int ret;
+ 
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_PRESENT:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_STATUS);
+-		if (val->intval & MAX17042_STATUS_BattAbsent)
++		ret = max17042_read_reg(chip->client, MAX17042_STATUS);
++		if (ret < 0)
++			return ret;
++
++		if (ret & MAX17042_STATUS_BattAbsent)
+ 			val->intval = 0;
+ 		else
+ 			val->intval = 1;
+ 		break;
+ 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_Cycles);
++		ret = max17042_read_reg(chip->client, MAX17042_Cycles);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_MinMaxVolt);
+-		val->intval >>= 8;
++		ret = max17042_read_reg(chip->client, MAX17042_MinMaxVolt);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret >> 8;
+ 		val->intval *= 20000; /* Units of LSB = 20mV */
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_V_empty);
+-		val->intval >>= 7;
++		ret = max17042_read_reg(chip->client, MAX17042_V_empty);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret >> 7;
+ 		val->intval *= 10000; /* Units of LSB = 10mV */
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		val->intval = max17042_read_reg(chip->client, MAX17042_VCELL)
+-			    * 625 / 8;
++		ret = max17042_read_reg(chip->client, MAX17042_VCELL);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret * 625 / 8;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+-		val->intval = max17042_read_reg(chip->client, MAX17042_AvgVCELL)
+-			    * 625 / 8;
++		ret = max17042_read_reg(chip->client, MAX17042_AvgVCELL);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret * 625 / 8;
+ 		break;
+ 	case POWER_SUPPLY_PROP_CAPACITY:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_SOC) / 256;
++		ret = max17042_read_reg(chip->client, MAX17042_SOC);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret >> 8;
+ 		break;
+ 	case POWER_SUPPLY_PROP_CHARGE_FULL:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_RepSOC);
+-		if ((val->intval / 256) >= MAX17042_BATTERY_FULL)
++		ret = max17042_read_reg(chip->client, MAX17042_RepSOC);
++		if (ret < 0)
++			return ret;
++
++		if ((ret >> 8) >= MAX17042_BATTERY_FULL)
+ 			val->intval = 1;
+-		else if (val->intval >= 0)
++		else if (ret >= 0)
+ 			val->intval = 0;
+ 		break;
+ 	case POWER_SUPPLY_PROP_TEMP:
+-		val->intval = max17042_read_reg(chip->client,
+-				MAX17042_TEMP);
++		ret = max17042_read_reg(chip->client, MAX17042_TEMP);
++		if (ret < 0)
++			return ret;
++
++		val->intval = ret;
+ 		/* The value is signed. */
+ 		if (val->intval & 0x8000) {
+ 			val->intval = (0x7fff & ~val->intval) + 1;
+@@ -144,8 +168,11 @@ static int max17042_get_property(struct power_supply *psy,
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+ 		if (chip->pdata->enable_current_sense) {
+-			val->intval = max17042_read_reg(chip->client,
+-					MAX17042_Current);
++			ret = max17042_read_reg(chip->client, MAX17042_Current);
++			if (ret < 0)
++				return ret;
++
++			val->intval = ret;
+ 			if (val->intval & 0x8000) {
+ 				/* Negative */
+ 				val->intval = ~val->intval & 0x7fff;
+@@ -159,8 +186,12 @@ static int max17042_get_property(struct power_supply *psy,
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_AVG:
+ 		if (chip->pdata->enable_current_sense) {
+-			val->intval = max17042_read_reg(chip->client,
+-					MAX17042_AvgCurrent);
++			ret = max17042_read_reg(chip->client,
++						MAX17042_AvgCurrent);
++			if (ret < 0)
++				return ret;
++
++			val->intval = ret;
+ 			if (val->intval & 0x8000) {
+ 				/* Negative */
+ 				val->intval = ~val->intval & 0x7fff;
+-- 
+1.7.5.3
+
