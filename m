@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab1KZKBE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 05:01:04 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:42870 "EHLO smtp5-g21.free.fr"
+	id S1754199Ab1KZKBM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 05:01:12 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:43337 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab1KZKA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 05:00:57 -0500
+	id S1753207Ab1KZKBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 05:01:09 -0500
 From: Corentin Chary <corentincj@iksaif.net>
 To: platform-driver-x86@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
-        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 07/16] samsung-laptop: remove selftest
-Date: Sat, 26 Nov 2011 11:00:04 +0100
-Message-Id: <1322301613-8801-8-git-send-email-corentincj@iksaif.net>
+        Corentin Chary <corentincj@iksaif.net>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 09/16] samsung-laptop: add usb charge support
+Date: Sat, 26 Nov 2011 11:00:06 +0100
+Message-Id: <1322301613-8801-10-git-send-email-corentincj@iksaif.net>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1322301613-8801-1-git-send-email-corentincj@iksaif.net>
 References: <1322301613-8801-1-git-send-email-corentincj@iksaif.net>
@@ -20,140 +22,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can now do the self test using debugfs, so remove the code
-and keep the debug flag to enable more traces.
-
 Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/platform/x86/samsung-laptop.c |   77 +++-----------------------------
- 1 files changed, 8 insertions(+), 69 deletions(-)
+ .../ABI/testing/sysfs-driver-samsung-laptop        |    8 ++
+ drivers/platform/x86/samsung-laptop.c              |   82 ++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/ABI/testing/sysfs-driver-samsung-laptop b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
+index a6a56e1..f05b897 100644
+--- a/Documentation/ABI/testing/sysfs-driver-samsung-laptop
++++ b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
+@@ -27,3 +27,11 @@ Description:	Max battery charge level can be modified, battery cycle
+ 		level.
+ 		0 means normal battery mode (100% charge)
+ 		1 means battery life extender mode (80% charge)
++
++What:		/sys/devices/platform/samsung/usb_charge
++Date:		December 1, 2011
++KernelVersion:	3.3
++Contact:	Corentin Chary <corentin.chary@gmail.com>
++Description:	Use your USB ports to charge devices, even
++		when your laptop is powered off.
++		1 means enabled, 0 means disabled.
 diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index 6cbf2ed..638b368 100644
+index 74c34ce..d7cbee9 100644
 --- a/drivers/platform/x86/samsung-laptop.c
 +++ b/drivers/platform/x86/samsung-laptop.c
-@@ -362,52 +362,6 @@ static int sabi_set_commandb(struct samsung_laptop *samsung,
- 	return sabi_command(samsung, command, &in, NULL);
- }
+@@ -108,6 +108,10 @@ struct sabi_commands {
+ 	u16 get_battery_life_extender;
+ 	u16 set_battery_life_extender;
  
--static void test_backlight(struct samsung_laptop *samsung)
--{
--	const struct sabi_commands *commands = &samsung->config->commands;
--	struct sabi_data sretval;
--
--	sabi_command(samsung, commands->get_backlight, NULL, &sretval);
--	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.data[0]);
--
--	sabi_set_commandb(samsung, commands->set_backlight, 0);
--	printk(KERN_DEBUG "backlight should be off\n");
--
--	sabi_command(samsung, commands->get_backlight, NULL, &sretval);
--	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.data[0]);
--
--	msleep(1000);
--
--	sabi_set_commandb(samsung, commands->set_backlight, 1);
--	printk(KERN_DEBUG "backlight should be on\n");
--
--	sabi_command(samsung, commands->get_backlight, NULL, &sretval);
--	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.data[0]);
--}
--
--static void test_wireless(struct samsung_laptop *samsung)
--{
--	const struct sabi_commands *commands = &samsung->config->commands;
--	struct sabi_data sretval;
--
--	sabi_command(samsung, commands->get_wireless_button, NULL, &sretval);
--	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.data[0]);
--
--	sabi_set_commandb(samsung, commands->set_wireless_button, 0);
--	printk(KERN_DEBUG "wireless led should be off\n");
--
--	sabi_command(samsung, commands->get_wireless_button, NULL, &sretval);
--	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.data[0]);
--
--	msleep(1000);
--
--	sabi_set_commandb(samsung, commands->set_wireless_button, 1);
--	printk(KERN_DEBUG "wireless led should be on\n");
--
--	sabi_command(samsung, commands->get_wireless_button, NULL, &sretval);
--	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.data[0]);
--}
--
- static int read_brightness(struct samsung_laptop *samsung)
- {
- 	const struct sabi_config *config = samsung->config;
-@@ -840,12 +794,14 @@ static void samsung_sabi_exit(struct samsung_laptop *samsung)
- 	samsung->config = NULL;
- }
- 
--static __init void samsung_sabi_infos(struct samsung_laptop *samsung, int loca)
-+static __init void samsung_sabi_infos(struct samsung_laptop *samsung, int loca,
-+				      unsigned int ifaceP)
- {
- 	const struct sabi_config *config = samsung->config;
- 
- 	printk(KERN_DEBUG "This computer supports SABI==%x\n",
- 	       loca + 0xf0000 - 6);
++	/* 0x80 is off, 0x81 is on */
++	u16 get_usb_charge;
++	u16 set_usb_charge;
 +
- 	printk(KERN_DEBUG "SABI header:\n");
- 	printk(KERN_DEBUG " SMI Port Number = 0x%04x\n",
- 	       readw(samsung->sabi + config->header_offsets.port));
-@@ -859,23 +815,8 @@ static __init void samsung_sabi_infos(struct samsung_laptop *samsung, int loca)
- 	       readw(samsung->sabi + config->header_offsets.data_offset));
- 	printk(KERN_DEBUG " SABI data segment = 0x%04x\n",
- 	       readw(samsung->sabi + config->header_offsets.data_segment));
--}
--
--static void __init samsung_sabi_selftest(struct samsung_laptop *samsung,
--					unsigned int ifaceP)
--{
--	const struct sabi_config *config = samsung->config;
--	struct sabi_data sretval;
--
--	printk(KERN_DEBUG "ifaceP = 0x%08x\n", ifaceP);
--	printk(KERN_DEBUG "sabi_iface = %p\n", samsung->sabi_iface);
+ 	/*
+ 	 * Tell the BIOS that Linux is running on this machine.
+ 	 * 81 is on, 80 is off
+@@ -164,6 +168,9 @@ static const struct sabi_config sabi_configs[] = {
+ 			.get_battery_life_extender = 0xFFFF,
+ 			.set_battery_life_extender = 0xFFFF,
  
--	if (samsung->handle_backlight)
--		test_backlight(samsung);
--	test_wireless(samsung);
--
--	sabi_command(samsung, config->commands.get_brightness, NULL, &sretval);
--	printk(KERN_DEBUG "brightness = 0x%02x\n", sretval.data[0]);
-+	printk(KERN_DEBUG " SABI pointer = 0x%08x\n", ifaceP);
++			.get_usb_charge = 0xFFFF,
++			.set_usb_charge = 0xFFFF,
++
+ 			.set_linux = 0x0a,
+ 		},
+ 
+@@ -214,6 +221,9 @@ static const struct sabi_config sabi_configs[] = {
+ 			.get_battery_life_extender = 0x65,
+ 			.set_battery_life_extender = 0x66,
+ 
++			.get_usb_charge = 0x67,
++			.set_usb_charge = 0x68,
++
+ 			.set_linux = 0xff,
+ 		},
+ 
+@@ -622,9 +632,79 @@ static ssize_t set_battery_life_extender(struct device *dev,
+ static DEVICE_ATTR(battery_life_extender, S_IWUSR | S_IRUGO,
+ 		   get_battery_life_extender, set_battery_life_extender);
+ 
++static int read_usb_charge(struct samsung_laptop *samsung)
++{
++	const struct sabi_commands *commands = &samsung->config->commands;
++	struct sabi_data data;
++	int retval;
++
++	if (commands->get_usb_charge == 0xFFFF)
++		return -ENODEV;
++
++	memset(&data, 0, sizeof(data));
++	data.data[0] = 0x80;
++	retval = sabi_command(samsung, commands->get_usb_charge,
++			      &data, &data);
++
++	if (retval)
++		return retval;
++
++	if (data.data[0] != 0 && data.data[0] != 1)
++		return -ENODEV;
++
++	return data.data[0];
++}
++
++static int write_usb_charge(struct samsung_laptop *samsung,
++			    int enabled)
++{
++	const struct sabi_commands *commands = &samsung->config->commands;
++	struct sabi_data data;
++
++	memset(&data, 0, sizeof(data));
++	data.data[0] = 0x80 | enabled;
++	return sabi_command(samsung, commands->set_usb_charge,
++			    &data, NULL);
++}
++
++static ssize_t get_usb_charge(struct device *dev,
++			      struct device_attribute *attr,
++			      char *buf)
++{
++	struct samsung_laptop *samsung = dev_get_drvdata(dev);
++	int ret;
++
++	ret = read_usb_charge(samsung);
++	if (ret < 0)
++		return ret;
++
++	return sprintf(buf, "%d\n", ret);
++}
++
++static ssize_t set_usb_charge(struct device *dev,
++			      struct device_attribute *attr,
++			      const char *buf, size_t count)
++{
++	struct samsung_laptop *samsung = dev_get_drvdata(dev);
++	int ret, value;
++
++	if (!count || sscanf(buf, "%i", &value) != 1)
++		return -EINVAL;
++
++	ret = write_usb_charge(samsung, !!value);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++
++static DEVICE_ATTR(usb_charge, S_IWUSR | S_IRUGO,
++		   get_usb_charge, set_usb_charge);
++
+ static struct attribute *platform_attributes[] = {
+ 	&dev_attr_performance_level.attr,
+ 	&dev_attr_battery_life_extender.attr,
++	&dev_attr_usb_charge.attr,
+ 	NULL
+ };
+ 
+@@ -725,6 +805,8 @@ static mode_t samsung_sysfs_is_visible(struct kobject *kobj,
+ 		ok = !!samsung->config->performance_levels[0].name;
+ 	if (attr == &dev_attr_battery_life_extender.attr)
+ 		ok = !!(read_battery_life_extender(samsung) >= 0);
++	if (attr == &dev_attr_usb_charge.attr)
++		ok = !!(read_usb_charge(samsung) >= 0);
+ 
+ 	return ok ? attr->mode : 0;
  }
- 
- static int __init samsung_sabi_init(struct samsung_laptop *samsung)
-@@ -916,12 +857,13 @@ static int __init samsung_sabi_init(struct samsung_laptop *samsung)
- 	loca += 1;
- 	samsung->sabi = (samsung->f0000_segment + loca);
- 
--	if (debug)
--		samsung_sabi_infos(samsung, loca);
--
- 	/* Get a pointer to the SABI Interface */
- 	ifaceP = (readw(samsung->sabi + config->header_offsets.data_segment) & 0x0ffff) << 4;
- 	ifaceP += readw(samsung->sabi + config->header_offsets.data_offset) & 0x0ffff;
-+
-+	if (debug)
-+		samsung_sabi_infos(samsung, loca, ifaceP);
-+
- 	samsung->sabi_iface = ioremap_nocache(ifaceP, 16);
- 	if (!samsung->sabi_iface) {
- 		pr_err("Can't remap %x\n", ifaceP);
-@@ -929,9 +871,6 @@ static int __init samsung_sabi_init(struct samsung_laptop *samsung)
- 		goto exit;
- 	}
- 
--	if (debug)
--		samsung_sabi_selftest(samsung, ifaceP);
--
- 	/* Turn on "Linux" mode in the BIOS */
- 	if (commands->set_linux != 0xff) {
- 		int retval = sabi_set_commandb(samsung,
 -- 
 1.7.5.4
 
