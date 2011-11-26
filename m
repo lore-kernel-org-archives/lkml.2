@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1KZRzp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 12:55:45 -0500
-Received: from chipmunk.wormnet.eu ([195.195.131.226]:32807 "EHLO
-	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab1KZRzo (ORCPT
+	id S1753658Ab1KZSJk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 13:09:40 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54473 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753183Ab1KZSJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 12:55:44 -0500
-X-Greylist: delayed 424 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Nov 2011 12:55:44 EST
-Date: Sat, 26 Nov 2011 17:48:35 +0000
-From: Alexander Clouter <alex@digriz.org.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Mackall <mpm@selenic.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] char: hw_random: convert drivers/char/hw_random/* to
- use module_platform_driver()
-Message-ID: <20111126174834.GK6177@chipmunk>
-References: <1322313066.6001.3.camel@phoenix>
+	Sat, 26 Nov 2011 13:09:38 -0500
+Message-ID: <4ED12B50.9090206@metafoo.de>
+Date: Sat, 26 Nov 2011 19:09:20 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322313066.6001.3.camel@phoenix>
-Organization: diGriz
-X-URL: http://www.digriz.org.uk/
-X-JabberID: alex@digriz.org.uk
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-iio@vger.kernel.org, greg@kroah.com, linux-kernel@vger.kernel.org,
+        federico.vaga@gmail.com, dcobas@cern.ch, siglesia@cern.ch,
+        manohar.vanga@cern.ch
+Subject: Re: [RFC PATCH 0/7] Introducing ZIO, a new I/O framework
+References: <cover.1322328073.git.rubini@gnudd.com>
+In-Reply-To: <cover.1322328073.git.rubini@gnudd.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Axel Lin <axel.lin@gmail.com> [2011-11-26 21:11:06+0800]:
->
-> This patch converts the drivers in drivers/char/hw_random/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
+On 11/26/2011 06:30 PM, Alessandro Rubini wrote:
+> This RFC patch-set introduces the ZIO framework for input/output,
+> which will be used in the new series of drivers by the BE-CO-HT
+> group at CERN.
 > 
-> Cc: Alexander Clouter <alex@digriz.org.uk>
-> Cc: David Daney <ddaney@caviumnetworks.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: Jamie Iles <jamie@jamieiles.com>
-> Cc: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-Acked-by: Alexander Clouter <alex@digriz.org.uk>
+> The use-case it is meant to cover is very fast I/O with
+> hardware-provided timestamps.  The first production driver we will
+> support is a 100Ms/s 4-channel 14-bit ADC (developed on ohwr: see
+> http://www.ohwr.org/projects/fmc-adc-100m14b4cha ).  We need similar
+> bandwidth on output.
+> 
+> The synchronization engine of that FMC card and other ones is going to
+> be White Rabbit (http://www.ohwr.org/projects/white-rabbit).
+> 
+> Currently, the patch-set includes one example driver (zio-zero)
+> that behaves like /dev/zero and /dev/urandom. Other drivers will
+> come soon, both demo and real hardware.
+> 
+> Slides for a tutorial on the design ideas are online here:
+> http://www.ohwr.org/attachments/881/zio-111123.pdf
+> 
+> A list of pending issues and development plans is online at:
+> http://www.ohwr.org/projects/zio/wiki/Todo
 
-Cheers
+You've Cc'ed the IIO mailinglist, so you know about the IIO framework. Could
+you explain why you need a new framework and your devices can't be supported by
+the IIO framework? After a first quick glance ZIO looks to me like a subset of IIO.
 
--- 
-Alexander Clouter
-.sigmonster says: If you are too busy to read, then you are too busy.
+- Lars
