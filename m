@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab1KZRae (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 12:30:34 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:63336 "EHLO mail.gnudd.com"
+	id S1753680Ab1KZRaq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 12:30:46 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:63337 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab1KZRaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 12:30:30 -0500
-Date: Sat, 26 Nov 2011 18:30:20 +0100
+	id S1753588Ab1KZRal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 12:30:41 -0500
+Date: Sat, 26 Nov 2011 18:30:31 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-iio@vger.kernel.org, greg@kroah.com, linux-kernel@vger.kernel.org
 Cc: federico.vaga@gmail.com, dcobas@cern.ch, siglesia@cern.ch,
         manohar.vanga@cern.ch
-Subject: [RFC PATCH 1/7] Documentation: add docs for drivers/zio
-Message-ID: <136508309048abae5ff23c5230e9344c51442849.1322328075.git.rubini@gnudd.com>
+Subject: [RFC PATCH 2/7] include/linux: add headers for drivers/zio
+Message-ID: <09c2b3834c06fc45d8cca26d980482c8dad7af5a.1322328075.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,539 +23,759 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is documentation for the beta3 release of zio.
+Header files for the beta3 release of zio.
 The files match commit 7d37663 in git://ohwr.org/misc/zio.git .
-
-We are aware the "modules.txt" file is not correct as it lists files
-that are not ready. We decided to avoid fixing it for this RFC
-submission, which won't go upstream anyways.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Acked-by: Juan David Gonzalez Cobas <dcobas@cern.ch>
 Acked-by: Samuel Iglesias Gonsalvez <siglesia@cern.ch>
-Acked-by: Manohar Vanga <manohar.vanga@cern.ch>
+Acked-By: Manohar Vanga <manohar.vanga@cern.ch>
 ---
- Documentation/zio/00-INDEX    |   10 +++
- Documentation/zio/buffer.txt  |  114 ++++++++++++++++++++++++++++++++++++
- Documentation/zio/device.txt  |   69 ++++++++++++++++++++++
- Documentation/zio/modules.txt |   45 ++++++++++++++
- Documentation/zio/trigger.txt |  128 +++++++++++++++++++++++++++++++++++++++++
- drivers/zio/README            |  105 +++++++++++++++++++++++++++++++++
- 6 files changed, 471 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/zio/00-INDEX
- create mode 100644 Documentation/zio/buffer.txt
- create mode 100644 Documentation/zio/device.txt
- create mode 100644 Documentation/zio/modules.txt
- create mode 100644 Documentation/zio/trigger.txt
- create mode 100644 drivers/zio/README
+ include/linux/zio-buffer.h  |  246 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/zio-sysfs.h   |  122 +++++++++++++++++++++
+ include/linux/zio-trigger.h |   99 +++++++++++++++++
+ include/linux/zio.h         |  244 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 711 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/zio-buffer.h
+ create mode 100644 include/linux/zio-sysfs.h
+ create mode 100644 include/linux/zio-trigger.h
+ create mode 100644 include/linux/zio.h
 
-diff --git a/Documentation/zio/00-INDEX b/Documentation/zio/00-INDEX
+diff --git a/include/linux/zio-buffer.h b/include/linux/zio-buffer.h
 new file mode 100644
-index 0000000..093d9fb
+index 0000000..2e5500c
 --- /dev/null
-+++ b/Documentation/zio/00-INDEX
-@@ -0,0 +1,10 @@
-+00-INDEX
-+	- this file
-+device.txt
-+	- description of what ZIO devices (and csets and channels) are.
-+buffer.txt
-+	- description of the buffer, it's methods and how it is used.
-+trigger.txt
-+	- what is a trigger and what's its role in ZIO.
-+modules.txt
-+	- list of modules (and description) found in the first ZIO package
-diff --git a/Documentation/zio/buffer.txt b/Documentation/zio/buffer.txt
++++ b/include/linux/zio-buffer.h
+@@ -0,0 +1,246 @@
++/* Alessandro Rubini, Federico Vaga for CERN, 2011, GNU GPLv2 or later */
++#ifndef __ZIO_BUFFER_H__
++#define __ZIO_BUFFER_H__
++
++/*
++ * Data transfers on the control channel only happen by half a kB.
++ * This is fixed for forward compatibility; zio_control may have more
++ * fields in the future, and current apps should handle it.
++ */
++#define ZIO_CONTROL_SIZE	512
++
++/*
++ * The timestamp is mostly app-specific. It cam be timspec-alike but
++ * indidual devices may do whatever they want to match hardware.
++ */
++struct zio_timestamp {
++	uint64_t secs;
++	uint64_t ticks;
++	uint64_t bins;
++};
++
++/*
++ * The following data item is the control structure that is being exchanged
++ * on the control device associated to each data device. The size of each
++ * fields is fixed to ease portability of binary dumps (esp i386/x86-64).
++ * The endianness, however, is native for speed reasons.
++ */
++
++struct zio_control {
++	/* byte 0 */
++	uint8_t major_version;
++	uint8_t minor_version;
++	uint8_t unused[2];
++	/* byte 4*/
++	uint32_t seq_num;	/* block sequence number */
++	uint32_t flags;		/* endianness etc, see below */
++	uint32_t nsamples;	/* number of samples in this data block */
++	/* byte 16 */
++	uint16_t ssize;		/* sample-size for each of them, in bytes */
++	uint16_t sbits;		/* sample-bits: number of valid bits */
++	uint16_t cset_i;	/* index of channel-set within device */
++	uint16_t chan_i;	/* index of channel within cset */
++
++	/* byte 24 */
++	/* The control block includes what device the data belong to */
++	char devname[ZIO_NAME_LEN];
++
++	/* byte 56 */
++	/* Each data block is associated with a trigger and its features */
++	char triggername[ZIO_NAME_LEN];
++
++	/* byte 88 */
++	struct zio_timestamp tstamp;
++
++	/* byte 112 */
++	uint32_t ext_attr_mask;	/* mask of active extended attributes */
++	uint32_t std_attr_mask;	/* mask of active standard attributes */
++	/* byte 120 */
++	uint32_t std_attrs[32];	/* value of each standard attribute */
++	uint32_t ext_attrs[32];	/* value of each extended attribute */
++
++	/* This filler must be updated if you change fields above */
++	uint8_t __fill_end[ZIO_CONTROL_SIZE - 120 - 4 * (32 + 32)];
++};
++
++/* The following flags are used in the control structure */
++#define ZIO_CONTROL_LITTLE_ENDIAN	0x01000001
++#define ZIO_CONTROL_BIG_ENDIAN		0x02000002
++
++#define ZIO_CONTROL_MSB_ALIGN		0x00000004 /* for analog data */
++#define ZIO_CONTROL_LSB_ALIGN		0x00000008 /* for analog data */
++
++#ifdef __KERNEL__
++#include <linux/module.h>
++#include <linux/kobject.h>
++#include <linux/slab.h>
++#include <linux/zio.h>
++#include <linux/gfp.h>
++#include <linux/fs.h>
++#include <linux/list.h>
++#include <linux/spinlock.h>
++#include <linux/wait.h>
++
++#define ZIO_DEFAULT_BUFFER "kmalloc" /* For devices with no own buffer type */
++
++/* Compile-time check that the control structure is the right size */
++static inline void __unused_check_size(void)
++{
++	/* if zio_control is smaller then ZIO_CONTROL_SIZE, compile error */
++	static int __used v1[sizeof(struct zio_control) - ZIO_CONTROL_SIZE];
++	/* if zio_control is greater then ZIO_CONTROL_SIZE, compile error */
++	static int __used v2[ZIO_CONTROL_SIZE - sizeof(struct zio_control)];
++
++	BUILD_BUG_ON(sizeof(struct zio_control) != ZIO_CONTROL_SIZE);
++}
++
++/* FIXME: use a kmem_cache and real functions for control alloc/free */
++static inline struct zio_control *zio_alloc_control(gfp_t gfp)
++{
++	struct zio_control *ctrl;
++
++	ctrl = kzalloc(sizeof(*ctrl), gfp);
++	if (!ctrl)
++		return NULL;
++	ctrl->major_version = ZIO_MAJOR_VERSION;
++	ctrl->minor_version = ZIO_MINOR_VERSION;
++	if (ntohl(1) == 1)
++		ctrl->flags |= ZIO_CONTROL_BIG_ENDIAN;
++	else
++		ctrl->flags |= ZIO_CONTROL_LITTLE_ENDIAN;
++	return ctrl;
++}
++static inline void zio_free_control(struct zio_control *ctrl)
++{
++	kfree(ctrl);
++}
++
++/*
++ * The following structure defines a buffer type, with methods.
++ * An instance is created for each channel using it
++ */
++struct zio_buffer_operations;
++struct zio_buffer_type {
++	struct zio_obj_head	head;
++	struct module		*owner;
++	struct list_head	list; /* instances, and list lock */
++	struct spinlock		lock;
++	unsigned long		flags; /* to be defined */
++
++	/* file operations (read/write etc) are buffer-specific too */
++	const struct zio_sys_operations		*s_op;
++	const struct zio_buffer_operations	*b_op;
++	const struct file_operations		*f_op;
++
++	/* default attributes for instance */
++	struct zio_attribute_set		zattr_set;
++	/* FIXME: how "own" devices are listed (here or elsewhere?) */
++	struct zio_device	*zdev_owner;
++	unsigned int		n_zdev_owner;
++};
++#define to_zio_buf(obj) container_of(obj, struct zio_buffer, head.kobj)
++
++/* read and write may often be the generic ones */
++ssize_t zio_generic_read(struct file *, char __user *,
++			 size_t, loff_t *);
++ssize_t zio_generic_write(struct file *, const char __user *,
++			  size_t, loff_t *);
++unsigned int zio_generic_poll(struct file *, struct poll_table_struct *);
++int zio_generic_release(struct inode *inode, struct file *f);
++
++
++int __must_check zio_register_buf(struct zio_buffer_type *zbuf,
++				  const char *name);
++void zio_unregister_buf(struct zio_buffer_type *zbuf);
++
++struct zio_bi {
++	struct zio_obj_head	head;
++	struct list_head	list;		/* instance list */
++	struct zio_channel	*chan;
++	struct zio_cset		*cset;		/* short for chan->cset */
++
++	/* Those using generic_read need this information */
++	unsigned long flags;			/* input or output, etc */
++	wait_queue_head_t q;			/* for reading or writing */
++
++	/* Standard and extended attributes for this object */
++	struct zio_attribute_set		zattr_set;
++
++	const struct zio_buffer_operations	*b_op;
++	const struct file_operations		*f_op;
++};
++#define to_zio_bi(_kobj) container_of(_kobj, struct zio_bi, head.kobj)
++
++/* The block is the basic data item being transferred */
++struct zio_block {
++	unsigned long		ctrl_flags;
++	void			*data;
++	size_t			datalen;
++	size_t			uoff;
++};
++
++/*
++ * We must know whether the ctrl block has been filled/read or not: "cdone"
++ * No "set_ctrl" or "clr_cdone" are needed, as cdone starts 0 and is only set
++ */
++#define zio_get_ctrl(block) ((struct zio_control *)((block)->ctrl_flags & ~1))
++#define zio_set_ctrl(block, ctrl) ((block)->ctrl_flags = (unsigned long)(ctrl))
++#define zio_is_cdone(block)  ((block)->ctrl_flags & 1)
++#define zio_set_cdone(block)  ((block)->ctrl_flags |= 1)
++
++
++/*
++ * Each buffer implementation must provide the following methods, because
++ * internal management of individual data instances is left to each of them.
++ *
++ * "store" is for input and "retr" for output (called by low-level driver).
++ * After store, the block is ready for user space and freed internally;
++ * after retr, it's the low level driver that must cal the free method.
++ * The "alloc" method is called on trigger setup (activate), because the
++ * data storage must be available when data transfer really happens (thus,
++ * a DMA-only device will have its own buffer as the preferred one).
++ * The buffer may use its own alloc for blocks created at write(2) time.
++ *
++ * Note that each buffer type will need more information, so the block
++ * is usually inside a custom structure, reached by container_of().
++ * Thus, all blocks for a buffer type must be allocated and freed using
++ * the methods of that specific buffer type.
++ */
++struct zio_buffer_operations {
++	struct zio_block *	(*alloc_block)(struct zio_bi *bi,
++					       struct zio_control *ctrl,
++					       size_t datalen, gfp_t gfp);
++	void			(*free_block)(struct zio_bi *bi,
++					      struct zio_block *block);
++
++	int			(*store_block)(struct zio_bi *bi,
++					       struct zio_block *block);
++	struct zio_block *	(*retr_block) (struct zio_bi *bi);
++
++	struct zio_bi *		(*create)(struct zio_buffer_type *zbuf,
++					  struct zio_channel *chan,
++					  fmode_t f_flags);
++	void			(*destroy)(struct zio_bi *bi);
++};
++
++/*
++ * This is the structure we place in f->private_data at open time.
++ * Note that the buffer_create function is called by zio-core.
++ */
++enum zio_cdev_type {
++	ZIO_CDEV_CTRL,
++	ZIO_CDEV_DATA,
++};
++struct zio_f_priv {
++	struct zio_channel *chan; /* where current block and buffer live */
++	enum zio_cdev_type type;
++};
++
++ssize_t zio_generic_read(struct file *f, char __user *ubuf,
++			 size_t count, loff_t *offp);
++ssize_t zio_generic_write(struct file *f, const char __user *ubuf,
++			  size_t count, loff_t *offp);
++unsigned int zio_generic_poll(struct file *f, struct poll_table_struct *w);
++
++#endif /* __KERNEL__ */
++#endif /* __ZIO_BUFFER_H__ */
+diff --git a/include/linux/zio-sysfs.h b/include/linux/zio-sysfs.h
 new file mode 100644
-index 0000000..f80e63a
+index 0000000..376b992
 --- /dev/null
-+++ b/Documentation/zio/buffer.txt
-@@ -0,0 +1,114 @@
++++ b/include/linux/zio-sysfs.h
+@@ -0,0 +1,122 @@
++/* Federico Vaga for CERN, 2011, GNU GPLv2 or later */
++#ifndef ZIO_SYSFS_H_
++#define ZIO_SYSFS_H_
 +
-+ZIO defines a "buffer" object type, so each device can exploit any
-+features it may offer to speed up data transfers.
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
++#include <linux/types.h>
 +
-+Each cset in a device can use a different buffer, which is specified
-+as an attribute of the cset.  One instance of the buffer type exists
-+for each channel, and the char devices (control and data: see
-+device.txt) refer to the buffer.
++#include <linux/zio.h>
 +
-+Please read <linux/zio-buffer.h> together with this file.
++/*
++ * zio_attribute: the attribute to access device parameters.
++ *
++ * Many devices store configuration in hardware registers, and thus
++ * many configuration steps can be reduced to a read/write from/to a
++ * particular device register, located at a specific address.
++ *
++ * A zio_attribute provides a generic way to access those registers
++ *
++ * @attribute: standard attribute structure used to create a sysfs access
++ * @priv.reg: register address to use as is
++ * @priv.reg_descriptor: a generic pointer used to specify how access to a
++ *	particular register on device. This is defined by driver developer
++ * @value: is the value stored on device
++ * @show: is equivalent to info_get from zio_operations
++ * @store: is equivalent to  conf_set from zio_operations
++ */
++struct zio_attribute {
++	struct attribute			attr;
++	union { /* priv is sometimes a pointer and sometimes an hw addr */
++		void				*ptr;
++		unsigned long			addr;
++	} priv;
++	uint32_t				value;
++	const struct zio_sys_operations		*s_op;
++};
 +
-+	Buffer Types
-+	============
++struct zio_sys_operations {
++	int (*info_get)(struct kobject *kobj, struct zio_attribute *zattr,
++			uint32_t *usr_val);
++	int (*conf_set)(struct kobject *kobj, struct zio_attribute *zattr,
++			uint32_t  usr_val);
++};
 +
-+Buffers may be device-specific or generic. A generic buffer called
-+"kmalloc" is provided within zio-core; it uses kmalloc for allocation
-+data blocks.  Such buffer is activated by default on all new csets
-+being registered but is not special in any other way, you can write
-+your own generic buffer (and if it's better than ours, we may use it
-+as default buffer in future releases).
++/* attribute -> zio_attribute */
++#define to_zio_zattr(aptr) container_of(aptr, struct zio_attribute, attr)
 +
-+A device-specific buffer declares to be such within its attributes.  A
-+device-specific buffer can only be used by csets that declare its name
-+as preferred buffer type.  When such csets are registered, if the
-+buffer is already known to ZIO, it will be activated by default instead
-+of "kmalloc".
++/*
++ * Every object has both std attributes (whole length is known)
++ * and extended attributes (as we need to be told how many).
++ * Then, the sysfs attribute_groups are what we build to actually register
++ */
++struct zio_attribute_set {
++	struct zio_attribute	*std_zattr;
++	unsigned int		n_std_attr;
++	struct attribute_group	std_group;
++	struct zio_attribute	*ext_zattr;
++	unsigned int		n_ext_attr;
++	struct attribute_group	ext_group;
++};
 +
-+Sometimes people write drivers for a set of similar devices, with
-+similar DMA capabilities. In this case, all of them may refer to the
-+same device-specific buffer type; the buffer type may be registered
-+as a standalone kernel module.
++enum zattr_standard_zdev {
++	ZATTR_NBIT,	/* number of bits per sample */
++	ZATTR_GAIN,	/* gain for signal, integer in 0.001 steps */
++	ZATTR_OFFSET,	/* microvolts */
++	ZATTR_MAXRATE,	/* hertz */
++	ZATTR_VREFTYPE,	/* source of Vref (0 = default) */
++	ZATTR_STD_NUM_ZDEV,		/* used to size arrays */
++};
++enum zattr_standard_trig {
++	ZATTR_TRIG_REENABLE = 0,/* re-arm trigger */
++	ZATTR_TRIG_NSAMPLES,	/* samples for each transfer */
++	ZATTR_STD_NUM_TRIG,	/* used to size arrays */
++};
++enum zattr_standard_zbuf {
++	ZATTR_ZBUF_MAXLEN = 0,	/* max number of element in buffer */
++	ZATTR_STD_NUM_ZBUF,	/* used to size arrays */
++};
 +
-+The ZIO buffer data structures includes two sets of operations:
-+file_operations and buffer_operations.
-+
-+
-+	Buffer Operations
-+	=================
-+
-+Each buffer type must provide the following buffer operations. All
-+of them are implemented in zio-buf-kmalloc.c, which may be used as
-+reference to better understand the role of each method:
-+
-+	struct zio_bi *(*create)(struct zio_buffer_type *zbuf,
-+				 struct zio_channel *ch,
-+				 fmode_t f_flags);
-+	void (*destroy)(struct zio_bi *bi);
-+
-+The create() operation allocates and initializes an instance of the
-+buffer type. It is called by ZIO when a channel is opened for the
-+first time. The operation return a zio buffer instance (zio_bi),
-+which is the generic descriptor of a buffer instance. ZIO handles
-+only zio_bi, so complex buffer structures must contain the zio_bi
-+structure and use container_of() to access the private enclosing
-+structure.
-+
-+Destroy() deallocates a buffer instance. ZIO calls destroy when the
-+channel is unregistered from ZIO or when the user assigns a different
-+buffer type to the channel.
-+
-+When the control/data devices are closed, ZIO doesn't call destroy, so
-+incoming data can queue up while the application leaves it closed
-+(e.g., a shell script).  Actually, the release file operation is not
-+handled by ZIO, so it couldn't call destroy on close even if it wanted
-+to.
-+
-+	struct zio_block *(*alloc_block)(struct zio_bi *bi,
-+					 struct zio_control *ctrl,
-+					 size_t datalen, gfp_t gfp);
-+	void (*free_block)(struct zio_bi *bi, struct zio_block *block);
-+
-+For input channels, a block is allocated before the trigger fires, and
-+it is freed when the user has read or explicitly ignored it. For
-+output, allocation happens on user write and free is called by the
-+trigger when it is done. Thus, the functions are sometimes called by
-+buffer code itself, and sometimes by the trigger. The generic
-+structure hosting a block is zio_block which contain both data
-+(samples) and control informations.  If needed, buffers may use a more
-+complex structure, which will include zio_block, which is the only
-+structure that ZIO handles; by using container_of you can retrieve the
-+enclosing complex structure used in your buffer
-+
-+	int (*store_block)(struct zio_bi *bi, struct zio_block *block);
-+	struct zio_block (*retr_block) (struct zio_bi *bi);
-+
-+For input the trigger calls store_block() and the read system call issues
-+retr_block().  For output, the write system call runs store_block()
-+and the trigger may call retr_block() (although the buffer pushes to
-+the trigger when it receives the first data block).
++extern const char zio_zdev_attr_names[ZATTR_STD_NUM_ZDEV][ZIO_NAME_LEN];
++extern const char zio_trig_attr_names[ZATTR_STD_NUM_TRIG][ZIO_NAME_LEN];
++extern const char zio_zbuf_attr_names[ZATTR_STD_NUM_ZBUF][ZIO_NAME_LEN];
 +
 +
-+	File Operations
-+	===============
++/* FIXME: check this DECLARE stuff */
++#define DEFINE_ZATTR_STD(_type, _name) struct zio_attribute \
++	_name[ZATTR_STD_NUM_##_type]
 +
-+This field hosts the file_operations used by the char devices (control and
-+data) for every channel using this buffer type.  When char devices are
-+initially opened, the open method being run is within zio-code;
-+it  kmallocs f->private_data before calling the buffer-specific open
-+method. The private data being used is:
++/*
++ * @ZATTR_REG: define a zio attribute with address register
++ * @ZATTR_PRV: define a zio attribute with private register
++ * @ZATTR_EXT_REG: define a zio extended attribute with address register
++ * @ZATTR_EXT_PRV: define a zio extended attribute with private register
++ */
++#define ZATTR_REG(zobj, _type, _mode, _add, _val)[_type] = {		\
++		.attr = {						\
++			.name = zio_##zobj##_attr_names[_type],		\
++			.mode = _mode					\
++		},							\
++		.priv.addr = _add,					\
++		.value = _val,						\
++}
++#define ZATTR_PRV(zobj, _type, _mode, _add, _val)[_type] = {		\
++		.attr = {						\
++			.name = zio_##zobj##_attr_names[_type],		\
++			.mode = _mode					\
++		},							\
++		.priv.ptr = _add,					\
++		.value = _val,						\
++}
++#define ZATTR_EXT_REG(_name, _mode, _add, _val) {			\
++		.attr = {.name = _name, .mode = _mode},			\
++		.priv.addr = _add,					\
++		.value = _val,						\
++}
++#define ZATTR_EXT_PRV(_name, _mode, _add, _val) {			\
++		.attr = {.name = _name, .mode = _mode},			\
++		.priv.ptr = _add,					\
++		.value = _val,						\
++}
 +
-+	struct zio_f_priv {
-+		struct zio_channel *chan;
-+		enum zio_cdev_type type;
-+	};
-+
-+All buffer file operations can thus refer to the current channel (and
-+its buffer and its trigger), and know if the current file is
-+ZIO_CDEV_CTRL or ZIO_CDEV_DATA.  Every buffer is expected to
-+call zio_generic_release() at the end of its own release operation, or
-+used zio_generic_release() directly in the file operations.
-+
-+ZIO offers other generic file operations, that may be enough for your
-+buffer code or not. See zio-buf-kmalloc.c for a working example of
-+buffer file operations.
-diff --git a/Documentation/zio/device.txt b/Documentation/zio/device.txt
++#endif /* ZIO_SYSFS_H_ */
+diff --git a/include/linux/zio-trigger.h b/include/linux/zio-trigger.h
 new file mode 100644
-index 0000000..0c960e2
+index 0000000..6afacfe
 --- /dev/null
-+++ b/Documentation/zio/device.txt
-@@ -0,0 +1,69 @@
++++ b/include/linux/zio-trigger.h
+@@ -0,0 +1,99 @@
++/* Federico Vaga for CERN, 2011, GNU GPLv2 or later */
++#ifndef __ZIO_TRIGGER_H__
++#define __ZIO_TRIGGER_H__
 +
-+	ZIO Device
-+	==========
++#include <linux/zio.h>
++#include <linux/zio-buffer.h>
 +
-+A device, registered through zio_register_device() is the description
-+of an I/O peripheral. It is made up of channel-sets, called csets
-+from now on. A device may represent a PCI board or an SPI integrated
-+circuit or whatever it makes sense to manage from a single device driver.
-+All I/O operations are performed on csets, so the device is just an
-+array of csets.
++#define ZIO_DEFAULT_TRIGGER "timer" /* FIXME: app-request */
 +
-+	Csets
-+	=====
++struct zio_trigger_type {
++	struct zio_obj_head	head;
++	struct module		*owner;
++	struct list_head	list; /* instances, and list lock */
++	struct spinlock		lock;
++	unsigned long		flags; /* to be defined */
 +
-+A cset (channel-set) is an homogeneous set of I/O channels. All
-+channels in the set are feature the same physical characteristics;
-+moreover, a cset refers to a trigger object, so all channels in a set
-+are triggered by the same event. This is the typical use case for
-+logic analysers (digital input) or multi-probe scopes (analog input),
-+as well as multi-waveform output. If your device has several input
-+channels which are separately triggered, they should be defined as
-+several cset items, each featuring one channel only.  Finally, all
-+channels in a cset use the same buffer object for in-kernel data
-+storage. Both the buffer and the trigger for a cset are set by
-+writing the proper name in sysfs. At device registration defaults
-+apply. If ZIO can't find the trigger/buffer name you wrote,
-+it will return EINVAL and leave the previous trigger/buffer in place.
++	/* file_operations because the trigger may override the buffer */
++	const struct zio_sys_operations		*s_op;
++	const struct zio_trigger_operations	*t_op;
++	const struct file_operations		*f_op;
 +
-+	Channels
-+	========
++	/* default attributes for instance */
++	struct zio_attribute_set		zattr_set;
 +
-+The channel is the lowest object in the ZIO hierarchy. It represents
-+the single physical connector of the device: analog or digital, input
-+or output. Time-to-digital and digital-to-time devices can be represented
-+as channels as well.
++	/* FIXME: how "own" devices are listed (here or elsewhere?) */
++	struct zio_device	*zdev_owner;
++	unsigned int		n_zdev_owner;
++};
++#define to_zio_trig(_kobj) container_of(_kobj, struct zio_trigger, head.kobj)
 +
-+	Attributes
-+	==========
++int __must_check zio_register_trig(struct zio_trigger_type *ztrig,
++				   const char *name);
++void zio_unregister_trig(struct zio_trigger_type *trig);
 +
-+Most configuration and information in ZIO happens through sysfs.
-+See sysfs.txt for information about attributes. (FIXME: sysfs.txt)
++struct zio_ti {
++	struct zio_obj_head	head;
++	struct list_head	list;		/* instance list */
++	struct zio_cset		*cset;
 +
-+	Data Transfers
-+	==============
++	unsigned long		flags;		/* input or output, etc */
++	struct zio_control	*current_ctrl;	/* the active one */
++	/* This is for software stamping */
++	struct timespec		tstamp;
++	uint64_t tstamp_extra;
 +
-+Data transfer in ZIO uses two char devices for each channel offered by
-+the driver. One char device is used to describe data blocks (we call
-+it control device); the other is used to transfer the data blocks (we
-+call it data device). The control device returns (or accepts) a
-+fixed-size structure that describes the next data transfer, including
-+the trigger in use, data size, number of samples and various
-+attributes.  Applications may choose to read the data device alone,
-+without retrieving control information: when any data of a new block
-+is transferred, the associated control information is discarded.
-+Similarly, data is discarded if you re-read the control device after
-+having retrieved the description of a data block you are not
-+interested in.  For output, writing data without writing control uses
-+the default control information, or the one from the previous
-+transfer.
++	/* Standard and extended attributes for this object */
++	struct zio_attribute_set		zattr_set;
 +
-+The full set of rules for data and control transfers is described
-+elsewhere (FIXME: link to other docs) but it is pretty intuitive once
-+you get the idea.
++	const struct zio_trigger_operations	*t_op;
++	const struct file_operations		*f_op;
 +
-+See the "zio-dump" host tool in the top-level zio dir for an example
-+of generic and simple input application that shows use of control and
-+data files.
++};
++#define to_zio_ti(_kobj) container_of(_kobj, struct zio_ti, head.kobj)
++void zio_fire_trigger(struct zio_ti *ti);
 +
++/*
++ * When a buffer has a complete block of data, it can send it to the trigger
++ * using push_block. The trigger can either accept it (returns 0) or not
++ * (returns -EBUSY). This because an output  trigger has only one pending
++ * data transfer. When the block is consumed, the trigger may bi->retr_block
++ * to get the next one. Buffering is in the buffer, not in the trigger.
++ *
++ * For input channels, a buffer may call pull_block. The trigger may thus
++ * fire input directly and later have a block. In the normal case, the trigger
++ * runs by itself and it will call bi->store_block when a new block
++ * happens to be ready. In this case the pull_block method here may be null.
++ *
++ * Input and output in the device is almost always asynchronous, so when
++ * the data has been transferred for the cset, the device calls back the
++ * trigger. For output, data_done frees the blocks and prepares new
++ * blocks if possible; for input, data_done pushes material to the buffers.
++ *
++ * Then, a trigger instance is configured either by sysfs (and this means
++ * the conf_set callback runs and the instance is notified) or by writing
++ * a whole control to the control device. In this case the config method
++ * is called by the write method.
++ */
++struct zio_trigger_operations {
++	int			(*push_block)(struct zio_ti *ti,
++					      struct zio_channel *chan,
++					      struct zio_block *block);
++	void			(*pull_block)(struct zio_ti *ti,
++					      struct zio_channel *chan);
 +
-diff --git a/Documentation/zio/modules.txt b/Documentation/zio/modules.txt
++	void			(*data_done)(struct zio_cset *cset);
++
++	int			(*config)(struct zio_ti *ti,
++					  struct zio_control *ctrl);
++
++	struct zio_ti *		(*create)(struct zio_trigger_type *trig,
++					  struct zio_cset *cset,
++					  struct zio_control *ctrl,
++					  fmode_t flags);
++	void			(*destroy)(struct zio_ti *ti);
++};
++
++void zio_generic_data_done(struct zio_cset *cest);
++
++#endif /* __ZIO_TRIGGER_H__ */
+diff --git a/include/linux/zio.h b/include/linux/zio.h
 new file mode 100644
-index 0000000..b3df00a
+index 0000000..992994b
 --- /dev/null
-+++ b/Documentation/zio/modules.txt
-@@ -0,0 +1,45 @@
-+
-+This is the list of ZIO modules, at the time of writing. It is there
-+to help new users understanding how the parts stick together.
-+
-+  drivers/zio/zio-core.ko
-+
-+This module (which is linked from several source files) includes the
-+core sysfs and attribute management. It exports the register and
-+unregister functions for top-level objects. Moreover, it includes the
-+default buffer, called "kmalloc" and default trigger, called
-+"app-request".
-+
-+  drivers/zio/trigger/trig-ktimer.ko
-+  drivers/zio/trigger/trig-hrt.ko
-+  drivers/zio/trigger/trig-irq.ko
-+
-+Three other generic triggers. Two of them are time-based, and the
-+third hooks to an external interrupt (or more than one) as source of
-+trigger that can be used be any zio cset).
-+
-+  drivers/zio/dev/zio-null.ko
-+  drivers/zio/dev/zio-parport.ko
-+  drivers/zio/dev/zio-ad7888.ko
-+  drivers/zio/dev/zio-uart.ko
-+
-+These modules are examples. "null" does nothing: it discards output
-+data and returns zeroes as input data. It can be used to experiment
-+with generic triggers and as a sandbox for local modifications and
-+testing.
-+
-+The parport driver registers two output csets and two input cset.
-+In each group one cset is byte-oriented and the other is bit-oriented.
-+
-+The ad7888 is an SPI ADC we mounted on an ARM board. It's a real
-+8-channel ADC we are using for internal development, and this is a
-+real driver for a real thing. Over time it will handle its own buffer
-+type (our SPI master uses DMA) and its own data-driven trigger (even
-+if the data will be scanned by the CPU, so it can only work at low
-+data rates).
-+
-+The uart driver is a line discpline that can receive data from a
-+serial port. The first implementation expects to receive an endless
-+stream of 16-bit data, big endian (we used this to run on-board ADC on
-+cortex-m3), but we plan to extend it as a serious test case. You can
-+drive it from a pty slave, for example.
-diff --git a/Documentation/zio/trigger.txt b/Documentation/zio/trigger.txt
-new file mode 100644
-index 0000000..95b426f
---- /dev/null
-+++ b/Documentation/zio/trigger.txt
-@@ -0,0 +1,128 @@
-+
-+ZIO defines a "trigger" object type, and each cset is connected to
-+a trigger.
-+
-+Each cset in a device can use a different trigger, which is specified
-+as an attribute of the cset.  When the trigger fires, it acts on all
-+the non-disabled channels of the cset.  Only the "app-request" trigger
-+can act on a single channel at a time.
-+
-+Please read <linux/zio-trigger.h> together with this file.
-+
-+	Trigger Types
-+	=============
-+
-+Triggers may be device-specific or generic. A few generic triggers
-+are part of zio-core. The "app-request" trigger fires input when
-+the application calls read and fires output when the application calls
-+write (it acts on a single channel). The "ktimer" trigger uses a kernel
-+timer as trigger source. The "irq" trigger uses any interrupt (e.g.,
-+a GPIO interrupt, or pin 10 of the PC parallel port) as trigger event.
-+
-+A device-specific trigger declares to be such within its attributes.  A
-+device-specific trigger can only be used by csets that declare its name
-+as preferred trigger type.  When such csets are registered, if the
-+trigger is already known to ZIO, it will be activated by default instead
-+of "app-request".
-+
-+	Trigger Operations
-+	==================
-+
-+Trigger operations are the following:
-+
-+	struct zio_ti *(*create)(struct zio_trigger_type *trig,
-+				 struct zio_cset *cset,
-+				 struct zio_control *ctrl,
-+				 fmode_t flags);
-+	void (*destroy)(struct zio_ti *ti);
-+
-+Create and destroy a trigger instance for a cset. ZIO calls create() when
-+attaching the trigger to a cset; it calls destroy() when the trigger is
-+replaced by a different one or the cset is being unregistered from ZIO.
-+The instance structure is trigger-specific, but it must include the
-+generic structure zio_ti. Every time this structure is passed over, trigger
-+code may use container_of if it needs to access the private enclosing
-+structure.
-+
-+	int (*config)(struct zio_ti *ti, stuct zio_control *ctrl);
-+
-+The method is called by ZIO whenever the attributes for a trigger
-+instance are modified by the user (by writing to sysfs or otherwise).
-+
-+	int (*push_block)(struct zio_ti *ti,
-+			  struct zio_channel *chan,
-+			  struct zio_control *ctrl);
-+
-+This is used for output channels: when a new data block is ready, it
-+must be sent to the trigger so it can be output when the event fires.
-+Buffer code, therefore, is expected to call this trigger method.  The
-+function can return -EAGAIN if it has no space in the queue, or 0 on
-+success. If EAGAIN happens, the buffer should handle it (by storing
-+locally or notifying the user).
-+
-+	void (*pull_block)(struct zio_ti *ti,
-+	  		   struct zio_channel *chan);
-+
-+The method asks the trigger for a new block. It may be called by
-+the buffer, if it wants a block immediately. The trigger that offers
-+this method (which may be NULL) is responsible of storing a block
-+when available.  Since driver->input_cset completes asynchronously, this
-+method can't return a block directly.  The block that will be stored
-+may be shorter than what the trigger would have stored in the buffer
-+by itself.
-+
-+        void (*data_done)(struct zio_cset *cset);
-+
-+The function is called by the device, and signals the trigger that
-+the input or output operation on the cset is over. For input, the
-+trigger will push blocks to the buffer, for output it will release
-+the blocks.  zio-core offers zio_generic_data_done() for triggers
-+that don't need special handling.
-+
-+	File Operations
-+	===============
-+
-+The trigger may include a non-NULL f_ops pointer. Most triggers will
-+not need it, but for example "app-request" does, because it needs to
-+look at individual read and write calls performed by applications.
-+ZIO will use these file operations (instead of the buffer file operations)
-+when the open method of the char device detects that the active trigger
-+declares a non-NULL f_ops field.  These operations will most
-+likely fall back to buffer->f_ops for most of their actual work.
-+
-+See zio-trig-app-request.c for details about how this is used.
-+
-+	When the trigger fires
-+	======================
-+
-+The trigger event may happen for a variety of reasons. It can be
-+time-driven, data-driven or whatever else.  In any case, there is
-+a time when the trigger fires, so input or output may happen.
-+(With most hardware-specific triggers, the actual input or output of
-+data has already happened when the trigger interrupt runs, but this
-+doesn't change the software flow).
-+
-+Hardware-driven triggers will need to make their own work by themselves,
-+but ZIO offers this help macro to loop over all non-disabled channels:
-+
-+	cset_for_each(struct zio_cset *cset, struct zio_channel *ch)
-+
-+The macro works like "task_for_each" or "list_for_each" in the kernel
-+headers.
-+
-+For software-based triggers (where actual I/O happens when software
-+wants it to happen, even if it is in response to an interrupt), the
-+asynchronous code that runs the event will just need to call
-+
-+	zio_fire_trigger(struct zio_ti *ti);
-+
-+This function, part of zio-core, calls the internal helpers
-+__zio_fire_input_trigger for input or __zio_fire_output_trigger for
-+output. For input, block allocation is performed for each
-+non-disabled channel, and drv->input_cset is called.
-+For output, drv->outoput_cset is called.
-+
-+You can refer to "zio-trig-timer" for an example of a multi-instance
-+generic timer and to "zio-trig-app-request" for a non-conventional
-+implementation based on trigger-local file_operations.
-+
-diff --git a/drivers/zio/README b/drivers/zio/README
-new file mode 100644
-index 0000000..d537353
---- /dev/null
-+++ b/drivers/zio/README
-@@ -0,0 +1,105 @@
-+
-+Zio is "the ultimate I/O framework".  Is being developed on the open
-+hardware repository at http://www.ohwr.org/projects/zio .
-+
-+This version is known to compile and run with kernels 2.6.34 onwards.
-+
-+This README refers to version "beta3", but work is ongoing towards
-+a stable package. See the TODO file on ohwr for details.
-+
-+To test zio you need to load the core modules (later, the default
-+trigger and default buffer will be part of zio-core):
-+
-+   	insmod zio-core.ko
-+   	insmod buffers/zio-buf-kmalloc.ko
-+   	insmod triggers/zio-trig-timer.ko
-+
-+Drivers can't live without a trigger and a buffer, so the modules above
-+must be loaded first.
-+
-+The kmalloc buffer is a simple buffer that hosts a list of data blocks,
-+for either input or output.
-+
-+The timer trigger is a kernel-timer based trigger, that fires a block
-+transfer on a timely basis. You can use the "ms" parameter to set the
-+inter-block time, in milliseconds (the default is two seconds). You
-+can also pass the "nsamples" parameter to say how many samples are
-+aquired at each trigger instance.
-+
-+With the core in place, you can load a driver:
-+
-+	insmod drivers/zio-zero.ko
-+
-+zio-zero has a single channel-set (number 0) with three channels.
-+They simulate three analog inputs, 8-bit per sample.
-+
-+     channel 0: returns zero forever
-+     channel 1: returns random numbers
-+     channel 2: returns a sawtooth signal (0 to 255 and back)
-+
-+The char devices are called using device-cset-channel:
-+
-+    /dev/zzero-0-0-ctrl
-+    /dev/zzero-0-0-data
-+    /dev/zzero-0-1-ctrl
-+    /dev/zzero-0-1-data
-+    /dev/zzero-0-2-ctrl
-+    /dev/zzero-0-2-data
-+
-+(later versions will use a /dev/zio/ directory for all zio files)
-+
-+To read data you can just cat, or "od -t x1" the data device.
-+To get control information meta-information) together with data, you
-+can use the "zio-dump" user-space utility, in this directory.
-+
-+For example:
-+
-+    ./zio-dump /dev/zzero-0-2-ctrl /dev/zzero-0-2-data
-+
-+This is the result with a trigger that uses 2000 as msec and 32
-+as nsample:
-+
-+    ./zio-dump /dev/zzero-0-2-ctrl /dev/zzero-0-2-data
-+
-+    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
-+    Ctrl: seq 1, n 32, size 1, bits 8, flags 01000001 (little-endian)
-+    Ctrl: stamp 1320403540.084798370 (0)
-+    Data: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
-+    Data: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
-+
-+    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
-+    Ctrl: seq 2, n 32, size 1, bits 8, flags 01000001 (little-endian)
-+    Ctrl: stamp 1320403542.091093781 (0)
-+    Data: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
-+    Data: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f
-+
-+    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
-+    Ctrl: seq 3, n 32, size 1, bits 8, flags 01000001 (little-endian)
-+    Ctrl: stamp 1320403544.084790274 (0)
-+    Data: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f
-+    Data: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f
-+
-+Zio dump is able to access several pairs of devices (control and data),
-+and you can change the trigger and buffer attributes for the cset.
-+
-+Example:
-+
-+    echo 500 > /sys/zio/devices/zzero/cset0/trigger/ms-period
-+    echo 4 > /sys/zio/devices/zzero/cset0/trigger/nsamples
-+    echo 3 > /sys/zio/devices/zzero/cset0/chan0/buffer/max-buffer-len
-+    ./zio-dump /dev/zzero-0-*
-+
-+    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 0
-+    Ctrl: seq 102, n 4, size 1, bits 8, flags 01000001 (little-endian)
-+    Ctrl: stamp 4066.519285605 (0)
-+    Data: 00 00 00 00
-+
-+    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 1
-+    Ctrl: seq 102, n 4, size 1, bits 8, flags 01000001 (little-endian)
-+    Ctrl: stamp 4066.519285605 (0)
-+    Data: 71 29 a6 53
-+
-+    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
-+    Ctrl: seq 102, n 4, size 1, bits 8, flags 01000001 (little-endian)
-+    Ctrl: stamp 4066.519285605 (0)
-+    Data: 60 61 62 63
++++ b/include/linux/zio.h
+@@ -0,0 +1,244 @@
++
++/* Federico Vaga for CERN, 2011, GNU GPLv2 or later */
++#ifndef __ZIO_H__
++#define __ZIO_H__
++
++/* ZIO_VERSION: is a zio_class attribute to identify the framework version*/
++#define ZIO_MAJOR_VERSION 0
++#define ZIO_MINOR_VERSION 2
++
++#define ZIO_NAME_LEN 32 /* full name */
++
++#ifdef __KERNEL__ /* Nothing more is for user space */
++
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
++#include <linux/device.h>
++#include <linux/types.h>
++#include <linux/cdev.h>
++#include <linux/list.h>
++#include <linux/string.h>
++
++#include <linux/zio-sysfs.h>
++
++/* These two maxima are kept low by now to test overflow situations */
++#define ZIO_CSET_MAXNUM 16
++#define ZIO_CHAN_MAXNUM 16
++
++#define ZIO_NMAX_CSET_MINORS (ZIO_CHAN_MAXNUM * 2)
++#define ZIO_NAME_OBJ 12 /* name for registered object */
++
++/* Name the data structures */
++struct zio_device; /* both type (a.k.a. driver) and instance (a.k.a. device) */
++struct zio_channel; struct zio_cset;
++struct zio_buffer_type; struct zio_bi; struct zio_block;
++struct zio_trigger_type; struct zio_ti;
++
++struct zio_device_operations;
++struct zio_buffer_operations;
++struct zio_trigger_operations;
++
++/*
++ * We use the same functions to deal with attributes, but the structures
++ * we act on may be different (dev, cset, channel). Thus, all structures
++ * begin with the type identifier, and zio_obj_head is used in container_of
++ */
++enum zio_object_type {
++	ZNONE = 0,	/* reserved for non zio object */
++	ZDEV, ZCSET, ZCHAN,
++	ZTRIG, ZTI,	/* trigger and trigger instance */
++	ZBUF, ZBI,	/* buffer and buffer instance */
++};
++
++/* zio_obj_head is for internal use only, as explained above */
++struct zio_obj_head {
++	struct kobject		kobj;
++	enum zio_object_type	zobj_type;
++	char			name[ZIO_NAME_LEN];
++};
++#define to_zio_head(_kobj) container_of(_kobj, struct zio_obj_head, kobj)
++#define to_zio_dev(_kobj) container_of(_kobj, struct zio_device, head.kobj)
++#define to_zio_cset(_kobj) container_of(_kobj, struct zio_cset, head.kobj)
++#define to_zio_chan(_kobj) container_of(_kobj, struct zio_channel, head.kobj)
++
++static inline enum zio_object_type __zio_get_object_type(struct kobject *kobj)
++{
++	return to_zio_head(kobj)->zobj_type;
++}
++
++/* Bits 0..3 are reserved for use in all objects. By now only bit 1 is used */
++enum zobj_flags {
++	ZIO_DISABLED		= 0x1,	/* 0 (default) is enabled */
++	ZIO_DIR			= 0x2,	/* 0 is input  - 1 is output*/
++	ZIO_DIR_INPUT		= 0x0,
++	ZIO_DIR_OUTPUT		= 0x2,
++};
++
++/*
++ * zio_device -- the top-level hardware description
++ */
++struct zio_device {
++	struct zio_obj_head			head;
++	struct module				*owner;
++	spinlock_t				lock; /* for all attr ops */
++	unsigned long				flags;
++	struct zio_attribute_set		zattr_set;
++	const struct zio_sys_operations		*s_op;
++	const struct zio_device_operations	*d_op;
++
++	/* The full device is an array of csets */
++	struct zio_cset			*cset;
++	unsigned int			n_cset;
++
++	/* We can state what its preferred buffer and trigger are (NULL ok) */
++	char *preferred_buffer;
++	char *preferred_trigger;
++};
++
++struct zio_device_operations {
++	int (*input_cset)(struct zio_cset *cset);
++	int (*output_cset)(struct zio_cset *cset);
++};
++
++int __must_check zio_register_dev(struct zio_device *zdev, const char *name);
++void zio_unregister_dev(struct zio_device *zio_dev);
++
++/*
++ * zio_cset -- channel set: a group of channels with the same features
++ */
++struct zio_cset {
++	struct zio_obj_head	head;
++	struct zio_device	*zdev;		/* parent zio device */
++	struct zio_buffer_type	*zbuf;		/* buffer type for bi */
++	struct zio_trigger_type *trig;		/* trigger type for ti*/
++	struct zio_ti		*ti;		/* trigger instance */
++	unsigned		ssize;		/* sample size (bytes) */
++	unsigned		index;		/* index within parent */
++	unsigned long		flags;
++	struct zio_attribute_set zattr_set;
++	struct zio_attribute_set zattr_set_chan; /* model for channel attrs */
++
++	/* The cset is an array of channels */
++	struct zio_channel	*chan;
++	unsigned int		n_chan;
++
++	int (*init)(struct zio_cset *zcset);
++	void (*exit)(struct zio_cset *zcset);
++
++	struct list_head	list_cset;	/* for cset global list */
++	dev_t			basedev;	/* base for the minors */
++	char			zbuf_name[ZIO_NAME_OBJ];
++	char			trig_name[ZIO_NAME_OBJ];
++
++	struct zio_attribute	*cset_attrs; /* FIXME: set buf, set trig */
++};
++
++/* first 4bit are reserved for zio object universal flags */
++enum zcset_flags {
++	ZCSET_TYPE		= 0x10,	/* 0 is digital - 1 is analog*/
++	ZCSET_TYPE_DIGITAL	= 0x00,
++	ZCSET_TYPE_ANALOG	= 0x10,
++	ZCSET_CHAN_ALLOC	= 0x20, /* 1 if channels are allocated by zio*/
++	ZCSET_CHAN_ALLOC_ON	= 0x20,
++	ZCSET_CHAN_ALLOC_OFF	= 0x00,
++};
++
++/*
++ * zio_channel -- an individual channel within the cset
++ */
++
++struct zio_channel {
++	struct zio_obj_head	head;
++	struct zio_cset		*cset;		/* parent cset */
++	struct zio_ti		*ti;		/* cset trigger instance */
++	struct zio_bi		*bi;		/* buffer instance */
++	unsigned int		index;		/* index within parent */
++	unsigned long		flags;
++	struct zio_attribute_set zattr_set;
++
++	struct device		*ctrl_dev;	/* control char device */
++	struct device		*data_dev;	/* data char device */
++
++	struct zio_block	*user_block;	/* being transferred w/ user */
++	struct zio_block	*active_block;	/* being managed by hardware */
++};
++
++/* first 4bit are reserved for zio object universal flags */
++enum zchan_flag_mask {
++	ZCHAN_POLAR		= 0x10,	/* 0 is positive - 1 is negative*/
++	ZCHAN_POLAR_POSITIVE	= 0x00,
++	ZCHAN_POLAR_NEGATIVE	= 0x10,
++};
++
++/* get each channel from cset */
++static inline struct zio_channel *__first_enabled_chan(struct zio_cset *cset,
++						struct zio_channel *chan)
++{
++	if (unlikely(chan - cset->chan >= cset->n_chan))
++		return NULL;
++	while (1) {
++		if (!(chan->flags & ZIO_DISABLED))
++			return chan; /* if is enabled, use this */
++		if (chan->index+1 == cset->n_chan)
++			return NULL; /* no more channels */
++		chan++;
++	}
++}
++#define cset_for_each(cset, cptr)				\
++		for (cptr = cset->chan;				\
++		     (cptr = __first_enabled_chan(cset, cptr));	\
++		     cptr++)
++
++#ifdef __ZIO_INTERNAL__
++
++/* This list is used in the core to keep track of registered objects */
++struct zio_object_list {
++	struct kobject		*kobj;	/* for sysfs folder, no attrs */
++	enum zio_object_type	zobj_type;
++	struct list_head	list;
++};
++struct zio_object_list_item {
++	struct list_head	list;
++	char			name[ZIO_NAME_OBJ]; /* object name copy*/
++	struct module		*owner;
++	struct zio_obj_head	*obj_head;
++};
++
++/* Global framework status (i.e., globals in zio-core) */
++struct zio_status {
++	/* a pointer to set up standard ktype with create */
++	struct kobject		*kobj;
++	/*
++	 * The bmask represent the minors region for zio; each bit is
++	 * a block of minors available for a single cset. When a new cset
++	 * is declared, zio look for the first available block of minors:
++	 * set 1 to the correspondent bit on bitmask to set the block
++	 * as busy
++	 */
++	DECLARE_BITMAP(cset_minors_mask, ZIO_CSET_MAXNUM);
++	struct cdev		chrdev;
++	dev_t			basedev;
++	spinlock_t		lock;
++
++	/* List of cset, used to retrieve a cset from a minor base*/
++	struct list_head	list_cset;
++
++	/* The three lists of registered devices, with owner module */
++	struct zio_object_list	all_devices;
++	struct zio_object_list	all_trigger_types;
++	struct zio_object_list	all_buffer_types;
++};
++
++extern struct zio_status zio_global_status;
++int __zio_minorbase_get(struct zio_cset *zcset);
++void __zio_minorbase_put(struct zio_cset *zcset);
++
++int __zio_register_cdev(void);
++void __zio_unregister_cdev(void);
++
++int zio_create_chan_devices(struct zio_channel *zchan);
++void zio_destroy_chan_devices(struct zio_channel *zchan);
++#endif /* INTERNAL */
++
++#endif /* __KERNEL__ */
++#endif /* __ZIO_H__ */
 -- 
 1.7.7.2
