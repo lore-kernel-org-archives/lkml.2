@@ -1,112 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1KZNgD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 08:36:03 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:28563
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754664Ab1KZNf5 (ORCPT
+	id S1751858Ab1KZNwY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 08:52:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55960 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab1KZNwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 08:35:57 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Sat, 26 Nov 2011 21:48:08 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Mike Turquette <mturquette@ti.com>
-CC: <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <jeremy.kerr@canonical.com>, <broonie@opensource.wolfsonmicro.com>,
-        <tglx@linutronix.de>, <linus.walleij@stericsson.com>,
-        <amit.kucheria@linaro.org>, <dsaxena@linaro.org>, <patches@linaro.org>,
-        <linaro-dev@lists.linaro.org>, <aul@pwsan.com>,
-        <grant.likely@secretlab.ca>, <sboyd@quicinc.com>,
-        <skannan@quicinc.com>, <magnus.damm@gmail.com>,
-        <arnd.bergmann@linaro.org>, <eric.miao@linaro.org>,
-        <richard.zhao@linaro.org>, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH v3 4/5] clk: basic gateable and fixed-rate clks
-Message-ID: <20111126134807.GD19025@S2100-06.ap.freescale.net>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
- <1321926047-14211-5-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1321926047-14211-5-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Sat, 26 Nov 2011 08:52:22 -0500
+Message-ID: <1322315527.15832.1.camel@phoenix>
+Subject: [PATCH] scsi: convert drivers/scsi/* to use module_platform_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Date: Sat, 26 Nov 2011 21:52:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 05:40:46PM -0800, Mike Turquette wrote:
-> Many platforms support simple gateable clks and fixed-rate clks that
-> should not be re-implemented by every platform.
-> 
-> This patch introduces a gateable clk with a common programming model of
-> gate control via a write of 1 bit to a register.  Both set-to-enable and
-> clear-to-enable are supported.
-> 
-> Also introduced is a fixed-rate clk which has no reprogrammable aspects.
-> 
-> The purpose of both types of clks is documented in drivers/clk/basic.c.
-> 
-What I have seen is drivers/clk/clk-basic.c.
+This patch converts the drivers in drivers/scsi/* to use the
+module_platform_driver() macro which makes the code smaller and a bit
+simpler.
 
-> TODO: add support for a simple divider, simple mux and a dummy clk for
-> stubbing out platform support.
-> 
-> Based on original patch by Jeremy Kerr contribution by Jamie Iles.
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> ---
->  drivers/clk/Kconfig     |    7 ++
->  drivers/clk/Makefile    |    5 +-
->  drivers/clk/clk-basic.c |  208 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/clk.h     |   35 ++++++++
->  4 files changed, 253 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/clk/clk-basic.c
+Cc: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/scsi/jazz_esp.c   |   17 ++---------------
+ drivers/scsi/mac_esp.c    |   13 +------------
+ drivers/scsi/qlogicpti.c  |   13 +------------
+ drivers/scsi/sgiwd93.c    |   13 +------------
+ drivers/scsi/sni_53c710.c |   13 +------------
+ drivers/scsi/sun3x_esp.c  |   13 +------------
+ drivers/scsi/sun_esp.c    |   13 +------------
+ 7 files changed, 8 insertions(+), 87 deletions(-)
 
-[...]
-
-> +int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
-> +		struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
-> +		int set_to_enable)
-> +{
-> +	struct clk_hw_gate *gclk;
-> +	struct clk *clk;
-> +
-> +	gclk = kmalloc(sizeof(struct clk_hw_gate), GFP_KERNEL);
-> +
-> +	if (!gclk) {
-> +		pr_err("%s: could not allocate gated clk\n", __func__);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	clk = &gclk->clk;
-> +
-> +	/* struct clk_hw_gate assignments */
-> +	gclk->fixed_parent = fixed_parent;
-> +	gclk->reg = reg;
-> +	gclk->bit_idx = bit_idx;
-> +
-> +	/* struct clk assignments */
-> +	clk->name = name;
-> +	clk->flags = flags;
-> +
-> +	if (set_to_enable)
-> +		clk->ops = &clk_hw_gate_set_enable_ops;
-> +	else
-> +		clk->ops = &clk_hw_gate_set_disable_ops;
-> +
-> +	clk_init(NULL, clk);
-> +
-> +	return 0;
-
-The device tree support needs to get this 'struct clk *', so we may
-want to have all these registering functions return the 'clk'.
-
-> +}
-
+diff --git a/drivers/scsi/jazz_esp.c b/drivers/scsi/jazz_esp.c
+index 08e26d4..5c999ac 100644
+--- a/drivers/scsi/jazz_esp.c
++++ b/drivers/scsi/jazz_esp.c
+@@ -218,9 +218,6 @@ static int __devexit esp_jazz_remove(struct platform_device *dev)
+ 	return 0;
+ }
+ 
+-/* work with hotplug and coldplug */
+-MODULE_ALIAS("platform:jazz_esp");
+-
+ static struct platform_driver esp_jazz_driver = {
+ 	.probe		= esp_jazz_probe,
+ 	.remove		= __devexit_p(esp_jazz_remove),
+@@ -230,20 +227,10 @@ static struct platform_driver esp_jazz_driver = {
+ 	},
+ };
+ 
+-static int __init jazz_esp_init(void)
+-{
+-	return platform_driver_register(&esp_jazz_driver);
+-}
+-
+-static void __exit jazz_esp_exit(void)
+-{
+-	platform_driver_unregister(&esp_jazz_driver);
+-}
++module_platform_driver(esp_jazz_driver);
+ 
+ MODULE_DESCRIPTION("JAZZ ESP SCSI driver");
+ MODULE_AUTHOR("Thomas Bogendoerfer (tsbogend@alpha.franken.de)");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_VERSION);
+-
+-module_init(jazz_esp_init);
+-module_exit(jazz_esp_exit);
++MODULE_ALIAS("platform:jazz_esp");
+diff --git a/drivers/scsi/mac_esp.c b/drivers/scsi/mac_esp.c
+index 4ceeace..1246c63 100644
+--- a/drivers/scsi/mac_esp.c
++++ b/drivers/scsi/mac_esp.c
+@@ -622,21 +622,10 @@ static struct platform_driver esp_mac_driver = {
+ 	},
+ };
+ 
+-static int __init mac_esp_init(void)
+-{
+-	return platform_driver_register(&esp_mac_driver);
+-}
+-
+-static void __exit mac_esp_exit(void)
+-{
+-	platform_driver_unregister(&esp_mac_driver);
+-}
++module_platform_driver(esp_mac_driver);
+ 
+ MODULE_DESCRIPTION("Mac ESP SCSI driver");
+ MODULE_AUTHOR("Finn Thain <fthain@telegraphics.com.au>");
+ MODULE_LICENSE("GPL v2");
+ MODULE_VERSION(DRV_VERSION);
+ MODULE_ALIAS("platform:" DRV_MODULE_NAME);
+-
+-module_init(mac_esp_init);
+-module_exit(mac_esp_exit);
+diff --git a/drivers/scsi/qlogicpti.c b/drivers/scsi/qlogicpti.c
+index e40dc1c..c2b19a4 100644
+--- a/drivers/scsi/qlogicpti.c
++++ b/drivers/scsi/qlogicpti.c
+@@ -1474,21 +1474,10 @@ static struct platform_driver qpti_sbus_driver = {
+ 	.remove		= __devexit_p(qpti_sbus_remove),
+ };
+ 
+-static int __init qpti_init(void)
+-{
+-	return platform_driver_register(&qpti_sbus_driver);
+-}
+-
+-static void __exit qpti_exit(void)
+-{
+-	platform_driver_unregister(&qpti_sbus_driver);
+-}
++module_platform_driver(qpti_sbus_driver);
+ 
+ MODULE_DESCRIPTION("QlogicISP SBUS driver");
+ MODULE_AUTHOR("David S. Miller (davem@davemloft.net)");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION("2.1");
+ MODULE_FIRMWARE("qlogic/isp1000.bin");
+-
+-module_init(qpti_init);
+-module_exit(qpti_exit);
+diff --git a/drivers/scsi/sgiwd93.c b/drivers/scsi/sgiwd93.c
+index 3a9d85c..c8b0b53 100644
+--- a/drivers/scsi/sgiwd93.c
++++ b/drivers/scsi/sgiwd93.c
+@@ -319,18 +319,7 @@ static struct platform_driver sgiwd93_driver = {
+ 	}
+ };
+ 
+-static int __init sgiwd93_module_init(void)
+-{
+-	return platform_driver_register(&sgiwd93_driver);
+-}
+-
+-static void __exit sgiwd93_module_exit(void)
+-{
+-	return platform_driver_unregister(&sgiwd93_driver);
+-}
+-
+-module_init(sgiwd93_module_init);
+-module_exit(sgiwd93_module_exit);
++module_platform_driver(sgiwd93_driver);
+ 
+ MODULE_DESCRIPTION("SGI WD33C93 driver");
+ MODULE_AUTHOR("Ralf Baechle <ralf@linux-mips.org>");
+diff --git a/drivers/scsi/sni_53c710.c b/drivers/scsi/sni_53c710.c
+index 9acc2b2..8317752 100644
+--- a/drivers/scsi/sni_53c710.c
++++ b/drivers/scsi/sni_53c710.c
+@@ -141,15 +141,4 @@ static struct platform_driver snirm710_driver = {
+ 	},
+ };
+ 
+-static int __init snirm710_init(void)
+-{
+-	return platform_driver_register(&snirm710_driver);
+-}
+-
+-static void __exit snirm710_exit(void)
+-{
+-	platform_driver_unregister(&snirm710_driver);
+-}
+-
+-module_init(snirm710_init);
+-module_exit(snirm710_exit);
++module_platform_driver(snirm710_driver);
+diff --git a/drivers/scsi/sun3x_esp.c b/drivers/scsi/sun3x_esp.c
+index 0621037..a7f93a2 100644
+--- a/drivers/scsi/sun3x_esp.c
++++ b/drivers/scsi/sun3x_esp.c
+@@ -299,21 +299,10 @@ static struct platform_driver esp_sun3x_driver = {
+ 	},
+ };
+ 
+-static int __init sun3x_esp_init(void)
+-{
+-	return platform_driver_register(&esp_sun3x_driver);
+-}
+-
+-static void __exit sun3x_esp_exit(void)
+-{
+-	platform_driver_unregister(&esp_sun3x_driver);
+-}
++module_platform_driver(esp_sun3x_driver);
+ 
+ MODULE_DESCRIPTION("Sun3x ESP SCSI driver");
+ MODULE_AUTHOR("Thomas Bogendoerfer (tsbogend@alpha.franken.de)");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_VERSION);
+-
+-module_init(sun3x_esp_init);
+-module_exit(sun3x_esp_exit);
+ MODULE_ALIAS("platform:sun3x_esp");
+diff --git a/drivers/scsi/sun_esp.c b/drivers/scsi/sun_esp.c
+index 676fe9a..a53f5cf 100644
+--- a/drivers/scsi/sun_esp.c
++++ b/drivers/scsi/sun_esp.c
+@@ -642,20 +642,9 @@ static struct platform_driver esp_sbus_driver = {
+ 	.remove		= __devexit_p(esp_sbus_remove),
+ };
+ 
+-static int __init sunesp_init(void)
+-{
+-	return platform_driver_register(&esp_sbus_driver);
+-}
+-
+-static void __exit sunesp_exit(void)
+-{
+-	platform_driver_unregister(&esp_sbus_driver);
+-}
++module_platform_driver(esp_sbus_driver);
+ 
+ MODULE_DESCRIPTION("Sun ESP SCSI driver");
+ MODULE_AUTHOR("David S. Miller (davem@davemloft.net)");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_VERSION);
+-
+-module_init(sunesp_init);
+-module_exit(sunesp_exit);
 -- 
-Regards,
-Shawn
+1.7.5.4
+
+
 
