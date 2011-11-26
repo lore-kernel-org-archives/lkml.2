@@ -1,1056 +1,570 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab1KZWQS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 17:16:18 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39827 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab1KZWQQ (ORCPT
+	id S1755027Ab1KZWQo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 17:16:44 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37519 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab1KZWQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 17:16:16 -0500
-Message-ID: <4ED1652A.8080701@gmail.com>
-Date: Sat, 26 Nov 2011 23:16:10 +0100
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Sat, 26 Nov 2011 17:16:39 -0500
+Message-ID: <4ED1654D.8020702@kernel.org>
+Date: Sat, 26 Nov 2011 22:16:45 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
 MIME-Version: 1.0
-To: tom.leiming@gmail.com
-CC: tony@atomide.com, greg@kroah.com, arnd@arndb.de,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 3/3] drivers/misc: introduce face detection module driver(fdif)
-References: <1322281904-14526-1-git-send-email-tom.leiming@gmail.com> <1322281904-14526-4-git-send-email-tom.leiming@gmail.com>
-In-Reply-To: <1322281904-14526-4-git-send-email-tom.leiming@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-iio@vger.kernel.org, greg@kroah.com, linux-kernel@vger.kernel.org,
+        federico.vaga@gmail.com, dcobas@cern.ch, siglesia@cern.ch,
+        manohar.vanga@cern.ch
+Subject: Re: [RFC PATCH 1/7] Documentation: add docs for drivers/zio
+References: <cover.1322328073.git.rubini@gnudd.com> <136508309048abae5ff23c5230e9344c51442849.1322328075.git.rubini@gnudd.com>
+In-Reply-To: <136508309048abae5ff23c5230e9344c51442849.1322328075.git.rubini@gnudd.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: LMML
-
-On 11/26/2011 05:31 AM, tom.leiming@gmail.com wrote:
-> From: Ming Lei <ming.lei@canonical.com>
+On 11/26/2011 05:30 PM, Alessandro Rubini wrote:
+> This is documentation for the beta3 release of zio.
+> The files match commit 7d37663 in git://ohwr.org/misc/zio.git .
 > 
-> One face detection IP[1] is integared inside OMAP4 SoC, so
-> introduce this driver to make face detection function work
-> on OMAP4 SoC.
-
-Face detection IP is of course not specific to OMAP, I've seen it in other SoCs
-already and integrated with the video capture pipeline.
-
-And it clearly belongs to the media subsystem, there is already an infrastructure
-there that don't need to be re-invented, like buffer management and various IO
-method support.
-
-I think there is not much needed on top of that to support FD. We have already
-various mem-to-mem devices in V4L2, like video or image encoders or video
-post-processors.
-
+> We are aware the "modules.txt" file is not correct as it lists files
+> that are not ready. We decided to avoid fixing it for this RFC
+> submission, which won't go upstream anyways.
 > 
-> This driver is platform independent, so in theory can
-> be used to drive same IP module on other platforms.
-> 
-> [1], ch9 of OMAP4 TRM
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+> Acked-by: Juan David Gonzalez Cobas <dcobas@cern.ch>
+> Acked-by: Samuel Iglesias Gonsalvez <siglesia@cern.ch>
+> Acked-by: Manohar Vanga <manohar.vanga@cern.ch>
 > ---
->  drivers/misc/Kconfig  |    7 +
->  drivers/misc/Makefile |    1 +
->  drivers/misc/fdif.c   |  874 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/fdif.h  |   67 ++++
->  include/linux/major.h |    1 +
->  5 files changed, 950 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/fdif.c
->  create mode 100644 include/linux/fdif.h
+>  Documentation/zio/00-INDEX    |   10 +++
+>  Documentation/zio/buffer.txt  |  114 ++++++++++++++++++++++++++++++++++++
+>  Documentation/zio/device.txt  |   69 ++++++++++++++++++++++
+>  Documentation/zio/modules.txt |   45 ++++++++++++++
+>  Documentation/zio/trigger.txt |  128 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/zio/README            |  105 +++++++++++++++++++++++++++++++++
+>  6 files changed, 471 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/zio/00-INDEX
+>  create mode 100644 Documentation/zio/buffer.txt
+>  create mode 100644 Documentation/zio/device.txt
+>  create mode 100644 Documentation/zio/modules.txt
+>  create mode 100644 Documentation/zio/trigger.txt
+>  create mode 100644 drivers/zio/README
 > 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 5664696..884d8c7 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -500,6 +500,13 @@ config USB_SWITCH_FSA9480
->  	  stereo and mono audio, video, microphone and UART data to use
->  	  a common connector port.
->  
-> +config FDIF
-> +	tristate "Face Detection module"
-> +	help
-> +	  The FDIF is a face detection module, which can be integrated into
-> +	  SoCs to detect the location of human beings' face in one image. At
-> +	  least now, TI OMAP4 has the module inside.
-> +
->  source "drivers/misc/c2port/Kconfig"
->  source "drivers/misc/eeprom/Kconfig"
->  source "drivers/misc/cb710/Kconfig"
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index b26495a..0ed85ef 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -47,4 +47,5 @@ obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
->  obj-y				+= lis3lv02d/
->  obj-y				+= carma/
->  obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
-> +obj-$(CONFIG_FDIF)		+= fdif.o
->  obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
-> diff --git a/drivers/misc/fdif.c b/drivers/misc/fdif.c
+> diff --git a/Documentation/zio/00-INDEX b/Documentation/zio/00-INDEX
 > new file mode 100644
-> index 0000000..84a7049
+> index 0000000..093d9fb
 > --- /dev/null
-> +++ b/drivers/misc/fdif.c
-> @@ -0,0 +1,874 @@
-> +/*
-> + *      fdif.c  --  face detection module driver
-> + *
-> + *      Copyright (C) 2011  Ming Lei (ming.lei@canonical.com)
-> + *
-> + *      This program is free software; you can redistribute it and/or modify
-> + *      it under the terms of the GNU General Public License as published by
-> + *      the Free Software Foundation; either version 2 of the License, or
-> + *      (at your option) any later version.
-> + *
-> + *      This program is distributed in the hope that it will be useful,
-> + *      but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *      GNU General Public License for more details.
-> + *
-> + *      You should have received a copy of the GNU General Public License
-> + *      along with this program; if not, write to the Free Software
-> + *      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> + *
-> + */
-> +
-> +/*****************************************************************************/
-> +
-> +#include <linux/init.h>
-> +#include <linux/fs.h>
-> +#include <linux/mm.h>
-> +#include <linux/slab.h>
-> +#include <linux/signal.h>
-> +#include <linux/wait.h>
-> +#include <linux/poll.h>
-> +#include <linux/module.h>
-> +#include <linux/major.h>
-> +#include <linux/cdev.h>
-> +#include <linux/mman.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/delay.h>
-> +#include <linux/user_namespace.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/dma-mapping.h>
-> +#include <linux/fdif.h>
-> +#include <asm/uaccess.h>
-> +#include <asm/byteorder.h>
-> +#include <asm/io.h>
-> +
-> +#undef	DEBUG
-> +
-> +#define FDIF_DEV	MKDEV(FDIF_MAJOR, 0)
-> +#define FDIF_MAX_MINORS	8
-> +
-> +#define	WORK_MEM_SIZE	(52*1024)
-> +
-> +#define	FACE_SIZE_20_PIXELS	0
-> +#define	FACE_SIZE_25_PIXELS	1
-> +#define	FACE_SIZE_32_PIXELS	2
-> +#define	FACE_SIZE_40_PIXELS	3
-> +
-> +#define FACE_DIR_UP		0
-> +#define FACE_DIR_RIGHT		1
-> +#define FACE_DIR_LIFT		2
-> +
-> +/* 9.5 FDIF Register Manua of TI OMAP4 TRM */
-> +#define FDIF_REVISION		0x0
-> +#define FDIF_HWINFO		0x4
-> +#define FDIF_SYSCONFIG		0x10
-> +#define SOFTRESET		(1 << 0)
-> +
-> +#define FDIF_IRQSTATUS_RAW_j	(0x24 + 2*0x10)
-> +#define FDIF_IRQSTATUS_j	(0x28 + 2*0x10)
-> +#define FDIF_IRQENABLE_SET_j	(0x2c + 2*0x10)
-> +#define FDIF_IRQENABLE_CLR_j	(0x30 + 2*0x10)
-> +#define FINISH_IRQ		(1 << 8)
-> +#define ERR_IRQ			(1 << 0)
-> +
-> +#define FDIF_PICADDR		0x60
-> +#define FDIF_CTRL		0x64
-> +#define CTRL_MAX_TAGS		0x0A
-> +
-> +#define FDIF_WKADDR		0x68
-> +#define FD_CTRL			0x80
-> +#define CTRL_FINISH		(1 << 2)
-> +#define CTRL_RUN		(1 << 1)
-> +#define CTRL_SRST		(1 << 0)
-> +
-> +
-> +#define FD_DNUM			0x84
-> +#define FD_DCOND		0x88
-> +#define FD_STARTX		0x8c
-> +#define FD_STARTY		0x90
-> +#define FD_SIZEX		0x94
-> +#define FD_SIZEY		0x98
-> +#define FD_LHIT			0x9c
-> +#define FD_CENTERX_i		0x160
-> +#define FD_CENTERY_i		0x164
-> +#define FD_CONFSIZE_i		0x168
-> +#define FD_ANGLE_i		0x16c
-> +
-> +static irqreturn_t handle_detection(int irq, void *__fdif);
-> +
-> +struct fdif {
-> +	struct platform_device	*pdev;
-> +	void __iomem		*base;
-> +	struct mutex		mutex;
-> +	int			open_count;
-> +	int			irq;
-> +	struct device		*dev;
-> +	dma_addr_t		pict_dma;
-> +	dma_addr_t		work_dma;
-> +
-> +	/* wake up if a face detection completed */
-> +	wait_queue_head_t 	wait;
-> +
-> +	int			read_idx;
-> +
-> +	/*setting*/
-> +	struct fdif_setting	s;
-> +
-> +	/*face detection result*/
-> +	int			face_cnt;
-> +	struct fdif_result	faces[MAX_FACE_COUNT];
-> +};
-> +
-> +static struct class	*fdif_class;
-> +
-> +/*only support one fdif device now*/
-> +static struct fdif	*g_fdif;
-> +
-> +static inline void fdif_writel(void __iomem *base, u32 reg, u32 val)
-> +{
-> +	__raw_writel(val, base + reg);
-> +}
-> +
-> +static inline u32 fdif_readl(void __iomem *base, u32 reg)
-> +{
-> +	return __raw_readl(base + reg);
-> +}
-> +
-> +#ifdef DEBUG
-> +static void dump_fdif_setting(struct fdif *fdif, const char *func)
-> +{
-> +	printk("%s: %s\n", func, __func__);
-> +	printk("picture addr:%8p, work mem addr:%8p\n",
-> +			fdif->s.pict_addr, fdif->s.work_mem_addr);
-> +	printk("face size=%2d, face dir=%2d, lhit=%d\n",
-> +			fdif->s.min_face_size, fdif->s.face_dir,
-> +			fdif->s.lhit);
-> +	printk("startx =%4d starty=%4d sizex=%4d sizey=%4d\n",
-> +			fdif->s.startx, fdif->s.starty,
-> +			fdif->s.sizex, fdif->s.sizey);
-> +}
-> +
-> +static void dump_fdif_results(struct fdif *fdif, const char *func)
-> +{
-> +	int idx;
-> +
-> +	printk("%s: %s\n", func, __func__);
-> +
-> +	printk("found %d faces\n", fdif->face_cnt);
-> +	for(idx=0; idx < fdif->face_cnt; idx++) {
-> +		struct fdif_result *fr = &fdif->faces[idx];
-> +		printk("	No.%d x=%3d y=%2d sz=%2d ang=%3d conf=%2d\n",
-> +				idx, fr->centerx, fr->centery,
-> +				fr->size, fr->angle, fr->confidence);
-> +	}
-> +}
-> +
-> +static void dump_fdif_regs(struct fdif *fdif, const char *func)
-> +{
-> +	printk("%s:%s\n", __func__, func);
-> +	printk("FDIF_CTRL=%08x FDIF_SYSCONFIG=%08x\n",
-> +			fdif_readl(fdif->base, FDIF_CTRL),
-> +			fdif_readl(fdif->base, FDIF_SYSCONFIG));
-> +	printk("FDIF_IRQSTATUS_RAW_j=%08x FDIF_IRQSTATUS_j=%08x\n",
-> +			fdif_readl(fdif->base, FDIF_IRQSTATUS_RAW_j),
-> +			fdif_readl(fdif->base, FDIF_IRQSTATUS_j));
-> +	printk("FDIF_PICADDR=%08x FDIF_WKADDR=%08x\n",
-> +			fdif_readl(fdif->base, FDIF_PICADDR),
-> +			fdif_readl(fdif->base, FDIF_WKADDR));
-> +	printk("FD_CTRL=%04x\n", fdif_readl(fdif->base, FD_CTRL));
-> +}
-> +
-> +#else
-> +static inline void dump_fdif_setting(struct fdif *fdif, const char *func)
-> +{
-> +}
-> +static inline void dump_fdif_results(struct fdif *fdif, const char *func)
-> +{
-> +}
-> +static inline void dump_fdif_regs(struct fdif *fdif, const char *func)
-> +{
-> +}
-> +#endif
-> +
-> +static void free_buffer(struct fdif *fdif)
-> +{
-> +	int order;
-> +
-> +	order = get_order(PICT_SIZE_X * PICT_SIZE_Y);
-> +	free_pages((unsigned long)fdif->s.pict_addr, order);
-> +
-> +	order = get_order(WORK_MEM_SIZE);
-> +	free_pages((unsigned long)fdif->s.work_mem_addr, order);
-> +}
-> +
-> +static int allocate_buffer(struct fdif *fdif)
-> +{
-> +	struct device *dev = &fdif->pdev->dev;
-> +	int order, ret;
-> +
-> +	order = get_order(PICT_SIZE_X * PICT_SIZE_Y);
-> +	fdif->s.pict_addr = (void *)__get_free_pages(GFP_KERNEL, order);
-> +	if (!fdif->s.pict_addr) {
-> +		dev_err(dev, "fdif pict buffer allocation(%d) failed\n",
-> +				order);
-> +		ret = -ENOMEM;
-> +		goto err_out;
-> +	}
-> +
-> +	order = get_order(WORK_MEM_SIZE);
-> +	fdif->s.work_mem_addr = (void *)__get_free_pages(GFP_KERNEL, order);
-> +	if (!fdif->s.work_mem_addr) {
-> +		dev_err(dev, "fdif buffer allocation(%d) failed\n",
-> +				order);
-> +		ret = -ENOMEM;
-> +		goto err_mem;
-> +	}
-> +	return 0;
-> +
-> +err_mem:
-> +	free_buffer(fdif);
-> +err_out:
-> +	return ret;
-> +}
-> +
-> +static int fdif_probe(struct platform_device *pdev)
-> +{
-> +	struct device	*dev = &pdev->dev;
-> +	struct fdif *fdif;
-> +	struct resource *res;
-> +	int ret;
-> +
-> +	fdif = kzalloc(sizeof(*fdif), GFP_KERNEL);
-> +	if (!fdif) {
-> +		dev_err(dev, "Memory allocation failed\n");
-> +		ret = -ENOMEM;
-> +		goto end_probe;
-> +	}
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-> +		dev_err(dev, "fdif get resource failed\n");
-> +		ret = -ENODEV;
-> +		goto err_iomap;
-> +	}
-> +
-> +	fdif->base = ioremap(res->start, resource_size(res));
-> +	if (!fdif->base) {
-> +		dev_err(dev, "fdif ioremap failed\n");
-> +		ret = -ENOMEM;
-> +		goto err_iomap;
-> +	}
-> +
-> +	fdif->irq = platform_get_irq(pdev, 0);
-> +	if (fdif->irq < 0) {
-> +		dev_err(dev, "fdif get irq failed\n");
-> +		ret = -ENODEV;
-> +		goto err_get_irq;
-> +	}
-> +
-> +	ret = request_irq(fdif->irq, handle_detection, 0, "fdif", fdif);
-> +	if (ret)
-> +		goto err_get_irq;
-> +
-> +	init_waitqueue_head(&fdif->wait);
-> +	mutex_init(&fdif->mutex);
-> +
-> +	pm_suspend_ignore_children(dev, true);
-> +	fdif->dev = device_create(fdif_class, dev,
-> +			MKDEV(FDIF_MAJOR, 0),
-> +			NULL, "fdif");
-> +	if (!fdif->dev) {
-> +		ret = -ENOMEM;
-> +		goto err_device_create;
-> +	}
-> +
-> +	fdif->pdev = pdev;
-> +	platform_set_drvdata(pdev, fdif);
-> +
-> +	pm_runtime_get_sync(dev);
-> +	dev_info(dev, "fdif version=%8x hwinfo=%08x\n",
-> +			fdif_readl(fdif->base, FDIF_REVISION),
-> +			fdif_readl(fdif->base, FDIF_HWINFO));
-> +	pm_runtime_put(dev);
-> +
-> +	g_fdif = fdif;
-> +	return 0;
-> +
-> +err_device_create:
-> +	free_irq(fdif->irq, fdif);
-> +err_get_irq:
-> +	iounmap(fdif->base);
-> +err_iomap:
-> +	kfree(fdif);
-> +end_probe:
-> +	return ret;
-> +}
-> +
-> +static int fdif_remove(struct platform_device *pdev)
-> +{
-> +	struct fdif *fdif = platform_get_drvdata(pdev);
-> +
-> +	device_destroy(fdif_class, MKDEV(FDIF_MAJOR, 0));
-> +	free_irq(fdif->irq, fdif);
-> +	iounmap(fdif->base);
-> +	kfree(fdif);
-> +	return 0;
-> +}
-> +
-> +static int fdif_suspend(struct platform_device *pdev, pm_message_t msg)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int fdif_resume(struct platform_device *pdev)
-> +{
-> +	return 0;
-> +}
-> +
-> +static struct platform_device_id fdif_device_ids[] = {
-> +	{.name = "fdif"},
-> +	{},
-> +};
-> +
-> +struct platform_driver fdif_driver = {
-> +	.probe =	fdif_probe,
-> +	.remove =	fdif_remove,
-> +	.suspend =	fdif_suspend,
-> +	.resume =	fdif_resume,
-> +	.driver = {
-> +		.name  =	"fdif",
-> +		.owner =	THIS_MODULE,
-> +	},
-> +	.id_table = 	fdif_device_ids,
-> +};
-> +
-> +static void install_default_setting(struct fdif *fdif)
-> +{
-> +	fdif->s.min_face_size	= FACE_SIZE_25_PIXELS;
-> +	fdif->s.face_dir	= FACE_DIR_UP;
-> +	fdif->s.startx		= 0;
-> +	fdif->s.starty		= 0;
-> +	fdif->s.sizex		= 0x140;
-> +	fdif->s.sizey		= 0xf0;
-> +	fdif->s.lhit		= 0x5;
-> +}
-> +
-> +static void commit_image_setting(struct fdif *fdif)
-> +{
-> +	unsigned long conf;
-> +	struct device *dev = &fdif->pdev->dev;
-> +
-> +	fdif->pict_dma = dma_map_single(dev, fdif->s.pict_addr,
-> +		                PICT_SIZE_X*PICT_SIZE_Y,
-> +				DMA_TO_DEVICE);
-> +	fdif_writel(fdif->base, FDIF_PICADDR, fdif->pict_dma);
-> +
-> +	conf = (fdif->s.min_face_size & 0x3) ||
-> +		((fdif->s.face_dir & 0x3) << 2);
-> +	fdif_writel(fdif->base, FD_DCOND, conf);
-> +
-> +	fdif_writel(fdif->base, FD_STARTX, fdif->s.startx);
-> +	fdif_writel(fdif->base, FD_STARTY, fdif->s.starty);
-> +	fdif_writel(fdif->base, FD_SIZEX, fdif->s.sizex);
-> +	fdif_writel(fdif->base, FD_SIZEY, fdif->s.sizey);
-> +	fdif_writel(fdif->base, FD_LHIT, fdif->s.lhit);
-> +}
-> +
-> +static void start_detect(struct fdif *fdif)
-> +{
-> +	unsigned long conf;
-> +
-> +	dump_fdif_setting(fdif, __func__);
-> +	dump_fdif_regs(fdif, __func__);
-> +
-> +	fdif->face_cnt = -1;
-> +	commit_image_setting(fdif);
-> +
-> +	/*enable finish irq*/
-> +	conf = FINISH_IRQ;
-> +	fdif_writel(fdif->base, FDIF_IRQENABLE_SET_j, conf);
-> +
-> +	/*set RUN flag*/
-> +	conf = CTRL_RUN;
-> +	fdif_writel(fdif->base, FD_CTRL, conf);
-> +}
-> +
-> +static void stop_detect(struct fdif *fdif)
-> +{
-> +	unsigned long conf;
-> +	struct device *dev = &fdif->pdev->dev;
-> +
-> +	dma_unmap_single(dev, fdif->pict_dma,
-> +				PICT_SIZE_X*PICT_SIZE_Y,
-> +				DMA_TO_DEVICE);
-> +	/*disable finish irq*/
-> +	conf = FINISH_IRQ;
-> +	fdif_writel(fdif->base, FDIF_IRQENABLE_CLR_j, conf);
-> +
-> +	/*mark FINISH flag*/
-> +	conf = CTRL_FINISH;
-> +	fdif_writel(fdif->base, FD_CTRL, conf);
-> +}
-> +
-> +/*softreset fdif*/
-> +static int softreset_fdif(struct fdif *fdif)
-> +{
-> +	unsigned long conf;
-> +	int to = 0;
-> +
-> +	conf = fdif_readl(fdif->base, FDIF_SYSCONFIG);
-> +	conf |= SOFTRESET;
-> +	fdif_writel(fdif->base, FDIF_SYSCONFIG, conf);
-> +
-> +	while ((conf & SOFTRESET) && to++ < 2000) {
-> +		conf = fdif_readl(fdif->base, FDIF_SYSCONFIG);
-> +		udelay(2);
-> +	}
-> +
-> +	if (to == 2000)
-> +		printk(KERN_ERR "%s: reset failed\n", __func__);
-> +
-> +	return to == 2000;
-> +}
-> +
-> +static int read_faces(struct fdif *fdif)
-> +{
-> +	int cnt;
-> +	int idx = 0;
-> +
-> +	cnt = fdif_readl(fdif->base, FD_DNUM) & 0x3f;
-> +
-> +	fdif->face_cnt = cnt;
-> +	fdif->read_idx = 0;
-> +
-> +	while(idx < cnt) {
-> +		struct fdif_result *fr = &fdif->faces[idx];
-> +
-> +		fr->centerx = fdif_readl(fdif->base,
-> +				FD_CENTERX_i + idx * 0x10) & 0x1ff;
-> +		fr->centery = fdif_readl(fdif->base,
-> +				FD_CENTERY_i + idx * 0x10) & 0xff;
-> +		fr->angle = fdif_readl(fdif->base,
-> +				FD_ANGLE_i + idx * 0x10) & 0x1ff;
-> +		fr->size = fdif_readl(fdif->base,
-> +				FD_CONFSIZE_i + idx * 0x10);
-> +		fr->confidence = (fr->size >> 8) & 0xf;
-> +		fr->size = fr->size & 0xff;
-> +
-> +		idx++;
-> +	}
-> +
-> +	stop_detect(fdif);
-> +	dump_fdif_results(fdif, __func__);
-> +	wake_up(&fdif->wait);
-> +
-> +	return fdif->face_cnt;
-> +}
-> +
-> +static irqreturn_t handle_detection(int irq, void *__fdif)
-> +{
-> +	unsigned long irqsts;
-> +	struct fdif *fdif = __fdif;
-> +
-> +	dump_fdif_regs(fdif, __func__);
-> +
-> +	/*clear irq status*/
-> +	irqsts = fdif_readl(fdif->base, FDIF_IRQSTATUS_j);
-> +	fdif_writel(fdif->base, FDIF_IRQSTATUS_j, irqsts);
-> +
-> +	if (irqsts & FINISH_IRQ) {
-> +		read_faces(fdif);
-> +	} else if (irqsts & ERR_IRQ) {
-> +		dev_err(&fdif->pdev->dev, "err irq!");
-> +		softreset_fdif(fdif);
-> +	} else {
-> +		dev_err(&fdif->pdev->dev, "spurious irq!");
-> +	}
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static void fdif_global_init(struct fdif *fdif)
-> +{
-> +	unsigned long conf;
-> +	struct device *dev = &fdif->pdev->dev;
-> +
-> +	/*softreset fdif*/
-> +	softreset_fdif(fdif);
-> +
-> +	/*set max tags*/
-> +	conf = fdif_readl(fdif->base, FDIF_CTRL);
-> +	conf &= ~0x1e;
-> +	conf |= (CTRL_MAX_TAGS << 1);
-> +	fdif_writel(fdif->base, FDIF_CTRL, conf);
-> +
-> +	/*enable error irq*/
-> +	conf = ERR_IRQ;
-> +	fdif_writel(fdif->base, FDIF_IRQENABLE_SET_j, conf);
-> +
-> +	fdif->work_dma = dma_map_single(dev,
-> +				fdif->s.work_mem_addr,
-> +		                WORK_MEM_SIZE,
-> +				DMA_TO_DEVICE);
-> +	fdif_writel(fdif->base, FDIF_WKADDR, fdif->work_dma);
-> +}
-> +
-> +static void fdif_global_deinit(struct fdif *fdif)
-> +{
-> +	unsigned long conf;
-> +	struct device *dev = &fdif->pdev->dev;
-> +
-> +	/*enable error irq*/
-> +	conf = ERR_IRQ;
-> +	fdif_writel(fdif->base, FDIF_IRQENABLE_CLR_j, conf);
-> +
-> +	dma_unmap_single(dev, fdif->work_dma,
-> +			WORK_MEM_SIZE, DMA_TO_DEVICE);
-> +}
-> +
-> +/*
-> + * file operations
-> + */
-> +static int fdif_open(struct inode *inode, struct file *file)
-> +{
-> +	struct fdif *fdif = g_fdif;
-> +	int ret = 0;
-> +
-> +	if (iminor(inode) || !fdif) {
-> +		printk("fdif: device is not correct!\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	mutex_lock(&fdif->mutex);
-> +
-> +	if (!fdif->open_count++) {
-> +
-> +		ret = allocate_buffer(fdif);
-> +		if (ret)
-> +			goto err_mem;
-> +
-> +		install_default_setting(fdif);
-> +
-> +		pm_runtime_get_sync(&fdif->pdev->dev);
-> +		fdif_global_init(fdif);
-> +	}
-> +
-> +	file->private_data = fdif;
-> +	goto err_out;
-> +
-> +err_mem:
-> +	free_buffer(fdif);
-> +err_out:
-> +	mutex_unlock(&fdif->mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static int fdif_release(struct inode *inode, struct file *file)
-> +{
-> +	struct fdif *fdif = file->private_data;
-> +
-> +	if (!fdif)
-> +		return -ENODEV;
-> +
-> +	mutex_lock(&fdif->mutex);
-> +
-> +	if (!--fdif->open_count) {
-> +		stop_detect(fdif);
-> +		fdif_global_deinit(fdif);
-> +		pm_runtime_put(&fdif->pdev->dev);
-> +		free_buffer(fdif);
-> +	}
-> +
-> +	mutex_unlock(&fdif->mutex);
-> +	return 0;
-> +}
-> +
-> +static ssize_t fdif_read(struct file *file, char __user *buf, size_t nbytes,
-> +			   loff_t *ppos)
-> +{
-> +	struct fdif *fdif = file->private_data;
-> +	ssize_t ret = 0;
-> +	unsigned len;
-> +	loff_t pos = *ppos;
-> +	int size;
-> +
-> +	/*not support unaligned read*/
-> +	if ((long)pos % sizeof(struct fdif_result))
-> +		return -EFAULT;
-> +
-> +	/*wait for completation of current detection*/
-> +	wait_event_interruptible(fdif->wait, fdif->face_cnt != -1);
-> +
-> +	mutex_lock(&fdif->mutex);
-> +	if (fdif->face_cnt == -1) {
-> +		ret = -ERESTARTSYS;
-> +		goto err;
-> +	}
-> +
-> +	if (fdif->read_idx < 0) {
-> +		ret = -EFAULT;
-> +		goto err;
-> +	}
-> +
-> +	if (fdif->face_cnt <= fdif->read_idx)
-> +		goto err;
-> +
-> +	size = (fdif->face_cnt - fdif->read_idx) *
-> +		sizeof(struct fdif_result);
-> +	if (pos < size) {
-> +		len = size - pos;
-> +		if (len > nbytes)
-> +			len = nbytes;
-> +
-> +		len -= len % sizeof(struct fdif_result);
-> +
-> +		if (copy_to_user(buf, &fdif->faces[fdif->read_idx], len)) {
-> +			ret = -EFAULT;
-> +			goto err;
-> +		}
-> +
-> +		fdif->read_idx += len / sizeof(struct fdif_result);
-> +		*ppos += len;
-> +		ret += len;
-> +	}
-> +err:
-> +	mutex_unlock(&fdif->mutex);
-> +	return ret;
-> +}
-> +
-> +#ifdef DEBUG
-> +static void print_cmd(int cmd, void __user *p)
-> +{
-> +	char buf[64];
-> +	int arg, l = 63;
-> +
-> +	switch (cmd) {
-> +	case FDIF_START:
-> +		strcpy(buf, "START");
-> +		break;
-> +	case FDIF_GET_FACE_CNT:
-> +		strcpy(buf, "GET_CNT");
-> +		break;
-> +	case FDIF_STOP:
-> +		strcpy(buf, "STOP");
-> +		break;
-> +	case FDIF_RESET:
-> +		strcpy(buf, "RESET");
-> +		break;
-> +	case FDIF_GET_SETTING:
-> +		strcpy(buf, "GET_SETTING");
-> +		break;
-> +	case FDIF_SET_MIN_FACE_SIZE:
-> +		l = sprintf(buf, "SET_MIN_FACE_SIZE: %d",
-> +			(get_user(arg,(unsigned int __user *)p) ? : arg));
-> +		break;
-> +	case FDIF_SET_STARTXY:
-> +		l = sprintf(buf, "SET_STARTXY: %d",
-> +			(get_user(arg,(unsigned int __user *)p) ? : arg));
-> +		break;
-> +	case FDIF_SET_SIZEXY:
-> +		l = sprintf(buf, "SET_SIZEXY: %d",
-> +			(get_user(arg,(unsigned int __user *)p) ? : arg));
-> +		break;
-> +	case FDIF_SET_FACE_DIR:
-> +		l = sprintf(buf, "SET_FACE_DIR: %d",
-> +			(get_user(arg,(unsigned int __user *)p) ? : arg));
-> +		break;
-> +	case FDIF_SET_LHIT:
-> +		l = sprintf(buf, "SET_LHIT: %d",
-> +			(get_user(arg,(unsigned int __user *)p) ? : arg));
-> +		break;
-> +	default:
-> +		strcpy(buf, "????");
-> +	}
-> +
-> +	buf[l] = '\0';
-> +
-> +	printk("%s: %s\n", __func__, buf);
-> +}
-> +#else
-> +static inline void print_cmd(int cmd, void __user *p)
-> +{
-> +}
-> +#endif
-> +
-> +static long fdif_ioctl(struct file *file, unsigned int cmd,
-> +			unsigned long arg)
-> +{
-> +	struct fdif *fdif = file->private_data;
-> +	int ret = 0;
-> +	int val;
-> +
-> +	if (!(file->f_mode & FMODE_WRITE))
-> +		return -EPERM;
-> +
-> +	print_cmd(cmd, (void __user *)arg);
-> +
-> +	mutex_lock(&fdif->mutex);
-> +	switch (cmd) {
-> +	case FDIF_START:
-> +		start_detect(fdif);
-> +		break;
-> +	case FDIF_GET_FACE_CNT:
-> +		if (put_user(fdif->face_cnt, (u32 __user *)arg))
-> +			ret = -EFAULT;
-> +		break;
-> +	case FDIF_STOP:
-> +		stop_detect(fdif);
-> +		break;
-> +	case FDIF_RESET:
-> +		softreset_fdif(fdif);
-> +		break;
-> +	case FDIF_GET_SETTING:
-> +		ret = (copy_to_user((void __user *)arg, &fdif->s,
-> +				sizeof(struct fdif_setting)) ?
-> +				-EFAULT : 0);
-> +		break;
-> +	case FDIF_SET_MIN_FACE_SIZE:
-> +		ret = get_user(val, (int __user *)arg) ? -EFAULT : 0;
-> +		if (!ret)
-> +			fdif->s.min_face_size = val;
-> +		break;
-> +	case FDIF_SET_STARTXY:
-> +		ret = get_user(val, (int __user *)arg) ? -EFAULT : 0;
-> +		if (!ret) {
-> +			fdif->s.startx = val & 0xffff;
-> +			fdif->s.starty = (val >> 16) & 0xffff;
-> +		}
-> +		break;
-> +	case FDIF_SET_SIZEXY:
-> +		ret = get_user(val, (int __user *)arg) ? -EFAULT : 0;
-> +		if (!ret) {
-> +			fdif->s.sizex = val & 0xffff;
-> +			fdif->s.sizey = (val >> 16) & 0xffff;
-> +		}
-> +		break;
-> +	case FDIF_SET_FACE_DIR:
-> +		ret = get_user(val, (int __user *)arg) ? -EFAULT : 0;
-> +		if (!ret)
-> +			fdif->s.face_dir = val;
-> +		break;
-> +	case FDIF_SET_LHIT:
-> +		ret = get_user(val, (int __user *)arg) ? -EFAULT : 0;
-> +		if (!ret)
-> +			fdif->s.lhit = val;
-> +		break;
-> +	default:
-> +		ret = -1;
-> +	}
-> +	mutex_unlock(&fdif->mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static int fdif_mmap(struct file *file, struct vm_area_struct *vma)
-> +{
-> +	struct fdif *fdif = file->private_data;
-> +	unsigned long off;
-> +	unsigned long start;
-> +	u32 len;
-> +
-> +	if (!fdif)
-> +		return -ENODEV;
-> +
-> +	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
-> +		return -EINVAL;
-> +
-> +	off = vma->vm_pgoff << PAGE_SHIFT;
-> +
-> +	mutex_lock(&fdif->mutex);
-> +	start = virt_to_phys(fdif->s.pict_addr);
-> +	len = PAGE_ALIGN((start & ~PAGE_MASK) +
-> +			PICT_SIZE_X * PICT_SIZE_Y);
-> +	if (off >= len) {
-> +		mutex_unlock(&fdif->mutex);
-> +		return -EINVAL;
-> +	}
-> +	mutex_unlock(&fdif->mutex);
-> +
-> +	start &= PAGE_MASK;
-> +	if ((vma->vm_end - vma->vm_start + off) > len)
-> +		return -EINVAL;
-> +	off += start;
-> +
-> +	vma->vm_pgoff = off >> PAGE_SHIFT;
-> +	vma->vm_flags |= VM_IO | VM_RESERVED;
-> +	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
-> +
-> +	if (remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
-> +			     vma->vm_end - vma->vm_start, vma->vm_page_prot))
-> +		return -EAGAIN;
-> +
-> +	return 0;
-> +}
-> +
-> +static unsigned int fdif_poll(struct file *file,
-> +				struct poll_table_struct *wait)
-> +{
-> +	struct fdif *fdif = file->private_data;
-> +	unsigned int mask = 0;
-> +
-> +	poll_wait(file, &fdif->wait, wait);
-> +	if (file->f_mode & FMODE_WRITE && fdif->face_cnt != -1)
-> +		mask |= POLLOUT | POLLWRNORM;
-> +	return mask;
-> +}
-> +
-> +const struct file_operations fdif_file_operations = {
-> +	.owner =	  THIS_MODULE,
-> +	.read =		  fdif_read,
-> +	.poll =		  fdif_poll,
-> +	.unlocked_ioctl = fdif_ioctl,
-> +	.mmap =		  fdif_mmap,
-> +	.open =		  fdif_open,
-> +	.release =	  fdif_release,
-> +};
-> +
-> +static int __init fdif_init(void)
-> +{
-> +	int retval;
-> +
-> +	fdif_class = class_create(THIS_MODULE, "fdif");
-> +	if (IS_ERR(fdif_class)) {
-> +		printk(KERN_ERR "Unable to creat fdif class\n");
-> +		retval = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	retval = platform_driver_register(&fdif_driver);
-> +	if (retval) {
-> +		printk(KERN_ERR "Unable to register fdif driver\n");
-> +		goto err_driver_register;
-> +	}
-> +
-> +	if ((retval = register_chrdev(FDIF_MAJOR, "fdif",
-> +				&fdif_file_operations))) {
-> +		printk(KERN_ERR "Unable to get fdif device major %d\n",
-> +		       FDIF_MAJOR);
-> +		goto err_chr;
-> +	}
-> +	return 0;
-> +
-> +err_chr:
-> +	platform_driver_unregister(&fdif_driver);
-> +err_driver_register:
-> +	class_destroy(fdif_class);
-> +out:
-> +	return retval;
-> +}
-> +
-> +static void fdif_cleanup(void)
-> +{
-> +	unregister_chrdev(FDIF_MAJOR, "fdif");
-> +	platform_driver_unregister(&fdif_driver);
-> +	class_destroy(fdif_class);
-> +}
-> +
-> +module_init(fdif_init);
-> +module_exit(fdif_cleanup);
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:fdif");
-> +MODULE_AUTHOR("Ming Lei <ming.lei@canonical.com>");
-> diff --git a/include/linux/fdif.h b/include/linux/fdif.h
+> +++ b/Documentation/zio/00-INDEX
+> @@ -0,0 +1,10 @@
+> +00-INDEX
+> +	- this file
+> +device.txt
+> +	- description of what ZIO devices (and csets and channels) are.
+> +buffer.txt
+> +	- description of the buffer, it's methods and how it is used.
+> +trigger.txt
+> +	- what is a trigger and what's its role in ZIO.
+> +modules.txt
+> +	- list of modules (and description) found in the first ZIO package
+> diff --git a/Documentation/zio/buffer.txt b/Documentation/zio/buffer.txt
 > new file mode 100644
-> index 0000000..c0494c2
+> index 0000000..f80e63a
 > --- /dev/null
-> +++ b/include/linux/fdif.h
-> @@ -0,0 +1,67 @@
-> +/*****************************************************************************/
+> +++ b/Documentation/zio/buffer.txt
+> @@ -0,0 +1,114 @@
 > +
-> +/*
-> + *	fdif.h	---	face detection header file
-> + *
-> + *	Copyright (C) 2011
-> + *          Ming Lei (ming.lei@canonical.com)
-> + *
-> + *	This program is free software; you can redistribute it and/or modify
-> + *	it under the terms of the GNU General Public License as published by
-> + *	the Free Software Foundation; either version 2 of the License, or
-> + *	(at your option) any later version.
-> + *
-> + *	This program is distributed in the hope that it will be useful,
-> + *	but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *	GNU General Public License for more details.
-> + *
-> + *	You should have received a copy of the GNU General Public License
-> + *	along with this program; if not, write to the Free Software
-> + *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> + *
-> + */
+> +ZIO defines a "buffer" object type, so each device can exploit any
+> +features it may offer to speed up data transfers.
 > +
-> +/*****************************************************************************/
+> +Each cset in a device can use a different buffer, which is specified
+> +as an attribute of the cset.  One instance of the buffer type exists
+> +for each channel, and the char devices (control and data: see
+> +device.txt) refer to the buffer.
 > +
-> +#ifndef _LINUX_FDIF_H
-> +#define _LINUX_FDIF_H
+> +Please read <linux/zio-buffer.h> together with this file.
 > +
-> +#include <linux/types.h>
-> +#include <linux/magic.h>
+> +	Buffer Types
+> +	============
 > +
-> +#define MAX_FACE_COUNT  35
-> +#define PICT_SIZE_X     320
-> +#define PICT_SIZE_Y     240
+> +Buffers may be device-specific or generic. A generic buffer called
+> +"kmalloc" is provided within zio-core; it uses kmalloc for allocation
+> +data blocks.  Such buffer is activated by default on all new csets
+> +being registered but is not special in any other way, you can write
+> +your own generic buffer (and if it's better than ours, we may use it
+> +as default buffer in future releases).
 > +
-> +struct fdif_setting {
-> +	void			*pict_addr;
-> +	void			*work_mem_addr;
-> +	int 			min_face_size;
-> +	int			face_dir;
-> +	int			startx, starty;
-> +	int			sizex, sizey;
-> +	int			lhit;
-> +};
+> +A device-specific buffer declares to be such within its attributes.  A
+> +device-specific buffer can only be used by csets that declare its name
+> +as preferred buffer type.  When such csets are registered, if the
+> +buffer is already known to ZIO, it will be activated by default instead
+> +of "kmalloc".
 > +
-> +struct fdif_result {
-> +	unsigned short centerx;
-> +	unsigned short centery;
-> +	unsigned short angle;
-> +	unsigned short size;
-> +	unsigned short confidence;
-> +};
+> +Sometimes people write drivers for a set of similar devices, with
+> +similar DMA capabilities. In this case, all of them may refer to the
+> +same device-specific buffer type; the buffer type may be registered
+> +as a standalone kernel module.
 > +
-> +#define FDIF_START		_IOR('F', 0x24, unsigned int)
-> +#define FDIF_GET_FACE_CNT	_IOR('F', 0x25, unsigned int)
-> +#define FDIF_STOP		_IOR('F', 0x26, unsigned int)
-> +#define FDIF_RESET		_IOR('F', 0x27, unsigned int)
+> +The ZIO buffer data structures includes two sets of operations:
+> +file_operations and buffer_operations.
 > +
-> +#define FDIF_GET_SETTING	_IOR('F', 0x28, struct fdif_setting)
-> +#define FDIF_SET_MIN_FACE_SIZE	_IOR('F', 0x2a, unsigned int)
-> +#define FDIF_SET_STARTXY	_IOR('F', 0x2b, unsigned int)
-> +#define FDIF_SET_SIZEXY		_IOR('F', 0x2c, unsigned int)
-> +#define FDIF_SET_FACE_DIR	_IOR('F', 0x2d, unsigned int)
-> +#define FDIF_SET_LHIT		_IOR('F', 0x2e, unsigned int)
 > +
-> +#endif /* _LINUX_FDIF_H */
-> diff --git a/include/linux/major.h b/include/linux/major.h
-> index 6a8ca98..57d1c98 100644
-> --- a/include/linux/major.h
-> +++ b/include/linux/major.h
-> @@ -174,4 +174,5 @@
->  #define BLOCK_EXT_MAJOR		259
->  #define SCSI_OSD_MAJOR		260	/* open-osd's OSD scsi device */
->  
-> +#define FDIF_MAJOR		261
->  #endif
+> +	Buffer Operations
+> +	=================
+> +
+> +Each buffer type must provide the following buffer operations. All
+> +of them are implemented in zio-buf-kmalloc.c, which may be used as
+> +reference to better understand the role of each method:
+> +
+> +	struct zio_bi *(*create)(struct zio_buffer_type *zbuf,
+> +				 struct zio_channel *ch,
+> +				 fmode_t f_flags);
+> +	void (*destroy)(struct zio_bi *bi);
+> +
+> +The create() operation allocates and initializes an instance of the
+> +buffer type. It is called by ZIO when a channel is opened for the
+> +first time. The operation return a zio buffer instance (zio_bi),
+> +which is the generic descriptor of a buffer instance. ZIO handles
+> +only zio_bi, so complex buffer structures must contain the zio_bi
+> +structure and use container_of() to access the private enclosing
+> +structure.
+> +
+> +Destroy() deallocates a buffer instance. ZIO calls destroy when the
+> +channel is unregistered from ZIO or when the user assigns a different
+> +buffer type to the channel.
+> +
+> +When the control/data devices are closed, ZIO doesn't call destroy, so
+> +incoming data can queue up while the application leaves it closed
+> +(e.g., a shell script).  Actually, the release file operation is not
+> +handled by ZIO, so it couldn't call destroy on close even if it wanted
+> +to.
+> +
+> +	struct zio_block *(*alloc_block)(struct zio_bi *bi,
+> +					 struct zio_control *ctrl,
+> +					 size_t datalen, gfp_t gfp);
+> +	void (*free_block)(struct zio_bi *bi, struct zio_block *block);
+> +
+> +For input channels, a block is allocated before the trigger fires, and
+> +it is freed when the user has read or explicitly ignored it. For
+> +output, allocation happens on user write and free is called by the
+> +trigger when it is done. Thus, the functions are sometimes called by
+> +buffer code itself, and sometimes by the trigger. The generic
+> +structure hosting a block is zio_block which contain both data
+> +(samples) and control informations.  If needed, buffers may use a more
+> +complex structure, which will include zio_block, which is the only
+> +structure that ZIO handles; by using container_of you can retrieve the
+> +enclosing complex structure used in your buffer
+> +
+> +	int (*store_block)(struct zio_bi *bi, struct zio_block *block);
+> +	struct zio_block (*retr_block) (struct zio_bi *bi);
+> +
+> +For input the trigger calls store_block() and the read system call issues
+> +retr_block().  For output, the write system call runs store_block()
+> +and the trigger may call retr_block() (although the buffer pushes to
+> +the trigger when it receives the first data block).
+> +
+> +
+> +	File Operations
+> +	===============
+> +
+> +This field hosts the file_operations used by the char devices (control and
+> +data) for every channel using this buffer type.  When char devices are
+> +initially opened, the open method being run is within zio-code;
+> +it  kmallocs f->private_data before calling the buffer-specific open
+> +method. The private data being used is:
+> +
+> +	struct zio_f_priv {
+> +		struct zio_channel *chan;
+> +		enum zio_cdev_type type;
+> +	};
+> +
+> +All buffer file operations can thus refer to the current channel (and
+> +its buffer and its trigger), and know if the current file is
+> +ZIO_CDEV_CTRL or ZIO_CDEV_DATA.  Every buffer is expected to
+> +call zio_generic_release() at the end of its own release operation, or
+> +used zio_generic_release() directly in the file operations.
+> +
+> +ZIO offers other generic file operations, that may be enough for your
+> +buffer code or not. See zio-buf-kmalloc.c for a working example of
+> +buffer file operations.
+> diff --git a/Documentation/zio/device.txt b/Documentation/zio/device.txt
+> new file mode 100644
+> index 0000000..0c960e2
+> --- /dev/null
+> +++ b/Documentation/zio/device.txt
+> @@ -0,0 +1,69 @@
+> +
+> +	ZIO Device
+> +	==========
+> +
+> +A device, registered through zio_register_device() is the description
+> +of an I/O peripheral. It is made up of channel-sets, called csets
+> +from now on. A device may represent a PCI board or an SPI integrated
+> +circuit or whatever it makes sense to manage from a single device driver.
+> +All I/O operations are performed on csets, so the device is just an
+> +array of csets.
+> +
+> +	Csets
+> +	=====
+> +
+> +A cset (channel-set) is an homogeneous set of I/O channels. All
+> +channels in the set are feature the same physical characteristics;
+> +moreover, a cset refers to a trigger object, so all channels in a set
+> +are triggered by the same event. This is the typical use case for
+> +logic analysers (digital input) or multi-probe scopes (analog input),
+> +as well as multi-waveform output. If your device has several input
+> +channels which are separately triggered, they should be defined as
+> +several cset items, each featuring one channel only.  Finally, all
+> +channels in a cset use the same buffer object for in-kernel data
+> +storage. Both the buffer and the trigger for a cset are set by
+> +writing the proper name in sysfs. At device registration defaults
+> +apply. If ZIO can't find the trigger/buffer name you wrote,
+> +it will return EINVAL and leave the previous trigger/buffer in place.
+> +
+> +	Channels
+> +	========
+> +
+> +The channel is the lowest object in the ZIO hierarchy. It represents
+> +the single physical connector of the device: analog or digital, input
+> +or output. Time-to-digital and digital-to-time devices can be represented
+> +as channels as well.
+> +
+> +	Attributes
+> +	==========
+> +
+> +Most configuration and information in ZIO happens through sysfs.
+> +See sysfs.txt for information about attributes. (FIXME: sysfs.txt)
+> +
+> +	Data Transfers
+> +	==============
+> +
+> +Data transfer in ZIO uses two char devices for each channel offered by
+> +the driver. One char device is used to describe data blocks (we call
+> +it control device); the other is used to transfer the data blocks (we
+> +call it data device). The control device returns (or accepts) a
+> +fixed-size structure that describes the next data transfer, including
+> +the trigger in use, data size, number of samples and various
+> +attributes.  Applications may choose to read the data device alone,
+> +without retrieving control information: when any data of a new block
+> +is transferred, the associated control information is discarded.
+> +Similarly, data is discarded if you re-read the control device after
+> +having retrieved the description of a data block you are not
+> +interested in.  For output, writing data without writing control uses
+> +the default control information, or the one from the previous
+> +transfer.
+> +
+> +The full set of rules for data and control transfers is described
+> +elsewhere (FIXME: link to other docs) but it is pretty intuitive once
+> +you get the idea.
+> +
+> +See the "zio-dump" host tool in the top-level zio dir for an example
+> +of generic and simple input application that shows use of control and
+> +data files.
+> +
+> +
+> diff --git a/Documentation/zio/modules.txt b/Documentation/zio/modules.txt
+> new file mode 100644
+> index 0000000..b3df00a
+> --- /dev/null
+> +++ b/Documentation/zio/modules.txt
+> @@ -0,0 +1,45 @@
+> +
+> +This is the list of ZIO modules, at the time of writing. It is there
+> +to help new users understanding how the parts stick together.
+> +
+> +  drivers/zio/zio-core.ko
+> +
+> +This module (which is linked from several source files) includes the
+> +core sysfs and attribute management. It exports the register and
+> +unregister functions for top-level objects. Moreover, it includes the
+> +default buffer, called "kmalloc" and default trigger, called
+> +"app-request".
+> +
+> +  drivers/zio/trigger/trig-ktimer.ko
+> +  drivers/zio/trigger/trig-hrt.ko
+> +  drivers/zio/trigger/trig-irq.ko
+> +
+> +Three other generic triggers. Two of them are time-based, and the
+> +third hooks to an external interrupt (or more than one) as source of
+> +trigger that can be used be any zio cset).
+> +
+> +  drivers/zio/dev/zio-null.ko
+> +  drivers/zio/dev/zio-parport.ko
+> +  drivers/zio/dev/zio-ad7888.ko
+> +  drivers/zio/dev/zio-uart.ko
+> +
+> +These modules are examples. "null" does nothing: it discards output
+> +data and returns zeroes as input data. It can be used to experiment
+> +with generic triggers and as a sandbox for local modifications and
+> +testing.
+> +
+> +The parport driver registers two output csets and two input cset.
+> +In each group one cset is byte-oriented and the other is bit-oriented.
+> +
+> +The ad7888 is an SPI ADC we mounted on an ARM board. It's a real
+> +8-channel ADC we are using for internal development, and this is a
+> +real driver for a real thing. Over time it will handle its own buffer
+> +type (our SPI master uses DMA) and its own data-driven trigger (even
+> +if the data will be scanned by the CPU, so it can only work at low
+> +data rates).
+> +
+> +The uart driver is a line discpline that can receive data from a
+> +serial port. The first implementation expects to receive an endless
+> +stream of 16-bit data, big endian (we used this to run on-board ADC on
+> +cortex-m3), but we plan to extend it as a serious test case. You can
+> +drive it from a pty slave, for example.
+> diff --git a/Documentation/zio/trigger.txt b/Documentation/zio/trigger.txt
+> new file mode 100644
+> index 0000000..95b426f
+> --- /dev/null
+> +++ b/Documentation/zio/trigger.txt
+> @@ -0,0 +1,128 @@
+> +
+> +ZIO defines a "trigger" object type, and each cset is connected to
+> +a trigger.
+> +
+> +Each cset in a device can use a different trigger, which is specified
+> +as an attribute of the cset.  When the trigger fires, it acts on all
+> +the non-disabled channels of the cset.  Only the "app-request" trigger
+> +can act on a single channel at a time.
+> +
+> +Please read <linux/zio-trigger.h> together with this file.
+> +
+> +	Trigger Types
+> +	=============
+> +
+> +Triggers may be device-specific or generic. A few generic triggers
+> +are part of zio-core. The "app-request" trigger fires input when
+> +the application calls read and fires output when the application calls
+> +write (it acts on a single channel). The "ktimer" trigger uses a kernel
+> +timer as trigger source. The "irq" trigger uses any interrupt (e.g.,
+> +a GPIO interrupt, or pin 10 of the PC parallel port) as trigger event.
+> +
+> +A device-specific trigger declares to be such within its attributes.  A
+> +device-specific trigger can only be used by csets that declare its name
+> +as preferred trigger type.  When such csets are registered, if the
+> +trigger is already known to ZIO, it will be activated by default instead
+> +of "app-request".
+> +
+> +	Trigger Operations
+> +	==================
+> +
+> +Trigger operations are the following:
+> +
+> +	struct zio_ti *(*create)(struct zio_trigger_type *trig,
+> +				 struct zio_cset *cset,
+> +				 struct zio_control *ctrl,
+> +				 fmode_t flags);
+> +	void (*destroy)(struct zio_ti *ti);
+> +
+> +Create and destroy a trigger instance for a cset. ZIO calls create() when
+> +attaching the trigger to a cset; it calls destroy() when the trigger is
+> +replaced by a different one or the cset is being unregistered from ZIO.
+> +The instance structure is trigger-specific, but it must include the
+> +generic structure zio_ti. Every time this structure is passed over, trigger
+> +code may use container_of if it needs to access the private enclosing
+> +structure.
+> +
+> +	int (*config)(struct zio_ti *ti, stuct zio_control *ctrl);
+> +
+> +The method is called by ZIO whenever the attributes for a trigger
+> +instance are modified by the user (by writing to sysfs or otherwise).
+> +
+> +	int (*push_block)(struct zio_ti *ti,
+> +			  struct zio_channel *chan,
+> +			  struct zio_control *ctrl);
+> +
+> +This is used for output channels: when a new data block is ready, it
+> +must be sent to the trigger so it can be output when the event fires.
+> +Buffer code, therefore, is expected to call this trigger method.  The
+> +function can return -EAGAIN if it has no space in the queue, or 0 on
+> +success. If EAGAIN happens, the buffer should handle it (by storing
+> +locally or notifying the user).
+> +
+> +	void (*pull_block)(struct zio_ti *ti,
+> +	  		   struct zio_channel *chan);
+> +
+> +The method asks the trigger for a new block. It may be called by
+> +the buffer, if it wants a block immediately. The trigger that offers
+> +this method (which may be NULL) is responsible of storing a block
+> +when available.  Since driver->input_cset completes asynchronously, this
+> +method can't return a block directly.  The block that will be stored
+> +may be shorter than what the trigger would have stored in the buffer
+> +by itself.
+> +
+> +        void (*data_done)(struct zio_cset *cset);
+> +
+> +The function is called by the device, and signals the trigger that
+> +the input or output operation on the cset is over. For input, the
+> +trigger will push blocks to the buffer, for output it will release
+> +the blocks.  zio-core offers zio_generic_data_done() for triggers
+> +that don't need special handling.
+> +
+> +	File Operations
+> +	===============
+> +
+> +The trigger may include a non-NULL f_ops pointer. Most triggers will
+> +not need it, but for example "app-request" does, because it needs to
+> +look at individual read and write calls performed by applications.
+> +ZIO will use these file operations (instead of the buffer file operations)
+> +when the open method of the char device detects that the active trigger
+> +declares a non-NULL f_ops field.  These operations will most
+> +likely fall back to buffer->f_ops for most of their actual work.
+> +
+> +See zio-trig-app-request.c for details about how this is used.
+> +
+> +	When the trigger fires
+> +	======================
+> +
+> +The trigger event may happen for a variety of reasons. It can be
+> +time-driven, data-driven or whatever else.  In any case, there is
+> +a time when the trigger fires, so input or output may happen.
+> +(With most hardware-specific triggers, the actual input or output of
+> +data has already happened when the trigger interrupt runs, but this
+> +doesn't change the software flow).
+> +
+> +Hardware-driven triggers will need to make their own work by themselves,
+> +but ZIO offers this help macro to loop over all non-disabled channels:
+> +
+> +	cset_for_each(struct zio_cset *cset, struct zio_channel *ch)
+> +
+> +The macro works like "task_for_each" or "list_for_each" in the kernel
+> +headers.
+> +
+> +For software-based triggers (where actual I/O happens when software
+> +wants it to happen, even if it is in response to an interrupt), the
+> +asynchronous code that runs the event will just need to call
+> +
+> +	zio_fire_trigger(struct zio_ti *ti);
+> +
+> +This function, part of zio-core, calls the internal helpers
+> +__zio_fire_input_trigger for input or __zio_fire_output_trigger for
+> +output. For input, block allocation is performed for each
+> +non-disabled channel, and drv->input_cset is called.
+> +For output, drv->outoput_cset is called.
+> +
+> +You can refer to "zio-trig-timer" for an example of a multi-instance
+> +generic timer and to "zio-trig-app-request" for a non-conventional
+> +implementation based on trigger-local file_operations.
+> +
+> diff --git a/drivers/zio/README b/drivers/zio/README
+> new file mode 100644
+> index 0000000..d537353
+> --- /dev/null
+> +++ b/drivers/zio/README
+> @@ -0,0 +1,105 @@
+> +
+> +Zio is "the ultimate I/O framework".  Is being developed on the open
+> +hardware repository at http://www.ohwr.org/projects/zio .
+> +
+> +This version is known to compile and run with kernels 2.6.34 onwards.
+> +
+> +This README refers to version "beta3", but work is ongoing towards
+> +a stable package. See the TODO file on ohwr for details.
+> +
+> +To test zio you need to load the core modules (later, the default
+> +trigger and default buffer will be part of zio-core):
+> +
+> +   	insmod zio-core.ko
+> +   	insmod buffers/zio-buf-kmalloc.ko
+> +   	insmod triggers/zio-trig-timer.ko
+> +
+> +Drivers can't live without a trigger and a buffer, so the modules above
+> +must be loaded first.
+> +
+> +The kmalloc buffer is a simple buffer that hosts a list of data blocks,
+> +for either input or output.
+> +
+> +The timer trigger is a kernel-timer based trigger, that fires a block
+> +transfer on a timely basis. You can use the "ms" parameter to set the
+> +inter-block time, in milliseconds (the default is two seconds). You
+> +can also pass the "nsamples" parameter to say how many samples are
+> +aquired at each trigger instance.
+> +
+> +With the core in place, you can load a driver:
+> +
+> +	insmod drivers/zio-zero.ko
+> +
+> +zio-zero has a single channel-set (number 0) with three channels.
+> +They simulate three analog inputs, 8-bit per sample.
+> +
+> +     channel 0: returns zero forever
+> +     channel 1: returns random numbers
+> +     channel 2: returns a sawtooth signal (0 to 255 and back)
+> +
+> +The char devices are called using device-cset-channel:
+> +
+> +    /dev/zzero-0-0-ctrl
+> +    /dev/zzero-0-0-data
+> +    /dev/zzero-0-1-ctrl
+> +    /dev/zzero-0-1-data
+> +    /dev/zzero-0-2-ctrl
+> +    /dev/zzero-0-2-data
+> +
+> +(later versions will use a /dev/zio/ directory for all zio files)
+> +
+> +To read data you can just cat, or "od -t x1" the data device.
+> +To get control information meta-information) together with data, you
+> +can use the "zio-dump" user-space utility, in this directory.
+> +
+> +For example:
+> +
+> +    ./zio-dump /dev/zzero-0-2-ctrl /dev/zzero-0-2-data
+> +
+> +This is the result with a trigger that uses 2000 as msec and 32
+> +as nsample:
+> +
+> +    ./zio-dump /dev/zzero-0-2-ctrl /dev/zzero-0-2-data
+> +
+> +    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
+> +    Ctrl: seq 1, n 32, size 1, bits 8, flags 01000001 (little-endian)
+> +    Ctrl: stamp 1320403540.084798370 (0)
+> +    Data: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> +    Data: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+> +
+> +    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
+> +    Ctrl: seq 2, n 32, size 1, bits 8, flags 01000001 (little-endian)
+> +    Ctrl: stamp 1320403542.091093781 (0)
+> +    Data: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
+> +    Data: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f
+> +
+> +    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
+> +    Ctrl: seq 3, n 32, size 1, bits 8, flags 01000001 (little-endian)
+> +    Ctrl: stamp 1320403544.084790274 (0)
+> +    Data: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f
+> +    Data: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f
+> +
+> +Zio dump is able to access several pairs of devices (control and data),
+> +and you can change the trigger and buffer attributes for the cset.
+> +
+> +Example:
+> +
+> +    echo 500 > /sys/zio/devices/zzero/cset0/trigger/ms-period
+> +    echo 4 > /sys/zio/devices/zzero/cset0/trigger/nsamples
+> +    echo 3 > /sys/zio/devices/zzero/cset0/chan0/buffer/max-buffer-len
+> +    ./zio-dump /dev/zzero-0-*
+> +
+> +    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 0
+> +    Ctrl: seq 102, n 4, size 1, bits 8, flags 01000001 (little-endian)
+> +    Ctrl: stamp 4066.519285605 (0)
+> +    Data: 00 00 00 00
+> +
+> +    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 1
+> +    Ctrl: seq 102, n 4, size 1, bits 8, flags 01000001 (little-endian)
+> +    Ctrl: stamp 4066.519285605 (0)
+> +    Data: 71 29 a6 53
+> +
+> +    Ctrl: version 0.2, trigger timer, dev zzero, cset 0, chan 2
+> +    Ctrl: seq 102, n 4, size 1, bits 8, flags 01000001 (little-endian)
+> +    Ctrl: stamp 4066.519285605 (0)
+> +    Data: 60 61 62 63
+Interesting approach to meta data handling.  It's kind of 'partly' out
+of band as it can apply to large chunks of data.
+
+How does it map if you have triggers causing single captures from each
+channel?  I would imagine you will then store a whole meta data set per
+sample?  I know this isn't your use case, but I'm currious to see where
+the overlap lies between this and IIO as you can imagine!
