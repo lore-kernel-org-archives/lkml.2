@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1KZVy7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 16:54:59 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56920 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab1KZVy5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 16:54:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <201111262232.46195.rjw@sisk.pl>
-References: <CA+55aFyNUC+k1gp3MQkxQzernEzRZwYOH4EBnOq=6UiaJ2oh4A@mail.gmail.com>
-	<201111250203.29786.rjw@sisk.pl>
-	<201111262232.46195.rjw@sisk.pl>
-Date: Sun, 27 Nov 2011 05:54:56 +0800
-X-Google-Sender-Auth: gLFPa9wGDqc_CRMU7DaQ6utde6Y
-Message-ID: <CAJ-VmonZYrEJS7UkqdSTnMQ5waDjPgSpVDPqiHz2=Uksso5tHw@mail.gmail.com>
-Subject: Re: [Regression, 3.2-rc1] ath9k broken on AR928X (was: Re: Linux
- 3.2-rc3 - just in time for Thanksgiving)
-From: Adrian Chadd <adrian@freebsd.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Wireless <linux-wireless@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754934Ab1KZWNS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 17:13:18 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:48988 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754198Ab1KZWNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 17:13:15 -0500
+Date: Sat, 26 Nov 2011 23:13:04 +0100
+From: matthieu castet <castet.matthieu@free.fr>
+To: Sander Eikelenboom <linux@eikelenboom.it>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: re : 3.2-rc2 regression due to commit "USB: EHCI: fix HUB TT
+ scheduling issue with iso transfer" 811c926c
+Message-ID: <20111126231304.0bf12f69@mat-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 November 2011 05:32, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> Tomorrow I'll try to identify the offending commits.
->
-> Well, it took more time than I had hoped. :-(
->
-> Bisection turns up:
->
-> commit 2577c6e8f2320f1d2f09be122efef5b9118efee4
-> Author: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
-> Date:   Tue Sep 13 22:38:18 2011 +0530
->
->    ath9k_hw: Add support for AR946/8x chipsets.
->
->    This patch adds support for AR946/8x chipets.
+Hi,
 
-Oh god. That's going to be fun to figure out :)
+could you try the following patch ?
 
-> which I think is wrong for at lest two reasons.  Not that I understand
-> what it actually does to the driver, but first, it does much more than the
-> changelog says and, second, it is practically impossible to revert
-> because of the number of commits on top depending on it.  Quite frankly,
-> it is about to make it to my list of examples of how things should _not_ be
-> done in the kernel.
->
-> The commit immediately preceding it doesn't show any symptoms of failure, so
-> I'm quite convinced this one really introduced the problem for me.
->
-> The chip in the affected box is (according to "lspci -v"):
+It seems there is a flow in the error condition.
 
-Can you please find out what the actual PCI device id is? That way I
-can help you (hopefully) isolate which bits of that change would cause
-your regression.
 
-That commit almost exclusively touches the AR93xx chipset support, so
-I can't (easily) see how this would break support for the AR928x NICs.
+Matthieu
 
-Adrian
+
+diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+index 56a3203..464b451 100644
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1475,6 +1475,7 @@ iso_stream_schedule (
+ 	 * jump until after the queue is primed.
+ 	 */
+ 	else {
++		int done = 0;
+ 		start = SCHEDULE_SLOP + (now & ~0x07);
+ 
+ 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
+@@ -1491,19 +1492,23 @@ iso_stream_schedule (
+ 			/* check schedule: enough space? */
+ 			if (stream->highspeed) {
+ 				if (itd_slot_ok(ehci, mod, start,
+-						stream->usecs, period))
++						stream->usecs, period)) {
++					done = 1;
+ 					break;
++				}
+ 			} else {
+ 				if ((start % 8) >= 6)
+ 					continue;
+ 				if (sitd_slot_ok(ehci, mod, stream,
+-						start, sched, period))
++						start, sched, period)) {
++					done = 1;
+ 					break;
++				}
+ 			}
+ 		} while (start > next);
+ 
+ 		/* no room in the schedule */
+-		if (start == next) {
++		if (!done) {
+ 			ehci_dbg(ehci, "iso resched full %p (now %d max %d)\n",
+ 				urb, now, now + mod);
+ 			status = -ENOSPC;
