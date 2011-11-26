@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab1KZKvN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 05:51:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56243 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab1KZKvK (ORCPT
+	id S1754006Ab1KZKyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 05:54:49 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51938 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab1KZKyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 05:51:10 -0500
-Message-ID: <1322304658.18498.0.camel@phoenix>
-Subject: [PATCH] regulator: export of_get_regulator_init_data
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rajendra Nayak <rnayak@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Date: Sat, 26 Nov 2011 18:50:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Nov 2011 05:54:45 -0500
+Subject: Re: [BUG] 3.2-rc2: BUG kmalloc-8: Redzone overwritten
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Matt Mackall <mpm@selenic.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <1321870967.8173.1.camel@lappy>
+References: <1321866845.3831.7.camel@lappy>
+	 <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321870915.2552.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321870967.8173.1.camel@lappy>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sat, 26 Nov 2011 12:54:38 +0200
+Message-ID: <1322304878.28191.1.camel@sasha>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_get_regulator_init_data is called in drivers/regulator/fixed.c
-which could be a module.
+On Mon, 2011-11-21 at 12:22 +0200, Sasha Levin wrote:
+> On Mon, 2011-11-21 at 11:21 +0100, Eric Dumazet wrote:
+> > Le lundi 21 novembre 2011 à 11:15 +0100, Eric Dumazet a écrit :
+> > 
+> > > 
+> > > Hmm, trinity tries to crash decnet ;)
+> > > 
+> > > Maybe we should remove this decnet stuff for good instead of tracking
+> > > all bugs just for the record. Is there anybody still using decnet ?
+> > > 
+> > > For example dn_start_slow_timer() starts a timer without holding a
+> > > reference on struct sock, this is highly suspect.
+> > > 
+> > > [PATCH] decnet: proper socket refcounting
+> > > 
+> > > Better use sk_reset_timer() / sk_stop_timer() helpers to make sure we
+> > > dont access already freed/reused memory later.
+> > > 
+> > > Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> > > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > 
+> > Hmm, I forgot to remove the sock_hold(sk) call from dn_slow_timer(),
+> > here is V2 :
+> > 
+> > [PATCH] decnet: proper socket refcounting
+> > 
+> > Better use sk_reset_timer() / sk_stop_timer() helpers to make sure we
+> > dont access already freed/reused memory later.
+> > 
+> > Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > ---
+> 
+> [snip]
+> 
+> Applied locally and running same tests as before, will update with
+> results.
+> 
 
-Export of_get_regulator_init_data to fix below build error:
-ERROR: "of_get_regulator_init_data" [drivers/regulator/fixed.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+Looks ok after a couple days of testing.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/of_regulator.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+	Tested-by: Sasha Levin <levinsasha928@gmail.com>
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 76673c7..acd7045 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -10,6 +10,7 @@
-  * (at your option) any later version.
-  */
- 
-+#include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/regulator/machine.h>
-@@ -79,3 +80,4 @@ struct regulator_init_data *of_get_regulator_init_data(struct device *dev)
- 	of_get_regulation_constraints(dev->of_node, &init_data);
- 	return init_data;
- }
-+EXPORT_SYMBOL_GPL(of_get_regulator_init_data);
 -- 
-1.7.5.4
 
-
+Sasha.
 
