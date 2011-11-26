@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab1KZSx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 13:53:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab1KZSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 13:53:27 -0500
-Date: Sat, 26 Nov 2011 18:33:15 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: migration: pair unlock_page and lock_page when
- migrating huge pages
-Message-ID: <20111126173315.GG8397@redhat.com>
-References: <CAJd=RBChfVC4hUKvO5ks0+NxahTgibdivLotw3VpAa7_-r8_+g@mail.gmail.com>
+	id S1753923Ab1KZTCK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 14:02:10 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51880 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab1KZTCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 14:02:06 -0500
+Date: Sat, 26 Nov 2011 22:02:00 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: mmarek@suse.cz, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ctags: remove struct forward declarations
+Message-ID: <20111126190200.GA13297@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBChfVC4hUKvO5ks0+NxahTgibdivLotw3VpAa7_-r8_+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hillf,
+They're quite pointless and obscure location of real structure definition.
 
-On Fri, Nov 25, 2011 at 08:20:31PM +0800, Hillf Danton wrote:
-> Skip unlocking page if fail to lock, then lock and unlock are paired.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/mm/migrate.c	Fri Nov 25 20:11:14 2011
-> +++ b/mm/migrate.c	Fri Nov 25 20:21:26 2011
-> @@ -869,9 +869,9 @@ static int unmap_and_move_huge_page(new_
-> 
->  	if (anon_vma)
->  		put_anon_vma(anon_vma);
-> -out:
->  	unlock_page(hpage);
-> 
-> +out:
->  	if (rc != -EAGAIN) {
->  		list_del(&hpage->lru);
->  		put_page(hpage);
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Looks good, I guess that path wasn't exercised frequently because
-there's no blocking I/O involvement with hugetlbfs.
+ scripts/tags.sh |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks,
-Andrea
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -146,6 +146,8 @@ exuberant()
+ 	--langdef=dotconfig --language-force=dotconfig          \
+ 	--regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
+ 
++	# Remove structure forward declarations.
++	LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
+ }
+ 
+ emacs()
