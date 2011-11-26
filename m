@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab1KZSR1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 13:17:27 -0500
-Received: from gherkin.frus.com ([192.158.254.49]:49129 "EHLO gherkin.frus.com"
+	id S1753846Ab1KZSYX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 13:24:23 -0500
+Received: from brutus.rcsd.ms ([68.216.50.44]:39193 "EHLO mailgw2.rcsd.ms"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab1KZSR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 13:17:26 -0500
-Date: Sat, 26 Nov 2011 12:17:24 -0600
-From: Bob Tracy <rct@gherkin.frus.com>
-To: linux-kernel@vger.kernel.org
-Subject: [BUG] 3.2-rcX regression: boot failure on AMD K6-III/450
-Message-ID: <20111126181724.GA1993@gherkin.frus.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+	id S1753603Ab1KZSYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 13:24:22 -0500
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Nov 2011 13:24:22 EST
+Reply-To: <alert01@cpll.cn>
+From: "E-Mail Account Maintenance" <info@upc.nl>
+Subject: E-Mail Account Maintenance
+Date: Sat, 26 Nov 2011 23:47:06 +0530
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 111126-0, 11/26/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <7807_1322331428_4ED12D24_7807_5913770_1_20111126181544.251328B8C29@mail4.rcsd.ms>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Verified for 3.2-rc[1-3].  Subject system using LILO as bootloader.
-The following messages appear on the console:
 
-Loading linux-dev.
-BIOS data check successful
-Probing EDD (edd=off to disable)... ok
-<blank line>
-Decompressing Linux... Parsing ELF... done.
-Booting the kernel.
-<hang here -- no further output>
+ Beste UPC gebruiker,
 
-The console output is normal and expected up to the point of the hang.
-Versions 3.1 and prior work fine.  I had earlier thought the floppy
-regression Pavel reported applied to my case (and it may), but I don't
-seem to be getting that far in the boot process.
+ Willen wij u mededelen dat wij momenteel uitvoeren van gepland onderhouden
+ upgrade van onze UPC webmail service en als gevolg van deze onze UPC klant 
+ is
+ Om uw UPC account, zodat u om ons uw e-mail account gegevens die zijn als 
+ volgt:
 
---Bob
+ * User name:
+ * Wachtwoord:
+ * Geboortedatum:
+
+ Doet u dit niet binnen 48 uur zal onmiddellijk maken van uw UPC account
+ gedeactiveerd uit onze database.
+
+This message may contain confidential and/or proprietary
+information, and is intended for the person/entity to
+whom it was originally addressed. Any use by others is
+strictly prohibited.
+
