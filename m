@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab1KZAnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Nov 2011 19:43:41 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46874 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab1KZAnk (ORCPT
+	id S1754278Ab1KZAuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Nov 2011 19:50:52 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:59144 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab1KZAuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Nov 2011 19:43:40 -0500
-Date: Sat, 26 Nov 2011 04:43:35 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>, linux-kernel@vger.kernel.org,
-        mad_soft@inbox.ru, koen@dominion.thruhere.net
-Subject: Re: [PATCH] power/ds2760_battery: Add rated capacity of the hx4700
- 3600mAh battery
-Message-ID: <20111126004335.GA1703@oksana.dev.rtsoft.ru>
-References: <CA+gwMcf9xvcFNJoxmDO0z-FMhKrd=9eptSDrpsBB3a20pzMfKw@mail.gmail.com>
- <1322178776.45812.YahooMailClassic@web29011.mail.ird.yahoo.com>
- <20111125235613.GA21434@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Fri, 25 Nov 2011 19:50:51 -0500
+Date: Sat, 26 Nov 2011 01:44:47 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, netdev@vger.kernel.org,
+        nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        Armin Kazmi <armin.kazmi@tu-dortmund.de>, Gerd <booster@wolke7.net>
+Subject: Re: [bug?] r8169: hangs under heavy load
+Message-ID: <20111126004447.GA14744@electric-eye.fr.zoreil.com>
+References: <4E7F4D45.7040902@wolke7.net> <1316978632.4122.103.camel@deadeye> <4E82C0B5.1050902@wolke7.net> <1317254171.4068.12.camel@deadeye> <20111124044137.GA18262@elie.hsd1.il.comcast.net> <4ECFE7A7.5070300@wolke7.net> <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop> <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111125235613.GA21434@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322262357.2550.12.camel@edumazet-laptop>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 03:56:13AM +0400, Anton Vorontsov wrote:
+Eric Dumazet <eric.dumazet@gmail.com> :
+> Le vendredi 25 novembre 2011 ?? 23:22 +0100, Francois Romieu a ??crit :
 [...]
-> The only thing we can do is some machine-specific fixup. The
-> universal way is ds2760_battery.rate_capacity module (and kernel
-> command line) parameter that you can use to fixup the value.
+> > This path is not used.
+> 
+> OK, then we receive a RxFIFOOver indication while napi handler is
+> running (quite possible if machine under network load)
 
-Oh, btw, nowadays there is support for writable properties in the
-power supply class. So, in addition to the module parameter, for
-convenience you might also implement write-function for the
-rated_capacity value.
+Welcome to the post 92fc43b4159b518f5baae57301f26d770b0834c9 world. :o/
 
-Thanks,
+The hack below could help (the XID matches RTL_GIGA_MAC_VER_22):
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 6f06aa1..4fcfb3f 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5818,7 +5818,6 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			switch (tp->mac_version) {
+ 			/* Work around for rx fifo overflow */
+ 			case RTL_GIGA_MAC_VER_11:
+-			case RTL_GIGA_MAC_VER_22:
+ 			case RTL_GIGA_MAC_VER_26:
+ 				netif_stop_queue(dev);
+ 				rtl8169_tx_timeout(dev);
+@@ -5835,6 +5834,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			case RTL_GIGA_MAC_VER_31:
+ 			/* Experimental science. Pktgen proof. */
+ 			case RTL_GIGA_MAC_VER_12:
++			case RTL_GIGA_MAC_VER_22:
+ 			case RTL_GIGA_MAC_VER_25:
+ 				if (status == RxFIFOOver)
+ 					goto done;
+
+
+Traffic may stop flowing though. The patch below should be better:
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 6f06aa1..54be9e1 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5820,8 +5820,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			case RTL_GIGA_MAC_VER_11:
+ 			case RTL_GIGA_MAC_VER_22:
+ 			case RTL_GIGA_MAC_VER_26:
+-				netif_stop_queue(dev);
+-				rtl8169_tx_timeout(dev);
++				rtl8169_schedule_work(dev, rtl8169_reset_task);
+ 				goto done;
+ 			/* Testers needed. */
+ 			case RTL_GIGA_MAC_VER_17:
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Ueimor
