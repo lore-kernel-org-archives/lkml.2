@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1KZWe5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 17:34:57 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:57955 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786Ab1KZWez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 17:34:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
-Subject: [PATCH] ath9k: Revert change that broke AR928X on Acer Ferrari One
-Date: Sat, 26 Nov 2011 23:37:43 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Wireless <linux-wireless@vger.kernel.org>,
-        Adrian Chadd <adrian@freebsd.org>
-References: <CA+55aFyNUC+k1gp3MQkxQzernEzRZwYOH4EBnOq=6UiaJ2oh4A@mail.gmail.com> <201111250203.29786.rjw@sisk.pl> <201111262232.46195.rjw@sisk.pl>
-In-Reply-To: <201111262232.46195.rjw@sisk.pl>
+	id S1755054Ab1KZW4X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 17:56:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40715 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754953Ab1KZW4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 17:56:21 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dcobas@cern.ch, siglesia@cern.ch,
+        manohar.vanga@cern.ch
+Subject: Re: [RFC PATCH 3/7] drivers/zio: core files for the ZIO input/output
+Date: Sat, 26 Nov 2011 23:58:41 +0100
+Message-ID: <7431481.TL8TOhprdN@harkonnen>
+User-Agent: KMail/4.7.3 (Linux/3.1.1-2.fc16.x86_64; KDE/4.7.3; x86_64; ; )
+In-Reply-To: <20111126200341.GD11421@kroah.com>
+References: <cover.1322328073.git.rubini@gnudd.com> <51ba376321edbd0bcbd206cb28abb14a68a05a2b.1322328075.git.rubini@gnudd.com> <20111126200341.GD11421@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111262337.43771.rjw@sisk.pl>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+In data sabato 26 novembre 2011 12:03:41, Greg KH ha scritto:
+> On Sat, Nov 26, 2011 at 06:30:42PM +0100, Alessandro Rubini wrote:
+> > +static struct kobj_type zdktype = { /* For standard and extended
+> > attribute */ +	.release   = NULL,
+> 
+> Sweet!
+> 
+> As-per the in-kernel documentation, I now get to mock you for doing
+> this :)
+> 
+> Please NEVER DO THIS, you are ignoring the messages that the kernel
+> sends you when you remove one of these devices, and causing a memory
+> leak.
 
-Revert a hunk in drivers/net/wireless/ath/ath9k/hw.c introduced by
-commit 2577c6e8f2320f1d2f09be122efef5b9118efee4 (ath9k_hw: Add
-support for AR946/8x chipsets) that caused a nasty regression to
-appear on my Acer Ferrari One (the box locks up entirely at random
-times after the wireless has been started without any way to get
-debug information out of it).
+Honestly we never see any messages about this.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/net/wireless/ath/ath9k/hw.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> Not nice at all, yet another reason to use a 'struct device'.
 
-Index: linux/drivers/net/wireless/ath/ath9k/hw.c
-===================================================================
---- linux.orig/drivers/net/wireless/ath/ath9k/hw.c
-+++ linux/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1827,7 +1827,8 @@ static void ath9k_set_power_sleep(struct
- 	}
- 
- 	/* Clear Bit 14 of AR_WA after putting chip into Full Sleep mode. */
--	REG_WRITE(ah, AR_WA, ah->WARegVal & ~AR_WA_D3_L1_DISABLE);
-+	if (AR_SREV_9300_20_OR_LATER(ah))
-+		REG_WRITE(ah, AR_WA, ah->WARegVal & ~AR_WA_D3_L1_DISABLE);
- }
- 
- /*
+I don't think is a valid reason, because device_release implementation require 
+us to implement a release method within device, or device_type or class; so we 
+can use kobj_type as well.
+
+> thanks,
+> 
+> greg k-h
+-- 
+Federico Vaga
