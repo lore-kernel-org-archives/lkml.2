@@ -1,46 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab1K0XH0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 18:07:26 -0500
-Received: from gate.crashing.org ([63.228.1.57]:34850 "EHLO gate.crashing.org"
+	id S1754701Ab1K0XJV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 18:09:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44544 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752929Ab1K0XHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 18:07:25 -0500
-Message-ID: <1322435233.23348.19.camel@pasglop>
-Subject: Re: [RFC PATCH v2 4/4] cpuidle: (POWER) Handle power_save=off
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Nov 2011 10:07:13 +1100
-In-Reply-To: <20111117112906.9191.54050.stgit@localhost6.localdomain6>
-References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>
-	 <20111117112906.9191.54050.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752942Ab1K0XJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 18:09:20 -0500
+Date: Mon, 28 Nov 2011 08:08:36 +0900
+From: Greg KH <gregkh@suse.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, myungjoo.ham@gmail.com,
+        linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kalle Komierowski <karl.komierowski@stericsson.com>,
+        Johan PALSSON <johan.palsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+Message-ID: <20111127230836.GA29728@suse.de>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+ <201111251402.28016.arnd@arndb.de>
+ <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-17 at 16:59 +0530, Deepthi Dharwar wrote:
-> This patch makes pseries_idle_driver not to be registered when
-> power_save=off kernel boot option is specified. The
-> boot_option_idle_override variable used here is similar to
-> its usage on x86.
+On Sun, Nov 27, 2011 at 11:43:39PM +0100, Linus Walleij wrote:
+> Hi MyungJoo, Arnd
+> 
+> On Fri, Nov 25, 2011 at 3:02 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Thursday 24 November 2011, MyungJoo Ham wrote:
+> >> For switch ports, which may have different types of cables
+> >> (USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+> >> drivers that detect the state changes at the port and device drivers that
+> >> do something according to the state changes.
+> >>
+> >> For example, when MAX8997-MUIC detects a Charger cable insertion, another
+> >> device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
+> >> or board file) needs to set charger current limit accordingly and when
+> >> MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
+> >> need to do some operations accordingly.
+> >>
+> >> This patchset supports the usage of notifier for passing such information
+> >> between device drivers.
+> >>
+> >> Another issue is that at a single switch port, there might be multiple
+> >> and heterogeneous cables attached at the same time. Besides, the state
+> >> (Attached or Detached) of each cable may alter independently.
+> >>
+> >> In order to address such issues, Android kernel's "Switch" class seems to
+> >> be a good basis and we have implemented "Multistate Switch Class" based on
+> >> it. The "Switch" class code of Android kernel is GPL as well.
+> >
+> > How does this relate to the new "pinmux" subsystem that Linus Walleij
+> > maintains? Would it be useful to integrate your driver into pinmux
+> > instead of starting a new subsystem?
+> 
+> Looks unrelated to pinmux but very useful.
+> 
+> And the uevent scheme from Arve seems like it's doing the
+> right thing to me, but see below on relation to <linux/input.h>.
+> 
+> The GPIO part has to be reviewed by Grant though.
+> 
+> Our charger code also needs to
+> know when the USB cable is inserted, currently we have a simple
+> cross-call in a header file:
+> static void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
+> 
+> So there is certainly a growing need of subsystems that
+> need to notify each other about things that are happening,
+> the need comes naturally from mobile ICs I think, and
+> I also think they all have one or another custom mechanism
+> in place already.
+> 
+> But - and now we need Dmitry to check the concepts:
+> 
+> Some use this stuff from <linux/input.h> to talk to userspace
+> though the input subsystem:
+> 
+> /*
+>  * Switch events
+>  */
+> 
+> #define SW_LID                  0x00  /* set = lid shut */
+> #define SW_TABLET_MODE          0x01  /* set = tablet mode */
+> #define SW_HEADPHONE_INSERT     0x02  /* set = inserted */
+> #define SW_RFKILL_ALL           0x03  /* rfkill master switch, type "any"
+>                                          set = radio enabled */
+> #define SW_RADIO                SW_RFKILL_ALL   /* deprecated */
+> #define SW_MICROPHONE_INSERT    0x04  /* set = inserted */
+> #define SW_DOCK                 0x05  /* set = plugged into dock */
+> #define SW_LINEOUT_INSERT       0x06  /* set = inserted */
+> #define SW_JACK_PHYSICAL_INSERT 0x07  /* set = mechanical switch set */
+> #define SW_VIDEOOUT_INSERT      0x08  /* set = inserted */
+> #define SW_CAMERA_LENS_COVER    0x09  /* set = lens covered */
+> #define SW_KEYPAD_SLIDE         0x0a  /* set = keypad slide out */
+> #define SW_FRONT_PROXIMITY      0x0b  /* set = front proximity sensor active */
+> #define SW_ROTATE_LOCK          0x0c  /* set = rotate locked/disabled */
+> #define SW_LINEIN_INSERT        0x0d  /* set = inserted */
+> #define SW_MAX                  0x0f
+> #define SW_CNT                  (SW_MAX+1)
+> 
+> These are *also* switches. You could very well add USB
+> cable insertion to the list above.
+> 
+> So for the userspace part it seems to me that we need to make
+> up our mind about this stuff: is it going to be through input or
+> uevent like in this patch? Or ?both??
 
-Quick Q. With your changes, the CPU will never get into idle at all
-until cpuidle initializes and the driver loads.
+Input please, uevent is not for things like switches that are "common",
+but for things that are "uncommon" and don't happen often.
 
-That means not only much later in the boot process, but potentially
-never if the distro has the driver as a module and fails to load it, or
-similar.
+thanks,
 
-Can't that be an issue ? Shouldn't we keep at least one of the basic
-idle functions as a fallback ?
-
-Cheers,
-Ben.
-
-
+greg k-h
