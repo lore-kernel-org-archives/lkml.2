@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab1K0BsD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 20:48:03 -0500
-Received: from zaphod.wh17.tu-dresden.de ([141.76.124.10]:55988 "EHLO
-	zaphod.wh17.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab1K0BsB (ORCPT
+	id S1754857Ab1K0COY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 21:14:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54150 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab1K0COX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 20:48:01 -0500
-X-Greylist: delayed 1431 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Nov 2011 20:48:00 EST
-X-Spam-DCC: URT: zaphod 1060; Body=1 Fuz1=1 Fuz2=1
-Date: Sun, 27 Nov 2011 02:23:46 +0100
-From: Henning Schild <henning@wh9.tu-dresden.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Tom Gundersen <teg@jklm.no>, ibm-acpi-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Natanji <natanji@gmail.com>, maciej.rutecki@gmail.com, lenb@kernel.org
-Subject: Re: [ibm-acpi-devel] Regression in thinkpad-acpi events
-Message-ID: <20111127022346.32f11849@schlepp.lan>
-In-Reply-To: <20111115230305.GA23325@khazad-dum.debian.net>
-References: <4EBAC3B5.5060405@gmail.com>
- <201111142031.06663.maciej.rutecki@gmail.com>
- <4EC16F8E.7060601@gmail.com>
- <201111142118.47256.maciej.rutecki@gmail.com>
- <CAG-2HqVnsmSyHVCvEVf+sZw5NxhR8qSDDB0AtR+igwCCFiwfgQ@mail.gmail.com>
- <20111115230305.GA23325@khazad-dum.debian.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 26 Nov 2011 21:14:23 -0500
+Message-ID: <1322360030.6779.1.camel@phoenix>
+Subject: [PATCH] regulator: Avoid potential NULL dereference in
+ reg_fixed_voltage_probe()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rajendra Nayak <rnayak@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Sun, 27 Nov 2011 10:13:50 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I came across this problem after updating the kernel on my laptop. The
-hotkeys actually work until after the first wakeup from hibernation. I
-tried 3.0.9 3.1.1 3.1.2 and for hibernation i used tuxonice. It is not
-only the acpi events that stop working, also the events that should be
-delivered as input events. Reloading the module does not help. Having
-the module not loaded for the hibernation also does not help. After
-waking up the events will be gone.
+of_get_fixed_voltage_config() may return NULL, return -ENOMEM in this case
+so we don't dereference NULL pointer.
 
-Do the Arch kernels use tuxonice? Do you receive events before the
-first hibernation?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/fixed.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Henning
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 639e19d..2f917a1 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -166,8 +166,11 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
+ 	struct fixed_voltage_data *drvdata;
+ 	int ret;
+ 
+-	if (pdev->dev.of_node)
++	if (pdev->dev.of_node) {
+ 		config = of_get_fixed_voltage_config(&pdev->dev);
++		if (!config)
++			return -ENOMEM;
++	}
+ 
+ 	drvdata = kzalloc(sizeof(struct fixed_voltage_data), GFP_KERNEL);
+ 	if (drvdata == NULL) {
+-- 
+1.7.5.4
+
+
+
