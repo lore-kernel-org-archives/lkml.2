@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab1K0FhA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:37:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60495 "EHLO mx1.redhat.com"
+	id S1755556Ab1K0FhK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:37:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40910 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755394Ab1K0Fg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 00:36:56 -0500
+	id S1755394Ab1K0FhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 00:37:04 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Phillip Lougher <phillip@squashfs.org.uk>
-Subject: [PATCH 46/62] squashfs: remove the second argument of k[un]map_atomic()
-Date: Sun, 27 Nov 2011 13:27:26 +0800
-Message-Id: <1322371662-26166-47-git-send-email-amwang@redhat.com>
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
+Subject: [PATCH 47/62] ubifs: remove the second argument of k[un]map_atomic()
+Date: Sun, 27 Nov 2011 13:27:27 +0800
+Message-Id: <1322371662-26166-48-git-send-email-amwang@redhat.com>
 In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,60 +23,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- fs/squashfs/file.c    |    8 ++++----
- fs/squashfs/symlink.c |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ fs/ubifs/file.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/squashfs/file.c b/fs/squashfs/file.c
-index 38bb1c6..8ca62c2 100644
---- a/fs/squashfs/file.c
-+++ b/fs/squashfs/file.c
-@@ -464,10 +464,10 @@ static int squashfs_readpage(struct file *file, struct page *page)
- 		if (PageUptodate(push_page))
- 			goto skip_page;
- 
--		pageaddr = kmap_atomic(push_page, KM_USER0);
-+		pageaddr = kmap_atomic(push_page);
- 		squashfs_copy_data(pageaddr, buffer, offset, avail);
- 		memset(pageaddr + avail, 0, PAGE_CACHE_SIZE - avail);
--		kunmap_atomic(pageaddr, KM_USER0);
-+		kunmap_atomic(pageaddr);
- 		flush_dcache_page(push_page);
- 		SetPageUptodate(push_page);
- skip_page:
-@@ -484,9 +484,9 @@ skip_page:
- error_out:
- 	SetPageError(page);
- out:
--	pageaddr = kmap_atomic(page, KM_USER0);
-+	pageaddr = kmap_atomic(page);
- 	memset(pageaddr, 0, PAGE_CACHE_SIZE);
--	kunmap_atomic(pageaddr, KM_USER0);
-+	kunmap_atomic(pageaddr);
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index f9c234b..5c8f6dc 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1042,10 +1042,10 @@ static int ubifs_writepage(struct page *page, struct writeback_control *wbc)
+ 	 * the page size, the remaining memory is zeroed when mapped, and
+ 	 * writes to that region are not written out to the file."
+ 	 */
+-	kaddr = kmap_atomic(page, KM_USER0);
++	kaddr = kmap_atomic(page);
+ 	memset(kaddr + len, 0, PAGE_CACHE_SIZE - len);
  	flush_dcache_page(page);
- 	if (!PageError(page))
- 		SetPageUptodate(page);
-diff --git a/fs/squashfs/symlink.c b/fs/squashfs/symlink.c
-index 1191817..12806df 100644
---- a/fs/squashfs/symlink.c
-+++ b/fs/squashfs/symlink.c
-@@ -90,14 +90,14 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
- 			goto error_out;
- 		}
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
  
--		pageaddr = kmap_atomic(page, KM_USER0);
-+		pageaddr = kmap_atomic(page);
- 		copied = squashfs_copy_data(pageaddr + bytes, entry, offset,
- 								length - bytes);
- 		if (copied == length - bytes)
- 			memset(pageaddr + length, 0, PAGE_CACHE_SIZE - length);
- 		else
- 			block = entry->next_index;
--		kunmap_atomic(pageaddr, KM_USER0);
-+		kunmap_atomic(pageaddr);
- 		squashfs_cache_put(entry);
- 	}
- 
+ 	if (i_size > synced_i_size) {
+ 		err = inode->i_sb->s_op->write_inode(inode, NULL);
 -- 
 1.7.4.4
 
