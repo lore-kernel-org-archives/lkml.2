@@ -1,123 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab1K0Wnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 17:43:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45880 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755764Ab1K0Wnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 17:43:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <201111251402.28016.arnd@arndb.de>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
-	<201111251402.28016.arnd@arndb.de>
-Date: Sun, 27 Nov 2011 23:43:39 +0100
-Message-ID: <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>, myungjoo.ham@gmail.com
-Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755863Ab1K0Wsi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 17:48:38 -0500
+Received: from gate.crashing.org ([63.228.1.57]:51124 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab1K0Wsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 17:48:37 -0500
+Message-ID: <1322434096.23348.6.camel@pasglop>
+Subject: Re: [RFC PATCH v2 1/4] cpuidle: (powerpc) Add cpu_idle_wait() to
+ allow switching of idle routines
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 28 Nov 2011 09:48:16 +1100
+In-Reply-To: <20111117112830.9191.1951.stgit@localhost6.localdomain6>
+References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>
+	 <20111117112830.9191.1951.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi MyungJoo, Arnd
+On Thu, 2011-11-17 at 16:58 +0530, Deepthi Dharwar wrote:
+> This patch provides cpu_idle_wait() routine for the powerpc
+> platform which is required by the cpuidle subsystem. This
+> routine is requied to change the idle handler on SMP systems.
+> The equivalent routine for x86 is in arch/x86/kernel/process.c
+> but the powerpc implementation is different.
+> 
+> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> Signed-off-by: Trinabh Gupta <g.trinabh@gmail.com>
+> Signed-off-by: Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>
+> ---
 
-On Fri, Nov 25, 2011 at 3:02 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 24 November 2011, MyungJoo Ham wrote:
->> For switch ports, which may have different types of cables
->> (USB, TA, HDMI, Analog A/V, and others), we often have seperated device
->> drivers that detect the state changes at the port and device drivers that
->> do something according to the state changes.
->>
->> For example, when MAX8997-MUIC detects a Charger cable insertion, another
->> device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
->> or board file) needs to set charger current limit accordingly and when
->> MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
->> need to do some operations accordingly.
->>
->> This patchset supports the usage of notifier for passing such information
->> between device drivers.
->>
->> Another issue is that at a single switch port, there might be multiple
->> and heterogeneous cables attached at the same time. Besides, the state
->> (Attached or Detached) of each cable may alter independently.
->>
->> In order to address such issues, Android kernel's "Switch" class seems to
->> be a good basis and we have implemented "Multistate Switch Class" based on
->> it. The "Switch" class code of Android kernel is GPL as well.
->
-> How does this relate to the new "pinmux" subsystem that Linus Walleij
-> maintains? Would it be useful to integrate your driver into pinmux
-> instead of starting a new subsystem?
+No, that patch also adds this idle boot override thing (can you pick a
+shorter name for boot_option_idle_override btw ?) which seems unrelated
+and without any explanation as to what it's supposed to be about.
 
-Looks unrelated to pinmux but very useful.
+Additionally, I'm a bit worried (but maybe we already discussed that a
+while back, I don't know) but cpu_idle_wait() has "wait" in the name,
+which makes me think it might need to actually -wait- for all cpus to
+have come out of the function.
 
-And the uevent scheme from Arve seems like it's doing the
-right thing to me, but see below on relation to <linux/input.h>.
+Now your implementation doesn't provide that guarantee. It might be
+fine, I don't know, but if it is, you'd better document it well in the
+comments surrounding the code, because as it is, all you do is shoot an
+interrupt which will cause the target CPU to eventually come out of idle
+some time in the future.
 
-The GPIO part has to be reviewed by Grant though.
+Cheers,
+Ben.
 
-Our charger code also needs to
-know when the USB cable is inserted, currently we have a simple
-cross-call in a header file:
-static void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
+>  arch/powerpc/Kconfig                 |    4 ++++
+>  arch/powerpc/include/asm/processor.h |    2 ++
+>  arch/powerpc/include/asm/system.h    |    1 +
+>  arch/powerpc/kernel/idle.c           |   26 ++++++++++++++++++++++++++
+>  4 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index b177caa..87f8604 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -87,6 +87,10 @@ config ARCH_HAS_ILOG2_U64
+>  	bool
+>  	default y if 64BIT
+>  
+> +config ARCH_HAS_CPU_IDLE_WAIT
+> +	bool
+> +	default y
+> +
+>  config GENERIC_HWEIGHT
+>  	bool
+>  	default y
+> diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
+> index eb11a44..811b7e7 100644
+> --- a/arch/powerpc/include/asm/processor.h
+> +++ b/arch/powerpc/include/asm/processor.h
+> @@ -382,6 +382,8 @@ static inline unsigned long get_clean_sp(struct pt_regs *regs, int is_32)
+>  }
+>  #endif
+>  
+> +enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* __ASSEMBLY__ */
+>  #endif /* _ASM_POWERPC_PROCESSOR_H */
+> diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
+> index e30a13d..ff66680 100644
+> --- a/arch/powerpc/include/asm/system.h
+> +++ b/arch/powerpc/include/asm/system.h
+> @@ -221,6 +221,7 @@ extern unsigned long klimit;
+>  extern void *zalloc_maybe_bootmem(size_t size, gfp_t mask);
+>  
+>  extern int powersave_nap;	/* set if nap mode can be used in idle loop */
+> +void cpu_idle_wait(void);
+>  
+>  /*
+>   * Atomic exchange
+> diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+> index 39a2baa..b478c72 100644
+> --- a/arch/powerpc/kernel/idle.c
+> +++ b/arch/powerpc/kernel/idle.c
+> @@ -39,9 +39,13 @@
+>  #define cpu_should_die()	0
+>  #endif
+>  
+> +unsigned long boot_option_idle_override = IDLE_NO_OVERRIDE;
+> +EXPORT_SYMBOL(boot_option_idle_override);
+> +
+>  static int __init powersave_off(char *arg)
+>  {
+>  	ppc_md.power_save = NULL;
+> +	boot_option_idle_override = IDLE_POWERSAVE_OFF;
+>  	return 0;
+>  }
+>  __setup("powersave=off", powersave_off);
+> @@ -102,6 +106,28 @@ void cpu_idle(void)
+>  	}
+>  }
+>  
+> +
+> +/*
+> + * cpu_idle_wait - Used to ensure that all the CPUs come out of the old
+> + * idle loop and start using the new idle loop.
+> + * Required while changing idle handler on SMP systems.
+> + * Caller must have changed idle handler to the new value before the call.
+> + */
+> +void cpu_idle_wait(void)
+> +{
+> +	int cpu;
+> +	smp_mb();
+> +
+> +	/* kick all the CPUs so that they exit out of old idle routine */
+> +	get_online_cpus();
+> +	for_each_online_cpu(cpu) {
+> +		if (cpu != smp_processor_id())
+> +			smp_send_reschedule(cpu);
+> +	}
+> +	put_online_cpus();
+> +}
+> +EXPORT_SYMBOL_GPL(cpu_idle_wait);
+> +
+>  int powersave_nap;
+>  
+>  #ifdef CONFIG_SYSCTL
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
-So there is certainly a growing need of subsystems that
-need to notify each other about things that are happening,
-the need comes naturally from mobile ICs I think, and
-I also think they all have one or another custom mechanism
-in place already.
 
-But - and now we need Dmitry to check the concepts:
-
-Some use this stuff from <linux/input.h> to talk to userspace
-though the input subsystem:
-
-/*
- * Switch events
- */
-
-#define SW_LID                  0x00  /* set = lid shut */
-#define SW_TABLET_MODE          0x01  /* set = tablet mode */
-#define SW_HEADPHONE_INSERT     0x02  /* set = inserted */
-#define SW_RFKILL_ALL           0x03  /* rfkill master switch, type "any"
-                                         set = radio enabled */
-#define SW_RADIO                SW_RFKILL_ALL   /* deprecated */
-#define SW_MICROPHONE_INSERT    0x04  /* set = inserted */
-#define SW_DOCK                 0x05  /* set = plugged into dock */
-#define SW_LINEOUT_INSERT       0x06  /* set = inserted */
-#define SW_JACK_PHYSICAL_INSERT 0x07  /* set = mechanical switch set */
-#define SW_VIDEOOUT_INSERT      0x08  /* set = inserted */
-#define SW_CAMERA_LENS_COVER    0x09  /* set = lens covered */
-#define SW_KEYPAD_SLIDE         0x0a  /* set = keypad slide out */
-#define SW_FRONT_PROXIMITY      0x0b  /* set = front proximity sensor active */
-#define SW_ROTATE_LOCK          0x0c  /* set = rotate locked/disabled */
-#define SW_LINEIN_INSERT        0x0d  /* set = inserted */
-#define SW_MAX                  0x0f
-#define SW_CNT                  (SW_MAX+1)
-
-These are *also* switches. You could very well add USB
-cable insertion to the list above.
-
-So for the userspace part it seems to me that we need to make
-up our mind about this stuff: is it going to be through input or
-uevent like in this patch? Or ?both??
-
-Incidentally I saw a similar problem the other day, we submitted
-a HWMON driver that introduced an kernel-internal event
-broadcast system for when the system gets overheated etc,
-it serves a similar purpose as MyungJoo's second patch
-(the kernel-internal notifications), albeit someplace else.
-
-Yours,
-Linus Walleij
