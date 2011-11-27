@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab1K0GZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 01:25:22 -0500
-Received: from nbd.name ([46.4.11.11]:38221 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab1K0GZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 01:25:20 -0500
-Message-ID: <4ED1D7BE.7040401@openwrt.org>
-Date: Sun, 27 Nov 2011 13:25:02 +0700
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754486Ab1K0Ggi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 01:36:38 -0500
+Received: from webmail.njmu.edu.cn ([202.195.176.89]:39896 "EHLO
+	barracuda.njmu.edu.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751569Ab1K0Ggh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 01:36:37 -0500
+X-Greylist: delayed 1844 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Nov 2011 01:36:37 EST
+X-ASG-Debug-ID: 1322353629-6983016d0000-xx1T2L
+X-Barracuda-URL: http://202.195.176.89:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: chenminglong@njmu.edu.cn
+Message-ID: <CDVREBBNWYYWUKCKDKYRGTOONLJZ.chenminglong@njmu.edu.cn>
+X-EYOUMAIL-SMTPAUTH: chenminglong@njmu.edu.cn
+Reply-To: <jagadish_rama@tnctr.com>
+From: "Jagadish Sankar Rama" <chenminglong@njmu.edu.cn>
+X-ASG-Orig-Subj: PROFITABLE BUSINESS.
+Subject: PROFITABLE BUSINESS.
+Date: Sun, 27 Nov 2011 08:26:54 +0800
 MIME-Version: 1.0
-To: Adrian Chadd <adrian@freebsd.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH] ath9k: Revert change that broke AR928X on Acer Ferrari
- One
-References: <CA+55aFyNUC+k1gp3MQkxQzernEzRZwYOH4EBnOq=6UiaJ2oh4A@mail.gmail.com> <201111250203.29786.rjw@sisk.pl> <201111262232.46195.rjw@sisk.pl> <201111262337.43771.rjw@sisk.pl> <CAJ-Vmo=yh_maZtccaBkqZwip-ubjR4U471ALPwYwTurMaQrZ9Q@mail.gmail.com>
-In-Reply-To: <CAJ-Vmo=yh_maZtccaBkqZwip-ubjR4U471ALPwYwTurMaQrZ9Q@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Barracuda-Connect: mail.njmu.edu.cn[202.195.176.64]
+X-Barracuda-Start-Time: 1322353630
+X-Barracuda-Virus-Scanned: by Barracuda Spam Firewall at njmu.edu.cn
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-27 8:16 AM, Adrian Chadd wrote:
-> Hm, considering the origina patch did this:
-> 
->         /* Clear Bit 14 of AR_WA after putting chip into Full Sleep mode. */
-> -       if (AR_SREV_9300_20_OR_LATER(ah))
-> -               REG_WRITE(ah, AR_WA,
-> -                         ah->WARegVal & ~AR_WA_D3_L1_DISABLE);
-> +       if (!AR_SREV_9480(ah))
-> +               REG_WRITE(ah, AR_WA, ah->WARegVal & ~AR_WA_D3_L1_DISABLE);
-> 
-> .. something tells me that perhaps the correct statement is:
-> 
-> if (AR_SREV_9300_20_OR_LATER(ah) && !AR_SREV_9480(ah))
->     REG_WRITE() ...
-> 
-I checked again, the !AR_SREV_9480(ah) was intentionally removed in a
-later change, so using AR_SREV_9300_20_OR_LATER(ah) is correct.
+Hello .
 
-- Felix
+ I have a Mutual business proposal am proposing to you, that I will want you to handle from your country, I will
+ like to seek your consent first.
+
+ I have a serious business project proposal for you to manage and handle for me in your country. This project involves a huge specific amount I
+ can't mention here for security reasons. It involve a transaction from my bank in Asia. and we are bound by laws here.
+
+ If you feel you can have this handled, please let me know, so that I send you an attached comprehensive details of this transaction.
+
+ Sincerely,
+Jagadish Sankar Rama.
