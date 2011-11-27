@@ -1,35 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1K0MDB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 07:03:01 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60383 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752852Ab1K0MDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 07:03:00 -0500
-Date: Sun, 27 Nov 2011 12:02:58 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Avoid potential NULL dereference in
- reg_fixed_voltage_probe()
-Message-ID: <20111127120258.GJ2896@opensource.wolfsonmicro.com>
-References: <1322360030.6779.1.camel@phoenix>
- <20111127113529.GG2896@opensource.wolfsonmicro.com>
- <CAF+7xWk8f-qiodctY3U3FRJiohZzYNO4KaE7v5qi1C52HUySNg@mail.gmail.com>
+	id S1755360Ab1K0MEx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 07:04:53 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58573 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753975Ab1K0MEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 07:04:49 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 3/5] PM / Runtime: Make documentation follow the new behavior of irq_safe
+Date: Sun, 27 Nov 2011 13:05:35 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201111271301.47244.rjw@sisk.pl>
+In-Reply-To: <201111271301.47244.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF+7xWk8f-qiodctY3U3FRJiohZzYNO4KaE7v5qi1C52HUySNg@mail.gmail.com>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111271305.35811.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 07:56:20PM +0800, Axel Lin wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> Or do you prefer change it this way:
+The runtime PM core code behavior related to the power.irq_safe
+device flag has changed recently and the documentation should be
+modified to reflect it.
 
-Yes, that looks sensible.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ Documentation/power/runtime_pm.txt |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+Index: linux/Documentation/power/runtime_pm.txt
+===================================================================
+--- linux.orig/Documentation/power/runtime_pm.txt
++++ linux/Documentation/power/runtime_pm.txt
+@@ -65,11 +65,12 @@ are referred to as subsystem-level callb
+ 
+ By default, the callbacks are always invoked in process context with interrupts
+ enabled.  However, subsystems can use the pm_runtime_irq_safe() helper function
+-to tell the PM core that a device's ->runtime_suspend() and ->runtime_resume()
+-callbacks should be invoked in atomic context with interrupts disabled.
+-This implies that these callback routines must not block or sleep, but it also
+-means that the synchronous helper functions listed at the end of Section 4 can
+-be used within an interrupt handler or in an atomic context.
++to tell the PM core that their ->runtime_suspend(), ->runtime_resume() and
++->runtime_idle() callbacks may be invoked in atomic context with interrupts
++disabled for a given device.  This implies that the callback routines in
++question must not block or sleep, but it also means that the synchronous helper
++functions listed at the end of Section 4 may be used for that device within an
++interrupt handler or generally in an atomic context.
+ 
+ The subsystem-level suspend callback is _entirely_ _responsible_ for handling
+ the suspend of the device as appropriate, which may, but need not include
+
