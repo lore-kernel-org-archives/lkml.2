@@ -1,35 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab1K0Tq5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 14:46:57 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58415 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752878Ab1K0Tq4 (ORCPT
+	id S1755379Ab1K0TrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 14:47:16 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54073 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab1K0TrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 14:46:56 -0500
-Date: Sun, 27 Nov 2011 19:46:53 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v2] regulator: Avoid potential NULL dereference in
- reg_fixed_voltage_probe()
-Message-ID: <20111127194653.GB25598@opensource.wolfsonmicro.com>
-References: <1322395677.2799.1.camel@phoenix>
+	Sun, 27 Nov 2011 14:47:14 -0500
+Date: Sun, 27 Nov 2011 20:46:48 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Jochen Friedrich <jochen@scram.de>,
+        Peter Korsgaard <jacmet@sunsite.dk>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Barry Song <21cnbao@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: convert drivers/i2c/* to use
+ module_platform_driver()
+Message-ID: <20111127194648.GA26533@pengutronix.de>
+References: <1322374332.2226.1.camel@phoenix>
+ <20111127202212.44ebf4c4@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
 Content-Disposition: inline
-In-Reply-To: <1322395677.2799.1.camel@phoenix>
-X-Cookie: Beware of low-flying butterflies.
+In-Reply-To: <20111127202212.44ebf4c4@endymion.delvare>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 08:07:57PM +0800, Axel Lin wrote:
-> of_get_fixed_voltage_config() may return NULL, return -ENOMEM in this case
-> so we don't dereference NULL pointer.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Applied, thanks.
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+
+> > -module_init(gpiomux_init);
+> > -module_exit(gpiomux_exit);
+> > +module_platform_driver(gpiomux_driver);
+>=20
+> This one would be better as a separate patch, as it touches a different
+> subdirectory, which I am responsible for.
+
+=2E.. which has a patch pending[1], hint ;)
+
+[1] http://comments.gmane.org/gmane.linux.drivers.i2c/9432
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7Sk6gACgkQD27XaX1/VRthcQCfX6xFM4dYGfJ1LiHUKe2wFeVo
+03IAn3S70moncL+O2Fa/I6qx+n1FPFUJ
+=bpz7
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
