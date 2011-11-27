@@ -1,164 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1K0SEw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 13:04:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23030 "EHLO mx1.redhat.com"
+	id S1754615Ab1K0SE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 13:04:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61987 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753296Ab1K0SEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 13:04:49 -0500
+	id S1753697Ab1K0SE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 13:04:57 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 4/9] ftrace: Add enable/disable ftrace_ops control interface
-Date: Sun, 27 Nov 2011 19:04:29 +0100
-Message-Id: <1322417074-5834-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 8/9] ftrace, perf: Add FILTER_TRACE_FN event field type
+Date: Sun, 27 Nov 2011 19:04:33 +0100
+Message-Id: <1322417074-5834-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a way to temporarily enable/disable ftrace_ops.
-
-When there is a ftrace_ops with FTRACE_OPS_FL_CONTROL flag
-registered, the ftrace_ops_list_func processing function
-is used as ftrace function in order to have all registered
-ftrace_ops under control.
-
-Also using jump label not to introduce overhead to current
-ftrace_ops_list_func processing.
+Adding FILTER_TRACE_FN event field type for function tracepoint
+event, so it can be properly recognized within filtering code.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/ftrace.h |   12 ++++++++++++
- kernel/trace/ftrace.c  |   39 +++++++++++++++++++++++++++++----------
- 2 files changed, 41 insertions(+), 10 deletions(-)
+ include/linux/ftrace_event.h       |    1 +
+ kernel/trace/trace_events_filter.c |    7 ++++++-
+ kernel/trace/trace_export.c        |   25 ++++++++++++++++++++-----
+ 3 files changed, 27 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 26eafce..28b59f1 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -35,12 +35,14 @@ enum {
- 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
- 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
- 	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
-+	FTRACE_OPS_FL_CONTROL		= 1 << 3,
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 2bf677c..dd478fc 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -245,6 +245,7 @@ enum {
+ 	FILTER_STATIC_STRING,
+ 	FILTER_DYN_STRING,
+ 	FILTER_PTR_STRING,
++	FILTER_TRACE_FN,
  };
  
- struct ftrace_ops {
- 	ftrace_func_t			func;
- 	struct ftrace_ops		*next;
- 	unsigned long			flags;
-+	atomic_t			disabled;
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	struct ftrace_hash		*notrace_hash;
- 	struct ftrace_hash		*filter_hash;
-@@ -97,6 +99,16 @@ int register_ftrace_function(struct ftrace_ops *ops);
- int unregister_ftrace_function(struct ftrace_ops *ops);
- void clear_ftrace_function(void);
+ #define EVENT_STORAGE_SIZE 128
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index fdc6d22..7b0b04c 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -900,6 +900,11 @@ int filter_assign_type(const char *type)
+ 	return FILTER_OTHER;
+ }
  
-+static inline void enable_ftrace_function(struct ftrace_ops *ops)
++static bool is_function_field(struct ftrace_event_field *field)
 +{
-+	atomic_dec(&ops->disabled);
++	return field->filter_type == FILTER_TRACE_FN;
 +}
 +
-+static inline void disable_ftrace_function(struct ftrace_ops *ops)
-+{
-+	atomic_inc(&ops->disabled);
-+}
-+
- extern void ftrace_stub(unsigned long a0, unsigned long a1);
- 
- #else /* !CONFIG_FUNCTION_TRACER */
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 0ca0c0d..e5a9498 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -30,6 +30,7 @@
- #include <linux/list.h>
- #include <linux/hash.h>
- #include <linux/rcupdate.h>
-+#include <linux/jump_label.h>
- 
- #include <trace/events/sched.h>
- 
-@@ -94,6 +95,8 @@ ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
- 
-+static struct jump_label_key ftrace_ops_control;
-+
- static void
- ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
- 
-@@ -196,17 +199,21 @@ static void update_ftrace_function(void)
- 
- 	update_global_ops();
- 
--	/*
--	 * If we are at the end of the list and this ops is
--	 * not dynamic, then have the mcount trampoline call
--	 * the function directly
--	 */
--	if (ftrace_ops_list == &ftrace_list_end ||
--	    (ftrace_ops_list->next == &ftrace_list_end &&
--	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC)))
--		func = ftrace_ops_list->func;
--	else
-+	if (jump_label_enabled(&ftrace_ops_control))
- 		func = ftrace_ops_list_func;
-+	else {
-+		/*
-+		 * If we are at the end of the list and this ops is
-+		 * not dynamic, then have the mcount trampoline call
-+		 * the function directly
-+		 */
-+		if (ftrace_ops_list == &ftrace_list_end ||
-+		    (ftrace_ops_list->next == &ftrace_list_end &&
-+		     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC)))
-+			func = ftrace_ops_list->func;
-+		else
-+			func = ftrace_ops_list_func;
-+	}
- 
- #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
-@@ -280,6 +287,9 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
- 	} else
- 		add_ftrace_ops(&ftrace_ops_list, ops);
- 
-+	if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+		jump_label_inc(&ftrace_ops_control);
-+
- 	if (ftrace_enabled)
- 		update_ftrace_function();
- 
-@@ -311,6 +321,9 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 	if (ret < 0)
+ static bool is_string_field(struct ftrace_event_field *field)
+ {
+ 	return field->filter_type == FILTER_DYN_STRING ||
+@@ -987,7 +992,7 @@ static int init_pred(struct filter_parse_state *ps,
+ 			fn = filter_pred_strloc;
+ 		else
+ 			fn = filter_pred_pchar;
+-	} else {
++	} else if (!is_function_field(field)) {
+ 		if (field->is_signed)
+ 			ret = strict_strtoll(pred->regex.pattern, 0, &val);
+ 		else
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 62e86a5..7b035ab 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 	ret = trace_define_field(event_call, #type, #item,		\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 	if (ret)							\
  		return ret;
  
-+	if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+		jump_label_dec(&ftrace_ops_control);
-+
- 	if (ftrace_enabled)
- 		update_ftrace_function();
+@@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 				 offsetof(typeof(field),		\
+ 					  container.item),		\
+ 				 sizeof(field.container.item),		\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 	if (ret)							\
+ 		return ret;
  
-@@ -3577,8 +3590,14 @@ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
- 	preempt_disable_notrace();
- 	op = rcu_dereference_raw(ftrace_ops_list);
- 	while (op != &ftrace_list_end) {
-+		if (static_branch(&ftrace_ops_control))
-+			if ((op->flags & FTRACE_OPS_FL_CONTROL) &&
-+			    atomic_read(&op->disabled))
-+				goto next;
+@@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 		ret = trace_define_field(event_call, event_storage, #item, \
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+@@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ 				 offsetof(typeof(field),		\
+ 					  container.item),		\
+ 				 sizeof(field.container.item),		\
+-				 is_signed_type(type), FILTER_OTHER);	\
++				 is_signed_type(type), filter_type);	\
+ 	if (ret)							\
+ 		return ret;
+ 
+@@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
+ #define __dynamic_array(type, item)					\
+ 	ret = trace_define_field(event_call, #type, #item,		\
+ 				 offsetof(typeof(field), item),		\
+-				 0, is_signed_type(type), FILTER_OTHER);\
++				 0, is_signed_type(type), filter_type);\
+ 	if (ret)							\
+ 		return ret;
+ 
++#define FILTER_TYPE_TRACE_FN           FILTER_TRACE_FN
++#define FILTER_TYPE_TRACE_GRAPH_ENT    FILTER_OTHER
++#define FILTER_TYPE_TRACE_GRAPH_RET    FILTER_OTHER
++#define FILTER_TYPE_TRACE_CTX          FILTER_OTHER
++#define FILTER_TYPE_TRACE_WAKE         FILTER_OTHER
++#define FILTER_TYPE_TRACE_STACK                FILTER_OTHER
++#define FILTER_TYPE_TRACE_USER_STACK   FILTER_OTHER
++#define FILTER_TYPE_TRACE_BPRINT       FILTER_OTHER
++#define FILTER_TYPE_TRACE_PRINT                FILTER_OTHER
++#define FILTER_TYPE_TRACE_MMIO_RW      FILTER_OTHER
++#define FILTER_TYPE_TRACE_MMIO_MAP     FILTER_OTHER
++#define FILTER_TYPE_TRACE_BRANCH       FILTER_OTHER
++#define FILTER_TYPE(arg)               FILTER_TYPE_##arg
 +
- 		if (ftrace_ops_test(op, ip))
- 			op->func(ip, parent_ip);
-+ next:
- 		op = rcu_dereference_raw(op->next);
- 	};
- 	preempt_enable_notrace();
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
+ int									\
+@@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+ {									\
+ 	struct struct_name field;					\
+ 	int ret;							\
++	int filter_type = FILTER_TYPE(id);				\
+ 									\
+ 	tstruct;							\
+ 									\
 -- 
 1.7.1
 
