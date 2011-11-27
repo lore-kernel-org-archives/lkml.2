@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1K0Lx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 06:53:28 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58537 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222Ab1K0Lx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 06:53:27 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tino Keitel <tino.keitel@tikei.de>
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage metering applications has gone crackers
-Date: Sun, 27 Nov 2011 12:56:17 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, "Artem S. Tashkinov" <t.artem@lycos.com>
-References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19> <201111271245.57772.rjw@sisk.pl> <20111127114536.GA14250@mac.home>
-In-Reply-To: <20111127114536.GA14250@mac.home>
+	id S1754842Ab1K0LyU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 06:54:20 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42053 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab1K0LyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 06:54:18 -0500
+Date: Sun, 27 Nov 2011 11:54:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Pali Roh??r <pali.rohar@gmail.com>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        syed rafiuddin <rafiuddin.sayed@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 8/9] bq27x00: Add miscdevice for each battery with
+ ioctl for reading registers
+Message-ID: <20111127115416.GA2579@sirena.org.uk>
+References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
+ <7780165.E3DXgdWAv1@pali-elitebook>
+ <20111125204626.GA25003@oksana.dev.rtsoft.ru>
+ <33058541.3DK13LYaLI@pali-elitebook>
+ <20111125220448.GA2078@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111271256.18091.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111125220448.GA2078@oksana.dev.rtsoft.ru>
+X-Cookie: Know Thy User.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 27, 2011, Tino Keitel wrote:
-> On Sun, Nov 27, 2011 at 12:45:57 +0100, Rafael J. Wysocki wrote:
-> > On Sunday, November 27, 2011, Tino Keitel wrote:
-> > > On Thu, Nov 24, 2011 at 21:05:53 +0100, Tino Keitel wrote:
-> > > > On Thu, Nov 24, 2011 at 10:30:15 +0000, Artem S. Tashkinov wrote:
-> > > > > Hello,
-> > > > > 
-> > > > > I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all CPU metering applications have gone terribly mad
-> > > > > under this kernel:
-> > > > 
-> > > > I get the same using top, htop and the gnome system monitor with kernel
-> > > > 3.2 on a Sandy Bridge quad core box, running Debian unstable.
-> > > 
-> > > I just tested 3.2-rc2, and see the same bug.
-> > 
-> > I'm seeing that too on one of my test boxes, but not all the time
-> > (i.e. there are periods in which the readings are correct).  The other boxes
-> > I've tested with 3.2-rc are fine in that respect.
-> > 
-> > Also, it seems that it shows 100%-(real load) when it is wrong.  So, it looks
-> > like there's an overflow somewhere in the CPU load measuring code, at least
-> > on some CPUs.
-> > 
-> > What's your CPU, BTW?
-> 
-> Intel Core i5-2400
+On Sat, Nov 26, 2011 at 02:04:48AM +0400, Anton Vorontsov wrote:
 
-The CPU I'm seeing the problem with is AMD Athlon X2 3800+.
+> What would be more practical, is to allow I2C core to provide
+> userspace interface even for already bound I2C devices.
 
-Thanks,
-Rafael
+> That could be some kind of CONFIG_I2C_UNSAFE_DEBUG: when
+> selected I2C core would allow access to all I2C devices. But still,
+> the niche for such a feature is tiny, so I doubt that it is worth
+> doing at all.
+
+I don't know if it's applicable here but if this is a device that has
+registers that fit within regmap then the regmap API provides a debugfs
+interface for dumping the register map as standard.
