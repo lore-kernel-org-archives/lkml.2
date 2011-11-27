@@ -1,19 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab1K0FaL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:30:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54916 "EHLO mx1.redhat.com"
+	id S1752429Ab1K0FaJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:30:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1K0FaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750999Ab1K0FaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Nov 2011 00:30:06 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>, Stuart Menefy <stuart.menefy@st.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH 06/62] sh: remove the second argument of k[un]map_atomic()
-Date: Sun, 27 Nov 2011 13:26:46 +0800
-Message-Id: <1322371662-26166-7-git-send-email-amwang@redhat.com>
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Becky Bruce <beckyb@kernel.crashing.org>,
+        Dave Carroll <dcarroll@astekcorp.com>,
+        Anton Blanchard <anton@samba.org>, kvm@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 05/62] powerpc: remove the second argument of k[un]map_atomic()
+Date: Sun, 27 Nov 2011 13:26:45 +0800
+Message-Id: <1322371662-26166-6-git-send-email-amwang@redhat.com>
 In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,82 +32,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- arch/sh/mm/cache-sh4.c |    4 ++--
- arch/sh/mm/cache.c     |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ arch/powerpc/kvm/book3s_pr.c      |    4 ++--
+ arch/powerpc/mm/dma-noncoherent.c |    5 ++---
+ arch/powerpc/mm/hugetlbpage.c     |    4 ++--
+ arch/powerpc/mm/mem.c             |    4 ++--
+ 4 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/arch/sh/mm/cache-sh4.c b/arch/sh/mm/cache-sh4.c
-index 92eb986..112fea1 100644
---- a/arch/sh/mm/cache-sh4.c
-+++ b/arch/sh/mm/cache-sh4.c
-@@ -244,7 +244,7 @@ static void sh4_flush_cache_page(void *args)
- 		if (map_coherent)
- 			vaddr = kmap_coherent(page, address);
- 		else
--			vaddr = kmap_atomic(page, KM_USER0);
-+			vaddr = kmap_atomic(page);
+diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
+index 3c791e1..fbd4103 100644
+--- a/arch/powerpc/kvm/book3s_pr.c
++++ b/arch/powerpc/kvm/book3s_pr.c
+@@ -227,14 +227,14 @@ static void kvmppc_patch_dcbz(struct kvm_vcpu *vcpu, struct kvmppc_pte *pte)
+ 	hpage_offset /= 4;
  
- 		address = (unsigned long)vaddr;
- 	}
-@@ -259,7 +259,7 @@ static void sh4_flush_cache_page(void *args)
- 		if (map_coherent)
- 			kunmap_coherent(vaddr);
- 		else
--			kunmap_atomic(vaddr, KM_USER0);
-+			kunmap_atomic(vaddr);
- 	}
+ 	get_page(hpage);
+-	page = kmap_atomic(hpage, KM_USER0);
++	page = kmap_atomic(hpage);
+ 
+ 	/* patch dcbz into reserved instruction, so we trap */
+ 	for (i=hpage_offset; i < hpage_offset + (HW_PAGE_SIZE / 4); i++)
+ 		if ((page[i] & 0xff0007ff) == INS_DCBZ)
+ 			page[i] &= 0xfffffff7;
+ 
+-	kunmap_atomic(page, KM_USER0);
++	kunmap_atomic(page);
+ 	put_page(hpage);
  }
  
-diff --git a/arch/sh/mm/cache.c b/arch/sh/mm/cache.c
-index 5a580ea..616966a 100644
---- a/arch/sh/mm/cache.c
-+++ b/arch/sh/mm/cache.c
-@@ -95,7 +95,7 @@ void copy_user_highpage(struct page *to, struct page *from,
- {
- 	void *vfrom, *vto;
+diff --git a/arch/powerpc/mm/dma-noncoherent.c b/arch/powerpc/mm/dma-noncoherent.c
+index 329be36..6747eec 100644
+--- a/arch/powerpc/mm/dma-noncoherent.c
++++ b/arch/powerpc/mm/dma-noncoherent.c
+@@ -365,12 +365,11 @@ static inline void __dma_sync_page_highmem(struct page *page,
+ 	local_irq_save(flags);
  
--	vto = kmap_atomic(to, KM_USER1);
-+	vto = kmap_atomic(to);
+ 	do {
+-		start = (unsigned long)kmap_atomic(page + seg_nr,
+-				KM_PPC_SYNC_PAGE) + seg_offset;
++		start = (unsigned long)kmap_atomic(page + seg_nr) + seg_offset;
  
- 	if (boot_cpu_data.dcache.n_aliases && page_mapped(from) &&
- 	    test_bit(PG_dcache_clean, &from->flags)) {
-@@ -103,16 +103,16 @@ void copy_user_highpage(struct page *to, struct page *from,
- 		copy_page(vto, vfrom);
- 		kunmap_coherent(vfrom);
- 	} else {
--		vfrom = kmap_atomic(from, KM_USER0);
-+		vfrom = kmap_atomic(from);
- 		copy_page(vto, vfrom);
--		kunmap_atomic(vfrom, KM_USER0);
-+		kunmap_atomic(vfrom);
+ 		/* Sync this buffer segment */
+ 		__dma_sync((void *)start, seg_size, direction);
+-		kunmap_atomic((void *)start, KM_PPC_SYNC_PAGE);
++		kunmap_atomic((void *)start);
+ 		seg_nr++;
+ 
+ 		/* Calculate next buffer segment size */
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 8558b57..85d3592 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -880,9 +880,9 @@ void flush_dcache_icache_hugepage(struct page *page)
+ 		if (!PageHighMem(page)) {
+ 			__flush_dcache_icache(page_address(page+i));
+ 		} else {
+-			start = kmap_atomic(page+i, KM_PPC_SYNC_ICACHE);
++			start = kmap_atomic(page+i);
+ 			__flush_dcache_icache(start);
+-			kunmap_atomic(start, KM_PPC_SYNC_ICACHE);
++			kunmap_atomic(start);
+ 		}
  	}
- 
- 	if (pages_do_alias((unsigned long)vto, vaddr & PAGE_MASK) ||
- 	    (vma->vm_flags & VM_EXEC))
- 		__flush_purge_region(vto, PAGE_SIZE);
- 
--	kunmap_atomic(vto, KM_USER1);
-+	kunmap_atomic(vto);
- 	/* Make sure this page is cleared on other CPU's too before using it */
- 	smp_wmb();
  }
-@@ -120,14 +120,14 @@ EXPORT_SYMBOL(copy_user_highpage);
- 
- void clear_user_highpage(struct page *page, unsigned long vaddr)
- {
--	void *kaddr = kmap_atomic(page, KM_USER0);
-+	void *kaddr = kmap_atomic(page);
- 
- 	clear_page(kaddr);
- 
- 	if (pages_do_alias((unsigned long)kaddr, vaddr & PAGE_MASK))
- 		__flush_purge_region(kaddr, PAGE_SIZE);
- 
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- }
- EXPORT_SYMBOL(clear_user_highpage);
- 
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 2dd6bdd..edb8b3a 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -457,9 +457,9 @@ void flush_dcache_icache_page(struct page *page)
+ #endif
+ #ifdef CONFIG_BOOKE
+ 	{
+-		void *start = kmap_atomic(page, KM_PPC_SYNC_ICACHE);
++		void *start = kmap_atomic(page);
+ 		__flush_dcache_icache(start);
+-		kunmap_atomic(start, KM_PPC_SYNC_ICACHE);
++		kunmap_atomic(start);
+ 	}
+ #elif defined(CONFIG_8xx) || defined(CONFIG_PPC64)
+ 	/* On 8xx there is no need to kmap since highmem is not supported */
 -- 
 1.7.4.4
 
