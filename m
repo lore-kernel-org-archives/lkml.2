@@ -1,279 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1K0SFB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 13:05:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39343 "EHLO mx1.redhat.com"
+	id S1754844Ab1K0SFs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 13:05:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab1K0SE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 13:04:59 -0500
+	id S1753235Ab1K0SEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 13:04:55 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 9/9] ftrace, perf: Add filter support for function trace event
-Date: Sun, 27 Nov 2011 19:04:34 +0100
-Message-Id: <1322417074-5834-10-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 7/9] ftrace, perf: Add support to use function tracepoint in perf
+Date: Sun, 27 Nov 2011 19:04:32 +0100
+Message-Id: <1322417074-5834-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to filter function trace event via perf
-interface. It is now possible to use filter interface
-in the perf tool like:
+Adding perf registration support for the ftrace function event,
+so it is now possible to register it via perf interface.
 
-  perf record -e ftrace:function --filter="(ip == mm_*)" ls
+The perf_event struct statically contains ftrace_ops as a handle
+for function tracer. The function tracer is registered/unregistered
+in open/close actions, and enabled/disabled in add/del actions.
 
-The filter syntax is restricted to the the 'ip' field only,
-and following operators are accepted '==' '!=' '&&', ending
-up with the filter strings like:
+It is now possible to use function trace within perf commands
+like:
 
-  "ip == f1 f2 ..." && "ip != f3 f4 ..." ...
-
-The '==' operator adds trace filter with same efect as would
-be added via set_ftrace_filter file.
-
-The '!=' operator adds trace filter with same efect as would
-be added via set_ftrace_notrace file.
-
-The right side of the '!=', '==' operators is list of functions
-or regexp. to be added to filter separated by space. Same syntax
-is supported/required as for the set_ftrace_filter and
-set_ftrace_notrace files.
-
-The '&&' operator is used for connecting multiple filter definitions
-together. It is possible to have more than one '==' and '!='
-opearators within one filter string.
+  perf record -e ftrace:function ls
+  perf stat -e ftrace:function ls
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- kernel/trace/trace.h               |    4 +-
- kernel/trace/trace_events_filter.c |  111 +++++++++++++++++++++++++++++++++---
- kernel/trace/trace_export.c        |    5 ++
- 3 files changed, 110 insertions(+), 10 deletions(-)
+ include/linux/perf_event.h      |    3 +
+ kernel/trace/trace_event_perf.c |   88 +++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_export.c     |   23 ++++++++++
+ 3 files changed, 114 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index c4330dc..fde4d2a 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -589,6 +589,8 @@ static inline int ftrace_trace_task(struct task_struct *task)
- static inline int ftrace_is_dead(void) { return 0; }
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1e9ebe5..6071995 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -847,6 +847,9 @@ struct perf_event {
+ #ifdef CONFIG_EVENT_TRACING
+ 	struct ftrace_event_call	*tp_event;
+ 	struct event_filter		*filter;
++#ifdef CONFIG_FUNCTION_TRACER
++	struct ftrace_ops               ftrace_ops;
++#endif
  #endif
  
-+int ftrace_event_is_function(struct ftrace_event_call *call);
-+
- /*
-  * struct trace_parser - servers for reading the user input separated by spaces
-  * @cont: set if the input is not complete - no final space char was found
-@@ -765,9 +767,7 @@ struct filter_pred {
- 	u64 			val;
- 	struct regex		regex;
- 	unsigned short		*ops;
--#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	struct ftrace_event_field *field;
--#endif
- 	int 			offset;
- 	int 			not;
- 	int 			op;
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 7b0b04c..7434f50 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -54,6 +54,13 @@ struct filter_op {
- 	int precedence;
- };
- 
-+static struct filter_op filter_ftrace_ops[] = {
-+	{ OP_AND,	"&&",		1 },
-+	{ OP_NE,	"!=",		2 },
-+	{ OP_EQ,	"==",		2 },
-+	{ OP_NONE,	"OP_NONE",	0 },
-+};
-+
- static struct filter_op filter_ops[] = {
- 	{ OP_OR,	"||",		1 },
- 	{ OP_AND,	"&&",		2 },
-@@ -81,6 +88,7 @@ enum {
- 	FILT_ERR_TOO_MANY_PREDS,
- 	FILT_ERR_MISSING_FIELD,
- 	FILT_ERR_INVALID_FILTER,
-+	FILT_ERR_IP_FIELD_ONLY,
- };
- 
- static char *err_text[] = {
-@@ -96,6 +104,7 @@ static char *err_text[] = {
- 	"Too many terms in predicate expression",
- 	"Missing field name and/or value",
- 	"Meaningless filter expression",
-+	"Only 'ip' field is supported for function trace",
- };
- 
- struct opstack_op {
-@@ -992,7 +1001,12 @@ static int init_pred(struct filter_parse_state *ps,
- 			fn = filter_pred_strloc;
- 		else
- 			fn = filter_pred_pchar;
--	} else if (!is_function_field(field)) {
-+	} else if (is_function_field(field)) {
-+		if (strcmp(field->name, "ip")) {
-+			parse_error(ps, FILT_ERR_IP_FIELD_ONLY, 0);
-+			return -EINVAL;
-+		}
-+	} else {
- 		if (field->is_signed)
- 			ret = strict_strtoll(pred->regex.pattern, 0, &val);
- 		else
-@@ -1339,10 +1353,8 @@ static struct filter_pred *create_pred(struct filter_parse_state *ps,
- 
- 	strcpy(pred.regex.pattern, operand2);
- 	pred.regex.len = strlen(pred.regex.pattern);
--
--#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	pred.field = field;
--#endif
-+
- 	return init_pred(ps, field, &pred) ? NULL : &pred;
+ #ifdef CONFIG_CGROUP_PERF
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index d72af0b..4be0f73 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -250,3 +250,91 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+ 	return raw_data;
  }
- 
-@@ -1894,6 +1906,81 @@ void ftrace_profile_free_filter(struct perf_event *event)
- 	__free_filter(filter);
- }
- 
-+struct function_filter_data {
-+	struct ftrace_ops *ops;
-+	int first_filter;
-+	int first_notrace;
-+};
+ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
 +
-+static int __ftrace_function_set_filter(int filter, char *buf, int len,
-+					struct function_filter_data *data)
++
++static void
++perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
 +{
-+	int *reset;
++	struct ftrace_entry *entry;
++	struct hlist_head *head;
++	struct pt_regs regs;
++	int rctx;
 +
-+	reset = filter ? &data->first_filter : &data->first_notrace;
++#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
++		    sizeof(u64)) - sizeof(u32))
 +
-+	if (filter)
-+		ftrace_set_filter(data->ops, buf, len, *reset);
-+	else
-+		ftrace_set_notrace(data->ops, buf, len, *reset);
++	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
 +
-+	if (*reset)
-+		*reset = 0;
++	perf_fetch_caller_regs(&regs);
 +
-+	return WALK_PRED_DEFAULT;
++	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
++	if (!entry)
++		return;
++
++	entry->ip = ip;
++	entry->parent_ip = parent_ip;
++
++	head = this_cpu_ptr(event_function.perf_events);
++	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
++			      1, &regs, head);
++
++#undef ENTRY_SIZE
 +}
 +
-+static int ftrace_function_check_pred(struct filter_pred *pred)
++static int perf_ftrace_function_register(struct perf_event *event)
 +{
-+	struct ftrace_event_field *field = pred->field;
++	struct ftrace_ops *ops = &event->ftrace_ops;
 +
-+	/*
-+	  Check the predicate for function trace, verify:
-+	   - only '==' and '!=' is used
-+	   - the 'ip' field is used
-+	*/
-+	if (WARN((pred->op != OP_EQ) && (pred->op != OP_NE),
-+		 "wrong operator for function filter: %d\n", pred->op))
++	ops->flags |= FTRACE_OPS_FL_CONTROL;
++	atomic_set(&ops->disabled, 1);
++	ops->func = perf_ftrace_function_call;
++	return register_ftrace_function(ops);
++}
++
++static int perf_ftrace_function_unregister(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	return unregister_ftrace_function(ops);
++}
++
++static void perf_ftrace_function_enable(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	enable_ftrace_function(ops);
++}
++
++static void perf_ftrace_function_disable(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	disable_ftrace_function(ops);
++}
++
++int perf_ftrace_event_register(struct ftrace_event_call *call,
++			       enum trace_reg type, void *data)
++{
++	int etype = call->event.type;
++
++	if (etype != TRACE_FN)
 +		return -EINVAL;
 +
-+	if (strcmp(field->name, "ip"))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int ftrace_function_set_filter_cb(enum move_type move,
-+					 struct filter_pred *pred,
-+					 int *err, void *data)
-+{
-+	if ((move != MOVE_DOWN) ||
-+	    (pred->left != FILTER_PRED_INVALID))
-+		return WALK_PRED_DEFAULT;
-+
-+	/* Double checking the predicate is valid for function trace. */
-+	*err = ftrace_function_check_pred(pred);
-+	if (*err)
-+		return WALK_PRED_ABORT;
-+
-+	return __ftrace_function_set_filter(pred->op == OP_EQ,
-+					    pred->regex.pattern,
-+					    pred->regex.len,
-+					    data);
-+}
-+
-+static int ftrace_function_set_filter(struct perf_event *event,
-+				      struct event_filter *filter)
-+{
-+	struct function_filter_data data = {
-+		.first_filter  = 1,
-+		.first_notrace = 1,
-+		.ops           = &event->ftrace_ops,
-+	};
-+
-+	return walk_pred_tree(filter->preds, filter->root,
-+			      ftrace_function_set_filter_cb, &data);
-+}
-+
- int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 			      char *filter_str)
- {
-@@ -1901,6 +1988,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	struct event_filter *filter;
- 	struct filter_parse_state *ps;
- 	struct ftrace_event_call *call;
-+	struct filter_op *fops = filter_ops;
- 
- 	mutex_lock(&event_mutex);
- 
-@@ -1925,14 +2013,21 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	if (!ps)
- 		goto free_filter;
- 
--	parse_init(ps, filter_ops, filter_str);
-+	if (ftrace_event_is_function(call))
-+		fops = filter_ftrace_ops;
-+
-+	parse_init(ps, fops, filter_str);
- 	err = filter_parse(ps);
- 	if (err)
- 		goto free_ps;
- 
- 	err = replace_preds(call, filter, ps, filter_str, false);
--	if (!err)
--		event->filter = filter;
-+	if (!err) {
-+		if (ftrace_event_is_function(call))
-+			err = ftrace_function_set_filter(event, filter);
-+		else
-+			event->filter = filter;
++	switch (type) {
++	case TRACE_REG_REGISTER:
++	case TRACE_REG_UNREGISTER:
++		break;
++	case TRACE_REG_PERF_REGISTER:
++	case TRACE_REG_PERF_UNREGISTER:
++		return 0;
++	case TRACE_REG_PERF_OPEN:
++		return perf_ftrace_function_register(data);
++	case TRACE_REG_PERF_CLOSE:
++		return perf_ftrace_function_unregister(data);
++	case TRACE_REG_PERF_ADD:
++		perf_ftrace_function_enable(data);
++		return 0;
++	case TRACE_REG_PERF_DEL:
++		perf_ftrace_function_disable(data);
++		return 0;
 +	}
- 
- free_ps:
- 	filter_opstack_clear(ps);
-@@ -1940,7 +2035,7 @@ free_ps:
- 	kfree(ps);
- 
- free_filter:
--	if (err)
-+	if (err || ftrace_event_is_function(call))
- 		__free_filter(filter);
- 
- out_unlock:
++
++	return -EINVAL;
++}
 diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 7b035ab..46c35e2 100644
+index bbeec31..62e86a5 100644
 --- a/kernel/trace/trace_export.c
 +++ b/kernel/trace/trace_export.c
-@@ -208,4 +208,9 @@ struct ftrace_event_call __used event_##call = {			\
- struct ftrace_event_call __used						\
- __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+@@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
  
-+int ftrace_event_is_function(struct ftrace_event_call *call)
+ #include "trace_entries.h"
+ 
++static int ftrace_event_class_register(struct ftrace_event_call *call,
++				       enum trace_reg type, void *data)
 +{
-+	return call == &event_function;
++	switch (type) {
++	case TRACE_REG_PERF_REGISTER:
++	case TRACE_REG_PERF_UNREGISTER:
++		return 0;
++	case TRACE_REG_PERF_OPEN:
++	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
++#ifdef CONFIG_PERF_EVENTS
++		return perf_ftrace_event_register(call, type, data);
++#endif
++	case TRACE_REG_REGISTER:
++	case TRACE_REG_UNREGISTER:
++		break;
++	}
++
++	return -EINVAL;
 +}
 +
- #include "trace_entries.h"
+ #undef __entry
+ #define __entry REC
+ 
+@@ -159,6 +181,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+ 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
++	.reg			= ftrace_event_class_register,		\
+ };									\
+ 									\
+ struct ftrace_event_call __used event_##call = {			\
 -- 
 1.7.1
 
