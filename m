@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab1K0Rum (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 12:50:42 -0500
-Received: from imr3.ericy.com ([198.24.6.13]:49721 "EHLO imr3.ericy.com"
+	id S1752828Ab1K0SEo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 13:04:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57837 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab1K0Rul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 12:50:41 -0500
-Date: Sun, 27 Nov 2011 09:48:49 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Marc Pignat <marc.pignat@hevs.ch>, Paul Thomas <pthomas8589@gmail.com>,
-        Eric Miao <eric.miao@marvell.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH] hwmon: convert drivers/hwmon/* to use module_spi_driver()
-Message-ID: <20111127174849.GA31315@ericsson.com>
-References: <1322205165.11718.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1322205165.11718.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752167Ab1K0SEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 13:04:43 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC] ftrace, perf: Adding support to use function trace
+Date: Sun, 27 Nov 2011 19:04:25 +0100
+Message-Id: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 25, 2011 at 02:12:45AM -0500, Axel Lin wrote:
-> This patch converts the drivers in drivers/hwmon/* to use the
-> module_spi_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Sonic Zhang <sonic.zhang@analog.com>
-> Cc: Marc Pignat <marc.pignat@hevs.ch>
-> Cc: Paul Thomas <pthomas8589@gmail.com>
-> Cc: Eric Miao <eric.miao@marvell.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+hi,
+here's another version of perf support for function trace
+with filter. The changeset is working and hopefully is not
+introducing more bugs.. ;) still testing.
 
-module_spi_driver() is not (yet) available in mainline, so this patch
-can not be applied right now.
+Patch 1 through 3 could be probably taken separately as they
+fix independent issues. The rest is specific to the perf
+function tracing.
 
-It would probably make sense to resubmit the patch once the code necessary
-to support it is available, to make sure it does not miss any new drivers.
+I needed a way to temporarily enable/disable ftrace_ops based
+on the event in/out scheduling, patch 4/9 is introducing that.
+Not sure this is the best way though..
 
-Guenter
+Also adding open/close, add/del registration actions for
+tracepoint (patches 5,6) to have suitable place to control
+the function trace.
+
+Patch 7 enables the function event perf registration,
+and patches 8 and 9 add filter support.
+
+attached patches:
+- 1/9 trace: Fix uninitialized variable compiler warning
+- 2/9 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
+- 3/9 ftrace: Fix shutdown to disable calls properly
+- 4/9 ftrace: Add enable/disable ftrace_ops control interface
+- 5/9 ftrace, perf: Add open/close tracepoint perf registration actions
+- 6/9 ftrace, perf: Add add/del tracepoint perf registration actions
+- 7/9 ftrace, perf: Add support to use function tracepoint in perf
+- 8/9 ftrace, perf: Add FILTER_TRACE_FN event field type
+- 9/9 ftrace, perf: Add filter support for function trace event
+
+thanks for comments,
+jirka
+---
+ include/linux/ftrace.h             |   12 ++
+ include/linux/ftrace_event.h       |    9 ++-
+ include/linux/perf_event.h         |    3 +
+ kernel/trace/ftrace.c              |   45 ++++++---
+ kernel/trace/trace.c               |    3 +-
+ kernel/trace/trace.h               |    9 ++-
+ kernel/trace/trace_event_perf.c    |  208 ++++++++++++++++++++++++++++-------
+ kernel/trace/trace_events.c        |   12 ++-
+ kernel/trace/trace_events_filter.c |  114 ++++++++++++++++++--
+ kernel/trace/trace_export.c        |   53 ++++++++-
+ kernel/trace/trace_kprobe.c        |    8 ++-
+ kernel/trace/trace_syscalls.c      |   18 +++-
+ 12 files changed, 413 insertions(+), 81 deletions(-)
