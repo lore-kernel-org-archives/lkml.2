@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab1K0FcB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:32:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28506 "EHLO mx1.redhat.com"
+	id S1755116Ab1K0FcZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:32:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab1K0Fb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 00:31:57 -0500
+	id S1754733Ab1K0FcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 00:32:21 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Alex Dubov <oakad@yahoo.com>, Takashi Iwai <tiwai@suse.de>,
-        Aries Lee <arieslee@jmicron.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 19/62] memstick: remove the second argument of k[un]map_atomic()
-Date: Sun, 27 Nov 2011 13:26:59 +0800
-Message-Id: <1322371662-26166-20-git-send-email-amwang@redhat.com>
+        Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+Subject: [PATCH 18/62] media: remove the second argument of k[un]map_atomic()
+Date: Sun, 27 Nov 2011 13:26:58 +0800
+Message-Id: <1322371662-26166-19-git-send-email-amwang@redhat.com>
 In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,54 +24,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- drivers/memstick/host/jmb38x_ms.c |    4 ++--
- drivers/memstick/host/tifm_ms.c   |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/video/ivtv/ivtv-udma.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/memstick/host/jmb38x_ms.c b/drivers/memstick/host/jmb38x_ms.c
-index 6ce70e9..fd4eefb 100644
---- a/drivers/memstick/host/jmb38x_ms.c
-+++ b/drivers/memstick/host/jmb38x_ms.c
-@@ -325,7 +325,7 @@ static int jmb38x_ms_transfer_data(struct jmb38x_ms_host *host)
- 			p_cnt = min(p_cnt, length);
- 
+diff --git a/drivers/media/video/ivtv/ivtv-udma.c b/drivers/media/video/ivtv/ivtv-udma.c
+index 69cc816..7338cb2 100644
+--- a/drivers/media/video/ivtv/ivtv-udma.c
++++ b/drivers/media/video/ivtv/ivtv-udma.c
+@@ -57,9 +57,9 @@ int ivtv_udma_fill_sg_list (struct ivtv_user_dma *dma, struct ivtv_dma_page_info
+ 			if (dma->bouncemap[map_offset] == NULL)
+ 				return -1;
  			local_irq_save(flags);
--			buf = kmap_atomic(pg, KM_BIO_SRC_IRQ) + p_off;
-+			buf = kmap_atomic(pg) + p_off;
- 		} else {
- 			buf = host->req->data + host->block_pos;
- 			p_cnt = host->req->data_len - host->block_pos;
-@@ -341,7 +341,7 @@ static int jmb38x_ms_transfer_data(struct jmb38x_ms_host *host)
- 				 : jmb38x_ms_read_reg_data(host, buf, p_cnt);
- 
- 		if (host->req->long_data) {
--			kunmap_atomic(buf - p_off, KM_BIO_SRC_IRQ);
-+			kunmap_atomic(buf - p_off);
+-			src = kmap_atomic(dma->map[map_offset], KM_BOUNCE_READ) + offset;
++			src = kmap_atomic(dma->map[map_offset]) + offset;
+ 			memcpy(page_address(dma->bouncemap[map_offset]) + offset, src, len);
+-			kunmap_atomic(src, KM_BOUNCE_READ);
++			kunmap_atomic(src);
  			local_irq_restore(flags);
+ 			sg_set_page(&dma->SGlist[map_offset], dma->bouncemap[map_offset], len, offset);
  		}
- 
-diff --git a/drivers/memstick/host/tifm_ms.c b/drivers/memstick/host/tifm_ms.c
-index b7aacf4..975d77c 100644
---- a/drivers/memstick/host/tifm_ms.c
-+++ b/drivers/memstick/host/tifm_ms.c
-@@ -210,7 +210,7 @@ static unsigned int tifm_ms_transfer_data(struct tifm_ms *host)
- 			p_cnt = min(p_cnt, length);
- 
- 			local_irq_save(flags);
--			buf = kmap_atomic(pg, KM_BIO_SRC_IRQ) + p_off;
-+			buf = kmap_atomic(pg) + p_off;
- 		} else {
- 			buf = host->req->data + host->block_pos;
- 			p_cnt = host->req->data_len - host->block_pos;
-@@ -221,7 +221,7 @@ static unsigned int tifm_ms_transfer_data(struct tifm_ms *host)
- 			 : tifm_ms_read_data(host, buf, p_cnt);
- 
- 		if (host->req->long_data) {
--			kunmap_atomic(buf - p_off, KM_BIO_SRC_IRQ);
-+			kunmap_atomic(buf - p_off);
- 			local_irq_restore(flags);
- 		}
- 
 -- 
 1.7.4.4
 
