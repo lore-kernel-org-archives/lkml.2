@@ -1,297 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1K0Q6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 11:58:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36148 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1K0Q6U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 11:58:20 -0500
+	id S1751724Ab1K0RE0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 12:04:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab1K0REY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 12:04:24 -0500
+Date: Sun, 27 Nov 2011 19:06:00 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-net: Acquire device lock when releasing device
+Message-ID: <20111127170558.GA31970@redhat.com>
+References: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
+ <20111127164925.GA24941@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAH9NwWcLu=_NuQSrChHfUA=u6=1-2eJB+sBR1Y88w75do0G1tA@mail.gmail.com>
-References: <CAH9NwWcLu=_NuQSrChHfUA=u6=1-2eJB+sBR1Y88w75do0G1tA@mail.gmail.com>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Sun, 27 Nov 2011 17:57:58 +0100
-Message-ID: <CAH9NwWeqMCPv0VZ1jtGkjCVq2WiKrMMz2R6U9zWC1d8gWV=suw@mail.gmail.com>
-Subject: Re: [PATCH] add led driver for Bachmann's ot200
-To: linux-kernel@vger.kernel.org
-Cc: rpurdie@rpsys.net, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111127164925.GA24941@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any feedback on this? Would like to get the driver in 3.3
-
---
-Christian Gmeiner, MSc
-
-
-
-2011/11/18 Christian Gmeiner <christian.gmeiner@gmail.com>:
-> From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
-> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Date: Fri, 18 Nov 2011 10:21:48 +0100
-> Subject: [PATCH] add led driver for Bachmann's ot200
->
-> This patch adds support for leds on Bachmann's ot200 visualisation device.
-> The device has three leds on the back panel (led_err, led_init and led_run)
-> and can handle up to seven leds on the front panel.
->
-> The driver was written by Linutronix on behalf of
-> Bachmann electronic GmbH.
->
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+On Sun, Nov 27, 2011 at 06:49:27PM +0200, Michael S. Tsirkin wrote:
+> On Fri, Nov 18, 2011 at 11:19:42AM +0200, Sasha Levin wrote:
+> > Device lock should be held when releasing a device, and specifically
+> > when calling vhost_dev_cleanup(). Otherwise, RCU complains about it:
+> > 
+> > [ 2025.642835] ===============================
+> > [ 2025.643838] [ INFO: suspicious RCU usage. ]
+> > [ 2025.645182] -------------------------------
+> > [ 2025.645927] drivers/vhost/vhost.c:475 suspicious rcu_dereference_protected() usage!
+> > [ 2025.647329]
+> > [ 2025.647330] other info that might help us debug this:
+> > [ 2025.647331]
+> > [ 2025.649042]
+> > [ 2025.649043] rcu_scheduler_active = 1, debug_locks = 1
+> > [ 2025.650235] no locks held by trinity/21042.
+> > [ 2025.650971]
+> > [ 2025.650972] stack backtrace:
+> > [ 2025.651789] Pid: 21042, comm: trinity Not tainted 3.2.0-rc2-sasha-00057-ga9098b3 #5
+> > [ 2025.653342] Call Trace:
+> > [ 2025.653792]  [<ffffffff810b4a6a>] lockdep_rcu_suspicious+0xaf/0xb9
+> > [ 2025.654916]  [<ffffffff818d4c2c>] vhost_dev_cleanup+0x342/0x3ac
+> > [ 2025.655985]  [<ffffffff818d4f18>] vhost_net_release+0x48/0x7f
+> > [ 2025.657247]  [<ffffffff811416e3>] fput+0x11e/0x1dc
+> > [ 2025.658091]  [<ffffffff8113f1ec>] filp_close+0x6e/0x79
+> > [ 2025.658964]  [<ffffffff81089ed7>] put_files_struct+0xcc/0x196
+> > [ 2025.659971]  [<ffffffff8108a034>] exit_files+0x46/0x4f
+> > [ 2025.660865]  [<ffffffff8108a716>] do_exit+0x264/0x75c
+> > [ 2025.662201]  [<ffffffff8113f490>] ? fsnotify_modify+0x60/0x68
+> > [ 2025.663260]  [<ffffffff81bbdbca>] ? sysret_check+0x2e/0x69
+> > [ 2025.664269]  [<ffffffff8108acc1>] do_group_exit+0x83/0xb1
+> > [ 2025.665448]  [<ffffffff8108ad01>] sys_exit_group+0x12/0x16
+> > [ 2025.666396]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
+> > 
+> > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > Cc: kvm@vger.kernel.org
+> > Cc: virtualization@lists.linux-foundation.org
+> > Cc: netdev@vger.kernel.org
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > ---
+> >  drivers/vhost/net.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > index 882a51f..c9be601 100644
+> > --- a/drivers/vhost/net.c
+> > +++ b/drivers/vhost/net.c
+> > @@ -586,6 +586,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+> >  	struct socket *tx_sock;
+> >  	struct socket *rx_sock;
+> >  
+> > +	mutex_lock(&n->dev.mutex);
+> >  	vhost_net_stop(n, &tx_sock, &rx_sock);
+> >  	vhost_net_flush(n);
+> >  	vhost_dev_cleanup(&n->dev);
+> > @@ -596,6 +597,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+> >  	/* We do an extra flush before freeing memory,
+> >  	 * since jobs can re-queue themselves. */
+> >  	vhost_net_flush(n);
+> > +	mutex_unlock(&n->dev.mutex);
+> >  	kfree(n);
+> >  	return 0;
+> >  }
+> 
+> This calls fput fom release under lock which is generally a bad idea,
+> as locks become nested then. For example, consider what would happen if this
+> somehow triggers a release which in turn needs the same mutex.
+> 
+> And, we are releasing the device, so it seems better to check
+> that no one has the lock.
+> How about the following instead? What do you think?
+> 
+> -->
+> 
+> vhost: fix release path lockdep checks
+> 
+> We shouldn't hold any locks on release path. Pass a flag to
+> vhost_dev_cleanup to use the lockdep info correctly.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
 > ---
->  drivers/leds/Kconfig      |    8 ++
->  drivers/leds/Makefile     |    1 +
->  drivers/leds/leds-ot200.c |  204 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 213 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/leds/leds-ot200.c
->
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index ff203a4..6cf0dd6 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -387,6 +387,14 @@ config LEDS_RENESAS_TPU
->          pin function. The latter to support brightness control.
->          Brightness control is supported but hardware blinking is not.
->
-> +config LEDS_OT200
-> +       tristate "LED support for Bachmann OT200"
-> +       depends on LEDS_CLASS
-> +       help
-> +         This option enables support for the LEDs on the Bachmann OT200. The
-> +         LEDs are controlled through LPC bus.
-> +         Say Y to enable LEDs on the Bachmann OT200.
-> +
->  config LEDS_TRIGGERS
->        bool "LED Trigger support"
->        depends on LEDS_CLASS
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index e4f6bf5..0814d42 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)                        += leds-ns2.o
->  obj-$(CONFIG_LEDS_NETXBIG)             += leds-netxbig.o
->  obj-$(CONFIG_LEDS_ASIC3)               += leds-asic3.o
->  obj-$(CONFIG_LEDS_RENESAS_TPU)         += leds-renesas-tpu.o
-> +obj-$(CONFIG_LEDS_OT200)               += leds-ot200.o
->
->  # LED SPI Drivers
->  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
-> new file mode 100644
-> index 0000000..60f118b
-> --- /dev/null
-> +++ b/drivers/leds/leds-ot200.c
-> @@ -0,0 +1,204 @@
-> +/*
-> + * Bachmann ot200 leds driver.
-> + *
-> + * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> + * License: GPL as published by the FSF.
-> + */
-> +
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/leds.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +
-> +struct ot200_led {
-> +       struct led_classdev cdev;
-> +       char name[8];
-> +       unsigned int num;
-> +};
-> +
-> +static u8 old_val;
-> +static u8 old_val_back;
-> +DEFINE_SPINLOCK(value_lock);
-> +
-> +static void ot200_led_set(struct led_classdev *led_cdev,
-> +                       enum led_brightness value)
-> +{
-> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
-> +       u8 val;
-> +       u8 mask;
-> +       unsigned long flags;
-> +
-> +       mask = 1 << led->num;
-> +
-> +       spin_lock_irqsave(&value_lock, flags);
-> +       val = old_val;
-> +
-> +       if (value == LED_OFF)
-> +               val &= ~mask;
-> +       else
-> +               val |= mask;
-> +
-> +       old_val = val;
-> +       spin_unlock_irqrestore(&value_lock, flags);
-> +       outb(val, 0x49);
-> +}
-> +
-> +static void ot200_led_back_set(struct led_classdev *led_cdev,
-> +                       enum led_brightness value)
-> +{
-> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
-> +       u8 val;
-> +       u8 mask;
-> +       unsigned long flags;
-> +
-> +       mask = 1 << led->num;
-> +
-> +       spin_lock_irqsave(&value_lock, flags);
-> +       val = old_val_back;
-> +
-> +       if (value == LED_OFF)
-> +               val &= ~mask;
-> +       else
-> +               val |= mask;
-> +
-> +       old_val_back = val;
-> +       spin_unlock_irqrestore(&value_lock, flags);
-> +       outb(val, 0x5a);
-> +}
-> +
-> +static int __devinit create_ot200_led(struct platform_device *pdev, int num,
-> +               struct ot200_led *led)
-> +{
-> +       int ret;
-> +
-> +       num += 1;
-> +       snprintf(led->name, sizeof(led->name), "led%d", num);
-> +       led->num = 7 - num;
-> +       led->cdev.name = led->name;
-> +       led->cdev.default_trigger = NULL;
-> +       led->cdev.blink_set = NULL;
-> +       led->cdev.brightness_set = ot200_led_set;
-> +
-> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
-> +       if (ret < 0)
-> +               goto out;
-> +
-> +       dev_set_drvdata(led->cdev.dev, led);
-> +       return 0;
-> +
-> +       led_classdev_unregister(&led->cdev);
-> +out:
-> +       return ret;
-> +}
-> +
-> +static int __devinit create_ot200_led_back(struct platform_device *pdev,
-> +               int num, struct ot200_led *led)
-> +{
-> +       char *led_name;
-> +       int ret;
-> +
-> +       switch (num) {
-> +       case 0:
-> +               led_name = "run";
-> +               break;
-> +       case 1:
-> +               led_name = "init";
-> +               break;
-> +       case 2:
-> +               led_name = "err";
-> +               break;
-> +       default:
-> +               BUG();
-> +       };
-> +
-> +       snprintf(led->name, sizeof(led->name), "led_%s", led_name);
-> +       led->num = num;
-> +       led->cdev.name = led->name;
-> +       led->cdev.blink_set = NULL;
-> +       led->cdev.brightness_set = ot200_led_back_set;
-> +
-> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
-> +       if (ret < 0)
-> +               goto out;
-> +
-> +       dev_set_drvdata(led->cdev.dev, led);
-> +       return 0;
-> +
-> +       led_classdev_unregister(&led->cdev);
-> +out:
-> +       return ret;
-> +
-> +}
-> +
-> +#define NUM_LEDS       7
-> +#define NUM_LEDS_BACK  3
-> +#define NUM_LEDS_TOTAL (NUM_LEDS + NUM_LEDS_BACK)
-> +
-> +static int __devinit ot200_led_probe(struct platform_device *pdev)
-> +{
-> +       struct ot200_led *leds;
-> +       int i;
-> +       int ret;
-> +
-> +       leds = kzalloc(sizeof(struct ot200_led) * NUM_LEDS_TOTAL, GFP_KERNEL);
-> +       if (!leds)
-> +               return -ENOMEM;
-> +
-> +       for (i = 0; i < NUM_LEDS; i++) {
-> +               ret = create_ot200_led(pdev, i, &leds[i]);
-> +               if (ret < 0)
-> +                       goto err;
-> +       }
-> +
-> +       for (i = NUM_LEDS; i < NUM_LEDS + NUM_LEDS_BACK; i++) {
-> +               ret = create_ot200_led_back(pdev, i - NUM_LEDS, &leds[i]);
-> +               if (ret < 0)
-> +                       goto err;
-> +       }
-> +
-> +       platform_set_drvdata(pdev, leds);
-> +       outb(0x0, 0x49);        /* turn of all front leds */
-> +       outb(0x2, 0x5a);        /* turn on init led */
-> +       return 0;
-> +
-> +err:
-> +       for (i = i - 1; i >= 0; i--)
-> +               led_classdev_unregister(&leds[i].cdev);
-> +
-> +       kfree(leds);
-> +
-> +       return ret;
-> +}
-> +
-> +static int __devexit ot200_led_remove(struct platform_device *pdev)
-> +{
-> +       int i;
-> +       struct ot200_led *leds;
-> +
-> +       leds = platform_get_drvdata(pdev);
-> +
-> +       for (i = 0; i < NUM_LEDS_TOTAL; i++)
-> +               led_classdev_unregister(&leds[i].cdev);
-> +
-> +       kfree(leds);
-> +       platform_set_drvdata(pdev, NULL);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver ot200_led_driver = {
-> +       .probe          = ot200_led_probe,
-> +       .remove         = __devexit_p(ot200_led_remove),
-> +       .driver         = {
-> +               .name   = "leds-ot200",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
-> +module_platform_driver(ot200_led_driver);
-> +
-> +MODULE_AUTHOR("Sebastian A. Siewior <bigeasy@linutronix.de>");
-> +MODULE_DESCRIPTION("ot200 LED driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:leds-ot200");
-> --
-> 1.7.5.4
->
+
+Sorry, this got cut short. Here's the full patch (1st chunk was
+missing).  Does this solve the problem for you?
+
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 8b16d16..9bba4b3 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -598,7 +598,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+ 
+ 	vhost_net_stop(n, &tx_sock, &rx_sock);
+ 	vhost_net_flush(n);
+-	vhost_dev_cleanup(&n->dev);
++	vhost_dev_cleanup(&n->dev, false);
+ 	if (tx_sock)
+ 		fput(tx_sock->file);
+ 	if (rx_sock)
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index a8c95ef..96f9769 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -424,7 +424,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	if (!memory)
+ 		return -ENOMEM;
+ 
+-	vhost_dev_cleanup(dev);
++	vhost_dev_cleanup(dev, true);
+ 
+ 	memory->nregions = 0;
+ 	RCU_INIT_POINTER(dev->memory, memory);
+@@ -455,8 +455,8 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
+ 	return j;
+ }
+ 
+-/* Caller should have device mutex */
+-void vhost_dev_cleanup(struct vhost_dev *dev)
++/* Caller should have device mutex if and only if locked is set */
++void vhost_dev_cleanup(struct vhost_dev *dev, bool locked)
+ {
+ 	int i;
+ 
+@@ -493,7 +493,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 	dev->log_file = NULL;
+ 	/* No one will access memory at this point */
+ 	kfree(rcu_dereference_protected(dev->memory,
+-					lockdep_is_held(&dev->mutex)));
++					locked ==
++						lockdep_is_held(&dev->mutex)));
+ 	RCU_INIT_POINTER(dev->memory, NULL);
+ 	WARN_ON(!list_empty(&dev->work_list));
+ 	if (dev->worker) {
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b3e8cc3..97e18d3 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -164,7 +164,7 @@ struct vhost_dev {
+ long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
+ long vhost_dev_check_owner(struct vhost_dev *);
+ long vhost_dev_reset_owner(struct vhost_dev *);
+-void vhost_dev_cleanup(struct vhost_dev *);
++void vhost_dev_cleanup(struct vhost_dev *, bool locked);
+ long vhost_dev_ioctl(struct vhost_dev *, unsigned int ioctl, unsigned long arg);
+ int vhost_vq_access_ok(struct vhost_virtqueue *vq);
+ int vhost_log_access_ok(struct vhost_dev *);
