@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1K0IsI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 03:48:08 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33043 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1K0IsB (ORCPT
+	id S1755303Ab1K0ItT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 03:49:19 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36514 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1K0ItS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 03:48:01 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
+	Sun, 27 Nov 2011 03:49:18 -0500
+Date: Sun, 27 Nov 2011 09:48:48 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
         Ben Dooks <ben-linux@fluff.org>, Jochen Friedrich <jochen@scram.de>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Peter Korsgaard <jacmet@sunsite.dk>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Manuel Lauss <manuel.lauss@googlemail.com>,
         Barry Song <21cnbao@gmail.com>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -20,43 +20,51 @@ Cc: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         Grant Likely <grant.likely@secretlab.ca>,
         Samuel Ortiz <sameo@linux.intel.com>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c: convert drivers/i2c/* to use module_platform_driver()
+Subject: Re: [PATCH] i2c: convert drivers/i2c/* to use
+ module_platform_driver()
+Message-ID: <20111127084848.GA5263@pengutronix.de>
 References: <1322374332.2226.1.camel@phoenix>
-Date: Sun, 27 Nov 2011 09:47:55 +0100
-In-Reply-To: <1322374332.2226.1.camel@phoenix> (Axel Lin's message of "Sun, 27
-	Nov 2011 14:12:12 +0800")
-Message-ID: <87aa7ihryc.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <1322374332.2226.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Axel" == Axel Lin <axel.lin@gmail.com> writes:
 
- Axel> This patch converts the drivers in drivers/i2c/* to use the
- Axel> module_platform_driver() macro which makes the code smaller and a bit
- Axel> simpler.
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- Axel> Cc: Jean Delvare <khali@linux-fr.org>
- Axel> Cc: Ben Dooks <ben-linux@fluff.org>
- Axel> Cc: Jochen Friedrich <jochen@scram.de>
- Axel> Cc: Peter Korsgaard <jacmet@sunsite.dk>
- Axel> Cc: Wolfram Sang <w.sang@pengutronix.de>
- Axel> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
- Axel> Cc: Manuel Lauss <manuel.lauss@googlemail.com>
- Axel> Cc: Barry Song <21cnbao@gmail.com>
- Axel> Cc: Linus Walleij <linus.walleij@linaro.org>
- Axel> Cc: Yong Zhang <yong.zhang0@gmail.com>
- Axel> Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
- Axel> Cc: Grant Likely <grant.likely@secretlab.ca>
- Axel> Cc: Samuel Ortiz <sameo@linux.intel.com>
- Axel> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Sun, Nov 27, 2011 at 02:12:12PM +0800, Axel Lin wrote:
+> This patch converts the drivers in drivers/i2c/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 
-Looks good for i2c-ocores / gpio-i2cmux:
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
--- 
-Bye, Peter Korsgaard
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7R+XAACgkQD27XaX1/VRulvwCcDy+/N8L+uZkYG69/Qs/prIIW
+etoAoIZjWZlaqpDc1lqLSrxVdkjyvvv0
+=g860
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
