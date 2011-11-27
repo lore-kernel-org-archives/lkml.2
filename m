@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab1K0M5V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 07:57:21 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62567 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752795Ab1K0M5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 07:57:20 -0500
-Date: Sun, 27 Nov 2011 12:56:56 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 v5] arm: fault.c: Port OOM changes into do_page_fault
-Message-ID: <20111127125656.GA26042@mudshark.cambridge.arm.com>
-References: <1321986690-6079-1-git-send-email-consul.kautuk@gmail.com>
- <20111126235032.GC9581@n2100.arm.linux.org.uk>
- <CAFPAmTTWVwq8H6HVzdvTcN-jcSoNQ2-TfLWT33ks8_kpGND+SA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFPAmTTWVwq8H6HVzdvTcN-jcSoNQ2-TfLWT33ks8_kpGND+SA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755376Ab1K0NFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 08:05:37 -0500
+Received: from mout9.freenet.de ([195.4.92.99]:40308 "EHLO mout9.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab1K0NFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 08:05:35 -0500
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+X-Newsgroups: linux.kernel
+Subject: Broken hd or filesystem access after resume from suspend2disk
+Date: Sun, 27 Nov 2011 14:02:33 +0100
+Organization: privat
+Message-ID: <jatcd7$4sc$1@ID-44327.news.uni-berlin.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0.1) Gecko/20111121 Firefox/8.0.1 SeaMonkey/2.5
+To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 05:58:33AM +0000, Kautuk Consul wrote:
-> >
-> > Thanks.  I think this is fine.  Please put it in the patch system so it's
-> > not forgotten, and I'll get to it sometime during the next week.  Thanks.
-> >
-> 
-> Thanks. I don't know what you mean by "put it in the patch system" as I already
-> did a "git send-email" for this patch to this mailing list.
-> 
-> So, please find the v5 patch file attached to this email for any
-> further reference.
+Hello,
 
-You should read the documentation here:
+I'm often having trouble accessing the hd / filesystem after a resume
+from  suspend2disk. Sometimes, the machine completely hangs after resume
+or it cannot be suspended at all.
 
-http://www.arm.linux.org.uk/developer/patches/info.php
+Today, I faced the following problem after resuming:
 
-and then you can use git send-email --suppress-cc=all to email your patch to
-the patch system, making sure you have the correct KernelVersion tag.
+Using wpa_supplicant failed with the message:
 
-Will
+wpa_supplicant -t -c /etc/wpa_supplicant/wpa_supplicant.conf -f
+/var/log/wpa_supplicant.log -Dnl80211 -iwlan0
+wpa_supplicant: symbol lookup error: /lib64/libssl.so.1.0.0: undefined
+symbol: RAND_add
+
+
+ldd `which wpa_supplicant`
+        linux-vdso.so.1 =>  (0x00007fffd84b9000)
+        libnl.so.1 => /lib64/libnl.so.1 (0x00007fe5ac0bd000)
+        libdl.so.2 => /lib64/libdl.so.2 (0x00007fe5abeb9000)
+        libssl.so.1.0.0 => /lib64/libssl.so.1.0.0 (0x00007fe5abc5d000)
+        libcrypto.so.1.0.0 => /lib64/libcrypto.so.1.0.0 (0x00007fe5ab8ad000)
+        libdbus-1.so.3 => /lib64/libdbus-1.so.3 (0x00007fe5ab668000)
+        libc.so.6 => /lib64/libc.so.6 (0x00007fe5ab2d9000)
+        libm.so.6 => /lib64/libm.so.6 (0x00007fe5ab082000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fe5ac30f000)
+        libz.so.1 => /lib64/libz.so.1 (0x00007fe5aae6a000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007fe5aac4d000)
+        librt.so.1 => /lib64/librt.so.1 (0x00007fe5aaa45000)
+
+
+rpm -qVf /lib64/libssl.so.1.0.0
+5........    /lib64/libcrypto.so.1.0.0
+
+-> The libcrypto-library seems to be broken.
+
+In order to check, if there are more broken libraries (after the
+resume), I did a md5sum on the complete /lib64 directory to have it at
+base for a recheck after a reboot.
+
+The recheck after the reboot showed two more broken files:
+
+cd /lib64
+md5sum -c md5sum.out | grep FAILED
+libcrypto.so.1.0.0: FAILED
+libkeyutils.so.1: FAILED
+libkeyutils.so.1.4: FAILED
+md5sum: WARNING: 3 computed checksums did NOT match
+
+Apparently, there is something completely broken after resume.
+
+
+The machine is a MSI CR620 notebook and kernel is 3.1.
+
+00:00.0 Host bridge: Intel Corporation Core Processor DRAM Controller
+(rev 02)
+00:02.0 VGA compatible controller: Intel Corporation Core Processor
+Integrated Graphics Controller (rev 02)
+00:16.0 Communication controller: Intel Corporation 5 Series/3400 Series
+Chipset HECI Controller (rev 06)
+00:1a.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
+USB2 Enhanced Host Controller (rev 05)
+00:1b.0 Audio device: Intel Corporation 5 Series/3400 Series Chipset
+High Definition Audio (rev 05)
+00:1c.0 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 1 (rev 05)
+00:1c.1 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 2 (rev 05)
+00:1c.3 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 4 (rev 05)
+00:1c.5 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 6 (rev 05)
+00:1d.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
+USB2 Enhanced Host Controller (rev 05)
+00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev a5)
+00:1f.0 ISA bridge: Intel Corporation Mobile 5 Series Chipset LPC
+Interface Controller (rev 05)
+00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series Chipset
+4 port SATA AHCI Controller (rev 05)
+00:1f.3 SMBus: Intel Corporation 5 Series/3400 Series Chipset SMBus
+Controller (rev 05)
+00:1f.6 Signal processing controller: Intel Corporation 5 Series/3400
+Series Chipset Thermal Subsystem (rev 05)
+05:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless
+Network Adapter (PCI-Express) (rev 01)
+06:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
+RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+3f:00.0 Host bridge: Intel Corporation Core Processor QuickPath
+Architecture Generic Non-core Registers (rev 02)
+3f:00.1 Host bridge: Intel Corporation Core Processor QuickPath
+Architecture System Address Decoder (rev 02)
+3f:02.0 Host bridge: Intel Corporation Core Processor QPI Link 0 (rev 02)
+3f:02.1 Host bridge: Intel Corporation Core Processor QPI Physical 0
+(rev 02)
+3f:02.2 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
+3f:02.3 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
+
+
+Does anybody has an idea how to fix / or further analyze this problem?
+
+
+Thank you,
+kind regards,
+Andreas
