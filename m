@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab1K0FbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:31:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62954 "EHLO mx1.redhat.com"
+	id S1754674Ab1K0FbX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:31:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33268 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754356Ab1K0FbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 00:31:11 -0500
+	id S1752147Ab1K0FbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 00:31:02 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        bluesmoke-devel@lists.sourceforge.net
-Subject: [PATCH 13/62] edac: remove the second argument of k[un]map_atomic()
-Date: Sun, 27 Nov 2011 13:26:53 +0800
-Message-Id: <1322371662-26166-14-git-send-email-amwang@redhat.com>
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
+Subject: [PATCH 12/62] crypto: remove the second argument of k[un]map_atomic()
+Date: Sun, 27 Nov 2011 13:26:52 +0800
+Message-Id: <1322371662-26166-13-git-send-email-amwang@redhat.com>
 In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,29 +23,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- drivers/edac/edac_mc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/crypto/hifn_795x.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index d69144a..08dff48 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -621,13 +621,13 @@ static void edac_mc_scrub_block(unsigned long page, unsigned long offset,
- 	if (PageHighMem(pg))
- 		local_irq_save(flags);
+diff --git a/drivers/crypto/hifn_795x.c b/drivers/crypto/hifn_795x.c
+index fe765f4..76368f9 100644
+--- a/drivers/crypto/hifn_795x.c
++++ b/drivers/crypto/hifn_795x.c
+@@ -1731,9 +1731,9 @@ static int ablkcipher_get(void *saddr, unsigned int *srestp, unsigned int offset
+ 	while (size) {
+ 		copy = min3(srest, dst->length, size);
  
--	virt_addr = kmap_atomic(pg, KM_BOUNCE_READ);
-+	virt_addr = kmap_atomic(pg);
+-		daddr = kmap_atomic(sg_page(dst), KM_IRQ0);
++		daddr = kmap_atomic(sg_page(dst));
+ 		memcpy(daddr + dst->offset + offset, saddr, copy);
+-		kunmap_atomic(daddr, KM_IRQ0);
++		kunmap_atomic(daddr);
  
- 	/* Perform architecture specific atomic scrub operation */
- 	atomic_scrub(virt_addr + offset, size);
+ 		nbytes -= copy;
+ 		size -= copy;
+@@ -1793,17 +1793,17 @@ static void hifn_process_ready(struct ablkcipher_request *req, int error)
+ 				continue;
+ 			}
  
- 	/* Unmap and complete */
--	kunmap_atomic(virt_addr, KM_BOUNCE_READ);
-+	kunmap_atomic(virt_addr);
+-			saddr = kmap_atomic(sg_page(t), KM_SOFTIRQ0);
++			saddr = kmap_atomic(sg_page(t));
  
- 	if (PageHighMem(pg))
- 		local_irq_restore(flags);
+ 			err = ablkcipher_get(saddr, &t->length, t->offset,
+ 					dst, nbytes, &nbytes);
+ 			if (err < 0) {
+-				kunmap_atomic(saddr, KM_SOFTIRQ0);
++				kunmap_atomic(saddr);
+ 				break;
+ 			}
+ 
+ 			idx += err;
+-			kunmap_atomic(saddr, KM_SOFTIRQ0);
++			kunmap_atomic(saddr);
+ 		}
+ 
+ 		hifn_cipher_walk_exit(&rctx->walk);
 -- 
 1.7.4.4
 
