@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab1K0K1j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 05:27:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30827 "EHLO mx1.redhat.com"
+	id S1754392Ab1K0K3m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 05:29:42 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:49133 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101Ab1K0K1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 05:27:38 -0500
-Message-ID: <4ED2108F.9000203@redhat.com>
-Date: Sun, 27 Nov 2011 11:27:27 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
-MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: NeilBrown <neilb@suse.de>, Cong Wang <amwang@redhat.com>,
-        linux-raid@vger.kernel.org, akpm@linux-foundation.org,
+	id S1752517Ab1K0K3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 05:29:41 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Greg KH <greg@kroah.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH 17/62] md: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-18-git-send-email-amwang@redhat.com> <20111127170013.20d180a9@notabene.brown>
-In-Reply-To: <20111127170013.20d180a9@notabene.brown>
-X-Enigmail-Version: 1.2.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v3 16/16] mtd/docg3: add protection areas sysfs access
+References: <1321714978-24543-1-git-send-email-robert.jarzmik@free.fr>
+	<1321714978-24543-17-git-send-email-robert.jarzmik@free.fr>
+	<20111126235727.GA12856@kroah.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Sun, 27 Nov 2011 11:29:28 +0100
+In-Reply-To: <20111126235727.GA12856@kroah.com> (Greg KH's message of "Sat, 26
+	Nov 2011 15:57:27 -0800")
+Message-ID: <87r50t3lkn.fsf@free.fr>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2011 07:00 AM, NeilBrown wrote:
-> On Sun, 27 Nov 2011 13:26:57 +0800 Cong Wang <amwang@redhat.com> wrote:
-> 
->>
->> Signed-off-by: Cong Wang <amwang@redhat.com>
-> 
-> This and patch 57/62
-> 
->  Acked-by: NeilBrown <neilb@suse.de>
-> 
-> thanks.
-> 
-> Not sure why there are two separate patches to md/bitmap.c though...
-> 
-> ... and I cannot offically 'ack' the dm-crypt.c parts of this as I'm not the
->     maintainer.  'md' and 'dm' are separate systems in the same directory -
->     confusing, isn't it :-(
+Greg KH <greg@kroah.com> writes:
 
-These little walled gardens ... :)
+> On Sat, Nov 19, 2011 at 04:02:58PM +0100, Robert Jarzmik wrote:
+>> As each docg3 chip has 2 protection areas (DPS0 and DPS1),
+>> and because theses areas can prevent user access to the chip
+>> data, add for each floor the sysfs entries which insert the
+>> protection key into the right DPS.
+>> 
+>> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+>
+> As you are adding new sysfs files, you also must add Documentation/ABI
+> entries for them.  Please do so.
+OK Greg, I'll prepare a patch soon.
 
-I hope I can ack that dm-crypt code, I added that chunk
-as part of loop-aes compatibility code.
-(Anyway Alasdair as dm maintainer should ack it too.)
+Cheers.
 
-Acked-by: Milan Broz <mbroz@redhat.com>
-
-
->> diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
->> index 8c2a000..db6b516 100644
->> --- a/drivers/md/dm-crypt.c
->> +++ b/drivers/md/dm-crypt.c
->> @@ -590,9 +590,9 @@ static int crypt_iv_lmk_gen(struct crypt_config *cc, u8 *iv,
->>  	int r = 0;
->>  
->>  	if (bio_data_dir(dmreq->ctx->bio_in) == WRITE) {
->> -		src = kmap_atomic(sg_page(&dmreq->sg_in), KM_USER0);
->> +		src = kmap_atomic(sg_page(&dmreq->sg_in));
->>  		r = crypt_iv_lmk_one(cc, iv, dmreq, src + dmreq->sg_in.offset);
->> -		kunmap_atomic(src, KM_USER0);
->> +		kunmap_atomic(src);
->>  	} else
->>  		memset(iv, 0, cc->iv_size);
->>  
->> @@ -608,14 +608,14 @@ static int crypt_iv_lmk_post(struct crypt_config *cc, u8 *iv,
->>  	if (bio_data_dir(dmreq->ctx->bio_in) == WRITE)
->>  		return 0;
->>  
->> -	dst = kmap_atomic(sg_page(&dmreq->sg_out), KM_USER0);
->> +	dst = kmap_atomic(sg_page(&dmreq->sg_out));
->>  	r = crypt_iv_lmk_one(cc, iv, dmreq, dst + dmreq->sg_out.offset);
->>  
->>  	/* Tweak the first block of plaintext sector */
->>  	if (!r)
->>  		crypto_xor(dst + dmreq->sg_out.offset, iv, cc->iv_size);
->>  
->> -	kunmap_atomic(dst, KM_USER0);
->> +	kunmap_atomic(dst);
->>  	return r;
->>  }
->>  
+-- 
+Robert
