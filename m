@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1K0Jlo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 04:41:44 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47461 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab1K0Jlm (ORCPT
+	id S1752280Ab1K0JmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 04:42:25 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:49585
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750973Ab1K0JmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 04:41:42 -0500
-Message-ID: <4ED205D1.5060407@openvz.org>
-Date: Sun, 27 Nov 2011 13:41:37 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
+	Sun, 27 Nov 2011 04:42:23 -0500
+Message-ID: <4ED205F9.3070908@compulab.co.il>
+Date: Sun, 27 Nov 2011 11:42:17 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Pedro Alves <pedro@codesourcery.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with	given
- pids
-References: <4EC4F2FB.408@parallels.com> <201111221204.39235.pedro@codesourcery.com> <20111122153326.GD322@google.com> <201111231620.45440.pedro@codesourcery.com> <20111123162417.GE25780@google.com> <4ECD3946.1030503@parallels.com> <4ECD542C.7010705@parallels.com> <20111124173121.GA23260@redhat.com> <4ECF6AA0.80006@parallels.com>
-In-Reply-To: <4ECF6AA0.80006@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Igor Grinberg <grinberg@compulab.co.il>
+CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MFD: TWL: add power off functionality
+References: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
+In-Reply-To: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Emelyanov wrote:
-> OK, here's another proposal that seem to suit all of us:
->
-> 1. me wants to clone tasks with pids set
-> 2. Pedro wants to fork task with not changing pids and w/o root perms
-> 3. Oleg and Tejun want to have little intrusion into fork() path
->
-> The proposal is to implement the PR_RESERVE_PID prctl which allocates and puts a
-> pid on the current. The subsequent fork() uses this pid, this pid survives and keeps
-> its bit in the pidmap after detach. The 2nd fork() after the 1st task death thus
-> can reuse the same pid again. This basic thing doesn't require root perms at all
-> and safe against pid reuse problems. When requesting for pid reservation task may
-> specify a pid number it wants to have, but this requires root perms (CAP_SYS_ADMIN).
->
-> Pedro, I suppose this will work for your checkpoint feature in gdb, am I right?
->
-> Few comments about intrusion:
->
->   * the common path - if (pid !=&init_struct_pid) - on fork is just modified
->   * we have -1 argument to copy_process
->   * one more field on struct pid is OK, since it size doesn't change (32 bit level is
->     anyway not required, it's OK to reduce on down to 16 bits)
->   * no clone flags extension
->   * no new locking - the reserved pid manipulations happen under tasklist_lock and
->     existing common paths do not require more of it
->   * yes, we have +1 member on task_struct :(
->
-> Current API problems:
->
->   * Only one fork() with pid at a time. Next call to PR_RESERVE_PID will kill the
->     previous reservation (don't know how to fix)
->   * No way to fork() an init of a pid sub-namespace with desired pid in current
->     (can be fixed for a flag for PR_RESERVE_PID saying that we need a pid for a
->      namespace of a next level)
+ping!
 
->   * No way to grab existing pid for reserve (can be fixed, if someone wants this)
 
-We can add flag to sys_wait4(), and stash pid in wait_task_zombie(), right before release_task()
-code will looks something like this:
+On 11/13/11 11:49, Igor Grinberg wrote:
+> TWL family of PMICs, used in master mode, have a power off
+> functionality. The resulting power off sequence shuts down all the SoC
+> supplies, LDOs, etc. The sequence is described in the datasheets
+> chapter "Power-Off Sequence".
+> Note, that board must be wired correctly for the power off to work as
+> expected.
+> 
+> Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+> ---
+>  drivers/mfd/twl4030-power.c |   42 ++++++++++++++++++++++++++++++++++++++++--
+>  include/linux/i2c/twl.h     |    2 ++
+>  2 files changed, 42 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+> index a764676..d905f51 100644
+> --- a/drivers/mfd/twl4030-power.c
+> +++ b/drivers/mfd/twl4030-power.c
+> @@ -34,7 +34,8 @@
+>  static u8 twl4030_start_script_address = 0x2b;
+>  
+>  #define PWR_P1_SW_EVENTS	0x10
+> -#define PWR_DEVOFF	(1<<0)
+> +#define PWR_DEVOFF		(1 << 0)
+> +#define SEQ_OFFSYNC		(1 << 0)
+>  
+>  #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
+>  #define PHY_TO_OFF_PM_RECEIVER(p)	(p - 0x5b)
+> @@ -511,12 +512,27 @@ int twl4030_remove_script(u8 flags)
+>  	return err;
+>  }
+>  
+> +/*
+> + * In master mode, start the power off sequence.
+> + * After a successful execution, TWL shuts down the power to the SoC
+> + * and all peripherals connected to it.
+> + */
+> +void twl4030_power_off(void)
+> +{
+> +	int err;
+> +
+> +	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, PWR_DEVOFF,
+> +			       TWL4030_PM_MASTER_P1_SW_EVENTS);
+> +	if (err)
+> +		pr_err("TWL4030 Unable to power off\n");
+> +}
+> +
+>  void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
+>  {
+>  	int err = 0;
+>  	int i;
+>  	struct twl4030_resconfig *resconfig;
+> -	u8 address = twl4030_start_script_address;
+> +	u8 val, address = twl4030_start_script_address;
+>  
+>  	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
+>  			TWL4030_PM_MASTER_KEY_CFG1,
+> @@ -548,6 +564,28 @@ void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
+>  		}
+>  	}
+>  
+> +	/* Board has to be wired properly to use this feature */
+> +	if (twl4030_scripts->use_poweroff && !pm_power_off) {
+> +		/* Default for SEQ_OFFSYNC is set, lets ensure this */
+> +		err = twl_i2c_read_u8(TWL4030_MODULE_PM_MASTER, &val,
+> +				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
+> +		if (err) {
+> +			pr_warning("TWL4030 Unable to read registers\n");
+> +
+> +		} else if (!(val & SEQ_OFFSYNC)) {
+> +			val |= SEQ_OFFSYNC;
+> +			err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, val,
+> +					TWL4030_PM_MASTER_CFG_P123_TRANSITION);
+> +			if (err) {
+> +				pr_err("TWL4030 Unable to setup SEQ_OFFSYNC\n");
+> +				goto relock;
+> +			}
+> +		}
+> +
+> +		pm_power_off = twl4030_power_off;
+> +	}
+> +
+> +relock:
+>  	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
+>  			TWL4030_PM_MASTER_PROTECT_KEY);
+>  	if (err)
+> diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+> index 114c0f6..78d3465 100644
+> --- a/include/linux/i2c/twl.h
+> +++ b/include/linux/i2c/twl.h
+> @@ -652,10 +652,12 @@ struct twl4030_power_data {
+>  	unsigned num;
+>  	struct twl4030_resconfig *resource_config;
+>  #define TWL4030_RESCONFIG_UNDEF	((u8)-1)
+> +	bool use_poweroff;	/* Board is wired for TWL poweroff */
+>  };
+>  
+>  extern void twl4030_power_init(struct twl4030_power_data *triton2_scripts);
+>  extern int twl4030_remove_script(u8 flags);
+> +extern void twl4030_power_off(void);
+>  
+>  struct twl4030_codec_data {
+>  	unsigned int digimic_delay; /* in ms */
 
--       if (p != NULL)
-+       if (p != NULL) {
-+               if ((wo->wo_flags & WCATCHPID) && !current->pid_stash) {
-+                       struct pid *pid = task_pid(p);
-+
-+                       pid->flags |= PID_STASHED;
-+                       current->pid_stash = get_pid(pid);
-+               }
-                 release_task(p);
-+       }
-
-And next fork() creates child with the same pid.
-So, struct pid will work like boomerang =)
+-- 
+Regards,
+Igor.
